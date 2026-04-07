@@ -1,0 +1,45 @@
+.ainalyst_phase
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Переменные окружения (ключи Confluence и др.)
+.env
+.env.local
+#.env.*
+
+# Входные материалы — транскрипты, регламенты, конфиденциальные документы клиентов
+inputs/*
+!inputs/README.md
+
+# Артефакты проекта — данные конкретных BA-проектов, не часть инструмента
+governance_plans/data/*
+governance_plans/reports/*
+# Сохраняем сами папки в репозитории
+!governance_plans/data/.gitkeep
+!governance_plans/reports/.gitkeep
+
+# PDF-экспорт отчётов (генерируется утилитой export_pdf.py, ADR-092)
+governance_plans/reports/*.pdf
+
+# Генерируется автоматически через: python phase.py <фаза>
+.mcp.json
+
+# Системные файлы редакторов и ОС
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

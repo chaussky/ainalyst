@@ -1,0 +1,8 @@
+# Зафиксированные версии (протестировано, ADR-REVIEW-п7)
+# Для обновления: проверить совместимость вручную, затем обновить версии ниже
+mcp[cli]==1.6.0
+fastmcp==2.3.3
+pydantic==2.11.1
+atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC интеграция
+markdown2==2.5.3               # Markdown → HTML для Confluence storage format
+reportlab==4.2.5               # PDF-экспорт отчётов (ADR-092, утилита export_pdf.py)
