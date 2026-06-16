@@ -135,11 +135,15 @@ def make_test_repo(project_name: str = "test_project") -> dict:
 
 
 def save_test_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
-    """Сохраняет тестовый репозиторий через общий резолвер пути (issue #1)."""
-    from skills.common import data_path
+    """Сохраняет тестовый репозиторий ПЛОСКО (legacy-раскладка, issue #1).
+
+    Намеренно пишет в плоский data/, чтобы воспроизводить уже существующие
+    (домиграционные) артефакты: модульный резолвер data_path увидит плоский файл
+    и продолжит читать/писать его на месте — fallback на legacy.
+    """
     safe_name = repo["project"].lower().replace(" ", "_")
-    path = data_path(repo["project"], f"{safe_name}_traceability_repo.json")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    path = os.path.join(governance_dir, f"{safe_name}_traceability_repo.json")
+    os.makedirs(governance_dir, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
     return path

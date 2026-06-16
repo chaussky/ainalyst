@@ -36,7 +36,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_RiskAssessment")
 
@@ -75,40 +75,40 @@ ZONE_LABELS = {
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _scope_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{SCOPE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{SCOPE_FILENAME}")
 
 
 def _assessment_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ASSESSMENT_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ASSESSMENT_FILENAME}")
 
 
 def _repo_path(project_id: str, repo_project_id: Optional[str] = None) -> str:
     pid = repo_project_id or project_id
-    return os.path.join(DATA_DIR, f"{_safe(pid)}_{REPO_FILENAME}")
+    return data_path(pid, f"{_safe(pid)}_{REPO_FILENAME}")
 
 
 def _cs_state_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CS_STATE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CS_STATE_FILENAME}")
 
 
 def _cs_needs_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CS_NEEDS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CS_NEEDS_FILENAME}")
 
 
 def _fs_state_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{FS_STATE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{FS_STATE_FILENAME}")
 
 
 def _gap_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{GAP_FILENAME}")
 
 
 def _elicitation_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ELICITATION_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ELICITATION_FILENAME}")
 
 
 def _load_assessment(project_id: str) -> dict:
@@ -120,7 +120,7 @@ def _load_assessment(project_id: str) -> dict:
 
 
 def _save_assessment(data: dict, project_id: str):
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(_assessment_path(project_id)), exist_ok=True)
     data["updated"] = str(date.today())
     with open(_assessment_path(project_id), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -219,7 +219,7 @@ def scope_risk_assessment(
         "created": str(date.today()),
     }
 
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(_scope_path(project_id)), exist_ok=True)
     with open(_scope_path(project_id), "w", encoding="utf-8") as f:
         json.dump(scope, f, ensure_ascii=False, indent=2)
 
