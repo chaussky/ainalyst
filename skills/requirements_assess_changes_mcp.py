@@ -26,7 +26,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Requirements_Assess_Changes")
 
@@ -63,8 +63,8 @@ SCHEDULE_MAP = {"Low": 3, "Medium": 2, "High": 1}  # инвертировано:
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
-    safe = project_name.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_{REPO_FILENAME}")
+    safe = normalize_project_id(project_name)
+    return data_path(project_name, f"{safe}_{REPO_FILENAME}")
 
 
 def _load_repo(project_name: str) -> dict:
@@ -77,7 +77,7 @@ def _load_repo(project_name: str) -> dict:
 
 def _save_repo(project_name: str, repo: dict) -> None:
     path = _repo_path(project_name)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)

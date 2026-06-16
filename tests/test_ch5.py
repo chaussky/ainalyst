@@ -12,8 +12,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # Моки применяются через conftest при импорте
-from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo
-from skills.common import DATA_DIR
+from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo, list_data_files
+from skills.common import DATA_DIR, data_path
 
 import skills.requirements_traceability_mcp as mod51
 import skills.requirements_maintain_mcp as mod52
@@ -74,7 +74,7 @@ class TestTraceabilityMCP(BaseMCPTest):
 
     def test_init_creates_json_file(self):
         self._init()
-        files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
+        files = list_data_files()
         self.assertEqual(len(files), 1)
 
     def test_init_correct_structure(self):
@@ -294,7 +294,7 @@ class TestIntegration51_52(BaseMCPTest):
              "version": "1.0", "status": "confirmed"}
         ]))
         mod52.update_requirement(self.P, "FR-001", "Интеграция", new_status="approved")
-        files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
+        files = list_data_files()
         self.assertEqual(len(files), 1)
         repo = load_test_repo(self.P)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
@@ -365,15 +365,15 @@ def make_prio_repo(project_name: str = "prio_test") -> dict:
 
 def save_prio_repo(repo: dict) -> None:
     safe = repo["project"].lower().replace(" ", "_")
-    path = os.path.join(DATA_DIR, f"{safe}_traceability_repo.json")
-    os.makedirs(DATA_DIR, exist_ok=True)
+    path = data_path(safe, f"{safe}_traceability_repo.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
 
 
 def load_prio_file(project_name: str) -> dict:
     safe = project_name.lower().replace(" ", "_")
-    path = os.path.join(DATA_DIR, f"{safe}_prioritization.json")
+    path = data_path(safe, f"{safe}_prioritization.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -749,8 +749,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.save_prioritization_result(self.P, "SAVE1")
         # Читаем репозиторий 5.1 напрямую
         safe = self.P.lower().replace(" ", "_")
-        repo_path = os.path.join(DATA_DIR,
-                                  f"{safe}_traceability_repo.json")
+        repo_path = data_path(safe, f"{safe}_traceability_repo.json")
         with open(repo_path) as f:
             repo = json.load(f)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
@@ -764,8 +763,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.run_aggregation(self.P, "HIST1")
         mod53.save_prioritization_result(self.P, "HIST1")
         safe = self.P.lower().replace(" ", "_")
-        with open(os.path.join(DATA_DIR,
-                                f"{safe}_traceability_repo.json")) as f:
+        with open(data_path(safe, f"{safe}_traceability_repo.json")) as f:
             repo = json.load(f)
         actions = [h["action"] for h in repo.get("history", [])]
         self.assertIn("priority_updated", actions)

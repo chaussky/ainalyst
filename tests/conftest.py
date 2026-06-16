@@ -135,21 +135,33 @@ def make_test_repo(project_name: str = "test_project") -> dict:
 
 
 def save_test_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
-    """Сохраняет тестовый репозиторий. Возвращает путь."""
+    """Сохраняет тестовый репозиторий через общий резолвер пути (issue #1)."""
+    from skills.common import data_path
     safe_name = repo["project"].lower().replace(" ", "_")
-    path = os.path.join(governance_dir, f"{safe_name}_traceability_repo.json")
-    os.makedirs(governance_dir, exist_ok=True)
+    path = data_path(repo["project"], f"{safe_name}_traceability_repo.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
     return path
 
 
 def load_test_repo(project_name: str, governance_dir: str = "governance_plans/data") -> dict:
-    """Загружает тестовый репозиторий."""
+    """Загружает тестовый репозиторий через общий резолвер пути (issue #1)."""
+    from skills.common import data_path
     safe_name = project_name.lower().replace(" ", "_")
-    path = os.path.join(governance_dir, f"{safe_name}_traceability_repo.json")
+    path = data_path(project_name, f"{safe_name}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def list_data_files(suffix: str = ".json", base: str = "governance_plans/data") -> list:
+    """Рекурсивно перечисляет файлы в data/ (включая подпапки проекта, issue #1)."""
+    out = []
+    for root, _dirs, files in os.walk(base):
+        for f in files:
+            if f.endswith(suffix):
+                out.append(os.path.join(root, f))
+    return out
 
 
 class BaseMCPTest(unittest.TestCase):
