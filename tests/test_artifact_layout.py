@@ -112,3 +112,65 @@ class TestSaveArtifact(unittest.TestCase):
         common.save_artifact("# hi", "legacy_prefix")
         flat = [f for f in os.listdir("governance_plans/reports") if f.endswith(".md")]
         self.assertEqual(len(flat), 1)
+
+
+class TestMigration(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._cwd = os.getcwd()
+        os.chdir(self.tmp)
+        os.makedirs("governance_plans/data", exist_ok=True)
+        os.makedirs("governance_plans/reports", exist_ok=True)
+
+    def tearDown(self):
+        os.chdir(self._cwd)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _write(self, path, text="{}"):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def test_moves_flat_data_into_subdir(self):
+        import migrate_artifacts
+        self._write("governance_plans/data/crm_traceability_repo.json", '{"x":1}')
+        migrate_artifacts.migrate(apply=True)
+        self.assertTrue(os.path.exists("governance_plans/data/crm/crm_traceability_repo.json"))
+        self.assertFalse(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
+        with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"x":1}')  # данные не повреждены
+
+    def test_dry_run_moves_nothing(self):
+        import migrate_artifacts
+        self._write("governance_plans/data/crm_traceability_repo.json")
+        migrate_artifacts.migrate(apply=False)
+        self.assertTrue(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
+
+    def test_idempotent_and_never_overwrites(self):
+        import migrate_artifacts
+        self._write("governance_plans/data/crm/crm_traceability_repo.json", '{"nested":1}')
+        self._write("governance_plans/data/crm_traceability_repo.json", '{"flat":1}')
+        migrate_artifacts.migrate(apply=True)  # цель занята → не трогаем оба
+        with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"nested":1}')
+        self.assertTrue(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
+
+    def test_specs_dir_migrates(self):
+        import migrate_artifacts
+        self._write("governance_plans/data/crm_specs/dd_001.md", "# dd")
+        migrate_artifacts.migrate(apply=True)
+        self.assertTrue(os.path.exists("governance_plans/data/crm/specs/dd_001.md"))
+
+    def test_report_with_embedded_project_migrates(self):
+        import migrate_artifacts
+        self._write("governance_plans/reports/6_1_current_state_crm_20260616_120000.md", "# r")
+        migrate_artifacts.migrate(apply=True)
+        self.assertTrue(os.path.exists(
+            "governance_plans/reports/crm/6_1_current_state_crm_20260616_120000.md"))
+
+    def test_report_without_project_stays_put(self):
+        import migrate_artifacts
+        self._write("governance_plans/reports/4_4_comm_package_20260616_120000.md", "# r")
+        migrate_artifacts.migrate(apply=True)
+        self.assertTrue(os.path.exists(
+            "governance_plans/reports/4_4_comm_package_20260616_120000.md"))
