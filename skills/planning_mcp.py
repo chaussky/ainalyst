@@ -26,7 +26,7 @@ from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
-    save_artifact, logger, DATA_DIR,
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
 )
 
@@ -83,11 +83,11 @@ _ISSUE_RECOMMENDATIONS = {
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _plan_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{PLAN_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{PLAN_FILENAME}")
 
 
 def _load_plan(project_id: str) -> dict:
@@ -99,9 +99,10 @@ def _load_plan(project_id: str) -> dict:
 
 
 def _save_plan(data: dict, project_id: str):
-    os.makedirs(DATA_DIR, exist_ok=True)
+    path = _plan_path(project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(_plan_path(project_id), "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
