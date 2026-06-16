@@ -11,7 +11,7 @@ echo ""
 # Показываем какие проекты уже есть (по JSON файлам в data/)
 if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
     echo "📁 Активные проекты:"
-    ls "$DATA_DIR"/*.json 2>/dev/null | \
+    find "$DATA_DIR" -name '*.json' 2>/dev/null | \
         sed 's/.*\///' | \
         sed 's/_traceability_repo\.json//' | \
         sed 's/_prioritization\.json//' | \
@@ -34,7 +34,7 @@ fi
 # Показываем последние сохранённые отчёты
 if [ -d "$REPORTS_DIR" ] && [ "$(ls -A $REPORTS_DIR 2>/dev/null)" ]; then
     echo "📄 Последние артефакты в reports/:"
-    ls -t "$REPORTS_DIR"/*.md 2>/dev/null | head -5 | \
+    find "$REPORTS_DIR" -name '*.md' 2>/dev/null | xargs -r ls -t 2>/dev/null | head -5 | \
         while read f; do
             echo "   • $(basename $f)"
         done
