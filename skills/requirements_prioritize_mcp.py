@@ -1074,7 +1074,7 @@ def save_prioritization_result(
     ]
 
     content = "\n".join(lines)
-    saved = save_artifact(content, prefix=f"5_3_prioritization_{project_name.lower().replace(' ', '_')}")
+    saved = save_artifact(content, prefix=f"5_3_prioritization_{project_name.lower().replace(' ', '_')}", project_id=project_name)
     return content + saved
 
 

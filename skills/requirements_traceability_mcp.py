@@ -255,7 +255,7 @@ def init_traceability_repo(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_traceability_init")
+    save_artifact(content, prefix="5_1_traceability_init", project_id=project_name)
     return content + f"\n\n✅ Репозиторий сохранён: `{repo_path}`"
 
 
@@ -524,7 +524,7 @@ def run_impact_analysis(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_impact_analysis")
+    save_artifact(content, prefix="5_1_impact_analysis", project_id=project_name)
     return content
 
 
@@ -713,7 +713,7 @@ def check_coverage(
         lines.append("✅ Покрытие полное. Трассировка готова для 5.3 (Приоритизация) и 5.5 (Утверждение).")
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_coverage_check")
+    save_artifact(content, prefix="5_1_coverage_check", project_id=project_name)
     return content
 
 
@@ -845,7 +845,7 @@ def export_traceability_matrix(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_traceability_matrix")
+    save_artifact(content, prefix="5_1_traceability_matrix", project_id=project_name)
     return content
 
 

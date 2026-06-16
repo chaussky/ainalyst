@@ -663,7 +663,7 @@ def check_business_alignment(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_3_business_alignment")
+    save_artifact(content, prefix="7_3_business_alignment", project_id=project_id)
     return content
 
 
@@ -1443,7 +1443,7 @@ def get_validation_report(
         ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_3_validation_report")
+    save_artifact(content, prefix="7_3_validation_report", project_id=project_id)
     return content
 
 

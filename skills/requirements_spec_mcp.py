@@ -283,7 +283,7 @@ def analyze_elicitation_context(
     ]
 
     result = "\n".join(lines)
-    save_artifact(result, prefix="7_1_context_analysis")
+    save_artifact(result, prefix="7_1_context_analysis", project_id=project_id)
     return result
 
 
@@ -803,7 +803,7 @@ def generate_use_case_diagram(
         result_lines.append(f"| `{uc['id']}` | {uc['title']} | {uc.get('status', 'draft')} |")
 
     result = "\n".join(result_lines)
-    save_artifact(result, prefix="7_1_uc_diagram")
+    save_artifact(result, prefix="7_1_uc_diagram", project_id=project_id)
     return result
 
 
@@ -1535,7 +1535,7 @@ def build_coverage_matrix(
         )
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_1_coverage_matrix")
+    save_artifact(content, prefix="7_1_coverage_matrix", project_id=project_id)
     return content
 
 

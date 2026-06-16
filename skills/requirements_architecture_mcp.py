@@ -1140,7 +1140,7 @@ def save_architecture_snapshot(
     content = "\n".join(doc_lines)
 
     # Сохраняем через save_artifact
-    save_artifact(content, prefix="7_4_architecture")
+    save_artifact(content, prefix="7_4_architecture", project_id=project_id)
 
     # Ответ пользователю
     result_lines = [

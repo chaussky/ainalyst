@@ -381,7 +381,7 @@ def prepare_approval_package(
     ]
 
     artifact_content = "\n".join(lines)
-    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_package_{package_id}")
+    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_package_{package_id}", project_id=project_name)
 
     return artifact_content + save_path
 
@@ -1183,7 +1183,7 @@ def create_requirements_baseline(
     ]
 
     artifact_content = "\n".join(record_lines)
-    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_record_{baseline_version}")
+    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_record_{baseline_version}", project_id=project_name)
 
     # Финальный вывод
     output_lines = [

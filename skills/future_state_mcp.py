@@ -1607,7 +1607,7 @@ def save_future_state(
     ]
 
     report_content = "\n".join(report_lines)
-    save_artifact(report_content, prefix=f"6_2_future_state_{_safe(project_id)}")
+    save_artifact(report_content, prefix=f"6_2_future_state_{_safe(project_id)}", project_id=project_id)
 
     # Проброс в 7.3 (ADR-065)
     push_status = ""

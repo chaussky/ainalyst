@@ -652,7 +652,7 @@ def check_req_quality(
     lines.append(f"7. Сгенерируй отчёт: `get_verification_report(project_id='{project_id}')`.")
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_quality_check")
+    save_artifact(content, prefix="7_2_quality_check", project_id=project_id)
     return content
 
 
@@ -904,7 +904,7 @@ def check_model_consistency(
         ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_model_consistency")
+    save_artifact(content, prefix="7_2_model_consistency", project_id=project_id)
     return content
 
 
@@ -1427,7 +1427,7 @@ def get_verification_report(
         ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_verification_report")
+    save_artifact(content, prefix="7_2_verification_report", project_id=project_id)
     return content
 
 

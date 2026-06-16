@@ -340,7 +340,7 @@ def update_requirement(
     else:
         content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
 
-    save_artifact(content, prefix="5_2_requirement_update")
+    save_artifact(content, prefix="5_2_requirement_update", project_id=project_name)
     return content
 
 
@@ -494,7 +494,7 @@ def deprecate_requirements(
     if hook_result.get("status") != "synced":
         content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
 
-    save_artifact(content, prefix="5_2_deprecation")
+    save_artifact(content, prefix="5_2_deprecation", project_id=project_name)
     return content
 
 
@@ -696,7 +696,7 @@ def check_requirements_health(
     if hook_result.get("status") != "synced":
         content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
 
-    save_artifact(content, prefix="5_2_health_check")
+    save_artifact(content, prefix="5_2_health_check", project_id=project_name)
     return content
 
 
@@ -903,7 +903,7 @@ def find_reusable_requirements(
     if hook_result.get("status") != "synced":
         content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
 
-    save_artifact(content, prefix="5_2_reuse_candidates")
+    save_artifact(content, prefix="5_2_reuse_candidates", project_id=project_name)
     return content
 
 

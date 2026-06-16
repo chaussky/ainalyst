@@ -211,7 +211,7 @@ def run_consistency_check(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_3_consistency_check")
+    return save_artifact(meta + content, prefix="4_3_consistency_check", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
@@ -403,7 +403,7 @@ def save_confirmed_elicitation_result(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_3_confirmed_result")
+    return save_artifact(meta + content, prefix="4_3_confirmed_result", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------

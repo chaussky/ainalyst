@@ -1323,7 +1323,7 @@ def save_design_options_report(
     content = "\n".join(doc_lines)
 
     # Сохраняем через save_artifact
-    save_artifact(content, prefix="7_5_design_options")
+    save_artifact(content, prefix="7_5_design_options", project_id=project_id)
 
     # Ответ пользователю
     result_lines = [

@@ -132,7 +132,7 @@ def save_elicitation_plan(
 {expected_outcomes}
 """
 
-    suffix = save_artifact(content, f"Elicitation_Plan_{project_name.replace(' ', '_')}")
+    suffix = save_artifact(content, f"Elicitation_Plan_{project_name.replace(' ', '_')}", project_id=project_name)
     return f"✅ План выявления сохранён.{suffix}"
 
 

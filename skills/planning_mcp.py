@@ -640,7 +640,7 @@ def save_ba_plan(
             md_lines.append("")
 
     md_content = "\n".join(md_lines)
-    artifact_result = save_artifact(md_content, f"3_ba_plan_{_safe(project_id)}")
+    artifact_result = save_artifact(md_content, f"3_ba_plan_{_safe(project_id)}", project_id=project_id)
 
     plan["status"] = "finalized"
     plan["finalized_on"] = str(date.today())

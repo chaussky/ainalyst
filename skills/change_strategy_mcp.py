@@ -1167,7 +1167,7 @@ def save_change_strategy(
             ])
 
     md_content = "\n".join(md_lines)
-    artifact_result = save_artifact(md_content, f"6_4_change_strategy_{_safe(project_id)}")
+    artifact_result = save_artifact(md_content, f"6_4_change_strategy_{_safe(project_id)}", project_id=project_id)
 
     # Финализируем JSON
     strategy["status"] = "finalized"

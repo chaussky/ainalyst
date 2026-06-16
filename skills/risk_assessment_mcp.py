@@ -966,7 +966,7 @@ def save_risk_assessment(
     md_lines.extend(_risks_section("🟢 Low-риски", low_risks))
 
     md_content = "\n".join(md_lines)
-    artifact_result = save_artifact(md_content, f"6_3_risk_assessment_{_safe(project_id)}")
+    artifact_result = save_artifact(md_content, f"6_3_risk_assessment_{_safe(project_id)}", project_id=project_id)
 
     # Финализируем JSON
     assessment["status"] = "finalized"

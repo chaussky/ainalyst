@@ -177,7 +177,8 @@ def process_elicitation_results(
 
     suffix = save_artifact(
         content,
-        f"Elicitation_Results_{project_name.replace(' ', '_')}_{session_date.replace('.', '-')}"
+        f"Elicitation_Results_{project_name.replace(' ', '_')}_{session_date.replace('.', '-')}",
+        project_id=project_name,
     )
     return f"✅ Результаты выявления сохранены.{suffix}"
 
@@ -281,7 +282,7 @@ def compare_elicitation_results(
 {follow_up_plan}
 """
 
-    suffix = save_artifact(content, f"Cross_Analysis_{project_name.replace(' ', '_')}")
+    suffix = save_artifact(content, f"Cross_Analysis_{project_name.replace(' ', '_')}", project_id=project_name)
     return f"✅ Кросс-анализ сохранён.{suffix}"
 
 
@@ -389,7 +390,7 @@ def save_cr_elicitation_analysis(
 {workshop_block}
 """
 
-    suffix = save_artifact(content, f"CR_Elicitation_{project_name.replace(' ', '_')}")
+    suffix = save_artifact(content, f"CR_Elicitation_{project_name.replace(' ', '_')}", project_id=project_name)
     return f"✅ Анализ CR сохранён.{suffix}"
 
 
@@ -524,7 +525,7 @@ def update_stakeholder_registry(
 > Полный реестр проекта формируется накопительно из всех обновлений.
 """
 
-    suffix = save_artifact(content, f"Stakeholder_Registry_{project_name.replace(' ', '_')}")
+    suffix = save_artifact(content, f"Stakeholder_Registry_{project_name.replace(' ', '_')}", project_id=project_name)
     return f"✅ Реестр стейкхолдеров обновлён. Новых записей: {len(stakeholders)}.{suffix}"
 
 

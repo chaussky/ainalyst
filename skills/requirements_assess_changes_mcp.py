@@ -968,7 +968,7 @@ def resolve_cr(
     record_lines += ["---", "", "*Сгенерировано: AInalyst BABOK 5.4*"]
 
     artifact_content = "\n".join(record_lines)
-    save_path = save_artifact(artifact_content, prefix=f"5_4_cr_decision_{cr_id}")
+    save_path = save_artifact(artifact_content, prefix=f"5_4_cr_decision_{cr_id}", project_id=project_name)
 
     # Итоговый вывод
     output_lines = [

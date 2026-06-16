@@ -1237,7 +1237,7 @@ def save_recommendation(
     ]
 
     content = "\n".join(doc_lines)
-    save_artifact(content, prefix="7_6_recommendation")
+    save_artifact(content, prefix="7_6_recommendation", project_id=project_id)
 
     # Ответ пользователю
     action = "обновлена" if is_update else "создана"
