@@ -29,6 +29,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo
 
 import skills.requirements_spec_mcp as mod71
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ def save_spec_repo(repo: dict, governance_dir: str = "governance_plans/data") ->
 def load_spec_repo(project_id: str, governance_dir: str = "governance_plans/data") -> dict:
     """Загружает репозиторий 5.1."""
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join(governance_dir, f"{safe}_traceability_repo.json")
+    path = data_path(project_id, f"{safe}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -114,14 +115,15 @@ class TestSpecUtilities(unittest.TestCase):
         self.assertIn("crm_2024", path)
 
     def test_specs_dir_format(self):
+        # issue #1: спеки в data/<project>/specs/ (новая вложенная раскладка)
         d = mod71._specs_dir("crm_2024")
-        self.assertIn("crm_2024_specs", d)
+        self.assertIn(os.path.join("crm_2024", "specs"), d)
         self.assertIn("governance_plans", d)
 
     def test_specs_dir_normalizes_spaces(self):
         d = mod71._specs_dir("My Project")
         self.assertNotIn(" ", d)
-        self.assertIn("my_project_specs", d)
+        self.assertIn(os.path.join("my_project", "specs"), d)
 
     def test_load_repo_empty_when_missing(self):
         """Загрузка несуществующего репозитория возвращает пустую структуру."""

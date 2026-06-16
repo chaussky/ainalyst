@@ -34,6 +34,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest, save_test_repo
 
 import skills.requirements_verify_mcp as mod72
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -63,14 +64,14 @@ def save_repo(repo: dict) -> str:
 
 def load_repo(project_id: str) -> dict:
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_traceability_repo.json")
+    path = data_path(project_id, f"{safe}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def load_issues(project_id: str) -> dict:
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_verification_issues.json")
+    path = data_path(project_id, f"{safe}_verification_issues.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -474,11 +475,11 @@ class TestCheckModelConsistency(BaseMCPTest):
         os.makedirs(specs_dir, exist_ok=True)
 
         # DD с сущностью Application
-        with open(os.path.join(specs_dir, "dd_001_test.md"), "w") as f:
+        with open(os.path.join(specs_dir, "dd_001_test.md"), "w", encoding="utf-8") as f:
             f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
 
         # ERD с другой сущностью
-        with open(os.path.join(specs_dir, "erd_001_test.puml"), "w") as f:
+        with open(os.path.join(specs_dir, "erd_001_test.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\nentity "Order" as Ord {}\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc3")
@@ -489,10 +490,10 @@ class TestCheckModelConsistency(BaseMCPTest):
         specs_dir = "governance_plans/data/proj_mc4_specs"
         os.makedirs(specs_dir, exist_ok=True)
 
-        with open(os.path.join(specs_dir, "dd_001.md"), "w") as f:
+        with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:
             f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
 
-        with open(os.path.join(specs_dir, "erd_001.puml"), "w") as f:
+        with open(os.path.join(specs_dir, "erd_001.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\nentity "Client" as Cli {}\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc4")
@@ -503,7 +504,7 @@ class TestCheckModelConsistency(BaseMCPTest):
         os.makedirs(specs_dir, exist_ok=True)
 
         # UC spec с актором
-        with open(os.path.join(specs_dir, "uc_001_create.md"), "w") as f:
+        with open(os.path.join(specs_dir, "uc_001_create.md"), "w", encoding="utf-8") as f:
             f.write(
                 "# UC-001 — Создать заявку\n\n"
                 "| Атрибут | Значение |\n"
@@ -512,7 +513,7 @@ class TestCheckModelConsistency(BaseMCPTest):
             )
 
         # UC Diagram без этого актора
-        with open(os.path.join(specs_dir, "uc_diagram_test.puml"), "w") as f:
+        with open(os.path.join(specs_dir, "uc_diagram_test.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nactor "Администратор" as A1\nusecase "Создать заявку" as UC1\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc5")
@@ -931,10 +932,10 @@ class TestPipeline(BaseMCPTest):
         specs_dir = f"governance_plans/data/{project_id}_specs"
         os.makedirs(specs_dir, exist_ok=True)
 
-        with open(os.path.join(specs_dir, "dd_001.md"), "w") as f:
+        with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:
             f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
 
-        with open(os.path.join(specs_dir, "erd_001.puml"), "w") as f:
+        with open(os.path.join(specs_dir, "erd_001.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\n@enduml\n')
 
         result = mod72.check_model_consistency(project_id)

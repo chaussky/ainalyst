@@ -32,7 +32,7 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Value_Recommend")
 
@@ -73,31 +73,31 @@ RISK_LEVEL_MAP = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _rec_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{RECOMMENDATION_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{RECOMMENDATION_FILENAME}")
 
 
 def _design_options_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{DESIGN_OPTIONS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{DESIGN_OPTIONS_FILENAME}")
 
 
 def _context_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
 
 
 def _architecture_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
 
 
 def _risks_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{RISKS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{RISKS_FILENAME}")
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _load_json(path: str, default) -> dict:
@@ -117,7 +117,7 @@ def _load_recommendation(project_id: str) -> dict:
 
 
 def _save_recommendation(data: dict) -> None:
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(_rec_path(data["project_id"])), exist_ok=True)
     data["updated"] = str(date.today())
     with open(_rec_path(data["project_id"]), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

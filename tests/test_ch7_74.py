@@ -46,6 +46,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest
 
 import skills.requirements_architecture_mcp as mod74
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ def save_repo(repo):
 
 def load_arch(project_id):
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_architecture.json")
+    path = data_path(project_id, f"{safe}_architecture.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 

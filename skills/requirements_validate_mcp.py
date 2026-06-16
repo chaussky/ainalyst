@@ -31,7 +31,7 @@ from collections import deque
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Requirements_Validate")
 
@@ -45,19 +45,19 @@ ASSUMPTIONS_FILENAME = "assumptions.json"
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _context_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
 
 
 def _assumptions_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ASSUMPTIONS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ASSUMPTIONS_FILENAME}")
 
 
 def _load_repo(project_id: str) -> dict:
@@ -71,7 +71,7 @@ def _load_repo(project_id: str) -> dict:
 def _save_repo(repo: dict) -> None:
     project_id = repo["project"]
     path = _repo_path(project_id)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -88,7 +88,7 @@ def _load_context(project_id: str) -> Optional[dict]:
 
 def _save_context(data: dict) -> None:
     path = _context_path(data["project_id"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated_at"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -111,7 +111,7 @@ def _load_assumptions(project_id: str) -> dict:
 
 def _save_assumptions(data: dict) -> None:
     path = _assumptions_path(data["project"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -225,10 +225,10 @@ def set_business_context(
     prefill_status = ""
     if from_strategy_project_id.strip():
         safe_sp = from_strategy_project_id.lower().replace(" ", "_")
-        fs_goals_path = os.path.join(DATA_DIR, f"{safe_sp}_future_state_goals.json")
-        fs_state_path = os.path.join(DATA_DIR, f"{safe_sp}_future_state.json")
-        fs_scope_path = os.path.join(DATA_DIR, f"{safe_sp}_future_state_scope.json")
-        cs_needs_path = os.path.join(DATA_DIR, f"{safe_sp}_business_needs.json")
+        fs_goals_path = data_path(safe_sp, f"{safe_sp}_future_state_goals.json")
+        fs_state_path = data_path(safe_sp, f"{safe_sp}_future_state.json")
+        fs_scope_path = data_path(safe_sp, f"{safe_sp}_future_state_scope.json")
+        cs_needs_path = data_path(safe_sp, f"{safe_sp}_business_needs.json")
 
         try:
             prefill_parts = []
@@ -308,8 +308,8 @@ def set_business_context(
     elif from_current_state_project_id.strip():
         prefill_status = "\n\n⚠️ Параметр `from_current_state_project_id` устарел. Используйте `from_strategy_project_id` (ADR-065)."
         safe_cs = from_current_state_project_id.lower().replace(" ", "_")
-        needs_path = os.path.join(DATA_DIR, f"{safe_cs}_business_needs.json")
-        scope_path = os.path.join(DATA_DIR, f"{safe_cs}_current_state_scope.json")
+        needs_path = data_path(safe_cs, f"{safe_cs}_business_needs.json")
+        scope_path = data_path(safe_cs, f"{safe_cs}_current_state_scope.json")
 
         if os.path.exists(needs_path):
             try:

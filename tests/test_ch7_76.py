@@ -80,6 +80,7 @@ from tests.conftest import BaseMCPTest, setup_mocks
 setup_mocks()
 
 import skills.value_recommend_mcp as mod76
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +207,7 @@ def save_risks(risks_data: dict, project_id: str, tmp_dir: str):
 
 def load_rec_file(project_id: str, tmp_dir: str) -> dict:
     pid = project_id.lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_recommendation.json")
+    path = data_path(project_id, f"{pid}_recommendation.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -642,7 +643,7 @@ class TestCheckValueReadiness(BaseMCPTest):
         # Патчим файл: убираем benefits
         rec = load_rec_file("warn_proj", self.tmp_dir)
         rec["value_assessments"]["OPT-001"]["benefits"] = []
-        path = os.path.join(self.tmp_dir, "governance_plans", "data", "warn_proj_recommendation.json")
+        path = data_path("warn_proj", "warn_proj_recommendation.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(rec, f, ensure_ascii=False, indent=2)
         result = mod76.check_value_readiness("warn_proj")
