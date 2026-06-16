@@ -1,5 +1,6 @@
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 import os
+import re
 import sys
 import logging
 from datetime import datetime
@@ -23,6 +24,29 @@ def _ensure_dirs():
     """Создаёт все нужные папки если их нет."""
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(REPORTS_DIR, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Раскладка артефактов по подкаталогам проекта (issue #1)
+# ---------------------------------------------------------------------------
+
+_PID_DISALLOWED = re.compile(r"[^a-z0-9_-]+")
+
+
+def normalize_project_id(project_id: str) -> str:
+    """Безопасное имя проекта для использования как имя каталога.
+
+    Защита от path traversal: убирает '/', '\\', '..', абсолютные пути;
+    оставляет whitelist [a-z0-9_-]. Пустой результат → '_unknown'.
+    """
+    if not project_id:
+        return "_unknown"
+    s = str(project_id).strip().lower()
+    s = s.replace("\\", "_").replace("/", "_").replace(" ", "_")
+    s = _PID_DISALLOWED.sub("_", s)
+    s = re.sub(r"_+", "_", s)
+    s = s.strip("._-")
+    return s or "_unknown"
 
 
 class Stakeholder(BaseModel):
