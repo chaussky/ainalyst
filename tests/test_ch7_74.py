@@ -46,6 +46,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest
 
 import skills.requirements_architecture_mcp as mod74
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ def save_repo(repo):
 
 def load_arch(project_id):
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_architecture.json")
+    path = data_path(project_id, f"{safe}_architecture.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -713,7 +714,7 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         save_repo(repo)
         calls = []
         original = mod74.save_artifact
-        mod74.save_artifact = lambda content, prefix="": calls.append(prefix) or "✅"
+        mod74.save_artifact = lambda content, prefix="", project_id=None: calls.append(prefix) or "✅"
         try:
             mod74.save_architecture_snapshot("artifact_proj", "v1.0")
         finally:
@@ -736,7 +737,7 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         """Architecture Document содержит секцию Viewpoints."""
         doc_content = []
         original = mod74.save_artifact
-        mod74.save_artifact = lambda content, prefix="": doc_content.append(content) or "✅"
+        mod74.save_artifact = lambda content, prefix="", project_id=None: doc_content.append(content) or "✅"
         try:
             repo = make_full_repo("doc_proj")
             save_repo(repo)
@@ -750,7 +751,7 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         """Architecture Document содержит секцию передачи в 4.4 и 7.5."""
         doc_content = []
         original = mod74.save_artifact
-        mod74.save_artifact = lambda content, prefix="": doc_content.append(content) or "✅"
+        mod74.save_artifact = lambda content, prefix="", project_id=None: doc_content.append(content) or "✅"
         try:
             repo = make_full_repo("delivery_proj")
             save_repo(repo)
@@ -849,7 +850,7 @@ class TestPipeline(BaseMCPTest):
 
         doc_content = []
         original = mod74.save_artifact
-        mod74.save_artifact = lambda content, prefix="": doc_content.append(content) or "✅"
+        mod74.save_artifact = lambda content, prefix="", project_id=None: doc_content.append(content) or "✅"
         try:
             mod74.save_architecture_snapshot(project_id, "v1.0")
         finally:

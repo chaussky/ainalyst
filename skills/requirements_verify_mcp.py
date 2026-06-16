@@ -29,7 +29,7 @@ import glob
 from datetime import date, datetime
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir
 
 mcp = FastMCP("BABOK_Requirements_Verify")
 
@@ -95,8 +95,8 @@ CONDITION_PATTERNS = [
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_id: str) -> str:
-    safe = project_id.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_{REPO_FILENAME}")
+    safe = normalize_project_id(project_id)
+    return data_path(project_id, f"{safe}_{REPO_FILENAME}")
 
 
 def _load_repo(project_id: str) -> dict:
@@ -110,7 +110,7 @@ def _load_repo(project_id: str) -> dict:
 def _save_repo(repo: dict) -> None:
     project_id = repo["project"]
     path = _repo_path(project_id)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -129,8 +129,8 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 # ---------------------------------------------------------------------------
 
 def _issues_path(project_id: str) -> str:
-    safe = project_id.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_{ISSUES_FILENAME}")
+    safe = normalize_project_id(project_id)
+    return data_path(project_id, f"{safe}_{ISSUES_FILENAME}")
 
 
 def _load_issues(project_id: str) -> dict:
@@ -149,7 +149,7 @@ def _load_issues(project_id: str) -> dict:
 
 def _save_issues(data: dict) -> None:
     path = _issues_path(data["project"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -187,8 +187,9 @@ def _open_blockers_for_req(data: dict, req_id: str) -> list:
 # ---------------------------------------------------------------------------
 
 def _specs_dir(project_id: str) -> str:
-    safe = project_id.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_specs")
+    # issue #1: спеки в data/<project>/specs/, с fallback на legacy-раскладки.
+    # Единый источник истины — common.specs_dir.
+    return specs_dir(project_id)
 
 
 # ---------------------------------------------------------------------------
@@ -645,7 +646,7 @@ def check_req_quality(
     lines.append(f"7. Сгенерируй отчёт: `get_verification_report(project_id='{project_id}')`.")
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_quality_check")
+    save_artifact(content, prefix="7_2_quality_check", project_id=project_id)
     return content
 
 
@@ -897,7 +898,7 @@ def check_model_consistency(
         ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_model_consistency")
+    save_artifact(content, prefix="7_2_model_consistency", project_id=project_id)
     return content
 
 
@@ -1420,7 +1421,7 @@ def get_verification_report(
         ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="7_2_verification_report")
+    save_artifact(content, prefix="7_2_verification_report", project_id=project_id)
     return content
 
 

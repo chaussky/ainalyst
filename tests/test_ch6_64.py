@@ -1038,7 +1038,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
         _setup_full_pipeline()
         md_content_captured = {}
         with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
-            def capture(content, name):
+            def capture(content, name, project_id=None):
                 md_content_captured["content"] = content
                 return "✅"
             mock_sa.side_effect = capture
@@ -1049,7 +1049,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
         _setup_full_pipeline()
         md_content_captured = {}
         with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
-            def capture(content, name):
+            def capture(content, name, project_id=None):
                 md_content_captured["content"] = content
                 return "✅"
             mock_sa.side_effect = capture

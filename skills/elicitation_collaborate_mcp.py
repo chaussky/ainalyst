@@ -163,7 +163,7 @@ def log_decision(
         f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
-    return save_artifact(meta + content, prefix="4_5_decision_log")
+    return save_artifact(meta + content, prefix="4_5_decision_log", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ def save_meeting_notes(
         f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
-    return save_artifact(meta + content, prefix="4_5_meeting_notes")
+    return save_artifact(meta + content, prefix="4_5_meeting_notes", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
@@ -443,7 +443,7 @@ def update_engagement_status(
         f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
-    return save_artifact(meta + content, prefix="4_5_engagement_status")
+    return save_artifact(meta + content, prefix="4_5_engagement_status", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------

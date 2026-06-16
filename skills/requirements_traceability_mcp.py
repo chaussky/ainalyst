@@ -26,7 +26,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
@@ -39,8 +39,8 @@ REPO_FILENAME = "traceability_repo.json"
 
 def _repo_path(project_name: str) -> str:
     """Возвращает путь к JSON-файлу репозитория для проекта."""
-    safe_name = project_name.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe_name}_{REPO_FILENAME}")
+    safe_name = normalize_project_id(project_name)
+    return data_path(project_name, f"{safe_name}_{REPO_FILENAME}")
 
 
 def _load_repo(project_name: str) -> dict:
@@ -64,7 +64,7 @@ def _save_repo(repo: dict) -> str:
     """Сохраняет репозиторий в JSON. Возвращает путь."""
     project_name = repo["project"]
     path = _repo_path(project_name)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -255,7 +255,7 @@ def init_traceability_repo(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_traceability_init")
+    save_artifact(content, prefix="5_1_traceability_init", project_id=project_name)
     return content + f"\n\n✅ Репозиторий сохранён: `{repo_path}`"
 
 
@@ -524,7 +524,7 @@ def run_impact_analysis(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_impact_analysis")
+    save_artifact(content, prefix="5_1_impact_analysis", project_id=project_name)
     return content
 
 
@@ -713,7 +713,7 @@ def check_coverage(
         lines.append("✅ Покрытие полное. Трассировка готова для 5.3 (Приоритизация) и 5.5 (Утверждение).")
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_coverage_check")
+    save_artifact(content, prefix="5_1_coverage_check", project_id=project_name)
     return content
 
 
@@ -845,7 +845,7 @@ def export_traceability_matrix(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="5_1_traceability_matrix")
+    save_artifact(content, prefix="5_1_traceability_matrix", project_id=project_name)
     return content
 
 

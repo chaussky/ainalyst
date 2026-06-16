@@ -36,7 +36,7 @@ import os
 from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_ChangeStrategy")
 
@@ -76,20 +76,20 @@ DO_NOTHING_OPTION_ID = "OPT-000"
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _scope_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{SCOPE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{SCOPE_FILENAME}")
 
 
 def _strategy_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{STRATEGY_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{STRATEGY_FILENAME}")
 
 
 def _repo_path(project_id: str, repo_project_id: Optional[str] = None) -> str:
     pid = repo_project_id or project_id
-    return os.path.join(DATA_DIR, f"{_safe(pid)}_{REPO_FILENAME}")
+    return data_path(pid, f"{_safe(pid)}_{REPO_FILENAME}")
 
 
 def _safe_load_json(path: str) -> Optional[dict]:
@@ -111,7 +111,7 @@ def _load_strategy(project_id: str) -> dict:
 
 
 def _save_strategy(data: dict, project_id: str):
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(_strategy_path(project_id)), exist_ok=True)
     data["updated"] = str(date.today())
     with open(_strategy_path(project_id), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -214,7 +214,7 @@ def scope_change_strategy(
         "created": str(date.today()),
     }
 
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(_scope_path(project_id)), exist_ok=True)
     with open(_scope_path(project_id), "w", encoding="utf-8") as f:
         json.dump(scope, f, ensure_ascii=False, indent=2)
 
@@ -232,7 +232,7 @@ def scope_change_strategy(
 
     for src_id in source_ids:
         # 6.1: business_needs
-        needs_path = os.path.join(DATA_DIR, f"{_safe(src_id)}_{BUSINESS_NEEDS_FILENAME}")
+        needs_path = data_path(src_id, f"{_safe(src_id)}_{BUSINESS_NEEDS_FILENAME}")
         needs_data = _safe_load_json(needs_path)
         if needs_data:
             for bn in needs_data.get("business_needs", []):
@@ -246,7 +246,7 @@ def scope_change_strategy(
             warnings.append(f"⚠️ 6.1 business_needs не найден для '{src_id}'")
 
         # 6.2: future_state (goals)
-        fs_path = os.path.join(DATA_DIR, f"{_safe(src_id)}_{FUTURE_STATE_FILENAME}")
+        fs_path = data_path(src_id, f"{_safe(src_id)}_{FUTURE_STATE_FILENAME}")
         fs_data = _safe_load_json(fs_path)
         if fs_data:
             for bg in fs_data.get("goals", []):
@@ -259,7 +259,7 @@ def scope_change_strategy(
             warnings.append(f"⚠️ 6.2 future_state не найден для '{src_id}'")
 
         # 6.3: risk_assessment
-        risk_path = os.path.join(DATA_DIR, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
+        risk_path = data_path(src_id, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
         risk_data = _safe_load_json(risk_path)
         if risk_data:
             for rk in risk_data.get("risks", []):
@@ -1167,7 +1167,7 @@ def save_change_strategy(
             ])
 
     md_content = "\n".join(md_lines)
-    artifact_result = save_artifact(md_content, f"6_4_change_strategy_{_safe(project_id)}")
+    artifact_result = save_artifact(md_content, f"6_4_change_strategy_{_safe(project_id)}", project_id=project_id)
 
     # Финализируем JSON
     strategy["status"] = "finalized"

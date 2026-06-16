@@ -32,7 +32,7 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Design_Options")
 
@@ -74,27 +74,27 @@ DEFAULT_CRITERIA = [
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _design_options_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{DESIGN_OPTIONS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{DESIGN_OPTIONS_FILENAME}")
 
 
 def _change_strategy_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CHANGE_STRATEGY_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CHANGE_STRATEGY_FILENAME}")
 
 
 def _context_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
 
 
 def _architecture_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
 
 
 def _load_json(path: str, default: dict) -> dict:
@@ -105,7 +105,7 @@ def _load_json(path: str, default: dict) -> dict:
 
 
 def _save_json(path: str, data: dict) -> None:
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -236,7 +236,7 @@ def set_change_strategy(
         "updated": str(date.today()),
     }
 
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(strategy, f, ensure_ascii=False, indent=2)
 
@@ -1323,7 +1323,7 @@ def save_design_options_report(
     content = "\n".join(doc_lines)
 
     # Сохраняем через save_artifact
-    save_artifact(content, prefix="7_5_design_options")
+    save_artifact(content, prefix="7_5_design_options", project_id=project_id)
 
     # Ответ пользователю
     result_lines = [

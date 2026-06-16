@@ -559,7 +559,7 @@ class TestSaveBaPlan(BaseMCPTest):
         _setup_full_pipeline()
         captured = {}
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.side_effect = lambda c, n: captured.update({"content": c}) or "✅"
+            mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("3.1", captured["content"])
         self.assertIn("Подход", captured["content"])
@@ -568,7 +568,7 @@ class TestSaveBaPlan(BaseMCPTest):
         _setup_full_pipeline()
         captured = {}
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.side_effect = lambda c, n: captured.update({"content": c}) or "✅"
+            mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("Спонсор", captured["content"])
 
@@ -576,7 +576,7 @@ class TestSaveBaPlan(BaseMCPTest):
         _setup_full_pipeline()
         captured = {}
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.side_effect = lambda c, n: captured.update({"content": c}) or "✅"
+            mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("3.3", captured["content"])
 
@@ -584,7 +584,7 @@ class TestSaveBaPlan(BaseMCPTest):
         _setup_full_pipeline()
         captured = {}
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.side_effect = lambda c, n: captured.update({"name": n}) or "✅"
+            mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"name": n}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("3_ba_plan", captured["name"])
 

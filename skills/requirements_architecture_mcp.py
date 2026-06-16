@@ -31,7 +31,7 @@ from collections import deque
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
 
@@ -85,23 +85,23 @@ SKIP_TYPES = {"business", "test"}
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _stakeholders_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{STAKEHOLDERS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{STAKEHOLDERS_FILENAME}")
 
 
 def _context_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CONTEXT_FILENAME}")
 
 
 def _architecture_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{ARCHITECTURE_FILENAME}")
 
 
 def _load_repo(project_id: str) -> dict:
@@ -148,7 +148,7 @@ def _load_architecture(project_id: str) -> dict:
 def _save_architecture(data: dict) -> None:
     project_id = data["project_id"]
     path = _architecture_path(project_id)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -1140,7 +1140,7 @@ def save_architecture_snapshot(
     content = "\n".join(doc_lines)
 
     # Сохраняем через save_artifact
-    save_artifact(content, prefix="7_4_architecture")
+    save_artifact(content, prefix="7_4_architecture", project_id=project_id)
 
     # Ответ пользователю
     result_lines = [

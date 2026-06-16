@@ -197,7 +197,7 @@ def prepare_communication_package(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_4_comm_package")
+    return save_artifact(meta + content, prefix="4_4_comm_package", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ def log_communication(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_4_comm_log")
+    return save_artifact(meta + content, prefix="4_4_comm_log", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
@@ -606,7 +606,7 @@ def check_communication_schedule(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_4_comm_schedule")
+    return save_artifact(meta + content, prefix="4_4_comm_schedule", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------

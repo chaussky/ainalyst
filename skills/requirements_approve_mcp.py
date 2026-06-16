@@ -27,7 +27,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_Requirements_Approve")
 
@@ -49,13 +49,13 @@ STATUS_REJECTED = "rejected"
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
-    safe = project_name.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_{REPO_FILENAME}")
+    safe = normalize_project_id(project_name)
+    return data_path(project_name, f"{safe}_{REPO_FILENAME}")
 
 
 def _approval_history_path(project_name: str) -> str:
-    safe = project_name.lower().replace(" ", "_")
-    return os.path.join(DATA_DIR, f"{safe}_{APPROVAL_HISTORY_FILENAME}")
+    safe = normalize_project_id(project_name)
+    return data_path(project_name, f"{safe}_{APPROVAL_HISTORY_FILENAME}")
 
 
 def _load_repo(project_name: str) -> dict:
@@ -68,7 +68,7 @@ def _load_repo(project_name: str) -> dict:
 
 def _save_repo(project_name: str, repo: dict) -> None:
     path = _repo_path(project_name)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -84,7 +84,7 @@ def _load_approval_history(project_name: str) -> dict:
 
 def _save_approval_history(project_name: str, history: dict) -> None:
     path = _approval_history_path(project_name)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     history["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
@@ -381,7 +381,7 @@ def prepare_approval_package(
     ]
 
     artifact_content = "\n".join(lines)
-    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_package_{package_id}")
+    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_package_{package_id}", project_id=project_name)
 
     return artifact_content + save_path
 
@@ -1183,7 +1183,7 @@ def create_requirements_baseline(
     ]
 
     artifact_content = "\n".join(record_lines)
-    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_record_{baseline_version}")
+    save_path = save_artifact(artifact_content, prefix=f"5_5_approval_record_{baseline_version}", project_id=project_name)
 
     # Финальный вывод
     output_lines = [

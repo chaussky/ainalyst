@@ -43,6 +43,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest
 
 import skills.requirements_validate_mcp as mod73
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ def save_repo(repo: dict) -> None:
 
 def load_repo(project_id: str) -> dict:
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_traceability_repo.json")
+    path = data_path(project_id, f"{safe}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -136,7 +137,7 @@ def save_assumptions_data(data: dict) -> None:
 
 def load_assumptions_data(project_id: str) -> dict:
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_assumptions.json")
+    path = data_path(project_id, f"{safe}_assumptions.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 

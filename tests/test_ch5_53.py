@@ -22,6 +22,7 @@ from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_r
 setup_mocks()
 
 import skills.requirements_prioritize_mcp as mod53
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +234,7 @@ class TestStartPrioritizationSession(BaseMCPTest):
         """Файл приоритизации создаётся на диске."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         self.assertTrue(os.path.exists(path), f"Файл не найден: {path}")
 
     # --- дубликат метки ---
@@ -257,7 +258,7 @@ class TestStartPrioritizationSession(BaseMCPTest):
     def test_flags_volatile_requirement(self):
         """Нестабильное требование (версия 1.4+) упоминается в отчёте."""
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:
@@ -332,7 +333,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         """Оценки записываются в файл."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
@@ -343,7 +344,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         self._call(stakeholder_id="SH-001")
         self._call(stakeholder_id="SH-002", stakeholder_influence="Medium")
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
@@ -356,7 +357,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         updated_scores = json.dumps([{"req_id": "BR-001", "score": "Won't"}])
         self._call(stakeholder_id="SH-001", scores_json=updated_scores)
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
@@ -401,7 +402,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         """Оценки в закрытую сессию не принимаются."""
         # Вручную закрываем сессию
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
@@ -565,7 +566,7 @@ class TestResolveConflict(BaseMCPTest):
         """Итоговый приоритет обновляется в данных сессии."""
         self._call(req_id="BR-001", final_priority="Should")
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
@@ -631,7 +632,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         """Приоритеты записываются в трассировочный репозиторий."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         # Хотя бы одно требование должно получить приоритет
@@ -642,7 +643,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         """История изменений записывается в трассировочный репозиторий."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertIn("history", data)
@@ -651,7 +652,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         """Сессия помечается как closed после финализации."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_prioritization.json")
+        path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)

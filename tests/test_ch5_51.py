@@ -21,6 +21,7 @@ from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_r
 setup_mocks()
 
 import skills.requirements_traceability_mcp as mod51
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -121,14 +122,14 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         """Репозиторий записывается на диск."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         self.assertTrue(os.path.exists(path), f"Файл не найден: {path}")
 
     def test_correct_structure(self):
         """Файл содержит project, requirements, links, history."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertIn("project", data)
@@ -140,7 +141,7 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         """Все 4 требования попадают в репозиторий."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertEqual(len(data["requirements"]), 4)
@@ -152,7 +153,7 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         self._call()
         self._call()  # второй вызов
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         ids = [r["id"] for r in data["requirements"]]
@@ -176,8 +177,10 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         """Разные проекты пишут в разные файлы."""
         self._call(project_name="project_alpha")
         self._call(project_name="project_beta")
-        self.assertTrue(os.path.exists("governance_plans/data/project_alpha_traceability_repo.json"))
-        self.assertTrue(os.path.exists("governance_plans/data/project_beta_traceability_repo.json"))
+        self.assertTrue(os.path.exists(
+            data_path("project_alpha", "project_alpha_traceability_repo.json")))
+        self.assertTrue(os.path.exists(
+            data_path("project_beta", "project_beta_traceability_repo.json")))
 
     # --- ошибки ---
 
@@ -275,7 +278,7 @@ class TestAddTraceLink(BaseMCPTest):
         """Добавленная связь сохраняется в файл."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         link_pairs = [(l["from"], l["to"]) for l in data["links"]]
@@ -288,7 +291,7 @@ class TestAddTraceLink(BaseMCPTest):
         self._call()
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         pairs = [(l["from"], l["to"], l["relation"]) for l in data["links"]]
@@ -416,7 +419,7 @@ class TestCheckCoverage(BaseMCPTest):
         """Deprecated-требования не попадают в аудит."""
         # Помечаем FR-002 как deprecated через репозиторий напрямую
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:

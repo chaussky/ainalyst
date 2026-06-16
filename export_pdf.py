@@ -283,7 +283,9 @@ def _render_table(table_lines: list[str], body_style) -> list:
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def find_md_files() -> list[Path]:
-    return sorted(REPORTS_DIR.glob("*.md"))
+    # rglob — рекурсивно, чтобы видеть и подпапки проекта (reports/<project_id>/),
+    # и старые плоские артефакты (issue #1).
+    return sorted(REPORTS_DIR.rglob("*.md"))
 
 
 def pdf_path_for(md: Path) -> Path:

@@ -169,29 +169,79 @@ REPORTS_DIR = os.path.join(BASE_DIR, "reports")  # Markdown: документы 
 
 Пути относительные — MCP-серверы всегда запускаются из корня проекта через Claude Code.
 
+### Раскладка по подкаталогам проекта (issue #1)
+
+Артефакты раскладываются по подпапке проекта, чтобы несколько проектов/команд не
+превращали `governance_plans/` в свалку:
+
+```
+governance_plans/
+├── data/<project_id>/<project_id>_traceability_repo.json   # JSON
+│   └── specs/                                               # спеки 7.1
+└── reports/<project_id>/6_1_current_state_<project_id>_<ts>.md  # Markdown
+```
+
+Центральные хелперы в `common.py` (единственный источник пути):
+
+```python
+def normalize_project_id(project_id: str) -> str:
+    """Безопасное имя проекта для каталога: lower/trim, разделители и '..' → '_',
+    whitelist [a-z0-9_-]. Защита от path traversal."""
+
+def data_dir_for(project_id) -> str:    # governance_plans/data/<safe_pid>/
+def report_dir_for(project_id) -> str:  # governance_plans/reports/<safe_pid>/
+
+def data_path(project_id, filename) -> str:
+    """Единый резолвер json (чтение и запись): вложенный, если есть; иначе плоский
+    (legacy in place), если есть; иначе вложенный (новый артефакт)."""
+```
+
+Правила для разработчика:
+- **JSON**: путь строй через `data_path(project_id, f"{safe}_{FILENAME}")`, а каталог
+  при записи создавай через `os.makedirs(os.path.dirname(path), exist_ok=True)`
+  (не `os.makedirs(DATA_DIR, ...)`). Имя файла сохраняет префикс `{safe}_` — это
+  даёт тривиальный fallback на старые плоские файлы и самоидентификацию.
+- **Markdown**: вызывай `save_artifact(content, prefix, project_id=...)` — с
+  `project_id` отчёт пишется в `reports/<project_id>/`. Без `project_id` сохраняется
+  старое плоское поведение (обратная совместимость).
+- **Чтение** старых плоских артефактов работает автоматически: `data_path` отдаёт
+  плоский путь, если вложенного ещё нет. Перечисление (`export_pdf.py`,
+  `session_start.sh`) рекурсивно обходит подпапки.
+- **Миграция**: `python migrate_artifacts.py` (dry-run) → `--apply`. Только
+  перемещает старые плоские файлы в подпапки (нормализуя и папку, и имя файла —
+  раскладка получается канонической), ничего не удаляет.
+
+**Контракт `project_id`.** Используй имена из `[a-z0-9_-]` (регистр и пробелы
+обрабатываются: `lower`, пробел → `_`) — для них нормализация идемпотентна и
+обратима, fallback и миграция работают без сюрпризов. Символы вне этого набора
+(`.`, `/`, `(` и т.п.) `normalize_project_id` заменяет на `_` ради безопасности
+(анти-traversal). Следствия для «экзотических» имён:
+- `data_path`/`specs_dir` дополнительно ищут файлы под ДОмиграционным именем
+  (`_legacy_safe`), поэтому уже созданные артефакты не теряются и без миграции;
+- разные имена могут схлопнуться в одну папку (`a.b` и `a_b` → `a_b`) — это
+  осознанный компромисс слугификации. Не задавай `project_id`, различающиеся
+  только символами вне `[a-z0-9_-]`.
+
 ### `_ensure_dirs()` и `save_artifact()`
 
 ```python
-def _ensure_dirs():
-    """Создаёт все нужные папки если их нет."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-
-
-def save_artifact(content: str, prefix: str) -> str:
-    """Сохраняет Markdown-артефакт в reports/ и возвращает путь."""
+def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
+    """Сохраняет Markdown-артефакт в reports/ (или reports/<project_id>/) и возвращает путь."""
     _ensure_dirs()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{prefix}_{timestamp}.md"
-    filepath = os.path.join(REPORTS_DIR, filename)
+    out_dir = report_dir_for(project_id) if project_id else REPORTS_DIR
+    if project_id:
+        os.makedirs(out_dir, exist_ok=True)
+    filepath = os.path.join(out_dir, filename)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     return f"\n\n✅ Артефакт сохранен: `{filepath}`"
 ```
 
 Несколько важных следствий:
-- `governance_plans/data/` и `governance_plans/reports/` **создаются автоматически** при первом вызове `save_artifact`. Ручной `mkdir` не нужен — папки уже есть в репозитории с `.gitkeep`, а при их случайном отсутствии `_ensure_dirs()` создаст их сама.
-- `save_artifact` пишет **только в `reports/`** (Markdown). JSON-файлы каждый сервер пишет напрямую в `DATA_DIR` через собственную логику.
+- `governance_plans/data/` и `governance_plans/reports/` **создаются автоматически**. Ручной `mkdir` не нужен — папки уже есть в репозитории с `.gitkeep`, а при их случайном отсутствии `_ensure_dirs()` создаст их сама.
+- `save_artifact` пишет **только в `reports/`** (Markdown). JSON-файлы каждый сервер пишет напрямую в `DATA_DIR` через собственную логику, но **путь строит через `data_path`**.
 - Временна́я метка в имени файла обеспечивает уникальность: `{prefix}_20260402_143022.md`
 
 ### Матрицы — единственный источник истины

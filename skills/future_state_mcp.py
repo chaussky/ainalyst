@@ -39,7 +39,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_FutureState")
 
@@ -85,39 +85,39 @@ DEFAULT_ELEMENTS_BY_TYPE = {
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _scope_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{SCOPE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{SCOPE_FILENAME}")
 
 
 def _state_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{STATE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{STATE_FILENAME}")
 
 
 def _goals_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{GOALS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{GOALS_FILENAME}")
 
 
 def _gap_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{GAP_FILENAME}")
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _cs_scope_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CS_SCOPE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CS_SCOPE_FILENAME}")
 
 
 def _cs_state_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CS_STATE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CS_STATE_FILENAME}")
 
 
 def _cs_needs_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{CS_NEEDS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{CS_NEEDS_FILENAME}")
 
 
 def _load_json(path: str) -> Optional[dict]:
@@ -128,7 +128,7 @@ def _load_json(path: str) -> Optional[dict]:
 
 
 def _save_json(path: str, data: dict) -> None:
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -1607,7 +1607,7 @@ def save_future_state(
     ]
 
     report_content = "\n".join(report_lines)
-    save_artifact(report_content, prefix=f"6_2_future_state_{_safe(project_id)}")
+    save_artifact(report_content, prefix=f"6_2_future_state_{_safe(project_id)}", project_id=project_id)
 
     # Проброс в 7.3 (ADR-065)
     push_status = ""

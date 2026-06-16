@@ -122,8 +122,8 @@ class Base75Test(BaseMCPTest):
         mod75.save_artifact = self._mock_save_artifact
         self._saved_artifacts = []
 
-    def _mock_save_artifact(self, content, prefix="artifact"):
-        self._saved_artifacts.append({"prefix": prefix, "content": content})
+    def _mock_save_artifact(self, content, prefix="artifact", project_id=None):
+        self._saved_artifacts.append({"prefix": prefix, "content": content, "project_id": project_id})
 
     def _write_repo(self, project_id, repo_data):
         path = mod75._repo_path(project_id)

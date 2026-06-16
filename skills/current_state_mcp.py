@@ -35,7 +35,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
 
 mcp = FastMCP("BABOK_CurrentState")
 
@@ -75,23 +75,23 @@ DEFAULT_ELEMENTS_BY_TYPE = {
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
-    return project_id.lower().replace(" ", "_")
+    return normalize_project_id(project_id)
 
 
 def _scope_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{SCOPE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{SCOPE_FILENAME}")
 
 
 def _state_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{STATE_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{STATE_FILENAME}")
 
 
 def _needs_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{NEEDS_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{NEEDS_FILENAME}")
 
 
 def _repo_path(project_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{_safe(project_id)}_{REPO_FILENAME}")
+    return data_path(project_id, f"{_safe(project_id)}_{REPO_FILENAME}")
 
 
 def _load_scope(project_id: str) -> Optional[dict]:
@@ -104,7 +104,7 @@ def _load_scope(project_id: str) -> Optional[dict]:
 
 def _save_scope(data: dict) -> str:
     path = _scope_path(data["project_id"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     logger.info(f"Скоуп анализа сохранён: {path}")
@@ -128,7 +128,7 @@ def _load_state(project_id: str) -> dict:
 
 def _save_state(data: dict) -> str:
     path = _state_path(data["project_id"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -151,7 +151,7 @@ def _load_needs(project_id: str) -> dict:
 
 def _save_needs(data: dict) -> str:
     path = _needs_path(data["project_id"])
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -170,7 +170,7 @@ def _load_repo(project_id: str) -> Optional[dict]:
 def _save_repo(repo: dict) -> None:
     project_id = repo["project"]
     path = _repo_path(project_id)
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -1169,7 +1169,7 @@ def save_current_state(
     ]
 
     report_content = "\n".join(report_lines)
-    save_artifact(report_content, prefix=f"6_1_current_state_{_safe(project_id)}")
+    save_artifact(report_content, prefix=f"6_1_current_state_{_safe(project_id)}", project_id=project_id)
 
     # Проброс в 7.3 (ADR-055)
     push_status = ""

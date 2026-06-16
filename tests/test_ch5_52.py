@@ -22,6 +22,7 @@ from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_r
 setup_mocks()
 
 import skills.requirements_maintain_mcp as mod52
+from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +110,7 @@ class TestUpdateRequirement(BaseMCPTest):
         """Новый статус сохраняется в файл."""
         self._call(new_status="approved")
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         req = next(r for r in data["requirements"] if r["id"] == "BR-001")
@@ -119,7 +120,7 @@ class TestUpdateRequirement(BaseMCPTest):
         """История изменений записывается в репозиторий."""
         self._call(new_status="approved")
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertIn("history", data)
@@ -177,7 +178,7 @@ class TestUpdateRequirement(BaseMCPTest):
             mod52.update_requirement(**_call_with_version)
 
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         req = next(r for r in data["requirements"] if r["id"] == "FR-001")
@@ -265,7 +266,7 @@ class TestDeprecateRequirements(BaseMCPTest):
         """Статус deprecated сохраняется в репозиторий."""
         self._call(req_ids_json=json.dumps(["FR-002"]), final_status="deprecated")
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         req = next(r for r in data["requirements"] if r["id"] == "FR-002")
@@ -275,7 +276,7 @@ class TestDeprecateRequirements(BaseMCPTest):
         """Устаревшее требование не удаляется, а остаётся в репозитории."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         ids = [r["id"] for r in data["requirements"]]
@@ -334,7 +335,7 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         """Требование с версией 1.4+ помечается как волатильное."""
         # Напрямую прописываем версию 1.5 в репозиторий
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:
@@ -349,7 +350,7 @@ class TestCheckRequirementsHealth(BaseMCPTest):
     def test_excludes_deprecated(self):
         """Deprecated-требования исключаются из аудита (без фильтра)."""
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:
@@ -458,7 +459,7 @@ class TestFindReusableRequirements(BaseMCPTest):
     def test_deprecated_excluded(self):
         """Deprecated-требования не попадают в результат."""
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:
@@ -529,7 +530,7 @@ class TestIntegration52(BaseMCPTest):
                     new_status="approved",
                 )
         safe_name = PROJECT.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data", f"{safe_name}_traceability_repo.json")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.assertGreaterEqual(len(data.get("history", [])), 3)
