@@ -35,3 +35,49 @@ class TestNormalizeProjectId(unittest.TestCase):
     def test_empty_becomes_unknown(self):
         self.assertEqual(common.normalize_project_id(""), "_unknown")
         self.assertEqual(common.normalize_project_id(".."), "_unknown")
+
+
+class TestDataPath(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._cwd = os.getcwd()
+        os.chdir(self.tmp)
+        os.makedirs("governance_plans/data", exist_ok=True)
+
+    def tearDown(self):
+        os.chdir(self._cwd)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_new_artifact_goes_nested(self):
+        p = common.data_path("crm", "crm_traceability_repo.json")
+        self.assertEqual(
+            os.path.normpath(p),
+            os.path.normpath("governance_plans/data/crm/crm_traceability_repo.json"),
+        )
+
+    def test_legacy_flat_is_read_in_place(self):
+        flat = "governance_plans/data/crm_traceability_repo.json"
+        with open(flat, "w", encoding="utf-8") as f:
+            f.write("{}")
+        p = common.data_path("crm", "crm_traceability_repo.json")
+        self.assertEqual(os.path.normpath(p), os.path.normpath(flat))
+
+    def test_nested_wins_over_flat(self):
+        os.makedirs("governance_plans/data/crm", exist_ok=True)
+        nested = "governance_plans/data/crm/crm_traceability_repo.json"
+        with open(nested, "w", encoding="utf-8") as f:
+            f.write("{}")
+        with open("governance_plans/data/crm_traceability_repo.json", "w", encoding="utf-8") as f:
+            f.write("{}")
+        p = common.data_path("crm", "crm_traceability_repo.json")
+        self.assertEqual(os.path.normpath(p), os.path.normpath(nested))
+
+    def test_dir_helpers(self):
+        self.assertEqual(
+            os.path.normpath(common.data_dir_for("crm")),
+            os.path.normpath("governance_plans/data/crm"),
+        )
+        self.assertEqual(
+            os.path.normpath(common.report_dir_for("crm")),
+            os.path.normpath("governance_plans/reports/crm"),
+        )

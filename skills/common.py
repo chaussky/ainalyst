@@ -49,6 +49,34 @@ def normalize_project_id(project_id: str) -> str:
     return s or "_unknown"
 
 
+def data_dir_for(project_id: str) -> str:
+    """governance_plans/data/<safe_pid>/ — каталог json-артефактов проекта."""
+    return os.path.join(DATA_DIR, normalize_project_id(project_id))
+
+
+def report_dir_for(project_id: str) -> str:
+    """governance_plans/reports/<safe_pid>/ — каталог markdown-отчётов проекта."""
+    return os.path.join(REPORTS_DIR, normalize_project_id(project_id))
+
+
+def data_path(project_id: str, filename: str) -> str:
+    """Единый резолвер пути json (и чтение, и запись).
+
+    filename уже включает префикс {safe_pid}_ (issue #1, развилка 1). Логика:
+      1) есть вложенный data/<safe_pid>/<filename> → он;
+      2) иначе есть плоский data/<filename>        → он (legacy in place);
+      3) иначе                                      → вложенный (новый артефакт).
+    Каталог создаёт сторона записи: os.makedirs(os.path.dirname(path), ...).
+    """
+    nested = os.path.join(data_dir_for(project_id), filename)
+    if os.path.exists(nested):
+        return nested
+    flat = os.path.join(DATA_DIR, filename)
+    if os.path.exists(flat):
+        return flat
+    return nested
+
+
 class Stakeholder(BaseModel):
     """Модель стейкхолдера для матрицы вовлечения."""
     name: str = Field(..., description="Имя или роль стейкхолдера")
