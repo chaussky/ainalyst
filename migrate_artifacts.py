@@ -14,6 +14,8 @@ import os
 import re
 import shutil
 
+from skills.common import normalize_project_id
+
 BASE_DIR = "governance_plans"
 DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
@@ -76,14 +78,18 @@ def migrate(apply=False):
             full = os.path.join(DATA_DIR, entry)
             if os.path.isdir(full):
                 if entry.endswith("_specs"):
-                    pid = entry[: -len("_specs")]
+                    norm = normalize_project_id(entry[: -len("_specs")])
                     for f in sorted(os.listdir(full)):
                         _move(os.path.join(full, f),
-                              os.path.join(DATA_DIR, pid, "specs", f), apply, log)
+                              os.path.join(DATA_DIR, norm, "specs", f), apply, log)
                 continue
             pid = _project_from_data(entry)
             if pid:
-                _move(full, os.path.join(DATA_DIR, pid, entry), apply, log)
+                # Каноническая раскладка: нормализуем И папку, И префикс имени файла,
+                # чтобы рантайм (data_path → normalize_project_id) точно нашёл файл.
+                norm = normalize_project_id(pid)
+                base = entry[len(pid) + 1:]
+                _move(full, os.path.join(DATA_DIR, norm, f"{norm}_{base}"), apply, log)
             else:
                 log.append(f"skip (project unknown): {entry}")
 
@@ -95,7 +101,9 @@ def migrate(apply=False):
                 continue
             pid = _project_from_report(entry)
             if pid:
-                _move(full, os.path.join(REPORTS_DIR, pid, entry), apply, log)
+                # Отчёты читаются только перечислением (glob) — нормализуем папку,
+                # имя файла оставляем как есть (внутри префикс — лишь метка).
+                _move(full, os.path.join(REPORTS_DIR, normalize_project_id(pid), entry), apply, log)
             else:
                 log.append(f"skip (project unknown): {entry}")
 

@@ -29,7 +29,7 @@ import glob
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir
 
 mcp = FastMCP("BABOK_Requirements_Spec")
 
@@ -114,15 +114,9 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
 # ---------------------------------------------------------------------------
 
 def _specs_dir(project_id: str) -> str:
-    # issue #1: спеки в data/<project>/specs/, с fallback на legacy data/<project>_specs/
-    safe = normalize_project_id(project_id)
-    nested = os.path.join(DATA_DIR, safe, "specs")
-    legacy = os.path.join(DATA_DIR, f"{safe}_specs")
-    if os.path.isdir(nested):
-        return nested
-    if os.path.isdir(legacy):
-        return legacy
-    return nested
+    # issue #1: спеки в data/<project>/specs/, с fallback на legacy-раскладки.
+    # Единый источник истины — common.specs_dir.
+    return specs_dir(project_id)
 
 
 def _save_spec(content: str, project_id: str, filename: str) -> str:

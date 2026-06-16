@@ -72,6 +72,30 @@ class TestDataPath(unittest.TestCase):
         p = common.data_path("crm", "crm_traceability_repo.json")
         self.assertEqual(os.path.normpath(p), os.path.normpath(nested))
 
+    def test_legacy_exotic_name_is_found(self):
+        # legacy-файл создан ДОмиграционной нормализацией (точка сохранена старым _safe)
+        legacy = "governance_plans/data/demo.v2_traceability_repo.json"
+        with open(legacy, "w", encoding="utf-8") as f:
+            f.write("{}")
+        # рантайм строит имя через normalize_project_id (demo_v2_...), но обязан найти legacy
+        p = common.data_path("demo.v2", "demo_v2_traceability_repo.json")
+        self.assertEqual(os.path.normpath(p), os.path.normpath(legacy))
+
+    def test_specs_dir_finds_legacy_exotic(self):
+        os.makedirs("governance_plans/data/demo.v2_specs", exist_ok=True)
+        d = common.specs_dir("demo.v2")
+        self.assertEqual(
+            os.path.normpath(d),
+            os.path.normpath("governance_plans/data/demo.v2_specs"),
+        )
+
+    def test_specs_dir_new_is_nested_canonical(self):
+        d = common.specs_dir("Demo V2")
+        self.assertEqual(
+            os.path.normpath(d),
+            os.path.normpath("governance_plans/data/demo_v2/specs"),
+        )
+
     def test_dir_helpers(self):
         self.assertEqual(
             os.path.normpath(common.data_dir_for("crm")),
@@ -174,3 +198,16 @@ class TestMigration(unittest.TestCase):
         migrate_artifacts.migrate(apply=True)
         self.assertTrue(os.path.exists(
             "governance_plans/reports/4_4_comm_package_20260616_120000.md"))
+
+    def test_migration_canonicalizes_exotic_name(self):
+        # legacy-файл экзотического имени → каноническая раскладка (нормализованы и папка, и имя)
+        import migrate_artifacts
+        import skills.common as c
+        self._write("governance_plans/data/demo.v2_traceability_repo.json", '{"x":1}')
+        migrate_artifacts.migrate(apply=True)
+        self.assertTrue(os.path.exists(
+            "governance_plans/data/demo_v2/demo_v2_traceability_repo.json"))
+        # и рантайм находит файл по исходному (экзотическому) project_id
+        self.assertTrue(os.path.exists(c.data_path("demo.v2", "demo_v2_traceability_repo.json")))
+        with open("governance_plans/data/demo_v2/demo_v2_traceability_repo.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"x":1}')

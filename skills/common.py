@@ -59,21 +59,63 @@ def report_dir_for(project_id: str) -> str:
     return os.path.join(REPORTS_DIR, normalize_project_id(project_id))
 
 
+def _legacy_safe(project_id: str) -> str:
+    """Домиграционная нормализация имени (issue #1) — ТОЛЬКО для поиска уже
+    существующих legacy-файлов. До перехода на normalize_project_id имена строились
+    как project_id.lower().replace(" ", "_"), что сохраняло точки и прочие символы.
+    """
+    return str(project_id).lower().replace(" ", "_")
+
+
 def data_path(project_id: str, filename: str) -> str:
     """Единый резолвер пути json (и чтение, и запись).
 
-    filename уже включает префикс {safe_pid}_ (issue #1, развилка 1). Логика:
-      1) есть вложенный data/<safe_pid>/<filename> → он;
-      2) иначе есть плоский data/<filename>        → он (legacy in place);
-      3) иначе                                      → вложенный (новый артефакт).
+    filename уже включает префикс {safe_pid}_ (issue #1, развилка 1). Возвращает
+    первый существующий из кандидатов, иначе — каноническую вложенную раскладку:
+      1) data/<norm>/<filename>          — каноническая вложенная;
+      2) data/<filename>                 — каноническая плоская (legacy-раскладка);
+      3..5) то же, но с ДОмиграционным именем (для project_id с символами вне
+            [a-z0-9_-], например с точками — их старый _safe сохранял, а
+            normalize_project_id переписывает).
     Каталог создаёт сторона записи: os.makedirs(os.path.dirname(path), ...).
     """
-    nested = os.path.join(data_dir_for(project_id), filename)
-    if os.path.exists(nested):
-        return nested
-    flat = os.path.join(DATA_DIR, filename)
-    if os.path.exists(flat):
-        return flat
+    norm = normalize_project_id(project_id)
+    candidates = [
+        os.path.join(DATA_DIR, norm, filename),
+        os.path.join(DATA_DIR, filename),
+    ]
+    legacy = _legacy_safe(project_id)
+    if legacy != norm and filename.startswith(norm + "_"):
+        legacy_name = legacy + filename[len(norm):]
+        candidates += [
+            os.path.join(DATA_DIR, norm, legacy_name),
+            os.path.join(DATA_DIR, legacy, legacy_name),
+            os.path.join(DATA_DIR, legacy_name),
+        ]
+    for cand in candidates:
+        if os.path.exists(cand):
+            return cand
+    return candidates[0]  # новый артефакт → каноническая вложенная раскладка
+
+
+def specs_dir(project_id: str) -> str:
+    """Каталог спеков 7.1: data/<project_id>/specs/ (issue #1).
+
+    Fallback на legacy-раскладки (включая ДОмиграционные имена с точками и т.п.):
+    плоский data/<safe>_specs/ и варианты со старой нормализацией.
+    """
+    norm = normalize_project_id(project_id)
+    nested = os.path.join(DATA_DIR, norm, "specs")
+    candidates = [nested, os.path.join(DATA_DIR, f"{norm}_specs")]
+    legacy = _legacy_safe(project_id)
+    if legacy != norm:
+        candidates += [
+            os.path.join(DATA_DIR, legacy, "specs"),
+            os.path.join(DATA_DIR, f"{legacy}_specs"),
+        ]
+    for cand in candidates:
+        if os.path.isdir(cand):
+            return cand
     return nested
 
 
