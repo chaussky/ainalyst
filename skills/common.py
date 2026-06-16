@@ -85,13 +85,22 @@ class Stakeholder(BaseModel):
     attitude: Optional[str] = Field("Neutral", description="Отношение к проекту: Neutral / Champion / Blocker")
 
 
-def save_artifact(content: str, prefix: str) -> str:
-    """Сохраняет Markdown-артефакт в reports/ и возвращает путь."""
+def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
+    """Сохраняет Markdown-артефакт в reports/ и возвращает путь.
+
+    Если передан project_id — артефакт пишется в reports/<project_id>/ (issue #1).
+    Без project_id сохраняется поведение по умолчанию (плоский reports/).
+    """
     _ensure_dirs()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{prefix}_{timestamp}.md"
-    filepath = os.path.join(REPORTS_DIR, filename)
+    if project_id:
+        out_dir = report_dir_for(project_id)
+        os.makedirs(out_dir, exist_ok=True)
+    else:
+        out_dir = REPORTS_DIR
+    filepath = os.path.join(out_dir, filename)
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)

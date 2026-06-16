@@ -81,3 +81,34 @@ class TestDataPath(unittest.TestCase):
             os.path.normpath(common.report_dir_for("crm")),
             os.path.normpath("governance_plans/reports/crm"),
         )
+
+
+class TestSaveArtifact(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._cwd = os.getcwd()
+        os.chdir(self.tmp)
+        # conftest замокал common.save_artifact — восстановим реальную через reload
+        importlib.reload(common)
+
+    def tearDown(self):
+        os.chdir(self._cwd)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        importlib.reload(common)  # вернуть состояние модуля (моки conftest)
+
+    def test_with_project_id_nests(self):
+        common.save_artifact("# hi", "6_1_current_state_crm", project_id="crm")
+        files = []
+        for root, _dirs, fs in os.walk("governance_plans/reports"):
+            for f in fs:
+                files.append(os.path.join(root, f))
+        self.assertEqual(len(files), 1)
+        self.assertIn(
+            os.path.normpath("governance_plans/reports/crm"),
+            os.path.normpath(files[0]),
+        )
+
+    def test_without_project_id_is_flat_backcompat(self):
+        common.save_artifact("# hi", "legacy_prefix")
+        flat = [f for f in os.listdir("governance_plans/reports") if f.endswith(".md")]
+        self.assertEqual(len(flat), 1)
