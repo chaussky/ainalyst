@@ -1,290 +1,292 @@
-# Сценарий A — Анализ одного интервью / воркшопа / заметок
+# Scenario A — Analysis of a single interview / workshop / notes
 
-## Входные данные
+## Input data
 
-BA передаёт один из форматов:
-- Транскрипт интервью (текст диалога)
-- Заметки с интервью или воркшопа
-- Ответы анкеты
-- Аудио/видео расшифровка (текстом)
+The BA provides one of the following formats:
+- An interview transcript (dialogue text)
+- Notes from an interview or workshop
+- Questionnaire answers
+- An audio/video transcription (as text)
 
 ---
 
-## Алгоритм анализа (выполнять строго по шагам)
+## Analysis algorithm (follow strictly, step by step)
 
-### Шаг 1 — Структурирование профайла стейкхолдера
+### Step 1 — Structuring the stakeholder profile
 
-Извлеки из материала:
+Extract from the material:
 
-| Поле | Что искать |
+| Field | What to look for |
 | :--- | :--- |
-| Роль в проекте | Должность, функция, зона ответственности |
-| Тип участия | Decision maker / Influencer / End user / Expert |
-| Уровень влияния | High / Medium / Low + обоснование |
-| Уровень интереса | High / Medium / Low + обоснование |
-| Отношение к проекту | Champion / Neutral / Blocker + признаки |
-| Ключевые ожидания | Что стейкхолдер хочет получить от проекта |
-| Основные опасения | Чего боится, что может заблокировать |
+| Role in the project | Title, function, area of responsibility |
+| Type of involvement | Decision maker / Influencer / End user / Expert |
+| Level of influence | High / Medium / Low + rationale |
+| Level of interest | High / Medium / Low + rationale |
+| Attitude toward the project | Champion / Neutral / Blocker + indicators |
+| Key expectations | What the stakeholder wants to get from the project |
+| Main concerns | What they fear, what might block the project |
 
 ---
 
-### Шаг 2 — Извлечение смежных стейкхолдеров и карта расширения
+### Step 2 — Extracting adjacent stakeholders and an expansion map
 
-Реестр стейкхолдеров — это живой документ. Каждое интервью должно его пополнять.
-Твоя задача: найти в транскрипте всех упомянутых людей, роли, отделы, системы —
-и превратить это в конкретный список "кто следующий".
+The stakeholder registry is a living document. Every interview should add to it.
+Your task: find all mentioned people, roles, departments, and systems in the
+transcript, and turn this into a concrete "who is next" list.
 
-**2a. Профайл смежных стейкхолдеров**
+**2a. Adjacent stakeholder profile**
 
-Для каждого упомянутого — зафикcируй:
+For each one mentioned, record:
 
-| Поле | Что искать |
+| Field | What to look for |
 | :--- | :--- |
-| Кто это | Имя, роль, отдел |
-| Как взаимодействует | С текущим стейкхолдером и с проектом |
-| Критичность | Высокая / Средняя / Низкая |
-| Потенциальный конфликт интересов | Если есть сигналы |
-| Статус в реестре | Новый / Уже известен / Требует уточнения |
+| Who they are | Name, role, department |
+| How they interact | With the current stakeholder and with the project |
+| Criticality | High / Medium / Low |
+| Potential conflict of interest | If there are signals |
+| Registry status | New / Already known / Needs clarification |
 
-**2b. Карта расширения стейкхолдеров**
+**2b. Stakeholder expansion map**
 
-Это главный вопрос после каждого интервью: **кто ещё?**
+This is the key question after every interview: **who else?**
 
-Ищи в тексте активно — не только прямые упоминания, но и косвенные сигналы:
-- "мы согласовываем с..." → есть согласующий стейкхолдер
-- "это влияет на работу..." → есть затронутая сторона
-- "раньше этим занимался..." → есть исторический участник
-- "это решает не я..." → есть скрытый decision maker
-- названия отделов, систем, ролей без имён → есть неизвестные стейкхолдеры
+Actively look in the text — not just for direct mentions, but also indirect signals:
+- "we coordinate this with..." -> there is an approving stakeholder
+- "this affects the work of..." -> there is an impacted party
+- "this used to be handled by..." -> there is a historical participant
+- "that is not my decision..." -> there is a hidden decision maker
+- names of departments, systems, roles without names -> there are unknown stakeholders
 
-Для каждого найденного:
+For each one found:
 
 ```
-Стейкхолдер: [кто / роль / отдел]
-Источник: через [имя/роль текущего стейкхолдера]
-Почему важен: [как связан с проектом]
-Приоритет охвата: Срочно / По плану / Под вопросом
-Статус: Новый / Уже в реестре
-Рекомендуемый формат: Интервью / Воркшоп / Письменный запрос
+Stakeholder: [who / role / department]
+Source: via [name/role of the current stakeholder]
+Why important: [how they relate to the project]
+Coverage priority: Urgent / As planned / In question
+Status: New / Already in the registry
+Recommended format: Interview / Workshop / Written request
 ```
 
-**2c. Вопросы для расширения реестра**
+**2c. Questions to expand the registry**
 
-Если BA ещё не задавал эти вопросы стейкхолдеру — отметь как рекомендацию:
-- "С кем вы согласовываете изменения в этом процессе?"
-- "Кто ещё использует результаты этой работы?"
-- "Чья работа изменится, если мы реализуем это?"
-- "Кто может заблокировать или замедлить проект?"
-- "Есть ли внешние стороны — партнёры, регуляторы, клиенты?"
+If the BA has not yet asked these questions of the stakeholder, flag them as a recommendation:
+- "Who do you coordinate changes to this process with?"
+- "Who else uses the results of this work?"
+- "Whose work will change if we implement this?"
+- "Who could block or slow down the project?"
+- "Are there external parties — partners, regulators, customers?"
 
-После заполнения — используй MCP-инструмент `update_stakeholder_registry`
-для обновления живого реестра проекта.
+After filling this in, use the MCP tool `update_stakeholder_registry`
+to update the project's live registry.
 
 ---
 
-### Шаг 3 — Потребности и боли
+### Step 3 — Needs and pain points
 
-Для каждой боли извлеки:
+For each pain point, extract:
 
 ```
-Боль: [краткое название]
-Описание: [контекст и суть проблемы]
-Частота: [как часто возникает]
-Влияние на бизнес: [что теряет компания / человек]
-Предполагаемая причина: [если стейкхолдер назвал или это очевидно]
-Цитата: [дословно, если есть сильная формулировка]
+Pain point: [brief name]
+Description: [context and essence of the problem]
+Frequency: [how often it occurs]
+Business impact: [what the company / person loses]
+Suspected cause: [if the stakeholder named it, or if it is obvious]
+Quote: [verbatim, if there is a strong statement]
 ```
 
-Фокус на проблемах, не на решениях. Если стейкхолдер сразу предлагает решение —
-зафикcируй его отдельно как "предложенное решение", не как требование.
+Focus on problems, not solutions. If the stakeholder immediately proposes a
+solution, record it separately as a "proposed solution," not as a requirement.
 
 ---
 
-### Шаг 4 — Требования
+### Step 4 — Requirements
 
-Сгруппируй по типам:
+Group by type:
 
-**Функциональные требования (FR)**
-Что система должна делать. Формат: "Система должна [действие]".
+**Functional Requirements (FR)**
+What the system must do. Format: "The system shall [action]".
 
-**Нефункциональные требования (NFR)**
-Производительность, безопасность, доступность. Только с измеримым критерием.
+**Non-Functional Requirements (NFR)**
+Performance, security, availability. Only with a measurable criterion.
 
-**Ограничения**
-Технические, бюджетные, временные, регуляторные рамки.
+**Constraints**
+Technical, budgetary, time, or regulatory boundaries.
 
-**Бизнес-правила**
-Правила, которым должна следовать система (расчёты, логика, политики).
+**Business rules**
+Rules the system must follow (calculations, logic, policies).
 
-Для каждого требования:
-- Явное (стейкхолдер сформулировал прямо) vs Неявное (следует из контекста)
-- Приоритет если указан, иначе — "не определён"
+For each requirement:
+- Explicit (stated directly by the stakeholder) vs. Implicit (inferred from context)
+- Priority if specified, otherwise "not defined"
 
 ---
 
-### Шаг 5 — User Stories
+### Step 5 — User Stories
 
-Для каждого значимого требования:
+For each significant requirement:
 
 ```
-As a [роль]
-I want [цель / функциональность]
-So that [бизнес-ценность]
+As a [role]
+I want [goal / functionality]
+So that [business value]
 
 Acceptance Criteria:
-- GIVEN [контекст]
-  WHEN [действие]
-  THEN [результат]
+- GIVEN [context]
+  WHEN [action]
+  THEN [result]
 
-Priority: High / Medium / Low / Не определён
-Notes: [допущения, риски, связанные требования]
+Priority: High / Medium / Low / Not defined
+Notes: [assumptions, risks, related requirements]
 ```
 
-Не придумывай Acceptance Criteria если они не следуют логически из материала.
-Лучше написать "требует уточнения" чем додумать.
+Do not invent Acceptance Criteria if they do not follow logically from the
+material. It is better to write "needs clarification" than to guess.
 
 ---
 
-### Шаг 6 — Анализ полноты (Gap Analysis)
+### Step 6 — Completeness analysis (Gap Analysis)
 
-Это ключевой шаг. Проверь по каждому блоку профайла:
+This is a key step. Check each block of the profile:
 
-| Блок | Статус | Что не раскрыто |
+| Block | Status | What is not covered |
 | :--- | :--- | :--- |
-| Роль и контекст | ✅ Полный / ⚠️ Частичный / ❌ Пустой | ... |
-| Влияние и интерес | | |
-| Смежные стейкхолдеры | | |
-| Потребности и боли | | |
-| Требования | | |
+| Role and context | Complete / Partial / Empty | ... |
+| Influence and interest | | |
+| Adjacent stakeholders | | |
+| Needs and pain points | | |
+| Requirements | | |
 
 ---
 
-### Шаг 7 — Анализ "белых пятен" и скрытых сигналов
+### Step 7 — Analysis of "blind spots" and hidden signals
 
-**Это самый аналитический шаг. Здесь нужна интерпретация, а не только факты.**
+**This is the most analytical step. It requires interpretation, not just facts.**
 
-#### 7a. Где стейкхолдер не договорил
+#### 7a. Where the stakeholder held back
 
-Признаки недосказанности:
-- Тема поднята, но быстро свёрнута ("ну это отдельная история...")
-- Расплывчатые формулировки там, где можно быть конкретным
-- "Это сложно объяснить", "это специфика нашего процесса" без деталей
-- Ответ на вопрос "почему" заменён ответом на "что"
+Signs of something left unsaid:
+- A topic is raised but quickly dropped ("well, that is a separate story...")
+- Vague phrasing where they could have been specific
+- "It is hard to explain," "that is specific to our process" without details
+- An answer to "why" replaced with an answer to "what"
 
-Для каждого случая укажи:
+For each case, specify:
 ```
-Сигнал: [цитата или описание момента]
-Что предположительно скрыто: [гипотеза]
-Рекомендация BA: [как раскрыть на следующей сессии]
-```
-
-#### 7b. Где BA не "додавил"
-
-Признаки незакрытых тем:
-- Стейкхолдер упомянул что-то важное, но следующий вопрос ушёл в другую сторону
-- Конкретный пример запрошен не был (стейкхолдер говорил абстрактно)
-- "Как часто?", "Кто ещё вовлечён?", "Что происходит дальше?" — не было задано
-- Боль названа, но её влияние на бизнес не уточнено
-
-Для каждого случая:
-```
-Момент: [где в интервью произошло]
-Упущенный вопрос: [что нужно было спросить]
-Почему важно: [что это даст]
+Signal: [quote or description of the moment]
+What might be hidden: [hypothesis]
+BA recommendation: [how to surface this in the next session]
 ```
 
-#### 7c. Внутренние противоречия
+#### 7b. Where the BA did not "push further"
 
-Стейкхолдер сказал А в одном месте и не-А в другом.
-Это не обязательно ложь — может быть контекст разный, или человек сам не определился.
+Signs of unresolved topics:
+- The stakeholder mentioned something important, but the next question went elsewhere
+- No specific example was requested (the stakeholder spoke abstractly)
+- "How often?", "Who else is involved?", "What happens next?" — was not asked
+- A pain point was named but its business impact was not clarified
+
+For each case:
+```
+Moment: [where in the interview this occurred]
+Missed question: [what should have been asked]
+Why it matters: [what this would reveal]
+```
+
+#### 7c. Internal contradictions
+
+The stakeholder said A in one place and not-A in another.
+This is not necessarily a lie — the context may differ, or the person may not
+have settled on a position themselves.
 
 ```
-Противоречие: [что против чего]
-Цитаты: [дословно из текста]
-Гипотеза: [почему так могло получиться]
-Вопрос для уточнения: [как это разрешить]
+Contradiction: [what versus what]
+Quotes: [verbatim from the text]
+Hypothesis: [why this might have happened]
+Clarifying question: [how to resolve this]
 ```
 
-#### 7d. Политические и эмоциональные сигналы
+#### 7d. Political and emotional signals
 
-- Резкая смена тона при определённых темах
-- Упоминание других людей / отделов с негативной коннотацией
-- "Это не моё решение", "меня об этом не спрашивали"
-- Явная защита своей территории или, наоборот, дистанцирование
+- A sudden shift in tone on certain topics
+- Mentions of other people / departments with a negative connotation
+- "That is not my decision," "no one asked me about that"
+- Clear defensiveness about their own territory, or conversely, distancing
 
-Эти сигналы важны для понимания реального отношения стейкхолдера к проекту.
+These signals are important for understanding the stakeholder's real attitude
+toward the project.
 
 ---
 
-### Шаг 8 — Рекомендации BA
+### Step 8 — BA recommendations
 
-Конкретный список действий после анализа:
+A concrete list of actions following the analysis:
 
 ```
-## Рекомендации для BA
+## Recommendations for the BA
 
-### Требует уточнения у этого стейкхолдера
-1. [тема] — [конкретный вопрос] — [почему важно]
+### Needs clarification from this stakeholder
+1. [topic] — [specific question] — [why it matters]
 
-### Требует выявления у других стейкхолдеров
-1. [тема] — [у кого спросить] — [конкретный вопрос]
+### Needs elicitation from other stakeholders
+1. [topic] — [who to ask] — [specific question]
 
-### Требует документального подтверждения
-1. [что проверить] — [где искать]
+### Needs documentary confirmation
+1. [what to verify] — [where to look]
 
-### Follow-up интервью необходим?
-Да / Нет — [обоснование]
+### Is a follow-up interview necessary?
+Yes / No — [rationale]
 ```
 
 ---
 
-### Шаг 9 — Оценка зрелости требований
+### Step 9 — Requirements maturity assessment
 
-| Критерий | Оценка | Комментарий |
+| Criterion | Rating | Comment |
 | :--- | :--- | :--- |
-| Clarity (ясность) | Низкая / Средняя / Высокая | |
-| Completeness (полнота) | | |
-| Value (бизнес-ценность) | | |
-| Feasibility (реализуемость) | | |
-| Testability (верифицируемость) | | |
+| Clarity | Low / Medium / High | |
+| Completeness | | |
+| Value (business value) | | |
+| Feasibility | | |
+| Testability | | |
 
-**Общий уровень зрелости:** Низкий / Средний / Хороший / Высокий
+**Overall maturity level:** Low / Medium / Good / High
 
 ---
 
-## Формат финального отчёта
+## Final report format
 
 ```markdown
-# Результаты выявления (неподтверждённые)
-**Стейкхолдер:** [роль]
-**Дата сессии:** [дата]
-**Тип сессии:** Интервью / Воркшоп / Анкетирование
-**Статус:** Неподтверждённые результаты (→ передаётся в 4.3)
+# Elicitation Results (Unconfirmed)
+**Stakeholder:** [role]
+**Session date:** [date]
+**Session type:** Interview / Workshop / Questionnaire
+**Status:** Unconfirmed results (→ passed to 4.3)
 
-## 1. Профайл стейкхолдера
-[из Шага 1]
+## 1. Stakeholder profile
+[from Step 1]
 
-## 2. Смежные стейкхолдеры
-[из Шага 2]
+## 2. Adjacent stakeholders
+[from Step 2]
 
-## 3. Потребности и боли
-[из Шага 3]
+## 3. Needs and pain points
+[from Step 3]
 
-## 4. Требования
-[из Шага 4]
+## 4. Requirements
+[from Step 4]
 
 ## 5. User Stories
-[из Шага 5]
+[from Step 5]
 
-## 6. Анализ полноты
-[из Шага 6]
+## 6. Completeness analysis
+[from Step 6]
 
-## 7. Белые пятна и скрытые сигналы
-[из Шага 7 — недосказанности, незакрытые темы, противоречия, сигналы]
+## 7. Blind spots and hidden signals
+[from Step 7 — things left unsaid, unresolved topics, contradictions, signals]
 
-## 8. Рекомендации BA
-[из Шага 8]
+## 8. BA recommendations
+[from Step 8]
 
-## 9. Оценка зрелости требований
-[из Шага 9]
+## 9. Requirements maturity assessment
+[from Step 9]
 ```

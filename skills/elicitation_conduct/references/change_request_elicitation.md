@@ -1,140 +1,140 @@
-# Сценарий C — Выявление в контексте Change Request
+# Scenario C — Elicitation in the context of a Change Request
 
-Используй когда прилетел CR и BA нужно понять:
-что изменилось в понимании предметной области,
-у кого довыявить информацию,
-и какие ранее собранные данные теперь устарели.
-
----
-
-## Логика сценария
-
-CR — это не только изменение требований. Это сигнал что:
-- Изменилась бизнес-реальность стейкхолдера
-- Появилась новая информация которой раньше не было
-- Предыдущее выявление было неполным (и CR это обнажил)
-- Изменился контекст — и старые требования нужно переосмыслить
-
-Задача BA — не просто "обновить требования", а понять **почему** прилетел CR
-и **что ещё** может измениться вслед за ним.
+Use this when a CR has come in and the BA needs to understand:
+what changed in the understanding of the business domain,
+who to re-elicit information from,
+and which previously collected data is now outdated.
 
 ---
 
-## Алгоритм
+## Scenario logic
 
-### Шаг 1 — Разобрать CR
+A CR is not just a change to requirements. It's a signal that:
+- The stakeholder's business reality has changed
+- New information has appeared that wasn't there before
+- Previous elicitation was incomplete (and the CR exposed this)
+- The context has changed — and old requirements need to be reconsidered
 
-Получи от BA описание CR и ответь на вопросы:
+The BA's task is not just to "update the requirements," but to understand
+**why** the CR came in and **what else** might change as a result.
+
+---
+
+## Algorithm
+
+### Step 1 — Break down the CR
+
+Get a description of the CR from the BA and answer these questions:
 
 ```
-CR: [краткое описание изменения]
+CR: [brief description of the change]
 
-Что именно меняется:
-- Бизнес-процесс? [да/нет]
-- Требования к системе? [да/нет]
-- Роли / ответственности? [да/нет]
-- Внешние условия (рынок, регулятор, интеграции)? [да/нет]
+What exactly is changing:
+- Business process? [yes/no]
+- System requirements? [yes/no]
+- Roles / responsibilities? [yes/no]
+- External conditions (market, regulator, integrations)? [yes/no]
 
-Инициатор изменения: [кто]
-Причина изменения: [почему сейчас]
+Change initiator: [who]
+Reason for the change: [why now]
 ```
 
 ---
 
-### Шаг 2 — Зона влияния на ранее собранные данные
+### Step 2 — Impact zone on previously collected data
 
-Сопоставь CR с уже собранными артефактами выявления.
+Map the CR against already-collected elicitation artifacts.
 
-| Артефакт | Затронут? | Характер изменения |
+| Artifact | Affected? | Nature of the change |
 | :--- | :--- | :--- |
-| Профайл стейкхолдера [имя] | Да / Нет | Изменились ожидания / опасения |
-| Боль #N | Да / Нет | Устарела / усилилась / новый контекст |
-| Требование FR-XXX | Да / Нет | Меняется / удаляется / добавляется |
-| User Story US-XXX | Да / Нет | Критерии приёмки нужно пересмотреть |
+| Stakeholder profile [name] | Yes / No | Expectations / concerns have changed |
+| Pain point #N | Yes / No | Outdated / intensified / new context |
+| Requirement FR-XXX | Yes / No | Changing / being removed / being added |
+| User Story US-XXX | Yes / No | Acceptance criteria need to be revisited |
 
 ---
 
-### Шаг 3 — Что устарело
+### Step 3 — What is outdated
 
-Явно зафикcируй что больше нельзя считать актуальным:
-
-```
-Устаревший артефакт: [ID / название]
-Почему устарел: [связь с CR]
-Что с ним делать: Обновить / Удалить / Заморозить до уточнения
-```
-
----
-
-### Шаг 4 — Новые вопросы для выявления
-
-CR порождает новые вопросы. Для каждого:
+Explicitly record what can no longer be considered current:
 
 ```
-Вопрос: [что нужно выяснить]
-У кого: [стейкхолдер / роль]
-Почему возник: [связь с CR]
-Приоритет: Критичный / Высокий / Средний
-Формат: Быстрый созвон / Повторное интервью / Письменный запрос
+Outdated artifact: [ID / name]
+Why outdated: [link to the CR]
+What to do with it: Update / Remove / Freeze pending clarification
 ```
 
 ---
 
-### Шаг 5 — Оценка масштаба довыявления
+### Step 4 — New elicitation questions
+
+A CR generates new questions. For each one:
 
 ```
-Количество затронутых стейкхолдеров: [N]
-Количество устаревших артефактов: [N]
-Объём нового выявления: Минимальный (1-2 созвона) / Средний / Значительный
-
-Риск: есть ли признаки что CR — это симптом более глубокого изменения?
-[да/нет + обоснование]
-
-Рекомендация: [что делать BA в первую очередь]
-```
-
----
-
-### Шаг 6 — Нужен ли новый воркшоп?
-
-Воркшоп с несколькими стейкхолдерами нужен если:
-- CR затрагивает зоны ответственности нескольких сторон
-- Есть риск конфликта интересов при изменении
-- Изменение требует согласования приоритетов
-- Масштаб изменений значительный
-
-```
-Воркшоп нужен: Да / Нет
-Обоснование: [почему]
-Состав участников: [кто должен быть]
-Ключевые вопросы для повестки: [список]
+Question: [what needs to be clarified]
+From whom: [stakeholder / role]
+Why it arose: [link to the CR]
+Priority: Critical / High / Medium
+Format: Quick call / Follow-up interview / Written request
 ```
 
 ---
 
-## Формат финального отчёта по CR
+### Step 5 — Assessing the scope of re-elicitation
+
+```
+Number of affected stakeholders: [N]
+Number of outdated artifacts: [N]
+Scope of new elicitation: Minimal (1-2 calls) / Moderate / Significant
+
+Risk: are there signs that the CR is a symptom of a deeper change?
+[yes/no + rationale]
+
+Recommendation: [what the BA should do first]
+```
+
+---
+
+### Step 6 — Is a new workshop needed?
+
+A workshop with multiple stakeholders is needed if:
+- The CR touches the areas of responsibility of several parties
+- There is a risk of conflicting interests from the change
+- The change requires aligning priorities
+- The scope of the change is significant
+
+```
+Workshop needed: Yes / No
+Rationale: [why]
+Participants: [who should attend]
+Key agenda questions: [list]
+```
+
+---
+
+## Final CR analysis report format
 
 ```markdown
-# Анализ выявления в контексте Change Request
-**CR:** [описание]
-**Дата анализа:** [дата]
-**Статус:** Требует довыявления
+# Elicitation Analysis in the Context of a Change Request
+**CR:** [description]
+**Analysis date:** [date]
+**Status:** Requires further elicitation
 
-## 1. Разбор CR
-[суть изменения, инициатор, причина]
+## 1. CR breakdown
+[essence of the change, initiator, reason]
 
-## 2. Зона влияния
-[таблица затронутых артефактов]
+## 2. Impact zone
+[table of affected artifacts]
 
-## 3. Устаревшие данные
-[что нужно обновить или удалить]
+## 3. Outdated data
+[what needs to be updated or removed]
 
-## 4. План довыявления
-[вопросы, стейкхолдеры, форматы, приоритеты]
+## 4. Re-elicitation plan
+[questions, stakeholders, formats, priorities]
 
-## 5. Оценка масштаба
-[объём работы, риски, рекомендация]
+## 5. Scope assessment
+[scope of work, risks, recommendation]
 
-## 6. Воркшоп
-[нужен или нет, состав, повестка]
+## 6. Workshop
+[needed or not, participants, agenda]
 ```

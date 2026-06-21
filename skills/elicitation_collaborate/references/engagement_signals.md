@@ -1,150 +1,151 @@
-# Справочник сигналов вовлечённости стейкхолдеров (BABOK 4.5)
+# Stakeholder Engagement Signals Reference (BABOK 4.5)
 
-Используй этот файл в Режиме A для диагностики поведения стейкхолдера.
-Каждый паттерн — реальная ситуация из практики BA с конкретной тактикой.
-
----
-
-## Классификация сигналов
-
-Сигналы делятся на три категории:
-- 🟢 **Позитивные** — вовлечённость растёт, нужно поддерживать
-- 🟡 **Нейтральные / тревожные** — требуют внимания, но не критичны
-- 🔴 **Негативные** — угрожают качеству бизнес-анализа, требуют немедленного действия
+Use this file in Mode A to diagnose stakeholder behavior.
+Each pattern is a real situation from BA practice with a concrete tactic.
 
 ---
 
-## 🟢 Позитивные сигналы
+## Signal classification
 
-### Стейкхолдер сам инициирует контакт
-**Что значит:** высокий интерес, Champion-поведение  
-**Тактика:** использовать как союзника — просить помогать вовлекать других,
-делиться контекстом, рекомендовать новых стейкхолдеров  
-**Риск:** может начать доминировать и подавлять других — следи за балансом
-
-### Стейкхолдер даёт детальную обратную связь
-**Что значит:** доверяет процессу, хочет качественного результата  
-**Тактика:** явно благодарить за конкретность, показывать как feedback
-влияет на решения — это усиливает вовлечённость  
-**Риск:** может затянуть процесс перфекционизмом — фиксируй сроки
-
-### Стейкхолдер приводит коллег на встречи
-**Что значит:** хочет расширить охват, видит ценность  
-**Тактика:** расширять реестр, фиксировать новых участников  
-**Риск:** встречи могут стать неуправляемыми — договаривайся о ролях заранее
+Signals fall into three categories:
+- **Positive** — engagement is growing, needs to be sustained
+- **Neutral / warning** — require attention but aren't critical
+- **Negative** — threaten the quality of business analysis, require immediate action
 
 ---
 
-## 🟡 Тревожные сигналы
+## Positive signals
 
-### Стейкхолдер отвечает с задержкой (2–5 дней)
-**Что значит:** перегружен, низкий приоритет проекта, или пассивное избегание  
-**Диагностика:** задай вопрос напрямую — «есть ли что-то, что мешает?»  
-**Тактика:**
-- Если перегружен → переформатировать запросы: короче, с явным дедлайном
-- Если низкий приоритет → эскалировать через спонсора
-- Если избегание → переходи к Режиму D (анализ конфликта)
+### Stakeholder initiates contact themselves
+**What it means:** high interest, Champion behavior
+**Tactic:** use them as an ally — ask them to help engage others,
+share context, recommend new stakeholders
+**Risk:** they may start dominating and suppressing others — watch the balance
 
-### Стейкхолдер даёт поверхностные ответы
-**Что значит:** не доверяет процессу, не видит смысла, или не понимает вопросов  
-**Диагностика:** проверь формат — возможно, вопросы слишком абстрактны  
-**Тактика:**
-- Переключиться на конкретные примеры: «Расскажи как это выглядит в пятницу в 17:00»
-- Провести наблюдение (observation) вместо интервью
-- Явно показать: «Вот как ваш ответ влияет на решение»
+### Stakeholder gives detailed feedback
+**What it means:** trusts the process, wants a quality result
+**Tactic:** explicitly thank them for being specific, show how feedback
+shapes decisions — this reinforces engagement
+**Risk:** may drag out the process with perfectionism — lock in deadlines
 
-### Стейкхолдер пропускает встречи (1–2 раза)
-**Что значит:** низкий приоритет или организационные проблемы  
-**Тактика:** уточнить удобное время, сократить формат встречи,
-предложить асинхронный вариант (анкета, email-обмен)  
-**Триггер для эскалации:** если пропуски продолжаются — фиксировать риск
-
-### Стейкхолдер соглашается со всем без обсуждения
-**Что значит:** «да-да» без реального вовлечения — опасный паттерн  
-**Риск:** молчаливое несогласие выйдет позже, на стадии приёмки  
-**Тактика:**
-- Задавать провокационные вопросы: «А что если мы сделаем наоборот?»
-- Явно просить несогласие: «Что в этом решении вас беспокоит?»
-- Проверять понимание: «Как вы объясните это своей команде?»
+### Stakeholder brings colleagues to meetings
+**What it means:** wants to broaden reach, sees value
+**Tactic:** expand the registry, log new participants
+**Risk:** meetings may become unmanageable — agree on roles in advance
 
 ---
 
-## 🔴 Негативные сигналы
+## Warning signals
 
-### Стейкхолдер систематически не отвечает (>1 недели)
-**Что значит:** пассивный Blocker или потеря интереса  
-**Тактика:**
-1. Один прямой звонок (не письмо) — «Хочу убедиться что всё в порядке»
-2. Если нет ответа → эскалировать спонсору с фактами: «X не участвует с [дата]»
-3. Зафиксировать риск в реестре  
-**Никогда:** не игнорировать молчание и не делать вид что всё нормально
+### Stakeholder responds with a delay (2–5 days)
+**What it means:** overloaded, low project priority, or passive avoidance
+**Diagnosis:** ask directly — "is there anything getting in the way?"
+**Tactic:**
+- If overloaded → reformat requests: shorter, with an explicit deadline
+- If low priority → escalate through the sponsor
+- If avoidance → move to Mode D (conflict analysis)
 
-### Стейкхолдер открыто критикует процесс или BA
-**Что значит:** накопившееся недовольство, возможно обоснованное  
-**Тактика:**
-1. Не защищаться — сначала слушать и фиксировать конкретные претензии
-2. Разделить: критика процесса (можно исправить) vs личная критика (другой разговор)
-3. Показать что услышан: «Вот что я изменю на основе вашего feedback»
-4. Если критика деструктивна → переходи к Режиму D
+### Stakeholder gives superficial answers
+**What it means:** doesn't trust the process, doesn't see the point, or doesn't
+understand the questions
+**Diagnosis:** check the format — questions might be too abstract
+**Tactic:**
+- Switch to concrete examples: "Tell me what this looks like on Friday at 5pm"
+- Conduct an observation instead of an interview
+- Explicitly show: "Here's how your answer affects the decision"
 
-### Стейкхолдер начинает обходить BA
-**Что значит:** потеря доверия к BA как посреднику  
-**Признаки:** стейкхолдер напрямую ставит задачи разработчикам, говорит
-с руководством без BA, организует параллельные встречи  
-**Тактика:**
-1. Немедленный разговор 1-на-1: «Замечаю что мы стали реже взаимодействовать»
-2. Выяснить причину — часто это нерешённая проблема из прошлого
-3. Вовлечь спонсора если ситуация не разрешается
+### Stakeholder misses meetings (1–2 times)
+**What it means:** low priority or organizational issues
+**Tactic:** clarify a convenient time, shorten the meeting format,
+offer an asynchronous option (survey, email exchange)
+**Escalation trigger:** if the absences continue — log the risk
 
-### Стейкхолдер публично противоречит ранее согласованному
-**Что значит:** либо решение было принято без реального согласия,
-либо изменились обстоятельства, либо политическая игра  
-**Тактика:**
-1. Ссылаться на Decision Log — спокойно, без обвинений
-2. Выяснить что изменилось: «С тех пор как мы договорились, что-то произошло?»
-3. Если ничего не изменилось → фасилитационная встреча с нейтральным модератором
+### Stakeholder agrees to everything without discussion
+**What it means:** "yes-yes" without real engagement — a dangerous pattern
+**Risk:** silent disagreement will surface later, at the acceptance stage
+**Tactic:**
+- Ask provocative questions: "What if we did the opposite?"
+- Explicitly invite disagreement: "What about this decision concerns you?"
+- Check understanding: "How would you explain this to your team?"
 
 ---
 
-## Стратегии работы с Blocker
+## Negative signals
 
-Blocker — стейкхолдер с высоким влиянием, который активно или пассивно
-мешает прогрессу. Требует индивидуального подхода.
+### Stakeholder systematically stops responding (>1 week)
+**What it means:** passive Blocker or loss of interest
+**Tactic:**
+1. One direct call (not an email) — "Want to make sure everything's okay"
+2. If no response → escalate to the sponsor with facts: "X hasn't participated since [date]"
+3. Log the risk in the registry
+**Never:** ignore the silence or pretend everything is fine
 
-### Типы Blocker и тактики
+### Stakeholder openly criticizes the process or the BA
+**What it means:** accumulated dissatisfaction, possibly justified
+**Tactic:**
+1. Don't get defensive — first listen and log the specific complaints
+2. Separate: criticism of the process (fixable) vs. personal criticism (a different conversation)
+3. Show that you heard them: "Here's what I'll change based on your feedback"
+4. If the criticism is destructive → move to Mode D
 
-| Тип | Признаки | Тактика |
+### Stakeholder starts going around the BA
+**What it means:** loss of trust in the BA as an intermediary
+**Signs:** the stakeholder assigns tasks directly to developers, talks to
+management without the BA, organizes parallel meetings
+**Tactic:**
+1. Immediate 1-on-1 conversation: "I've noticed we've been interacting less"
+2. Find out the cause — often it's an unresolved issue from the past
+3. Involve the sponsor if the situation doesn't resolve
+
+### Stakeholder publicly contradicts something previously agreed
+**What it means:** either the decision was made without real agreement,
+or circumstances changed, or it's a political move
+**Tactic:**
+1. Refer to the Decision Log — calmly, without accusations
+2. Find out what changed: "Has something happened since we agreed on this?"
+3. If nothing changed → a facilitated meeting with a neutral moderator
+
+---
+
+## Strategies for working with a Blocker
+
+A Blocker is a high-influence stakeholder who actively or passively
+impedes progress. Requires an individual approach.
+
+### Types of Blocker and tactics
+
+| Type | Signs | Tactic |
 |---|---|---|
-| **Идеологический** | Принципиально против изменений | Показать связь изменения с его ценностями и интересами |
-| **Политический** | Защищает зону влияния | Найти как изменение усиливает его позицию, а не угрожает |
-| **Информационный** | Блокирует из-за недопонимания | Индивидуальная сессия, упрощённый язык, ответы на конкретные страхи |
-| **Ресурсный** | Не даёт время/людей | Эскалация через спонсора с бизнес-обоснованием |
-| **Пассивный** | Просто не участвует | Создать ситуацию где его участие обязательно и видимо |
+| **Ideological** | Fundamentally against change | Show how the change connects to their values and interests |
+| **Political** | Defending their sphere of influence | Find how the change strengthens their position rather than threatening it |
+| **Informational** | Blocking due to misunderstanding | Individual session, simplified language, answers to specific fears |
+| **Resource** | Won't give time/people | Escalation through the sponsor with a business case |
+| **Passive** | Simply doesn't participate | Create a situation where their participation is mandatory and visible |
 
-### Общий алгоритм для Blocker
-1. Встреча 1-на-1 (никогда не в группе)
-2. Слушать — понять реальную причину сопротивления
-3. Найти общую цель — она всегда есть
-4. Предложить роль которая даёт ощущение контроля
-5. Если не работает → эскалация спонсору с документацией попыток
+### General algorithm for a Blocker
+1. 1-on-1 meeting (never in a group)
+2. Listen — understand the real cause of resistance
+3. Find the common goal — there's always one
+4. Offer a role that gives a sense of control
+5. If it doesn't work → escalate to the sponsor with documentation of attempts
 
 ---
 
-## Конфликт интересов между стейкхолдерами
+## Conflict of interest between stakeholders
 
-### Типы конфликтов
+### Types of conflict
 
-| Тип | Пример | Стратегия разрешения |
+| Type | Example | Resolution strategy |
 |---|---|---|
-| **Приоритетный** | А хочет функцию X первой, Б — функцию Y | MoSCoW или WSJF с участием обоих |
-| **Ресурсный** | Оба претендуют на одну команду | Эскалация к decision maker |
-| **Концептуальный** | Разное видение будущего состояния | Фасилитационный воркшоп, визуализация обоих вариантов |
-| **Территориальный** | Спор о зонах ответственности | Чёткое разграничение в RACI |
-| **Личный** | Межличностный конфликт | BA — не психолог, эскалировать PM или HR |
+| **Priority** | A wants feature X first, B wants feature Y | MoSCoW or WSJF with both involved |
+| **Resource** | Both are competing for the same team | Escalation to the decision maker |
+| **Conceptual** | Different vision of the future state | Facilitated workshop, visualization of both options |
+| **Territorial** | Dispute over areas of responsibility | Clear delineation in a RACI |
+| **Personal** | Interpersonal conflict | BA is not a psychologist, escalate to PM or HR |
 
-### Роль BA в конфликте
-BA — фасилитатор, не судья. Задача: создать условия для решения,
-не принимать сторону, фиксировать договорённости.
+### The BA's role in a conflict
+The BA is a facilitator, not a judge. The task: create the conditions for
+a resolution, don't take sides, log the agreements.
 
-Если конфликт выходит за рамки BA → фиксировать факт, эскалировать,
-не пытаться решить в одиночку.
+If the conflict goes beyond the BA's scope → log the fact, escalate,
+don't try to resolve it alone.
