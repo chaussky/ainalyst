@@ -188,7 +188,7 @@ Drop any input file into the `inputs/` folder and tell AInalyst:
 
 > *"Process this material. File: inputs/ivanov_21mar.txt"*
 
-AInalyst will read the file, extract requirements, risks, and open questions, and save the result as an artifact. Any kind of source works: interview and workshop transcripts, business rules, regulations, technical specifications. The supported formats are `.txt`, `.md`, and `.docx`.
+AInalyst will read the file, extract requirements, risks, and open questions, and save the result as an artifact. Any kind of source works: interview and workshop transcripts, business rules, regulations, technical specifications. The supported formats are `.txt`, `.md`, `.pdf`, and `.docx`.
 
 ---
 
