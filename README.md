@@ -272,7 +272,7 @@ AInalyst is distributed under the **GNU AGPL v3** license.
 
 **Free for:**
 - Business analysts using the platform locally for their own work
-- Companies deploying the platform inside their own perimeter for their own analysts
+- Companies deploying the platform within their own infrastructure for their own analysts
 
 **A commercial license is required for:**
 - Building SaaS services on top of the platform
@@ -284,7 +284,7 @@ For production, SaaS, or proprietary use, see [COMMERCIAL_LICENSE.md](COMMERCIAL
 
 The change history is in [CHANGELOG.md](CHANGELOG.md).
 
-For questions about commercial licensing, custom development (additional MCP servers), or deployment in a closed perimeter with local models:
+For questions about commercial licensing, custom development (additional MCP servers), or deployment in a closed/air-gapped environment with local models:
 
 **Anatoly Chaussky**
 Email: chaussky@gmail.com
