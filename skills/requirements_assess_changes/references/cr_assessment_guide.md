@@ -1,239 +1,239 @@
-# Справочник: Оценка изменений требований (BABOK 5.4)
+# Reference Guide: Assess Requirements Changes (BABOK 5.4)
 
-## Когда читать этот файл
+## When to read this file
 
-Читай этот файл когда:
-- BA открывает новый CR и не знает как оценить формальность
-- Нужно понять как считается скоринг по пяти осям
-- Возникает вопрос кто принимает решение по CR
-- CR связан с регуляторными или нормативными требованиями
-
----
-
-## Природа задачи 5.4
-
-5.4 — **привратник изменений**. Результат — не решение, а *рекомендация*.
-Решение принимает спонсор, CCB (Change Control Board) или уполномоченный стейкхолдер.
-
-BA оценивает: увеличит ли изменение ценность решения, и если да — какой ценой.
-
-**Три обязательных вопроса при любом CR:**
-1. Трассируется ли CR к реальной бизнес-потребности?
-2. Конфликтует ли CR с существующими требованиями?
-3. Увеличивает ли CR уровень риска?
+Read this file when:
+- The BA is opening a new CR and is unsure how to assess its formality
+- You need to understand how the five-axis scoring is calculated
+- A question arises about who makes the decision on a CR
+- The CR involves regulatory or legislative requirements
 
 ---
 
-## Формальность оценки
+## The nature of task 5.4
 
-Уровень формальности определяется **до** начала анализа. Зависит от:
+5.4 is the **change gatekeeper**. The output is not a decision but a *recommendation*.
+The decision is made by the sponsor, the CCB (Change Control Board), or the authorized stakeholder.
 
-| Фактор | Низкая формальность | Высокая формальность |
+The BA assesses: will the change increase the value of the solution, and if so, at what cost.
+
+**Three mandatory questions for any CR:**
+1. Does the CR trace back to a real business need?
+2. Does the CR conflict with existing requirements?
+3. Does the CR increase the level of risk?
+
+---
+
+## Assessment formality
+
+The formality level is determined **before** the analysis begins. It depends on:
+
+| Factor | Low formality | High formality |
 |--------|--------------------|--------------------|
-| Методология проекта | Agile / Adaptive | Predictive / Waterfall |
-| Масштаб изменения | Уточнение / малый CR | Новая функциональность / архитектурный CR |
-| Затронутые стейкхолдеры | 1–2 | 3+ или спонсор |
-| Регуляторный контекст | Нет | Есть (compliance, audit) |
-| Стадия проекта | Начало / Discovery | Близко к релизу |
+| Project methodology | Agile / Adaptive | Predictive / Waterfall |
+| Scope of change | Clarification / minor CR | New functionality / architectural CR |
+| Affected stakeholders | 1–2 | 3+ or the sponsor |
+| Regulatory context | None | Present (compliance, audit) |
+| Project stage | Early / Discovery | Close to release |
 
-**Правило:** В Predictive-проектах каждый CR потенциально разрушителен — переделка завершённых задач. В Agile — изменение встраивается в следующий sprint, формальность ниже.
+**Rule:** In Predictive projects, every CR is potentially disruptive — it means redoing completed work. In Agile, the change is folded into the next sprint, so formality is lower.
 
-Многие CR снимаются с рассмотрения **до** формального анализа — инициатор переформулирует или отзывает после первичной беседы.
-
----
-
-## Пять осей анализа влияния
-
-### Ось 1 — Benefit (Выгода)
-Что получает бизнес или пользователь при принятии CR.
-
-| Оценка | Описание |
-|--------|----------|
-| High (3) | Прямая бизнес-ценность: новый доход, снижение издержек, compliance |
-| Medium (2) | Улучшение UX, ускорение процесса, снижение операционной нагрузки |
-| Low (1) | Косметические изменения, удобство без измеримого эффекта |
-
-**Вводит:** BA на основе бизнес-контекста.
-
-### Ось 2 — Cost (Стоимость)
-**Полная стоимость** включает три компонента:
-- Прямая стоимость реализации CR
-- Стоимость переделок связанных требований/компонентов
-- **Альтернативные затраты** — что откладывается или отменяется из backlog'а
-
-| Оценка | Описание |
-|--------|----------|
-| Low (3) | Малые правки, 1–2 затронутых требования, не влияет на roadmap |
-| Medium (2) | Средний объём, 3–7 затронутых, небольшой сдвиг сроков |
-| High (1) | Крупная переделка, 8+ затронутых, серьёзный сдвиг или отмена других фич |
-
-**Вводит:** BA. Технические оценки трудозатрат запрашиваются у разработчиков.
-
-### Ось 3 — Impact (Влияние)
-Количество клиентов, пользователей или бизнес-процессов, затрагиваемых CR.
-**Считается автоматически** из графа трассировки 5.1 (BFS-обход от изменяемого требования).
-
-| Оценка | Описание |
-|--------|----------|
-| High (3) | Затронуто 8+ требований или ключевые бизнес-процессы |
-| Medium (2) | Затронуто 3–7 требований |
-| Low (1) | Затронуто 1–2 требования, изолированное изменение |
-
-**Считается:** автоматически в `run_cr_impact` на основе `run_impact_analysis` из 5.1.
-
-### Ось 4 — Schedule (График)
-Влияние на существующие обязательства поставки.
-**Рассчитывается автоматически** на основе количества затронутых узлов и типов связей.
-
-| Оценка | Описание |
-|--------|----------|
-| Low risk (3) | Изменение укладывается в текущий sprint/итерацию |
-| Medium risk (2) | Требует переноса 1–2 задач или небольшого сдвига milestone |
-| High risk (1) | Угрожает дедлайну релиза или требует пересмотра roadmap |
-
-**Считается:** автоматически в `run_cr_impact`.
-
-### Ось 5 — Urgency (Срочность)
-Насколько критично принять CR именно сейчас.
-
-| Оценка | Описание |
-|--------|----------|
-| Critical (3) | Регуляторное требование, проблема безопасности, блокер для бизнеса |
-| High (2) | Важно для ближайшего релиза, есть внешние обязательства |
-| Normal (1) | Желательно, но может подождать следующей итерации |
-
-**Вводит:** BA.
+Many CRs get withdrawn from consideration **before** formal analysis — the initiator reformulates or withdraws the request after an initial conversation.
 
 ---
 
-## Формула скоринга
+## Five impact analysis axes
+
+### Axis 1 — Benefit
+What the business or user gains if the CR is accepted.
+
+| Rating | Description |
+|--------|----------|
+| High (3) | Direct business value: new revenue, reduced costs, compliance |
+| Medium (2) | Improved UX, faster process, reduced operational load |
+| Low (1) | Cosmetic changes, convenience with no measurable effect |
+
+**Entered by:** the BA, based on business context.
+
+### Axis 2 — Cost
+**Full cost** consists of three components:
+- Direct cost of implementing the CR
+- Cost of reworking related requirements/components
+- **Opportunity cost** — what gets postponed or dropped from the backlog
+
+| Rating | Description |
+|--------|----------|
+| Low (3) | Minor edits, 1–2 affected requirements, no impact on the roadmap |
+| Medium (2) | Moderate scope, 3–7 affected, small schedule shift |
+| High (1) | Major rework, 8+ affected, serious schedule shift or cancellation of other features |
+
+**Entered by:** the BA. Technical effort estimates are requested from developers.
+
+### Axis 3 — Impact
+The number of customers, users, or business processes affected by the CR.
+**Calculated automatically** from the 5.1 traceability graph (BFS traversal from the changed requirement).
+
+| Rating | Description |
+|--------|----------|
+| High (3) | 8+ requirements affected, or key business processes |
+| Medium (2) | 3–7 requirements affected |
+| Low (1) | 1–2 requirements affected, isolated change |
+
+**Calculated by:** automatically, in `run_cr_impact`, based on `run_impact_analysis` from 5.1.
+
+### Axis 4 — Schedule
+Impact on existing delivery commitments.
+**Calculated automatically** based on the number of affected nodes and relation types.
+
+| Rating | Description |
+|--------|----------|
+| Low risk (3) | The change fits within the current sprint/iteration |
+| Medium risk (2) | Requires rescheduling 1–2 tasks or a small milestone shift |
+| High risk (1) | Threatens the release deadline or requires a roadmap revision |
+
+**Calculated by:** automatically, in `run_cr_impact`.
+
+### Axis 5 — Urgency
+How critical it is to accept the CR right now.
+
+| Rating | Description |
+|--------|----------|
+| Critical (3) | Regulatory requirement, security issue, business blocker |
+| High (2) | Important for the upcoming release, external commitments exist |
+| Normal (1) | Desirable, but can wait for the next iteration |
+
+**Entered by:** the BA.
+
+---
+
+## Scoring formula
 
 ```
 CR Score = (Benefit × 2) + (Urgency × 1.5) + (Impact × 1) - (Cost × 1.5) - (Schedule_Risk × 1)
 ```
 
-**Веса отражают приоритеты:**
-- Benefit × 2 — ценность важнее всего
-- Cost × 1.5 — стоимость второй по значимости ограничитель
-- Urgency × 1.5 — срочность может перевесить стоимость
-- Impact и Schedule — контекстные факторы
+**The weights reflect priorities:**
+- Benefit × 2 — value matters most
+- Cost × 1.5 — cost is the second most significant constraint
+- Urgency × 1.5 — urgency can outweigh cost
+- Impact and Schedule are contextual factors
 
-**Диапазон и пороги:**
+**Range and thresholds:**
 
-| Score | Предварительный вердикт |
+| Score | Preliminary verdict |
 |-------|------------------------|
-| ≥ 8.0 | ✅ Approve — высокая ценность, приемлемая стоимость |
-| 4.0–7.9 | 🟡 Modify — стоит пересмотреть скоуп или сроки |
-| 1.0–3.9 | ⏳ Defer — отложить до следующей итерации |
-| < 1.0 | ❌ Reject — затраты превышают ценность |
+| ≥ 8.0 | ✅ Approve — high value, acceptable cost |
+| 4.0–7.9 | 🟡 Modify — scope or timeline should be revisited |
+| 1.0–3.9 | ⏳ Defer — postpone to the next iteration |
+| < 1.0 | ❌ Reject — cost outweighs value |
 
-**Важно:** формула даёт *предварительный* вердикт. Claude анализирует контекст и может скорректировать рекомендацию с явным обоснованием.
-
----
-
-## Автоматические проверки при скоринге
-
-Помимо числового скоринга, система проверяет:
-
-### Проверка 1 — Трассировка к потребности
-CR должен трассироваться к бизнес-требованию (BR) через граф 5.1.
-Если путь до BR не найден → ⚠️ предупреждение: «CR не трассируется к бизнес-потребности».
-
-### Проверка 2 — Конфликты с приоритетами
-Если CR изменяет требование из 5.3:
-- Требование было Won't → становится Must: 🔴 критический конфликт
-- Требование было Must → снижается: ⚠️ требует пересмотра приоритизации
-
-### Проверка 3 — Волатильность затронутых требований
-Если среди затронутых есть требования с версией 1.3+ (из 5.2) → 🟡 флаг риска:
-нестабильные требования + CR = двойная неопределённость.
-
-### Проверка 4 — Dependency violations
-Если CR превращает зависимое (depends) Won't-требование в Must →
-автоматически проверяем dependency chain из 5.1.
+**Important:** the formula produces a *preliminary* verdict. Claude analyzes the context and may adjust the recommendation with an explicit rationale.
 
 ---
 
-## Типы решений по CR
+## Automated checks during scoring
 
-| Решение | Когда | Кто уполномочен |
+In addition to the numeric score, the system checks:
+
+### Check 1 — Traceability to the need
+The CR must trace back to a business requirement (BR) through the 5.1 graph.
+If no path to a BR is found → ⚠️ warning: "CR does not trace to a business need."
+
+### Check 2 — Conflicts with priorities
+If the CR changes a requirement from 5.3:
+- The requirement was Won't → becomes Must: 🔴 critical conflict
+- The requirement was Must → gets downgraded: ⚠️ requires a re-prioritization review
+
+### Check 3 — Volatility of affected requirements
+If any affected requirement has version 1.3+ (from 5.2) → 🟡 risk flag:
+unstable requirements + CR = double uncertainty.
+
+### Check 4 — Dependency violations
+If the CR turns a dependent (depends) Won't requirement into a Must →
+the dependency chain from 5.1 is automatically checked.
+
+---
+
+## Types of CR decisions
+
+| Decision | When | Who is authorized |
 |---------|-------|----------------|
-| **Approve** | CR увеличивает ценность, стоимость приемлема | Спонсор / CCB / Product Owner |
-| **Approve with Modification** | CR принимается в урезанном скоупе | BA + Спонсор |
-| **Defer** | CR ценный, но не сейчас | BA / Product Owner |
-| **Reject** | CR не несёт ценности или неприемлемо дорог | CCB / Спонсор |
+| **Approve** | The CR increases value, cost is acceptable | Sponsor / CCB / Product Owner |
+| **Approve with Modification** | The CR is accepted with a reduced scope | BA + Sponsor |
+| **Defer** | The CR is valuable, but not right now | BA / Product Owner |
+| **Reject** | The CR provides no value or is unacceptably expensive | CCB / Sponsor |
 
-Кто именно уполномочен — определяется в задаче 3.3 (Governance approach).
-`resolve_cr` принимает параметр `decided_by` — обязательно указывать.
+Exactly who is authorized is determined in task 3.3 (Governance approach).
+`resolve_cr` takes a `decided_by` parameter — it must always be specified.
 
 ---
 
-## Статусы требований после resolve_cr
+## Requirement statuses after resolve_cr
 
-| Решение CR | Статус затронутых требований | Следующий шаг BA |
+| CR decision | Status of affected requirements | Next BA step |
 |------------|------------------------------|-----------------|
-| Approved | `under_change` | Обновить содержание через 5.2 |
-| Approved with Modification | `under_change` (частично) | Уточнить скоуп, обновить через 5.2 |
-| Deferred | Без изменений | CR сохраняется в репозитории со статусом `deferred` |
-| Rejected | Без изменений | CR сохраняется со статусом `rejected` (аудит) |
+| Approved | `under_change` | Update the content via 5.2 |
+| Approved with Modification | `under_change` (partial) | Clarify the scope, update via 5.2 |
+| Deferred | No change | The CR is kept in the repository with status `deferred` |
+| Rejected | No change | The CR is kept with status `rejected` (audit) |
 
-**Важно:** требования со статусом `under_change` не удаляются и не изменяются автоматически.
-BA вносит содержательные изменения вручную через `update_requirement` (5.2).
-
----
-
-## Особые случаи
-
-### Регуляторный CR
-Если CR вызван изменением законодательства или нормативов:
-- Urgency автоматически → Critical
-- Reject невозможен (нельзя отказаться от compliance)
-- Вопрос только в сроках и скоупе реализации
-- Рекомендуется привлечь Регулятора/Аудитора из списка стейкхолдеров 5.4.7
-
-### CR в Predictive-проекте близко к релизу
-- Высокая вероятность что даже малый CR = большая переделка
-- Schedule Risk автоматически повышается на 1 уровень
-- BA должен явно указать в `open_cr`: `project_phase = "pre_release"`
-
-### Несколько связанных CR
-Иногда несколько CR затрагивают одни и те же требования.
-Рекомендация: оценивать совместно, не по одному — суммарный impact может быть нелинейным.
-В `open_cr` можно указать `related_cr_ids` для связи в репозитории.
+**Important:** requirements with status `under_change` are not deleted or automatically modified.
+The BA makes the substantive changes manually, via `update_requirement` (5.2).
 
 ---
 
-## Заинтересованные стороны и их роль в 5.4
+## Special cases
 
-| Стейкхолдер | Роль в 5.4 |
+### Regulatory CR
+If the CR is driven by a change in legislation or regulations:
+- Urgency automatically → Critical
+- Reject is not an option (compliance cannot be declined)
+- The only open questions are timing and implementation scope
+- It is recommended to involve the Regulator/Auditor from the 5.4.7 stakeholder list
+
+### CR in a Predictive project close to release
+- High likelihood that even a small CR means major rework
+- Schedule Risk is automatically raised by one level
+- The BA must explicitly set `project_phase = "pre_release"` in `open_cr`
+
+### Multiple related CRs
+Sometimes several CRs affect the same requirements.
+Recommendation: assess them together, not one at a time — the combined impact can be non-linear.
+You can specify `related_cr_ids` in `open_cr` to link them in the repository.
+
+---
+
+## Stakeholders and their role in 5.4
+
+| Stakeholder | Role in 5.4 |
 |-------------|-----------|
-| Спонсор | Финальное решение по CR, ответственность за скоуп |
-| Руководитель проекта | Оценка влияния на план и ресурсы |
-| Разработчик/Архитектор | Оценка технической стоимости (Cost, Schedule) |
-| Тестировщик | Оценка влияния на тест-покрытие |
-| Бизнес-эксперт | Оценка ценности (Benefit) и бизнес-контекста |
-| Регулятор/Аудитор | Проверка compliance при регуляторных CR |
-| Конечный пользователь | Обратная связь по влиянию на работу |
+| Sponsor | Final decision on the CR, accountable for scope |
+| Project manager | Assesses impact on the plan and resources |
+| Developer/Architect | Assesses technical cost (Cost, Schedule) |
+| Tester | Assesses impact on test coverage |
+| Business expert | Assesses value (Benefit) and business context |
+| Regulator/Auditor | Verifies compliance for regulatory CRs |
+| End user | Provides feedback on impact to their work |
 
 ---
 
-## Типичные ошибки BA при оценке CR
+## Common BA mistakes when assessing a CR
 
-**1. Оценка только прямой стоимости**
-Часто забывают альтернативные затраты: что откладывается если CR одобрен?
-Всегда спрашивай: «Что мы НЕ сделаем если возьмём этот CR?»
+**1. Assessing only direct cost**
+Opportunity cost is often forgotten: what gets postponed if the CR is approved?
+Always ask: "What will we NOT do if we take on this CR?"
 
-**2. CR без трассировки к потребности**
-«Хочу добавить фичу» ≠ бизнес-потребность. Каждый CR должен отвечать на вопрос:
-«Какую проблему бизнеса или пользователя это решает?»
+**2. CR with no traceability to a need**
+"I want to add a feature" ≠ a business need. Every CR must answer the question:
+"What business or user problem does this solve?"
 
-**3. Игнорирование scope creep**
-Один CR выглядит маленьким, но тянет за собой 10+ связанных требований.
-Всегда запускай `run_cr_impact` — граф покажет реальный масштаб.
+**3. Ignoring scope creep**
+A single CR looks small but pulls in 10+ related requirements.
+Always run `run_cr_impact` — the graph will reveal the real scope.
 
-**4. Накопление CR без решений**
-CR в статусе `open` дольше 2 спринтов = проблема управления.
-Используй `check_cr_status` для мониторинга открытых CR.
+**4. Letting CRs pile up without decisions**
+A CR sitting in `open` status for more than 2 sprints is a governance problem.
+Use `check_cr_status` to monitor open CRs.
 
-**5. Отсутствие rationale при Reject**
-Через 6 месяцев никто не помнит почему отклонили. Всегда заполняй `rationale` в `resolve_cr`.
+**5. Missing rationale on Reject**
+Six months later, nobody remembers why it was rejected. Always fill in `rationale` in `resolve_cr`.

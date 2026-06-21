@@ -1,181 +1,181 @@
 ---
 name: requirements_traceability
 description: >
-  Скилл BABOK 5.1 — Трассировка требований. Используй этот скилл когда BA хочет
-  построить или обновить граф связей между артефактами проекта, добавить трассировочную
-  ссылку, провести impact analysis или экспортировать матрицу трассировки.
-  Триггеры: «трассировка», «trace requirements», «traceability matrix», «связи требований»,
-  «impact analysis», «откуда это требование», «coverage», «граф требований».
-project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
+  BABOK 5.1 skill — Trace Requirements. Use this skill when the BA wants to
+  build or update the graph of links between project artifacts, add a traceability
+  link, run an impact analysis, or export a traceability matrix.
+  Triggers: "trace requirements", "traceability matrix", "requirement links",
+  "impact analysis", "where did this requirement come from", "coverage", "requirements graph".
+project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: BABOK 5.1 — Trace Requirements
-**Задача:** управление трассировкой требований на протяжении жизненного цикла.  
-**MCP-сервер:** `requirements_traceability_mcp.py`  
+**Task:** managing requirements traceability throughout the life cycle.  
+**MCP server:** `requirements_traceability_mcp.py`  
 **Reference:** `references/traceability_guide.md`
 
 ---
 
-## Суть задачи
+## What this task is about
 
-Трассировка — это **граф связей** между всеми артефактами проекта.
+Traceability is a **graph of links** between all project artifacts.
 
 ```
-Бизнес-потребность
-  └─[derives]→ Бизнес-требование (BR)
-       └─[derives]→ Требование стейкхолдера (SR)
-            └─[derives]→ Требование к решению (FR/NFR)
-                 ├─[satisfies]← Компонент / модуль
-                 └─[verifies]← Тест (TC)
+Business need
+  └─[derives]→ Business requirement (BR)
+       └─[derives]→ Stakeholder requirement (SR)
+            └─[derives]→ Solution requirement (FR/NFR)
+                 ├─[satisfies]← Component / module
+                 └─[verifies]← Test (TC)
 ```
 
-Плюс горизонтальные связи: `depends` между требованиями одного уровня.
+Plus horizontal links: `depends` between requirements at the same level.
 
-**Главная ценность:** когда приходит CR или требование меняется — BA мгновенно
-видит что затронуто: какие требования, тесты, компоненты. Без трассировки — гадание.
-
----
-
-## Когда активируется этот скилл
-
-- BA добавляет новое требование в проект
-- Требование изменилось (CR или уточнение)
-- Нужно оценить влияние изменения (→ передаётся в 5.4)
-- Нужно проверить покрытие перед приоритизацией (5.3) или утверждением (5.5)
-- Запрос на матрицу трассировки для стейкхолдеров или аудита
+**Core value:** when a CR arrives or a requirement changes, the BA instantly
+sees what's affected — which requirements, tests, components. Without traceability, it's guesswork.
 
 ---
 
-## Три режима работы
+## When this skill is activated
 
-### Режим A — Первичная трассировка нового требования
-
-**Когда:** получено подтверждённое требование из 4.3 или новое требование при CR.
-
-Алгоритм:
-1. Определить **тип требования**: `business` / `stakeholder` / `solution` / `transition`
-2. Задать вопрос: **откуда оно взялось?** → найти родителя для `derives`-связи
-3. Задать вопрос: **из чего оно следует или что требует?** → горизонтальные `depends`
-4. Задать вопрос: **какой компонент это реализует?** (если уже известно) → `satisfies`
-5. Задать вопрос: **какой тест это проверяет?** (если уже известно) → `verifies`
-6. Вызвать `add_trace_link` для каждой связи
-7. Если репозиторий создаётся впервые → сначала `init_traceability_repo`
-
-> 📌 Если ответа на вопросы 4-5 нет — это нормально. Связи `satisfies` и `verifies`
-> добавляются позже. Orphan-требование без `satisfies`/`verifies` — это ожидаемое
-> состояние на ранних этапах. Orphan без `derives` — это уже проблема.
-
-### Режим B — Поддержание трассировки (изменение требования)
-
-**Когда:** требование обновилось (версия, статус, содержание).
-
-Алгоритм:
-1. Обновить запись требования: новая версия, новый статус
-2. Вызвать `run_impact_analysis` — получить список всех затронутых артефактов
-3. Для каждого затронутого артефакта: актуальна ли связь?
-   - Если связь устарела → обновить `rationale` или удалить через `add_trace_link` с флагом `remove`
-   - Если появились новые связи → добавить
-4. Если изменение пришло как CR → результат `run_impact_analysis` передаётся в 5.4
-   для экспертной оценки: брать/не брать, какова цена
-
-> ⚠️ Режим B — самая частая причина «мёртвой трассировки». BA обновляет требование,
-> но забывает обновить граф. Claude должен напомнить: «это требование изменилось —
-> нужно проверить связи».
-
-### Режим C — Аудит покрытия
-
-**Когда:** перед приоритизацией (5.3), перед утверждением (5.5), после серии CR.
-
-Алгоритм:
-1. Вызвать `check_coverage`
-2. Интерпретировать результаты:
-   - 🔴 **Orphan без источника** → выяснить бизнес-обоснование или заморозить
-   - 🟡 **Нет реализации** → уточнить у разработчика или добавить в backlog
-   - 🟡 **Нет теста** → уточнить у QA или создать тест
-   - 🟢 **Полное покрытие** → готово к следующему шагу
-3. Принять решение по каждому проблемному требованию
-4. При необходимости → `export_traceability_matrix` для отчёта
+- BA adds a new requirement to the project
+- A requirement has changed (CR or clarification)
+- Need to assess the impact of a change (→ handed off to 5.4)
+- Need to check coverage before prioritization (5.3) or approval (5.5)
+- Request for a traceability matrix for stakeholders or an audit
 
 ---
 
-## Уровни формальности — выбери перед стартом
+## Three modes of operation
 
-Если контекст проекта неизвестен — **спроси BA**. Правильный пресет экономит
-часы ненужной работы или защищает от пропущенных связей.
+### Mode A — Initial traceability for a new requirement
 
-| Вопрос для BA | Если ответ... | Рекомендуй |
+**When:** a confirmed requirement arrives from 4.3, or a new requirement comes in via a CR.
+
+Algorithm:
+1. Determine the **requirement type**: `business` / `stakeholder` / `solution` / `transition`
+2. Ask: **where did it come from?** → find the parent for the `derives` link
+3. Ask: **what does it follow from, or what does it require?** → horizontal `depends`
+4. Ask: **which component implements this?** (if already known) → `satisfies`
+5. Ask: **which test verifies this?** (if already known) → `verifies`
+6. Call `add_trace_link` for each link
+7. If the repository is being created for the first time → call `init_traceability_repo` first
+
+> 📌 If there's no answer to questions 4-5, that's fine. `satisfies` and `verifies`
+> links can be added later. An orphan requirement without `satisfies`/`verifies` is an expected
+> state at early stages. An orphan without `derives` is already a problem.
+
+### Mode B — Maintaining traceability (requirement change)
+
+**When:** a requirement has been updated (version, status, content).
+
+Algorithm:
+1. Update the requirement record: new version, new status
+2. Call `run_impact_analysis` — get the list of all affected artifacts
+3. For each affected artifact: is the link still valid?
+   - If the link is stale → update `rationale` or remove it via `add_trace_link` with the `remove` flag
+   - If new links have appeared → add them
+4. If the change arrived as a CR → the `run_impact_analysis` result is passed to 5.4
+   for expert assessment: accept or not, what's the cost
+
+> ⚠️ Mode B is the most common cause of "dead traceability." The BA updates a requirement
+> but forgets to update the graph. Claude should remind them: "this requirement changed —
+> the links need to be checked."
+
+### Mode C — Coverage audit
+
+**When:** before prioritization (5.3), before approval (5.5), after a series of CRs.
+
+Algorithm:
+1. Call `check_coverage`
+2. Interpret the results:
+   - 🔴 **Orphan with no source** → clarify the business justification or freeze it
+   - 🟡 **No implementation** → check with the developer or add to the backlog
+   - 🟡 **No test** → check with QA or create a test
+   - 🟢 **Full coverage** → ready for the next step
+3. Make a decision for each problematic requirement
+4. If needed → `export_traceability_matrix` for a report
+
+---
+
+## Formality levels — choose before you start
+
+If the project context is unknown — **ask the BA**. Picking the right preset saves
+hours of unnecessary work or guards against missed links.
+
+| Question for the BA | If the answer is... | Recommend |
 |---------------|---------------|------------|
-| Есть регуляторные требования? (GDPR, ФЗ, ISO) | Да | Full |
-| Внешний аудит или compliance? | Да | Full |
-| Команда > 20 человек? | Да | Standard → Full |
-| Есть выделенный QA? | Да | Standard |
-| Agile, спринты, стартап? | Да | Lite |
+| Are there regulatory requirements? (GDPR, local law, ISO) | Yes | Full |
+| External audit or compliance? | Yes | Full |
+| Team > 20 people? | Yes | Standard → Full |
+| Is there a dedicated QA function? | Yes | Standard |
+| Agile, sprints, startup? | Yes | Lite |
 
-**BA всегда принимает финальное решение.** Скилл рекомендует, не навязывает.
+**The BA always makes the final decision.** The skill recommends, it doesn't impose.
 
-Прочитай детали пресетов: `references/traceability_guide.md` → раздел «Пресеты формальности»
+Read the preset details: `references/traceability_guide.md` → section "Formality presets"
 
 ---
 
-## Интеграция с другими задачами
+## Integration with other tasks
 
-**Откуда приходят требования:**
-- `4.3 save_confirmed_elicitation_result` → подтверждённые артефакты → добавляем в репозиторий (Режим A)
-- `4.2 save_cr_elicitation_analysis` → требования при CR → обновляем трассировку (Режим B)
+**Where requirements come from:**
+- `4.3 save_confirmed_elicitation_result` → confirmed artifacts → add to the repository (Mode A)
+- `4.2 save_cr_elicitation_analysis` → requirements from a CR → update traceability (Mode B)
 
-### Mapping из 4.3 в репозиторий трассировки
+### Mapping from 4.3 into the traceability repository
 
-Артефакт 4.3 хранит требования в структуре `{functional: [...], non_functional: [...]}`.
-При добавлении в репозиторий трассировки конвертируй так:
+The 4.3 artifact stores requirements in the structure `{functional: [...], non_functional: [...]}`.
+When adding to the traceability repository, convert as follows:
 
-| Поле в 4.3 | Поле в репозитории 5.1 |
+| Field in 4.3 | Field in the 5.1 repository |
 |-----------|------------------------|
 | `functional[].id` → `FR-001` | `id` |
 | `"FR"` / `"NFR"` | `type: "solution"` |
 | `functional[].statement` | `title` |
 | `"confirmed"` (final_readiness) | `status: "confirmed"` |
-| путь к файлу 4.3 | `source_artifact` |
+| path to the 4.3 file | `source_artifact` |
 
-Бизнес-требования (BR) и требования стейкхолдеров (SR) идут из ранних сессий выявления (4.2).
-Их type: `"business"` и `"stakeholder"` соответственно.
+Business requirements (BR) and stakeholder requirements (SR) come from earlier elicitation sessions (4.2).
+Their type: `"business"` and `"stakeholder"` respectively.
 
-**Куда уходят результаты:**
-- `5.3` Приоритизация → учитывай `depends`-связи: нельзя приоритизировать выше зависимость
-- `5.4` Оценка изменений → передай результат `run_impact_analysis` как технический input
-- `5.5` Утверждение → используй `export_traceability_matrix` для пакета согласования
-- `6.x` User Stories / Use Cases → каждый артефакт трассируется к FR/SR
+**Where the results go:**
+- `5.3` Prioritization → account for `depends` links: a requirement can't be prioritized above its dependency
+- `5.4` Change assessment → pass the `run_impact_analysis` result as technical input
+- `5.5` Approval → use `export_traceability_matrix` for the sign-off package
+- `6.x` User Stories / Use Cases → every artifact traces back to an FR/SR
 
 ---
 
-## MCP-инструменты
+## MCP tools
 
-| Инструмент | Режим | Когда вызывать |
+| Tool | Mode | When to call |
 |------------|-------|----------------|
-| `init_traceability_repo` | A | Один раз при старте проекта |
-| `add_trace_link` | A, B | При каждом новом/изменённом требовании или связи |
-| `run_impact_analysis` | B | Пришло изменение, нужно понять что затронуто |
-| `check_coverage` | C | Аудит перед приоритизацией / утверждением / после CR |
-| `export_traceability_matrix` | C | Нужна матрица для стейкхолдеров или аудита |
+| `init_traceability_repo` | A | Once, at project start |
+| `add_trace_link` | A, B | For every new/changed requirement or link |
+| `run_impact_analysis` | B | A change has arrived, need to understand what's affected |
+| `check_coverage` | C | Audit before prioritization / approval / after a CR |
+| `export_traceability_matrix` | C | Need a matrix for stakeholders or an audit |
 
 ---
 
-## Чего 5.1 НЕ делает
+## What 5.1 does NOT do
 
-- **Не приоритизирует** требования — это 5.3
-- **Не оценивает** стоит ли брать CR — это 5.4 (5.1 даёт технический input)
-- **Не утверждает** требования формально — это 5.5
-- **Не создаёт** требования — это 4.2/4.3
-- **Не управляет** конфигурацией кода — это за пределами BABOK
+- **Does not prioritize** requirements — that's 5.3
+- **Does not assess** whether to accept a CR — that's 5.4 (5.1 provides technical input)
+- **Does not formally approve** requirements — that's 5.5
+- **Does not create** requirements — that's 4.2/4.3
+- **Does not manage** code configuration — that's outside BABOK
 
 ---
 
-## Быстрый старт для нового проекта
+## Quick start for a new project
 
 ```
-1. BA передаёт подтверждённые артефакты из 4.3
-2. Выбрать уровень формальности (Lite / Standard / Full)
-3. init_traceability_repo — создать репозиторий
-4. Для каждого требования: add_trace_link (Режим A)
-5. check_coverage — убедиться что orphan-требований нет
-6. export_traceability_matrix — сохранить исходное состояние
+1. BA hands over confirmed artifacts from 4.3
+2. Choose a formality level (Lite / Standard / Full)
+3. init_traceability_repo — create the repository
+4. For each requirement: add_trace_link (Mode A)
+5. check_coverage — make sure there are no orphan requirements
+6. export_traceability_matrix — save the initial state
 ```

@@ -1,150 +1,150 @@
-# Справочник: Конфликты приоритизации и их разрешение (BABOK 5.3)
+# Reference: Prioritization Conflicts and Their Resolution (BABOK 5.3)
 
-## Три типа конфликтов
+## Three types of conflicts
 
-| Тип | Описание | Частота | Сложность |
+| Type | Description | Frequency | Complexity |
 |-----|----------|---------|-----------|
-| **Межстейкхолдерский** | SH-A говорит Must, SH-B говорит Won't | Высокая | Средняя |
-| **Dependency violation** | Must-требование зависит от Won't | Средняя | Высокая |
-| **Priority inflation** | >60% требований в Must | Высокая | Средняя |
+| **Cross-stakeholder** | SH-A says Must, SH-B says Won't | High | Medium |
+| **Dependency violation** | Must requirement depends on a Won't | Medium | High |
+| **Priority inflation** | >60% of requirements are Must | High | Medium |
 
 ---
 
-## Тип 1 — Межстейкхолдерский конфликт
+## Type 1 — Cross-stakeholder conflict
 
-### Детектирование
+### Detection
 
-Конфликт = расхождение оценок между стейкхолдерами на 2+ категории MoSCoW.
+Conflict = scores diverge between stakeholders by 2+ MoSCoW categories.
 
-| Расхождение | Серьёзность |
+| Divergence | Severity |
 |-------------|-------------|
-| Must vs Should | 🟡 Умеренное — обычно решается обсуждением |
-| Must vs Could | 🟠 Серьёзное — нужна фасилитация |
-| Must vs Won't | 🔴 Критическое — нужно решение спонсора |
-| Should vs Won't | 🟡 Умеренное |
+| Must vs Should | 🟡 Moderate — usually resolved through discussion |
+| Must vs Could | 🟠 Serious — needs facilitation |
+| Must vs Won't | 🔴 Critical — needs a sponsor decision |
+| Should vs Won't | 🟡 Moderate |
 
-**Усиливающий фактор:** если конфликтующие стейкхолдеры оба имеют High influence — конфликт требует эскалации к спонсору, не может быть решён BA самостоятельно.
+**Amplifying factor:** if both conflicting stakeholders have High influence, the conflict requires escalation to the sponsor and cannot be resolved by the BA alone.
 
-### Тактики разрешения
+### Resolution tactics
 
-**1. Декомпозиция требования**
-Часто конфликт возникает потому что требование слишком крупное.
-FR-001 «Личный кабинет» → Must для одного, Could для другого.
-После декомпозиции: FR-001a «Просмотр профиля» = Must, FR-001b «Редактирование аватара» = Could.
-Конфликт исчезает.
+**1. Decompose the requirement**
+A conflict often arises because the requirement is too large.
+FR-001 "Personal account" → Must for one stakeholder, Could for another.
+After decomposition: FR-001a "View profile" = Must, FR-001b "Edit avatar" = Could.
+The conflict disappears.
 
-**2. Уточнение выгоды**
-Попросить каждого стейкхолдера ответить: «Что конкретно произойдёт если мы НЕ реализуем это в текущей версии?»
-Часто оказывается что «Must» был Must из-за неверного понимания скоупа или привычки.
+**2. Clarify the benefit**
+Ask each stakeholder: "What exactly happens if we DON'T implement this in the current version?"
+Often a "Must" turns out to be a Must due to a misunderstanding of scope or simple habit.
 
-**3. Взвешенное голосование**
-Автоматически применяется при агрегации: influence High = 3, Medium = 2, Low = 1.
-Результат прозрачен — BA может показать стейкхолдеру математику.
+**3. Weighted voting**
+Applied automatically during aggregation: influence High = 3, Medium = 2, Low = 1.
+The result is transparent — the BA can show the stakeholder the math.
 
-**4. Эскалация к спонсору**
-Для Must vs Won't при High/High influence — BA не решает сам.
-Протокол: зафиксировать конфликт в Decision Log (4.5), назначить meeting, пригласить спонсора.
+**4. Escalate to the sponsor**
+For Must vs. Won't with High/High influence — the BA does not decide alone.
+Protocol: record the conflict in the Decision Log (4.5), schedule a meeting, invite the sponsor.
 
-**5. Отложить требование**
-Если конфликт неразрешим за разумное время — переместить в Won't текущей сессии.
-Зафиксировать в Decision Log: «Отложено до получения дополнительной информации».
+**5. Defer the requirement**
+If the conflict cannot be resolved within a reasonable time, move it to Won't for the current session.
+Record in the Decision Log: "Deferred pending additional information."
 
 ---
 
-## Тип 2 — Dependency Violation
+## Type 2 — Dependency Violation
 
-### Суть проблемы
+### The core problem
 
-Если FR-B имеет тип связи `depends` от FR-A в репозитории 5.1, и:
+If FR-B has a `depends` link from FR-A in the 5.1 repository, and:
 - FR-B = Must
-- FR-A = Should или ниже
+- FR-A = Should or lower
 
-→ логическое противоречие: «обязательное» требование зависит от «необязательного».
+→ logical contradiction: a "mandatory" requirement depends on an "optional" one.
 
-### Варианты разрешения
+### Resolution options
 
-| Вариант | Когда применять |
+| Option | When to apply |
 |---------|----------------|
-| **Поднять FR-A до Must** | Если FR-A действительно ценен сам по себе |
-| **Понизить FR-B до Should** | Если нашли способ работать без FR-B в первой версии |
-| **Декомпозировать FR-B** | Выделить минимальную версию FR-B которая не зависит от FR-A |
-| **Реализовать FR-A частично** | Если зависимость частичная — уточнить границу |
+| **Raise FR-A to Must** | If FR-A is genuinely valuable on its own |
+| **Lower FR-B to Should** | If a way was found to work without FR-B in the first version |
+| **Decompose FR-B** | Extract a minimal version of FR-B that does not depend on FR-A |
+| **Implement FR-A partially** | If the dependency is partial — clarify the boundary |
 
-### Цепочки зависимостей
+### Dependency chains
 
-BFS-обход в 5.1 может показать что проблема глубже:
+A BFS traversal in 5.1 may reveal that the problem runs deeper:
 FR-C (Must) → FR-B (Should) → FR-A (Won't)
 
-В этом случае «поднять FR-A» может потянуть за собой переоценку всей цепочки.
-Инструмент `run_impact_analysis` из 5.1 показывает полную картину.
+In this case, "raising FR-A" may force a reassessment of the entire chain.
+The `run_impact_analysis` tool from 5.1 shows the full picture.
 
 ---
 
-## Тип 3 — Priority Inflation
+## Type 3 — Priority Inflation
 
-### Признаки
+### Signs
 
-- > 60% требований помечены как Must
-- Почти все требования одного стейкхолдера = Must
-- Must/Should расставлены без обоснования
+- > 60% of requirements are marked Must
+- Almost all of one stakeholder's requirements are Must
+- Must/Should are assigned without justification
 
-### Причины
+### Causes
 
-| Причина | Тактика |
+| Cause | Tactic |
 |---------|---------|
-| Стейкхолдер боится что «его» требования не войдут | Объяснить что Won't ≠ никогда |
-| Нет понимания ресурсных ограничений | Показать capacity: «в этот спринт войдёт 30 story points» |
-| Требования слишком крупные | Декомпозировать, потом приоритизировать заново |
-| Политическое давление | Эскалация к спонсору, использовать WSJF для объективизации |
+| Stakeholder fears that "their" requirements won't make it in | Explain that Won't ≠ never |
+| No understanding of resource constraints | Show capacity: "this sprint can fit 30 story points" |
+| Requirements are too large | Decompose, then re-prioritize |
+| Political pressure | Escalate to the sponsor, use WSJF to make it objective |
 
-### Тактика «Фиксированный бюджет»
+### "Fixed budget" tactic
 
-Эффективная техника для фасилитации:
-«У нас 10 Must-слотов. Вот список из 25 требований. Выберите 10.»
+An effective facilitation technique:
+"We have 10 Must slots. Here's a list of 25 requirements. Pick 10."
 
-Это принуждает к реальным trade-off и снижает inflation.
-Аналог в WSJF: явное ограничение по Job Size (capacity).
+This forces real trade-offs and reduces inflation.
+The WSJF equivalent: an explicit Job Size (capacity) cap.
 
 ---
 
-## Матрица конфликтов и action items для BA
+## Conflict matrix and action items for the BA
 
-| Ситуация | Серьёзность | Action для BA |
+| Situation | Severity | Action for the BA |
 |----------|-------------|---------------|
-| Must vs Won't, оба High influence | 🔴 | Эскалация к спонсору, Decision Log |
-| Must vs Won't, один Low influence | 🟠 | Взвешенное голосование, объяснить математику |
-| Dependency violation (Must → Won't) | 🔴 | Один из 4 вариантов выше, обязательно документировать |
-| >60% Must | 🟠 | Техника «фиксированного бюджета», переработать сессию |
-| Один стейкхолдер выставил всё Must | 🟡 | Индивидуальная беседа, уточнить критерии |
-| Should vs Could расхождение | 🟢 | Взвешенное голосование, обычно решается автоматически |
+| Must vs Won't, both High influence | 🔴 | Escalate to the sponsor, Decision Log |
+| Must vs Won't, one Low influence | 🟠 | Weighted voting, explain the math |
+| Dependency violation (Must → Won't) | 🔴 | One of the 4 options above, must be documented |
+| >60% Must | 🟠 | "Fixed budget" technique, rerun the session |
+| One stakeholder marked everything Must | 🟡 | Individual conversation, clarify criteria |
+| Should vs Could divergence | 🟢 | Weighted voting, usually resolves automatically |
 
 ---
 
-## Документирование конфликтов
+## Documenting conflicts
 
-**Каждый конфликт фиксируется:**
-- `req_id` — какое требование
+**Each conflict is recorded with:**
+- `req_id` — which requirement
 - `conflict_type` — stakeholder_conflict / dependency_violation / inflation
-- Стороны конфликта (stakeholder IDs)
-- Финальное решение + rationale
-- Кто принял решение (`decided_by`)
+- Parties to the conflict (stakeholder IDs)
+- Final decision + rationale
+- Who made the decision (`decided_by`)
 
-Эта информация:
-1. Уходит в Decision Log (4.5) — для прозрачности и аудита
-2. Хранится в снапшоте сессии приоритизации — для объяснения BA на 5.5 (Approve)
-3. Доступна PM для проектного плана
+This information:
+1. Goes into the Decision Log (4.5) — for transparency and audit
+2. Is stored in the prioritization session snapshot — so the BA can explain it during 5.5 (Approve)
+3. Is available to the PM for the project plan
 
 ---
 
-## Непрерывная приоритизация — когда пересматривать
+## Continuous prioritization — when to revisit
 
-По BABOK приоритеты живут и меняются. Триггеры для переприоритизации:
+Per BABOK, priorities live on and change over time. Triggers for re-prioritization:
 
-| Триггер | Что пересматривать |
+| Trigger | What to revisit |
 |---------|--------------------|
-| Получены оценки стоимости от разработчиков | Все требования — стоимость меняет восприятие |
-| Change Request принят (5.4) | Затронутые требования + их зависимости |
-| Изменился бизнес-контекст (стратегия, рынок) | Полная переоценка Business Value |
-| Закончился спринт/этап | Требования следующей итерации |
-| Стабильность требования упала (5.2: версия 1.4+) | Конкретное нестабильное требование |
-| Новый стейкхолдер добавлен в проект | Его требования + пересчёт весов influence |
+| Cost estimates received from developers | All requirements — cost changes perception |
+| Change Request accepted (5.4) | Affected requirements + their dependencies |
+| Business context changed (strategy, market) | Full Business Value reassessment |
+| Sprint/stage ended | Requirements for the next iteration |
+| Requirement stability dropped (5.2: version 1.4+) | The specific unstable requirement |
+| New stakeholder added to the project | Their requirements + recalculated influence weights |

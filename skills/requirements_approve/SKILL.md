@@ -1,205 +1,206 @@
 ---
 name: requirements_approve
 description: >
-  Скилл BABOK 5.5 — Утверждение требований. Используй этот скилл когда требования
-  верифицированы и готовы к официальному согласованию стейкхолдерами, нужно создать
-  Requirements Baseline, получить подпись/одобрение или закрыть условное одобрение.
-  Триггеры: «утверждение требований», «approve requirements», «baseline», «согласование»,
-  «одобрение стейкхолдеров», «подписать требования», «requirements sign-off».
-project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
+  BABOK 5.5 skill — Approve Requirements. Use this skill when requirements have been
+  verified and are ready for formal sign-off by stakeholders, when a Requirements Baseline
+  needs to be created, when a signature/approval needs to be obtained, or when a conditional
+  approval needs to be closed.
+  Triggers: "approve requirements", "baseline", "sign-off", "stakeholder approval",
+  "sign off on requirements", "requirements sign-off".
+project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: BABOK 5.5 — Approve Requirements
 
-## Когда использовать этот скилл
+## When to use this skill
 
-Используй этот скилл когда:
-- Требования верифицированы (прошли 4.3) и готовы к официальному согласованию
-- Нужно получить одобрение стейкхолдеров перед передачей в разработку
-- Нужно создать official Requirements Baseline
-- Стейкхолдер выставил условное одобрение и нужно закрыть условие
-- Нужно проверить готовность пакета требований к baseline
+Use this skill when:
+- Requirements have been verified (passed 4.3) and are ready for formal sign-off
+- Stakeholder approval is needed before handoff to development
+- An official Requirements Baseline needs to be created
+- A stakeholder issued a conditional approval and the condition needs to be closed
+- The readiness of a requirements package for baseline needs to be checked
 
 ---
 
-## Входная информация
+## Input information
 
-| Источник | Что берём |
+| Source | What we take |
 |----------|-----------|
-| 4.3 (Confirm Elicitation) | Верифицированные требования |
-| 5.1 (Trace Requirements) | Матрица трассировки, статусы требований |
-| 5.2 (Maintain Requirements) | Версии, история изменений, stability |
-| 5.3 (Prioritize Requirements) | Приоритеты: Must/Should/Could/Won't, WSJF |
-| 5.4 (Assess Changes) | CR Decision Records, under_change требования |
-| 3.2 / 4.2 | Реестр стейкхолдеров: роли, authority, influence |
+| 4.3 (Confirm Elicitation) | Verified requirements |
+| 5.1 (Trace Requirements) | Traceability matrix, requirement statuses |
+| 5.2 (Maintain Requirements) | Versions, change history, stability |
+| 5.3 (Prioritize Requirements) | Priorities: Must/Should/Could/Won't, WSJF |
+| 5.4 (Assess Changes) | CR Decision Records, under_change requirements |
+| 3.2 / 4.2 | Stakeholder registry: roles, authority, influence |
 
 ---
 
-## Pipeline задачи
+## Task pipeline
 
 ```
-prepare_approval_package → record_approval_decision (×N стейкхолдеров)
-  → [close_approval_condition (при Conditional)]
+prepare_approval_package → record_approval_decision (×N stakeholders)
+  → [close_approval_condition (for Conditional)]
   → check_approval_status
   → create_requirements_baseline
 ```
 
 ---
 
-## Инструменты MCP
+## MCP tools
 
 ### 1. `prepare_approval_package`
-**Когда:** Перед началом сессии согласования. Собирает пакет требований для стейкхолдеров.
+**When:** Before starting an approval session. Assembles a requirements package for stakeholders.
 
-**Что делает:**
-- Берёт требования из репозитория 5.1 по req_ids или пакету
-- Добавляет матрицу трассировки, приоритеты (5.3), CR Decision Records (5.4)
-- Формирует Markdown-документ, адаптированный под аудиторию
+**What it does:**
+- Pulls requirements from the 5.1 repository by req_ids or package
+- Adds the traceability matrix, priorities (5.3), CR Decision Records (5.4)
+- Generates a Markdown document tailored to the audience
 
-**Параметры:**
-- `project_name` — название проекта
-- `package_id` — уникальный ID пакета (APKG-001)
-- `req_ids_json` — JSON-список ID требований для пакета
-- `approach` — `predictive` или `agile`
+**Parameters:**
+- `project_name` — project name
+- `package_id` — unique package ID (APKG-001)
+- `req_ids_json` — JSON list of requirement IDs for the package
+- `approach` — `predictive` or `agile`
 - `audience` — `business` / `developer` / `regulator` / `all`
-- `package_title` — название пакета (например: «Фича: Онбординг пользователей»)
-- `sprint_number` — номер спринта (только для agile)
+- `package_title` — package title (e.g., "Feature: User Onboarding")
+- `sprint_number` — sprint number (agile only)
 
 ---
 
 ### 2. `record_approval_decision`
-**Когда:** После получения ответа от каждого стейкхолдера.
-Вызывается по одному разу на каждого стейкхолдера (аналог add_stakeholder_scores в 5.3).
+**When:** After receiving a response from each stakeholder.
+Called once per stakeholder (analogous to add_stakeholder_scores in 5.3).
 
-**Что делает:**
-- Фиксирует решение: `approved` / `conditional` / `rejected` / `abstained`
-- При `conditional` — записывает условие, дедлайн, ответственного
-- При `rejected` — анализирует контекст из 5.3/5.4 и флагует конфликты
-- Обновляет статус требований в репозитории 5.1
+**What it does:**
+- Records the decision: `approved` / `conditional` / `rejected` / `abstained`
+- For `conditional` — records the condition, deadline, and owner
+- For `rejected` — analyzes context from 5.3/5.4 and flags conflicts
+- Updates requirement status in the 5.1 repository
 
-**Параметры:**
+**Parameters:**
 - `project_name`, `package_id`
-- `stakeholder_name` — имя стейкхолдера
+- `stakeholder_name` — stakeholder name
 - `stakeholder_raci` — `accountable` / `responsible` / `consulted`
 - `decision` — `approved` / `conditional` / `rejected` / `abstained`
-- `req_decisions_json` — JSON: решения по отдельным требованиям пакета.
-  Формат: `[{"req_id": "FR-001", "decision": "approved"}, {"req_id": "FR-002", "decision": "conditional", "condition_text": "...", "condition_deadline": "2026-04-01", "condition_owner": "Иванов"}]`
-  Если пусто (`[]`) — решение применяется ко всем требованиям пакета целиком.
-- `rejection_reason` — обязательно при decision=rejected
-- `comment` — любой комментарий стейкхолдера
+- `req_decisions_json` — JSON: decisions for individual requirements in the package.
+  Format: `[{"req_id": "FR-001", "decision": "approved"}, {"req_id": "FR-002", "decision": "conditional", "condition_text": "...", "condition_deadline": "2026-04-01", "condition_owner": "Smith"}]`
+  If empty (`[]`) — the decision applies to all requirements in the package as a whole.
+- `rejection_reason` — required when decision=rejected
+- `comment` — any comment from the stakeholder
 
 ---
 
 ### 3. `close_approval_condition`
-**Когда:** После выполнения условия по Conditional-одобрению.
+**When:** After a condition on a Conditional approval has been satisfied.
 
-**Что делает:**
-- Находит открытое условие по пакету, требованию и стейкхолдеру
-- Фиксирует что условие выполнено (с датой и описанием)
-- Обновляет статус требования на `approved`
+**What it does:**
+- Finds the open condition by package, requirement, and stakeholder
+- Records that the condition has been satisfied (with date and description)
+- Updates the requirement status to `approved`
 
-**Параметры:**
+**Parameters:**
 - `project_name`, `package_id`
-- `req_id` — требование с условием
-- `stakeholder_name` — кто выставил условие
-- `resolution_notes` — как условие было закрыто
+- `req_id` — requirement with the condition
+- `stakeholder_name` — who set the condition
+- `resolution_notes` — how the condition was closed
 
 ---
 
 ### 4. `check_approval_status`
-**Когда:** В любой момент для проверки готовности пакета к baseline.
+**When:** At any point, to check whether the package is ready for baseline.
 
-**Что делает:**
-- Считает статистику: approved / conditional / rejected / pending / abstained
-- Выявляет просроченные conditional и стейкхолдеров без ответа
-- Флагует rejected от Accountable-стейкхолдеров (блокеры)
-- Даёт вердикт: готов / не готов к baseline, с причинами
+**What it does:**
+- Computes statistics: approved / conditional / rejected / pending / abstained
+- Identifies overdue conditionals and stakeholders without a response
+- Flags rejections from Accountable stakeholders (blockers)
+- Gives a verdict: ready / not ready for baseline, with reasons
 
-**Параметры:**
+**Parameters:**
 - `project_name`, `package_id`
 
 ---
 
 ### 5. `create_requirements_baseline`
-**Когда:** После того как пакет готов к baseline (check_approval_status = ✅).
+**When:** Once the package is ready for baseline (check_approval_status = ✅).
 
-**Что делает:**
-- Создаёт snapshot пакета в `{project}_approval_history.json`
-- Обновляет статус approved требований в репозитории 5.1
-- Генерирует Approval Record (Markdown) через save_artifact
-- Этот артефакт → 4.4 (коммуникация) и Глава 6 (вход для разработки)
+**What it does:**
+- Creates a package snapshot in `{project}_approval_history.json`
+- Updates the status of approved requirements in the 5.1 repository
+- Generates an Approval Record (Markdown) via save_artifact
+- This artifact feeds → 4.4 (communication) and Chapter 6 (input for development)
 
-**Параметры:**
+**Parameters:**
 - `project_name`, `package_id`
-- `baseline_version` — версия baseline (например: `v1.0`, `v1.1`, `sprint-5`)
-- `decided_by` — кто подтверждает создание baseline (спонсор / PO)
-- `force` — `true` чтобы создать baseline даже при наличии предупреждений
-  (rejected от Consulted, открытые условия). По умолчанию `false`.
+- `baseline_version` — baseline version (e.g., `v1.0`, `v1.1`, `sprint-5`)
+- `decided_by` — who confirms creation of the baseline (sponsor / PO)
+- `force` — `true` to create the baseline even with warnings present
+  (rejected from Consulted, open conditions). Defaults to `false`.
 
 ---
 
-## Алгоритм работы BA
+## BA workflow
 
-### Сценарий 1: Predictive — baseline в конце фазы
+### Scenario 1: Predictive — baseline at the end of the phase
 
-1. Получить список verified требований из 4.3
-2. **`prepare_approval_package`** — собрать пакет, `approach=predictive`, `audience=all`
-3. Разослать пакет стейкхолдерам (через 4.4 `prepare_communication_package`)
-4. После ответа каждого: **`record_approval_decision`**
-5. Если Conditional: согласовать изменения, затем **`close_approval_condition`**
-6. **`check_approval_status`** — проверить готовность
-7. **`create_requirements_baseline`** — зафиксировать baseline v1.0
+1. Get the list of verified requirements from 4.3
+2. **`prepare_approval_package`** — assemble the package, `approach=predictive`, `audience=all`
+3. Send the package to stakeholders (via 4.4 `prepare_communication_package`)
+4. After each response: **`record_approval_decision`**
+5. If Conditional: agree on the changes, then **`close_approval_condition`**
+6. **`check_approval_status`** — check readiness
+7. **`create_requirements_baseline`** — record baseline v1.0
 
-### Сценарий 2: Agile — Sprint Backlog Baseline
+### Scenario 2: Agile — Sprint Backlog Baseline
 
-1. Отобрать требования для следующего спринта
+1. Select requirements for the next sprint
 2. **`prepare_approval_package`** — `approach=agile`, `sprint_number=N`
-3. Sprint Planning: Product Owner рассматривает пакет
-4. **`record_approval_decision`** — фиксируем решение PO
+3. Sprint Planning: Product Owner reviews the package
+4. **`record_approval_decision`** — record the PO's decision
 5. **`create_requirements_baseline`** — baseline `sprint-N`
 
-### Сценарий 3: Конфликт на этапе согласования
+### Scenario 3: Conflict during the approval stage
 
-1. **`record_approval_decision`** — стейкхолдер отклонил требование
-2. Система автоматически показывает конфликт с 5.3 / 5.4
-3. BA анализирует: это Accountable или Consulted стейкхолдер?
-   - Consulted: документируем риск, baseline возможен
-   - Accountable: нужно разрешить конфликт перед baseline
-4. Если нужно изменить требование → 5.2 `update_requirement`, потом повтор с шага 2
-5. Если нужен новый CR → 5.4 `open_cr`, затем повтор согласования
+1. **`record_approval_decision`** — a stakeholder rejected a requirement
+2. The system automatically surfaces a conflict with 5.3 / 5.4
+3. The BA analyzes: is this an Accountable or a Consulted stakeholder?
+   - Consulted: document the risk, baseline is still possible
+   - Accountable: the conflict must be resolved before baseline
+4. If the requirement needs to change → 5.2 `update_requirement`, then repeat from step 2
+5. If a new CR is needed → 5.4 `open_cr`, then repeat the approval process
 
 ---
 
-## Статусы требований в репозитории 5.1
+## Requirement statuses in the 5.1 repository
 
-| Статус | Значение |
+| Status | Meaning |
 |--------|----------|
-| `verified` | Прошло проверку качества (4.3), готово к согласованию |
-| `pending_approval` | Отправлено на согласование, ожидает ответа |
-| `approved` | Официально одобрено, готово к разработке |
-| `conditional_approved` | Одобрено с условием (условие открыто) |
-| `rejected` | Отклонено, требует доработки или risk assessment |
-| `under_change` | Затронуто CR из 5.4, идёт оценка изменения |
+| `verified` | Passed quality checks (4.3), ready for approval |
+| `pending_approval` | Sent for approval, awaiting response |
+| `approved` | Officially approved, ready for development |
+| `conditional_approved` | Approved with a condition (condition open) |
+| `rejected` | Rejected, requires rework or risk assessment |
+| `under_change` | Affected by a CR from 5.4, change assessment in progress |
 
 ---
 
-## Связь с другими задачами
+## Relationship to other tasks
 
-**Зависит от:**
-- 4.3 → verified требования (обязательный вход)
-- 5.1 → репозиторий с трассировкой
-- 5.2 → статусы и версии требований
-- 5.3 → приоритеты (контекст для анализа конфликтов)
-- 5.4 → CR Decision Records (контекст изменений)
+**Depends on:**
+- 4.3 → verified requirements (mandatory input)
+- 5.1 → traceability repository
+- 5.2 → requirement statuses and versions
+- 5.3 → priorities (context for conflict analysis)
+- 5.4 → CR Decision Records (context on changes)
 
-**Даёт:**
-- 4.4 → Approval Record для коммуникации
-- Глава 6 → approved требования как вход для разработки решения
+**Provides:**
+- 4.4 → Approval Record for communication
+- Chapter 6 → approved requirements as input for solution development
 
 ---
 
-## Справочные материалы
+## Reference materials
 
-При необходимости читай:
-- `references/approval_guide.md` — полный справочник: роли, статусы, baseline,
-  Predictive vs Agile, типичные ошибки
+Read as needed:
+- `references/approval_guide.md` — full reference: roles, statuses, baseline,
+  Predictive vs Agile, common mistakes
