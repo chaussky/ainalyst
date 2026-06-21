@@ -1,227 +1,227 @@
-# Справочник: Анализ текущего состояния (BABOK 6.1)
+# Reference Guide: Analyze Current State (BABOK 6.1)
 
-## Назначение
+## Purpose
 
-Анализ текущего состояния — точка отсчёта для всего проекта изменений.
-Цель: понять **почему** нужно измениться и **что** именно это затронет.
+Analyzing the current state is the starting point for the entire change project.
+Goal: understand **why** change is needed and **what** exactly it will affect.
 
-BABOK выделяет два ключевых выхода задачи 6.1:
-1. **Описание текущего состояния** — структурированный анализ 8 элементов
-2. **Бизнес-потребности** — формализованные причины изменений (input для 6.2)
-
----
-
-## 8 элементов анализа текущего состояния
-
-### 1. Бизнес-потребности (`business_needs`)
-
-**Что описываем:**
-- Проблемы, возможности или требования внешней среды, инициировавшие изменение
-- Стратегическая важность — почему это важно именно сейчас
-- Стоимость бездействия (Cost of Inaction) — что произойдёт если не менять
-
-**Типичные симптомы (которые BA путает с потребностями):**
-- «Жалобы клиентов растут» — симптом, не потребность
-- «Нет единого реестра» — симптом отсутствия системы
-- «Медленный процесс» — симптом, нужен RCA
-
-**Правильная формулировка потребности:**
-- Чёткая, измеримая проблема или возможность
-- Привязка к бизнес-результату
-- Пример: «Время обработки заявки выросло с 2 до 8 часов, потери клиентов +18% за год»
-
-**Вопросы для BA:**
-- Что именно не работает или что мы упускаем?
-- Какова стоимость текущей ситуации в деньгах/времени?
-- Что изменилось во внешней среде, что сделало это критичным?
-- Каков дедлайн — когда нужно решить?
+BABOK identifies two key outputs of task 6.1:
+1. **Current state description** — a structured analysis of 8 elements
+2. **Business needs** — formalized reasons for change (input for 6.2)
 
 ---
 
-### 2. Организационная структура и культура (`org_structure`)
+## 8 elements of current state analysis
 
-**Что описываем:**
-- Структура организации (подразделения, роли, иерархия)
-- Культура принятия решений: централизованная / децентрализованная
-- Неформальные центры влияния (кто реально принимает решения)
-- Готовность к изменениям (Change Readiness)
+### 1. Business needs (`business_needs`)
 
-**Что важно зафиксировать:**
-- Кто от текущего состояния выигрывает (будут сопротивляться изменениям)
-- Где есть «силосы» (разрыв коммуникации между подразделениями)
-- Культурные паттерны: «так всегда делали», сопротивление инструментам
+**What we describe:**
+- Problems, opportunities, or external environment requirements that initiated the change
+- Strategic importance — why this matters right now
+- Cost of Inaction — what will happen if nothing changes
 
-**Вопросы для BA:**
-- Как принимаются решения по нашей теме?
-- Есть ли конфликты между подразделениями по данной теме?
-- Как команды относятся к изменениям?
+**Typical symptoms (which the BA confuses with needs):**
+- "Customer complaints are increasing" — a symptom, not a need
+- "There's no unified registry" — a symptom of a missing system
+- "The process is slow" — a symptom, RCA is needed
 
----
+**A correctly formulated need:**
+- A clear, measurable problem or opportunity
+- Tied to a business outcome
+- Example: "Request processing time increased from 2 to 8 hours, customer churn +18% year over year"
 
-### 3. Возможности и процессы (`capabilities`)
-
-**Что описываем:**
-- Ключевые бизнес-процессы (as-is), связанные с областью изменений
-- Возможности организации: что умеет хорошо, что — плохо
-- Пробелы в возможностях (Capability Gaps): что организация не умеет делать
-
-**Метрики для сбора:**
-- Время выполнения шагов процесса
-- Количество ошибок / переделок
-- Количество ручных шагов vs автоматизированных
-- Точки передачи между подразделениями (handoffs)
-
-**Вопросы для BA:**
-- Как выглядит процесс шаг за шагом (swim-lane)?
-- Где возникают задержки или ошибки?
-- Что делается вручную, хотя могло бы быть автоматизировано?
-- Где есть дублирование работы?
+**Questions for the BA:**
+- What exactly isn't working, or what are we missing?
+- What is the cost of the current situation in money/time?
+- What changed in the external environment that made this critical?
+- What's the deadline — when does this need to be resolved?
 
 ---
 
-### 4. Технологии и инфраструктура (`technology`)
+### 2. Organizational structure and culture (`org_structure`)
 
-**Что описываем:**
-- Текущий технологический стек (системы, базы данных, интеграции)
-- Состояние: актуальная версия / legacy / end-of-life
-- Интеграционная схема: как системы взаимодействуют
-- Технический долг, ограничения, узкие места
+**What we describe:**
+- The structure of the organization (departments, roles, hierarchy)
+- Decision-making culture: centralized / decentralized
+- Informal centers of influence (who actually makes decisions)
+- Change Readiness
 
-**Метрики для сбора:**
-- Время отклика систем
-- Частота инцидентов / downtime
-- Стоимость поддержки
-- Возраст систем
+**What's important to capture:**
+- Who benefits from the current state (they will resist change)
+- Where "silos" exist (communication gaps between departments)
+- Cultural patterns: "that's how it's always been done," resistance to tools
 
-**Вопросы для BA:**
-- Какие системы задействованы в текущем процессе?
-- Есть ли системы, которые планируют заменить/вывести?
-- Где возникают технические сбои чаще всего?
-- Какие интеграции нестабильны?
+**Questions for the BA:**
+- How are decisions made on our topic?
+- Are there conflicts between departments on this topic?
+- How do teams feel about change?
 
 ---
 
-### 5. Политики (`policies`)
+### 3. Capabilities and processes (`capabilities`)
 
-**Что описываем:**
-- Нормативные документы (внутренние: регламенты, процедуры, стандарты)
-- Внешнее регулирование (законы, отраслевые стандарты, требования регуляторов)
-- Политики, которые ограничивают или определяют текущий процесс
+**What we describe:**
+- Key business processes (as-is) related to the area of change
+- Organizational capabilities: what's done well, what isn't
+- Capability Gaps: what the organization is unable to do
 
-**Частая ошибка:** не учитывать устаревшие политики как источник проблем.
-Процесс часто «кривой» именно потому что написан под регламент 2012 года.
+**Metrics to collect:**
+- Process step execution time
+- Number of errors / reworks
+- Number of manual steps vs. automated steps
+- Handoff points between departments
 
-**Вопросы для BA:**
-- Какие регламенты/политики регулируют текущий процесс?
-- Есть ли регуляторные требования, которым мы должны соответствовать?
-- Есть ли политики, которые конфликтуют между собой?
-- Актуальны ли существующие политики или они устарели?
-
----
-
-### 6. Бизнес-архитектура (`architecture`)
-
-**Что описываем:**
-- Как все элементы (процессы, системы, данные, роли) связаны и работают вместе
-- Ценностные потоки (Value Streams): как создаётся ценность от начала до конца
-- Операционная модель: как организация выполняет свою миссию
-
-**Это уровень «как система работает в целом»**, а не детали каждого элемента.
-Полезно для понимания системных эффектов: изменение одного элемента влияет на всё.
-
-**Вопросы для BA:**
-- Как процесс связан с другими процессами организации?
-- Где создаётся ценность для клиента в текущей схеме?
-- Какие зависимости между системами критичны?
+**Questions for the BA:**
+- What does the process look like step by step (swim-lane)?
+- Where do delays or errors occur?
+- What's done manually that could be automated?
+- Where is work duplicated?
 
 ---
 
-### 7. Внутренние активы (`assets`)
+### 4. Technology and infrastructure (`technology`)
 
-**Что описываем:**
-- Финансовые активы (бюджеты, инвестиции в текущие системы)
-- Интеллектуальные активы (знания, документация, ноу-хау)
-- Физические активы (оборудование, офисы)
-- Человеческий капитал (экспертиза, ключевые сотрудники)
+**What we describe:**
+- The current technology stack (systems, databases, integrations)
+- State: up to date / legacy / end-of-life
+- Integration map: how systems interact
+- Technical debt, constraints, bottlenecks
 
-**Почему важно:** активы определяют ограничения и возможности.
-Если ключевой эксперт уйдёт — процесс сломается. Если система самортизирована —
-есть основание для замены без дополнительного обоснования.
+**Metrics to collect:**
+- System response time
+- Incident frequency / downtime
+- Support cost
+- System age
 
-**Вопросы для BA:**
-- Какие активы критичны для текущего процесса?
-- Есть ли активы в состоянии risk (устаревшие, ненадёжные)?
-- Какова реальная стоимость владения текущим решением?
-
----
-
-### 8. Внешние воздействия (`external`)
-
-**Что описываем:**
-- Конкуренты: что они делают иначе?
-- Рыночные тренды: куда движется отрасль?
-- Регуляторные изменения: что вступает в силу?
-- Технологические тренды: что меняет правила игры?
-- Клиентские ожидания: что изменилось в поведении клиентов?
-
-**PEST-анализ как структура:** Political / Economic / Social / Technological
-
-**Вопросы для BA:**
-- Что делают конкуренты, чего мы не делаем?
-- Какие регуляторные изменения ожидаются в ближайшее время?
-- Как изменились ожидания клиентов?
+**Questions for the BA:**
+- Which systems are involved in the current process?
+- Are there systems planned for replacement/decommissioning?
+- Where do technical failures occur most often?
+- Which integrations are unstable?
 
 ---
 
-## Рекомендуемый набор элементов по типу инициативы
+### 5. Policies (`policies`)
 
-| Тип инициативы | Обязательно | Дополнительно |
+**What we describe:**
+- Internal regulatory documents (procedures, processes, standards)
+- External regulation (laws, industry standards, regulator requirements)
+- Policies that constrain or define the current process
+
+**A common mistake:** not accounting for outdated policies as a source of problems.
+A process is often "broken" precisely because it was written for a 2012-era regulation.
+
+**Questions for the BA:**
+- What policies/procedures govern the current process?
+- Are there regulatory requirements we must comply with?
+- Are there policies that conflict with each other?
+- Are the existing policies current, or are they outdated?
+
+---
+
+### 6. Business architecture (`architecture`)
+
+**What we describe:**
+- How all the elements (processes, systems, data, roles) are connected and work together
+- Value Streams: how value is created from start to finish
+- Operating model: how the organization carries out its mission
+
+**This is the "how the system works as a whole" level**, not the details of each element.
+Useful for understanding systemic effects: a change to one element affects everything.
+
+**Questions for the BA:**
+- How is the process connected to other processes in the organization?
+- Where is value created for the customer in the current setup?
+- Which dependencies between systems are critical?
+
+---
+
+### 7. Internal assets (`assets`)
+
+**What we describe:**
+- Financial assets (budgets, investments in current systems)
+- Intellectual assets (knowledge, documentation, know-how)
+- Physical assets (equipment, offices)
+- Human capital (expertise, key personnel)
+
+**Why this matters:** assets determine constraints and opportunities.
+If a key expert leaves, the process breaks. If a system is fully depreciated,
+there's grounds for replacement without additional justification.
+
+**Questions for the BA:**
+- Which assets are critical to the current process?
+- Are there assets at risk (outdated, unreliable)?
+- What's the real total cost of ownership of the current solution?
+
+---
+
+### 8. External influences (`external`)
+
+**What we describe:**
+- Competitors: what are they doing differently?
+- Market trends: where is the industry headed?
+- Regulatory changes: what's coming into effect?
+- Technology trends: what's changing the rules of the game?
+- Customer expectations: what's changed in customer behavior?
+
+**PEST analysis as a structure:** Political / Economic / Social / Technological
+
+**Questions for the BA:**
+- What are competitors doing that we aren't?
+- What regulatory changes are expected in the near term?
+- How have customer expectations changed?
+
+---
+
+## Recommended element set by initiative type
+
+| Initiative type | Mandatory | Additional |
 |----------------|-------------|----------------|
 | `process_improvement` | business_needs, capabilities, technology, policies | org_structure, architecture |
 | `new_system` | business_needs, capabilities, technology, architecture | policies, assets |
 | `regulatory` | business_needs, policies, technology, external | org_structure, capabilities |
 | `cost_reduction` | business_needs, capabilities, assets, external | technology, policies |
-| `market_opportunity` | Все 8 элементов | — |
+| `market_opportunity` | All 8 elements | — |
 
 ---
 
-## Глубина анализа
+## Depth of analysis
 
-### `light` (3–4 элемента)
-- Фокус на бизнес-потребностях и ключевых процессах
-- Используется для небольших инициатив с понятной областью
-- Срок: 1–2 рабочих дня
+### `light` (3–4 elements)
+- Focus on business needs and key processes
+- Used for smaller initiatives with a clear scope
+- Timeframe: 1–2 business days
 
-### `standard` (5–6 элементов)
-- Добавляем технологии и политики
-- Большинство проектов
-- Срок: 3–5 рабочих дней
+### `standard` (5–6 elements)
+- Adds technology and policies
+- Most projects
+- Timeframe: 3–5 business days
 
-### `deep` (все 8 элементов)
-- Полный срез организации
-- Стратегические изменения, рыночные возможности, compliance
-- Срок: 1–2 недели
+### `deep` (all 8 elements)
+- A full cross-section of the organization
+- Strategic change, market opportunities, compliance
+- Timeframe: 1–2 weeks
 
 ---
 
-## Источники данных для каждого элемента
+## Data sources for each element
 
-| Источник | Что даёт |
+| Source | What it provides |
 |----------|----------|
-| `elicitation` | Результаты 4.2/4.3 — структурированные данные из интервью и сессий |
-| `document` | Регламенты, отчёты, аналитика, BPM-диаграммы |
-| `observation` | Наблюдение за процессом на рабочем месте |
-| `interview` | Целевые интервью (если не через 4.2) |
-| `other` | Внешние источники: отраслевые отчёты, данные регуляторов |
+| `elicitation` | Results from 4.2/4.3 — structured data from interviews and sessions |
+| `document` | Procedures, reports, analytics, BPM diagrams |
+| `observation` | Observing the process on-site |
+| `interview` | Targeted interviews (if not done via 4.2) |
+| `other` | External sources: industry reports, regulator data |
 
 ---
 
-## Связь с другими задачами BABOK
+## Relationship to other BABOK tasks
 
-| Задача | Как использует результаты 6.1 |
+| Task | How it uses 6.1 results |
 |--------|-------------------------------|
-| **6.2** Define Future State | Текущее состояние — основа для определения разрывов (gap analysis) |
-| **6.4** Assess Risks | Элементы текущего состояния — источник рисков |
-| **7.3** Validate Requirements | `set_business_context` предзаполняется из 6.1 (ADR-055) |
-| **7.6** Recommend Solution | RCA и бизнес-потребности влияют на оценку ценности |
-| **5.1** Trace Requirements | Бизнес-потребности (BN-xxx) — upstream-вершины графа трассировки |
+| **6.2** Define Future State | Current state is the foundation for identifying gaps (gap analysis) |
+| **6.4** Assess Risks | Current state elements are a source of risks |
+| **7.3** Validate Requirements | `set_business_context` is pre-filled from 6.1 (ADR-055) |
+| **7.6** Recommend Solution | RCA and business needs influence the value assessment |
+| **5.1** Trace Requirements | Business needs (BN-xxx) are upstream nodes of the traceability graph |

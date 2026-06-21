@@ -1,243 +1,243 @@
 ---
 name: current_state
 description: >
-  Скилл BABOK 6.1 — Анализ текущего состояния (as-is). Используй этот скилл когда
-  BA хочет понять текущее состояние бизнеса, сформулировать бизнес-потребности,
-  провести RCA (Root Cause Analysis) или описать проблемы организации.
-  Триггеры: «текущее состояние», «as-is», «проблема», «бизнес-потребность»,
-  «корневая причина», «current state», «analyze current state», «почему так происходит».
-project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
+  BABOK 6.1 skill — Analyze Current State (as-is). Use this skill when the BA
+  wants to understand the current state of the business, formulate business
+  needs, conduct RCA (Root Cause Analysis), or describe organizational problems.
+  Triggers: "current state", "as-is", "problem", "business need",
+  "root cause", "analyze current state", "why is this happening".
+project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: Analyze Current State (BABOK 6.1)
 
-## Когда читать этот скилл
+## When to read this skill
 
-Читай этот файл когда:
-- BA говорит «нужно понять текущее состояние», «провести анализ as-is», «описать проблему»
-- BA хочет сформулировать бизнес-потребности
-- BA проводит RCA (Root Cause Analysis)
-- Запрос содержит: «текущее состояние», «as-is», «проблема», «бизнес-потребность»,
-  «корневая причина», «анализ», «current state»
+Read this file when:
+- The BA says "I need to understand the current state," "run an as-is analysis," "describe the problem"
+- The BA wants to formulate business needs
+- The BA is conducting RCA (Root Cause Analysis)
+- The request contains: "current state", "as-is", "problem", "business need",
+  "root cause", "analysis", "current state"
 
-## Что это за задача
+## What this task is about
 
-BABOK 6.1 — Analyze Current State — точка отсчёта для всего проекта изменений.
+BABOK 6.1 — Analyze Current State — the starting point for the entire change project.
 
-**Два ключевых выхода:**
-1. **Описание текущего состояния** — структурированный анализ 8 элементов (что есть сейчас)
-2. **Бизнес-потребности (BN-xxx)** — формализованные причины изменений (input для 6.2)
+**Two key outputs:**
+1. **Current state description** — structured analysis of 8 elements (what exists now)
+2. **Business needs (BN-xxx)** — formalized reasons for change (input for 6.2)
 
-**Почему это важно:**
-- Без анализа текущего состояния — нет понимания, что именно меняем и почему
-- Бизнес-потребности — upstream-вершины всей трассировки (BN → BR → FR → TC)
-- RCA отличает симптомы от причин: решение точное, не «лечим симптомы»
-
----
-
-## MCP-инструменты (6 шт.)
-
-| Инструмент | Когда вызывать |
-|------------|----------------|
-| `scope_current_state` | Первый шаг — скоуп и контракт анализа |
-| `capture_current_state_element` | Для каждого элемента из скоупа (итеративно) |
-| `run_root_cause_analysis` | После сбора данных, перед формулировкой BN |
-| `define_business_needs` | После RCA — формулировать и регистрировать BN |
-| `check_current_state_completeness` | Перед финализацией — coverage check |
-| `save_current_state` | Финальный шаг — Markdown-отчёт + проброс в 7.3 |
+**Why this matters:**
+- Without a current state analysis, there's no understanding of what exactly we're changing and why
+- Business needs are the upstream nodes of the entire traceability chain (BN → BR → FR → TC)
+- RCA distinguishes symptoms from causes: the solution is precise, not "treating symptoms"
 
 ---
 
-## Алгоритм работы
+## MCP tools (6)
 
-### Шаг 1 — Скоуп (обязательно первым)
+| Tool | When to call |
+|------|----------------|
+| `scope_current_state` | First step — scope and contract for the analysis |
+| `capture_current_state_element` | For each element in scope (iteratively) |
+| `run_root_cause_analysis` | After data collection, before formulating BN |
+| `define_business_needs` | After RCA — formulate and register BN |
+| `check_current_state_completeness` | Before finalization — coverage check |
+| `save_current_state` | Final step — Markdown report + handoff to 7.3 |
 
-Вызов `scope_current_state`. Фиксирует явный контракт анализа.
+---
 
-**Вопросы BA:**
-- Что инициировало этот проект? (process_improvement / new_system / regulatory / cost_reduction / market_opportunity)
-- Сколько времени есть на анализ? → выбор глубины (light / standard / deep)
-- Есть ли готовые результаты выявления из 4.3? → session_ids
+## Workflow algorithm
 
-**Рекомендации по elements_in_scope по умолчанию:**
+### Step 1 — Scope (mandatory first step)
+
+Call `scope_current_state`. Fixes an explicit contract for the analysis.
+
+**Questions for the BA:**
+- What initiated this project? (process_improvement / new_system / regulatory / cost_reduction / market_opportunity)
+- How much time is available for the analysis? → choice of depth (light / standard / deep)
+- Are there ready elicitation results from 4.3? → session_ids
+
+**Default recommendations for elements_in_scope:**
 - `process_improvement` → business_needs, capabilities, technology, policies
 - `new_system` → business_needs, capabilities, technology, architecture
 - `regulatory` → business_needs, policies, technology, external
 - `cost_reduction` → business_needs, capabilities, assets, external
-- `market_opportunity` → все 8 элементов (deep)
+- `market_opportunity` → all 8 elements (deep)
 
-Подробнее о 8 элементах: читай `references/current_state_guide.md`
-
----
-
-### Шаг 2 — Сбор данных по элементам (итеративно)
-
-Вызов `capture_current_state_element` для каждого элемента из скоупа.
-
-**Порядок работы:**
-1. Начинай с `business_needs` — это фундамент
-2. Потом `capabilities` и `technology` — где происходит проблема
-3. Потом `policies` — что мешает или что требуется
-4. По необходимости: `org_structure`, `architecture`, `assets`, `external`
-
-**Как помогать BA заполнять элементы:**
-
-Для каждого элемента задай вопросы (из `references/current_state_guide.md`),
-помоги структурировать ответы. Результат — конкретные, измеримые описания.
-
-**Признак качественного описания:**
-- Есть цифры (метрики): время, деньги, частота, процент ошибок
-- Есть pain_points — симптомы, жалобы, наблюдения
-- Понятен источник информации (sources)
-
-**Признак плохого описания:**
-- «Процесс неэффективный» — слишком общо
-- «Нет автоматизации» — симптом, не описание состояния
-- Нет метрик и нет источников
+For more on the 8 elements: read `references/current_state_guide.md`
 
 ---
 
-### Шаг 3 — Root Cause Analysis
+### Step 2 — Collect data by element (iteratively)
 
-Вызов `run_root_cause_analysis` для каждой ключевой проблемы.
+Call `capture_current_state_element` for each element in scope.
 
-**Выбор техники (подробнее: `references/rca_guide.md`):**
-- `five_whys` — одна проблема, линейная цепочка, быстро
-- `fishbone` — несколько категорий причин (Люди / Процессы / Технологии / Данные)
-- `problem_tree` — стратегический анализ с последствиями
+**Order of work:**
+1. Start with `business_needs` — this is the foundation
+2. Then `capabilities` and `technology` — where the problem occurs
+3. Then `policies` — what's blocking it or what's required
+4. As needed: `org_structure`, `architecture`, `assets`, `external`
 
-**Ключевые принципы:**
-- `problem_statement` — измеримо: «Время выросло с 2 до 8 часов» а не «процесс медленный»
-- `root_cause` — одна главная причина (не симптом, не следствие)
-- `contributing_factors` — факторы, усиливающие корневую причину
-- `evidence` — данные, подтверждающие цепочку причин
-- `affected_elements` — какие из 8 элементов затронуты (связь с шагом 2)
+**How to help the BA fill in elements:**
 
-**Нормализованный выход (ADR-056):** независимо от техники — единый формат.
-Техника — инструмент мышления. MCP сохраняет нормализованный результат.
+For each element, ask the questions (from `references/current_state_guide.md`),
+and help structure the answers. The result should be concrete, measurable descriptions.
 
----
+**Signs of a good description:**
+- Contains numbers (metrics): time, money, frequency, error rate
+- Contains pain_points — symptoms, complaints, observations
+- The information source is clear (sources)
 
-### Шаг 4 — Формулировка бизнес-потребностей
-
-Вызов `define_business_needs` для каждой бизнес-потребности.
-
-**Отличие бизнес-потребности от требования:**
-- Бизнес-потребность: ЧТО нужно изменить и ПОЧЕМУ
-- Требование: КАК именно это сделать
-
-**Структура хорошей бизнес-потребности:**
-- `need_title` — краткий, понятный заголовок
-- `description` — конкретная, измеримая формулировка проблемы/возможности
-- `cost_of_inaction` — что будет если не менять (убедительный аргумент)
-- `expected_benefits` — ожидаемые выгоды от изменений
-- `root_cause_ids` — связь с RCA (обязательно!)
-
-**Регистрация в трассировке (ADR-054):**
-- `register_in_traceability: true` (по умолчанию) — BN-xxx появится в репозитории 5.1
-- Это upstream-вершина: BN → BR → FR → TC — полная сквозная трассировка
-- Если репозиторий 5.1 ещё не создан — создать через `init_traceability_repo` (5.1)
+**Signs of a poor description:**
+- "The process is inefficient" — too generic
+- "No automation" — a symptom, not a description of the state
+- No metrics and no sources
 
 ---
 
-### Шаг 5 — Проверка полноты
+### Step 3 — Root Cause Analysis
 
-Вызов `check_current_state_completeness` перед финализацией.
+Call `run_root_cause_analysis` for each key problem.
 
-Что проверяет:
-- Все ли скоупированные элементы заполнены?
-- Есть ли хотя бы один RCA?
-- Есть ли бизнес-потребности?
-- Связаны ли BN с RCA?
+**Choosing a technique (details: `references/rca_guide.md`):**
+- `five_whys` — one problem, a linear chain, fast
+- `fishbone` — several categories of causes (People / Process / Technology / Data)
+- `problem_tree` — strategic analysis with consequences
 
-**Это предупреждения, не блокировки.** Аналитик принимает решение идти дальше.
+**Key principles:**
+- `problem_statement` — measurable: "Time increased from 2 to 8 hours" rather than "the process is slow"
+- `root_cause` — one main cause (not a symptom, not a consequence)
+- `contributing_factors` — factors that reinforce the root cause
+- `evidence` — data confirming the chain of causes
+- `affected_elements` — which of the 8 elements are affected (link to step 2)
+
+**Normalized output (ADR-056):** regardless of the technique used — a single unified format.
+The technique is a thinking tool. The MCP saves the normalized result.
 
 ---
 
-### Шаг 6 — Финализация
+### Step 4 — Formulating business needs
 
-Вызов `save_current_state`.
+Call `define_business_needs` for each business need.
 
-**Параметр `push_to_business_context`:**
-- `false` (по умолчанию) — только сохраняет отчёт 6.1
-- `true` — готовит данные для передачи в 7.3. BA затем вызывает:
+**The difference between a business need and a requirement:**
+- Business need: WHAT needs to change and WHY
+- Requirement: HOW exactly to do it
+
+**Structure of a good business need:**
+- `need_title` — a short, clear title
+- `description` — a concrete, measurable statement of the problem/opportunity
+- `cost_of_inaction` — what will happen if nothing changes (a compelling argument)
+- `expected_benefits` — expected benefits from the change
+- `root_cause_ids` — link to RCA (mandatory!)
+
+**Registering in traceability (ADR-054):**
+- `register_in_traceability: true` (default) — BN-xxx will appear in the 5.1 repository
+- This is an upstream node: BN → BR → FR → TC — full end-to-end traceability
+- If the 5.1 repository hasn't been created yet — create it via `init_traceability_repo` (5.1)
+
+---
+
+### Step 5 — Completeness check
+
+Call `check_current_state_completeness` before finalization.
+
+What it checks:
+- Are all the scoped elements filled in?
+- Is there at least one RCA?
+- Are there business needs?
+- Are the BNs linked to the RCA?
+
+**These are warnings, not blockers.** The analyst decides whether to proceed.
+
+---
+
+### Step 6 — Finalization
+
+Call `save_current_state`.
+
+**The `push_to_business_context` parameter:**
+- `false` (default) — only saves the 6.1 report
+- `true` — prepares the data for handoff to 7.3. The BA then calls:
   `set_business_context(from_current_state_project_id="project_id", ...)`
-  и данные из BN предзаполнят бизнес-цели автоматически (ADR-055)
+  and the data from the BN automatically pre-fills the business objectives (ADR-055)
 
 ---
 
-## Интеграция с другими задачами
+## Integration with other tasks
 
-### Вход: 4.3 → 6.1 (импорт из выявления)
+### Input: 4.3 → 6.1 (import from elicitation)
 
-Если BA уже проводил выявление и есть подтверждённые результаты (4.3),
-их можно импортировать при скоупировании через `session_ids`.
+If the BA has already conducted elicitation and confirmed results exist (4.3),
+they can be imported during scoping via `session_ids`.
 
-Маппинг данных 4.3 → 8 элементов 6.1:
-- `confirmed_needs` → элемент `business_needs`
-- `confirmed_constraints` → элемент `policies`, частично `technology`
-- `raw_notes` и контекст интервью → `capabilities`, `org_structure`, `technology`
-- Упоминания внешних факторов → `external`
+Mapping of 4.3 data → 8 elements of 6.1:
+- `confirmed_needs` → the `business_needs` element
+- `confirmed_constraints` → the `policies` element, partially `technology`
+- `raw_notes` and interview context → `capabilities`, `org_structure`, `technology`
+- Mentions of external factors → `external`
 
-Импортированные данные помечаются как черновик — BA уточняет через
+Imported data is marked as a draft — the BA refines it via
 `capture_current_state_element`.
 
-### Выход: 6.1 → 5.1 (трассировка)
+### Output: 6.1 → 5.1 (traceability)
 
-BN-xxx узлы регистрируются в репозитории 5.1 с типом `business_need`.
-Полная цепочка: `BN-001 → BR-001 → FR-001 → TC-001`
-`run_impact_analysis` (5.4) видит бизнес-потребности как upstream-вершины.
+BN-xxx nodes are registered in the 5.1 repository with the type `business_need`.
+Full chain: `BN-001 → BR-001 → FR-001 → TC-001`
+`run_impact_analysis` (5.4) sees business needs as upstream nodes.
 
-### Выход: 6.1 → 7.3 (бизнес-контекст)
+### Output: 6.1 → 7.3 (business context)
 
-`set_business_context` в 7.3 принимает параметр `from_current_state_project_id`.
-При передаче — предзаполняет бизнес-цели из бизнес-потребностей 6.1.
-Без параметра — работает как раньше (backward compatible, ADR-055).
+`set_business_context` in 7.3 accepts the `from_current_state_project_id` parameter.
+When passed — it pre-fills business objectives from the 6.1 business needs.
+Without the parameter — it works as before (backward compatible, ADR-055).
 
-### Выход: 6.1 → 6.2 (Future State)
+### Output: 6.1 → 6.2 (Future State)
 
-Задача 6.2 строится на `root_cause` из RCA:
-«Что именно меняем» = «устраняем корневую причину из RCA-001»
-
----
-
-## Частые ошибки BA — как помогать
-
-### «Описывает симптомы вместо причин»
-- Помоги задать вопрос «Почему?» три-пять раз
-- Напомни: жалоба клиента — симптом, причина — в процессе/технологии/политике
-
-### «Хочет проанализировать всё»
-- Напомни про скоуп — scope_current_state определяет что анализируем
-- Лучше глубоко 4 элемента, чем поверхностно все 8
-
-### «Бизнес-потребность сформулирована как решение»
-- «Нам нужна CRM-система» — это решение, не потребность
-- Потребность: «Мы теряем 30% клиентов из-за медленной обработки обращений»
-
-### «Нет цифр и метрик»
-- Без цифр невозможно оценить ценность решения в 7.6
-- Помоги BA найти или оценить метрики: время, деньги, частота ошибок
+Task 6.2 builds on the `root_cause` from the RCA:
+"What exactly are we changing" = "eliminating the root cause from RCA-001"
 
 ---
 
-## Артефакты 6.1
+## Common BA mistakes — how to help
 
-| Файл | Назначение |
+### "Describes symptoms instead of causes"
+- Help by asking "Why?" three to five times
+- Remind them: a customer complaint is a symptom; the cause lies in the process/technology/policy
+
+### "Wants to analyze everything"
+- Remind them about scope — scope_current_state defines what we analyze
+- It's better to go deep on 4 elements than shallow on all 8
+
+### "Business need is formulated as a solution"
+- "We need a CRM system" — that's a solution, not a need
+- The need: "We're losing 30% of customers due to slow request handling"
+
+### "No numbers or metrics"
+- Without numbers, it's impossible to assess the value of the solution in 7.6
+- Help the BA find or estimate metrics: time, money, error rate
+
+---
+
+## 6.1 artifacts
+
+| File | Purpose |
 |------|------------|
-| `{project}_current_state_scope.json` | Контракт: что анализируем |
-| `{project}_current_state.json` | Данные по 8 элементам + RCA |
-| `{project}_business_needs.json` | Реестр бизнес-потребностей |
-| `6_1_current_state_{project}.md` | Читаемый отчёт (REPORTS_DIR) |
+| `{project}_current_state_scope.json` | Contract: what we're analyzing |
+| `{project}_current_state.json` | Data for the 8 elements + RCA |
+| `{project}_business_needs.json` | Business needs registry |
+| `6_1_current_state_{project}.md` | Human-readable report (REPORTS_DIR) |
 
 ---
 
-## Reference-файлы
+## Reference files
 
-Читай когда нужны детали:
+Read when you need details:
 
-- **`references/current_state_guide.md`** — подробное описание каждого из 8 элементов:
-  что анализировать, вопросы для BA, примеры хорошего/плохого описания
+- **`references/current_state_guide.md`** — detailed description of each of the 8 elements:
+  what to analyze, questions for the BA, examples of good/poor descriptions
 
-- **`references/rca_guide.md`** — три техники RCA с пошаговыми инструкциями
-  и маппингом в нормализованный формат (ADR-056)
+- **`references/rca_guide.md`** — three RCA techniques with step-by-step instructions
+  and a mapping to the normalized format (ADR-056)

@@ -1,207 +1,207 @@
-# change_strategy_guide.md — Руководство по определению стратегии изменения
+# change_strategy_guide.md — Guide to Defining the Change Strategy
 
-## 1. Что такое стратегия изменения (BABOK 6.4)
+## 1. What is a change strategy (BABOK 6.4)
 
-Стратегия изменения — это **обоснованный выбор** того, как организация перейдёт
-из текущего состояния (6.1) в целевое состояние (6.2), с учётом рисков (6.3)
-и готовности организации.
+A change strategy is a **substantiated choice** of how the organization will transition
+from the current state (6.1) to the future state (6.2), taking into account risks (6.3)
+and organizational readiness.
 
-Результат 6.4 — не просто «сделаем это так», а структурированный документ:
-- **Solution Scope** — что именно входит в скоуп решения (capabilities)
-- **Change Strategy** — из каких вариантов выбрали и почему
-- **Transition States** — этапы перехода, что реализуется на каждом
+The output of 6.4 isn't just "we'll do it this way" — it's a structured document:
+- **Solution Scope** — exactly what is in the scope of the solution (capabilities)
+- **Change Strategy** — which options were chosen from, and why
+- **Transition States** — the transition phases and what's delivered in each
 
 ---
 
-## 2. Типы стратегий изменения
+## 2. Types of change strategies
 
 ### big_bang
-**Суть:** Переход за один раз — новое решение запускается полностью, старое выключается.
+**Essence:** A one-time cutover — the new solution launches in full, the old one is switched off.
 
-**Когда подходит:**
-- Системы малого масштаба
-- Высокая зависимость компонентов друг от друга (нельзя внедрить частично)
-- Жёсткие регуляторные сроки
-- Команда опытная, риски управляемы
+**When it fits:**
+- Small-scale systems
+- High interdependency between components (can't be implemented partially)
+- Hard regulatory deadlines
+- Experienced team, manageable risks
 
-**Преимущества:** Скорость, одна волна изменений, нет долгого co-existence
-**Риски:** Высокий операционный риск, нет пути отступления
+**Advantages:** Speed, a single wave of change, no long co-existence period
+**Risks:** High operational risk, no rollback path
 
 ---
 
 ### phased
-**Суть:** Поэтапный переход — функциональность и capability-блоки внедряются последовательно.
+**Essence:** A step-by-step transition — functionality and capability blocks are rolled out sequentially.
 
-**Когда подходит:**
-- Большие системы с независимыми функциональными блоками
-- Организация с низкой change_history
-- Нужно реализовывать ценность постепенно
-- Финансирование приходит траншами
+**When it fits:**
+- Large systems with independent functional blocks
+- An organization with a low change_history
+- Value needs to be delivered incrementally
+- Funding arrives in tranches
 
-**Преимущества:** Управляемый риск, ранняя ценность, обратная связь после каждой фазы
-**Риски:** Длительный период co-existence, усложнённая архитектура переходного состояния
+**Advantages:** Manageable risk, early value, feedback after each phase
+**Risks:** Long co-existence period, more complex transition-state architecture
 
 ---
 
 ### pilot_first
-**Суть:** Сначала пилот на ограниченной аудитории → валидация → масштабирование.
+**Essence:** Pilot first on a limited audience → validation → scale-up.
 
-**Когда подходит:**
-- Высокая неопределённость в решении
-- Нужна валидация гипотез до полного инвестирования
-- Есть подходящая «безопасная» пилотная группа
-- Инновационное или неопробованное решение
+**When it fits:**
+- High uncertainty in the solution
+- Need to validate hypotheses before full investment
+- A suitable "safe" pilot group is available
+- An innovative or unproven solution
 
-**Преимущества:** Минимальный риск, реальные данные до масштабирования
-**Риски:** Более долгий путь к полной реализации, риск «вечного пилота»
+**Advantages:** Minimal risk, real data before scaling
+**Risks:** Longer path to full implementation, risk of a "perpetual pilot"
 
 ---
 
 ### do_nothing
-**Суть:** Не менять ничего — оставить текущее состояние как есть.
+**Essence:** Change nothing — leave the current state as is.
 
-**Когда подходит:** Никогда (как выбранный вариант). Используется как **baseline**
-для сравнения: что произойдёт если мы ничего не сделаем?
+**When it fits:** Never (as the chosen option). Used as the **baseline**
+for comparison: what happens if we do nothing?
 
-**Обязательный к рассмотрению по BABOK** — чтобы BA явно обосновал:
-«Текущее состояние неприемлемо, потому что...»
+**Mandatory to consider per BABOK** — so the BA explicitly justifies:
+"The current state is unacceptable because..."
 
 ---
 
 ## 3. Capability Categories
 
-Capability — это **способность**, которую организация приобретёт в результате изменения.
+A capability is an **ability** that the organization will gain as a result of the change.
 
-| Категория | Что включает |
+| Category | What it includes |
 |-----------|-------------|
-| `process` | Бизнес-процессы, workflows, регламенты |
-| `technology` | Программные системы, инфраструктура, интеграции |
-| `data` | Данные, аналитика, хранилища, качество данных |
-| `people` | Знания, навыки, компетенции персонала |
-| `org_structure` | Организационная структура, роли, ответственность |
-| `knowledge` | Документация, база знаний, стандарты |
-| `location` | Физические офисы, точки присутствия, логистика |
+| `process` | Business processes, workflows, regulations |
+| `technology` | Software systems, infrastructure, integrations |
+| `data` | Data, analytics, storage, data quality |
+| `people` | Knowledge, skills, staff competencies |
+| `org_structure` | Organizational structure, roles, accountability |
+| `knowledge` | Documentation, knowledge base, standards |
+| `location` | Physical offices, points of presence, logistics |
 
 ---
 
-## 4. Gap Severity — от 6.2 к 6.4
+## 4. Gap Severity — from 6.2 to 6.4
 
-В `define_solution_scope` каждый capability получает `gap_severity`:
+In `define_solution_scope`, each capability receives a `gap_severity`:
 
-| Уровень | Значение | Как это влияет на стратегию |
+| Level | Meaning | How it affects the strategy |
 |---------|----------|-----------------------------|
-| `none` | Capability уже есть | Может быть вне активного скоупа |
-| `low` | Небольшой gap, несложно закрыть | Обычно в ранних фазах phased |
-| `medium` | Значимый gap, требует усилий | Планируется в основных фазах |
-| `high` | Критичный gap, сложно закрыть | Часто определяет структуру фаз |
+| `none` | The capability already exists | May be outside the active scope |
+| `low` | Small gap, easy to close | Usually in the early phases of a phased rollout |
+| `medium` | Significant gap, requires effort | Planned in the main phases |
+| `high` | Critical gap, hard to close | Often determines the phase structure |
 
-`gap_source` может быть:
-- `6.2:gap_analysis` — взято из артефакта gap_analysis (6.2)
-- `manual` — BA определил самостоятельно
-
----
-
-## 5. Opportunity Cost — почему это важно
-
-**Определение:** Opportunity Cost варианта A = лучшее из того, от чего отказываемся, выбрав A вместо остальных вариантов.
-
-**BABOK требует:** При выборе стратегии — явно зафиксировать что именно теряем,
-отвергая альтернативы. Это делает решение защищаемым перед спонсором.
-
-**Формат:**
-> «Выбрав `phased` вместо `pilot_first`, мы отказываемся от возможности
-> валидировать решение на реальных пользователях до полного внедрения.
-> Принятое допущение: требования достаточно понятны и пилот не нужен.»
-
-**Типичные ошибки BA:**
-- «Мы выбрали вариант A потому что он лучше» — нет comparison
-- Сравнение только по стоимости, без учёта time-to-value и risk
-- Отвергнутые варианты упоминаются вскользь без обоснования
+`gap_source` can be:
+- `6.2:gap_analysis` — taken from the gap_analysis artifact (6.2)
+- `manual` — the BA determined it independently
 
 ---
 
-## 6. Взвешенные критерии сравнения (ADR-081)
+## 5. Opportunity Cost — why it matters
 
-Дефолтные критерии и их смысл:
+**Definition:** The Opportunity Cost of option A = the best of what we give up by choosing A instead of the other options.
 
-| Критерий | Что оценивает | Дефолтный вес |
+**BABOK requires:** When choosing a strategy — explicitly capture exactly what we lose
+by rejecting the alternatives. This makes the decision defensible to the sponsor.
+
+**Format:**
+> "By choosing `phased` over `pilot_first`, we give up the ability
+> to validate the solution with real users before full rollout.
+> Assumption made: the requirements are clear enough and a pilot isn't needed."
+
+**Typical BA mistakes:**
+- "We chose option A because it's better" — no comparison
+- Comparing only on cost, without accounting for time-to-value and risk
+- Rejected options are mentioned in passing without justification
+
+---
+
+## 6. Weighted comparison criteria (ADR-081)
+
+The default criteria and their meaning:
+
+| Criterion | What it assesses | Default weight |
 |----------|--------------|---------------|
-| `alignment_to_goals` | Насколько вариант достигает business goals из 6.2 | 25% |
-| `risk_mitigation` | Насколько вариант снижает топ-риски из 6.3 | 20% |
-| `cost` | Инверсия уровня инвестиций (low cost = высокий балл) | 20% |
-| `time_to_value` | Скорость получения первой ценности | 15% |
-| `org_readiness_fit` | Соответствие readiness_score из оценки готовности | 10% |
-| `feasibility` | Техническая и операционная реализуемость | 10% |
+| `alignment_to_goals` | How well the option achieves the business goals from 6.2 | 25% |
+| `risk_mitigation` | How much the option reduces the top risks from 6.3 | 20% |
+| `cost` | Inverse of the investment level (low cost = high score) | 20% |
+| `time_to_value` | Speed of obtaining first value | 15% |
+| `org_readiness_fit` | Fit with the readiness_score from the readiness assessment | 10% |
+| `feasibility` | Technical and operational feasibility | 10% |
 
-**Шкала оценки:** 1–5 (1=плохо, 5=отлично) по каждому критерию.
-**Weighted Score** = Σ(оценка × вес / 100).
+**Scoring scale:** 1–5 (1=poor, 5=excellent) for each criterion.
+**Weighted Score** = Σ(score × weight / 100).
 
-**Кастомные критерии:** можно добавить через `custom_criteria_json`.
-Сумма весов (дефолтные + кастомные) должна быть 100%.
+**Custom criteria:** can be added via `custom_criteria_json`.
+The sum of weights (default + custom) must equal 100%.
 
 ---
 
-## 7. Transition States — структурированный план фаз
+## 7. Transition States — a structured phase plan
 
-Transition State = промежуточное состояние на пути к целевому.
+A Transition State is an intermediate state on the way to the future state.
 
-Каждая фаза должна отвечать на вопросы:
-1. **Что capabilities реализуется** в этой фазе?
-2. **Какие gaps закрываются** к концу фазы?
-3. **Какие риски остаются** после фазы (из 6.3)?
-4. **Какая ценность реализуема** к концу фазы (из 6.2)?
+Each phase must answer the questions:
+1. **What capabilities are delivered** in this phase?
+2. **What gaps are closed** by the end of the phase?
+3. **What risks remain** after the phase (from 6.3)?
+4. **What value is realizable** by the end of the phase (from 6.2)?
 
-**Правило «каждая фаза = standalone value»:**
-Если Фаза 1 не даёт самостоятельной ценности — это признак неправильной нарезки фаз.
-Спонсор должен видеть ROI уже после первой фазы.
+**The "each phase = standalone value" rule:**
+If Phase 1 doesn't deliver standalone value, that's a sign of incorrect phase slicing.
+The sponsor should see ROI already after the first phase.
 
-**Пример для phased-стратегии (CRM upgrade):**
+**Example for a phased strategy (CRM upgrade):**
 
-| Фаза | Capabilities | Gaps closed | Value |
+| Phase | Capabilities | Gaps closed | Value |
 |------|-------------|-------------|-------|
-| 1 (3 мес) | CRM базовый + интеграция с колл-центром | gap_crm_data | Операторы видят историю клиента |
-| 2 (5 мес) | Аналитический модуль + автоматизация | gap_reporting | Сокращение ручной отчётности на 60% |
-| 3 (4 мес) | Self-service + мобильный | gap_self_service | NPS +15 пунктов |
+| 1 (3 mo) | Base CRM + call center integration | gap_crm_data | Agents see customer history |
+| 2 (5 mo) | Analytics module + automation | gap_reporting | 60% reduction in manual reporting |
+| 3 (4 mo) | Self-service + mobile | gap_self_service | NPS +15 points |
 
 ---
 
-## 8. Solution Scope — что включать и что явно исключать
+## 8. Solution Scope — what to include and what to explicitly exclude
 
-`explicitly_excluded` — это не «то что мы забыли», это **осознанные решения**.
+`explicitly_excluded` is not "what we forgot" — it's **deliberate decisions**.
 
-**Зачем фиксировать исключения:**
-- Предотвращает scope creep в Главе 7
-- Устанавливает ожидания стейкхолдеров
-- Создаёт основу для будущих фаз или отдельных инициатив
+**Why capture exclusions:**
+- Prevents scope creep in Chapter 7
+- Sets stakeholder expectations
+- Creates a basis for future phases or separate initiatives
 
-**Примеры хороших формулировок исключений:**
-- «Миграция исторических данных из Archive_2015–2018 — вне скоупа: данные невостребованы»
-- «Мобильное приложение для клиентов — вне скоупа: выделено в отдельную инициативу Q3»
-- «Интеграция с партнёрскими API — вне скоупа до завершения фазы 2»
+**Examples of good exclusion statements:**
+- "Migration of historical data from Archive_2015–2018 — out of scope: data is no longer needed"
+- "Customer-facing mobile app — out of scope: carved out into a separate Q3 initiative"
+- "Integration with partner APIs — out of scope until phase 2 is complete"
 
 ---
 
-## 9. Когда выбрать каждую стратегию — матрица решений
+## 9. When to choose each strategy — decision matrix
 
-| Фактор | big_bang | phased | pilot_first |
+| Factor | big_bang | phased | pilot_first |
 |--------|----------|--------|-------------|
-| Масштаб | Малый / средний | Любой | Любой |
-| Зрелость org_readiness | Высокая | Средняя | Любая |
-| Неопределённость решения | Низкая | Средняя | Высокая |
-| Зависимость компонентов | Высокая | Низкая | Средняя |
-| Финансирование | Единовременное | Поэтапное | Поэтапное |
-| Приоритет time-to-value | Не критичен | Важен | Важен |
-| Наличие пилотной группы | Не нужна | Не нужна | Обязательна |
+| Scale | Small / medium | Any | Any |
+| org_readiness maturity | High | Medium | Any |
+| Solution uncertainty | Low | Medium | High |
+| Component dependency | High | Low | Medium |
+| Funding | Lump sum | Incremental | Incremental |
+| Priority on time-to-value | Not critical | Important | Important |
+| Availability of a pilot group | Not needed | Not needed | Required |
 
 ---
 
-## 10. Downstream-контракт (что используют задачи 7.x и 8.x)
+## 10. Downstream contract (what tasks 7.x and 8.x use)
 
-| Поле в JSON | Кто использует | Зачем |
+| Field in JSON | Who uses it | Why |
 |-------------|---------------|-------|
-| `solution_scope.capabilities` | 7.1 | Что специфицировать |
-| `change_strategy.transition_states` | 7.4 | Архитектура по фазам |
-| `change_strategy.selected_option_id` | 7.5 | Ограничения дизайна |
-| `change_strategy.options[].pros/cons` | 7.5 | Контекст отвергнутых альтернатив |
-| `transition_states[].value_realizable` | 7.6 | Ценность по фазам |
-| `transition_states[].risks_remaining` | 8.x | Baseline рисков для мониторинга |
+| `solution_scope.capabilities` | 7.1 | What to specify |
+| `change_strategy.transition_states` | 7.4 | Architecture by phase |
+| `change_strategy.selected_option_id` | 7.5 | Design constraints |
+| `change_strategy.options[].pros/cons` | 7.5 | Context on the rejected alternatives |
+| `transition_states[].value_realizable` | 7.6 | Value by phase |
+| `transition_states[].risks_remaining` | 8.x | Risk baseline for monitoring |
