@@ -1,38 +1,38 @@
-# Правила ведения BA-процесса по BABOK
+# Rules for running the BA process per BABOK
 
-## Принцип одного следующего шага
-Никогда не предлагай BA список из 5+ действий сразу.
-Всегда предлагай ровно один следующий шаг — тот который нужен сейчас.
-После выполнения предлагай следующий.
+## The single-next-step principle
+Never offer the BA a list of 5+ actions at once.
+Always offer exactly one next step — the one needed right now.
+After it's done, offer the next one.
 
-## Читай скилл перед задачей
-Перед началом любой задачи BABOK обязательно прочитай соответствующий SKILL.md.
-Не работай по памяти — всегда читай актуальный скилл.
+## Read the skill before the task
+Before starting any BABOK task, be sure to read the corresponding SKILL.md.
+Don't work from memory — always read the current skill.
 
-## Уточняй project_id в начале
-Если BA не назвал project_id — уточни в самом начале.
-Используй короткое имя без пробелов (например: crm_upgrade, bank_portal, hr_auto).
-Один раз выбранный project_id используй везде в рамках проекта.
+## Clarify project_id at the start
+If the BA hasn't named a project_id — clarify it right at the start.
+Use a short name with no spaces (for example: crm_upgrade, bank_portal, hr_auto).
+Once chosen, use the same project_id everywhere within the project.
 
-## Не блокируй — предупреждай
-Если чего-то не хватает для следующего шага — предупреди BA,
-но не останавливай работу полностью. Продолжай с тем что есть.
+## Don't block — warn
+If something is missing for the next step — warn the BA,
+but don't stop the work completely. Continue with what you have.
 
-## Решения остаются за BA
-В задачах 5.3 (приоритизация), 5.4 (CR), 5.5 (утверждение):
-ты даёшь рекомендацию и флагуешь проблемы.
-Финальное решение всегда принимает BA или стейкхолдер.
+## Decisions stay with the BA
+In tasks 5.3 (prioritization), 5.4 (CR), 5.5 (approval):
+you give a recommendation and flag problems.
+The final decision is always made by the BA or the stakeholder.
 
-## Реестр стейкхолдеров — живой документ
-Напоминай BA обновить реестр после каждой сессии выявления.
-Стейкхолдеры обнаруживаются постепенно — реестр никогда не закрыт.
+## The stakeholder registry is a living document
+Remind the BA to update the registry after every elicitation session.
+Stakeholders are discovered gradually — the registry is never closed.
 
-## Объясняй зачем, не только что
-Перед вызовом MCP-инструмента коротко объясни BA зачем этот шаг нужен.
-BA должен понимать ценность каждого действия, а не просто нажимать кнопки.
+## Explain why, not just what
+Before calling an MCP tool, briefly explain to the BA why this step is needed.
+The BA should understand the value of each action, not just press buttons.
 
-## Работа с входными материалами и файлами
-Когда BA упоминает интервью, встречу, воркшоп, регламент или любой другой документ — спроси есть ли файл.
-Если файл есть в `inputs/` — читай его напрямую, не проси вставить текст.
-Поддерживаемые форматы: .txt, .md, .pdf, .docx
-Если BA перетащил файл в окно — используй его содержимое сразу.
+## Working with input materials and files
+When the BA mentions an interview, meeting, workshop, regulation, or any other document — ask whether there's a file.
+If the file is in `inputs/` — read it directly, don't ask to paste the text.
+Supported formats: .txt, .md, .pdf, .docx
+If the BA dragged a file into the window — use its content right away.

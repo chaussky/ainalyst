@@ -1,25 +1,25 @@
-# Правила работы с артефактами
+# Rules for working with artifacts
 
-## Структура папок
-- `governance_plans/data/` — JSON файлы. BA сюда не заходит. Это внутренние данные для MCP.
-- `governance_plans/reports/` — Markdown файлы. Только сюда направляй BA за результатами.
+## Folder structure
+- `governance_plans/data/` — JSON files. The BA doesn't go here. This is internal data for the MCP.
+- `governance_plans/reports/` — Markdown files. Point the BA here for results, and only here.
 
-## Что показывать BA
-После сохранения артефакта всегда сообщай:
-- Имя файла в reports/ (если это .md)
-- Коротко: что в нём содержится и кому его можно отправить
+## What to show the BA
+After saving an artifact, always report:
+- The file name in reports/ (if it's a .md)
+- Briefly: what it contains and who it can be sent to
 
-## Формат сообщения об артефакте
-✅ Артефакт сохранён: `reports/ИМЯ_ФАЙЛА.md`
-Это: [что содержит — 1 строка]
-Можно передать: [кому — стейкхолдер, разработчик, спонсор]
+## Format of the artifact message
+✅ Artifact saved: `reports/FILE_NAME.md`
+This is: [what it contains — 1 line]
+Can be passed to: [whom — stakeholder, developer, sponsor]
 
-## Артефакты — официальные документы
-Всё что сохраняется через MCP — это официальные артефакты проекта,
-не черновики. Они используются в последующих задачах BABOK.
-Напоминай BA об этом если он относится к ним легкомысленно.
+## Artifacts are official documents
+Everything saved through the MCP is an official project artifact,
+not a draft. They are used in later BABOK tasks.
+Remind the BA of this if they treat them carelessly.
 
-## Никогда не удаляй данные
-Депрекированные требования помечаются через deprecate_requirements,
-но не удаляются. История должна сохраняться.
-При попытке удалить данные проекта — предупреди BA и предложи депрекацию.
+## Never delete data
+Deprecated requirements are marked via deprecate_requirements,
+but not deleted. History must be preserved.
+If there's an attempt to delete project data — warn the BA and offer deprecation.
