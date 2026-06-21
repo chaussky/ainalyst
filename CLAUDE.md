@@ -53,27 +53,27 @@ it holds the methodology, the working algorithm, and the templates.
 
 | Chapter | Topic | Skill |
 |-------|------|-------|
-| 3 | Business analysis planning | `skills/planning_prep/SKILL.md` |
-| 4.1 | Prepare for elicitation | `skills/elicitation_prep/SKILL.md` |
-| 4.2 | Conduct elicitation | `skills/elicitation_conduct/SKILL.md` |
-| 4.3 | Confirm elicitation results | `skills/elicitation_confirm/SKILL.md` |
-| 4.4 | Communicate business analysis information | `skills/elicitation_communicate/SKILL.md` |
-| 4.5 | Manage stakeholder collaboration | `skills/elicitation_collaborate/SKILL.md` |
-| 5.1 | Trace requirements | `skills/requirements_traceability/SKILL.md` |
-| 5.2 | Maintain requirements | `skills/requirements_maintain/SKILL.md` |
-| 5.3 | Prioritize requirements | `skills/requirements_prioritize/SKILL.md` |
-| 5.4 | Assess requirements changes (CR) | `skills/requirements_assess_changes/SKILL.md` |
-| 5.5 | Approve requirements | `skills/requirements_approve/SKILL.md` |
-| 6.1 | Analyze current state | `skills/current_state/SKILL.md` |
-| 6.2 | Define future state | `skills/future_state/SKILL.md` |
-| 6.3 | Assess risks | `skills/risk_assessment/SKILL.md` |
-| 6.4 | Define change strategy | `skills/change_strategy/SKILL.md` |
-| 7.1 | Specify and model requirements | `skills/requirements_spec/SKILL.md` |
-| 7.2 | Verify requirements | `skills/requirements_verify/SKILL.md` |
-| 7.3 | Validate requirements | `skills/requirements_validate/SKILL.md` |
-| 7.4 | Requirements architecture | `skills/requirements_architecture/SKILL.md` |
-| 7.5 | Design options | `skills/design_options/SKILL.md` |
-| 7.6 | Estimate value and recommendation | `skills/value_recommend/SKILL.md` |
+| 3 | Business Analysis Planning and Monitoring | `skills/planning_prep/SKILL.md` |
+| 4.1 | Prepare for Elicitation | `skills/elicitation_prep/SKILL.md` |
+| 4.2 | Conduct Elicitation | `skills/elicitation_conduct/SKILL.md` |
+| 4.3 | Confirm Elicitation Results | `skills/elicitation_confirm/SKILL.md` |
+| 4.4 | Communicate Business Analysis Information | `skills/elicitation_communicate/SKILL.md` |
+| 4.5 | Manage Stakeholder Collaboration | `skills/elicitation_collaborate/SKILL.md` |
+| 5.1 | Trace Requirements | `skills/requirements_traceability/SKILL.md` |
+| 5.2 | Maintain Requirements | `skills/requirements_maintain/SKILL.md` |
+| 5.3 | Prioritize Requirements | `skills/requirements_prioritize/SKILL.md` |
+| 5.4 | Assess Requirements Changes (CR) | `skills/requirements_assess_changes/SKILL.md` |
+| 5.5 | Approve Requirements | `skills/requirements_approve/SKILL.md` |
+| 6.1 | Analyze Current State | `skills/current_state/SKILL.md` |
+| 6.2 | Define Future State | `skills/future_state/SKILL.md` |
+| 6.3 | Assess Risks | `skills/risk_assessment/SKILL.md` |
+| 6.4 | Define Change Strategy | `skills/change_strategy/SKILL.md` |
+| 7.1 | Specify and Model Requirements | `skills/requirements_spec/SKILL.md` |
+| 7.2 | Verify Requirements | `skills/requirements_verify/SKILL.md` |
+| 7.3 | Validate Requirements | `skills/requirements_validate/SKILL.md` |
+| 7.4 | Define Requirements Architecture | `skills/requirements_architecture/SKILL.md` |
+| 7.5 | Define Design Options | `skills/design_options/SKILL.md` |
+| 7.6 | Analyze Potential Value and Recommend Solution | `skills/value_recommend/SKILL.md` |
 
 Read the `references/*.md` links inside a skill only when the algorithm calls for them — not all at once.
 
