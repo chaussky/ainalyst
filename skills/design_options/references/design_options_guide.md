@@ -1,179 +1,179 @@
 # Design Options Guide — BABOK 7.5
 
-Справочник для задачи Define Design Options.
-Читается Claude Code по запросу из SKILL.md.
+Reference for the Define Design Options task.
+Read by Claude Code on demand from SKILL.md.
 
 ---
 
-## 1. Подходы к решению: Build / Buy / Hybrid
+## 1. Solution approaches: Build / Buy / Hybrid
 
-### Build (разработка с нуля)
-**Когда выбирают:**
-- Уникальные бизнес-процессы, которые сложно автоматизировать готовым решением
-- Высокие требования к интеграции с существующими системами
-- Чувствительные данные / требования безопасности исключают SaaS
-- Долгосрочная стратегия: ключевая компетенция компании
+### Build (develop from scratch)
+**When it's chosen:**
+- Unique business processes that are hard to automate with an off-the-shelf solution
+- High integration requirements with existing systems
+- Sensitive data / security requirements rule out SaaS
+- Long-term strategy: a core competency of the company
 
-**Плюсы:** полный контроль, точное соответствие требованиям, нет лицензионных рисков
-**Минусы:** высокая стоимость разработки, долгий time-to-market, ресурсы на поддержку
+**Pros:** full control, exact fit to requirements, no licensing risk
+**Cons:** high development cost, long time-to-market, support resources required
 
-**Типичные компоненты:** backend-сервис, база данных, UI, интеграционный слой
-
----
-
-### Buy (покупка / готовое решение)
-**Когда выбирают:**
-- Стандартные процессы (ERP, CRM, HRM) — нет смысла изобретать велосипед
-- Ограниченный бюджет на разработку
-- Нужно быстро запустить (time-to-market < 6 месяцев)
-- Вендор предоставляет обновления и поддержку
-
-**Плюсы:** быстрый старт, проверенное решение, поддержка вендора
-**Минусы:** зависимость от вендора, ограниченная кастомизация, лицензионные расходы
-
-**Что включить в Vendor Notes:** название вендора, версия, стоимость лицензии, TCO, ограничения кастомизации, референсы
+**Typical components:** backend service, database, UI, integration layer
 
 ---
 
-### Hybrid (комбинированный)
-**Когда выбирают:**
-- Часть процессов стандартная (Buy), часть — уникальная (Build)
-- Постепенная миграция: Buy как платформа, Build для расширений
-- Интеграция нескольких систем
+### Buy (purchase / off-the-shelf solution)
+**When it's chosen:**
+- Standard processes (ERP, CRM, HRM) — no point reinventing the wheel
+- Limited development budget
+- Need to launch quickly (time-to-market < 6 months)
+- Vendor provides updates and support
 
-**Плюсы:** баланс speed-to-market и гибкости
-**Минусы:** сложность интеграции, два типа рисков одновременно
+**Pros:** fast start, proven solution, vendor support
+**Cons:** vendor dependency, limited customization, licensing costs
+
+**What to include in Vendor Notes:** vendor name, version, license cost, TCO, customization constraints, references
+
+---
+
+### Hybrid (combined)
+**When it's chosen:**
+- Part of the process is standard (Buy), part is unique (Build)
+- Gradual migration: Buy as the platform, Build for extensions
+- Integration of multiple systems
+
+**Pros:** balance of speed-to-market and flexibility
+**Cons:** integration complexity, two risk types at once
 
 ---
 
 ## 2. Improvement Opportunities (BABOK)
 
-По BABOK v3 задача 7.5 явно требует описания возможностей улучшения.
-Три типа по стандарту:
+Under BABOK v3, task 7.5 explicitly requires describing improvement opportunities.
+Three types per the standard:
 
 ### efficiency
-Автоматизация или упрощение работы, которую сейчас делает человек вручную.
-Примеры:
-- «Автоматическое формирование отчётов вместо ручного Excel»
-- «Автоматическая проверка документов при загрузке»
-- «Уведомления вместо ручного мониторинга статусов»
+Automating or simplifying work that a person currently does manually.
+Examples:
+- "Automatic report generation instead of manual Excel work"
+- "Automatic document validation on upload"
+- "Notifications instead of manual status monitoring"
 
 ### information_access
-Улучшение доступа к информации для принятия решений.
-Примеры:
-- «Единый дашборд вместо данных из 5 разных систем»
-- «Real-time статус заказа вместо звонков в колл-центр»
-- «Аналитика по клиентам на базе исторических данных»
+Improving access to information for decision-making.
+Examples:
+- "A single dashboard instead of data from 5 different systems"
+- "Real-time order status instead of calling the call center"
+- "Customer analytics built on historical data"
 
 ### new_capability
-Новые возможности, которых сейчас нет.
-Примеры:
-- «Мобильное приложение для полевых сотрудников»
-- «Интеграция с внешними поставщиками через API»
-- «Персонализированные рекомендации на базе ML»
+New capabilities that don't currently exist.
+Examples:
+- "A mobile app for field staff"
+- "Integration with external suppliers via API"
+- "Personalized recommendations based on ML"
 
 ---
 
-## 3. Критерии сравнения вариантов дизайна
+## 3. Criteria for comparing design options
 
-### Дефолтные критерии (используются если BA не задал кастомные)
+### Default criteria (used if the BA hasn't set custom ones)
 
-| Критерий | Описание | Вес (дефолт) |
+| Criterion | Description | Weight (default) |
 |----------|----------|--------------|
-| cost | Стоимость реализации (CAPEX + OPEX на 3 года) | high |
-| speed | Time-to-market (как быстро можно запустить) | high |
-| risk | Совокупный риск (технический + организационный) | medium |
-| req_coverage | Процент покрытия Must-требований | high |
-| flexibility | Возможность изменений после запуска | medium |
+| cost | Implementation cost (CAPEX + OPEX over 3 years) | high |
+| speed | Time-to-market (how quickly it can launch) | high |
+| risk | Aggregate risk (technical + organizational) | medium |
+| req_coverage | Percentage of Must-requirement coverage | high |
+| flexibility | Ability to change after launch | medium |
 
-### Как интерпретировать матрицу
-- **req_coverage** рассчитывается автоматически: Must-req allocated в v1 / всего Must-req
-- Остальные критерии — качественная оценка BA (Low / Medium / High)
-- При сравнении: HighWeight-критерии имеют приоритет при равных итогах
+### How to interpret the matrix
+- **req_coverage** is calculated automatically: Must-requirements allocated to v1 / total Must-requirements
+- The other criteria are a qualitative BA assessment (Low / Medium / High)
+- When comparing: high-weight criteria take priority on a tie
 
-### Кастомные критерии
-BA может передать `criteria_json` — список дополнительных критериев:
+### Custom criteria
+The BA can pass `criteria_json` — a list of additional criteria:
 ```json
 [
-  {"id": "vendor_support", "label": "Поддержка вендора", "weight": "medium"},
-  {"id": "integration_complexity", "label": "Сложность интеграции", "weight": "high"}
+  {"id": "vendor_support", "label": "Vendor support", "weight": "medium"},
+  {"id": "integration_complexity", "label": "Integration complexity", "weight": "high"}
 ]
 ```
 
 ---
 
-## 4. Allocation — паттерны распределения req по версиям
+## 4. Allocation — patterns for allocating requirements to releases
 
-### Простой вариант (реализован в v1)
-Версии: `v1` / `v2` / `out_of_scope`
+### Simple option (implemented in v1)
+Releases: `v1` / `v2` / `out_of_scope`
 
-**Алгоритм auto_suggest:**
+**auto_suggest algorithm:**
 - Must (MoSCoW) / High (WSJF) → `v1`
-- Should / Medium → `v1` или `v2` (BA выбирает при подтверждении)
+- Should / Medium → `v1` or `v2` (BA decides on confirmation)
 - Could / Low → `v2`
 - Won't → `out_of_scope`
-- Без приоритета → предупреждение, BA решает вручную
+- No priority → a warning is raised, the BA decides manually
 
-**Проверка depends-конфликтов:**
-После утверждения распределения инструмент проверяет граф 5.1.
-Если req A (v1) зависит от req B (v2) через связь `depends` — это конфликт.
-Инструмент предлагает переместить B в v1. Решение — за BA.
+**Depends-conflict check:**
+After the allocation is confirmed, the tool checks the 5.1 graph.
+If requirement A (v1) depends on requirement B (v2) via a `depends` link — that's a conflict.
+The tool suggests moving B to v1. The decision belongs to the BA.
 
-### Развилка v2 (запланировано)
-Продвинутый allocation:
-- Несколько компонентов (не только v1/v2): «Компонент A», «Компонент B», «MVP»
-- Матрица компоненты × версии
-- Распределение по командам
-Для v2: добавить `assignment_mode` и `components_json` в `allocate_requirements`.
-
----
-
-## 5. Vendor Assessment (для Buy / Hybrid)
-
-По BABOK упоминается как техника оценки вендора.
-В v1 реализован минимальный вариант: поле `vendor_notes` внутри варианта с подходом `buy` / `hybrid`.
-
-**Что рекомендуется включить в vendor_notes:**
-- Название вендора и продукта
-- Стоимость (лицензия / SaaS-подписка / TCO за 3 года)
-- Ограничения кастомизации
-- Референсы (кто использует в отрасли)
-- Условия SLA и поддержки
-- Риск vendor lock-in
-
-**Развилка v2:** отдельный инструмент `run_vendor_assessment` с формализованной оценкой
-по критериям (Financial stability, Product roadmap, Implementation support, Exit strategy).
+### v2 fork (planned)
+Advanced allocation:
+- Multiple components (not just v1/v2): "Component A", "Component B", "MVP"
+- Components × releases matrix
+- Allocation across teams
+For v2: add `assignment_mode` and `components_json` to `allocate_requirements`.
 
 ---
 
-## 6. Change Strategy — связь с задачей 7.5
+## 5. Vendor Assessment (for Buy / Hybrid)
 
-### Что такое Change Strategy (BABOK 6.4)
-Определяет **стратегический уровень** изменения:
-- Тип изменения: technology / process / organizational / hybrid
-- Скоуп: что меняется, что остаётся
-- Ограничения: бюджет, сроки, технологические стеки
-- Временные рамки и фазы
+BABOK mentions this as a vendor assessment technique.
+In v1 a minimal version is implemented: a `vendor_notes` field inside an option using the `buy` / `hybrid` approach.
 
-### Как влияет на Design Options
-- **change_type = technology** → варианты дизайна фокусируются на архитектурных решениях
-- **change_type = process** → акцент на BP-артефактах и Improvement Opportunities
-- **change_type = organizational** → allocation учитывает организационные ограничения
-- **constraints** → автоматически попадают в Design Options Report как ограничения
+**What's recommended for vendor_notes:**
+- Vendor and product name
+- Cost (license / SaaS subscription / 3-year TCO)
+- Customization constraints
+- References (who uses it in the industry)
+- SLA and support terms
+- Vendor lock-in risk
+
+**v2 fork:** a separate `run_vendor_assessment` tool with a formalized assessment
+against criteria (Financial stability, Product roadmap, Implementation support, Exit strategy).
 
 ---
 
-## 7. Связь с другими задачами BABOK
+## 6. Change Strategy — relationship to task 7.5
 
-| Вход | Задача | Что используем |
+### What Change Strategy is (BABOK 6.4)
+Defines the **strategic level** of the change:
+- Change type: technology / process / organizational / hybrid
+- Scope: what changes, what stays the same
+- Constraints: budget, timeline, technology stacks
+- Timeframes and phases
+
+### How it affects Design Options
+- **change_type = technology** → design options focus on architectural decisions
+- **change_type = process** → emphasis on BP artifacts and Improvement Opportunities
+- **change_type = organizational** → allocation accounts for organizational constraints
+- **constraints** → automatically flow into the Design Options Report as constraints
+
+---
+
+## 7. Relationship to other BABOK tasks
+
+| Input | Task | What we use |
 |------|--------|----------------|
-| 5.1 | Traceability | Граф `depends`-связей для проверки allocation |
-| 5.3 | Prioritization | Поле `priority` в req для auto_suggest |
-| 7.3 | Business Context | Бизнес-цели, Future State, ограничения |
-| 7.4 | Architecture | Viewpoints, gaps — контекст для вариантов |
-| 6.4 | Change Strategy | Тип и ограничения изменения |
+| 5.1 | Traceability | Graph of `depends` links to validate allocation |
+| 5.3 | Prioritization | The `priority` field on requirements for auto_suggest |
+| 7.3 | Business Context | Business objectives, Future State, constraints |
+| 7.4 | Architecture | Viewpoints, gaps — context for the options |
+| 6.4 | Change Strategy | Change type and constraints |
 
-| Выход | Задача | Что передаём |
+| Output | Task | What we pass along |
 |-------|--------|--------------|
-| 7.6 | Analyze Value | Design Options Report (все варианты + allocation) |
-| 4.4 | Communicate | Comparison Document для стейкхолдеров |
+| 7.6 | Analyze Value | Design Options Report (all options + allocation) |
+| 4.4 | Communicate | Comparison Document for stakeholders |

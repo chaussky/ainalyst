@@ -1,151 +1,151 @@
-# Руководство по выбору нотации — BABOK 7.1
+# Notation Selection Guide — BABOK 7.1
 
-Этот файл помогает BA выбрать правильный тип артефакта для конкретной задачи.
-Используется SKILL.md как reference при анализе контекста.
+This file helps the BA choose the right artifact type for a specific task.
+Used by SKILL.md as a reference during context analysis.
 
 ---
 
-## Быстрый выбор: что использовать?
+## Quick pick: what to use?
 
-| Ситуация | Артефакт | Инструмент |
+| Situation | Artifact | Tool |
 |----------|----------|------------|
-| Стейкхолдер говорит «я хочу чтобы система...» | User Story | `create_user_story` |
-| Нужна формальная спецификация для разработчика | Functional Requirement | `create_functional_requirement` |
-| Есть нефункциональные требования (SLA, скорость, надёжность) | Functional Requirement (тип: non_functional) | `create_functional_requirement` |
-| Стейкхолдер описывает бизнес-правило или ограничение | Functional Requirement (тип: business_rule) | `create_functional_requirement` |
-| Нужно описать взаимодействие пользователя с системой | Use Case | `create_use_case` |
-| Нужна диаграмма всех взаимодействий на одном листе | Use Case Diagram | `generate_use_case_diagram` |
-| Стейкхолдер описывает как работает процесс «сейчас» или «должно быть» | Business Process | `create_business_process` |
-| Нужно разобраться что за данные, какие поля, какие ограничения | Data Dictionary | `create_data_dictionary` |
-| Нужно показать связи между сущностями | ERD | `create_erd` |
-| Нужно убедиться что все бизнес-цели покрыты | Coverage Matrix | `build_coverage_matrix` |
+| Stakeholder says "I want the system to..." | User Story | `create_user_story` |
+| A formal specification is needed for a developer | Functional Requirement | `create_functional_requirement` |
+| There are non-functional requirements (SLA, speed, reliability) | Functional Requirement (type: non_functional) | `create_functional_requirement` |
+| Stakeholder describes a business rule or constraint | Functional Requirement (type: business_rule) | `create_functional_requirement` |
+| Need to describe user interaction with the system | Use Case | `create_use_case` |
+| Need a diagram of all interactions on one page | Use Case Diagram | `generate_use_case_diagram` |
+| Stakeholder describes how a process works "now" or "should work" | Business Process | `create_business_process` |
+| Need to understand what data, which fields, which constraints | Data Dictionary | `create_data_dictionary` |
+| Need to show relationships between entities | ERD | `create_erd` |
+| Need to confirm all business objectives are covered | Coverage Matrix | `build_coverage_matrix` |
 
 ---
 
-## Подробные критерии выбора
+## Detailed selection criteria
 
 ### User Story vs Functional Requirement
 
-**User Story** — когда:
-- Проект ведётся по Agile (Scrum, Kanban)
-- Требование описывает пользовательское взаимодействие с системой
-- Важна ценность для конечного пользователя
-- Артефакт планируется добавить в Product Backlog
-- Формат: «As a / I want / So that»
+**User Story** — when:
+- The project follows Agile (Scrum, Kanban)
+- The requirement describes user interaction with the system
+- Value to the end user matters
+- The artifact is planned to be added to the Product Backlog
+- Format: "As a / I want / So that"
 
-**Functional Requirement** — когда:
-- Проект ведётся по Predictive (Waterfall, RUP)
-- Требование описывает поведение системы без привязки к конкретной персоне
-- Нужен трассируемый идентификатор (FR-001) с атрибутами
-- Артефакт будет частью SRS-документа
-- Формат: «Система ДОЛЖНА...»
+**Functional Requirement** — when:
+- The project follows Predictive (Waterfall, RUP)
+- The requirement describes system behavior without tying it to a specific persona
+- A traceable identifier (FR-001) with attributes is needed
+- The artifact will be part of an SRS document
+- Format: "The system SHALL..."
 
-**Оба подходят** в Hybrid-проектах. Выбирай по тому, что привычнее команде разработки.
+**Both fit** Hybrid projects. Choose whichever the development team is more comfortable with.
 
 ---
 
 ### Use Case vs User Story vs Business Process
 
-**Use Case** — когда нужно:
-- Описать полный сценарий взаимодействия (включая альтернативы и исключения)
-- Формализовать контракт между системой и внешним актором
-- Объединить несколько User Story в один сценарий
-- Показать как система отвечает на разные события от одного актора
+**Use Case** — when you need to:
+- Describe a full interaction scenario (including alternatives and exceptions)
+- Formalize the contract between the system and an external actor
+- Combine several User Stories into one scenario
+- Show how the system responds to different events from one actor
 
-**User Story** — когда нужно:
-- Быстро зафиксировать потребность пользователя
-- Передать в спринт с чёткими критериями приёмки
-- Не нужны альтернативные сценарии (простой линейный флоу)
+**User Story** — when you need to:
+- Quickly capture a user need
+- Hand it off to a sprint with clear acceptance criteria
+- No alternative scenarios are needed (simple linear flow)
 
-**Business Process** — когда нужно:
-- Описать процесс с несколькими участниками (не только система)
-- Показать последовательность шагов «as-is» или «to-be»
-- Процесс включает ручные шаги, ожидания, передачи между отделами
-- Нужна основа для построения BPMN-диаграммы в draw.io/Camunda
+**Business Process** — when you need to:
+- Describe a process with multiple participants (not just the system)
+- Show a sequence of "as-is" or "to-be" steps
+- The process includes manual steps, waits, handoffs between departments
+- A basis for building a BPMN diagram in draw.io/Camunda is needed
 
 ---
 
 ### Data Dictionary vs ERD
 
-**Data Dictionary** — когда нужно:
-- Разобраться в структуре данных конкретной сущности
-- Зафиксировать типы, ограничения, бизнес-правила для атрибутов
-- Убедиться что команда понимает предметную область одинаково
-- Нет чёткого понимания связей между сущностями
+**Data Dictionary** — when you need to:
+- Understand the data structure of a specific entity
+- Capture types, constraints, business rules for attributes
+- Make sure the team understands the domain the same way
+- There's no clear understanding yet of relationships between entities
 
-**ERD** — когда нужно:
-- Показать связи между несколькими сущностями
-- Обсудить схему базы данных с архитектором/разработчиком
-- Зафиксировать кардинальность отношений (один ко многим, многие ко многим)
-- Нужна база для физического проектирования БД
+**ERD** — when you need to:
+- Show relationships between several entities
+- Discuss the database schema with an architect/developer
+- Capture relationship cardinality (one-to-many, many-to-many)
+- A basis for physical database design is needed
 
-**Обычно нужны оба**: Data Dictionary описывает атрибуты, ERD — связи.
-BA создаёт DD первым (понимает структуру), затем ERD (понимает связи).
-
----
-
-## Типичные ошибки выбора нотации
-
-### ❌ Неправильно: Business Rule как отдельный документ
-Business rules не должны существовать в вакууме. Они ВСЕГДА связаны с:
-- конкретным Use Case (правило применяется в шаге сценария), или
-- конкретным Functional Requirement (правило ограничивает поведение).
-Используй `create_functional_requirement` с типом `business_rule`, затем связывай в 5.1.
-
-### ❌ Неправильно: Use Case для каждой кнопки
-Use Case описывает цель пользователя, не UI-элемент.
-«Нажать кнопку Сохранить» — не UC. «Сохранить черновик заявки» — UC.
-Ориентир: если UC нельзя сформулировать в виде глагола+существительного («Оформить заявку»), это не UC.
-
-### ❌ Неправильно: User Story без Acceptance Criteria
-User Story без AC — не требование, а пожелание. Обязательно 2–5 критериев.
-Шаблон AC: «[Когда] [условие] → [Система/Пользователь] [действие]»
-
-### ❌ Неправильно: ERD как единственный артефакт данных
-ERD показывает структуру, но не семантику. Всегда дополняй Data Dictionary
-с описанием бизнес-смысла каждого атрибута.
+**Usually both are needed**: the Data Dictionary describes attributes, the ERD describes relationships.
+The BA creates the DD first (understands the structure), then the ERD (understands the relationships).
 
 ---
 
-## Стратегии покрытия по типам проектов
+## Common notation-selection mistakes
 
-### Agile-проект (Scrum)
-Приоритет: User Stories → Use Cases для сложных флоу → Data Dictionary
-ERD — только если команда строит с нуля. Business Process — для AS-IS анализа.
+### ❌ Wrong: Business Rule as a standalone document
+Business rules should not exist in a vacuum. They are ALWAYS tied to:
+- a specific Use Case (the rule applies at a scenario step), or
+- a specific Functional Requirement (the rule constrains behavior).
+Use `create_functional_requirement` with type `business_rule`, then link it in 5.1.
 
-### Predictive-проект (Waterfall)
-Приоритет: Functional Requirements → Use Cases → Business Processes → ERD + Data Dictionary
-User Stories — необязательны, но полезны для UI-части.
+### ❌ Wrong: a Use Case for every button
+A Use Case describes a user goal, not a UI element.
+"Click the Save button" is not a UC. "Save a draft application" is a UC.
+Rule of thumb: if the UC cannot be phrased as a verb+noun ("Submit application"), it's not a UC.
 
-### Hybrid-проект
-Functional Requirements для backbone системы + User Stories для user-facing фич.
-Use Cases для интеграций. Business Process для описания измененных бизнес-процессов.
+### ❌ Wrong: User Story without Acceptance Criteria
+A User Story without AC is not a requirement, it's a wish. 2–5 criteria are mandatory.
+AC template: "[When] [condition] → [System/User] [action]"
+
+### ❌ Wrong: ERD as the only data artifact
+An ERD shows structure but not semantics. Always supplement it with a Data Dictionary
+that describes the business meaning of each attribute.
 
 ---
 
-## Как PlantUML вписывается в рабочий процесс
+## Coverage strategies by project type
 
-Файлы `.puml` сохраняются рядом с `.md` артефактом:
+### Agile project (Scrum)
+Priority: User Stories → Use Cases for complex flows → Data Dictionary
+ERD — only if the team is building from scratch. Business Process — for AS-IS analysis.
+
+### Predictive project (Waterfall)
+Priority: Functional Requirements → Use Cases → Business Processes → ERD + Data Dictionary
+User Stories — optional, but useful for the UI part.
+
+### Hybrid project
+Functional Requirements for the system backbone + User Stories for user-facing features.
+Use Cases for integrations. Business Process for describing changed business processes.
+
+---
+
+## How PlantUML fits into the workflow
+
+The `.puml` files are saved alongside the `.md` artifact:
 ```
 governance_plans/crm_specs/
 ├── UC-001_approve_request.md
-├── UC-001_approve_request.puml       ← диаграмма отдельного UC (если нужна)
-├── uc_diagram_crm.puml               ← сводная UC Diagram всего проекта
+├── UC-001_approve_request.puml       ← diagram for an individual UC (if needed)
+├── uc_diagram_crm.puml               ← consolidated UC Diagram for the whole project
 ├── BP-001_request_lifecycle.md
-├── BP-001_request_lifecycle.puml     ← Activity Diagram процесса
+├── BP-001_request_lifecycle.puml     ← process Activity Diagram
 ├── ERD-001_core_entities.md
 └── ERD-001_core_entities.puml        ← ER Diagram
 ```
 
-**Как рендерить `.puml`:**
+**How to render `.puml`:**
 1. **PlantUML Online**: https://www.plantuml.com/plantuml/uml/
-2. **VS Code**: расширение «PlantUML» (jebbs.plantuml)
-3. **Confluence**: плагин PlantUML for Confluence
-4. **IntelliJ IDEA**: встроенная поддержка PlantUML
+2. **VS Code**: the "PlantUML" extension (jebbs.plantuml)
+3. **Confluence**: the PlantUML for Confluence plugin
+4. **IntelliJ IDEA**: built-in PlantUML support
 
-**Локальная установка PlantUML:**
+**Local PlantUML install:**
 ```bash
 brew install plantuml          # macOS
 sudo apt install plantuml      # Ubuntu/Debian
 ```
-Рендер в PNG: `plantuml file.puml`
+Render to PNG: `plantuml file.puml`

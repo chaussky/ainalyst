@@ -1,164 +1,164 @@
-# validation_guide.md — Методология валидации требований (BABOK 7.3)
+# validation_guide.md — Requirements Validation Methodology (BABOK 7.3)
 
-## Валидация vs Верификация
+## Validation vs Verification
 
-| Аспект | 7.2 Верификация | 7.3 Валидация |
+| Aspect | 7.2 Verification | 7.3 Validation |
 |--------|----------------|---------------|
-| Вопрос | Правильно ли написано? | Нужно ли нам это? |
-| Фокус | Качество формулировок | Ценность для бизнеса |
-| Техники | Rule-based, чеклисты | BFS-анализ, stakeholder review |
-| Периодичность | Разовый прогон | Итерационная |
-| Результат | Статус `verified` | Статус `validated` |
+| Question | Is it written correctly? | Do we need this? |
+| Focus | Quality of wording | Value to the business |
+| Techniques | Rule-based, checklists | BFS analysis, stakeholder review |
+| Frequency | One-time pass | Iterative |
+| Result | Status `verified` | Status `validated` |
 
-**Ключевая мысль:** требование может пройти верификацию с отличным результатом (атомарное, однозначное, тестируемое), но провалить валидацию (не нужно бизнесу, не связано с бизнес-целями).
-
----
-
-## Три оси валидации
-
-### Ось 1: Ценность (Value)
-
-**Вопрос:** Приносит ли это требование выгоду стейкхолдерам?
-
-**Признаки проблемы:**
-- Req не связан ни с одной бизнес-целью (orphan)
-- Стейкхолдеры не могут объяснить зачем это нужно
-- Ценность не измерима (нет KPI или success criteria)
-- Ценность есть только для одного стейкхолдера при конфликте с другими
-
-**Техника BABOK — Финансовый анализ:**
-Для критичных решений оцениваем ROI требования:
-- Стоимость реализации vs ценность для бизнеса
-- Если cost > benefit → кандидат на исключение
+**Key idea:** a requirement can pass verification with an excellent result (atomic, unambiguous, testable) but fail validation (not needed by the business, not linked to business goals).
 
 ---
 
-### Ось 2: Соответствие будущему состоянию (Future State Alignment)
+## Three axes of validation
 
-**Вопрос:** Помогает ли это требование достичь целевого состояния?
+### Axis 1: Value
 
-**Проверка через BFS (автоматически в `check_business_alignment`):**
+**Question:** Does this requirement bring benefit to stakeholders?
+
+**Warning signs:**
+- The req is not linked to any business goal (orphan)
+- Stakeholders cannot explain why it's needed
+- Value is not measurable (no KPI or success criteria)
+- Value exists only for one stakeholder, conflicting with others
+
+**BABOK technique — Financial Analysis:**
+For critical decisions, we assess the ROI of the requirement:
+- Cost of implementation vs. value to the business
+- If cost > benefit → candidate for exclusion
+
+---
+
+### Axis 2: Future State Alignment
+
+**Question:** Does this requirement help achieve the target state?
+
+**Verification via BFS (automatic in `check_business_alignment`):**
 ```
-req → связи в 5.1 → BFS-обход → узел типа 'business' → совпадает с BG?
-```
-
-**Title-matching (второй метод):**
-Если граф 5.1 разрежен — ищем пересечение ключевых слов req и BG.
-
-**Признаки проблемы:**
-- Req описывает «как было» вместо «как должно быть»
-- Req фиксирует текущий процесс, не улучшая его
-- Req противоречит описанию Future State
-
----
-
-### Ось 3: Предположения и риски (Assumptions & Risks)
-
-**Вопрос:** Выявлены ли ключевые допущения? Управляются ли риски?
-
-**Когда выявлять assumptions:**
-- Req не может быть реализован без определённого условия (технического, бизнесового)
-- Есть неопределённость в поведении пользователей или систем
-- Интеграции зависят от сторонних систем
-- Бизнес-модель проекта инновационна (беспрецедентный продукт)
-
----
-
-## Техники BABOK для валидации
-
-### 1. Acceptance and Evaluation Criteria (Критерии принятия)
-
-Измеримые условия, при которых решение считается успешным:
-```
-Baseline: текущий показатель
-Target: целевой показатель
-Measurement method: как измерять
+req → links in 5.1 → BFS traversal → node of type 'business' → matches a BG?
 ```
 
-Хранится в поле `success_criteria` узла req в репозитории 5.1.
+**Title-matching (second method):**
+If the 5.1 graph is sparse, we look for keyword overlap between the req and the BG.
 
-### 2. Stakeholder Review (Обзор со стейкхолдерами)
-
-Структурированная сессия с заказчиком:
-- Пройтись по каждому BG: «Какие req помогают достичь этой цели?»
-- Orphan req предъявить заказчику: «Зачем нам это?»
-- Открытые assumptions обсудить: «Подтверждает ли это ваш опыт?»
-
-### 3. Prototyping (Прототипирование)
-
-Ранняя проверка ценности через визуализацию:
-- Wireframe показывает как req воплотится в интерфейсе
-- Стейкхолдер может отреагировать «это не то, что мне нужно»
-- Выявляет скрытые assumptions
-
-### 4. Risk Analysis (Анализ рисков)
-
-Для каждого high-risk assumption:
-- Вероятность: насколько likely опровержение?
-- Влияние: что произойдёт с проектом при опровержении?
-- Митигация: что делаем если опровержение состоялось?
+**Warning signs:**
+- The req describes "how it was" instead of "how it should be"
+- The req documents the current process without improving it
+- The req contradicts the Future State description
 
 ---
 
-## Паттерны частых ошибок валидации
+### Axis 3: Assumptions & Risks
 
-### Паттерн 1: «Золотое покрытие» (Gold Plating)
+**Question:** Have key assumptions been identified? Are the risks managed?
 
-**Симптом:** Много req с высокой детализацией, orphan по BG.
-
-**Диагностика:**
-- `check_business_alignment` выдаёт >20% orphan
-- Стейкхолдеры не могут связать req с бизнес-проблемой
-
-**Решение:** Для каждого orphan — вопрос заказчику «Зачем?». Если ответа нет — удалить.
+**When to identify assumptions:**
+- The req cannot be implemented without a certain condition (technical, business-related)
+- There's uncertainty in user or system behavior
+- Integrations depend on third-party systems
+- The project's business model is innovative (unprecedented product)
 
 ---
 
-### Паттерн 2: «Суррогатные цели» (Surrogate Goals)
+## BABOK techniques for validation
 
-**Симптом:** BG сформулированы как технические задачи, а не бизнес-результаты.
+### 1. Acceptance and Evaluation Criteria
 
-**Пример плохого BG:** «Внедрить микросервисную архитектуру»
-**Пример хорошего BG:** «Снизить time-to-market новых фич с 3 месяцев до 3 недель»
+Measurable conditions under which the solution is considered successful:
+```
+Baseline: current metric
+Target: target metric
+Measurement method: how to measure
+```
 
-**Последствие:** check_business_alignment будет неточным — технические req совпадут с техническими BG.
+Stored in the `success_criteria` field of the req node in the 5.1 repository.
 
----
+### 2. Stakeholder Review
 
-### Паттерн 3: «Непроверенные предположения» (Untested Assumptions)
+A structured session with the customer:
+- Go through each BG: "Which req help achieve this goal?"
+- Present orphan req to the customer: "Why do we need this?"
+- Discuss open assumptions: "Does this match your experience?"
 
-**Симптом:** Нет ни одного assumptions в проекте.
+### 3. Prototyping
 
-**Диагностика:** Либо BA не логировал assumptions, либо проект тривиален.
+Early value verification through visualization:
+- A wireframe shows how the req will materialize in the interface
+- A stakeholder may react with "this isn't what I need"
+- Surfaces hidden assumptions
 
-**Типичные assumptions которые забывают:**
-- «Пользователи примут изменение интерфейса»
-- «Legacy-система поддерживает интеграцию»
-- «Объём данных для миграции известен»
-- «Сроки согласования в смежных отделах укладываются в план»
+### 4. Risk Analysis
 
----
-
-### Паттерн 4: «Непокрытые BG» (Uncovered Goals)
-
-**Симптом:** Есть BG без req.
-
-**Диагностика:** `get_validation_report` показывает пустую строку в coverage matrix.
-
-**Возможные причины:**
-- BG добавили позже требований → нужны новые req
-- BG достигается организационными мерами, не IT → зафиксировать как out of scope
-- BG будет реализован в следующей итерации → зафиксировать в backlog
+For each high-risk assumption:
+- Probability: how likely is it to be refuted?
+- Impact: what happens to the project if it's refuted?
+- Mitigation: what do we do if it is refuted?
 
 ---
 
-## Готовность к 7.5 Design Options
+## Common validation error patterns
 
-Критерии перехода к 7.5:
-- [ ] ≥ 80% verified req получили статус validated
-- [ ] 0 открытых high-risk assumptions
-- [ ] 0 orphan req (или все orphan исключены осознанно)
-- [ ] Все BG покрыты хотя бы одним req
-- [ ] Validation Report создан
+### Pattern 1: "Gold Plating"
 
-При несоблюдении критериев — `get_validation_report` выдаст статус ❌ с объяснением.
+**Symptom:** Many highly detailed req, orphan with respect to BGs.
+
+**Diagnosis:**
+- `check_business_alignment` reports >20% orphan
+- Stakeholders cannot connect the req to a business problem
+
+**Solution:** For each orphan, ask the customer "Why?" If there's no answer, remove it.
+
+---
+
+### Pattern 2: "Surrogate Goals"
+
+**Symptom:** BGs are phrased as technical tasks rather than business outcomes.
+
+**Example of a bad BG:** "Implement a microservices architecture"
+**Example of a good BG:** "Reduce time-to-market for new features from 3 months to 3 weeks"
+
+**Consequence:** check_business_alignment will be inaccurate — technical req will match technical BGs.
+
+---
+
+### Pattern 3: "Untested Assumptions"
+
+**Symptom:** No assumptions logged anywhere in the project.
+
+**Diagnosis:** Either the BA didn't log assumptions, or the project is trivial.
+
+**Typical assumptions that get forgotten:**
+- "Users will accept the interface change"
+- "The legacy system supports the integration"
+- "The migration data volume is known"
+- "Approval timelines in adjacent departments fit the plan"
+
+---
+
+### Pattern 4: "Uncovered Goals"
+
+**Symptom:** There are BGs with no req.
+
+**Diagnosis:** `get_validation_report` shows an empty row in the coverage matrix.
+
+**Possible causes:**
+- The BG was added after the requirements → new req are needed
+- The BG is achieved through organizational measures, not IT → mark it as out of scope
+- The BG will be implemented in a later iteration → log it in the backlog
+
+---
+
+## Readiness for 7.5 Design Options
+
+Criteria for moving on to 7.5:
+- [ ] ≥ 80% of verified req have reached validated status
+- [ ] 0 open high-risk assumptions
+- [ ] 0 orphan req (or all orphans deliberately excluded)
+- [ ] All BGs are covered by at least one req
+- [ ] Validation Report has been created
+
+If the criteria are not met, `get_validation_report` returns a ❌ status with an explanation.

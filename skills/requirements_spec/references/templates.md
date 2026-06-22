@@ -1,27 +1,27 @@
-# Шаблоны артефактов — BABOK 7.1 (Specify and Model Requirements)
+# Artifact Templates — BABOK 7.1 (Specify and Model Requirements)
 
-Этот файл содержит каноничные шаблоны для каждого типа артефакта задачи 7.1.
-Используется MCP-сервером `requirements_spec_mcp.py` как эталон структуры.
+This file contains the canonical templates for each artifact type of task 7.1.
+Used by the `requirements_spec_mcp.py` MCP server as the structural reference.
 
 ---
 
-## Шаблон 1: User Story
+## Template 1: User Story
 
 ```
-<!-- BABOK 7.1 — User Story | Проект: {project} | {date} -->
+<!-- BABOK 7.1 — User Story | Project: {project} | {date} -->
 
 # {id} — {title}
 
-**Тип:** User Story
-**Проект:** {project}
-**Источник:** {source_artifact}
-**Приоритет:** {priority}
-**Статус:** draft
-**Версия:** 1.0
+**Type:** User Story
+**Project:** {project}
+**Source:** {source_artifact}
+**Priority:** {priority}
+**Status:** draft
+**Version:** 1.0
 
 ---
 
-## История
+## Story
 
 As a **{role}**,
 I want **{action}**,
@@ -31,118 +31,118 @@ So that **{benefit}**.
 
 {criteria}
 
-## Дополнительный контекст
+## Additional context
 
 {notes}
 ```
 
-**Правила оформления:**
-- `role` — роль пользователя, не персона и не система («Менеджер по заявкам», не «Иван»)
-- `action` — конкретное действие, формулируется кратко
-- `benefit` — бизнес-результат (не технический), начинается с «я мог» / «система обеспечивала»
-- Acceptance Criteria — пронумерованный список, каждый критерий начинается с «Система...» или «Пользователь...»
-- Минимум 2, рекомендуется 3–5 критериев
+**Formatting rules:**
+- `role` — a user role, not a persona and not the system ("Application Manager", not "John")
+- `action` — a concrete action, phrased concisely
+- `benefit` — a business outcome (not technical), starts with "I can" / "the system ensures"
+- Acceptance Criteria — a numbered list, each criterion starts with "The system..." or "The user..."
+- Minimum 2, 3–5 criteria recommended
 
 ---
 
-## Шаблон 2: Functional Requirement (SRS-style)
+## Template 2: Functional Requirement (SRS-style)
 
 ```
-<!-- BABOK 7.1 — Functional Requirement | Проект: {project} | {date} -->
+<!-- BABOK 7.1 — Functional Requirement | Project: {project} | {date} -->
 
 # {id} — {title}
 
-**Тип:** {req_type}
-**Проект:** {project}
-**Источник:** {source_artifact}
-**Приоритет:** {priority}
-**Статус:** draft
-**Версия:** 1.0
-**Владелец:** {owner}
+**Type:** {req_type}
+**Project:** {project}
+**Source:** {source_artifact}
+**Priority:** {priority}
+**Status:** draft
+**Version:** 1.0
+**Owner:** {owner}
 
 ---
 
-## Формулировка
+## Statement
 
 {description}
 
-## Обоснование
+## Rationale
 
 {rationale}
 
-## Ограничения и допущения
+## Constraints and assumptions
 
 {constraints}
 
-## Связанные требования
+## Related requirements
 
 {related}
 ```
 
-**Типы требований:**
-- `functional` — что система должна делать
-- `non_functional` — качественные характеристики (производительность, безопасность, доступность)
-- `business_rule` — бизнес-правило или ограничение предметной области
+**Requirement types:**
+- `functional` — what the system must do
+- `non_functional` — quality characteristics (performance, security, availability)
+- `business_rule` — a business rule or domain constraint
 
-**Правила формулировки:**
-- Функциональное: «Система ДОЛЖНА [глагол действия]...»
-- Нефункциональное: «Система ДОЛЖНА [метрика] [значение] при [условии]»
-- Бизнес-правило: «[Субъект] [глагол] [объект] [условие]» — без слова «система»
+**Phrasing rules:**
+- Functional: "The system SHALL [action verb]..."
+- Non-functional: "The system SHALL [metric] [value] under [condition]"
+- Business rule: "[Subject] [verb] [object] [condition]" — without the word "system"
 
 ---
 
-## Шаблон 3: Use Case
+## Template 3: Use Case
 
 ```
-<!-- BABOK 7.1 — Use Case | Проект: {project} | {date} -->
+<!-- BABOK 7.1 — Use Case | Project: {project} | {date} -->
 
 # {id} — {title}
 
-**Тип:** Use Case
-**Проект:** {project}
-**Источник:** {source_artifact}
-**Приоритет:** {priority}
-**Статус:** draft
-**Версия:** 1.0
+**Type:** Use Case
+**Project:** {project}
+**Source:** {source_artifact}
+**Priority:** {priority}
+**Status:** draft
+**Version:** 1.0
 
 ---
 
-## Общая информация
+## General information
 
-| Атрибут       | Значение         |
+| Attribute       | Value         |
 |---------------|------------------|
-| Актор (primary) | {primary_actor} |
-| Акторы (secondary) | {secondary_actors} |
-| Предусловие   | {precondition}   |
-| Постусловие   | {postcondition}  |
-| Триггер       | {trigger}        |
+| Actor (primary) | {primary_actor} |
+| Actors (secondary) | {secondary_actors} |
+| Precondition   | {precondition}   |
+| Postcondition   | {postcondition}  |
+| Trigger       | {trigger}        |
 
-## Основной сценарий (Happy Path)
+## Main scenario (Happy Path)
 
 {steps_main}
 
-## Альтернативные сценарии
+## Alternative scenarios
 
 {steps_alt}
 
-## Сценарии исключений
+## Exception scenarios
 
 {steps_exc}
 
-## Бизнес-правила и ограничения
+## Business rules and constraints
 
 {business_rules}
 ```
 
-**Правила оформления шагов:**
-- Нумерованный список: «1. Актор [действие]. 2. Система [реакция].»
-- Чередование: актор → система → актор → система
-- Исключения: «Xа. Если [условие] → система [действие].»
-- Альтернативы нумеруются как «2а», «3б» и т.д. относительно шага основного сценария
+**Step formatting rules:**
+- Numbered list: "1. Actor [action]. 2. System [response]."
+- Alternation: actor → system → actor → system
+- Exceptions: "Xa. If [condition] → system [action]."
+- Alternatives are numbered as "2a", "3b" etc. relative to the main scenario step
 
 ---
 
-## Шаблон 4: Use Case Diagram (PlantUML)
+## Template 4: Use Case Diagram (PlantUML)
 
 ```plantuml
 @startuml {diagram_name}
@@ -169,66 +169,66 @@ A2 --> UC_shared
 @enduml
 ```
 
-**Правила диаграммы:**
-- `<<include>>` — обязательное включение (подпроцесс всегда вызывается)
-- `<<extend>>` — опциональное расширение (вызывается при условии)
-- `<<generalization>>` — наследование акторов (стрела без стрелки, направление к родителю)
-- Все UC проекта объединяются на одной диаграмме
-- `system_boundary` — имя системы/подсистемы, задаёт прямоугольник
+**Diagram rules:**
+- `<<include>>` — mandatory inclusion (the sub-process is always invoked)
+- `<<extend>>` — optional extension (invoked under a condition)
+- `<<generalization>>` — actor inheritance (arrow without an arrowhead, pointing to the parent)
+- All UCs in the project are combined on one diagram
+- `system_boundary` — the system/subsystem name, defines the rectangle
 
 ---
 
-## Шаблон 5а: Business Process (текстовое описание)
+## Template 5a: Business Process (text description)
 
 ```
-<!-- BABOK 7.1 — Business Process | Проект: {project} | {date} -->
+<!-- BABOK 7.1 — Business Process | Project: {project} | {date} -->
 
 # {id} — {title}
 
-**Тип:** Business Process
-**Проект:** {project}
-**Источник:** {source_artifact}
-**Приоритет:** {priority}
-**Статус:** draft
-**Версия:** 1.0
+**Type:** Business Process
+**Project:** {project}
+**Source:** {source_artifact}
+**Priority:** {priority}
+**Status:** draft
+**Version:** 1.0
 
 ---
 
-## Общая информация
+## General information
 
-| Атрибут     | Значение           |
+| Attribute     | Value           |
 |-------------|--------------------|
-| Владелец процесса | {process_owner} |
-| Триггер     | {trigger}          |
-| Результат   | {outcome}          |
-| Участники   | {participants}     |
+| Process owner | {process_owner} |
+| Trigger     | {trigger}          |
+| Outcome   | {outcome}          |
+| Participants   | {participants}     |
 
-## Шаги процесса
+## Process steps
 
 {steps}
 
-## Бизнес-правила
+## Business rules
 
 {business_rules}
 
-## Метрики процесса
+## Process metrics
 
 {metrics}
 
-## Исключения и нештатные ситуации
+## Exceptions and edge cases
 
 {exceptions}
 ```
 
-**Правила оформления шагов процесса:**
-- Нумерованный список с указанием ответственного: «1. [Роль]: [действие]»
-- Точки ветвления: «2a. Если [условие]: → шаг X. 2б. Иначе: → шаг Y.»
-- Ожидания/таймеры: «4. [Роль] ожидает [событие] (макс. [время]).»
-- Завершение: последний шаг = достижение результата процесса
+**Process step formatting rules:**
+- Numbered list with the responsible party: "1. [Role]: [action]"
+- Branch points: "2a. If [condition]: → step X. 2b. Otherwise: → step Y."
+- Waits/timers: "4. [Role] waits for [event] (max [time])."
+- Completion: the last step = the process outcome is reached
 
 ---
 
-## Шаблон 5б: Business Process Activity Diagram (PlantUML)
+## Template 5b: Business Process Activity Diagram (PlantUML)
 
 ```plantuml
 @startuml {diagram_name}
@@ -260,53 +260,53 @@ stop
 @enduml
 ```
 
-**Правила диаграммы:**
-- Swimlane для каждого участника/системы (`|имя|`)
-- `start` / `stop` — обязательны
-- Ромб (`if`) для точек ветвления
-- `fork` / `fork again` / `end fork` для параллельных потоков
-- Нотация Activity (не BPMN) — PlantUML Activity v2
+**Diagram rules:**
+- A swimlane for each participant/system (`|name|`)
+- `start` / `stop` — mandatory
+- Diamond (`if`) for branch points
+- `fork` / `fork again` / `end fork` for parallel flows
+- Activity notation (not BPMN) — PlantUML Activity v2
 
 ---
 
-## Шаблон 6а: Data Dictionary
+## Template 6a: Data Dictionary
 
 ```
-<!-- BABOK 7.1 — Data Dictionary | Проект: {project} | {date} -->
+<!-- BABOK 7.1 — Data Dictionary | Project: {project} | {date} -->
 
 # {id} — Data Dictionary: {title}
 
-**Тип:** Data Dictionary
-**Проект:** {project}
-**Источник:** {source_artifact}
-**Статус:** draft
-**Версия:** 1.0
+**Type:** Data Dictionary
+**Project:** {project}
+**Source:** {source_artifact}
+**Status:** draft
+**Version:** 1.0
 
 ---
 
-## Сущность: {entity_name}
+## Entity: {entity_name}
 
-**Описание:** {entity_description}
+**Description:** {entity_description}
 
-| Атрибут | Тип данных | Обязательный | Ограничения | Описание |
+| Attribute | Data type | Required | Constraints | Description |
 |---------|-----------|--------------|-------------|----------|
-| {attr_1} | {type} | Да / Нет | {constraint} | {desc} |
+| {attr_1} | {type} | Yes / No | {constraint} | {desc} |
 
-**Бизнес-правила для сущности:**
+**Business rules for the entity:**
 {entity_rules}
 
 ---
 ```
 
-**Правила оформления:**
-- Одна таблица = одна сущность (не смешивать)
-- Типы данных: String, Integer, Decimal, Boolean, Date, DateTime, Enum, FK (ссылка)
-- Ограничения: NOT NULL, UNIQUE, MIN/MAX, формат (regex), значения по умолчанию
-- Enum-атрибуты: перечислить допустимые значения в колонке «Ограничения»
+**Formatting rules:**
+- One table = one entity (do not mix)
+- Data types: String, Integer, Decimal, Boolean, Date, DateTime, Enum, FK (reference)
+- Constraints: NOT NULL, UNIQUE, MIN/MAX, format (regex), default values
+- Enum attributes: list the allowed values in the "Constraints" column
 
 ---
 
-## Шаблон 6б: ERD (PlantUML)
+## Template 6b: ERD (PlantUML)
 
 ```plantuml
 @startuml {diagram_name}
@@ -338,24 +338,24 @@ E1 ||--o{ E2 : "{relation_label}"
 @enduml
 ```
 
-**Нотация связей PlantUML:**
-- `||--||`  — один к одному (обязательная)
-- `||--o|`  — один к одному (необязательная со стороны второй)
-- `||--o{`  — один ко многим
-- `|o--o{`  — ноль или один ко многим
-- `}o--o{`  — многие ко многим
+**PlantUML relationship notation:**
+- `||--||`  — one-to-one (mandatory)
+- `||--o|`  — one-to-one (optional on the second side)
+- `||--o{`  — one-to-many
+- `|o--o{`  — zero-or-one-to-many
+- `}o--o{`  — many-to-many
 
-**Правила диаграммы:**
-- PK помечается `+` перед атрибутом
-- FK отмечать в комментарии `[FK]`
-- Разделитель `--` между PK и остальными атрибутами
-- Метка связи (`"relation_label"`) — краткий глагол от первой сущности ко второй
+**Diagram rules:**
+- PK is marked with `+` before the attribute
+- Mark FK with the `[FK]` comment
+- Separator `--` between the PK and the remaining attributes
+- The relationship label (`"relation_label"`) — a short verb from the first entity to the second
 
 ---
 
-## Соответствие типов артефактов и типов требований в реестре 5.1
+## Mapping of artifact types to requirement types in the 5.1 registry
 
-| Артефакт 7.1     | type в реестре 5.1 | ID-префикс |
+| 7.1 Artifact     | type in 5.1 registry | ID prefix |
 |------------------|--------------------|------------|
 | User Story       | user_story         | US-        |
 | Functional Req   | functional         | FR-        |

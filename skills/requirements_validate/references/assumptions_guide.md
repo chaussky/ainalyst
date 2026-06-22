@@ -1,173 +1,173 @@
-# assumptions_guide.md — Работа с предположениями (BABOK 7.3)
+# assumptions_guide.md — Working with Assumptions (BABOK 7.3)
 
-## Что такое предположение (Assumption)
+## What an Assumption is
 
-**Предположение (Assumption)** — утверждение, принятое за истину без доказательства.
+**Assumption** — a statement accepted as true without proof.
 
-Assumptions особенно критичны когда:
-- Организация запускает **беспрецедентный продукт** (нет исторических данных)
-- Нельзя **доказать причинно-следственную связь** между проблемой и решением
-- **Интеграции** зависят от поведения сторонних систем
-- **Пользователи** должны изменить привычки
+Assumptions are especially critical when:
+- The organization is launching an **unprecedented product** (no historical data)
+- A **cause-and-effect relationship** between the problem and the solution cannot be proven
+- **Integrations** depend on the behavior of third-party systems
+- **Users** must change their habits
 
-Невыявленное assumption = скрытый риск. Когда оно опровергается — проект разворачивается в неожиданном направлении. Лучше зафиксировать и проверить.
+An unidentified assumption is a hidden risk. When it's refuted, the project veers off in an unexpected direction. It's better to log it and verify it.
 
 ---
 
-## Классификация по risk_level
+## Classification by risk_level
 
 ### 🔴 High risk
 
-**Когда присваивать:**
-- Опровержение меняет архитектуру решения или исключает req
-- Зависит от действий стейкхолдеров вне зоны влияния BA
-- Требует технической проверки до начала разработки
+**When to assign:**
+- Being refuted would change the solution architecture or eliminate a req
+- Depends on actions of stakeholders outside the BA's sphere of influence
+- Requires technical verification before development starts
 
-**Примеры:**
-- «Предполагаем, что legacy-система поддерживает REST API»
-- «Ожидаем, что 95% пользователей перейдут с email-уведомлений на push»
-- «Считаем, что объём данных для миграции не превысит 10 млн записей»
+**Examples:**
+- "We assume the legacy system supports a REST API"
+- "We expect 95% of users to switch from email notifications to push"
+- "We believe the volume of data to migrate will not exceed 10 million records"
 
-**Последствие:** `mark_req_validated` выдаёт предупреждение пока открыто.
+**Consequence:** `mark_req_validated` issues a warning while it remains open.
 
 ---
 
 ### 🟡 Medium risk
 
-**Когда присваивать:**
-- Опровержение потребует корректировки req, но не пересмотра архитектуры
-- Может быть проверено в процессе разработки (не обязательно до старта)
+**When to assign:**
+- Being refuted would require adjusting a req, but not revisiting the architecture
+- Can be verified during development (not necessarily before kickoff)
 
-**Примеры:**
-- «Предполагаем, что операторы готовы к 2-часовому обучению»
-- «Ожидаем, что пиковая нагрузка не превысит 1000 RPS»
-- «Считаем, что дизайн-система компании охватывает все нужные компоненты»
+**Examples:**
+- "We assume operators are willing to undergo 2 hours of training"
+- "We expect peak load not to exceed 1000 RPS"
+- "We believe the company's design system covers all the needed components"
 
 ---
 
 ### 🟢 Low risk
 
-**Когда присваивать:**
-- Опровержение не влечёт изменений req
-- Легко проверяется или имеет низкую вероятность опровержения
+**When to assign:**
+- Being refuted would not require changes to the req
+- Easy to verify or has a low probability of being refuted
 
-**Примеры:**
-- «Предполагаем, что браузеры целевой аудитории поддерживают ES2020»
-- «Ожидаем стабильный курс валют на период разработки»
-- «Считаем, что технический стек команды позволяет реализовать req»
-
----
-
-## Когда выявлять assumptions
-
-**До старта разработки:**
-- При анализе каждого req: «Что должно быть правдой для реализации этого?»
-- При check_business_alignment: orphan req часто скрывает непроверенное допущение
-- При работе с legacy-интеграциями: всегда
-
-**В процессе выявления (4.1–4.3):**
-- При противоречиях между стейкхолдерами: «Кто-то принял допущение, другой — нет»
-- При фразах «мы думали, что...», «обычно у нас...», «наверное, они...»
-
-**При изменении требований (5.4 CR):**
-- Каждый CR может опровергать ранее принятые assumptions
-- Проверяй `{project}_assumptions.json` при обработке CR
+**Examples:**
+- "We assume the target audience's browsers support ES2020"
+- "We expect a stable exchange rate over the development period"
+- "We believe the team's technical stack allows the req to be implemented"
 
 ---
 
-## Как подтверждать / опровергать
+## When to identify assumptions
 
-### Методы подтверждения
+**Before development starts:**
+- When analyzing each req: "What needs to be true for this to be implemented?"
+- During check_business_alignment: an orphan req often hides an unverified assumption
+- When dealing with legacy integrations: always
 
-| Метод | Подходит для |
+**During elicitation (4.1–4.3):**
+- When stakeholders contradict each other: "One person made an assumption, another didn't"
+- On phrases like "we thought that...", "usually we...", "they probably..."
+
+**When requirements change (5.4 CR):**
+- Every CR can refute previously accepted assumptions
+- Check `{project}_assumptions.json` when processing a CR
+
+---
+
+## How to confirm / refute
+
+### Confirmation methods
+
+| Method | Best suited for |
 |-------|-------------|
-| Интервью со стейкхолдером | Поведенческие assumptions |
-| Технический spike | Технические и интеграционные |
-| Пилот / MVP | Пользовательские |
-| Анализ документации | Системные, legacy-интеграции |
-| Прототип + UX-тест | Assumptions об UX |
-| Data analysis | Количественные assumptions (нагрузка, объём) |
+| Stakeholder interview | Behavioral assumptions |
+| Technical spike | Technical and integration assumptions |
+| Pilot / MVP | User-related assumptions |
+| Documentation review | System, legacy integration assumptions |
+| Prototype + UX test | Assumptions about UX |
+| Data analysis | Quantitative assumptions (load, volume) |
 
-### Что писать в resolution_note
+### What to write in resolution_note
 
-**Хорошо:**
-> «Провели технический spike с командой. REST API legacy-системы поддерживает версию 2.1, метод /orders/list доступен. Подтверждено 2025-03-10.»
+**Good:**
+> "Ran a technical spike with the team. The legacy system's REST API supports version 2.1, the /orders/list method is available. Confirmed 2025-03-10."
 
-**Плохо:**
-> «Проверили.»
+**Bad:**
+> "Checked it."
 
-Хорошая resolution_note — это аудиторский след. Через 3 месяца кто-то спросит «почему мы это решили так».
-
----
-
-## Типичные assumptions в IT-проектах
-
-### Технические
-
-| Assumption | Как проверить |
-|-----------|--------------|
-| «Legacy-система имеет API» | Technical spike, документация вендора |
-| «Время ответа БД ≤ N мс» | Load testing, query plan |
-| «Объём данных миграции известен» | SQL-запрос к prod-базе (если доступ есть) |
-| «SSO-провайдер поддерживает нужный flow» | Документация, тестовый стенд |
-
-### Пользовательские
-
-| Assumption | Как проверить |
-|-----------|--------------|
-| «Пользователи примут новый интерфейс» | UX-тест с реальными пользователями |
-| «Операторы готовы к обучению» | Интервью с HR, опрос операторов |
-| «Мобильное использование < 20%» | Analytics, если продукт уже существует |
-
-### Бизнесовые
-
-| Assumption | Как проверить |
-|-----------|--------------|
-| «Заказчик выделит бюджет на фазу 2» | Фиксация в договоре или ROI-обоснование |
-| «Регулятор одобрит изменение» | Юридическая экспертиза |
-| «Конкуренты не выпустят аналог до релиза» | Мониторинг рынка |
+A good resolution_note is an audit trail. Three months from now, someone will ask "why did we decide it this way."
 
 ---
 
-## Связь assumptions и рисков проекта
+## Common assumptions in IT projects
 
-Assumption — это пассивный риск. Он становится активным при опровержении.
+### Technical
 
-**Маппинг risk_level → реакция проекта:**
+| Assumption | How to verify |
+|-----------|--------------|
+| "The legacy system has an API" | Technical spike, vendor documentation |
+| "DB response time ≤ N ms" | Load testing, query plan |
+| "The migration data volume is known" | SQL query against the prod database (if access is available) |
+| "The SSO provider supports the required flow" | Documentation, test environment |
 
-| risk_level | Что делать при `refuted` |
+### User-related
+
+| Assumption | How to verify |
+|-----------|--------------|
+| "Users will accept the new interface" | UX test with real users |
+| "Operators are ready for training" | Interview with HR, survey of operators |
+| "Mobile usage < 20%" | Analytics, if the product already exists |
+
+### Business-related
+
+| Assumption | How to verify |
+|-----------|--------------|
+| "The customer will allocate budget for phase 2" | Documented in the contract or an ROI justification |
+| "The regulator will approve the change" | Legal review |
+| "Competitors won't ship an equivalent before the release" | Market monitoring |
+
+---
+
+## How assumptions relate to project risk
+
+An assumption is a passive risk. It becomes active when refuted.
+
+**Mapping risk_level → project response:**
+
+| risk_level | What to do when `refuted` |
 |-----------|------------------------|
-| high | Немедленный pивот: пересмотр req, нотификация заказчика |
-| medium | CR-процесс (5.4): оценить влияние на scope/schedule |
-| low | Незначительная корректировка req, без эскалации |
+| high | Immediate pivot: revisit the req, notify the customer |
+| medium | CR process (5.4): assess impact on scope/schedule |
+| low | Minor adjustment to the req, no escalation |
 
-**Паттерн для DEVLOG:** при каждом `refuted` фиксировать:
-- Какой req пострадал
-- Что изменили в требованиях
-- Стоимость изменения (часы, sprint)
+**Pattern for the DEVLOG:** for every `refuted` case, log:
+- Which req was affected
+- What changed in the requirements
+- Cost of the change (hours, sprint)
 
 ---
 
-## Нумерация и хранение
+## Numbering and storage
 
-Assumptions хранятся в `governance_plans/{project}_assumptions.json`.
+Assumptions are stored in `governance_plans/{project}_assumptions.json`.
 
-**Структура одного assumption:**
+**Structure of a single assumption:**
 ```json
 {
   "assumption_id": "AS-001",
-  "description": "Текст предположения",
+  "description": "Text of the assumption",
   "req_ids": ["US-001", "FR-003"],
   "risk_level": "high",
   "status": "open",
-  "assigned_to": "Петрова А.",
+  "assigned_to": "A. Petrova",
   "created_at": "2025-03-10",
   "resolved_at": null,
   "resolution_note": ""
 }
 ```
 
-**Статусы:**
-- `open` → не проверено
-- `confirmed` → подтверждено (req остаются актуальными)
-- `refuted` → опровергнуто (req на пересмотр)
+**Statuses:**
+- `open` → not yet verified
+- `confirmed` → confirmed (req remain valid)
+- `refuted` → refuted (req up for revision)

@@ -1,94 +1,94 @@
 ---
 name: requirements_spec
 description: >
-  Скилл BABOK 7.1 — Спецификация и моделирование требований. Используй этот скилл
-  когда BA переводит результаты выявления в формальные спецификации: user stories,
-  use cases, бизнес-правила, data definitions, процессные модели (BPMN).
-  Триггеры: «спецификация требований», «user story», «use case», «бизнес-правила»,
-  «specify requirements», «написать требования», «оформить требования», «BPMN», «модели».
-project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
+  BABOK 7.1 skill — Specify and Model Requirements. Use this skill when the BA
+  translates elicitation results into formal specifications: user stories,
+  use cases, business rules, data definitions, process models (BPMN).
+  Triggers: "requirements specification", "user story", "use case", "business rules",
+  "specify requirements", "write requirements", "formalize requirements", "BPMN", "models".
+project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL.md — BABOK 7.1: Specify and Model Requirements
 
-## Что делает эта задача
+## What this task is about
 
-Задача 7.1 превращает подтверждённые результаты выявления (4.2/4.3) в формальные
-спецификации требований. Вход — «что сказали стейкхолдеры», выход — «требования
-в стандартных нотациях с моделями».
+Task 7.1 turns confirmed elicitation results (4.2/4.3) into formal requirements
+specifications. The input is "what the stakeholders said," the output is
+"requirements in standard notations with models."
 
-Это мост между выявлением (Глава 4) и верификацией/валидацией (7.2, 7.3).
-
----
-
-## Когда вызывать эти инструменты
-
-Вызывай инструменты 7.1, когда:
-- Есть подтверждённые результаты выявления (артефакты 4.3)
-- Нужно передать требования разработчикам, архитекторам, тестировщикам
-- Нужны трассируемые формальные спецификации
-- Надо проверить, что все бизнес-цели из выявления покрыты требованиями
+This is the bridge between elicitation (Chapter 4) and verification/validation (7.2, 7.3).
 
 ---
 
-## Рекомендуемый порядок работы
+## When to call these tools
 
-### Шаг 1 — Анализ контекста
-Начни с `analyze_elicitation_context`. Инструмент прочитает артефакты 4.3
-и предложит список требований-кандидатов с классификацией.
+Call the 7.1 tools when:
+- Confirmed elicitation results exist (artifacts from 4.3)
+- Requirements need to be handed off to developers, architects, testers
+- Traceable formal specifications are needed
+- You need to verify that all business objectives from elicitation are covered by requirements
+
+---
+
+## Recommended workflow
+
+### Step 1 — Context analysis
+Start with `analyze_elicitation_context`. The tool will read the 4.3 artifacts
+and propose a list of candidate requirements with classification.
 
 ```
 analyze_elicitation_context(
     project_id="crm_2024",
-    context_text=""   # оставить пустым — инструмент найдёт файл сам
+    context_text=""   # leave empty — the tool will find the file itself
 )
 ```
 
-Если файл 4.3 не найден, инструмент попросит передать текст вручную:
+If the 4.3 file is not found, the tool will ask you to pass the text manually:
 ```
 analyze_elicitation_context(
     project_id="crm_2024",
-    context_text="[скопируй сюда содержимое артефакта 4.3]"
+    context_text="[paste the contents of the 4.3 artifact here]"
 )
 ```
 
-### Шаг 2 — Создание артефактов
-Создавай требования по одному или группами, используя нужный инструмент.
-**Каждый созданный артефакт автоматически регистрируется в репозитории 5.1**
-со статусом `draft`. Тебе не нужно вручную вызывать инструменты 5.1.
+### Step 2 — Creating artifacts
+Create requirements one at a time or in groups, using the appropriate tool.
+**Every artifact created is automatically registered in the 5.1 repository**
+with status `draft`. You don't need to call the 5.1 tools manually.
 
-Как выбрать тип артефакта → смотри `references/modeling_guide.md`.
-Шаблоны каждого артефакта → смотри `references/templates.md`.
+How to choose the artifact type → see `references/modeling_guide.md`.
+Templates for each artifact → see `references/templates.md`.
 
-### Шаг 3 — Диаграммы (по необходимости)
-- После создания Use Cases → вызови `generate_use_case_diagram` для сводной диаграммы
-- Business Process создаёт `.puml` файл Activity Diagram автоматически
-- ERD создаёт `.puml` файл автоматически
+### Step 3 — Diagrams (as needed)
+- After creating Use Cases → call `generate_use_case_diagram` for a consolidated diagram
+- Business Process automatically creates a `.puml` Activity Diagram file
+- ERD automatically creates a `.puml` file
 
-### Шаг 4 — Проверка покрытия
-В конце вызови `build_coverage_matrix`. Инструмент покажет:
-- 🟢 Бизнес-цели, покрытые требованиями
-- 🔴 Бизнес-цели без ни одного требования (нужно создать)
-- 🟡 Бизнес-цели с 10+ требованиями (возможный over-engineering)
+### Step 4 — Coverage check
+At the end, call `build_coverage_matrix`. The tool will show:
+- 🟢 Business objectives covered by requirements
+- 🔴 Business objectives without a single requirement (need to create one)
+- 🟡 Business objectives with 10+ requirements (possible over-engineering)
 
 ---
 
-## Инструменты
+## Tools
 
 ### `analyze_elicitation_context`
-Анализирует подтверждённые результаты выявления и предлагает список требований.
+Analyzes confirmed elicitation results and proposes a list of requirements.
 
 ```
 analyze_elicitation_context(
-    project_id="crm_2024",       # обязательно
-    context_text=""              # опционально: текст если файл не найден
+    project_id="crm_2024",       # required
+    context_text=""              # optional: text if the file is not found
 )
 ```
 
-Возвращает:
-- Список бизнес-целей из 4.3
-- Требования-кандидаты с рекомендуемым типом и ID-префиксом
-- Пробелы: темы выявления без конкретных требований
+Returns:
+- List of business objectives from 4.3
+- Candidate requirements with a recommended type and ID prefix
+- Gaps: elicitation topics without specific requirements
 
 ---
 
@@ -98,11 +98,11 @@ analyze_elicitation_context(
 create_user_story(
     project_id="crm_2024",
     story_id="US-001",
-    title="Подать заявку на кредит",
-    role="Менеджер по заявкам",
-    action="создать новую заявку на кредит с заполнением всех полей",
-    benefit="заявка была зарегистрирована и передана на рассмотрение",
-    acceptance_criteria_json='["Система сохраняет заявку с уникальным ID", "Система отправляет подтверждение на email менеджера"]',
+    title="Submit a credit application",
+    role="Application Manager",
+    action="create a new credit application filling in all the fields",
+    benefit="the application is registered and forwarded for review",
+    acceptance_criteria_json='["The system saves the application with a unique ID", "The system sends a confirmation to the manager email"]',
     priority="High",
     source_artifact="governance_plans/4_3_crm_confirmed.md",
     notes=""
@@ -118,21 +118,21 @@ create_functional_requirement(
     project_id="crm_2024",
     req_id="FR-001",
     req_type="functional",           # functional | non_functional | business_rule
-    title="Автоматическое распределение заявок",
-    description="Система ДОЛЖНА автоматически распределять входящие заявки между менеджерами по алгоритму round-robin с учётом текущей загрузки.",
-    rationale="Снижает время ожидания клиента, исключает ручной контроль.",
+    title="Automatic application routing",
+    description="The system SHALL automatically distribute incoming applications among managers using a round-robin algorithm that accounts for current workload.",
+    rationale="Reduces client wait time and eliminates manual oversight.",
     priority="High",
-    owner="Руководитель отдела продаж",
+    owner="Head of Sales",
     source_artifact="governance_plans/4_3_crm_confirmed.md",
     constraints="",
     related_ids_json='["BR-001", "UC-001"]'
 )
 ```
 
-**Формулировки по типу:**
-- `functional`: «Система ДОЛЖНА [действие]...»
-- `non_functional`: «Система ДОЛЖНА обрабатывать не менее [N] запросов в секунду при [условии]»
-- `business_rule`: «[Субъект] [ограничение/правило]» — без привязки к системе
+**Phrasing by type:**
+- `functional`: "The system SHALL [action]..."
+- `non_functional`: "The system SHALL handle at least [N] requests per second under [condition]"
+- `business_rule`: "[Subject] [constraint/rule]" — without referencing the system
 
 ---
 
@@ -142,16 +142,16 @@ create_functional_requirement(
 create_use_case(
     project_id="crm_2024",
     uc_id="UC-001",
-    title="Рассмотреть заявку на кредит",
-    primary_actor="Кредитный аналитик",
-    secondary_actors="Служба безопасности, Система скоринга",
-    precondition="Заявка имеет статус 'На рассмотрении'",
-    postcondition="Заявка получает статус 'Одобрена' или 'Отклонена'",
-    trigger="Аналитик открывает заявку в системе",
-    main_scenario="1. Аналитик открывает заявку.\n2. Система отображает данные клиента и документы.\n3. Аналитик проверяет скоринговый балл.\n4. Система запрашивает проверку в Службе безопасности.\n5. Аналитик принимает решение.\n6. Система фиксирует решение и меняет статус.",
-    alt_scenarios="3а. Скоринговый балл недоступен: Аналитик запрашивает повторный расчёт.",
-    exc_scenarios="4а. Служба безопасности не отвечает более 24ч: Система уведомляет руководителя.",
-    business_rules="Решение должно быть принято в течение 3 рабочих дней.",
+    title="Review a credit application",
+    primary_actor="Credit Analyst",
+    secondary_actors="Security Department, Scoring System",
+    precondition="The application has status 'Under review'",
+    postcondition="The application receives status 'Approved' or 'Rejected'",
+    trigger="The analyst opens the application in the system",
+    main_scenario="1. The analyst opens the application.\n2. The system displays the client data and documents.\n3. The analyst checks the credit score.\n4. The system requests a check from the Security Department.\n5. The analyst makes a decision.\n6. The system records the decision and changes the status.",
+    alt_scenarios="3a. The credit score is unavailable: The analyst requests a recalculation.",
+    exc_scenarios="4a. The Security Department does not respond within 24h: The system notifies the manager.",
+    business_rules="The decision must be made within 3 business days.",
     priority="High",
     source_artifact="governance_plans/4_3_crm_confirmed.md"
 )
@@ -161,37 +161,37 @@ create_use_case(
 
 ### `generate_use_case_diagram`
 
-Генерирует сводную PlantUML Use Case Diagram по **всем** UC проекта из репозитория 5.1.
+Generates a consolidated PlantUML Use Case Diagram covering **all** UCs in the project from the 5.1 repository.
 
 ```
 generate_use_case_diagram(
     project_id="crm_2024",
-    system_boundary="CRM-система",
+    system_boundary="CRM system",
     diagram_name="crm_use_cases"
 )
 ```
 
-Результат: файл `{project}_specs/uc_diagram_{diagram_name}.puml`
+Result: file `{project}_specs/uc_diagram_{diagram_name}.puml`
 
 ---
 
 ### `create_business_process`
 
-Создаёт **два файла**: текстовое описание `.md` + Activity Diagram `.puml`.
+Creates **two files**: a text description `.md` + an Activity Diagram `.puml`.
 
 ```
 create_business_process(
     project_id="crm_2024",
     bp_id="BP-001",
-    title="Жизненный цикл заявки",
-    process_owner="Руководитель отдела продаж",
-    trigger="Клиент обращается за кредитом",
-    outcome="Кредит выдан или заявка закрыта с отказом",
-    participants="Менеджер, Кредитный аналитик, Служба безопасности",
-    steps="1. Менеджер: принять обращение клиента.\n2. Менеджер: создать заявку в CRM.\n3. Система: назначить аналитика.\n4. Аналитик: проверить документы.\n5. ...",
-    business_rules="Срок рассмотрения — 3 рабочих дня.",
-    metrics="Среднее время: 2 дня. Конверсия в одобрение: 65%.",
-    exceptions="Если клиент не предоставил документы в течение 5 дней — автозакрытие.",
+    title="Application lifecycle",
+    process_owner="Head of Sales",
+    trigger="A client applies for credit",
+    outcome="The credit is issued or the application is closed with a rejection",
+    participants="Manager, Credit Analyst, Security Department",
+    steps="1. Manager: receive the client's request.\n2. Manager: create the application in the CRM.\n3. System: assign an analyst.\n4. Analyst: verify documents.\n5. ...",
+    business_rules="Review period — 3 business days.",
+    metrics="Average time: 2 days. Approval conversion rate: 65%.",
+    exceptions="If the client does not provide documents within 5 days — auto-closure.",
     priority="Medium",
     source_artifact="governance_plans/4_3_crm_confirmed.md"
 )
@@ -205,8 +205,8 @@ create_business_process(
 create_data_dictionary(
     project_id="crm_2024",
     dd_id="DD-001",
-    title="Сущность Заявка (Application)",
-    entities_json='[{"name": "Application", "description": "Заявка на кредит", "attributes": [{"name": "id", "type": "Integer", "required": true, "constraints": "PK, AUTO_INCREMENT", "description": "Уникальный идентификатор"}, {"name": "status", "type": "Enum", "required": true, "constraints": "draft|submitted|approved|rejected", "description": "Статус заявки"}], "business_rules": ["Статус меняется только по бизнес-правилам перехода"]}]',
+    title="Application entity",
+    entities_json='[{"name": "Application", "description": "Credit application", "attributes": [{"name": "id", "type": "Integer", "required": true, "constraints": "PK, AUTO_INCREMENT", "description": "Unique identifier"}, {"name": "status", "type": "Enum", "required": true, "constraints": "draft|submitted|approved|rejected", "description": "Application status"}], "business_rules": ["The status changes only according to the transition business rules"]}]',
     source_artifact="governance_plans/4_3_crm_confirmed.md"
 )
 ```
@@ -215,13 +215,13 @@ create_data_dictionary(
 
 ### `create_erd`
 
-Создаёт **два файла**: описание связей `.md` + ER Diagram `.puml`.
+Creates **two files**: a relationship description `.md` + an ER Diagram `.puml`.
 
 ```
 create_erd(
     project_id="crm_2024",
     erd_id="ERD-001",
-    title="Основные сущности CRM",
+    title="Core CRM entities",
     entities_json='[{"name": "Application", "pk": "id", "attributes": ["client_id FK", "manager_id FK", "status Enum", "created_at DateTime"]}, {"name": "Client", "pk": "id", "attributes": ["name String", "inn String UNIQUE"]}]',
     relations_json='[{"from": "Application", "to": "Client", "cardinality": "many-to-one", "label": "belongs to"}]',
     source_artifact="governance_plans/4_3_crm_confirmed.md"
@@ -232,7 +232,7 @@ create_erd(
 
 ### `build_coverage_matrix`
 
-Строит матрицу покрытия «бизнес-цель → требования».
+Builds a "business objective → requirements" coverage matrix.
 
 ```
 build_coverage_matrix(
@@ -240,23 +240,23 @@ build_coverage_matrix(
 )
 ```
 
-**Сигналы:**
-- 🔴 Бизнес-цель не покрыта — создай хотя бы одно требование
-- 🟡 10+ требований на одну цель — возможен over-engineering, стоит пересмотреть
-- 🟢 1–9 требований на цель — нормальное покрытие
+**Signals:**
+- 🔴 Business objective not covered — create at least one requirement
+- 🟡 10+ requirements for a single objective — possible over-engineering, worth reviewing
+- 🟢 1–9 requirements per objective — normal coverage
 
 ---
 
-## Хранение артефактов
+## Artifact storage
 
-Все артефакты сохраняются в: `governance_plans/{project_id}_specs/`
+All artifacts are saved to: `governance_plans/{project_id}_specs/`
 
 ```
 governance_plans/crm_2024_specs/
 ├── US-001_submit_application.md
 ├── FR-001_auto_distribution.md
 ├── UC-001_review_application.md
-├── uc_diagram_crm_use_cases.puml       ← сводная UC Diagram
+├── uc_diagram_crm_use_cases.puml       ← consolidated UC Diagram
 ├── BP-001_application_lifecycle.md
 ├── BP-001_application_lifecycle.puml   ← Activity Diagram
 ├── DD-001_application_entity.md
@@ -266,34 +266,34 @@ governance_plans/crm_2024_specs/
 
 ---
 
-## Автоматическая регистрация в 5.1
+## Automatic registration in 5.1
 
-Каждый созданный артефакт **автоматически** регистрируется в репозитории 5.1
-(файл `governance_plans/{project_id}_traceability_repo.json`) со статусом `draft`.
+Every created artifact is **automatically** registered in the 5.1 repository
+(file `governance_plans/{project_id}_traceability_repo.json`) with status `draft`.
 
-Ты можешь:
-- Сразу добавить связи через `add_trace_link` (5.1)
-- Изменить статус через `update_requirement` (5.2) когда требование готово к верификации
-- Проверить покрытие через `check_coverage` (5.1)
+You can:
+- Immediately add links via `add_trace_link` (5.1)
+- Change the status via `update_requirement` (5.2) once the requirement is ready for verification
+- Check coverage via `check_coverage` (5.1)
 
 ---
 
-## Связи с другими задачами
+## Links to other tasks
 
-| Откуда | Что берём |
+| From | What we take |
 |--------|-----------|
-| 4.2/4.3 | Подтверждённые результаты выявления (вход для `analyze_elicitation_context`) |
-| 5.1 | Репозиторий трассировки (7.1 пишет в него автоматически) |
+| 4.2/4.3 | Confirmed elicitation results (input for `analyze_elicitation_context`) |
+| 5.1 | Traceability repository (7.1 writes to it automatically) |
 
-| Куда | Что передаём |
+| To | What we pass |
 |------|--------------|
-| 7.2 | Спецификации требований для верификации |
-| 7.3 | Спецификации требований для валидации |
-| 5.3 | Список draft-требований для приоритизации |
+| 7.2 | Requirements specifications for verification |
+| 7.3 | Requirements specifications for validation |
+| 5.3 | List of draft requirements for prioritization |
 
 ---
 
-## Справочники
+## References
 
-- `references/modeling_guide.md` — как выбрать тип артефакта
-- `references/templates.md` — шаблоны каждого артефакта и PlantUML-диаграмм
+- `references/modeling_guide.md` — how to choose the artifact type
+- `references/templates.md` — templates for each artifact and PlantUML diagrams

@@ -1,181 +1,181 @@
-# architecture_guide.md — Архитектура требований (BABOK 7.4)
+# architecture_guide.md — Requirements Architecture (BABOK 7.4)
 
-## Что такое архитектура требований
+## What requirements architecture is
 
-**Архитектура требований** — это организация требований в связную структуру, где каждое
-требование занимает своё место и понятно как оно соотносится с другими.
+**Requirements architecture** is the organization of requirements into a connected structure, where each
+requirement has its place and it's clear how it relates to the others.
 
-Это ответ на вопрос: **«Как наши требования образуют цельную картину?»**
+It's the answer to the question: **"How do our requirements form a coherent picture?"**
 
-BABOK определяет два ключевых понятия:
+BABOK defines two key concepts:
 
-| Понятие | Определение | Пример |
-|---------|-------------|--------|
-| **Viewpoint** (точка зрения) | Перспектива, с которой стейкхолдер смотрит на систему | «Бизнес-процессы», «Данные», «Пользователи» |
-| **View** (представление) | Конкретное подмножество требований для данной точки зрения | Все BP-артефакты, все FR-артефакты |
+| Concept | Definition | Example |
+|---------|------------|---------|
+| **Viewpoint** | The perspective from which a stakeholder looks at the system | "Business Processes", "Data", "Users" |
+| **View** | A specific subset of requirements for a given viewpoint | All BP artifacts, all FR artifacts |
 
-**Ключевой принцип:** у разных стейкхолдеров разные интересы. Финансовый директор смотрит на
-систему через призму бизнес-процессов и целей, разработчик — через функциональность,
-архитектор данных — через информационные объекты. Архитектура требований обеспечивает, чтобы
-каждый стейкхолдер видел «свою» часть картины, а BA видел целое.
-
----
-
-## Пять точек зрения (автоматический маппинг)
-
-Платформа автоматически организует требования по пяти стандартным точкам зрения на основе
-типа артефакта (ADR-034):
-
-### 1. Бизнес-процессы
-**Артефакты:** `business_process` (BP)  
-**Аудитория:** Бизнес-заказчик, владельцы процессов  
-**Вопрос:** Как изменятся бизнес-процессы?  
-**Признаки полноты:** Каждый ключевой бизнес-процесс описан. Нет Use Case без соответствующего BP.
-
-### 2. Данные и информация
-**Артефакты:** `data_dictionary` (DD), `erd` (ERD)  
-**Аудитория:** Архитектор данных, DBA  
-**Вопрос:** Какие данные создаются, хранятся, передаются?  
-**Признаки полноты:** Все сущности из ERD описаны в DD. Нет сущностей с неопределёнными атрибутами.
-
-### 3. Пользователи и взаимодействие
-**Артефакты:** `user_story` (US), `use_case` (UC)  
-**Аудитория:** UX-дизайнер, разработчик, тестировщик  
-**Вопрос:** Как пользователи взаимодействуют с системой?  
-**Признаки полноты:** Все типы пользователей представлены. Каждая US / UC трассируется к FR.
-
-### 4. Функциональность
-**Артефакты:** `functional` (FR), `non_functional` (NFR)  
-**Аудитория:** Разработчик, архитектор  
-**Вопрос:** Что система должна делать и как?  
-**Признаки полноты:** Каждый FR трассируется к US или UC. Каждый NFR привязан к FR.
-
-### 5. Бизнес-правила
-**Артефакты:** `business_rule` (BR)  
-**Аудитория:** Бизнес-аналитик, юрист, compliance-офицер  
-**Вопрос:** Какие правила и ограничения управляют поведением системы?  
-**Признаки полноты:** Бизнес-правила ссылаются на конкретные FR или BP.
+**Key principle:** different stakeholders have different interests. A CFO looks at the
+system through the lens of business processes and objectives, a developer through functionality,
+a data architect through information objects. Requirements architecture ensures that
+each stakeholder sees "their" part of the picture, while the BA sees the whole.
 
 ---
 
-## Кастомные точки зрения
+## Five viewpoints (automatic mapping)
 
-Стандартные пять точек зрения покрывают большинство проектов. Однако в регуляторных,
-финансовых и медицинских проектах могут потребоваться дополнительные:
+The platform automatically organizes requirements into five standard viewpoints based on the
+artifact type (ADR-034):
 
-**Примеры кастомных точек зрения:**
-- **Безопасность и доступ** — требования к аутентификации, авторизации, шифрованию
-- **Аудит и соответствие** — требования к логированию, SOX, GDPR, 152-ФЗ
-- **Интеграции** — требования к API, интеграционным сценариям
-- **Миграция данных** — требования к переносу исторических данных
+### 1. Business Processes
+**Artifacts:** `business_process` (BP)
+**Audience:** Business sponsor, process owners
+**Question:** How will business processes change?
+**Signs of completeness:** Every key business process is described. No Use Case lacks a corresponding BP.
 
-**Ключевое отличие (ADR-036):** кастомные точки зрения задаются через конкретные req_ids,
-а не через типы артефактов. Это потому, что «Безопасность» — не отдельный тип требования,
-а срез поверх существующих FR/NFR/BR. Только BA знает какие именно req относятся к безопасности.
+### 2. Data and Information
+**Artifacts:** `data_dictionary` (DD), `erd` (ERD)
+**Audience:** Data architect, DBA
+**Question:** What data is created, stored, transmitted?
+**Signs of completeness:** All entities from the ERD are described in the DD. No entities with undefined attributes.
 
----
+### 3. Users and Interaction
+**Artifacts:** `user_story` (US), `use_case` (UC)
+**Audience:** UX designer, developer, tester
+**Question:** How do users interact with the system?
+**Signs of completeness:** All user types are represented. Every US / UC traces to an FR.
 
-## Архитектурные разрывы
+### 4. Functionality
+**Artifacts:** `functional` (FR), `non_functional` (NFR)
+**Audience:** Developer, architect
+**Question:** What must the system do, and how?
+**Signs of completeness:** Every FR traces to a US or UC. Every NFR is linked to an FR.
 
-`check_architecture_gaps` проверяет архитектуру на двух уровнях:
-
-### Уровень 1: Матрица покрытия
-
-**Что проверяется:**
-- Есть ли стейкхолдер из реестра 4.2, для которого нет ни одного представления?
-- Есть ли бизнес-цель из business_context (7.3), не покрытая ни одной точкой зрения?
-- Есть ли пустая точка зрения (viewpoint без req)?
-
-| Проблема | Severity | Что делать |
-|----------|----------|-----------|
-| Стейкхолдер без представления | critical | Добавить req в нужную точку зрения |
-| BG без покрытия viewpoint | warning | Проверить трассировку в 5.1 или создать недостающие req |
-| Пустая точка зрения | info | Создать артефакты этого типа или удалить точку зрения |
-
-### Уровень 2: Семантические разрывы
-
-Проверки, выходящие за рамки матрицы — на основе связей в репозитории 5.1:
-
-| Разрыв | Severity | Объяснение |
-|--------|----------|-----------|
-| UC без BP | warning | Пользователь взаимодействует, но бизнес-процесс не описан |
-| NFR без FR | warning | Нефункциональное ограничение висит «в воздухе» без привязки к функции |
-| FR без UC или US | info | Функция описана, но сценарий использования не задокументирован |
-| Стейкхолдер в реестре без представления | critical | Стейкхолдер идентифицирован, но его интересы не покрыты ни одним req |
-
-**⚠️ Важно об уровне 2:** проверки семантических разрывов зависят от полноты графа 5.1.
-Если BA добавил мало связей в трассировку — будет много ложных срабатываний (FR без UC не
-потому что UC не написан, а потому что связь не добавлена). Интерпретируй результаты
-с учётом этого контекста.
+### 5. Business Rules
+**Artifacts:** `business_rule` (BR)
+**Audience:** Business analyst, legal counsel, compliance officer
+**Question:** What rules and constraints govern the system's behavior?
+**Signs of completeness:** Business rules reference specific FRs or BPs.
 
 ---
 
-## Фреймворки архитектуры требований
+## Custom viewpoints
 
-BABOK описывает несколько концептуальных фреймворков. На платформе используется упрощённый
-подход: автоматический маппинг + кастомные точки зрения. Для справки — основные фреймворки:
+The standard five viewpoints cover most projects. However, regulatory,
+financial, and healthcare projects may require additional ones:
+
+**Examples of custom viewpoints:**
+- **Security and Access** — requirements for authentication, authorization, encryption
+- **Audit and Compliance** — requirements for logging, SOX, GDPR, local data-protection law
+- **Integrations** — requirements for APIs, integration scenarios
+- **Data Migration** — requirements for migrating historical data
+
+**Key distinction (ADR-036):** custom viewpoints are defined via specific req_ids,
+not via artifact types. This is because "Security" is not a separate requirement type,
+but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly which requirements relate to security.
+
+---
+
+## Architecture gaps
+
+`check_architecture_gaps` checks the architecture at two levels:
+
+### Level 1: Coverage matrix
+
+**What's checked:**
+- Is there a stakeholder from the 4.2 registry with no view at all?
+- Is there a business objective from business_context (7.3) not covered by any viewpoint?
+- Is there an empty viewpoint (a viewpoint with no requirements)?
+
+| Problem | Severity | What to do |
+|---------|----------|-----------|
+| Stakeholder with no view | critical | Add requirements to the appropriate viewpoint |
+| BG with no viewpoint coverage | warning | Check traceability in 5.1 or create the missing requirements |
+| Empty viewpoint | info | Create artifacts of that type or remove the viewpoint |
+
+### Level 2: Semantic gaps
+
+Checks that go beyond the matrix — based on the links in the 5.1 repository:
+
+| Gap | Severity | Explanation |
+|-----|----------|--------------|
+| UC with no BP | warning | A user interacts, but the business process isn't described |
+| NFR with no FR | warning | A non-functional constraint is left "hanging" with no link to a function |
+| FR with no UC or US | info | A function is described, but the usage scenario isn't documented |
+| Stakeholder in the registry with no view | critical | The stakeholder is identified, but their interests aren't covered by any requirement |
+
+**⚠️ Important about level 2:** semantic gap checks depend on how complete the 5.1 graph is.
+If the BA has added few links in traceability, there will be many false positives (an FR with no UC, not
+because the UC wasn't written, but because the link wasn't added). Interpret the results
+with this context in mind.
+
+---
+
+## Requirements architecture frameworks
+
+BABOK describes several conceptual frameworks. The platform uses a simplified
+approach: automatic mapping + custom viewpoints. For reference — the main frameworks:
 
 ### Business Analysis Core Concept Model (BACCM)
-Шесть взаимосвязанных концепций: Изменение, Нужда, Решение, Контекст, Стейкхолдер, Ценность.
-Используется как философская основа, не как операционный инструмент.
+Six interconnected concepts: Change, Need, Solution, Context, Stakeholder, Value.
+Used as a philosophical foundation, not as an operational tool.
 
-### Zachman Framework (упрощённый)
-Матрица «кто, что, где, когда, почему, как» × «контекст, концепция, логика, физика».
-Полезен для Enterprise Architecture, избыточен для типичного IT-проекта.
+### Zachman Framework (simplified)
+A matrix of "who, what, where, when, why, how" × "context, concept, logic, physics".
+Useful for Enterprise Architecture, excessive for a typical IT project.
 
 ### Agile: Story Map
-Горизонтальная ось — пользовательские активности (эпики),
-вертикальная — детализация (US). Хорошо работает в Scrum/Kanban.
+Horizontal axis — user activities (epics),
+vertical axis — level of detail (US). Works well in Scrum/Kanban.
 
-**На практике:** для большинства проектов достаточно пяти стандартных точек зрения
-платформы. Фреймворки нужны при работе в крупном корпоративном контексте.
-
----
-
-## Снапшоты архитектуры
-
-По аналогии с baseline в 5.5, задача 7.4 поддерживает снапшоты (ADR-037):
-
-**Когда делать снапшот:**
-- Перед передачей архитектуры в 7.5 (Design Options)
-- После существенного изменения скоупа (Change Request)
-- По завершении каждой итерации в Agile-проектах
-
-**Что фиксирует снапшот:**
-- Состав viewpoints (автоматические + кастомные)
-- Views — какие req входят в каждую точку зрения
-- Открытые разрывы на момент снапшота
-- Версия (v1.0, v1.1) и примечания
+**In practice:** for most projects, the platform's five standard viewpoints
+are enough. Frameworks are needed when working in a large enterprise context.
 
 ---
 
-## Связь с другими задачами
+## Architecture snapshots
 
-| Задача | Роль в 7.4 |
-|--------|-----------|
-| **5.1** (Traceability) | Граф связей — основа для BFS-анализа разрывов уровня 2 |
-| **4.2** (Conduct Elicitation) | Реестр стейкхолдеров — проверка покрытия в уровне 1 |
-| **7.1** (Specification) | Репозиторий артефактов — источник для автоматического viewpoint-маппинга |
-| **7.3** (Validate) | business_context — BG для матрицы покрытия |
-| **4.4** (Communicate) | Architecture Document передаётся как артефакт для коммуникации |
-| **7.5** (Design Options) | Architecture Document — входной артефакт для дизайна решения |
+By analogy with the baseline in 5.5, task 7.4 supports snapshots (ADR-037):
+
+**When to take a snapshot:**
+- Before handing the architecture off to 7.5 (Design Options)
+- After a substantial scope change (Change Request)
+- At the end of each iteration in Agile projects
+
+**What a snapshot captures:**
+- The set of viewpoints (automatic + custom)
+- Views — which requirements belong to each viewpoint
+- Open gaps at the time of the snapshot
+- Version (v1.0, v1.1) and notes
 
 ---
 
-## Паттерны типичных архитектурных проблем
+## Links to other tasks
 
-### «Острова требований»
-Несколько изолированных кластеров req без связей между собой. Признак: граф 5.1 несвязный.
-Что делать: проверить связи через `run_impact_analysis` (5.1), добавить трассировку.
+| Task | Role in 7.4 |
+|------|-------------|
+| **5.1** (Traceability) | Link graph — basis for level-2 BFS gap analysis |
+| **4.2** (Conduct Elicitation) | Stakeholder registry — coverage check at level 1 |
+| **7.1** (Specification) | Artifact repository — source for automatic viewpoint mapping |
+| **7.3** (Validate) | business_context — BG for the coverage matrix |
+| **4.4** (Communicate) | Architecture Document is handed off as a communication artifact |
+| **7.5** (Design Options) | Architecture Document — input artifact for solution design |
 
-### «Перекос в сторону функциональности»
-Много FR/NFR, мало BP/US/UC. Разработчик видит что делать, но бизнес не видит контекст.
-Что делать: создать BP и US/UC для ключевых функций.
+---
 
-### «Данные без процессов»
-Хорошо описан ERD + DD, но нет BP описывающих как данные создаются и используются.
-Что делать: создать BP для ключевых data flows.
+## Patterns of common architecture problems
 
-### «Бесхозные NFR»
-NFR не привязаны к конкретным FR. «Система должна работать быстро» — к чему именно?
-Что делать: для каждого NFR добавить связь `satisfies` к конкретным FR в 5.1.
+### "Islands of requirements"
+Several isolated clusters of requirements with no links between them. Sign: the 5.1 graph is disconnected.
+What to do: check links via `run_impact_analysis` (5.1), add traceability.
+
+### "Skewed toward functionality"
+Lots of FR/NFR, little BP/US/UC. The developer sees what to do, but the business doesn't see the context.
+What to do: create BP and US/UC for key functions.
+
+### "Data without processes"
+ERD + DD are well described, but there's no BP describing how the data is created and used.
+What to do: create BP for key data flows.
+
+### "Orphaned NFRs"
+NFRs aren't linked to specific FRs. "The system must work fast" — relative to what exactly?
+What to do: for each NFR, add a `satisfies` link to specific FRs in 5.1.
