@@ -31,7 +31,7 @@ ADR-064: potential value in 6.2 is qualitative and structured
 ADR-065: from_strategy_project_id — single parameter for 7.3
 ADR-066: check_future_state_completeness — separate tool following the 6.1 pattern
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json

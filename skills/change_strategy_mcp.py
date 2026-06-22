@@ -28,7 +28,7 @@ ADR-081: default 6 criteria + optional custom ones
 ADR-082: new node type `solution` in the 5.1 repository
 ADR-083: JSON contract — a single file with solution_scope + change_strategy sections
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json

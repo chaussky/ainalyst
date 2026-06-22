@@ -28,7 +28,7 @@ ADR-074: node type `risk` and relation `threatens` in the 5.1 repository
 ADR-075: risk card structure (14 fields)
 ADR-076: export format for 6.4
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json

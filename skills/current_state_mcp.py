@@ -27,7 +27,7 @@ ADR-057: import from 4.3 via session_ids
 ADR-058: scope_current_state as an explicit contract
 ADR-059: capture_current_state_element — iterative pattern
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
