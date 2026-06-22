@@ -791,8 +791,8 @@ class TestCompareStrategyOptions(BaseMCPTest):
             scores_json=json.dumps(self._default_scores()),
             opportunity_cost="Тест",
         )
-        self.assertIn("Критерий", result)
-        self.assertIn("ИТОГО", result)
+        self.assertIn("Criterion", result)
+        self.assertIn("TOTAL", result)
 
     def test_compared_on_date_saved(self):
         compare_strategy_options(
@@ -997,7 +997,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
             mock_sa.return_value = "✅"
             result = save_change_strategy(project_id=PROJECT, push_to_traceability=True)
         self.assertIn("⚠️", result)
-        self.assertIn("репозиторий трассировки", result.lower())
+        self.assertIn("traceability repository", result.lower())
 
     def test_push_to_traceability_with_repo(self):
         """push_to_traceability=True с существующим репозиторием."""

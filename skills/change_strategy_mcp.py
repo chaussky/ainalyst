@@ -1,32 +1,32 @@
 """
 BABOK 6.4 — Define Change Strategy
-MCP-инструменты для определения стратегии изменения.
+MCP tools for defining the change strategy.
 
-Инструменты:
-  - scope_change_strategy       — инициализация + автоимпорт из 6.1, 6.2, 6.3
-  - define_solution_scope       — capabilities по категориям + explicitly_excluded
-  - assess_enterprise_readiness — 6 измерений готовности × скор 1–5 → readiness_score
-  - add_strategy_option         — карточка варианта стратегии
-  - compare_strategy_options    — взвешенная матрица → winner + opportunity cost
-  - define_transition_states    — фазы перехода с capabilities, gaps, рисками, ценностью
-  - save_change_strategy        — финализация: JSON + Markdown + опц. push в 5.1
+Tools:
+  - scope_change_strategy       — initialization + auto-import from 6.1, 6.2, 6.3
+  - define_solution_scope       — capabilities by category + explicitly_excluded
+  - assess_enterprise_readiness — 6 readiness dimensions x score 1-5 -> readiness_score
+  - add_strategy_option         — strategy option card
+  - compare_strategy_options    — weighted matrix -> winner + opportunity cost
+  - define_transition_states    — transition phases with capabilities, gaps, risks, value
+  - save_change_strategy        — finalize: JSON + Markdown + opt. push to 5.1
 
-Хранение:
-  - {project}_change_strategy_scope.json  — скоуп и контекст
-  - {project}_change_strategy.json        — финальный артефакт (контракт для 7.x, 8.x)
+Storage:
+  - {project}_change_strategy_scope.json  — scope and context
+  - {project}_change_strategy.json        — final artifact (contract for 7.x, 8.x)
 
-Интеграция:
-  Вход: 6.1 (business_needs), 6.2 (future_state, gap_analysis), 6.3 (risk_assessment)
-  Выход: change_strategy.json → 7.1, 7.4, 7.5, 7.6, 8.x;
-         узел solution + satisfies → 5.1 (опционально)
+Integration:
+  In: 6.1 (business_needs), 6.2 (future_state, gap_analysis), 6.3 (risk_assessment)
+  Out: change_strategy.json -> 7.1, 7.4, 7.5, 7.6, 8.x;
+       solution + satisfies node -> 5.1 (optional)
 
-ADR-077: scope_change_strategy — автоимпорт из 6.1+6.2+6.3, graceful degradation
-ADR-078: GAP встроен в define_solution_scope (gap_severity + gap_source)
-ADR-079: 6 измерений готовности (change_history добавлен к базовым 5)
-ADR-080: do_nothing добавляется автоматически как OPT-000
-ADR-081: дефолтные 6 критериев + опциональные кастомные
-ADR-082: новый тип узла `solution` в репозитории 5.1
-ADR-083: JSON-контракт — один файл с секциями solution_scope + change_strategy
+ADR-077: scope_change_strategy — auto-import from 6.1+6.2+6.3, graceful degradation
+ADR-078: GAP embedded in define_solution_scope (gap_severity + gap_source)
+ADR-079: 6 readiness dimensions (change_history added to the base 5)
+ADR-080: do_nothing is added automatically as OPT-000
+ADR-081: default 6 criteria + optional custom ones
+ADR-082: new node type `solution` in the 5.1 repository
+ADR-083: JSON contract — a single file with solution_scope + change_strategy sections
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -44,7 +44,7 @@ SCOPE_FILENAME = "change_strategy_scope.json"
 STRATEGY_FILENAME = "change_strategy.json"
 REPO_FILENAME = "traceability_repo.json"
 
-# Файлы из предыдущих задач (опциональные источники)
+# Files from previous tasks (optional sources)
 BUSINESS_NEEDS_FILENAME = "business_needs.json"
 FUTURE_STATE_FILENAME = "future_state.json"
 GAP_FILENAME = "gap_analysis.json"
@@ -72,7 +72,7 @@ DO_NOTHING_OPTION_ID = "OPT-000"
 
 
 # ---------------------------------------------------------------------------
-# Утилиты
+# Utilities
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -145,7 +145,7 @@ def _empty_strategy(project_id: str) -> dict:
 
 
 def _next_option_id(options: list) -> str:
-    """Генерирует следующий OPT-xxx ID (пропускает OPT-000)."""
+    """Generates the next OPT-xxx ID (skips OPT-000)."""
     existing_nums = []
     for o in options:
         oid = o.get("option_id", "")
@@ -168,7 +168,7 @@ def _readiness_verdict(score: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Инструменты
+# Tools
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -181,28 +181,28 @@ def scope_change_strategy(
     ba_notes: str = "",
 ) -> str:
     """
-    Шаг 1 пайплайна 6.4: инициализировать стратегию изменения.
+    Step 1 of the 6.4 pipeline: initialize the change strategy.
 
-    Фиксирует тип изменения, горизонт, методологию.
-    Автоматически импортирует контекст из 6.1 (business_needs), 6.2 (future_state, gap_analysis),
-    6.3 (risk_assessment). Добавляет do_nothing как OPT-000.
-    Graceful degradation: отсутствующие артефакты пропускаются с предупреждением.
+    Locks in the change type, horizon, and methodology.
+    Automatically imports context from 6.1 (business_needs), 6.2 (future_state, gap_analysis),
+    6.3 (risk_assessment). Adds do_nothing as OPT-000.
+    Graceful degradation: missing artifacts are skipped with a warning.
 
     Args:
-        project_id: Идентификатор проекта
-        change_type: Тип изменения (transformation/process_improvement/technology_implementation/regulatory_compliance/other)
-        time_horizon_months: Целевой горизонт в месяцах
-        methodology: Методология (agile/waterfall/hybrid)
-        source_project_ids: JSON-список project_id из 6.1/6.2/6.3 для автоимпорта, напр. '["crm_upgrade"]'
-        ba_notes: Дополнительный контекст
+        project_id: Project identifier
+        change_type: Change type (transformation/process_improvement/technology_implementation/regulatory_compliance/other)
+        time_horizon_months: Target horizon in months
+        methodology: Methodology (agile/waterfall/hybrid)
+        source_project_ids: JSON list of project_id from 6.1/6.2/6.3 for auto-import, e.g. '["crm_upgrade"]'
+        ba_notes: Additional context
     """
     try:
         source_ids = json.loads(source_project_ids) if source_project_ids.strip() else []
     except json.JSONDecodeError:
-        return "❌ Ошибка: source_project_ids должен быть JSON-массивом, напр. '[\"crm\"]'"
+        return "❌ Error: source_project_ids must be a JSON array, e.g. '[\"crm\"]'"
 
     if time_horizon_months <= 0:
-        return "❌ time_horizon_months должен быть > 0"
+        return "❌ time_horizon_months must be > 0"
 
     scope = {
         "project_id": project_id,
@@ -221,7 +221,7 @@ def scope_change_strategy(
     strategy = _load_strategy(project_id)
     strategy["scope"] = scope
 
-    # --- Автоимпорт контекста ---
+    # --- Auto-import context ---
     warnings = []
     imported_bn = []
     imported_bg = []
@@ -243,7 +243,7 @@ def scope_change_strategy(
                     "source_project": src_id,
                 })
         else:
-            warnings.append(f"⚠️ 6.1 business_needs не найден для '{src_id}'")
+            warnings.append(f"⚠️ 6.1 business_needs not found for '{src_id}'")
 
         # 6.2: future_state (goals)
         fs_path = data_path(src_id, f"{_safe(src_id)}_{FUTURE_STATE_FILENAME}")
@@ -256,7 +256,7 @@ def scope_change_strategy(
                     "source_project": src_id,
                 })
         else:
-            warnings.append(f"⚠️ 6.2 future_state не найден для '{src_id}'")
+            warnings.append(f"⚠️ 6.2 future_state not found for '{src_id}'")
 
         # 6.3: risk_assessment
         risk_path = data_path(src_id, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
@@ -273,7 +273,7 @@ def scope_change_strategy(
                         "source_project": src_id,
                     })
         else:
-            warnings.append(f"⚠️ 6.3 risk_assessment не найден для '{src_id}'")
+            warnings.append(f"⚠️ 6.3 risk_assessment not found for '{src_id}'")
 
     strategy["imported_context"] = {
         "business_needs": imported_bn,
@@ -281,22 +281,22 @@ def scope_change_strategy(
         "risks": imported_risks,
     }
 
-    # do_nothing добавляется автоматически (ADR-080)
+    # do_nothing is added automatically (ADR-080)
     existing_options = strategy["change_strategy"].get("options", [])
     if not any(o.get("option_id") == DO_NOTHING_OPTION_ID for o in existing_options):
         existing_options.insert(0, {
             "option_id": DO_NOTHING_OPTION_ID,
-            "name": "Do Nothing (статус-кво)",
+            "name": "Do Nothing (status quo)",
             "strategy_type": "do_nothing",
             "investment_level": "low",
             "timeline_months": 0,
             "linked_risks": [],
             "risk_impact": "exacerbates",
-            "pros": ["Нет затрат на изменение", "Нет операционного риска внедрения"],
+            "pros": ["No cost of change", "No operational rollout risk"],
             "cons": [
-                "Бизнес-потребности остаются нереализованными",
-                "Конкурентное отставание продолжается",
-                "Текущие проблемы усугубляются со временем",
+                "Business needs remain unmet",
+                "Competitive gap keeps widening",
+                "Current problems worsen over time",
             ],
             "weighted_score": None,
             "selected": False,
@@ -306,36 +306,36 @@ def scope_change_strategy(
 
     _save_strategy(strategy, project_id)
 
-    # --- Форматирование вывода ---
+    # --- Output formatting ---
     lines = [
-        f"✅ Стратегия изменения инициализирована\n\n",
-        f"  Проект:     {project_id}\n",
-        f"  Тип:        {change_type}\n",
-        f"  Горизонт:   {time_horizon_months} месяцев\n",
-        f"  Методология: {methodology}\n\n",
+        f"✅ Change strategy initialized\n\n",
+        f"  Project:     {project_id}\n",
+        f"  Type:        {change_type}\n",
+        f"  Horizon:     {time_horizon_months} months\n",
+        f"  Methodology: {methodology}\n\n",
     ]
 
     if imported_bn or imported_bg or imported_risks:
-        lines.append("**Импортированный контекст:**\n")
+        lines.append("**Imported context:**\n")
         if imported_bn:
-            lines.append(f"  📋 Бизнес-потребности (6.1): {len(imported_bn)} шт. — "
+            lines.append(f"  📋 Business needs (6.1): {len(imported_bn)} — "
                          + ", ".join(bn["id"] for bn in imported_bn if bn["id"]) + "\n")
         if imported_bg:
-            lines.append(f"  🎯 Бизнес-цели (6.2):        {len(imported_bg)} шт. — "
+            lines.append(f"  🎯 Business goals (6.2): {len(imported_bg)} — "
                          + ", ".join(bg["id"] for bg in imported_bg if bg["id"]) + "\n")
         if imported_risks:
             high_risks = [r for r in imported_risks if r.get("zone") == "high"]
-            lines.append(f"  ⚠️  Риски (6.3):              {len(imported_risks)} шт."
+            lines.append(f"  ⚠️  Risks (6.3):          {len(imported_risks)}"
                          + (f" ({len(high_risks)} High)" if high_risks else "") + "\n")
 
     if warnings:
-        lines.append("\n**Предупреждения (graceful degradation):**\n")
+        lines.append("\n**Warnings (graceful degradation):**\n")
         for w in warnings:
             lines.append(f"  {w}\n")
 
     lines.append(
-        f"\n  ℹ️ OPT-000 (do_nothing) добавлен автоматически как baseline.\n\n"
-        f"**Следующий шаг:** `define_solution_scope` — определи capabilities решения."
+        f"\n  ℹ️ OPT-000 (do_nothing) added automatically as the baseline.\n\n"
+        f"**Next step:** `define_solution_scope` — define the solution capabilities."
     )
 
     return "".join(lines)
@@ -349,34 +349,34 @@ def define_solution_scope(
     scope_summary: str = "",
 ) -> str:
     """
-    Шаг 2 пайплайна 6.4: определить скоуп решения через capabilities.
+    Step 2 of the 6.4 pipeline: define the solution scope via capabilities.
 
-    Каждый capability имеет категорию (process/technology/data/people/org_structure/knowledge/location),
-    gap_severity (none/low/medium/high) и признак in_scope.
-    explicitly_excluded фиксирует что осознанно вне скоупа — предотвращает scope creep.
+    Each capability has a category (process/technology/data/people/org_structure/knowledge/location),
+    a gap_severity (none/low/medium/high), and an in_scope flag.
+    explicitly_excluded records what is deliberately out of scope — prevents scope creep.
 
     Args:
-        project_id: Идентификатор проекта
-        capabilities_json: JSON-массив capabilities. Формат объекта:
+        project_id: Project identifier
+        capabilities_json: JSON array of capabilities. Object format:
             {"name": "...", "category": "technology", "description": "...",
              "gap_severity": "high", "gap_source": "6.2:gap_analysis", "in_scope": true}
-        explicitly_excluded: JSON-список строк — что явно НЕ входит в скоуп
-        scope_summary: 2–3 предложения: что делаем и чего не делаем
+        explicitly_excluded: JSON list of strings — what is explicitly NOT in scope
+        scope_summary: 2-3 sentences: what we are doing and what we are not doing
     """
     try:
         capabilities = json.loads(capabilities_json)
     except json.JSONDecodeError:
-        return "❌ Ошибка парсинга capabilities_json. Проверь синтаксис JSON."
+        return "❌ Error parsing capabilities_json. Check the JSON syntax."
 
     if not isinstance(capabilities, list):
-        return "❌ capabilities_json должен быть JSON-массивом."
+        return "❌ capabilities_json must be a JSON array."
 
     try:
         excluded = json.loads(explicitly_excluded) if explicitly_excluded.strip() else []
     except json.JSONDecodeError:
         excluded = []
 
-    # Валидация capabilities
+    # Validate capabilities
     valid_caps = []
     errors = []
     for i, cap in enumerate(capabilities):
@@ -384,13 +384,13 @@ def define_solution_scope(
         category = cap.get("category", "")
         gap_severity = cap.get("gap_severity", "medium")
         if not name:
-            errors.append(f"Capability #{i+1}: отсутствует поле 'name'")
+            errors.append(f"Capability #{i+1}: missing 'name' field")
             continue
         if category not in VALID_CAP_CATEGORIES:
-            errors.append(f"Capability '{name}': неверная category '{category}'. Допустимые: {', '.join(VALID_CAP_CATEGORIES)}")
+            errors.append(f"Capability '{name}': invalid category '{category}'. Allowed: {', '.join(VALID_CAP_CATEGORIES)}")
             continue
         if gap_severity not in VALID_GAP_SEVERITIES:
-            errors.append(f"Capability '{name}': неверная gap_severity '{gap_severity}'")
+            errors.append(f"Capability '{name}': invalid gap_severity '{gap_severity}'")
             continue
         valid_caps.append({
             "name": name,
@@ -402,7 +402,7 @@ def define_solution_scope(
         })
 
     if errors:
-        return "❌ Ошибки в capabilities_json:\n" + "\n".join(f"  • {e}" for e in errors)
+        return "❌ Errors in capabilities_json:\n" + "\n".join(f"  • {e}" for e in errors)
 
     strategy = _load_strategy(project_id)
     strategy["solution_scope"] = {
@@ -415,47 +415,47 @@ def define_solution_scope(
     in_scope = [c for c in valid_caps if c.get("in_scope", True)]
     out_of_scope = [c for c in valid_caps if not c.get("in_scope", True)]
 
-    # Статистика по категориям
+    # Stats by category
     cats = {}
     for c in in_scope:
         cats[c["category"]] = cats.get(c["category"], 0) + 1
 
-    # Статистика по gap_severity
+    # Stats by gap_severity
     gaps = {"high": 0, "medium": 0, "low": 0, "none": 0}
     for c in in_scope:
         gaps[c["gap_severity"]] = gaps.get(c["gap_severity"], 0) + 1
 
     lines = [
-        f"✅ Скоуп решения определён\n\n",
-        f"  В скоупе capabilities: {len(in_scope)}\n",
-        f"  Явные исключения:      {len(excluded)}\n\n",
+        f"✅ Solution scope defined\n\n",
+        f"  Capabilities in scope: {len(in_scope)}\n",
+        f"  Explicit exclusions:   {len(excluded)}\n\n",
     ]
 
     if cats:
-        lines.append("**Capabilities по категориям:**\n")
+        lines.append("**Capabilities by category:**\n")
         for cat, cnt in sorted(cats.items()):
             lines.append(f"  {cat}: {cnt}\n")
 
-    lines.append("\n**Распределение по gap_severity:**\n")
+    lines.append("\n**Distribution by gap_severity:**\n")
     if gaps["high"] > 0:
-        lines.append(f"  🔴 high:   {gaps['high']} (критичные gaps — определят структуру фаз)\n")
+        lines.append(f"  🔴 high:   {gaps['high']} (critical gaps — will drive the phase structure)\n")
     if gaps["medium"] > 0:
         lines.append(f"  🟡 medium: {gaps['medium']}\n")
     if gaps["low"] > 0:
         lines.append(f"  🟢 low:    {gaps['low']}\n")
     if gaps["none"] > 0:
-        lines.append(f"  ⚪ none:   {gaps['none']} (capabilities уже есть)\n")
+        lines.append(f"  ⚪ none:   {gaps['none']} (capability already exists)\n")
 
     if excluded:
-        lines.append("\n**Явные исключения из скоупа:**\n")
+        lines.append("\n**Explicit exclusions from scope:**\n")
         for ex in excluded:
             lines.append(f"  • {ex}\n")
 
     if scope_summary:
-        lines.append(f"\n**Резюме скоупа:** {scope_summary}\n")
+        lines.append(f"\n**Scope summary:** {scope_summary}\n")
 
     lines.append(
-        f"\n→ Следующий шаг: `assess_enterprise_readiness` — оцени готовность организации."
+        f"\n→ Next step: `assess_enterprise_readiness` — assess the organization's readiness."
     )
 
     return "".join(lines)
@@ -478,26 +478,26 @@ def assess_enterprise_readiness(
     change_history_rationale: str = "",
 ) -> str:
     """
-    Шаг 3 пайплайна 6.4: оценить готовность организации к изменению.
+    Step 3 of the 6.4 pipeline: assess the organization's readiness for change.
 
-    Оценивает 6 измерений по шкале 1–5. Вычисляет readiness_score (среднее) и вердикт:
-    ready (≥4.0) / proceed_with_caution (2.5–3.9) / not_ready (<2.5).
-    ADR-079: change_history добавлен к базовым 5 измерениям.
+    Rates 6 dimensions on a 1-5 scale. Computes the readiness_score (average) and a verdict:
+    ready (>=4.0) / proceed_with_caution (2.5-3.9) / not_ready (<2.5).
+    ADR-079: change_history added to the base 5 dimensions.
 
     Args:
-        project_id: Идентификатор проекта
-        leadership_commitment: Готовность руководства 1–5
-        cultural_readiness: Культурная готовность 1–5
-        resource_availability: Доступность ресурсов 1–5
-        operational_readiness: Операционная готовность 1–5
-        technical_readiness: Техническая готовность 1–5
-        change_history: История изменений в организации 1–5
-        leadership_rationale: Обоснование оценки leadership
-        cultural_rationale: Обоснование оценки culture
-        resource_rationale: Обоснование оценки resource
-        operational_rationale: Обоснование оценки operational
-        technical_rationale: Обоснование оценки technical
-        change_history_rationale: Обоснование оценки change_history
+        project_id: Project identifier
+        leadership_commitment: Leadership commitment 1-5
+        cultural_readiness: Cultural readiness 1-5
+        resource_availability: Resource availability 1-5
+        operational_readiness: Operational readiness 1-5
+        technical_readiness: Technical readiness 1-5
+        change_history: Organization's track record with change 1-5
+        leadership_rationale: Rationale for the leadership rating
+        cultural_rationale: Rationale for the culture rating
+        resource_rationale: Rationale for the resource rating
+        operational_rationale: Rationale for the operational rating
+        technical_rationale: Rationale for the technical rating
+        change_history_rationale: Rationale for the change_history rating
     """
     dimensions = {
         "leadership_commitment": leadership_commitment,
@@ -519,9 +519,9 @@ def assess_enterprise_readiness(
     errors = []
     for dim, val in dimensions.items():
         if not 1 <= val <= 5:
-            errors.append(f"{dim} должен быть от 1 до 5, получено: {val}")
+            errors.append(f"{dim} must be between 1 and 5, got: {val}")
     if errors:
-        return "❌ Ошибки валидации:\n" + "\n".join(f"  • {e}" for e in errors)
+        return "❌ Validation errors:\n" + "\n".join(f"  • {e}" for e in errors)
 
     score = sum(dimensions.values()) / len(dimensions)
     score = round(score, 2)
@@ -543,28 +543,28 @@ def assess_enterprise_readiness(
 
     verdict_emoji = {"ready": "🟢", "proceed_with_caution": "🟡", "not_ready": "🔴"}
     verdict_text = {
-        "ready": "Организация готова к изменению",
-        "proceed_with_caution": "Есть пробелы — нужны подготовительные меры",
-        "not_ready": "Требуется отдельная программа подготовки организации",
+        "ready": "The organization is ready for change",
+        "proceed_with_caution": "There are gaps — preparatory measures are needed",
+        "not_ready": "A dedicated organizational readiness program is required",
     }
 
     weak_dims = [(dim, val) for dim, val in dimensions.items() if val <= 2]
     medium_dims = [(dim, val) for dim, val in dimensions.items() if val == 3]
 
     lines = [
-        f"✅ Оценка готовности завершена\n\n",
+        f"✅ Readiness assessment complete\n\n",
         f"  Readiness Score: {score:.1f} / 5.0\n",
-        f"  Вердикт: {verdict_emoji[verdict]} {verdict} — {verdict_text[verdict]}\n\n",
-        f"**Профиль по измерениям:**\n",
+        f"  Verdict: {verdict_emoji[verdict]} {verdict} — {verdict_text[verdict]}\n\n",
+        f"**Profile by dimension:**\n",
     ]
 
     dim_labels = {
-        "leadership_commitment": "Готовность руководства",
-        "cultural_readiness": "Культурная готовность",
-        "resource_availability": "Доступность ресурсов",
-        "operational_readiness": "Операционная готовность",
-        "technical_readiness": "Техническая готовность",
-        "change_history": "История изменений",
+        "leadership_commitment": "Leadership commitment",
+        "cultural_readiness": "Cultural readiness",
+        "resource_availability": "Resource availability",
+        "operational_readiness": "Operational readiness",
+        "technical_readiness": "Technical readiness",
+        "change_history": "Change history",
     }
     score_bar = {1: "▪▫▫▫▫", 2: "▪▪▫▫▫", 3: "▪▪▪▫▫", 4: "▪▪▪▪▫", 5: "▪▪▪▪▪"}
 
@@ -574,25 +574,25 @@ def assess_enterprise_readiness(
         lines.append(f"  {bar} {val}/5  {label}\n")
 
     if weak_dims:
-        lines.append("\n**⚠️ Критические пробелы (оценка ≤ 2):**\n")
+        lines.append("\n**⚠️ Critical gaps (score ≤ 2):**\n")
         for dim, val in weak_dims:
             rat = rationales.get(dim, "")
             lines.append(f"  • {dim_labels.get(dim, dim)}: {val}/5"
                          + (f" — {rat}" if rat else "") + "\n")
         if verdict != "not_ready":
             lines.append(
-                "  → Рекомендуется рассмотреть pilot_first или phased стратегию\n"
-                "     и добавить подготовительную Фазу 0 в transition states\n"
+                "  → Consider a pilot_first or phased strategy\n"
+                "     and add a preparatory Phase 0 to the transition states\n"
             )
 
     if verdict == "proceed_with_caution" and medium_dims:
-        lines.append("\n**🟡 Измерения требующие внимания (оценка = 3):**\n")
+        lines.append("\n**🟡 Dimensions needing attention (score = 3):**\n")
         for dim, val in medium_dims:
             lines.append(f"  • {dim_labels.get(dim, dim)}: {val}/5\n")
 
     lines.append(
-        f"\n→ Следующий шаг: `add_strategy_option` — добавь варианты стратегии (min 1 реальный).\n"
-        f"  OPT-000 (do_nothing) уже добавлен автоматически."
+        f"\n→ Next step: `add_strategy_option` — add strategy options (min 1 real one).\n"
+        f"  OPT-000 (do_nothing) has already been added automatically."
     )
 
     return "".join(lines)
@@ -611,31 +611,31 @@ def add_strategy_option(
     risk_impact: Literal["mitigates", "exacerbates", "neutral"] = "neutral",
 ) -> str:
     """
-    Шаг 4 пайплайна 6.4: добавить вариант стратегии.
+    Step 4 of the 6.4 pipeline: add a strategy option.
 
-    do_nothing (OPT-000) добавлен автоматически — не нужно добавлять снова.
-    Минимум 1 реальный вариант. Оптимально 2–3 реальных варианта + do_nothing.
+    do_nothing (OPT-000) is added automatically — no need to add it again.
+    Minimum 1 real option. Optimally 2-3 real options + do_nothing.
 
     Args:
-        project_id: Идентификатор проекта
-        name: Название варианта (например "Поэтапная замена CRM")
-        strategy_type: Тип стратегии (big_bang/phased/pilot_first)
-        investment_level: Уровень инвестиций (high/medium/low)
-        timeline_months: Срок реализации в месяцах
-        pros: JSON-список преимуществ, напр. '["Быстрый time-to-value", "Низкий риск"]'
-        cons: JSON-список недостатков, напр. '["Высокая стоимость", "Длительный срок"]'
-        linked_risks: JSON-список RK-xxx рисков, напр. '["RK-001", "RK-003"]'
-        risk_impact: Как вариант влияет на linked_risks (mitigates/exacerbates/neutral)
+        project_id: Project identifier
+        name: Option name (e.g. "Phased CRM replacement")
+        strategy_type: Strategy type (big_bang/phased/pilot_first)
+        investment_level: Investment level (high/medium/low)
+        timeline_months: Implementation timeline in months
+        pros: JSON list of advantages, e.g. '["Fast time-to-value", "Low risk"]'
+        cons: JSON list of disadvantages, e.g. '["High cost", "Long timeline"]'
+        linked_risks: JSON list of RK-xxx risks, e.g. '["RK-001", "RK-003"]'
+        risk_impact: How the option affects linked_risks (mitigates/exacerbates/neutral)
     """
     try:
         pros_list = json.loads(pros) if pros.strip() else []
     except json.JSONDecodeError:
-        return "❌ Ошибка парсинга pros. Должен быть JSON-массив строк."
+        return "❌ Error parsing pros. Must be a JSON array of strings."
 
     try:
         cons_list = json.loads(cons) if cons.strip() else []
     except json.JSONDecodeError:
-        return "❌ Ошибка парсинга cons. Должен быть JSON-массив строк."
+        return "❌ Error parsing cons. Must be a JSON array of strings."
 
     try:
         risks_list = json.loads(linked_risks) if linked_risks.strip() else []
@@ -643,9 +643,9 @@ def add_strategy_option(
         risks_list = []
 
     if timeline_months <= 0:
-        return "❌ timeline_months должен быть > 0"
+        return "❌ timeline_months must be > 0"
     if not name.strip():
-        return "❌ name не может быть пустым"
+        return "❌ name cannot be empty"
 
     strategy = _load_strategy(project_id)
     options = strategy["change_strategy"].get("options", [])
@@ -671,19 +671,19 @@ def add_strategy_option(
     _save_strategy(strategy, project_id)
 
     total_real = len([o for o in options if o.get("strategy_type") != "do_nothing"])
-    risks_hint = f"\n  Связанные риски: {', '.join(risks_list)} ({risk_impact})" if risks_list else ""
+    risks_hint = f"\n  Linked risks: {', '.join(risks_list)} ({risk_impact})" if risks_list else ""
 
     return (
-        f"✅ Вариант стратегии добавлен: {option_id}\n\n"
-        f"  Название:    {name}\n"
-        f"  Тип:         {strategy_type}\n"
-        f"  Инвестиции:  {investment_level}\n"
-        f"  Срок:        {timeline_months} мес.\n"
-        f"  Плюсов:      {len(pros_list)}\n"
-        f"  Минусов:     {len(cons_list)}\n"
+        f"✅ Strategy option added: {option_id}\n\n"
+        f"  Name:        {name}\n"
+        f"  Type:        {strategy_type}\n"
+        f"  Investment:  {investment_level}\n"
+        f"  Timeline:    {timeline_months} mo.\n"
+        f"  Pros:        {len(pros_list)}\n"
+        f"  Cons:        {len(cons_list)}\n"
         f"{risks_hint}\n\n"
-        f"  Реальных вариантов в реестре: {total_real}\n\n"
-        f"→ Добавь ещё вариант (`add_strategy_option`) или переходи к `compare_strategy_options`."
+        f"  Real options in the register: {total_real}\n\n"
+        f"→ Add another option (`add_strategy_option`) or move on to `compare_strategy_options`."
     )
 
 
@@ -696,31 +696,31 @@ def compare_strategy_options(
     custom_criteria_json: str = "{}",
 ) -> str:
     """
-    Шаг 5 пайплайна 6.4: сравнить варианты через взвешенную матрицу.
+    Step 5 of the 6.4 pipeline: compare options via a weighted matrix.
 
-    Вычисляет weighted_score для каждого варианта, определяет winner,
-    фиксирует opportunity cost отвергнутых вариантов.
+    Computes the weighted_score for each option, determines the winner,
+    and records the opportunity cost of the rejected options.
 
     Args:
-        project_id: Идентификатор проекта
-        scores_json: JSON-матрица оценок 1–5 по каждому критерию.
-            Формат: {"OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 3, "cost": 3,
+        project_id: Project identifier
+        scores_json: JSON matrix of 1-5 scores per criterion.
+            Format: {"OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 3, "cost": 3,
                                  "time_to_value": 4, "org_readiness_fit": 3, "feasibility": 4}}
-            OPT-000 (do_nothing) должен быть включён для корректного сравнения.
-        opportunity_cost: Что теряем, выбрав winner вместо остальных (обязательный текст)
-        weights_json: Опционально — переопределить веса дефолтных критериев.
-            Сумма всех весов (включая кастомные) должна быть 100.
-            Формат: {"alignment_to_goals": 30, "risk_mitigation": 25, ...}
-        custom_criteria_json: Опционально — добавить кастомные критерии с весами.
-            Формат: {"regulatory_compliance": {"weight": 15, "description": "..."}}
+            OPT-000 (do_nothing) should be included for a correct comparison.
+        opportunity_cost: What we give up by choosing the winner over the rest (required text)
+        weights_json: Optional — override the default criteria weights.
+            The sum of all weights (including custom ones) must be 100.
+            Format: {"alignment_to_goals": 30, "risk_mitigation": 25, ...}
+        custom_criteria_json: Optional — add custom criteria with weights.
+            Format: {"regulatory_compliance": {"weight": 15, "description": "..."}}
     """
     if not opportunity_cost.strip():
-        return "❌ opportunity_cost обязателен. Опишите что теряем, выбрав лучший вариант вместо остальных."
+        return "❌ opportunity_cost is required. Describe what we give up by choosing the best option over the rest."
 
     try:
         scores = json.loads(scores_json)
     except json.JSONDecodeError:
-        return "❌ Ошибка парсинга scores_json. Проверь синтаксис JSON."
+        return "❌ Error parsing scores_json. Check the JSON syntax."
 
     try:
         weights_override = json.loads(weights_json) if weights_json.strip() else {}
@@ -732,12 +732,12 @@ def compare_strategy_options(
     except json.JSONDecodeError:
         custom_criteria = {}
 
-    # Итоговые веса
+    # Final weights
     final_weights = dict(DEFAULT_CRITERIA_WEIGHTS)
     if weights_override:
         final_weights.update(weights_override)
 
-    # Добавляем кастомные критерии
+    # Add custom criteria
     for crit_name, crit_data in custom_criteria.items():
         if isinstance(crit_data, dict):
             final_weights[crit_name] = crit_data.get("weight", 0)
@@ -746,15 +746,15 @@ def compare_strategy_options(
 
     total_weight = sum(final_weights.values())
     if abs(total_weight - 100) > 1:
-        return f"❌ Сумма весов должна быть 100, получено: {total_weight}. Скорректируй weights_json."
+        return f"❌ The sum of weights must be 100, got: {total_weight}. Adjust weights_json."
 
     strategy = _load_strategy(project_id)
     options = strategy["change_strategy"].get("options", [])
 
     if not options:
-        return "⚠️ Нет вариантов стратегии. Добавь через `add_strategy_option`."
+        return "⚠️ No strategy options. Add one via `add_strategy_option`."
 
-    # Вычисляем weighted_score
+    # Compute weighted_score
     scored_options = []
     for opt in options:
         oid = opt["option_id"]
@@ -763,7 +763,7 @@ def compare_strategy_options(
             continue
 
         if oid == DO_NOTHING_OPTION_ID and oid not in scores:
-            # do_nothing без явных оценок — формируем минимальные
+            # do_nothing without explicit scores — use minimal ones
             opt_scores = {crit: 1 for crit in final_weights}
 
         weighted = 0.0
@@ -776,21 +776,21 @@ def compare_strategy_options(
         scored_options.append(opt)
 
     if not scored_options:
-        return "⚠️ Нет оценённых вариантов. Проверь что option_id в scores_json совпадают с добавленными вариантами."
+        return "⚠️ No scored options. Check that the option_id values in scores_json match the options you added."
 
-    # Определяем winner (максимальный score среди не-do_nothing)
+    # Determine the winner (highest score among non-do_nothing options)
     real_options = [o for o in scored_options if o.get("strategy_type") != "do_nothing"]
     if not real_options:
-        return "⚠️ Нет реальных вариантов (не do_nothing). Добавь через `add_strategy_option`."
+        return "⚠️ No real options (other than do_nothing). Add one via `add_strategy_option`."
 
     winner = max(real_options, key=lambda o: o.get("weighted_score", 0))
     winner_id = winner["option_id"]
 
-    # Обновляем selected
+    # Update selected
     for opt in options:
         opt["selected"] = (opt["option_id"] == winner_id)
 
-    # Формируем rejected_alternatives
+    # Build rejected_alternatives
     rejected = []
     for opt in scored_options:
         if opt["option_id"] != winner_id:
@@ -798,7 +798,7 @@ def compare_strategy_options(
                 "option_id": opt["option_id"],
                 "name": opt.get("name", ""),
                 "weighted_score": opt.get("weighted_score"),
-                "rationale": f"Уступил {winner_id} по взвешенной оценке: "
+                "rationale": f"Lost to {winner_id} on weighted score: "
                              f"{opt.get('weighted_score', 0):.2f} vs {winner.get('weighted_score', 0):.2f}",
             })
 
@@ -811,19 +811,19 @@ def compare_strategy_options(
 
     _save_strategy(strategy, project_id)
 
-    # --- Форматирование вывода ---
+    # --- Output formatting ---
     lines = [
-        f"✅ Сравнение вариантов завершено\n\n",
-        f"  **Победитель: {winner_id} — {winner.get('name', '')}**\n",
+        f"✅ Comparison of options complete\n\n",
+        f"  **Winner: {winner_id} — {winner.get('name', '')}**\n",
         f"  Weighted Score: {winner.get('weighted_score', 0):.2f} / 5.00\n",
-        f"  Тип стратегии: {winner.get('strategy_type', '')}\n",
-        f"  Срок: {winner.get('timeline_months', 0)} мес. | Инвестиции: {winner.get('investment_level', '')}\n\n",
-        f"**Матрица сравнения:**\n",
+        f"  Strategy type: {winner.get('strategy_type', '')}\n",
+        f"  Timeline: {winner.get('timeline_months', 0)} mo. | Investment: {winner.get('investment_level', '')}\n\n",
+        f"**Comparison matrix:**\n",
     ]
 
-    # Таблица
+    # Table
     header_opts = [o["option_id"] for o in scored_options]
-    lines.append(f"  {'Критерий':<25} | " + " | ".join(f"{oid:>8}" for oid in header_opts) + " | Вес\n")
+    lines.append(f"  {'Criterion':<25} | " + " | ".join(f"{oid:>8}" for oid in header_opts) + " | Weight\n")
     lines.append(f"  {'-'*25}-+-" + "-+-".join(["-"*8]*len(header_opts)) + "-+-----\n")
     for crit, weight in final_weights.items():
         row = f"  {crit:<25} | "
@@ -832,7 +832,7 @@ def compare_strategy_options(
             row += f"{val:>8} | "
         row += f"{weight}%\n"
         lines.append(row)
-    lines.append(f"  {'ИТОГО (weighted)':<25} | ")
+    lines.append(f"  {'TOTAL (weighted)':<25} | ")
     for opt in scored_options:
         lines[-1] += f"{opt.get('weighted_score', 0):>8.2f} | "
     lines[-1] += "\n"
@@ -840,7 +840,7 @@ def compare_strategy_options(
     lines.append(f"\n**Opportunity Cost:**\n  {opportunity_cost}\n")
 
     lines.append(
-        f"\n→ Следующий шаг: `define_transition_states` — опиши фазы перехода."
+        f"\n→ Next step: `define_transition_states` — describe the transition phases."
     )
 
     return "".join(lines)
@@ -858,25 +858,25 @@ def define_transition_states(
     value_realizable: str,
 ) -> str:
     """
-    Шаг 6 пайплайна 6.4: описать фазу перехода (transition state).
+    Step 6 of the 6.4 pipeline: describe a transition state (phase).
 
-    Вызывай для каждой фазы. Для big_bang — одна фаза.
-    Для phased — 2–5 фаз. Каждая фаза должна давать standalone value.
+    Call this for each phase. For big_bang — a single phase.
+    For phased — 2-5 phases. Each phase should deliver standalone value.
 
     Args:
-        project_id: Идентификатор проекта
-        phase_number: Номер фазы (1, 2, 3...)
-        phase_name: Название фазы (например "Пилот: базовый CRM")
-        duration_months: Длительность фазы в месяцах
-        capabilities_delivered: JSON-список названий capabilities реализуемых в этой фазе
-        gaps_closed: JSON-список названий gaps закрытых к концу фазы
-        risks_remaining: JSON-список RK-xxx рисков которые остаются активными после фазы
-        value_realizable: Ценность реализуемая к концу фазы (для спонсора)
+        project_id: Project identifier
+        phase_number: Phase number (1, 2, 3...)
+        phase_name: Phase name (e.g. "Pilot: basic CRM")
+        duration_months: Phase duration in months
+        capabilities_delivered: JSON list of capability names delivered in this phase
+        gaps_closed: JSON list of gap names closed by the end of this phase
+        risks_remaining: JSON list of RK-xxx risks that remain active after this phase
+        value_realizable: Value realized by the end of the phase (for the sponsor)
     """
     try:
         caps = json.loads(capabilities_delivered) if capabilities_delivered.strip() else []
     except json.JSONDecodeError:
-        return "❌ Ошибка парсинга capabilities_delivered. Должен быть JSON-массив строк."
+        return "❌ Error parsing capabilities_delivered. Must be a JSON array of strings."
 
     try:
         gaps = json.loads(gaps_closed) if gaps_closed.strip() else []
@@ -889,13 +889,13 @@ def define_transition_states(
         risks = []
 
     if phase_number <= 0:
-        return "❌ phase_number должен быть > 0"
+        return "❌ phase_number must be > 0"
     if duration_months <= 0:
-        return "❌ duration_months должен быть > 0"
+        return "❌ duration_months must be > 0"
     if not phase_name.strip():
-        return "❌ phase_name не может быть пустым"
+        return "❌ phase_name cannot be empty"
     if not value_realizable.strip():
-        return "⚠️ value_realizable не заполнен — каждая фаза должна давать конкретную ценность."
+        return "⚠️ value_realizable is not filled in — every phase should deliver concrete value."
 
     transition_state = {
         "phase": phase_number,
@@ -910,7 +910,7 @@ def define_transition_states(
     strategy = _load_strategy(project_id)
     states = strategy.get("transition_states", [])
 
-    # Заменяем если фаза уже была определена
+    # Replace if this phase was already defined
     states = [s for s in states if s.get("phase") != phase_number]
     states.append(transition_state)
     states.sort(key=lambda s: s.get("phase", 0))
@@ -923,19 +923,19 @@ def define_transition_states(
 
     risks_note = ""
     if risks:
-        risks_note = f"\n  Остающиеся риски: {', '.join(risks)}"
+        risks_note = f"\n  Remaining risks: {', '.join(risks)}"
 
     return (
-        f"✅ Фаза {phase_number} зафиксирована\n\n"
-        f"  Название:      {phase_name}\n"
-        f"  Длительность:  {duration_months} мес.\n"
+        f"✅ Phase {phase_number} recorded\n\n"
+        f"  Name:          {phase_name}\n"
+        f"  Duration:      {duration_months} mo.\n"
         f"  Capabilities:  {len(caps)}\n"
-        f"  Gaps закрыто:  {len(gaps)}\n"
+        f"  Gaps closed:   {len(gaps)}\n"
         f"{risks_note}\n"
-        f"  Ценность:      {value_realizable[:80]}{'...' if len(value_realizable) > 80 else ''}\n\n"
-        f"  Итого фаз определено: {len(states)} | "
-        f"Суммарно: {total_caps} capabilities, {total_months} мес.\n\n"
-        f"→ Добавь следующую фазу или вызови `save_change_strategy` для финализации."
+        f"  Value:         {value_realizable[:80]}{'...' if len(value_realizable) > 80 else ''}\n\n"
+        f"  Total phases defined: {len(states)} | "
+        f"Total: {total_caps} capabilities, {total_months} mo.\n\n"
+        f"→ Add the next phase or call `save_change_strategy` to finalize."
     )
 
 
@@ -946,16 +946,16 @@ def save_change_strategy(
     traceability_project_id: str = "",
 ) -> str:
     """
-    Шаг 7 пайплайна 6.4: финализировать стратегию изменения.
+    Step 7 of the 6.4 pipeline: finalize the change strategy.
 
-    Сохраняет {project}_change_strategy.json (контракт для 7.x, 8.x) и генерирует
-    Markdown-отчёт через save_artifact. Опционально регистрирует solution в
-    репозитории 5.1 как узел типа 'solution' со связями 'satisfies'.
+    Saves {project}_change_strategy.json (a contract for 7.x, 8.x) and generates
+    a Markdown report via save_artifact. Optionally registers the solution in
+    the 5.1 repository as a 'solution'-type node with 'satisfies' links.
 
     Args:
-        project_id: Идентификатор проекта
-        push_to_traceability: Регистрировать solution в репозитории 5.1 (default: False)
-        traceability_project_id: project_id репозитория 5.1 (если отличается от основного)
+        project_id: Project identifier
+        push_to_traceability: Register the solution in the 5.1 repository (default: False)
+        traceability_project_id: project_id of the 5.1 repository (if different from the main one)
     """
     strategy = _load_strategy(project_id)
     scope = strategy.get("solution_scope", {})
@@ -968,19 +968,19 @@ def save_change_strategy(
     options = cs.get("options", [])
 
     if not capabilities:
-        return "⚠️ Скоуп решения не определён. Вызови `define_solution_scope`."
+        return "⚠️ Solution scope is not defined. Call `define_solution_scope`."
     if not selected_id:
-        return "⚠️ Вариант стратегии не выбран. Вызови `compare_strategy_options`."
+        return "⚠️ No strategy option selected. Call `compare_strategy_options`."
     if not readiness:
-        return "⚠️ Оценка готовности не заполнена. Вызови `assess_enterprise_readiness`."
+        return "⚠️ Readiness assessment is not filled in. Call `assess_enterprise_readiness`."
     if not states:
-        return "⚠️ Фазы перехода не определены. Вызови `define_transition_states`."
+        return "⚠️ Transition states are not defined. Call `define_transition_states`."
 
     selected_option = next((o for o in options if o.get("option_id") == selected_id), None)
     if not selected_option:
-        return f"⚠️ Выбранный вариант {selected_id} не найден в реестре."
+        return f"⚠️ Selected option {selected_id} not found in the register."
 
-    # --- Опциональный push в трассировку 5.1 (ADR-082) ---
+    # --- Optional push to the 5.1 traceability repository (ADR-082) ---
     traceability_notes = []
     if push_to_traceability:
         repo_pid = traceability_project_id or project_id
@@ -992,7 +992,7 @@ def save_change_strategy(
             existing_ids = {r["id"] for r in repo.get("requirements", [])}
             sol_id = "SOL-001"
 
-            # Узел solution
+            # solution node
             if sol_id not in existing_ids:
                 repo.setdefault("requirements", []).append({
                     "id": sol_id,
@@ -1003,9 +1003,9 @@ def save_change_strategy(
                     "added": str(date.today()),
                 })
                 existing_ids.add(sol_id)
-                traceability_notes.append(f"✅ Узел {sol_id} (solution) добавлен в 5.1")
+                traceability_notes.append(f"✅ Node {sol_id} (solution) added to 5.1")
 
-            # Связи satisfies с business_goals
+            # satisfies links to business_goals
             added_links = 0
             bg_list = strategy.get("imported_context", {}).get("business_goals", [])
             for bg in bg_list:
@@ -1015,56 +1015,56 @@ def save_change_strategy(
                         "from": sol_id,
                         "to": bg_id,
                         "relation": "satisfies",
-                        "rationale": f"Solution scope реализует {bg_id}",
+                        "rationale": f"Solution scope fulfills {bg_id}",
                         "added": str(date.today()),
                     })
                     added_links += 1
 
             if added_links:
-                traceability_notes.append(f"✅ Добавлено {added_links} связей satisfies → BG")
+                traceability_notes.append(f"✅ Added {added_links} satisfies links → BG")
 
             repo["updated"] = str(date.today())
             with open(repo_path, "w", encoding="utf-8") as f:
                 json.dump(repo, f, ensure_ascii=False, indent=2)
         else:
             traceability_notes.append(
-                f"⚠️ Репозиторий трассировки 5.1 не найден для '{repo_pid}' "
-                f"— push пропущен. Сначала инициализируй репозиторий."
+                f"⚠️ 5.1 traceability repository not found for '{repo_pid}' "
+                f"— push skipped. Initialize the repository first."
             )
 
-    # --- Markdown отчёт ---
+    # --- Markdown report ---
     verdict = readiness.get("verdict", "")
     readiness_score = readiness.get("readiness_score", 0)
     excluded = scope.get("explicitly_excluded", [])
     in_scope_caps = [c for c in capabilities if c.get("in_scope", True)]
 
     md_lines = [
-        f"# Стратегия изменения — {project_id}",
-        f"**Дата:** {date.today()}  ",
-        f"**Тип изменения:** {strategy.get('scope', {}).get('change_type', '')}  ",
-        f"**Горизонт:** {strategy.get('scope', {}).get('time_horizon_months', '')} месяцев  ",
-        f"**Методология:** {strategy.get('scope', {}).get('methodology', '')}",
+        f"# Change Strategy — {project_id}",
+        f"**Date:** {date.today()}  ",
+        f"**Change type:** {strategy.get('scope', {}).get('change_type', '')}  ",
+        f"**Horizon:** {strategy.get('scope', {}).get('time_horizon_months', '')} months  ",
+        f"**Methodology:** {strategy.get('scope', {}).get('methodology', '')}",
         "",
         "---",
         "",
-        "## Выбранная стратегия",
+        "## Selected Strategy",
         "",
         f"**{selected_id} — {selected_option.get('name', '')}**",
-        f"- Тип: {selected_option.get('strategy_type', '')}",
-        f"- Инвестиции: {selected_option.get('investment_level', '')}",
-        f"- Срок реализации: {selected_option.get('timeline_months', '')} мес.",
+        f"- Type: {selected_option.get('strategy_type', '')}",
+        f"- Investment: {selected_option.get('investment_level', '')}",
+        f"- Implementation timeline: {selected_option.get('timeline_months', '')} mo.",
         f"- Weighted Score: {selected_option.get('weighted_score', 'N/A')}",
         "",
     ]
 
     if selected_option.get("pros"):
-        md_lines.append("**Преимущества:**")
+        md_lines.append("**Pros:**")
         for p in selected_option["pros"]:
             md_lines.append(f"- {p}")
         md_lines.append("")
 
     if selected_option.get("cons"):
-        md_lines.append("**Риски / недостатки:**")
+        md_lines.append("**Risks / drawbacks:**")
         for c in selected_option["cons"]:
             md_lines.append(f"- {c}")
         md_lines.append("")
@@ -1079,7 +1079,7 @@ def save_change_strategy(
     # Rejected alternatives
     rejected = cs.get("rejected_alternatives", [])
     if rejected:
-        md_lines.extend(["## Отвергнутые варианты", ""])
+        md_lines.extend(["## Rejected Options", ""])
         for rej in rejected:
             rej_opt = next((o for o in options if o.get("option_id") == rej["option_id"]), {})
             md_lines.append(
@@ -1091,7 +1091,7 @@ def save_change_strategy(
     md_lines.extend([
         "---",
         "",
-        "## Скоуп решения",
+        "## Solution Scope",
         "",
         f"**Capabilities ({len(in_scope_caps)}):**",
         "",
@@ -1110,7 +1110,7 @@ def save_change_strategy(
         md_lines.append("")
 
     if excluded:
-        md_lines.extend(["**Явно вне скоупа:**", ""])
+        md_lines.extend(["**Explicitly out of scope:**", ""])
         for ex in excluded:
             md_lines.append(f"- {ex}")
         md_lines.append("")
@@ -1118,7 +1118,7 @@ def save_change_strategy(
     md_lines.extend([
         "---",
         "",
-        "## Готовность организации",
+        "## Enterprise Readiness",
         "",
         f"**Readiness Score: {readiness_score:.1f} / 5.0 — {verdict}**",
         "",
@@ -1126,12 +1126,12 @@ def save_change_strategy(
 
     dims = readiness.get("dimensions", {})
     dim_labels = {
-        "leadership_commitment": "Готовность руководства",
-        "cultural_readiness": "Культурная готовность",
-        "resource_availability": "Доступность ресурсов",
-        "operational_readiness": "Операционная готовность",
-        "technical_readiness": "Техническая готовность",
-        "change_history": "История изменений",
+        "leadership_commitment": "Leadership commitment",
+        "cultural_readiness": "Cultural readiness",
+        "resource_availability": "Resource availability",
+        "operational_readiness": "Operational readiness",
+        "technical_readiness": "Technical readiness",
+        "change_history": "Change history",
     }
     for dim, data in dims.items():
         sc = data.get("score", "?")
@@ -1143,12 +1143,12 @@ def save_change_strategy(
         md_lines.extend([
             "---",
             "",
-            "## Фазы перехода (Transition States)",
+            "## Transition States",
             "",
         ])
         for st in states:
             md_lines.extend([
-                f"### Фаза {st['phase']}: {st['name']} ({st.get('duration_months', 0)} мес.)",
+                f"### Phase {st['phase']}: {st['name']} ({st.get('duration_months', 0)} mo.)",
                 "",
             ])
             if st.get("capabilities_delivered"):
@@ -1156,20 +1156,20 @@ def save_change_strategy(
                 for cap in st["capabilities_delivered"]:
                     md_lines.append(f"- {cap}")
             if st.get("gaps_closed"):
-                md_lines.append("\n**Закрытые gaps:**")
+                md_lines.append("\n**Gaps closed:**")
                 for g in st["gaps_closed"]:
                     md_lines.append(f"- {g}")
             if st.get("risks_remaining"):
-                md_lines.append(f"\n**Остающиеся риски:** {', '.join(st['risks_remaining'])}")
+                md_lines.append(f"\n**Remaining risks:** {', '.join(st['risks_remaining'])}")
             md_lines.extend([
-                f"\n**Ценность:** {st.get('value_realizable', '')}",
+                f"\n**Value:** {st.get('value_realizable', '')}",
                 "",
             ])
 
     md_content = "\n".join(md_lines)
     artifact_result = save_artifact(md_content, f"6_4_change_strategy_{_safe(project_id)}", project_id=project_id)
 
-    # Финализируем JSON
+    # Finalize the JSON
     strategy["status"] = "finalized"
     strategy["finalized_on"] = str(date.today())
     _save_strategy(strategy, project_id)
@@ -1178,13 +1178,13 @@ def save_change_strategy(
     total_months = sum(s.get("duration_months", 0) for s in states)
 
     output = [
-        f"✅ Стратегия изменения финализирована\n\n",
-        f"  Проект:     {project_id}\n",
-        f"  Стратегия:  {selected_id} — {selected_option.get('name', '')}\n",
-        f"  Тип:        {selected_option.get('strategy_type', '')}\n",
-        f"  Фаз:        {len(states)} | Общий срок: {total_months} мес.\n",
+        f"✅ Change strategy finalized\n\n",
+        f"  Project:    {project_id}\n",
+        f"  Strategy:   {selected_id} — {selected_option.get('name', '')}\n",
+        f"  Type:       {selected_option.get('strategy_type', '')}\n",
+        f"  Phases:     {len(states)} | Total timeline: {total_months} mo.\n",
         f"  Readiness:  {readiness_score:.1f}/5.0 — {verdict}\n\n",
-        f"  📄 JSON (для 7.x, 8.x): `{json_path}`\n",
+        f"  📄 JSON (for 7.x, 8.x): `{json_path}`\n",
         artifact_result, "\n",
     ]
 
@@ -1192,19 +1192,19 @@ def save_change_strategy(
         output.extend(["\n"] + traceability_notes + ["\n"])
 
     output.append(
-        f"\n**Следующие шаги:**\n"
-        f"• 7.1 Specify Requirements → скоуп из `solution_scope.capabilities`\n"
-        f"• 7.4 Define Requirements Architecture → фазы из `transition_states`\n"
-        f"• 7.5 Define Design Options → выбранный вариант + отвергнутые альтернативы\n"
+        f"\n**Next steps:**\n"
+        f"• 7.1 Specify Requirements → scope from `solution_scope.capabilities`\n"
+        f"• 7.4 Define Requirements Architecture → phases from `transition_states`\n"
+        f"• 7.5 Define Design Options → selected option + rejected alternatives\n"
     )
 
     if verdict != "ready":
         weak = [(d, v["score"]) for d, v in dims.items() if v["score"] <= 2]
         if weak:
             output.append(
-                f"\n⚠️ Обратите внимание на низкие измерения готовности: "
+                f"\n⚠️ Pay attention to the low readiness dimensions: "
                 + ", ".join(f"{d}={s}" for d, s in weak)
-                + " — план мероприятий перед стартом.\n"
+                + " — prepare a mitigation plan before kickoff.\n"
             )
 
     return "".join(output)

@@ -1,32 +1,32 @@
 """
 BABOK 6.3 — Assess Risks
-MCP-инструменты для оценки рисков инициативы.
+MCP tools for assessing the risks of an initiative.
 
-Инструменты:
-  - scope_risk_assessment         — скоуп: тип инициативы, глубина, источники
-  - import_risks_from_context     — черновики рисков из 6.1, 6.2, 4.2
-  - add_risk                      — добавить/подтвердить риск в реестр
+Tools:
+  - scope_risk_assessment         — scope: initiative type, depth, sources
+  - import_risks_from_context     — draft risks from 6.1, 6.2, 4.2
+  - add_risk                      — add/confirm a risk in the register
   - set_risk_tolerance            — tolerance level + max_acceptable_score
-  - run_risk_matrix               — матрица зон, cumulative profile
-  - generate_recommendation       — тип рекомендации + narrative
-  - save_risk_assessment          — финализация: JSON + Markdown + опц. push в 5.1
+  - run_risk_matrix               — zone matrix, cumulative profile
+  - generate_recommendation       — recommendation type + narrative
+  - save_risk_assessment          — finalize: JSON + Markdown + opt. push to 5.1
 
-Хранение:
-  - {project}_risk_assessment_scope.json  — скоуп
-  - {project}_risk_assessment.json        — реестр рисков (контракт для 6.4)
-  - {project}_risk_assessment_*.md        — отчёт (через save_artifact)
+Storage:
+  - {project}_risk_assessment_scope.json  — scope
+  - {project}_risk_assessment.json        — risk register (contract for 6.4)
+  - {project}_risk_assessment_*.md        — report (via save_artifact)
 
-Интеграция:
-  Вход: 6.1 (current_state, business_needs), 6.2 (future_state, gap_analysis), 4.2 (elicitation)
-  Выход: risk_assessment.json → 6.4; узлы risk + threatens → 5.1 (опционально)
+Integration:
+  In: 6.1 (current_state, business_needs), 6.2 (future_state, gap_analysis), 4.2 (elicitation)
+  Out: risk_assessment.json → 6.4; risk + threatens nodes → 5.1 (optional)
 
-ADR-070: гибридное хранение (свой JSON + опц. push в 5.1)
-ADR-071: import_risks_from_context — режим черновиков
-ADR-072: шкала 1–5 × 1–5, зоны Low/Medium/High
-ADR-073: generate_recommendation — гибридный подход (логика + Claude narrative)
-ADR-074: тип узла `risk` и связь `threatens` в репозитории 5.1
-ADR-075: структура карточки риска (14 полей)
-ADR-076: экспортный формат для 6.4
+ADR-070: hybrid storage (own JSON + optional push to 5.1)
+ADR-071: import_risks_from_context — draft mode
+ADR-072: 1-5 x 1-5 scale, Low/Medium/High zones
+ADR-073: generate_recommendation — hybrid approach (logic + Claude narrative)
+ADR-074: node type `risk` and relation `threatens` in the 5.1 repository
+ADR-075: risk card structure (14 fields)
+ADR-076: export format for 6.4
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -44,15 +44,15 @@ SCOPE_FILENAME = "risk_assessment_scope.json"
 ASSESSMENT_FILENAME = "risk_assessment.json"
 REPO_FILENAME = "traceability_repo.json"
 
-# Файлы 6.1 (опциональный источник)
+# 6.1 files (optional source)
 CS_STATE_FILENAME = "current_state.json"
 CS_NEEDS_FILENAME = "business_needs.json"
 
-# Файлы 6.2 (опциональный источник)
+# 6.2 files (optional source)
 FS_STATE_FILENAME = "future_state.json"
 GAP_FILENAME = "gap_analysis.json"
 
-# Файлы 4.2 (опциональный источник)
+# 4.2 files (optional source)
 ELICITATION_FILENAME = "elicitation_results.json"
 
 VALID_CATEGORIES = ["strategic", "operational", "financial", "technical", "regulatory", "people", "external"]
@@ -71,7 +71,7 @@ ZONE_LABELS = {
 
 
 # ---------------------------------------------------------------------------
-# Утилиты
+# Utilities
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -170,7 +170,7 @@ def _zone_for_score(score: int, max_acceptable: int) -> str:
 
 
 def _safe_load_json(path: str) -> Optional[dict]:
-    """Загружает JSON, возвращает None если файл не найден или повреждён."""
+    """Loads JSON, returns None if the file is not found or corrupted."""
     if not os.path.exists(path):
         return None
     try:
@@ -181,7 +181,7 @@ def _safe_load_json(path: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Инструменты
+# Tools
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -193,22 +193,22 @@ def scope_risk_assessment(
     ba_notes: str = "",
 ) -> str:
     """
-    Шаг 1 пайплайна 6.3: зафиксировать скоуп оценки рисков.
+    Step 1 of the 6.3 pipeline: lock in the scope of the risk assessment.
 
-    Определяет тип инициативы, глубину анализа и источники данных.
-    Источники (6.1, 6.2, 4.2) используются в import_risks_from_context.
+    Determines the initiative type, analysis depth, and data sources.
+    Sources (6.1, 6.2, 4.2) are used in import_risks_from_context.
 
     Args:
-        project_id: Идентификатор проекта
-        initiative_type: Тип инициативы (process_improvement/new_system/regulatory/cost_reduction/market_opportunity/other)
-        analysis_depth: Глубина анализа (quick=3-5 рисков / standard=7-15 / comprehensive=15-30)
-        source_project_ids: JSON-список project_id из 6.1/6.2 для автоимпорта, напр. '["crm_upgrade"]'
-        ba_notes: Дополнительный контекст или ограничения
+        project_id: Project identifier
+        initiative_type: Initiative type (process_improvement/new_system/regulatory/cost_reduction/market_opportunity/other)
+        analysis_depth: Analysis depth (quick=3-5 risks / standard=7-15 / comprehensive=15-30)
+        source_project_ids: JSON list of project_id from 6.1/6.2 for auto-import, e.g. '["crm_upgrade"]'
+        ba_notes: Additional context or constraints
     """
     try:
         source_ids = json.loads(source_project_ids) if source_project_ids.strip() else []
     except json.JSONDecodeError:
-        return "❌ Ошибка: source_project_ids должен быть JSON-массивом, напр. '[\"crm\"]'"
+        return "❌ Error: source_project_ids must be a JSON array, e.g. '[\"crm\"]'"
 
     scope = {
         "project_id": project_id,
@@ -223,32 +223,32 @@ def scope_risk_assessment(
     with open(_scope_path(project_id), "w", encoding="utf-8") as f:
         json.dump(scope, f, ensure_ascii=False, indent=2)
 
-    # Инициализируем пустой реестр рисков
+    # Initialize an empty risk register
     assessment = _load_assessment(project_id)
     assessment["scope"] = scope
     _save_assessment(assessment, project_id)
 
     depth_guide = {
-        "quick": "3–5 рисков (ключевые угрозы, ~1 час)",
-        "standard": "7–15 рисков (основной анализ, ~2–3 часа)",
-        "comprehensive": "15–30 рисков (полный анализ, ~полдня)",
+        "quick": "3-5 risks (key threats, ~1 hour)",
+        "standard": "7-15 risks (core analysis, ~2-3 hours)",
+        "comprehensive": "15-30 risks (full analysis, ~half a day)",
     }
 
     sources_hint = ""
     if source_ids:
-        sources_hint = f"\n  Источники для импорта: {', '.join(source_ids)}"
-        sources_hint += "\n  → Вызови `import_risks_from_context` для автоматического сбора черновиков"
+        sources_hint = f"\n  Sources for import: {', '.join(source_ids)}"
+        sources_hint += "\n  → Call `import_risks_from_context` to automatically collect drafts"
     else:
-        sources_hint = "\n  Источники 6.1/6.2 не указаны → добавляй риски вручную через `add_risk`"
+        sources_hint = "\n  No 6.1/6.2 sources specified → add risks manually via `add_risk`"
 
     return (
-        f"✅ Скоуп оценки рисков зафиксирован\n\n"
-        f"  Проект:     {project_id}\n"
-        f"  Инициатива: {initiative_type}\n"
-        f"  Глубина:    {analysis_depth} — {depth_guide[analysis_depth]}\n"
+        f"✅ Risk assessment scope locked in\n\n"
+        f"  Project:    {project_id}\n"
+        f"  Initiative: {initiative_type}\n"
+        f"  Depth:      {analysis_depth} — {depth_guide[analysis_depth]}\n"
         f"{sources_hint}\n\n"
-        f"**Следующий шаг:** `import_risks_from_context` (если есть 6.1/6.2) "
-        f"или сразу `add_risk` для первого риска."
+        f"**Next step:** `import_risks_from_context` (if 6.1/6.2 data exists) "
+        f"or go straight to `add_risk` for the first risk."
     )
 
 
@@ -258,15 +258,15 @@ def import_risks_from_context(
     source_project_ids: str = "[]",
 ) -> str:
     """
-    Шаг 2 пайплайна 6.3: собрать черновики рисков из артефактов 6.1, 6.2, 4.2.
+    Step 2 of the 6.3 pipeline: collect draft risks from 6.1, 6.2, 4.2 artifacts.
 
-    Сканирует доступные артефакты и предлагает черновики рисков со статусом 'draft'.
-    BA просматривает черновики и подтверждает нужные через add_risk.
-    Graceful degradation: отсутствующие артефакты пропускаются с предупреждением.
+    Scans available artifacts and proposes draft risks with status 'draft'.
+    The BA reviews the drafts and confirms the relevant ones via add_risk.
+    Graceful degradation: missing artifacts are skipped with a warning.
 
     Args:
-        project_id: Идентификатор проекта
-        source_project_ids: JSON-список project_id для сканирования (по умолчанию — текущий проект)
+        project_id: Project identifier
+        source_project_ids: JSON list of project_id to scan (default: the current project)
     """
     try:
         source_ids = json.loads(source_project_ids) if source_project_ids.strip() else []
@@ -280,7 +280,7 @@ def import_risks_from_context(
     warnings = []
 
     for src_id in source_ids:
-        # --- 6.2: ограничения ---
+        # --- 6.2: constraints ---
         fs_data = _safe_load_json(_fs_state_path(src_id))
         if fs_data:
             constraints = fs_data.get("constraints", [])
@@ -294,15 +294,15 @@ def import_risks_from_context(
                         "import_source": f"6.2 constraint ({src_id})",
                         "category": risk_cat,
                         "source": "constraint",
-                        "description": f"Если ограничение «{desc}» не будет преодолено, то цели проекта могут быть не достигнуты",
+                        "description": f"If the constraint “{desc}” is not overcome, then the project goals may not be achieved",
                         "likelihood": 3,
                         "impact": 3,
                         "response_strategy": "mitigate",
                     })
         else:
-            warnings.append(f"⚠️ 6.2 future_state не найден для '{src_id}' — пропускаем")
+            warnings.append(f"⚠️ 6.2 future_state not found for '{src_id}' — skipping")
 
-        # --- 6.2: gap-анализ ---
+        # --- 6.2: gap analysis ---
         gap_data = _safe_load_json(_gap_path(src_id))
         if gap_data:
             gaps = gap_data.get("gaps", [])
@@ -315,13 +315,13 @@ def import_risks_from_context(
                         "import_source": f"6.2 gap_analysis ({src_id})",
                         "category": "technical",
                         "source": "future_state",
-                        "description": f"Если gap в элементе «{element}» окажется сложнее ожидаемого, то переход к будущему состоянию затянется",
+                        "description": f"If the gap in the “{element}” element turns out harder than expected, then the transition to the future state will be delayed",
                         "likelihood": 3,
                         "impact": 4,
                         "response_strategy": "mitigate",
                     })
 
-        # --- 6.1: корневые причины ---
+        # --- 6.1: root causes ---
         cs_data = _safe_load_json(_cs_state_path(src_id))
         if cs_data:
             rca = cs_data.get("rca", {})
@@ -334,15 +334,15 @@ def import_risks_from_context(
                         "import_source": f"6.1 root_cause_analysis ({src_id})",
                         "category": "operational",
                         "source": "current_state",
-                        "description": f"Если корневая причина «{desc}» не будет устранена в ходе проекта, то проблема возникнет снова",
+                        "description": f"If the root cause “{desc}” is not eliminated during the project, then the problem will resurface",
                         "likelihood": 2,
                         "impact": 3,
                         "response_strategy": "mitigate",
                     })
         else:
-            warnings.append(f"⚠️ 6.1 current_state не найден для '{src_id}' — пропускаем")
+            warnings.append(f"⚠️ 6.1 current_state not found for '{src_id}' — skipping")
 
-        # --- 6.1: бизнес-потребности высокого приоритета ---
+        # --- 6.1: high-priority business needs ---
         needs_data = _safe_load_json(_cs_needs_path(src_id))
         if needs_data:
             needs = needs_data.get("business_needs", [])
@@ -356,31 +356,31 @@ def import_risks_from_context(
                             "import_source": f"6.1 business_needs ({src_id})",
                             "category": "strategic",
                             "source": "current_state",
-                            "description": f"Если бизнес-потребность {bn_id} «{title}» не будет реализована в полном объёме, то ожидаемая ценность не будет достигнута",
+                            "description": f"If business need {bn_id} “{title}” is not delivered in full, then the expected value will not be achieved",
                             "likelihood": 2,
                             "impact": 4,
                             "response_strategy": "mitigate",
                             "linked_bn": bn_id,
                         })
 
-        # --- 4.2: риски, упомянутые стейкхолдерами ---
+        # --- 4.2: risks mentioned by stakeholders ---
         elicitation_data = _safe_load_json(_elicitation_path(src_id))
         if elicitation_data:
             risks_mentioned = elicitation_data.get("risks_mentioned", [])
             for rm in risks_mentioned:
                 if isinstance(rm, dict):
                     desc = rm.get("description", rm.get("risk", ""))
-                    stakeholder = rm.get("stakeholder", rm.get("source", "стейкхолдер"))
+                    stakeholder = rm.get("stakeholder", rm.get("source", "stakeholder"))
                 else:
                     desc = str(rm)
-                    stakeholder = "стейкхолдер"
+                    stakeholder = "stakeholder"
                 if desc:
                     drafts.append({
                         "status": "draft",
                         "import_source": f"4.2 elicitation ({src_id})",
                         "category": "operational",
                         "source": "stakeholder",
-                        "description": f"Стейкхолдер ({stakeholder}) отметил риск: {desc}",
+                        "description": f"A stakeholder ({stakeholder}) flagged a risk: {desc}",
                         "likelihood": 3,
                         "impact": 3,
                         "response_strategy": "mitigate",
@@ -388,38 +388,38 @@ def import_risks_from_context(
 
     if not drafts and not warnings:
         return (
-            "ℹ️ Источники для импорта не нашли данных.\n\n"
-            "Возможные причины:\n"
-            "  • Артефакты 6.1/6.2 ещё не заполнены\n"
-            "  • project_id не совпадает с указанным в source_project_ids\n\n"
-            "→ Добавляй риски вручную через `add_risk`."
+            "ℹ️ No data found in the import sources.\n\n"
+            "Possible reasons:\n"
+            "  • 6.1/6.2 artifacts are not filled in yet\n"
+            "  • project_id does not match the one specified in source_project_ids\n\n"
+            "→ Add risks manually via `add_risk`."
         )
 
-    # Сохраняем черновики в assessment
+    # Save the drafts into the assessment
     assessment = _load_assessment(project_id)
     existing_drafts = [r for r in assessment["risks"] if r.get("status") == "draft"]
-    # Очищаем старые черновики и добавляем новые
+    # Clear old drafts and add the new ones
     assessment["risks"] = [r for r in assessment["risks"] if r.get("status") != "draft"]
     assessment["risks"].extend(drafts)
     _save_assessment(assessment, project_id)
 
-    lines = [f"✅ Импортировано черновиков рисков: {len(drafts)}\n"]
+    lines = [f"✅ Imported risk drafts: {len(drafts)}\n"]
 
     if warnings:
-        lines.append("**Предупреждения:**")
+        lines.append("**Warnings:**")
         lines.extend(warnings)
         lines.append("")
 
-    lines.append("**Черновики (требуют подтверждения через `add_risk`):**\n")
+    lines.append("**Drafts (require confirmation via `add_risk`):**\n")
     for i, d in enumerate(drafts, 1):
         lines.append(
             f"{i}. [{d['category']}] {d['description'][:100]}{'...' if len(d['description']) > 100 else ''}\n"
-            f"   Источник: {d['import_source']} | По умолчанию: L={d['likelihood']} × I={d['impact']} → score {d['likelihood'] * d['impact']}\n"
+            f"   Source: {d['import_source']} | Default: L={d['likelihood']} × I={d['impact']} → score {d['likelihood'] * d['impact']}\n"
         )
 
     lines.append(
-        "\n**Следующий шаг:** для каждого релевантного черновика вызови `add_risk` "
-        "(можно скорректировать оценки). Нерелевантные — просто пропусти."
+        "\n**Next step:** call `add_risk` for each relevant draft "
+        "(you can adjust the ratings). Skip the irrelevant ones."
     )
 
     return "\n".join(lines)
@@ -444,40 +444,40 @@ def add_risk(
     linked_req: str = "",
 ) -> str:
     """
-    Шаг 3 пайплайна 6.3: добавить риск в реестр.
+    Step 3 of the 6.3 pipeline: add a risk to the register.
 
-    Автоматически присваивает risk_id (RK-001...) и вычисляет risk_score = likelihood × impact.
-    Используется как для подтверждения черновиков из import_risks_from_context,
-    так и для добавления новых рисков.
+    Automatically assigns a risk_id (RK-001...) and computes risk_score = likelihood x impact.
+    Used both for confirming drafts from import_risks_from_context
+    and for adding new risks.
 
     Args:
-        project_id: Идентификатор проекта
-        category: Категория риска (strategic/operational/financial/technical/regulatory/people/external)
-        source: Источник риска (change/current_state/future_state/requirement/stakeholder/assumption/constraint)
-        description: Описание в формате «Если X, то Y»
-        likelihood: Вероятность 1–5 (1=<10%, 2=10-30%, 3=30-60%, 4=60-80%, 5=>80%)
-        impact: Воздействие 1–5 (1=Negligible, 2=Minor, 3=Moderate, 4=Major, 5=Critical)
-        response_strategy: Ответная стратегия (accept/mitigate/transfer/avoid)
-        likelihood_rationale: Обоснование оценки вероятности
-        impact_rationale: Обоснование оценки воздействия
-        time_horizon: Горизонт риска (immediate/short_term/medium_term/long_term)
-        mitigation_plan: План снижения (обязателен при strategy=mitigate)
-        owner: stakeholder_id из реестра 3.2
-        linked_bn: ID бизнес-потребности (BN-xxx)
-        linked_bg: ID бизнес-цели (BG-xxx)
-        linked_req: ID требования (FR-xxx, BR-xxx...)
+        project_id: Project identifier
+        category: Risk category (strategic/operational/financial/technical/regulatory/people/external)
+        source: Risk source (change/current_state/future_state/requirement/stakeholder/assumption/constraint)
+        description: Description in "If X, then Y" format
+        likelihood: Likelihood 1-5 (1=<10%, 2=10-30%, 3=30-60%, 4=60-80%, 5=>80%)
+        impact: Impact 1-5 (1=Negligible, 2=Minor, 3=Moderate, 4=Major, 5=Critical)
+        response_strategy: Response strategy (accept/mitigate/transfer/avoid)
+        likelihood_rationale: Rationale for the likelihood rating
+        impact_rationale: Rationale for the impact rating
+        time_horizon: Risk horizon (immediate/short_term/medium_term/long_term)
+        mitigation_plan: Mitigation plan (required when strategy=mitigate)
+        owner: stakeholder_id from the 3.2 registry
+        linked_bn: Business need ID (BN-xxx)
+        linked_bg: Business goal ID (BG-xxx)
+        linked_req: Requirement ID (FR-xxx, BR-xxx...)
     """
-    # Валидация
+    # Validation
     if not 1 <= likelihood <= 5:
-        return f"❌ likelihood должен быть от 1 до 5, получено: {likelihood}"
+        return f"❌ likelihood must be between 1 and 5, got: {likelihood}"
     if not 1 <= impact <= 5:
-        return f"❌ impact должен быть от 1 до 5, получено: {impact}"
+        return f"❌ impact must be between 1 and 5, got: {impact}"
     if response_strategy == "mitigate" and not mitigation_plan:
-        return "⚠️ При strategy=mitigate рекомендуется заполнить mitigation_plan"
+        return "⚠️ When strategy=mitigate, it is recommended to fill in mitigation_plan"
 
     assessment = _load_assessment(project_id)
 
-    # Удаляем черновики с совпадающим описанием (подтверждение черновика)
+    # Remove drafts with a matching description (draft confirmation)
     assessment["risks"] = [
         r for r in assessment["risks"]
         if not (r.get("status") == "draft" and r.get("description", "")[:80] == description[:80])
@@ -510,7 +510,7 @@ def add_risk(
     assessment["risks"].append(risk)
     _save_assessment(assessment, project_id)
 
-    # Определяем предварительную зону (до set_risk_tolerance может не быть tolerance)
+    # Determine a preliminary zone (before set_risk_tolerance, there may be no tolerance yet)
     max_acc = assessment.get("risk_tolerance", {}).get("max_acceptable_score", 15)
     zone = _zone_for_score(score, max_acc)
     zone_label = ZONE_LABELS[zone]
@@ -519,17 +519,17 @@ def add_risk(
 
     warn = ""
     if response_strategy == "mitigate" and not mitigation_plan:
-        warn = "\n  ⚠️ Рекомендуется добавить mitigation_plan"
+        warn = "\n  ⚠️ It is recommended to add a mitigation_plan"
 
     return (
-        f"✅ Риск добавлен: {risk_id}\n\n"
-        f"  Категория:   {category}\n"
-        f"  Описание:    {description[:80]}{'...' if len(description) > 80 else ''}\n"
-        f"  Оценка:      L={likelihood} × I={impact} = score {score} {zone_label}\n"
-        f"  Стратегия:   {response_strategy}\n"
+        f"✅ Risk added: {risk_id}\n\n"
+        f"  Category:    {category}\n"
+        f"  Description: {description[:80]}{'...' if len(description) > 80 else ''}\n"
+        f"  Rating:      L={likelihood} × I={impact} = score {score} {zone_label}\n"
+        f"  Strategy:    {response_strategy}\n"
         f"{warn}\n"
-        f"  Всего рисков в реестре: {total_identified}\n\n"
-        f"→ Продолжай `add_risk` или переходи к `set_risk_tolerance`."
+        f"  Total risks in the register: {total_identified}\n\n"
+        f"→ Keep going with `add_risk` or move on to `set_risk_tolerance`."
     )
 
 
@@ -544,22 +544,22 @@ def set_risk_tolerance(
     escalation_threshold: int = 0,
 ) -> str:
     """
-    Шаг 4 пайплайна 6.3: задать толерантность к риску.
+    Step 4 of the 6.3 pipeline: set the risk tolerance.
 
-    Определяет стратегическую позицию и числовой порог High-рисков.
-    Риски с score >= max_acceptable_score считаются High и требуют активного реагирования.
+    Defines the strategic stance and the numeric threshold for High risks.
+    Risks with score >= max_acceptable_score are considered High and require active response.
 
     Args:
-        project_id: Идентификатор проекта
-        tolerance_level: Уровень толерантности (risk_averse/neutral/risk_seeking)
-        max_acceptable_score: Порог High-риска (1–25). Риски >= порога = High. Default: 15
-        organization_context: Контекст организации (отрасль, специфика)
-        sponsor_risk_appetite: Позиция спонсора (прямая цитата или интерпретация)
-        mandatory_avoid_categories: JSON-список категорий, которые всегда → avoid, напр. '["regulatory"]'
-        escalation_threshold: Score для эскалации к спонсору (0 = равен max_acceptable_score)
+        project_id: Project identifier
+        tolerance_level: Tolerance level (risk_averse/neutral/risk_seeking)
+        max_acceptable_score: High-risk threshold (1-25). Risks >= threshold = High. Default: 15
+        organization_context: Organizational context (industry, specifics)
+        sponsor_risk_appetite: Sponsor's stance (direct quote or interpretation)
+        mandatory_avoid_categories: JSON list of categories that always → avoid, e.g. '["regulatory"]'
+        escalation_threshold: Score for escalation to the sponsor (0 = equal to max_acceptable_score)
     """
     if not 1 <= max_acceptable_score <= 25:
-        return f"❌ max_acceptable_score должен быть от 1 до 25, получено: {max_acceptable_score}"
+        return f"❌ max_acceptable_score must be between 1 and 25, got: {max_acceptable_score}"
 
     try:
         avoid_cats = json.loads(mandatory_avoid_categories) if mandatory_avoid_categories.strip() else []
@@ -580,45 +580,45 @@ def set_risk_tolerance(
     }
     _save_assessment(assessment, project_id)
 
-    # Подсказки по калибровке
+    # Calibration hints
     hints = {
-        "risk_averse": "Рекомендуемый диапазон порога: 10–12. Все риски Medium+ требуют активного плана.",
-        "neutral": "Рекомендуемый диапазон порога: 14–16. Стандартный корпоративный подход.",
-        "risk_seeking": "Рекомендуемый диапазон порога: 18–20. Скорость и возможности важнее предсказуемости.",
+        "risk_averse": "Recommended threshold range: 10–12. All Medium+ risks require an active plan.",
+        "neutral": "Recommended threshold range: 14–16. Standard corporate approach.",
+        "risk_seeking": "Recommended threshold range: 18–20. Speed and opportunity matter more than predictability.",
     }
 
     avoid_note = ""
     if avoid_cats:
-        avoid_note = f"\n  Обязательные avoid: {', '.join(avoid_cats)}"
+        avoid_note = f"\n  Mandatory avoid: {', '.join(avoid_cats)}"
 
     return (
-        f"✅ Толерантность к риску задана\n\n"
-        f"  Уровень:         {tolerance_level}\n"
-        f"  Порог High-риска: score ≥ {max_acceptable_score} → 🔴 High\n"
-        f"  Порог эскалации:  score ≥ {esc_threshold} → требует разговора со спонсором\n"
+        f"✅ Risk tolerance set\n\n"
+        f"  Level:               {tolerance_level}\n"
+        f"  High-risk threshold: score ≥ {max_acceptable_score} → 🔴 High\n"
+        f"  Escalation threshold: score ≥ {esc_threshold} → requires a conversation with the sponsor\n"
         f"{avoid_note}\n\n"
         f"  {hints[tolerance_level]}\n\n"
-        f"→ Следующий шаг: `run_risk_matrix` для классификации всех рисков."
+        f"→ Next step: `run_risk_matrix` to classify all risks."
     )
 
 
 @mcp.tool()
 def run_risk_matrix(project_id: str) -> str:
     """
-    Шаг 5 пайплайна 6.3: построить матрицу рисков и cumulative profile.
+    Step 5 of the 6.3 pipeline: build the risk matrix and cumulative profile.
 
-    Классифицирует все риски по зонам (Low/Medium/High) на основе tolerance,
-    вычисляет суммарный профиль. Результат используется в generate_recommendation.
+    Classifies all risks into zones (Low/Medium/High) based on tolerance,
+    and computes the cumulative profile. The result is used in generate_recommendation.
 
     Args:
-        project_id: Идентификатор проекта
+        project_id: Project identifier
     """
     assessment = _load_assessment(project_id)
     identified_risks = [r for r in assessment["risks"] if r.get("status") == "identified"]
 
     if not identified_risks:
         return (
-            "⚠️ Реестр рисков пуст. Добавь хотя бы один риск через `add_risk` перед запуском матрицы."
+            "⚠️ The risk register is empty. Add at least one risk via `add_risk` before running the matrix."
         )
 
     tolerance = assessment.get("risk_tolerance", {})
@@ -628,10 +628,10 @@ def run_risk_matrix(project_id: str) -> str:
     classified = []
     for r in identified_risks:
         score = r.get("risk_score", r.get("likelihood", 1) * r.get("impact", 1))
-        # mandatory_avoid переопределяет стратегию
+        # mandatory_avoid overrides the strategy
         if r.get("category") in mandatory_avoid and r.get("response_strategy") != "avoid":
             zone = "high"
-            note = " ⚠️ категория в mandatory_avoid — стратегия должна быть avoid"
+            note = " ⚠️ category is in mandatory_avoid — strategy should be avoid"
         else:
             note = ""
             zone = _zone_for_score(score, max_acc)
@@ -663,26 +663,26 @@ def run_risk_matrix(project_id: str) -> str:
     assessment["cumulative_profile"] = cumulative_profile
     _save_assessment(assessment, project_id)
 
-    # --- Форматирование вывода ---
+    # --- Output formatting ---
     lines = [
-        f"✅ Матрица рисков построена\n",
-        f"  Всего рисков: {len(classified)} | Порог High: score ≥ {max_acc}\n",
+        f"✅ Risk matrix built\n",
+        f"  Total risks: {len(classified)} | High threshold: score ≥ {max_acc}\n",
         f"  🔴 High: {len(high_risks)} | 🟡 Medium: {len(medium_risks)} | 🟢 Low: {len(low_risks)}\n",
-        f"  Суммарный score: {total_score} | Средний: {avg_score:.1f}\n",
+        f"  Total score: {total_score} | Average: {avg_score:.1f}\n",
     ]
 
     if high_risks:
-        lines.append("\n**🔴 High-риски (требуют немедленного внимания):**\n")
+        lines.append("\n**🔴 High risks (require immediate attention):**\n")
         for r in sorted(high_risks, key=lambda x: -x["risk_score"]):
             lines.append(
                 f"  {r['risk_id']} [{r['category']}] score={r['risk_score']} "
                 f"(L={r['likelihood']}×I={r['impact']}) — {r['description'][:70]}...\n"
-                f"    Стратегия: {r['response_strategy']}"
+                f"    Strategy: {r['response_strategy']}"
                 + (f"{r.get('zone_note', '')}" if r.get("zone_note") else "") + "\n"
             )
 
     if medium_risks:
-        lines.append("\n**🟡 Medium-риски:**\n")
+        lines.append("\n**🟡 Medium risks:**\n")
         for r in sorted(medium_risks, key=lambda x: -x["risk_score"]):
             lines.append(
                 f"  {r['risk_id']} [{r['category']}] score={r['risk_score']} — "
@@ -690,10 +690,10 @@ def run_risk_matrix(project_id: str) -> str:
             )
 
     if low_risks:
-        lines.append(f"\n**🟢 Low-риски:** {len(low_risks)} шт. (детали в JSON)\n")
+        lines.append(f"\n**🟢 Low risks:** {len(low_risks)} (details in JSON)\n")
 
     lines.append(
-        f"\n→ Следующий шаг: `generate_recommendation` для формирования рекомендации спонсору."
+        f"\n→ Next step: `generate_recommendation` to produce a recommendation for the sponsor."
     )
 
     return "".join(lines)
@@ -705,14 +705,14 @@ def generate_recommendation(
     potential_value_summary: str = "",
 ) -> str:
     """
-    Шаг 6 пайплайна 6.3: сформировать рекомендацию (тип + narrative).
+    Step 6 of the 6.3 pipeline: generate a recommendation (type + narrative).
 
-    Детерминированная логика определяет тип рекомендации по ADR-073.
-    Claude пишет 2-4 предложения narrative с конкретными данными.
+    Deterministic logic determines the recommendation type per ADR-073.
+    Claude writes a 2-4 sentence narrative with concrete data.
 
     Args:
-        project_id: Идентификатор проекта
-        potential_value_summary: Краткое описание ожидаемой ценности из 6.2 (если не заполнена автоматически)
+        project_id: Project identifier
+        potential_value_summary: Short description of the expected value from 6.2 (if not filled in automatically)
     """
     assessment = _load_assessment(project_id)
     profile = assessment.get("cumulative_profile", {})
@@ -720,7 +720,7 @@ def generate_recommendation(
     risks = [r for r in assessment.get("risks", []) if r.get("status") == "identified"]
 
     if not profile:
-        return "⚠️ Сначала запусти `run_risk_matrix` — нужен cumulative profile."
+        return "⚠️ Run `run_risk_matrix` first — a cumulative profile is needed."
 
     max_acc = tolerance.get("max_acceptable_score", 15)
     tol_level = tolerance.get("level", "neutral")
@@ -728,7 +728,7 @@ def generate_recommendation(
     total_score = profile.get("total_score", 0)
     total_risks = profile.get("total_risks", 0)
 
-    # Попытка автозагрузки potential_value из 6.2
+    # Attempt to auto-load potential_value from 6.2
     if not potential_value_summary:
         scope = assessment.get("scope", {})
         for src_id in scope.get("source_project_ids", [project_id]):
@@ -739,7 +739,7 @@ def generate_recommendation(
                     potential_value_summary = pv.get("summary", pv.get("description", ""))
                     break
 
-    # --- Детерминированная логика выбора типа ---
+    # --- Deterministic type-selection logic ---
     high_risks = [r for r in risks if r.get("zone", _zone_for_score(r.get("risk_score", 0), max_acc)) == "high"]
     critical_without_mitigation = [
         r for r in high_risks
@@ -753,20 +753,20 @@ def generate_recommendation(
     else:
         rec_type = "proceed_with_mitigation"
 
-    # Описания типов
+    # Type descriptions
     rec_descriptions = {
-        "proceed_despite_risk": "Продолжать без дополнительных мер",
-        "proceed_with_mitigation": "Продолжать с реализацией планов снижения рисков",
-        "seek_higher_value": "Пересмотреть скоуп или подход для повышения ценности",
-        "do_not_proceed": "Не продолжать до устранения критических рисков",
+        "proceed_despite_risk": "Proceed without additional measures",
+        "proceed_with_mitigation": "Proceed while implementing the risk mitigation plans",
+        "seek_higher_value": "Revisit the scope or approach to increase value",
+        "do_not_proceed": "Do not proceed until the critical risks are resolved",
     }
 
-    # Топ-3 High-риска для narrative
+    # Top-3 High risks for the narrative
     top_risks = sorted(high_risks, key=lambda x: -x.get("risk_score", 0))[:3]
     top_risk_summary = "; ".join([
         f"{r['risk_id']} (score {r['risk_score']}, {r['response_strategy']})"
         for r in top_risks
-    ]) or "нет"
+    ]) or "none"
 
     mitigation_risks = [r for r in high_risks if r.get("response_strategy") == "mitigate"]
 
@@ -775,13 +775,13 @@ def generate_recommendation(
         "description": rec_descriptions[rec_type],
         "high_risks_addressed": len(mitigation_risks),
         "rationale": (
-            f"Из {total_risks} идентифицированных рисков {high_count} находятся в High-зоне "
-            f"(score ≥ {max_acc}). Суммарный рисковый профиль: {total_score}. "
-            f"Ключевые High-риски: {top_risk_summary}. "
-            f"Толерантность организации: {tol_level}. "
-            + (f"Ожидаемая ценность: {potential_value_summary}. " if potential_value_summary else "")
+            f"Of {total_risks} identified risks, {high_count} are in the High zone "
+            f"(score ≥ {max_acc}). Cumulative risk profile: {total_score}. "
+            f"Key High risks: {top_risk_summary}. "
+            f"Organizational tolerance: {tol_level}. "
+            + (f"Expected value: {potential_value_summary}. " if potential_value_summary else "")
             + (
-                f"При выполнении {len(mitigation_risks)} mitigation-планов рисковый профиль снизится."
+                f"Once the {len(mitigation_risks)} mitigation plans are executed, the risk profile will decrease."
                 if rec_type == "proceed_with_mitigation" else ""
             )
         ),
@@ -799,25 +799,25 @@ def generate_recommendation(
     }
 
     output = [
-        f"✅ Рекомендация сформирована\n\n",
+        f"✅ Recommendation generated\n\n",
         f"  {rec_emoji.get(rec_type, '◯')} **{rec_type}** — {rec_descriptions[rec_type]}\n\n",
-        f"  **Обоснование:** {recommendation['rationale']}\n\n",
+        f"  **Rationale:** {recommendation['rationale']}\n\n",
     ]
 
     if rec_type == "proceed_with_mitigation" and top_risks:
-        output.append("  **Приоритетные действия (High-риски):**\n")
+        output.append("  **Priority actions (High risks):**\n")
         for r in top_risks:
             plan = r.get("mitigation_plan", "—")
             output.append(f"  • {r['risk_id']}: {plan[:80]}\n")
 
     if rec_type == "do_not_proceed":
         output.append(
-            "\n  ⚠️ Рекомендация 'do_not_proceed' — критический результат.\n"
-            "  Необходима немедленная эскалация к спонсору.\n"
+            "\n  ⚠️ Recommendation 'do_not_proceed' — a critical outcome.\n"
+            "  Immediate escalation to the sponsor is required.\n"
         )
 
     output.append(
-        f"\n→ Следующий шаг: `save_risk_assessment` для финализации и генерации отчёта."
+        f"\n→ Next step: `save_risk_assessment` to finalize and generate the report."
     )
 
     return "".join(output)
@@ -830,16 +830,16 @@ def save_risk_assessment(
     traceability_project_id: str = "",
 ) -> str:
     """
-    Шаг 7 пайплайна 6.3: финализировать оценку рисков.
+    Step 7 of the 6.3 pipeline: finalize the risk assessment.
 
-    Сохраняет {project}_risk_assessment.json (вход для 6.4) и генерирует
-    Markdown-отчёт через save_artifact. Опционально регистрирует риски
-    в репозитории 5.1 как узлы типа 'risk' со связями 'threatens'.
+    Saves {project}_risk_assessment.json (input for 6.4) and generates
+    a Markdown report via save_artifact. Optionally registers risks
+    in the 5.1 repository as 'risk'-type nodes with 'threatens' links.
 
     Args:
-        project_id: Идентификатор проекта
-        push_to_traceability: Регистрировать риски в репозитории 5.1 (default: False)
-        traceability_project_id: project_id репозитория 5.1 (если отличается от основного)
+        project_id: Project identifier
+        push_to_traceability: Register risks in the 5.1 repository (default: False)
+        traceability_project_id: project_id of the 5.1 repository (if different from the main one)
     """
     assessment = _load_assessment(project_id)
     risks = [r for r in assessment.get("risks", []) if r.get("status") == "identified"]
@@ -848,11 +848,11 @@ def save_risk_assessment(
     recommendation = assessment.get("recommendation", {})
 
     if not risks:
-        return "⚠️ Реестр рисков пуст. Добавь хотя бы один риск через `add_risk`."
+        return "⚠️ The risk register is empty. Add at least one risk via `add_risk`."
     if not recommendation:
-        return "⚠️ Сначала вызови `generate_recommendation`."
+        return "⚠️ Call `generate_recommendation` first."
 
-    # --- Опциональный push в трассировку 5.1 ---
+    # --- Optional push to 5.1 traceability ---
     traceability_notes = []
     if push_to_traceability:
         repo_pid = traceability_project_id or project_id
@@ -879,7 +879,7 @@ def save_risk_assessment(
                     existing_ids.add(rid)
                     added_nodes += 1
 
-                # Связи threatens
+                # threatens links
                 for linked_field in ["linked_bn", "linked_bg", "linked_req"]:
                     linked_id = risk.get(linked_field, "")
                     if linked_id and linked_id in existing_ids:
@@ -887,7 +887,7 @@ def save_risk_assessment(
                             "from": rid,
                             "to": linked_id,
                             "relation": "threatens",
-                            "rationale": f"Риск угрожает {linked_id}",
+                            "rationale": f"Risk threatens {linked_id}",
                             "added": str(date.today()),
                         })
                         added_links += 1
@@ -897,15 +897,15 @@ def save_risk_assessment(
                 json.dump(repo, f, ensure_ascii=False, indent=2)
 
             traceability_notes.append(
-                f"✅ Трассировка 5.1 обновлена: +{added_nodes} узлов risk, +{added_links} связей threatens"
+                f"✅ 5.1 traceability updated: +{added_nodes} risk nodes, +{added_links} threatens links"
             )
         else:
             traceability_notes.append(
-                f"⚠️ Репозиторий трассировки 5.1 не найден для '{repo_pid}' "
-                f"— push пропущен. Сначала инициализируй репозиторий через `init_traceability_repo`."
+                f"⚠️ 5.1 traceability repository not found for '{repo_pid}' "
+                f"— push skipped. Initialize the repository first via `init_traceability_repo`."
             )
 
-    # --- Markdown отчёт ---
+    # --- Markdown report ---
     high_risks = [r for r in risks if r.get("zone", _zone_for_score(r.get("risk_score", 0), tolerance.get("max_acceptable_score", 15))) == "high"]
     medium_risks = [r for r in risks if r.get("zone", _zone_for_score(r.get("risk_score", 0), tolerance.get("max_acceptable_score", 15))) == "medium"]
     low_risks = [r for r in risks if r.get("zone", _zone_for_score(r.get("risk_score", 0), tolerance.get("max_acceptable_score", 15))) == "low"]
@@ -914,24 +914,24 @@ def save_risk_assessment(
     rec_emoji = {"proceed_despite_risk": "🟢", "proceed_with_mitigation": "🟡", "seek_higher_value": "🟠", "do_not_proceed": "🔴"}
 
     md_lines = [
-        f"# Оценка рисков — {project_id}",
-        f"**Дата:** {date.today()}  ",
-        f"**Толерантность:** {tolerance.get('level', 'neutral')} | Порог High: {tolerance.get('max_acceptable_score', 15)}",
+        f"# Risk Assessment — {project_id}",
+        f"**Date:** {date.today()}  ",
+        f"**Tolerance:** {tolerance.get('level', 'neutral')} | High threshold: {tolerance.get('max_acceptable_score', 15)}",
         "",
         "---",
         "",
-        "## Резюме",
+        "## Summary",
         "",
-        f"| Параметр | Значение |",
+        f"| Parameter | Value |",
         f"|----------|---------|",
-        f"| Всего рисков | {profile.get('total_risks', len(risks))} |",
+        f"| Total risks | {profile.get('total_risks', len(risks))} |",
         f"| 🔴 High | {profile.get('high_risks_count', len(high_risks))} |",
         f"| 🟡 Medium | {profile.get('medium_risks_count', len(medium_risks))} |",
         f"| 🟢 Low | {profile.get('low_risks_count', len(low_risks))} |",
-        f"| Суммарный score | {profile.get('total_score', 0)} |",
-        f"| Средний score | {profile.get('avg_score', 0)} |",
+        f"| Total score | {profile.get('total_score', 0)} |",
+        f"| Average score | {profile.get('avg_score', 0)} |",
         "",
-        f"## Рекомендация",
+        f"## Recommendation",
         "",
         f"{rec_emoji.get(rec_type, '◯')} **{rec_type}** — {recommendation.get('description', '')}",
         "",
@@ -939,7 +939,7 @@ def save_risk_assessment(
         "",
         "---",
         "",
-        "## Реестр рисков",
+        "## Risk Register",
         "",
     ]
 
@@ -950,25 +950,25 @@ def save_risk_assessment(
         for r in sorted(risk_list, key=lambda x: -x.get("risk_score", 0)):
             out.extend([
                 f"#### {r['risk_id']} — {r['description'][:60]}",
-                f"- **Категория:** {r['category']} | **Источник:** {r['source']}",
-                f"- **Оценка:** L={r['likelihood']} × I={r['impact']} = score {r['risk_score']}",
-                f"- **Стратегия:** {r['response_strategy']}",
+                f"- **Category:** {r['category']} | **Source:** {r['source']}",
+                f"- **Rating:** L={r['likelihood']} × I={r['impact']} = score {r['risk_score']}",
+                f"- **Strategy:** {r['response_strategy']}",
             ])
             if r.get("mitigation_plan"):
-                out.append(f"- **План снижения:** {r['mitigation_plan']}")
+                out.append(f"- **Mitigation plan:** {r['mitigation_plan']}")
             if r.get("owner"):
-                out.append(f"- **Владелец:** {r['owner']}")
+                out.append(f"- **Owner:** {r['owner']}")
             out.append("")
         return out
 
-    md_lines.extend(_risks_section("🔴 High-риски", high_risks))
-    md_lines.extend(_risks_section("🟡 Medium-риски", medium_risks))
-    md_lines.extend(_risks_section("🟢 Low-риски", low_risks))
+    md_lines.extend(_risks_section("🔴 High Risks", high_risks))
+    md_lines.extend(_risks_section("🟡 Medium Risks", medium_risks))
+    md_lines.extend(_risks_section("🟢 Low Risks", low_risks))
 
     md_content = "\n".join(md_lines)
     artifact_result = save_artifact(md_content, f"6_3_risk_assessment_{_safe(project_id)}", project_id=project_id)
 
-    # Финализируем JSON
+    # Finalize the JSON
     assessment["status"] = "finalized"
     assessment["finalized_on"] = str(date.today())
     _save_assessment(assessment, project_id)
@@ -976,11 +976,11 @@ def save_risk_assessment(
     json_path = _assessment_path(project_id)
 
     output = [
-        f"✅ Оценка рисков финализирована\n\n",
-        f"  Проект: {project_id}\n",
-        f"  Рисков: {len(risks)} | High: {len(high_risks)} | Medium: {len(medium_risks)} | Low: {len(low_risks)}\n",
-        f"  Рекомендация: {rec_emoji.get(rec_type, '')} {rec_type}\n\n",
-        f"  📄 JSON (для 6.4): `{json_path}`\n",
+        f"✅ Risk assessment finalized\n\n",
+        f"  Project: {project_id}\n",
+        f"  Risks: {len(risks)} | High: {len(high_risks)} | Medium: {len(medium_risks)} | Low: {len(low_risks)}\n",
+        f"  Recommendation: {rec_emoji.get(rec_type, '')} {rec_type}\n\n",
+        f"  📄 JSON (for 6.4): `{json_path}`\n",
         artifact_result, "\n",
     ]
 
@@ -988,12 +988,12 @@ def save_risk_assessment(
         output.extend(["\n"] + traceability_notes)
 
     output.append(
-        f"\n\n**Следующий шаг:**\n"
-        f"• Для спонсора: предоставь Markdown-отчёт\n"
-        f"• Для 6.4 Define Change Strategy: передай `{json_path}`\n"
+        f"\n\n**Next step:**\n"
+        f"• For the sponsor: provide the Markdown report\n"
+        f"• For 6.4 Define Change Strategy: hand off `{json_path}`\n"
     )
     if high_risks:
-        output.append(f"• Приоритет: назначь владельцев для {len(high_risks)} High-рисков\n")
+        output.append(f"• Priority: assign owners for {len(high_risks)} High risks\n")
 
     return "".join(output)
 

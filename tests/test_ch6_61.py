@@ -266,7 +266,7 @@ class TestScopeCurrentState(BaseMCPTest):
     def test_update_existing_scope(self):
         _scope(depth="light")
         result = _scope(depth="deep")
-        self.assertIn("ОБНОВЛЁН", result)
+        self.assertIn("UPDATED", result)
 
     def test_market_opportunity_deep_by_default(self):
         _scope(initiative="market_opportunity", depth="standard")
@@ -325,13 +325,13 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
     def test_update_marks_updated_in_result(self):
         _capture(description="Первое")
         result = _capture(description="Второе")
-        self.assertIn("ОБНОВЛЁН", result)
+        self.assertIn("UPDATED", result)
 
     def test_out_of_scope_warning(self):
         # external не входит в standard process_improvement scope
         result = _capture(element="external", description="Рыночные условия")
         self.assertIn("⚠️", result)
-        self.assertIn("скоуп", result)
+        self.assertIn("scope", result)
 
     def test_empty_description_error(self):
         result = _capture(description="")
@@ -347,7 +347,7 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
 
     def test_progress_shown_in_result(self):
         result = _capture()
-        self.assertIn("Прогресс", result)
+        self.assertIn("progress", result)
 
 
 # ---------------------------------------------------------------------------
@@ -364,12 +364,12 @@ class TestRunRootCauseAnalysis(BaseMCPTest):
     def test_five_whys_success(self):
         result = _rca(technique="five_whys")
         self.assertIn("✅", result)
-        self.assertIn("5 Почему", result)
+        self.assertIn("5 Whys", result)
 
     def test_problem_tree_success(self):
         result = _rca(technique="problem_tree")
         self.assertIn("✅", result)
-        self.assertIn("Дерево", result)
+        self.assertIn("Problem Tree", result)
 
     def test_rca_saved_to_state(self):
         _rca()
@@ -518,7 +518,7 @@ class TestCheckCompleteness(BaseMCPTest):
     def test_with_scope_shows_progress(self):
         _scope()
         result = check_current_state_completeness(PROJECT)
-        self.assertIn("готовность", result.lower())
+        self.assertIn("readiness", result.lower())
 
     def test_all_filled_is_ready(self):
         _scope(elements='["business_needs"]')
@@ -531,7 +531,7 @@ class TestCheckCompleteness(BaseMCPTest):
     def test_missing_elements_shown(self):
         _scope()  # 4 элемента в scope
         result = check_current_state_completeness(PROJECT)
-        self.assertIn("Незаполнен", result)
+        self.assertIn("not filled in", result)
 
     def test_no_rca_warning(self):
         _scope(elements='["business_needs"]')
@@ -544,12 +544,12 @@ class TestCheckCompleteness(BaseMCPTest):
         _capture()
         _rca()
         result = check_current_state_completeness(PROJECT)
-        self.assertIn("потребност", result)
+        self.assertIn("business need", result.lower())
 
     def test_draft_elements_shown(self):
         _scope(sessions='["session_001"]')
         result = check_current_state_completeness(PROJECT)
-        self.assertIn("черновик", result.lower())
+        self.assertIn("draft", result.lower())
 
     def test_readiness_percentage(self):
         _scope()
@@ -562,7 +562,7 @@ class TestCheckCompleteness(BaseMCPTest):
         _rca()
         _needs(root_cause_ids="[]")  # без RCA ссылки
         result = check_current_state_completeness(PROJECT)
-        self.assertIn("без RCA", result)
+        self.assertIn("no RCA", result)
 
 
 # ---------------------------------------------------------------------------
@@ -604,14 +604,14 @@ class TestSaveCurrentState(BaseMCPTest):
         # Добавляем черновик через session_ids
         _scope(sessions='["session_001"]')
         result = save_current_state(PROJECT, "Проект")
-        self.assertIn("черновик", result.lower())
+        self.assertIn("draft", result.lower())
 
     def test_statistics_shown(self):
         _rca()
         _needs()
         result = save_current_state(PROJECT, "Проект")
         self.assertIn("RCA", result)
-        self.assertIn("потребностей", result.lower())
+        self.assertIn("business need", result.lower())
 
     def test_analyst_notes_included(self):
         result = save_current_state(PROJECT, "Проект", analyst_notes="Важное замечание аналитика")

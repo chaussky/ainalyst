@@ -343,20 +343,20 @@ class TestScopeFutureState(BaseMCPTest):
         r = _scope(depth="deep")
         scope = _load_scope(PROJECT)
         self.assertEqual(scope["analysis_depth"], "deep")
-        self.assertIn("ОБНОВЛЁН", r)
+        self.assertIn("UPDATED", r)
 
     def test_scope_with_known_goals(self):
         r = _scope(goals="Хотим ускорить обработку в 4 раза")
-        self.assertIn("Известные цели", r)
+        self.assertIn("Known goals", r)
 
     def test_scope_with_current_state_data(self):
         _save_current_state_data()
         r = _scope()
-        self.assertIn("6.1 найдены", r)
+        self.assertIn("6.1 found", r)
 
     def test_scope_without_current_state(self):
         r = _scope()
-        self.assertIn("6.1 не найдены", r)
+        self.assertIn("No 6.1 data found", r)
 
     def test_scope_market_opportunity_all_elements(self):
         _scope(initiative="market_opportunity", depth="standard")
@@ -425,7 +425,7 @@ class TestCaptureFutureStateElement(BaseMCPTest):
     def test_capture_shows_current_state_context(self):
         _save_current_state_data()
         r = _capture(element="capabilities")
-        self.assertIn("текущее состояние", r.lower())
+        self.assertIn("current state", r.lower())
 
     def test_capture_out_of_scope_warning(self):
         r = capture_future_state_element(
@@ -439,7 +439,7 @@ class TestCaptureFutureStateElement(BaseMCPTest):
 
     def test_capture_progress_shown(self):
         r = _capture(element="capabilities")
-        self.assertIn("Прогресс", r)
+        self.assertIn("Progress", r)
 
 
 # ---------------------------------------------------------------------------
@@ -473,7 +473,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
     def test_goal_smart_valid(self):
         r = _goal()
-        self.assertIn("SMART-критерии соблюдены", r)
+        self.assertIn("SMART criteria met", r)
         goals_data = _load_goals(PROJECT)
         self.assertTrue(goals_data["goals"][0]["smart_validated"])
 
@@ -484,7 +484,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
             description="Описание",
             objectives_json="[]",
         )
-        self.assertIn("SMART-замечания", r)
+        self.assertIn("SMART notes", r)
 
     def test_goal_empty_title_error(self):
         r = define_goals_and_objectives(
@@ -533,7 +533,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
     def test_goal_no_repo_warning(self):
         r = _goal(register=True)
-        self.assertIn("не найден", r.lower())
+        self.assertIn("not found", r.lower())
 
     def test_goal_register_false_no_repo_needed(self):
         r = _goal(register=False)
@@ -578,11 +578,11 @@ class TestCaptureConstraints(BaseMCPTest):
 
     def test_constraint_assumed_status_warning(self):
         r = _constraint(status="assumed")
-        self.assertIn("предположение", r.lower())
+        self.assertIn("assumption", r.lower())
 
     def test_constraint_confirmed_status(self):
         r = _constraint(status="confirmed")
-        self.assertIn("Подтверждено", r)
+        self.assertIn("Confirmed", r)
 
     def test_constraint_empty_title_error(self):
         r = capture_constraints(
@@ -630,7 +630,7 @@ class TestRunGapAnalysis(BaseMCPTest):
     def test_gap_basic_success(self):
         r = run_gap_analysis(project_id=PROJECT)
         self.assertIn("✅", r)
-        self.assertIn("Gap-анализ проведён", r)
+        self.assertIn("Gap analysis completed", r)
 
     def test_gap_creates_file(self):
         run_gap_analysis(project_id=PROJECT)
@@ -681,7 +681,7 @@ class TestRunGapAnalysis(BaseMCPTest):
         run_gap_analysis(project_id=PROJECT)
         # Проверяем что сводка по типам есть в отчёте
         r = run_gap_analysis(project_id=PROJECT)
-        self.assertIn("Сводка", r)
+        self.assertIn("summary", r.lower())
 
     def test_gap_complexity_assigned(self):
         _save_current_state_data()
@@ -700,7 +700,7 @@ class TestAssessPotentialValue(BaseMCPTest):
     def test_value_basic_success(self):
         r = _value()
         self.assertIn("✅", r)
-        self.assertIn("Потенциальная ценность оценена", r)
+        self.assertIn("Potential value assessed", r)
 
     def test_value_saved_to_state(self):
         _value()
@@ -756,7 +756,7 @@ class TestAssessPotentialValue(BaseMCPTest):
             benefits_json='[{"benefit_title":"B","benefit_type":"operational","magnitude":"high","confidence":"high"}]',
             investment_level="low",
         )
-        self.assertIn("Привлекательный", r)
+        self.assertIn("Attractive", r)
 
     def test_value_summary_stored(self):
         _value(summary="Очень привлекательный профиль")
@@ -785,7 +785,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _scope()
         _capture()
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("цел", r.lower())
+        self.assertIn("goal", r.lower())
 
     def test_check_no_gap_warning(self):
         _scope()
@@ -801,7 +801,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _capture()
         _goal()
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("ограничен", r.lower())
+        self.assertIn("constraint", r.lower())
 
     def test_check_readiness_percentage(self):
         _scope()
@@ -857,7 +857,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         run_gap_analysis(project_id=PROJECT)
         # Без value assessment
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("ценность", r.lower())
+        self.assertIn("value", r.lower())
 
 
 # ---------------------------------------------------------------------------
@@ -887,8 +887,8 @@ class TestSaveFutureState(BaseMCPTest):
     def test_save_statistics_in_response(self):
         _full_pipeline()
         r = save_future_state(project_id=PROJECT, project_title="Проект")
-        self.assertIn("Статистика", r)
-        self.assertIn("Gap-анализ", r)
+        self.assertIn("Statistics", r)
+        self.assertIn("Gap analysis", r)
 
     def test_save_push_to_business_context(self):
         _full_pipeline()
@@ -904,7 +904,7 @@ class TestSaveFutureState(BaseMCPTest):
         from skills.future_state_mcp import _save_state
         _save_state(state)
         r = save_future_state(project_id=PROJECT, project_title="Проект")
-        self.assertIn("Черновик", r)
+        self.assertIn("Drafts", r)
 
     def test_save_analyst_notes_in_report(self):
         from unittest.mock import patch
@@ -1007,7 +1007,7 @@ class TestPipeline(BaseMCPTest):
             r = check_future_state_completeness(project_id=PROJECT)
             # Должно работать без исключений — вернуть предупреждения, не краш
             self.assertIn("⚠️", r)
-            self.assertIn("Предупреждения", r)
+            self.assertIn("Warnings", r)
         except Exception as e:
             self.fail(f"pipeline без ошибок не должен вызывать исключений: {e}")
 
