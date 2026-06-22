@@ -261,7 +261,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
     def test_duplicate_package_id_blocked(self):
         _open_package()
         result = _open_package()
-        self.assertIn("уже существует", result)
+        self.assertIn("already exists", result)
 
     def test_missing_requirements_error(self):
         result = prepare_approval_package(
@@ -271,7 +271,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
             req_ids_json='["FR-999"]',
             approach="predictive",
         )
-        self.assertIn("не найдены", result)
+        self.assertIn("not found", result)
 
     def test_invalid_json_error(self):
         result = prepare_approval_package(
@@ -438,7 +438,7 @@ class TestRecordApprovalDecision(BaseMCPTest):
                 {"req_id": "FR-999", "decision": "approved"},
             ]),
         )
-        self.assertIn("не входят", result)
+        self.assertIn("are not part of", result)
 
     def test_package_not_found_error(self):
         result = _record(package_id="APKG-MISSING")
@@ -521,7 +521,7 @@ class TestCloseApprovalCondition(BaseMCPTest):
             stakeholder_name="Иванов",
             resolution_notes="Второе закрытие",
         )
-        self.assertIn("уже закрыто", result)
+        self.assertIn("already closed", result)
 
     def test_wrong_stakeholder_error(self):
         result = close_approval_condition(
@@ -584,13 +584,13 @@ class TestCheckApprovalStatus(BaseMCPTest):
     def test_all_approved_ready_for_baseline(self):
         _record(decision="approved")
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Готов к baseline", result)
+        self.assertIn("Ready for baseline", result)
         self.assertIn("✅", result)
 
     def test_rejected_accountable_blocks_baseline(self):
         _record(decision="rejected", rejection_reason="Не согласен")
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Не готов", result)
+        self.assertIn("Not ready", result)
         self.assertIn("🔴", result)
 
     def test_rejected_consulted_does_not_block(self):
@@ -600,7 +600,7 @@ class TestCheckApprovalStatus(BaseMCPTest):
         result = check_approval_status(PROJECT, "APKG-001")
         # Consulted rejected — предупреждение, не блокировщик
         self.assertIn("Consulted", result)
-        self.assertIn("Готов к baseline", result)
+        self.assertIn("Ready for baseline", result)
 
     def test_open_conditions_reported(self):
         record_approval_decision(
@@ -643,13 +643,13 @@ class TestCheckApprovalStatus(BaseMCPTest):
             ]),
         )
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("ПРОСРОЧЕНО", result)
-        self.assertIn("Не готов", result)
+        self.assertIn("OVERDUE", result)
+        self.assertIn("Not ready", result)
 
     def test_pending_requirements_block_baseline(self):
         # Не записываем ни одного решения — все pending
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Не готов", result)
+        self.assertIn("Not ready", result)
         self.assertIn("pending", result)
 
     def test_statistics_shown(self):
@@ -695,7 +695,7 @@ class TestCheckApprovalStatus(BaseMCPTest):
             ]),
         )
         result = check_approval_status(PROJECT, "APKG-BIG")
-        self.assertIn("Не готов", result)
+        self.assertIn("Not ready", result)
 
     def test_multiple_stakeholders_mixed(self):
         _record(stakeholder="Иванов", decision="approved")
@@ -703,7 +703,7 @@ class TestCheckApprovalStatus(BaseMCPTest):
         result = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("Иванов", result)
         self.assertIn("Петров", result)
-        self.assertIn("Готов к baseline", result)
+        self.assertIn("Ready for baseline", result)
 
 
 # ---------------------------------------------------------------------------
@@ -765,7 +765,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             decided_by="Иванов",
         )
         self.assertIn("❌", result)
-        self.assertIn("заблокирован", result)
+        self.assertIn("blocked", result)
 
     def test_force_overrides_blocker(self):
         _record(decision="rejected", rejection_reason="Не согласен")
@@ -795,7 +795,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             baseline_version="v1.1",
             decided_by="Иванов",
         )
-        self.assertIn("уже имеет baseline", result)
+        self.assertIn("already has baseline", result)
 
     def test_package_not_found_error(self):
         result = create_requirements_baseline(
@@ -920,7 +920,7 @@ class TestApprovalPipeline(BaseMCPTest):
 
         # 4. check
         status = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Готов к baseline", status)
+        self.assertIn("Ready for baseline", status)
 
         # 5. baseline
         bl = create_requirements_baseline(
@@ -953,7 +953,7 @@ class TestApprovalPipeline(BaseMCPTest):
             decision="approved",
         )
         status = check_approval_status(PROJECT, "SPRINT-1")
-        self.assertIn("Готов к baseline", status)
+        self.assertIn("Ready for baseline", status)
 
         bl = create_requirements_baseline(
             project_name=PROJECT,
@@ -985,7 +985,7 @@ class TestApprovalPipeline(BaseMCPTest):
 
         # Статус ещё не ready
         status = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("условия", status)
+        self.assertIn("condition", status)
 
         # Закрываем условие
         close_approval_condition(
@@ -998,7 +998,7 @@ class TestApprovalPipeline(BaseMCPTest):
 
         # Теперь готов
         status2 = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Готов к baseline", status2)
+        self.assertIn("Ready for baseline", status2)
 
         # Baseline
         bl = create_requirements_baseline(
@@ -1017,7 +1017,7 @@ class TestApprovalPipeline(BaseMCPTest):
                 decision="rejected", rejection_reason="Не удобно")
 
         status = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Готов к baseline", status)
+        self.assertIn("Ready for baseline", status)
         self.assertIn("Consulted", status)
 
     def test_two_packages_independent(self):
@@ -1031,8 +1031,8 @@ class TestApprovalPipeline(BaseMCPTest):
         status_a = check_approval_status(PROJECT, "APKG-A")
         status_b = check_approval_status(PROJECT, "APKG-B")
 
-        self.assertIn("Готов к baseline", status_a)
-        self.assertIn("Не готов", status_b)
+        self.assertIn("Ready for baseline", status_a)
+        self.assertIn("Not ready", status_b)
 
     def test_baseline_version_history_grows(self):
         """История baseline-ов растёт при каждом новом пакете."""

@@ -1,24 +1,24 @@
 """
 BABOK 5.2 — Maintain Requirements
-MCP-инструменты для поддержания актуальности требований и их атрибутов.
+MCP tools for keeping requirements and their attributes up to date.
 
-Инструменты:
-  - update_requirement           — обновить атрибуты требования (статус, версия, приоритет...)
-  - deprecate_requirements       — пометить требования как устаревшие или заменённые
-  - check_requirements_health    — аудит здоровья реестра: волатильность, заброшенные, давно не обновлялись
-  - find_reusable_requirements   — найти кандидатов на повторное использование
+Tools:
+  - update_requirement           — update a requirement's attributes (status, version, priority...)
+  - deprecate_requirements       — mark requirements as deprecated or superseded
+  - check_requirements_health    — registry health audit: volatility, stale, abandoned
+  - find_reusable_requirements   — find candidates for reuse
 
-Хранение: тот же JSON-репозиторий что и 5.1 ({project}_traceability_repo.json).
-История каждого изменения пишется в repo["history"].
+Storage: the same JSON repository as 5.1 ({project}_traceability_repo.json).
+Each change's history is written to repo["history"].
 
-Хуки: после каждого обновления вызывается _export_hook().
-До подключения integrations/confluence_mcp.py возвращает local_only.
+Hooks: _export_hook() is called after every update.
+Returns local_only until integrations/confluence_mcp.py is wired up.
 
-Интеграция:
-  Вход: результаты 4.3 (status→confirmed), 5.3 (priority), 5.4 (CR-решения), 5.5 (status→approved)
-  Выход: актуальный реестр для 5.3, 5.5, 6.x; хук → Confluence
+Integration:
+  In:  results from 4.3 (status→confirmed), 5.3 (priority), 5.4 (CR decisions), 5.5 (status→approved)
+  Out: an up-to-date registry for 5.3, 5.5, 6.x; hook → Confluence
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -32,17 +32,17 @@ mcp = FastMCP("BABOK_Requirements_Maintain")
 
 REPO_FILENAME = "traceability_repo.json"
 
-# Порог волатильности — minor-версия выше этого значения → предупреждение
-VOLATILITY_WARNING_THRESHOLD = 3   # версия 1.3+
-VOLATILITY_CRITICAL_THRESHOLD = 4  # версия 1.4+
+# Volatility threshold — minor version above this value triggers a warning
+VOLATILITY_WARNING_THRESHOLD = 3   # version 1.3+
+VOLATILITY_CRITICAL_THRESHOLD = 4  # version 1.4+
 
-# Порог «заброшенности» в днях без обновления
+# "Staleness" threshold in days without an update
 STALE_DAYS_WARNING = 30
 STALE_DAYS_CRITICAL = 60
 
 
 # ---------------------------------------------------------------------------
-# Утилиты — общие с 5.1 (дублируем чтобы не создавать циклических зависимостей)
+# Utilities — shared with 5.1 (duplicated to avoid circular dependencies)
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
@@ -72,7 +72,7 @@ def _save_repo(repo: dict) -> str:
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
-    logger.info(f"Репозиторий обновлён (5.2): {path}")
+    logger.info(f"Repository updated (5.2): {path}")
     return path
 
 
@@ -84,7 +84,7 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 
 
 def _version_to_float(version: str) -> float:
-    """Конвертирует '1.3' → 1.3 для сравнения."""
+    """Converts '1.3' → 1.3 for comparison."""
     try:
         return float(version)
     except (ValueError, TypeError):
@@ -92,7 +92,7 @@ def _version_to_float(version: str) -> float:
 
 
 def _minor_version(version: str) -> int:
-    """Возвращает minor-часть версии: '1.3' → 3."""
+    """Returns the minor part of the version: '1.3' → 3."""
     try:
         parts = str(version).split(".")
         return int(parts[1]) if len(parts) > 1 else 0
@@ -101,7 +101,7 @@ def _minor_version(version: str) -> int:
 
 
 def _days_since(date_str: str) -> int:
-    """Количество дней с указанной даты."""
+    """Number of days since the given date."""
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d").date()
         return (date.today() - d).days
@@ -110,33 +110,33 @@ def _days_since(date_str: str) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Хук для внешних хранилищ
+# Hook for external storage
 # ---------------------------------------------------------------------------
 
 def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
     """
-    Хук экспорта — вызывается после каждого значимого обновления в 5.2.
+    Export hook — called after every significant update in 5.2.
 
-    Если заданы переменные окружения CONFLUENCE_URL + CONFLUENCE_API_TOKEN —
-    автоматически синхронизирует артефакт с Confluence через confluence_mcp.
-    Иначе возвращает local_only.
+    If the CONFLUENCE_URL + CONFLUENCE_API_TOKEN environment variables are set,
+    automatically syncs the artifact to Confluence via confluence_mcp.
+    Otherwise returns local_only.
 
     Args:
-        artifact_type: тип артефакта ('requirement_update', 'health_report', 'reuse_list')
-        content:       Markdown-содержимое артефакта
-        metadata:      dict с project_name, req_ids, operation и др.
+        artifact_type: artifact type ('requirement_update', 'health_report', 'reuse_list')
+        content:       Markdown content of the artifact
+        metadata:      dict with project_name, req_ids, operation, etc.
 
     Returns:
-        {"status": "synced", "url": "..."} или {"status": "local_only", "note": "..."}
+        {"status": "synced", "url": "..."} or {"status": "local_only", "note": "..."}
     """
-    # Проверяем наличие Confluence конфига
+    # Check for Confluence config
     if not os.environ.get("CONFLUENCE_URL") or not os.environ.get("CONFLUENCE_API_TOKEN"):
         return {
             "status": "local_only",
             "note": (
-                "Для синхронизации с Confluence задай переменные окружения: "
+                "To sync with Confluence, set the environment variables: "
                 "CONFLUENCE_URL, CONFLUENCE_API_TOKEN, CONFLUENCE_SPACE_KEY. "
-                "Подробнее: skills/integrations/confluence_mcp.py"
+                "Details: skills/integrations/confluence_mcp.py"
             )
         }
 
@@ -145,10 +145,10 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
 
         project_name = metadata.get("project_name", "BA Project")
         type_labels = {
-            "requirement_update": "Обновление требования",
-            "deprecation": "Устаревшие требования",
-            "health_report": "Аудит здоровья требований",
-            "reuse_list": "Кандидаты на повторное использование",
+            "requirement_update": "Requirement update",
+            "deprecation": "Deprecated requirements",
+            "health_report": "Requirements health audit",
+            "reuse_list": "Reuse candidates",
         }
         label = type_labels.get(artifact_type, artifact_type)
         page_title = f"{project_name} — {label} ({date.today()})"
@@ -161,14 +161,14 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
         return result
 
     except ImportError:
-        return {"status": "local_only", "note": "Модуль integrations/confluence_mcp.py недоступен"}
+        return {"status": "local_only", "note": "The integrations/confluence_mcp.py module is unavailable"}
     except Exception as e:
-        logger.warning(f"[export_hook] Ошибка Confluence: {e}")
-        return {"status": "local_only", "note": f"Ошибка синхронизации: {e}"}
+        logger.warning(f"[export_hook] Confluence error: {e}")
+        return {"status": "local_only", "note": f"Sync error: {e}"}
 
 
 # ---------------------------------------------------------------------------
-# 5.2.1 — Обновление требования или его атрибутов
+# 5.2.1 — Update a requirement or its attributes
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -188,44 +188,44 @@ def update_requirement(
     note: str = "",
 ) -> str:
     """
-    BABOK 5.2 — Обновляет атрибуты требования. Пишет историю изменений.
+    BABOK 5.2 — Updates a requirement's attributes. Records the change in the history.
 
-    Правило версионности:
-      Minor (1.0→1.1): уточнение формулировки, изменение критериев приёмки
-      Major (1.0→2.0): изменение сути, слияние, разделение требований
-      Без изменения версии: смена статуса, приоритета, owner (содержание не менялось)
+    Versioning rule:
+      Minor (1.0→1.1): wording clarification, acceptance-criteria change
+      Major (1.0→2.0): change in substance, merging or splitting requirements
+      No version change: status, priority, owner change (content unchanged)
 
     Args:
-        project_name:    Название проекта.
-        req_id:          ID требования: BR-001, FR-007 и т.д.
-        change_reason:   Причина изменения — обязательно. Пишется в историю.
-        new_status:      Новый статус. Допустимые значения:
+        project_name:    Project name.
+        req_id:          Requirement ID: BR-001, FR-007, etc.
+        change_reason:   Reason for the change — required. Recorded in the history.
+        new_status:      New status. Allowed values:
                          draft | confirmed | approved | implemented |
                          on_hold | deprecated | superseded | retired
-                         Пустая строка — не менять.
-        new_version:     Новая версия в формате major.minor (1.1, 2.0).
-                         Пустая строка — не менять.
-        new_priority:    High | Medium | Low. Пустая строка — не менять.
-        new_owner:       Имя/роль владельца. Пустая строка — не менять.
-        new_stability:   Stable | Volatile | Unknown. Пустая строка — не менять.
-        new_title:       Новая формулировка требования. Пустая строка — не менять.
-        reuse_candidate: "true" | "false". Пустая строка — не менять.
-        reuse_scope:     initiative | program | division | enterprise. Пустая строка — не менять.
-        complexity:      Low | Medium | High. Пустая строка — не менять.
-        note:            Дополнительная заметка BA (опционально).
+                         Empty string — leave unchanged.
+        new_version:     New version in major.minor format (1.1, 2.0).
+                         Empty string — leave unchanged.
+        new_priority:    High | Medium | Low. Empty string — leave unchanged.
+        new_owner:       Owner name/role. Empty string — leave unchanged.
+        new_stability:   Stable | Volatile | Unknown. Empty string — leave unchanged.
+        new_title:       New requirement wording. Empty string — leave unchanged.
+        reuse_candidate: "true" | "false". Empty string — leave unchanged.
+        reuse_scope:     initiative | program | division | enterprise. Empty string — leave unchanged.
+        complexity:      Low | Medium | High. Empty string — leave unchanged.
+        note:            Additional BA note (optional).
 
     Returns:
-        Подтверждение обновления с историей изменений требования.
+        Update confirmation with the requirement's change history.
     """
-    logger.info(f"update_requirement: {req_id} в проекте '{project_name}'")
+    logger.info(f"update_requirement: {req_id} in project '{project_name}'")
 
     repo = _load_repo(project_name)
     req = _find_req(repo, req_id)
 
     if not req:
         return (
-            f"❌ Требование `{req_id}` не найдено в репозитории проекта `{project_name}`.\n"
-            f"Проверьте ID или добавьте требование через `init_traceability_repo` (5.1)."
+            f"❌ Requirement `{req_id}` not found in the `{project_name}` project repository.\n"
+            f"Check the ID, or add the requirement via `init_traceability_repo` (5.1)."
         )
 
     changes = []
@@ -237,38 +237,38 @@ def update_requirement(
             req[attr] = new_val
             changes.append(f"- **{display_name}:** `{old_values[attr]}` → `{new_val}`")
 
-    _apply("status", new_status, "Статус")
-    _apply("version", new_version, "Версия")
-    _apply("priority", new_priority, "Приоритет")
-    _apply("owner", new_owner, "Владелец")
-    _apply("stability", new_stability, "Стабильность")
-    _apply("title", new_title, "Формулировка")
-    _apply("complexity", complexity, "Сложность")
-    _apply("reuse_scope", reuse_scope, "Scope повторного использования")
+    _apply("status", new_status, "Status")
+    _apply("version", new_version, "Version")
+    _apply("priority", new_priority, "Priority")
+    _apply("owner", new_owner, "Owner")
+    _apply("stability", new_stability, "Stability")
+    _apply("title", new_title, "Wording")
+    _apply("complexity", complexity, "Complexity")
+    _apply("reuse_scope", reuse_scope, "Reuse scope")
 
     if reuse_candidate:
         old_val = req.get("reuse_candidate", "—")
         val = reuse_candidate.lower() == "true"
         req["reuse_candidate"] = val
-        changes.append(f"- **Кандидат на reuse:** `{old_val}` → `{val}`")
+        changes.append(f"- **Reuse candidate:** `{old_val}` → `{val}`")
 
     if not changes:
-        return f"ℹ️ Нет изменений для требования `{req_id}`. Укажите хотя бы один атрибут для обновления."
+        return f"ℹ️ No changes for requirement `{req_id}`. Specify at least one attribute to update."
 
     req["last_reviewed"] = str(date.today())
 
-    # Автоматический пересчёт stability по волатильности
+    # Auto-recalculate stability based on volatility
     if not new_stability and new_version:
         minor = _minor_version(req.get("version", "1.0"))
         if minor >= VOLATILITY_CRITICAL_THRESHOLD:
             req["stability"] = "Volatile"
-            changes.append(f"- **Стабильность (авто):** пересчитана → `Volatile` (версия {req['version']})")
+            changes.append(f"- **Stability (auto):** recalculated → `Volatile` (version {req['version']})")
         elif minor >= VOLATILITY_WARNING_THRESHOLD:
             if req.get("stability") != "Volatile":
                 req["stability"] = "Volatile"
-                changes.append(f"- **Стабильность (авто):** пересчитана → `Volatile` (версия {req['version']})")
+                changes.append(f"- **Stability (auto):** recalculated → `Volatile` (version {req['version']})")
 
-    # Пишем в историю
+    # Record in history
     history_entry = {
         "action": "requirement_updated",
         "req_id": req_id,
@@ -281,71 +281,71 @@ def update_requirement(
 
     _save_repo(repo)
 
-    # Проверка волатильности — предупреждение
+    # Volatility check — warning
     volatility_warning = ""
     current_minor = _minor_version(req.get("version", "1.0"))
     if current_minor >= VOLATILITY_CRITICAL_THRESHOLD:
         volatility_warning = (
-            f"\n\n🔴 **Высокая волатильность:** версия `{req.get('version')}` — "
-            f"требование нестабильно. Рекомендуется обсудить первопричину со стейкхолдером."
+            f"\n\n🔴 **High volatility:** version `{req.get('version')}` — "
+            f"the requirement is unstable. Recommend discussing the root cause with the stakeholder."
         )
     elif current_minor >= VOLATILITY_WARNING_THRESHOLD:
         volatility_warning = (
-            f"\n\n⚠️ **Внимание:** версия `{req.get('version')}` — "
-            f"требование начинает проявлять признаки нестабильности."
+            f"\n\n⚠️ **Note:** version `{req.get('version')}` — "
+            f"the requirement is starting to show signs of instability."
         )
 
     lines = [
-        f"✅ Требование `{req_id}` обновлено",
+        f"✅ Requirement `{req_id}` updated",
         "",
-        f"**Проект:** {project_name}  ",
-        f"**Причина изменения:** {change_reason}  ",
-        f"**Дата:** {date.today()}",
+        f"**Project:** {project_name}  ",
+        f"**Reason for change:** {change_reason}  ",
+        f"**Date:** {date.today()}",
         "",
-        "### Изменения:",
+        "### Changes:",
         "",
     ] + changes
 
     if note:
-        lines += ["", f"**Заметка BA:** {note}"]
+        lines += ["", f"**BA note:** {note}"]
 
     lines += [
         "",
-        "### Текущее состояние требования:",
+        "### Current requirement state:",
         "",
-        f"| Атрибут | Значение |",
+        f"| Attribute | Value |",
         f"|---------|----------|",
         f"| ID | `{req.get('id')}` |",
-        f"| Тип | {req.get('type', '—')} |",
-        f"| Формулировка | {req.get('title', '—')} |",
-        f"| Статус | {req.get('status', '—')} |",
-        f"| Версия | {req.get('version', '—')} |",
-        f"| Приоритет | {req.get('priority', '—')} |",
-        f"| Владелец | {req.get('owner', '—')} |",
-        f"| Стабильность | {req.get('stability', '—')} |",
-        f"| Reuse кандидат | {req.get('reuse_candidate', '—')} |",
-        f"| Последняя проверка | {req.get('last_reviewed', '—')} |",
+        f"| Type | {req.get('type', '—')} |",
+        f"| Wording | {req.get('title', '—')} |",
+        f"| Status | {req.get('status', '—')} |",
+        f"| Version | {req.get('version', '—')} |",
+        f"| Priority | {req.get('priority', '—')} |",
+        f"| Owner | {req.get('owner', '—')} |",
+        f"| Stability | {req.get('stability', '—')} |",
+        f"| Reuse candidate | {req.get('reuse_candidate', '—')} |",
+        f"| Last reviewed | {req.get('last_reviewed', '—')} |",
     ]
 
     content = "\n".join(lines) + volatility_warning
 
-    # Хук экспорта
+    # Export hook
     hook_result = _export_hook(
         "requirement_update",
         content,
         {"project_name": project_name, "req_id": req_id, "operation": "update"}
     )
     if hook_result.get("status") == "synced":
-        content += f"\n\n🔗 Синхронизировано: {hook_result.get('url', '')}"
+        content += f"\n\n🔗 Synced: {hook_result.get('url', '')}"
     else:
-        content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
+        content += f"\n\n💾 Saved locally. {hook_result.get('note', '')}"
 
     save_artifact(content, prefix="5_2_requirement_update", project_id=project_name)
     return content
 
 
 # ---------------------------------------------------------------------------
-# 5.2.2 — Пометить требования как устаревшие / замененные
+# 5.2.2 — Mark requirements as deprecated / superseded
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -357,34 +357,34 @@ def deprecate_requirements(
     superseded_by: str = "",
 ) -> str:
     """
-    BABOK 5.2 — Помечает требования как устаревшие, заменённые или выведенные из эксплуатации.
+    BABOK 5.2 — Marks requirements as deprecated, superseded, or retired.
 
-    Требования НЕ удаляются — только помечаются. История сохраняется для аудита и трассировки.
-    После deprecation рекомендуется проверить активные связи через check_coverage (5.1).
+    Requirements are NOT deleted — only marked. The history is preserved for audit and traceability.
+    After deprecation, recommend checking active links via check_coverage (5.1).
 
     Args:
-        project_name:   Название проекта.
-        req_ids_json:   JSON-список ID требований: ["FR-007", "FR-008"]
-        final_status:   deprecated  — устарело, нет замены
-                        superseded  — заменено другим требованием
-                        retired     — проект завершён, требование в архив
-        reason:         Причина (обязательно). Пишется в историю.
-        superseded_by:  ID нового требования (только для superseded). Например: "FR-012"
+        project_name:   Project name.
+        req_ids_json:   JSON list of requirement IDs: ["FR-007", "FR-008"]
+        final_status:   deprecated  — outdated, no replacement
+                        superseded  — replaced by another requirement
+                        retired     — project complete, requirement archived
+        reason:         Reason (required). Recorded in the history.
+        superseded_by:  ID of the new requirement (only for superseded). E.g.: "FR-012"
 
     Returns:
-        Отчёт о помеченных требованиях + предупреждение об активных связях.
+        Report on marked requirements + a warning about active links.
     """
-    logger.info(f"deprecate_requirements: статус={final_status}, проект='{project_name}'")
+    logger.info(f"deprecate_requirements: status={final_status}, project='{project_name}'")
 
     try:
         req_ids = json.loads(req_ids_json)
     except json.JSONDecodeError as e:
-        return f"❌ Ошибка парсинга req_ids_json: {e}"
+        return f"❌ Error parsing req_ids_json: {e}"
 
     repo = _load_repo(project_name)
 
     if final_status == "superseded" and not superseded_by:
-        return "❌ Для статуса `superseded` необходимо указать `superseded_by` — ID нового требования."
+        return "❌ For the `superseded` status, you must specify `superseded_by` — the ID of the new requirement."
 
     processed = []
     not_found = []
@@ -413,7 +413,7 @@ def deprecate_requirements(
 
     _save_repo(repo)
 
-    # Проверить активные связи для deprecated требований
+    # Check active links for deprecated requirements
     active_links_warning = []
     for item in processed:
         req_id = item["id"]
@@ -422,32 +422,32 @@ def deprecate_requirements(
             if (lnk["from"] == req_id or lnk["to"] == req_id)
         ]
         if active:
-            active_links_warning.append(f"`{req_id}` имеет **{len(active)}** активных связей в трассировке")
+            active_links_warning.append(f"`{req_id}` has **{len(active)}** active traceability link(s)")
 
     status_labels = {
-        "deprecated": "🗄️ Deprecated (устарело)",
-        "superseded": "🔄 Superseded (заменено)",
-        "retired": "📦 Retired (архив)",
+        "deprecated": "🗄️ Deprecated",
+        "superseded": "🔄 Superseded",
+        "retired": "📦 Retired (archived)",
     }
 
     lines = [
-        f"<!-- BABOK 5.2 — Deprecation | Проект: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.2 — Deprecation | Project: {project_name} | {date.today()} -->",
         "",
         f"# {status_labels[final_status]}",
         "",
-        f"**Проект:** {project_name}  ",
-        f"**Причина:** {reason}  ",
-        f"**Дата:** {date.today()}",
+        f"**Project:** {project_name}  ",
+        f"**Reason:** {reason}  ",
+        f"**Date:** {date.today()}",
     ]
 
     if superseded_by:
-        lines.append(f"**Заменено на:** `{superseded_by}`  ")
+        lines.append(f"**Superseded by:** `{superseded_by}`  ")
 
     lines += [
         "",
-        f"## Обработано: {len(processed)} требований",
+        f"## Processed: {len(processed)} requirement(s)",
         "",
-        "| ID | Название | Был статус | Новый статус |",
+        "| ID | Title | Old status | New status |",
         "|----|----------|-----------|--------------|",
     ]
 
@@ -459,29 +459,29 @@ def deprecate_requirements(
     if not_found:
         lines += [
             "",
-            f"⚠️ Не найдено в репозитории: {', '.join(f'`{i}`' for i in not_found)}",
+            f"⚠️ Not found in the repository: {', '.join(f'`{i}`' for i in not_found)}",
         ]
 
     if active_links_warning:
         lines += [
             "",
-            "## ⚠️ Внимание: активные связи трассировки",
+            "## ⚠️ Warning: active traceability links",
             "",
-            "Следующие требования имеют активные связи — рекомендуется проверить через `check_coverage` (5.1):",
+            "The following requirements have active links — recommend checking via `check_coverage` (5.1):",
             "",
         ]
         for w in active_links_warning:
             lines.append(f"- {w}")
         lines += [
             "",
-            "> Связи могут указывать на тесты, компоненты или другие требования которые",
-            "> всё ещё ссылаются на deprecated требование.",
+            "> Links may point to tests, components, or other requirements that",
+            "> still reference the deprecated requirement.",
         ]
 
     lines += [
         "",
         "---",
-        "**Следующий шаг:** запустить `check_coverage` (5.1) для проверки осиротевших связей.",
+        "**Next step:** run `check_coverage` (5.1) to check for orphaned links.",
     ]
 
     content = "\n".join(lines)
@@ -492,14 +492,14 @@ def deprecate_requirements(
         {"project_name": project_name, "req_ids": req_ids, "final_status": final_status}
     )
     if hook_result.get("status") != "synced":
-        content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
+        content += f"\n\n💾 Saved locally. {hook_result.get('note', '')}"
 
     save_artifact(content, prefix="5_2_deprecation", project_id=project_name)
     return content
 
 
 # ---------------------------------------------------------------------------
-# 5.2.3 — Аудит здоровья реестра требований
+# 5.2.3 — Requirements registry health audit
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -509,32 +509,32 @@ def check_requirements_health(
     filter_status: str = "",
 ) -> str:
     """
-    BABOK 5.2 — Аудит здоровья реестра требований.
+    BABOK 5.2 — Requirements registry health audit.
 
-    Что ищет:
-      🔴 Высокая волатильность (версия 1.4+) — требование нестабильно
-      🟡 Средняя волатильность (версия 1.2-1.3) — стоит проверить
-      🟡 Давно не обновлялись (>60 дней) — возможно устарели
-      🟡 Долго в draft (>30 дней) — подтвердить или заморозить
-      🟡 Нет owner — некому отвечать за актуальность
-      🟢 Здоровые требования — всё в порядке
+    What it looks for:
+      🔴 High volatility (version 1.4+) — the requirement is unstable
+      🟡 Medium volatility (version 1.2-1.3) — worth checking
+      🟡 Stale (not updated for >60 days) — possibly outdated
+      🟡 Long in draft (>30 days) — confirm or freeze
+      🟡 No owner — nobody accountable for keeping it current
+      🟢 Healthy requirements — all good
 
     Args:
-        project_name:   Название проекта.
-        filter_type:    Фильтр по типу: business | stakeholder | solution | transition
-                        Пустая строка — все.
-        filter_status:  Фильтр по статусу. Пустая строка — все активные
-                        (исключает deprecated, superseded, retired).
+        project_name:   Project name.
+        filter_type:    Filter by type: business | stakeholder | solution | transition
+                        Empty string — all.
+        filter_status:  Filter by status. Empty string — all active
+                        (excludes deprecated, superseded, retired).
 
     Returns:
-        Отчёт о состоянии реестра с рекомендациями.
+        Registry health report with recommendations.
     """
     logger.info(f"check_requirements_health: '{project_name}'")
 
     repo = _load_repo(project_name)
     requirements = repo["requirements"]
 
-    # По умолчанию — только активные (не архивные)
+    # By default — active only (not archived)
     archive_statuses = {"deprecated", "superseded", "retired"}
     if not filter_status:
         requirements = [r for r in requirements if r.get("status") not in archive_statuses]
@@ -545,7 +545,7 @@ def check_requirements_health(
         requirements = [r for r in requirements if r.get("type") == filter_type]
 
     if not requirements:
-        return f"ℹ️ Активных требований не найдено в репозитории `{project_name}`."
+        return f"ℹ️ No active requirements found in the `{project_name}` repository."
 
     critical = []    # 🔴
     warnings = []    # 🟡
@@ -555,33 +555,33 @@ def check_requirements_health(
         req_id = req.get("id", "?")
         issues = []
 
-        # Волатильность
+        # Volatility
         minor = _minor_version(req.get("version", "1.0"))
         if minor >= VOLATILITY_CRITICAL_THRESHOLD:
-            issues.append(f"🔴 Высокая волатильность (v{req.get('version')})")
+            issues.append(f"🔴 High volatility (v{req.get('version')})")
         elif minor >= VOLATILITY_WARNING_THRESHOLD:
-            issues.append(f"🟡 Средняя волатильность (v{req.get('version')})")
+            issues.append(f"🟡 Medium volatility (v{req.get('version')})")
 
-        # Давно не обновлялось
+        # Stale
         last_reviewed = req.get("last_reviewed") or req.get("added", "")
         if last_reviewed:
             days = _days_since(last_reviewed)
             if days > STALE_DAYS_CRITICAL:
-                issues.append(f"🟡 Не обновлялось {days} дней")
+                issues.append(f"🟡 Not updated for {days} days")
             elif days > STALE_DAYS_WARNING:
-                issues.append(f"🟡 Не обновлялось {days} дней — стоит проверить")
+                issues.append(f"🟡 Not updated for {days} days — worth checking")
 
-        # Долго в draft
+        # Long in draft
         if req.get("status") == "draft":
             added = req.get("added", "")
             if added:
                 days_draft = _days_since(added)
                 if days_draft > STALE_DAYS_WARNING:
-                    issues.append(f"🟡 В статусе draft уже {days_draft} дней")
+                    issues.append(f"🟡 In draft status for {days_draft} days already")
 
-        # Нет owner
+        # No owner
         if not req.get("owner"):
-            issues.append("🟡 Нет владельца (owner)")
+            issues.append("🟡 No owner")
 
         req_info = {
             "id": req_id,
@@ -604,30 +604,30 @@ def check_requirements_health(
     health_pct = round(len(healthy) / total * 100) if total else 0
 
     lines = [
-        f"<!-- BABOK 5.2 — Аудит здоровья | Проект: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.2 — Health Audit | Project: {project_name} | {date.today()} -->",
         "",
-        f"# 🏥 Аудит здоровья реестра требований",
+        f"# 🏥 Requirements registry health audit",
         "",
-        f"**Проект:** {project_name}  ",
-        f"**Фильтр:** тип={filter_type or 'все'}, статус={filter_status or 'активные'}  ",
-        f"**Дата:** {date.today()}",
+        f"**Project:** {project_name}  ",
+        f"**Filter:** type={filter_type or 'all'}, status={filter_status or 'active'}  ",
+        f"**Date:** {date.today()}",
         "",
-        "## Сводка",
+        "## Summary",
         "",
-        "| Статус | Кол-во | % |",
+        "| Status | Count | % |",
         "|--------|--------|---|",
-        f"| 🟢 Здоровые | {len(healthy)} | {health_pct}% |",
-        f"| 🟡 Требуют внимания | {len(warnings)} | {round(len(warnings)/total*100) if total else 0}% |",
-        f"| 🔴 Критические | {len(critical)} | {round(len(critical)/total*100) if total else 0}% |",
-        f"| **Всего активных** | **{total}** | 100% |",
+        f"| 🟢 Healthy | {len(healthy)} | {health_pct}% |",
+        f"| 🟡 Need attention | {len(warnings)} | {round(len(warnings)/total*100) if total else 0}% |",
+        f"| 🔴 Critical | {len(critical)} | {round(len(critical)/total*100) if total else 0}% |",
+        f"| **Total active** | **{total}** | 100% |",
         "",
     ]
 
     if critical:
         lines += [
-            "## 🔴 Критические проблемы",
+            "## 🔴 Critical issues",
             "",
-            "| ID | Тип | Название | v | Статус | Проблема |",
+            "| ID | Type | Title | v | Status | Issue |",
             "|----|-----|----------|---|--------|----------|",
         ]
         for r in critical:
@@ -637,16 +637,16 @@ def check_requirements_health(
             )
         lines += [
             "",
-            "> **Рекомендация:** обсудить первопричину нестабильности со стейкхолдером.",
-            "> Высокая волатильность часто указывает на проблему выявления (4.2), а не содержания.",
+            "> **Recommendation:** discuss the root cause of instability with the stakeholder.",
+            "> High volatility often points to an elicitation problem (4.2), not the content itself.",
             "",
         ]
 
     if warnings:
         lines += [
-            "## 🟡 Требуют внимания",
+            "## 🟡 Need attention",
             "",
-            "| ID | Тип | Название | v | Владелец | Проблема |",
+            "| ID | Type | Title | v | Owner | Issue |",
             "|----|-----|----------|---|----------|----------|",
         ]
         for r in warnings:
@@ -658,33 +658,33 @@ def check_requirements_health(
 
     if healthy:
         lines += [
-            "## 🟢 Здоровые требования",
+            "## 🟢 Healthy requirements",
             "",
-            f"**{len(healthy)} требований** в хорошем состоянии — актуальны, имеют владельца, стабильны.",
+            f"**{len(healthy)} requirement(s)** in good shape — current, have an owner, stable.",
             "",
         ]
 
     lines += [
         "---",
         "",
-        "## Рекомендуемые действия",
+        "## Recommended actions",
         "",
     ]
 
     if critical:
         lines.append(
-            f"1. 🔴 **{len(critical)} критических** — обсудить волатильность, "
-            f"обновить через `update_requirement` или `deprecate_requirements`."
+            f"1. 🔴 **{len(critical)} critical** — discuss the volatility, "
+            f"update via `update_requirement` or `deprecate_requirements`."
         )
     if warnings:
-        no_owner = sum(1 for r in warnings if "владельца" in " ".join(r["issues"]))
-        stale = sum(1 for r in warnings if "дней" in " ".join(r["issues"]))
+        no_owner = sum(1 for r in warnings if "owner" in " ".join(r["issues"]))
+        stale = sum(1 for r in warnings if "days" in " ".join(r["issues"]))
         if no_owner:
-            lines.append(f"2. 🟡 **{no_owner} без владельца** — назначить owner через `update_requirement`.")
+            lines.append(f"2. 🟡 **{no_owner} without an owner** — assign an owner via `update_requirement`.")
         if stale:
-            lines.append(f"3. 🟡 **{stale} давно не обновлялись** — проверить актуальность у стейкхолдера.")
+            lines.append(f"3. 🟡 **{stale} not updated in a while** — confirm relevance with the stakeholder.")
     if not critical and not warnings:
-        lines.append("✅ Реестр в хорошем состоянии. Готов к приоритизации (5.3) и утверждению (5.5).")
+        lines.append("✅ The registry is in good shape. Ready for prioritization (5.3) and approval (5.5).")
 
     content = "\n".join(lines)
 
@@ -694,14 +694,14 @@ def check_requirements_health(
         {"project_name": project_name, "health_pct": health_pct}
     )
     if hook_result.get("status") != "synced":
-        content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
+        content += f"\n\n💾 Saved locally. {hook_result.get('note', '')}"
 
     save_artifact(content, prefix="5_2_health_check", project_id=project_name)
     return content
 
 
 # ---------------------------------------------------------------------------
-# 5.2.4 — Поиск кандидатов на повторное использование
+# 5.2.4 — Find candidates for reuse
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -712,22 +712,22 @@ def find_reusable_requirements(
     min_reuse_scope: Literal["initiative", "program", "division", "enterprise"] = "initiative",
 ) -> str:
     """
-    BABOK 5.2 — Находит требования — кандидатов на повторное использование.
+    BABOK 5.2 — Finds requirements that are candidates for reuse.
 
-    Критерии хорошего кандидата (автоматически проверяются):
-      ✅ Флаг reuse_candidate = True
-      ✅ Статус approved или implemented (проверено практикой)
-      ✅ Низкая волатильность (версия ≤ 1.1)
-      ✅ Тип business или stakeholder (высокий уровень абстракции)
+    Good-candidate criteria (checked automatically):
+      ✅ reuse_candidate flag = True
+      ✅ Status approved or implemented (proven in practice)
+      ✅ Low volatility (version ≤ 1.1)
+      ✅ Type business or stakeholder (high level of abstraction)
 
     Args:
-        project_name:     Название проекта.
-        search_query:     Поисковый запрос по тексту требования (опционально).
-        filter_type:      Фильтр по типу: business | stakeholder | solution | transition
-        min_reuse_scope:  Минимальный уровень scope: initiative | program | division | enterprise
+        project_name:     Project name.
+        search_query:     Search query against the requirement text (optional).
+        filter_type:      Filter by type: business | stakeholder | solution | transition
+        min_reuse_scope:  Minimum scope level: initiative | program | division | enterprise
 
     Returns:
-        Список кандидатов с оценкой пригодности для повторного использования.
+        List of candidates with a reuse-suitability score.
     """
     logger.info(f"find_reusable_requirements: '{project_name}', query='{search_query}'")
 
@@ -736,57 +736,57 @@ def find_reusable_requirements(
     min_scope_idx = scope_order.index(min_reuse_scope)
 
     candidates = []
-    others = []  # требования без флага reuse, но потенциально подходящие
+    others = []  # requirements without the reuse flag, but potentially suitable
 
     for req in repo["requirements"]:
-        # Пропускаем архивные
+        # Skip archived
         if req.get("status") in {"deprecated", "superseded", "retired"}:
             continue
 
-        # Фильтр по типу
+        # Filter by type
         if filter_type and req.get("type") != filter_type:
             continue
 
-        # Фильтр по поисковому запросу
+        # Filter by search query
         if search_query:
             text = (req.get("title", "") + " " + req.get("id", "")).lower()
             if search_query.lower() not in text:
                 continue
 
-        # Оценка пригодности
+        # Suitability score
         score = 0
         score_notes = []
 
         is_reuse = req.get("reuse_candidate", False)
         if is_reuse:
             score += 3
-            score_notes.append("✅ Помечен как reuse-кандидат")
+            score_notes.append("✅ Marked as a reuse candidate")
 
         status = req.get("status", "")
         if status in ("approved", "implemented"):
             score += 2
-            score_notes.append(f"✅ Статус {status} — проверено практикой")
+            score_notes.append(f"✅ Status {status} — proven in practice")
         elif status == "confirmed":
             score += 1
-            score_notes.append("🟡 Статус confirmed — ещё не утверждён")
+            score_notes.append("🟡 Status confirmed — not yet approved")
 
         minor = _minor_version(req.get("version", "1.0"))
         if minor <= 1:
             score += 2
-            score_notes.append(f"✅ Низкая волатильность (v{req.get('version', '1.0')})")
+            score_notes.append(f"✅ Low volatility (v{req.get('version', '1.0')})")
         elif minor <= 3:
             score += 1
-            score_notes.append(f"🟡 Умеренная волатильность (v{req.get('version')})")
+            score_notes.append(f"🟡 Moderate volatility (v{req.get('version')})")
         else:
-            score_notes.append(f"❌ Высокая волатильность (v{req.get('version')}) — риск при reuse")
+            score_notes.append(f"❌ High volatility (v{req.get('version')}) — risk on reuse")
 
         req_type = req.get("type", "")
         if req_type in ("business", "stakeholder"):
             score += 2
-            score_notes.append("✅ Высокий уровень абстракции (бизнес/стейкхолдер)")
+            score_notes.append("✅ High level of abstraction (business/stakeholder)")
         elif req_type == "solution":
             score += 0
-            score_notes.append("🟡 Требование к решению — ограниченный reuse")
+            score_notes.append("🟡 Solution requirement — limited reuse")
 
         req_scope = req.get("reuse_scope", "initiative")
         scope_idx = scope_order.index(req_scope) if req_scope in scope_order else 0
@@ -811,45 +811,45 @@ def find_reusable_requirements(
         elif score >= 3:
             others.append(req_info)
 
-    # Сортируем по score
+    # Sort by score
     candidates.sort(key=lambda x: x["score"], reverse=True)
     others.sort(key=lambda x: x["score"], reverse=True)
 
     lines = [
-        f"<!-- BABOK 5.2 — Повторное использование | Проект: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.2 — Reuse | Project: {project_name} | {date.today()} -->",
         "",
-        f"# ♻️ Кандидаты на повторное использование",
+        f"# ♻️ Reuse candidates",
         "",
-        f"**Проект:** {project_name}  ",
-        f"**Запрос:** {search_query or 'все'}  ",
-        f"**Тип:** {filter_type or 'все'}  ",
-        f"**Минимальный scope:** {min_reuse_scope}  ",
-        f"**Дата:** {date.today()}",
+        f"**Project:** {project_name}  ",
+        f"**Query:** {search_query or 'all'}  ",
+        f"**Type:** {filter_type or 'all'}  ",
+        f"**Minimum scope:** {min_reuse_scope}  ",
+        f"**Date:** {date.today()}",
         "",
-        f"Найдено **{len(candidates)}** подтверждённых кандидатов, "
-        f"**{len(others)}** потенциальных.",
+        f"Found **{len(candidates)}** confirmed candidate(s), "
+        f"**{len(others)}** potential.",
         "",
     ]
 
     if candidates:
         lines += [
-            "## ✅ Подтверждённые кандидаты",
+            "## ✅ Confirmed candidates",
             "",
         ]
         for r in candidates:
             lines += [
                 f"### `{r['id']}` — {r['title']}",
                 "",
-                f"| Атрибут | Значение |",
+                f"| Attribute | Value |",
                 f"|---------|----------|",
-                f"| Тип | {r['type']} |",
-                f"| Статус | {r['status']} |",
-                f"| Версия | {r['version']} |",
-                f"| Владелец | {r['owner']} |",
+                f"| Type | {r['type']} |",
+                f"| Status | {r['status']} |",
+                f"| Version | {r['version']} |",
+                f"| Owner | {r['owner']} |",
                 f"| Scope | {r['reuse_scope']} |",
-                f"| Оценка | {'⭐' * min(r['score'], 5)} ({r['score']}/10) |",
+                f"| Score | {'⭐' * min(r['score'], 5)} ({r['score']}/10) |",
                 "",
-                "**Оценка пригодности:**",
+                "**Suitability score:**",
             ]
             for note in r["score_notes"]:
                 lines.append(f"- {note}")
@@ -857,9 +857,9 @@ def find_reusable_requirements(
 
     if others:
         lines += [
-            "## 🟡 Потенциальные кандидаты (не помечены явно)",
+            "## 🟡 Potential candidates (not explicitly flagged)",
             "",
-            "| ID | Тип | Название | Статус | v | Оценка |",
+            "| ID | Type | Title | Status | v | Score |",
             "|----|-----|----------|--------|---|--------|",
         ]
         for r in others:
@@ -869,28 +869,28 @@ def find_reusable_requirements(
             )
         lines += [
             "",
-            "> Пометить как reuse-кандидата: `update_requirement(reuse_candidate='true')`",
+            "> Flag as a reuse candidate: `update_requirement(reuse_candidate='true')`",
         ]
 
     if not candidates and not others:
         lines += [
-            "ℹ️ Подходящих кандидатов не найдено по заданным критериям.",
+            "ℹ️ No suitable candidates found matching the given criteria.",
             "",
-            "Попробуйте:",
-            "- Убрать фильтр по типу",
-            "- Снизить min_reuse_scope до 'initiative'",
-            "- Пометить требования через `update_requirement(reuse_candidate='true')`",
+            "Try:",
+            "- Removing the type filter",
+            "- Lowering min_reuse_scope to 'initiative'",
+            "- Flagging requirements via `update_requirement(reuse_candidate='true')`",
         ]
 
     lines += [
         "",
         "---",
         "",
-        "## Следующий шаг",
+        "## Next step",
         "",
-        "Перед включением в новую инициативу — стейкхолдеры проверяют отобранные",
-        "требования на актуальность. Требование для reuse добавляется в новый",
-        "репозиторий с `source` указывающим на оригинал.",
+        "Before including in a new initiative — stakeholders verify the selected",
+        "requirements are still current. A requirement being reused is added to the new",
+        "repository with a `source` pointing back to the original.",
     ]
 
     content = "\n".join(lines)
@@ -901,7 +901,7 @@ def find_reusable_requirements(
         {"project_name": project_name, "candidates_count": len(candidates)}
     )
     if hook_result.get("status") != "synced":
-        content += f"\n\n💾 Сохранено локально. {hook_result.get('note', '')}"
+        content += f"\n\n💾 Saved locally. {hook_result.get('note', '')}"
 
     save_artifact(content, prefix="5_2_reuse_candidates", project_id=project_name)
     return content

@@ -223,7 +223,7 @@ class TestOpenCR(BaseMCPTest):
             target_req_ids_json='["FR-001"]',
         )
         self.assertIn("CR-001", result)
-        self.assertIn("зарегистрирован", result.lower())
+        self.assertIn("registered", result.lower())
 
     def test_open_cr_creates_node_in_repo(self):
         self._setup_repo()
@@ -252,7 +252,7 @@ class TestOpenCR(BaseMCPTest):
         )
         mod54.open_cr(**kwargs)
         result = mod54.open_cr(**kwargs)
-        self.assertIn("уже существует", result)
+        self.assertIn("already exists", result)
 
     def test_open_cr_missing_target_req(self):
         self._setup_repo()
@@ -266,7 +266,7 @@ class TestOpenCR(BaseMCPTest):
             formality="standard",
             target_req_ids_json='["XX-999"]',
         )
-        self.assertIn("не найден", result)
+        self.assertIn("not found", result)
 
     def test_open_cr_regulatory_sets_urgency_critical(self):
         self._setup_repo()
@@ -359,7 +359,7 @@ class TestRunCRImpact(BaseMCPTest):
     def test_run_cr_impact_success(self):
         self._setup_and_open()
         result = mod54.run_cr_impact(self.P, "CR-001")
-        self.assertIn("Анализ влияния", result)
+        self.assertIn("Impact analysis", result)
 
     def test_run_cr_impact_creates_modifies_links(self):
         self._setup_and_open()
@@ -709,7 +709,7 @@ class TestResolveCR(BaseMCPTest):
             decided_by="Sponsor", rationale="Дорого"
         )
         self.assertIn("❌", result)
-        self.assertIn("регуляторный", result.lower())
+        self.assertIn("regulatory", result.lower())
 
     def test_resolve_without_score_fails(self):
         repo = make_test_repo(self.P)
