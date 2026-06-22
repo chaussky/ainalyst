@@ -1,4 +1,4 @@
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 import os
 import re
 import sys
@@ -7,7 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# Настройка логирования (stderr — не мешает протоколу JSON-RPC)
+# Logging setup (stderr — does not interfere with the JSON-RPC protocol)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -16,28 +16,28 @@ logging.basicConfig(
 logger = logging.getLogger("BABOK_Toolkit")
 
 BASE_DIR = "governance_plans"
-DATA_DIR = os.path.join(BASE_DIR, "data")      # JSON: машиночитаемые файлы для MCP
-REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: документы для людей
+DATA_DIR = os.path.join(BASE_DIR, "data")      # JSON: machine-readable files for MCP
+REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: documents for humans
 
 
 def _ensure_dirs():
-    """Создаёт все нужные папки если их нет."""
+    """Creates all required folders if they don't exist."""
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(REPORTS_DIR, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
-# Раскладка артефактов по подкаталогам проекта (issue #1)
+# Artifact layout in per-project subdirectories (issue #1)
 # ---------------------------------------------------------------------------
 
 _PID_DISALLOWED = re.compile(r"[^a-z0-9_-]+")
 
 
 def normalize_project_id(project_id: str) -> str:
-    """Безопасное имя проекта для использования как имя каталога.
+    """Safe project name for use as a directory name.
 
-    Защита от path traversal: убирает '/', '\\', '..', абсолютные пути;
-    оставляет whitelist [a-z0-9_-]. Пустой результат → '_unknown'.
+    Protects against path traversal: strips '/', '\\', '..', absolute paths;
+    keeps only the whitelist [a-z0-9_-]. Empty result → '_unknown'.
     """
     if not project_id:
         return "_unknown"
@@ -50,34 +50,34 @@ def normalize_project_id(project_id: str) -> str:
 
 
 def data_dir_for(project_id: str) -> str:
-    """governance_plans/data/<safe_pid>/ — каталог json-артефактов проекта."""
+    """governance_plans/data/<safe_pid>/ — the project's JSON-artifact directory."""
     return os.path.join(DATA_DIR, normalize_project_id(project_id))
 
 
 def report_dir_for(project_id: str) -> str:
-    """governance_plans/reports/<safe_pid>/ — каталог markdown-отчётов проекта."""
+    """governance_plans/reports/<safe_pid>/ — the project's Markdown-report directory."""
     return os.path.join(REPORTS_DIR, normalize_project_id(project_id))
 
 
 def _legacy_safe(project_id: str) -> str:
-    """Домиграционная нормализация имени (issue #1) — ТОЛЬКО для поиска уже
-    существующих legacy-файлов. До перехода на normalize_project_id имена строились
-    как project_id.lower().replace(" ", "_"), что сохраняло точки и прочие символы.
+    """Pre-migration name normalization (issue #1) — used ONLY to locate already
+    existing legacy files. Before normalize_project_id was introduced, names were
+    built as project_id.lower().replace(" ", "_"), which kept dots and other characters.
     """
     return str(project_id).lower().replace(" ", "_")
 
 
 def data_path(project_id: str, filename: str) -> str:
-    """Единый резолвер пути json (и чтение, и запись).
+    """Single resolver for the JSON path (used for both reading and writing).
 
-    filename уже включает префикс {safe_pid}_ (issue #1, развилка 1). Возвращает
-    первый существующий из кандидатов, иначе — каноническую вложенную раскладку:
-      1) data/<norm>/<filename>          — каноническая вложенная;
-      2) data/<filename>                 — каноническая плоская (legacy-раскладка);
-      3..5) то же, но с ДОмиграционным именем (для project_id с символами вне
-            [a-z0-9_-], например с точками — их старый _safe сохранял, а
-            normalize_project_id переписывает).
-    Каталог создаёт сторона записи: os.makedirs(os.path.dirname(path), ...).
+    filename already includes the {safe_pid}_ prefix (issue #1, decision point 1). Returns
+    the first existing candidate, otherwise falls back to the canonical nested layout:
+      1) data/<norm>/<filename>          — canonical nested;
+      2) data/<filename>                 — canonical flat (legacy layout);
+      3..5) same, but with the PRE-migration name (for project_id values with characters
+            outside [a-z0-9_-], e.g. dots — the old _safe kept them, while
+            normalize_project_id rewrites them).
+    The directory is created by the writing side: os.makedirs(os.path.dirname(path), ...).
     """
     norm = normalize_project_id(project_id)
     candidates = [
@@ -95,14 +95,14 @@ def data_path(project_id: str, filename: str) -> str:
     for cand in candidates:
         if os.path.exists(cand):
             return cand
-    return candidates[0]  # новый артефакт → каноническая вложенная раскладка
+    return candidates[0]  # new artifact → canonical nested layout
 
 
 def specs_dir(project_id: str) -> str:
-    """Каталог спеков 7.1: data/<project_id>/specs/ (issue #1).
+    """The 7.1 specs directory: data/<project_id>/specs/ (issue #1).
 
-    Fallback на legacy-раскладки (включая ДОмиграционные имена с точками и т.п.):
-    плоский data/<safe>_specs/ и варианты со старой нормализацией.
+    Falls back to legacy layouts (including PRE-migration names with dots, etc.):
+    flat data/<safe>_specs/ and variants using the old normalization.
     """
     norm = normalize_project_id(project_id)
     nested = os.path.join(DATA_DIR, norm, "specs")
@@ -120,18 +120,18 @@ def specs_dir(project_id: str) -> str:
 
 
 class Stakeholder(BaseModel):
-    """Модель стейкхолдера для матрицы вовлечения."""
-    name: str = Field(..., description="Имя или роль стейкхолдера")
-    influence: str = Field(..., pattern="^(Low|Medium|High)$", description="Уровень влияния")
-    interest: str = Field(..., pattern="^(Low|Medium|High)$", description="Уровень интереса")
-    attitude: Optional[str] = Field("Neutral", description="Отношение к проекту: Neutral / Champion / Blocker")
+    """Stakeholder model for the engagement matrix."""
+    name: str = Field(..., description="Stakeholder name or role")
+    influence: str = Field(..., pattern="^(Low|Medium|High)$", description="Level of influence")
+    interest: str = Field(..., pattern="^(Low|Medium|High)$", description="Level of interest")
+    attitude: Optional[str] = Field("Neutral", description="Attitude toward the project: Neutral / Champion / Blocker")
 
 
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
-    """Сохраняет Markdown-артефакт в reports/ и возвращает путь.
+    """Saves a Markdown artifact to reports/ and returns the path.
 
-    Если передан project_id — артефакт пишется в reports/<project_id>/ (issue #1).
-    Без project_id сохраняется поведение по умолчанию (плоский reports/).
+    If project_id is provided, the artifact is written to reports/<project_id>/ (issue #1).
+    Without project_id, the default behavior is preserved (flat reports/).
     """
     _ensure_dirs()
 
@@ -147,13 +147,13 @@ def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-    logger.info(f"Артефакт сохранен: {filepath}")
-    return f"\n\n✅ Артефакт сохранен: `{filepath}`"
+    logger.info(f"Artifact saved: {filepath}")
+    return f"\n\n✅ Artifact saved: `{filepath}`"
 
 
 # ---------------------------------------------------------------------------
-# Shared matrices — используются в planning.py и planning_mcp.py
-# Единственный источник истины (ADR-REVIEW-п5)
+# Shared matrices — used in planning.py and planning_mcp.py
+# Single source of truth (ADR-REVIEW-5)
 # ---------------------------------------------------------------------------
 
 APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
@@ -170,17 +170,17 @@ APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
 
 REGULATORY_OVERRIDE: dict[str, str] = {
     "Adaptive (Agile)": "Hybrid (Agile + compliance gates)",
-    "Hybrid":           "Hybrid (с усиленным Governance)",
+    "Hybrid":           "Hybrid (with strengthened governance)",
 }
 
 QUADRANT_STRATEGIES: dict[tuple[str, str], tuple[str, str, str]] = {
-    ("High", "High"):     ("Key Players",     "Manage Closely — вовлекать в каждое решение",       "Еженедельно"),
-    ("High", "Medium"):   ("Context Setters", "Keep Satisfied — информировать о ключевых вехах",   "При вехах"),
-    ("High", "Low"):      ("Context Setters", "Keep Satisfied — информировать о ключевых вехах",   "При вехах"),
-    ("Medium", "High"):   ("Subjects",        "Keep Informed — демонстрации, Sprint Review",        "Bi-weekly"),
-    ("Low",  "High"):     ("Subjects",        "Keep Informed — демонстрации, Sprint Review",        "Bi-weekly"),
-    ("Medium", "Medium"): ("Subjects",        "Keep Informed — регулярные обновления",              "Ежемесячно"),
-    ("Medium", "Low"):    ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
-    ("Low",  "Medium"):   ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
-    ("Low",  "Low"):      ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
+    ("High", "High"):     ("Key Players",     "Manage Closely — involve in every decision",        "Weekly"),
+    ("High", "Medium"):   ("Context Setters", "Keep Satisfied — inform about key milestones",       "At milestones"),
+    ("High", "Low"):      ("Context Setters", "Keep Satisfied — inform about key milestones",       "At milestones"),
+    ("Medium", "High"):   ("Subjects",        "Keep Informed — demos, Sprint Review",               "Bi-weekly"),
+    ("Low",  "High"):     ("Subjects",        "Keep Informed — demos, Sprint Review",               "Bi-weekly"),
+    ("Medium", "Medium"): ("Subjects",        "Keep Informed — regular updates",                    "Monthly"),
+    ("Medium", "Low"):    ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
+    ("Low",  "Medium"):   ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
+    ("Low",  "Low"):      ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
 }

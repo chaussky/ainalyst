@@ -70,13 +70,13 @@ PROCESS_BASE = dict(
     project_name="crm_upgrade",
     session_date="2025-03-17",
     stakeholder_role="Менеджер продаж",
-    session_type="Интервью",
+    session_type="Interview",
     stakeholder_profile_json=json.dumps(STAKEHOLDER_PROFILE_VALID),
     pains_json=json.dumps(PAINS_VALID),
     requirements_json=json.dumps(REQUIREMENTS_VALID),
     gaps_and_signals="Не уточнил версию 1С; неясно кто администрирует систему",
     ba_recommendations="Провести техническое интервью с ИТ-директором",
-    maturity_level="Средний",
+    maturity_level="Medium",
     maturity_notes="Хорошо понимает бизнес, но не технические детали",
 )
 
@@ -97,52 +97,52 @@ class TestProcessElicitationResults(BaseMCPTest):
     # --- happy path по всем типам сессий ---
 
     def test_session_type_interview(self):
-        """Тип сессии: Интервью."""
-        result = self._call(session_type="Интервью")
+        """Тип сессии: Interview."""
+        result = self._call(session_type="Interview")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_session_type_workshop(self):
-        """Тип сессии: Воркшоп."""
-        result = self._call(session_type="Воркшоп")
+        """Тип сессии: Workshop."""
+        result = self._call(session_type="Workshop")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_session_type_questionnaire(self):
-        """Тип сессии: Анкетирование."""
-        result = self._call(session_type="Анкетирование")
+        """Тип сессии: Survey."""
+        result = self._call(session_type="Survey")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_session_type_observation(self):
-        """Тип сессии: Наблюдение."""
-        result = self._call(session_type="Наблюдение")
+        """Тип сессии: Observation."""
+        result = self._call(session_type="Observation")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_session_type_document_analysis(self):
-        """Тип сессии: Анализ документов."""
-        result = self._call(session_type="Анализ документов")
+        """Тип сессии: Document Analysis."""
+        result = self._call(session_type="Document Analysis")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     # --- maturity levels ---
 
     def test_maturity_low(self):
-        """Уровень зрелости: Низкий."""
-        result = self._call(maturity_level="Низкий", maturity_notes="Не понимает IT")
+        """Уровень зрелости: Low."""
+        result = self._call(maturity_level="Low", maturity_notes="Не понимает IT")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_maturity_good(self):
-        """Уровень зрелости: Хороший."""
-        result = self._call(maturity_level="Хороший")
+        """Уровень зрелости: Good."""
+        result = self._call(maturity_level="Good")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_maturity_high(self):
-        """Уровень зрелости: Высокий."""
-        result = self._call(maturity_level="Высокий")
+        """Уровень зрелости: High."""
+        result = self._call(maturity_level="High")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 

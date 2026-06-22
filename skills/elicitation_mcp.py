@@ -1,13 +1,13 @@
 """
 BABOK 4.1 — Prepare for Elicitation
-MCP-инструменты для подготовки к выявлению требований.
+MCP tools to prepare for requirements elicitation.
 
-Инструменты:
-  - save_elicitation_plan      — сохранить план выявления в .md
-  - create_google_form         — создать Google Form (заглушка, требует настройки OAuth)
-  - get_form_responses         — получить ответы из Google Form (заглушка)
+Tools:
+  - save_elicitation_plan      — save the elicitation plan to .md
+  - create_google_form         — create a Google Form (stub, requires OAuth setup)
+  - get_form_responses         — retrieve responses from a Google Form (stub)
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -19,7 +19,7 @@ mcp = FastMCP("BABOK_Elicitation_Prep")
 
 
 # ---------------------------------------------------------------------------
-# 4.1.1 — Сохранить план выявления
+# 4.1.1 — Save the elicitation plan
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -28,59 +28,59 @@ def save_elicitation_plan(
     goals: str,
     stakeholders_json: str,
     technique: Literal[
-        "Интервью",
-        "Анкетирование",
-        "Воркшоп",
-        "Мозговой штурм",
-        "Анализ документов",
-        "Наблюдение",
-        "Прототипирование",
-        "Фокус-группа",
-        "Бенчмаркинг"
+        "Interview",
+        "Survey",
+        "Workshop",
+        "Brainstorming",
+        "Document Analysis",
+        "Observation",
+        "Prototyping",
+        "Focus Group",
+        "Benchmarking"
     ],
     technique_rationale: str,
     questions_or_agenda: str,
     expected_outcomes: str,
 ) -> str:
     """
-    BABOK 4.1 — Сохраняет план выявления требований в .md файл.
+    BABOK 4.1 — Saves the requirements elicitation plan to a .md file.
 
     Args:
-        project_name:          Название проекта или инициативы.
-        goals:                 Цели выявления. Что должны узнать / подтвердить.
-        stakeholders_json:     JSON-массив стейкхолдеров. Формат:
-                               [{"name": "Иванов И.И.", "role": "Владелец процесса",
+        project_name:          Name of the project or initiative.
+        goals:                 Elicitation goals. What you need to learn / confirm.
+        stakeholders_json:     JSON array of stakeholders. Format:
+                               [{"name": "Jane Doe", "role": "Process Owner",
                                  "influence": "High", "interest": "High",
-                                 "what_to_learn": "Боли текущего процесса"}]
-        technique:             Выбранная техника выявления.
-        technique_rationale:   Обоснование выбора техники.
-        questions_or_agenda:   Вопросы (для интервью/анкеты) или повестка (для воркшопа).
-                               Передавать как текст с нумерацией или markdown.
-        expected_outcomes:     Ожидаемые результаты сессии выявления.
+                                 "what_to_learn": "Pain points of the current process"}]
+        technique:             Selected elicitation technique.
+        technique_rationale:   Rationale for the chosen technique.
+        questions_or_agenda:   Questions (for interview/survey) or agenda (for workshop).
+                               Pass as numbered text or markdown.
+        expected_outcomes:     Expected outcomes of the elicitation session.
 
     Returns:
-        Путь к сохранённому файлу плана выявления.
+        Path to the saved elicitation plan file.
     """
-    logger.info(f"4.1 Сохранение плана выявления: проект='{project_name}', техника='{technique}'")
+    logger.info(f"4.1 Saving elicitation plan: project='{project_name}', technique='{technique}'")
 
-    # Парсим стейкхолдеров
+    # Parse stakeholders
     try:
         stakeholders = json.loads(stakeholders_json)
     except json.JSONDecodeError as e:
         return (
-            f"❌ Ошибка разбора stakeholders_json: {e}\n\n"
-            f"Ожидаемый формат:\n"
+            f"❌ Error parsing stakeholders_json: {e}\n\n"
+            f"Expected format:\n"
             f'```json\n'
-            f'[{{"name": "Иванов И.И.", "role": "Владелец процесса", '
+            f'[{{"name": "Jane Doe", "role": "Process Owner", '
             f'"influence": "High", "interest": "High", '
-            f'"what_to_learn": "Боли текущего процесса"}}]\n'
+            f'"what_to_learn": "Pain points of the current process"}}]\n'
             f'```'
         )
 
     if not isinstance(stakeholders, list):
-        return "❌ Ошибка: stakeholders_json должен быть списком (JSON array), получен объект другого типа"
+        return "❌ Error: stakeholders_json must be a list (JSON array), got an object of a different type"
 
-    # Формируем таблицу стейкхолдеров
+    # Build the stakeholder table
     stakeholder_rows = "\n".join([
         f"| {s.get('name', '—')} | {s.get('role', '—')} | "
         f"{s.get('influence', '—')} | {s.get('interest', '—')} | "
@@ -89,55 +89,55 @@ def save_elicitation_plan(
     ])
 
     stakeholder_table = (
-        "| Стейкхолдер | Роль | Влияние | Интерес | Что хотим узнать |\n"
+        "| Stakeholder | Role | Influence | Interest | What we want to learn |\n"
         "| :--- | :--- | :---: | :---: | :--- |\n"
         + stakeholder_rows
     )
 
     from datetime import date
-    content = f"""# План выявления требований
+    content = f"""# Requirements Elicitation Plan
 
-**Проект:** {project_name}  
-**Дата подготовки:** {date.today().strftime("%d.%m.%Y")}  
-**Техника:** {technique}  
+**Project:** {project_name}
+**Prepared on:** {date.today().strftime("%d.%m.%Y")}
+**Technique:** {technique}
 
 ---
 
-## Цели выявления
+## Elicitation Goals
 
 {goals}
 
 ---
 
-## Стейкхолдеры
+## Stakeholders
 
 {stakeholder_table}
 
 ---
 
-## Выбранная техника: {technique}
+## Selected Technique: {technique}
 
-**Обоснование:** {technique_rationale}
+**Rationale:** {technique_rationale}
 
 ---
 
-## Вопросы / Повестка
+## Questions / Agenda
 
 {questions_or_agenda}
 
 ---
 
-## Ожидаемые результаты
+## Expected Outcomes
 
 {expected_outcomes}
 """
 
     suffix = save_artifact(content, f"Elicitation_Plan_{project_name.replace(' ', '_')}", project_id=project_name)
-    return f"✅ План выявления сохранён.{suffix}"
+    return f"✅ Elicitation plan saved.{suffix}"
 
 
 # ---------------------------------------------------------------------------
-# 4.1.2 — Создать Google Form (заглушка)
+# 4.1.2 — Create a Google Form (stub)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -147,37 +147,37 @@ def create_google_form(
     questions_json: str,
 ) -> str:
     """
-    BABOK 4.1 — Создаёт Google Form для анкетирования стейкхолдеров.
+    BABOK 4.1 — Creates a Google Form for surveying stakeholders.
 
-    ⚠️  ЗАГЛУШКА: требует настройки Google OAuth и Forms API.
-        Инструкция по настройке в конце ответа.
+    ⚠️  STUB: requires Google OAuth and Forms API setup.
+        Setup instructions appear at the end of the response.
 
     Args:
-        title:          Заголовок формы (название анкеты).
-        description:    Вводный текст для респондентов. Укажи цель опроса и дедлайн.
-        questions_json: JSON-массив вопросов. Формат:
+        title:          Form title (survey name).
+        description:    Intro text for respondents. State the survey's purpose and deadline.
+        questions_json: JSON array of questions. Format:
                         [
                           {
-                            "text": "Текст вопроса",
+                            "text": "Question text",
                             "type": "text" | "scale" | "choice" | "checkbox" | "ranking",
                             "required": true | false,
-                            "options": ["Вариант 1", "Вариант 2"]  // для choice / checkbox / ranking
+                            "options": ["Option 1", "Option 2"]  // for choice / checkbox / ranking
                           }
                         ]
 
     Returns:
-        Ссылку на созданную форму (после настройки API) или инструкцию по настройке.
+        A link to the created form (once the API is configured) or setup instructions.
     """
-    logger.info(f"4.1 create_google_form вызван: title='{title}'")
+    logger.info(f"4.1 create_google_form called: title='{title}'")
 
-    # Валидируем вопросы
+    # Validate questions
     try:
         questions = json.loads(questions_json)
     except json.JSONDecodeError as e:
-        return f"❌ Ошибка разбора questions_json: {e}"
+        return f"❌ Error parsing questions_json: {e}"
 
-    # Формируем превью анкеты
-    preview_lines = [f"## Превью анкеты: {title}\n", f"_{description}_\n"]
+    # Build the survey preview
+    preview_lines = [f"## Survey preview: {title}\n", f"_{description}_\n"]
     for i, q in enumerate(questions, 1):
         q_type = q.get("type", "text")
         required = "\\*" if q.get("required") else ""
@@ -191,41 +191,41 @@ def create_google_form(
     setup_instructions = """
 ---
 
-## ⚙️ Настройка Google Forms API
+## ⚙️ Google Forms API setup
 
-Для активации инструмента выполни следующие шаги:
+To activate this tool, follow these steps:
 
 ### 1. Google Cloud Project
-1. Перейди на https://console.cloud.google.com
-2. Создай новый проект (или выбери существующий)
-3. Включи **Google Forms API**: APIs & Services → Enable APIs → "Google Forms API"
-4. Включи **Google Drive API** (нужен для получения ответов)
+1. Go to https://console.cloud.google.com
+2. Create a new project (or select an existing one)
+3. Enable the **Google Forms API**: APIs & Services → Enable APIs → "Google Forms API"
+4. Enable the **Google Drive API** (needed to retrieve responses)
 
 ### 2. OAuth 2.0 credentials
 1. APIs & Services → Credentials → Create Credentials → OAuth Client ID
-2. Тип: Desktop App
-3. Скачай `credentials.json`
+2. Type: Desktop App
+3. Download `credentials.json`
 
-### 3. Установка зависимостей
+### 3. Install dependencies
 ```bash
 pip install google-auth google-auth-oauthlib google-auth-httplib2 googleapiclient
 ```
 
-### 4. Активация в коде
-Замени в файле `skills/elicitation_mcp.py`:
+### 4. Activate in code
+In `skills/elicitation_mcp.py`, replace:
 ```python
-# GOOGLE_CREDENTIALS_PATH = "credentials.json"  # раскомментируй
-# GOOGLE_TOKEN_PATH = "token.json"               # раскомментируй
+# GOOGLE_CREDENTIALS_PATH = "credentials.json"  # uncomment
+# GOOGLE_TOKEN_PATH = "token.json"               # uncomment
 ```
 
-После настройки инструмент создаст форму и вернёт ссылку для рассылки.
+Once configured, this tool will create the form and return a link to share.
 """
 
     return preview + setup_instructions
 
 
 # ---------------------------------------------------------------------------
-# 4.1.3 — Получить ответы из Google Form (заглушка)
+# 4.1.3 — Retrieve responses from a Google Form (stub)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -234,42 +234,42 @@ def get_form_responses(
     export_format: Literal["summary", "full", "csv"] = "summary",
 ) -> str:
     """
-    BABOK 4.1 — Получает и структурирует ответы из Google Form.
+    BABOK 4.1 — Retrieves and structures responses from a Google Form.
 
-    ⚠️  ЗАГЛУШКА: требует настроенного Google OAuth (см. create_google_form).
+    ⚠️  STUB: requires Google OAuth to be configured (see create_google_form).
 
     Args:
-        form_id:        ID формы из URL Google Forms.
-                        Пример: из https://forms.gle/ABC123 → form_id = "ABC123"
-                        Полный ID из URL редактора: /forms/d/{FORM_ID}/edit
-        export_format:  Формат вывода:
-                        - "summary"  — сводка по каждому вопросу с агрегацией
-                        - "full"     — все ответы построчно
-                        - "csv"      — данные для сохранения в таблицу
+        form_id:        Form ID from the Google Forms URL.
+                        Example: from https://forms.gle/ABC123 → form_id = "ABC123"
+                        Full ID from the editor URL: /forms/d/{FORM_ID}/edit
+        export_format:  Output format:
+                        - "summary"  — per-question summary with aggregation
+                        - "full"     — all responses, row by row
+                        - "csv"      — data for saving to a spreadsheet
 
     Returns:
-        Структурированные ответы из формы или инструкцию по настройке API.
+        Structured responses from the form, or setup instructions for the API.
     """
-    logger.info(f"4.1 get_form_responses вызван: form_id='{form_id}', format='{export_format}'")
+    logger.info(f"4.1 get_form_responses called: form_id='{form_id}', format='{export_format}'")
 
     mock_note = f"""
-## ⚠️ Заглушка: get_form_responses
+## ⚠️ Stub: get_form_responses
 
-Инструмент вызван для формы `{form_id}` (формат: {export_format}).
+Tool called for form `{form_id}` (format: {export_format}).
 
-После настройки Google API этот инструмент:
-- Получит все ответы через Google Forms API
-- Для `summary`: агрегирует ответы по каждому вопросу, выделит паттерны
-- Для `full`: вернёт таблицу всех ответов с датами
-- Для `csv`: сохранит данные в файл для анализа в Excel / Google Sheets
+Once the Google API is configured, this tool will:
+- Retrieve all responses via the Google Forms API
+- For `summary`: aggregate responses per question and surface patterns
+- For `full`: return a table of all responses with dates
+- For `csv`: save the data to a file for analysis in Excel / Google Sheets
 
-### Что делать прямо сейчас
+### What to do right now
 
-Если ответы уже собраны вручную — передай их как текст или CSV напрямую в чат,
-и Claude структурирует и проанализирует их без API.
+If responses have already been collected manually — paste them as text or CSV
+directly into the chat, and Claude will structure and analyze them without the API.
 
-### Настройка API
-См. инструкцию в инструменте `create_google_form`.
+### API setup
+See the instructions in the `create_google_form` tool.
 """
     return mock_note
 

@@ -99,7 +99,7 @@ def _make_info_mgmt(project_id: str = PROJECT, **kwargs):
 def _make_performance(project_id: str = PROJECT, **kwargs):
     params = dict(
         project_id=project_id,
-        current_issues_json='["нет шаблонов", "слабая трассировка"]',
+        current_issues_json='["no templates", "weak traceability"]',
     )
     params.update(kwargs)
     return evaluate_ba_performance(**params)
@@ -211,7 +211,7 @@ class TestSuggestBaApproach(BaseMCPTest):
 
     def test_output_contains_techniques(self):
         result = _make_approach()
-        self.assertIn("Техники BABOK", result)
+        self.assertIn("BABOK techniques", result)
 
     def test_output_contains_next_step(self):
         result = _make_approach()
@@ -335,7 +335,7 @@ class TestPlanBaGovernance(BaseMCPTest):
     def test_low_criticality(self):
         _make_governance(project_criticality="Low")
         plan = _load()
-        self.assertIn("Минимальный", plan["governance"]["change_control"])
+        self.assertIn("Minimal", plan["governance"]["change_control"])
 
     def test_decision_makers_saved(self):
         _make_governance(decision_makers_json='["Sponsor", "PO", "Lead BA"]')
@@ -403,7 +403,7 @@ class TestPlanInformationManagement(BaseMCPTest):
         _make_info_mgmt(traceability_level="High")
         plan = _load()
         desc = plan["information_management"]["traceability_description"]
-        self.assertIn("Полная", desc)
+        self.assertIn("Full", desc)
 
     def test_artifact_types_saved(self):
         _make_info_mgmt(artifact_types_json='["User Story", "BRD"]')
@@ -461,29 +461,29 @@ class TestEvaluateBaPerformance(BaseMCPTest):
         self.assertGreater(len(recs), 0)
 
     def test_known_issue_matched(self):
-        _make_performance(current_issues_json='["нет шаблонов"]')
+        _make_performance(current_issues_json='["no templates"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("шаблон" in r.lower() for r in recs))
+        self.assertTrue(any("template" in r.lower() for r in recs))
 
     def test_traceability_issue_matched(self):
-        _make_performance(current_issues_json='["слабая трассировка"]')
+        _make_performance(current_issues_json='["weak traceability"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("трассировк" in r.lower() for r in recs))
+        self.assertTrue(any("traceability" in r.lower() for r in recs))
 
     def test_unknown_issue_flagged(self):
-        _make_performance(current_issues_json='["загадочная проблема XYZ"]')
+        _make_performance(current_issues_json='["mysterious problem XYZ"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("ручного анализа" in r for r in recs))
+        self.assertTrue(any("manual analysis" in r.lower() for r in recs))
 
     def test_empty_issues(self):
         _make_performance(current_issues_json="[]")
         plan = _load()
         recs = plan["performance"]["recommendations"]
         self.assertEqual(len(recs), 1)
-        self.assertIn("ретроспективу", recs[0]["recommendation"])
+        self.assertIn("retrospective", recs[0]["recommendation"].lower())
 
     def test_metrics_saved(self):
         metrics = [{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]
@@ -506,7 +506,7 @@ class TestEvaluateBaPerformance(BaseMCPTest):
         self.assertIn("2", result)
 
     def test_multiple_known_issues(self):
-        issues = ["нет шаблонов", "слабая трассировка", "scope creep"]
+        issues = ["no templates", "weak traceability", "scope creep"]
         _make_performance(current_issues_json=json.dumps(issues))
         plan = _load()
         self.assertEqual(len(plan["performance"]["current_issues"]), 3)
@@ -562,7 +562,7 @@ class TestSaveBaPlan(BaseMCPTest):
             mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("3.1", captured["content"])
-        self.assertIn("Подход", captured["content"])
+        self.assertIn("Approach", captured["content"])
 
     def test_markdown_contains_stakeholders(self):
         _setup_full_pipeline()

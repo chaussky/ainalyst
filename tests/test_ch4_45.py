@@ -89,7 +89,7 @@ class TestLogDecision(BaseMCPTest):
             "alternatives_json": ALTERNATIVES_SOAP_VS_REST,
             "decision_maker": "Архитектор Сергей Краснов",
             "participants_json": PARTICIPANTS_TECH,
-            "decision_type": "Архитектурное",
+            "decision_type": "Architectural",
             "affected_artifacts_json": json.dumps([
                 {"artifact": "FR-001", "impact": "Обновить формулировку — добавить REST API"},
                 {"artifact": "NFR-002", "impact": "Добавить требования к безопасности API"},
@@ -105,9 +105,9 @@ class TestLogDecision(BaseMCPTest):
     # --- happy path по всем типам решений ---
 
     def test_type_requirement(self):
-        """Тип решения: Требование."""
+        """Тип решения: Requirement."""
         result = self._call(
-            decision_type="Требование",
+            decision_type="Requirement",
             decision_statement="FR-007 выносится за скоуп МВП",
             rationale="Не критично для запуска",
         )
@@ -115,24 +115,24 @@ class TestLogDecision(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_type_priority(self):
-        """Тип решения: Приоритет."""
+        """Тип решения: Priority."""
         result = self._call(
-            decision_type="Приоритет",
+            decision_type="Priority",
             decision_statement="FR-001 — Must Have, FR-007 — Could Have",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_architectural(self):
-        """Тип решения: Архитектурное."""
-        result = self._call(decision_type="Архитектурное")
+        """Тип решения: Architectural."""
+        result = self._call(decision_type="Architectural")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_process(self):
-        """Тип решения: Процессное."""
+        """Тип решения: Process."""
         result = self._call(
-            decision_type="Процессное",
+            decision_type="Process",
             decision_statement="Утверждать требования на еженедельных встречах",
         )
         self.assertIsInstance(result, str)
@@ -148,8 +148,8 @@ class TestLogDecision(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_type_other(self):
-        """Тип решения: Другое."""
-        result = self._call(decision_type="Другое")
+        """Тип решения: Other."""
+        result = self._call(decision_type="Other")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
@@ -198,7 +198,7 @@ class TestLogDecision(BaseMCPTest):
                 alternatives_json=ALTERNATIVES_SOAP_VS_REST,
                 decision_maker="Архитектор",
                 participants_json=PARTICIPANTS_TECH,
-                decision_type="Архитектурное",
+                decision_type="Architectural",
                 affected_artifacts_json=json.dumps([]),
                 rationale="Лучший выбор",
                 risks="",
@@ -234,7 +234,7 @@ class TestSaveMeetingNotes(BaseMCPTest):
         defaults = {
             "project_name": "crm_upgrade",
             "meeting_date": "2025-03-19",
-            "meeting_type": "Воркшоп",
+            "meeting_type": "Workshop",
             "participants_json": PARTICIPANTS_WORKSHOP,
             "agenda_json": AGENDA_WORKSHOP,
             "discussion_summary": "Разобрали FR-001–FR-010. Согласовали REST API. FR-007 вынесли в v2.0.",
@@ -252,21 +252,21 @@ class TestSaveMeetingNotes(BaseMCPTest):
     # --- happy path по всем типам встреч ---
 
     def test_type_interview(self):
-        """Тип встречи: Интервью."""
-        result = self._call(meeting_type="Интервью")
+        """Тип встречи: Interview."""
+        result = self._call(meeting_type="Interview")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_workshop(self):
-        """Тип встречи: Воркшоп."""
-        result = self._call(meeting_type="Воркшоп")
+        """Тип встречи: Workshop."""
+        result = self._call(meeting_type="Workshop")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_status_meeting(self):
-        """Тип встречи: Статус-митинг."""
+        """Тип встречи: Status Meeting."""
         result = self._call(
-            meeting_type="Статус-митинг",
+            meeting_type="Status Meeting",
             discussion_summary="Обсудили прогресс: 70% требований собрано",
             decisions_json=json.dumps([]),
         )
@@ -274,15 +274,15 @@ class TestSaveMeetingNotes(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_type_facilitation(self):
-        """Тип встречи: Фасилитационная сессия."""
-        result = self._call(meeting_type="Фасилитационная сессия")
+        """Тип встречи: Facilitation Session."""
+        result = self._call(meeting_type="Facilitation Session")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_one_on_one(self):
-        """Тип встречи: Встреча 1-на-1."""
+        """Тип встречи: 1-on-1 Meeting."""
         result = self._call(
-            meeting_type="Встреча 1-на-1",
+            meeting_type="1-on-1 Meeting",
             participants_json=json.dumps([
                 {"name": "Иван Иванов", "position": "Директор"},
                 {"name": "Анна BA", "position": "Аналитик"},
@@ -292,17 +292,17 @@ class TestSaveMeetingNotes(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_type_presentation(self):
-        """Тип встречи: Презентация."""
+        """Тип встречи: Presentation."""
         result = self._call(
-            meeting_type="Презентация",
+            meeting_type="Presentation",
             discussion_summary="Представили требования спонсору. Одобрено.",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_other(self):
-        """Тип встречи: Другое."""
-        result = self._call(meeting_type="Другое")
+        """Тип встречи: Other."""
+        result = self._call(meeting_type="Other")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
@@ -345,7 +345,7 @@ class TestSaveMeetingNotes(BaseMCPTest):
             mod45.save_meeting_notes(
                 project_name="crm_upgrade",
                 meeting_date="2025-03-19",
-                meeting_type="Воркшоп",
+                meeting_type="Workshop",
                 participants_json=PARTICIPANTS_WORKSHOP,
                 agenda_json=AGENDA_WORKSHOP,
                 discussion_summary="Обсуждение требований",
@@ -393,8 +393,8 @@ class TestUpdateEngagementStatus(BaseMCPTest):
             "change_date": "2025-03-19",
             "attitude_before": "Champion",
             "attitude_after": "Neutral",
-            "engagement_level_before": "Активный",
-            "engagement_level_after": "Пассивный",
+            "engagement_level_before": "Active",
+            "engagement_level_after": "Passive",
             "signal_observed": "Пропустил два статус-митинга, не отвечает на письма 5 дней",
             "probable_cause": "Предполагаемая реорганизация в его отделе",
             "ba_action_taken": "Написал в мессенджер напрямую, назначил встречу 1-на-1",
@@ -432,8 +432,8 @@ class TestUpdateEngagementStatus(BaseMCPTest):
         result = self._call(
             attitude_before="Neutral",
             attitude_after="Champion",
-            engagement_level_before="Пассивный",
-            engagement_level_after="Активный",
+            engagement_level_before="Passive",
+            engagement_level_after="Active",
             signal_observed="Начал активно предлагать улучшения, привлёк дополнительных стейкхолдеров",
             ba_action_taken="Вовлёк в детальное обсуждение требований к дашбордам",
         )
@@ -476,29 +476,29 @@ class TestUpdateEngagementStatus(BaseMCPTest):
     # --- engagement level transitions ---
 
     def test_passive_to_active(self):
-        """Пассивный → Активный."""
+        """Passive → Active."""
         result = self._call(
-            engagement_level_before="Пассивный",
-            engagement_level_after="Активный",
+            engagement_level_before="Passive",
+            engagement_level_after="Active",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_absent_to_passive(self):
-        """Отсутствует → Пассивный."""
+        """Absent → Passive."""
         result = self._call(
-            engagement_level_before="Отсутствует",
-            engagement_level_after="Пассивный",
+            engagement_level_before="Absent",
+            engagement_level_after="Passive",
             signal_observed="Впервые появился на встрече",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_active_to_absent(self):
-        """Активный → Отсутствует (тревожный сигнал)."""
+        """Active → Absent (тревожный сигнал)."""
         result = self._call(
-            engagement_level_before="Активный",
-            engagement_level_after="Отсутствует",
+            engagement_level_before="Active",
+            engagement_level_after="Absent",
             escalation_needed=True,
             escalation_to="PM",
         )
@@ -532,8 +532,8 @@ class TestUpdateEngagementStatus(BaseMCPTest):
                 change_date="2025-03-19",
                 attitude_before="Champion",
                 attitude_after="Neutral",
-                engagement_level_before="Активный",
-                engagement_level_after="Пассивный",
+                engagement_level_before="Active",
+                engagement_level_after="Passive",
                 signal_observed="Перестал отвечать",
                 probable_cause="Неизвестно",
                 ba_action_taken="Написал",

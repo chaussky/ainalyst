@@ -1,12 +1,12 @@
 """
 BABOK 4.3 — Confirm Elicitation Results
-MCP-инструменты для подтверждения результатов выявления.
+MCP tools for confirming elicitation results.
 
-Инструменты:
-  - run_consistency_check          — проверить артефакт(ы) 4.2 по 5 критериям качества
-  - save_confirmed_elicitation_result — сохранить финальный подтверждённый артефакт
+Tools:
+  - run_consistency_check          — check artifact(s) from 4.2 against 5 quality criteria
+  - save_confirmed_elicitation_result — save the final confirmed artifact
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -19,7 +19,7 @@ mcp = FastMCP("BABOK_Elicitation_Confirm")
 
 
 # ---------------------------------------------------------------------------
-# 4.3.1 — Проверка качества артефактов выявления по 5 критериям
+# 4.3.1 — Quality check of elicitation artifacts against 5 criteria
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -27,94 +27,94 @@ def run_consistency_check(
     project_name: str,
     source_artifacts_json: str,
     issues_json: str,
-    readiness_status: Literal["Готов к анализу", "Готов условно", "Требует доработки"],
+    readiness_status: Literal["Ready for Analysis", "Conditionally Ready", "Needs Rework"],
     readiness_rationale: str,
     needs_clarification: bool,
     clarification_questions_json: str,
     ba_decision: str,
 ) -> str:
     """
-    BABOK 4.3 — Сохраняет отчёт о проверке качества артефактов выявления.
-    Проверяет на полноту, точность, непротиворечивость, однозначность, тестируемость.
+    BABOK 4.3 — Saves a quality-check report for elicitation artifacts.
+    Checks completeness, correctness, consistency, unambiguity, and testability.
 
     Args:
-        project_name:               Название проекта.
-        source_artifacts_json:      Список проверенных артефактов. Формат:
+        project_name:               Project name.
+        source_artifacts_json:      List of checked artifacts. Format:
                                     [
                                       {
                                         "path": "governance_plans/4_2_..._results.md",
-                                        "stakeholder_role": "Руководитель отдела продаж",
-                                        "session_date": "ДД.ММ.ГГГГ"
+                                        "stakeholder_role": "Head of Sales",
+                                        "session_date": "DD.MM.YYYY"
                                       }
                                     ]
-        issues_json:                Найденные проблемы. Формат:
+        issues_json:                Identified issues. Format:
                                     [
                                       {
                                         "issue_id": "ISS-001",
-                                        "criterion": "Полнота | Точность | Непротиворечивость | Однозначность | Тестируемость",
-                                        "severity": "Критическая | Существенная | Незначительная",
-                                        "description": "Описание проблемы",
-                                        "evidence": "Цитата или ID требования из артефакта",
-                                        "source_artifact": "путь к файлу или роль стейкхолдера",
-                                        "recommendation": "Что сделать для устранения"
+                                        "criterion": "Completeness | Correctness | Consistency | Unambiguity | Testability",
+                                        "severity": "Critical | Significant | Minor",
+                                        "description": "Description of the issue",
+                                        "evidence": "Quote or requirement ID from the artifact",
+                                        "source_artifact": "file path or stakeholder role",
+                                        "recommendation": "What to do to resolve it"
                                       }
                                     ]
-        readiness_status:           Итоговый рейтинг готовности артефакта.
-        readiness_rationale:        Обоснование рейтинга — почему именно этот статус.
-        needs_clarification:        True если нужно уточнение у стейкхолдера.
-        clarification_questions_json: Список точечных вопросов если needs_clarification=True. Формат:
+        readiness_status:           Overall readiness rating of the artifact.
+        readiness_rationale:        Rationale for the rating — why this particular status.
+        needs_clarification:        True if clarification from the stakeholder is needed.
+        clarification_questions_json: List of targeted questions if needs_clarification=True. Format:
                                     [
                                       {
-                                        "stakeholder_role": "Кому адресован вопрос",
+                                        "stakeholder_role": "Who the question is addressed to",
                                         "issue_id": "ISS-001",
-                                        "question": "Текст вопроса для стейкхолдера",
-                                        "context": "Контекст: на встрече вы говорили о...",
-                                        "options": ["Вариант A", "Вариант B"]
+                                        "question": "Question text for the stakeholder",
+                                        "context": "Context: in the meeting you mentioned...",
+                                        "options": ["Option A", "Option B"]
                                       }
                                     ]
-        ba_decision:                Решение BA: что делать дальше (текстовое описание).
+        ba_decision:                BA's decision: what to do next (free text).
 
     Returns:
-        Путь к сохранённому отчёту о проверке.
+        Path to the saved quality-check report.
     """
-    logger.info(f"4.3 Проверка качества: проект='{project_name}'")
+    logger.info(f"4.3 Quality check: project='{project_name}'")
 
     try:
         artifacts = json.loads(source_artifacts_json)
         issues = json.loads(issues_json)
         questions = json.loads(clarification_questions_json) if clarification_questions_json else []
     except json.JSONDecodeError as e:
-        return f"❌ Ошибка разбора JSON: {e}"
+        return f"❌ Error parsing JSON: {e}"
 
     today = date.today().strftime("%d.%m.%Y")
 
-    # Статистика проблем
-    critical = [i for i in issues if i.get("severity") == "Критическая"]
-    significant = [i for i in issues if i.get("severity") == "Существенная"]
-    minor = [i for i in issues if i.get("severity") == "Незначительная"]
+    # Issue statistics
+    critical = [i for i in issues if i.get("severity") == "Critical"]
+    significant = [i for i in issues if i.get("severity") == "Significant"]
+    minor = [i for i in issues if i.get("severity") == "Minor"]
 
     by_criterion = {}
     for issue in issues:
         c = issue.get("criterion", "—")
         by_criterion.setdefault(c, []).append(issue)
 
-    # Иконка статуса
-    status_icon = {"Готов к анализу": "✅", "Готов условно": "⚠️", "Требует доработки": "🔴"}.get(
+    # Status icon
+    status_icon = {"Ready for Analysis": "✅", "Conditionally Ready": "⚠️", "Needs Rework": "🔴"}.get(
         readiness_status, "❓"
     )
 
     # -----------------------------------------------------------------------
-    # Формируем отчёт
+    # Build the report
     # -----------------------------------------------------------------------
     lines = []
-    lines.append("# Отчёт о проверке результатов выявления (BABOK 4.3)\n")
-    lines.append(f"**Проект:** {project_name}  ")
-    lines.append(f"**Дата проверки:** {today}  ")
-    lines.append(f"**Статус готовности:** {status_icon} {readiness_status}\n")
+    lines.append("# Elicitation Results Quality-Check Report (BABOK 4.3)\n")
+    lines.append(f"**Project:** {project_name}  ")
+    lines.append(f"**Check date:** {today}  ")
+    lines.append(f"**Readiness status:** {status_icon} {readiness_status}\n")
     lines.append("---\n")
 
-    # Проверенные артефакты
-    lines.append("## Проверенные артефакты\n")
+    # Checked artifacts
+    lines.append("## Checked Artifacts\n")
     for a in artifacts:
         lines.append(
             f"- `{a.get('path', '—')}` "
@@ -122,29 +122,29 @@ def run_consistency_check(
         )
     lines.append("")
 
-    # Итоговый рейтинг
+    # Overall rating
     lines.append("---\n")
-    lines.append(f"## {status_icon} Рейтинг готовности: {readiness_status}\n")
+    lines.append(f"## {status_icon} Readiness Rating: {readiness_status}\n")
     lines.append(f"{readiness_rationale}\n")
 
-    # Сводка проблем
+    # Issue summary
     lines.append("---\n")
-    lines.append("## Сводка проблем\n")
-    lines.append(f"| Серьёзность | Количество |")
+    lines.append("## Issue Summary\n")
+    lines.append(f"| Severity | Count |")
     lines.append(f"|---|---|")
-    lines.append(f"| 🔴 Критические | {len(critical)} |")
-    lines.append(f"| 🟡 Существенные | {len(significant)} |")
-    lines.append(f"| 🟢 Незначительные | {len(minor)} |")
-    lines.append(f"| **Итого** | **{len(issues)}** |\n")
+    lines.append(f"| 🔴 Critical | {len(critical)} |")
+    lines.append(f"| 🟡 Significant | {len(significant)} |")
+    lines.append(f"| 🟢 Minor | {len(minor)} |")
+    lines.append(f"| **Total** | **{len(issues)}** |\n")
 
     if not issues:
-        lines.append("_Проблем не обнаружено. Артефакт соответствует всем критериям качества._\n")
+        lines.append("_No issues found. The artifact meets all quality criteria._\n")
     else:
-        # Проблемы по критериям
+        # Issues by criterion
         lines.append("---\n")
-        lines.append("## Проблемы по критериям\n")
+        lines.append("## Issues by Criterion\n")
 
-        criterion_order = ["Полнота", "Точность", "Непротиворечивость", "Однозначность", "Тестируемость"]
+        criterion_order = ["Completeness", "Correctness", "Consistency", "Unambiguity", "Testability"]
         for criterion in criterion_order:
             criterion_issues = by_criterion.get(criterion, [])
             if not criterion_issues:
@@ -152,23 +152,23 @@ def run_consistency_check(
             lines.append(f"### {criterion}\n")
             for iss in criterion_issues:
                 sev = iss.get("severity", "—")
-                sev_icon = {"Критическая": "🔴", "Существенная": "🟡", "Незначительная": "🟢"}.get(sev, "❓")
+                sev_icon = {"Critical": "🔴", "Significant": "🟡", "Minor": "🟢"}.get(sev, "❓")
                 lines.append(f"**{iss.get('issue_id', '—')}** {sev_icon} {sev}  ")
-                lines.append(f"- **Проблема:** {iss.get('description', '—')}  ")
+                lines.append(f"- **Issue:** {iss.get('description', '—')}  ")
                 if iss.get("evidence"):
-                    lines.append(f"- **Пример:** {iss['evidence']}  ")
+                    lines.append(f"- **Example:** {iss['evidence']}  ")
                 if iss.get("source_artifact"):
-                    lines.append(f"- **Источник:** `{iss['source_artifact']}`  ")
-                lines.append(f"- **Рекомендация:** {iss.get('recommendation', '—')}\n")
+                    lines.append(f"- **Source:** `{iss['source_artifact']}`  ")
+                lines.append(f"- **Recommendation:** {iss.get('recommendation', '—')}\n")
 
-    # Вопросы для уточнения
+    # Clarification questions
     if needs_clarification and questions:
         lines.append("---\n")
-        lines.append("## Вопросы для уточнения у стейкхолдеров\n")
+        lines.append("## Questions for Stakeholder Clarification\n")
 
         by_stakeholder = {}
         for q in questions:
-            role = q.get("stakeholder_role", "Не указан")
+            role = q.get("stakeholder_role", "Not specified")
             by_stakeholder.setdefault(role, []).append(q)
 
         for role, qs in by_stakeholder.items():
@@ -176,25 +176,25 @@ def run_consistency_check(
             for q in qs:
                 lines.append(f"**[{q.get('issue_id', '—')}]** {q.get('question', '—')}  ")
                 if q.get("context"):
-                    lines.append(f"*Контекст: {q['context']}*  ")
+                    lines.append(f"*Context: {q['context']}*  ")
                 options = q.get("options", [])
                 if options:
                     for i, opt in enumerate(options, 1):
-                        lines.append(f"  - Вариант {i}: {opt}")
+                        lines.append(f"  - Option {i}: {opt}")
                 lines.append("")
     elif needs_clarification:
         lines.append("---\n")
-        lines.append("## Уточнение необходимо\n")
-        lines.append("_Список вопросов сформулирован в чате. Уточните у стейкхолдеров перед продолжением._\n")
+        lines.append("## Clarification Needed\n")
+        lines.append("_The list of questions has been drafted in the chat. Clarify with the stakeholders before continuing._\n")
 
-    # Решение BA
+    # BA decision
     lines.append("---\n")
-    lines.append("## Решение BA\n")
+    lines.append("## BA Decision\n")
     lines.append(f"{ba_decision}\n")
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.3 — Consistency Check Report. "
-        f"Проект: {project_name}. Дата: {today}.*\n"
+        f"Project: {project_name}. Date: {today}.*\n"
     )
 
     content = "\n".join(lines)
@@ -202,12 +202,12 @@ def run_consistency_check(
     meta = (
         f"<!--\n"
         f"  BABOK 4.3 — Consistency Check\n"
-        f"  Проект: {project_name}\n"
-        f"  Артефактов проверено: {len(artifacts)}\n"
-        f"  Проблем: {len(issues)} (крит: {len(critical)}, сущ: {len(significant)}, незнач: {len(minor)})\n"
-        f"  Статус: {readiness_status}\n"
-        f"  Требует уточнения: {needs_clarification}\n"
-        f"  Создан: {today}\n"
+        f"  Project: {project_name}\n"
+        f"  Artifacts checked: {len(artifacts)}\n"
+        f"  Issues: {len(issues)} (critical: {len(critical)}, significant: {len(significant)}, minor: {len(minor)})\n"
+        f"  Status: {readiness_status}\n"
+        f"  Needs clarification: {needs_clarification}\n"
+        f"  Created: {today}\n"
         f"-->\n\n"
     )
 
@@ -215,7 +215,7 @@ def run_consistency_check(
 
 
 # ---------------------------------------------------------------------------
-# 4.3.2 — Сохранить финальный подтверждённый артефакт
+# 4.3.2 — Save the final confirmed artifact
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -226,18 +226,18 @@ def save_confirmed_elicitation_result(
     confirmed_requirements_json: str,
     resolved_issues_json: str,
     open_issues_json: str,
-    final_readiness: Literal["Готов к анализу", "Готов условно"],
+    final_readiness: Literal["Ready for Analysis", "Conditionally Ready"],
     next_tasks: str,
 ) -> str:
     """
-    BABOK 4.3 — Сохраняет финальный подтверждённый артефакт выявления.
-    Является входом для задач 6.1 (Анализ текущего состояния) и 6.3 (Оценка рисков).
+    BABOK 4.3 — Saves the final confirmed elicitation artifact.
+    Serves as input for tasks 6.1 (Current State Analysis) and 6.3 (Risk Assessment).
 
     Args:
-        project_name:               Название проекта.
-        stakeholder_role:           Роль стейкхолдера (источник требований).
-        consistency_check_path:     Путь к отчёту run_consistency_check.
-        confirmed_requirements_json: Подтверждённые требования — финальные формулировки. Формат:
+        project_name:               Project name.
+        stakeholder_role:           Stakeholder role (source of the requirements).
+        consistency_check_path:     Path to the run_consistency_check report.
+        confirmed_requirements_json: Confirmed requirements — final wording. Format:
                                     {
                                       "functional": [
                                         {"id": "FR-001", "statement": "...", "acceptance_criteria": "..."},
@@ -248,144 +248,144 @@ def save_confirmed_elicitation_result(
                                       "constraints": ["..."],
                                       "business_rules": ["..."]
                                     }
-        resolved_issues_json:       Закрытые проблемы из consistency check. Формат:
+        resolved_issues_json:       Issues closed from the consistency check. Format:
                                     [
                                       {
                                         "issue_id": "ISS-001",
-                                        "resolution": "Как была закрыта",
-                                        "updated_requirement_id": "FR-001 или null"
+                                        "resolution": "How it was closed",
+                                        "updated_requirement_id": "FR-001 or null"
                                       }
                                     ]
-        open_issues_json:           Оставшиеся открытые проблемы (known issues). Формат:
+        open_issues_json:           Remaining open issues (known issues). Format:
                                     [
                                       {
                                         "issue_id": "ISS-002",
-                                        "description": "Краткое описание",
-                                        "risk": "Чем рискуем если не закрыть",
-                                        "owner": "Кто должен закрыть"
+                                        "description": "Brief description",
+                                        "risk": "What's at risk if not closed",
+                                        "owner": "Who should close it"
                                       }
                                     ]
-        final_readiness:            Финальный статус. Только Готов к анализу или Готов условно
-                                    (Требует доработки не может быть финальным статусом).
-        next_tasks:                 Конкретные следующие шаги — что делать дальше.
+        final_readiness:            Final status. Either Ready for Analysis or Conditionally Ready
+                                    (Needs Rework cannot be a final status).
+        next_tasks:                 Specific next steps — what to do next.
 
     Returns:
-        Путь к сохранённому подтверждённому артефакту.
+        Path to the saved confirmed artifact.
     """
-    logger.info(f"4.3 Сохранение подтверждённого артефакта: проект='{project_name}'")
+    logger.info(f"4.3 Saving confirmed artifact: project='{project_name}'")
 
     try:
         reqs = json.loads(confirmed_requirements_json)
         resolved = json.loads(resolved_issues_json)
         open_iss = json.loads(open_issues_json)
     except json.JSONDecodeError as e:
-        return f"❌ Ошибка разбора JSON: {e}"
+        return f"❌ Error parsing JSON: {e}"
 
     today = date.today().strftime("%d.%m.%Y")
-    status_icon = {"Готов к анализу": "✅", "Готов условно": "⚠️"}.get(final_readiness, "✅")
+    status_icon = {"Ready for Analysis": "✅", "Conditionally Ready": "⚠️"}.get(final_readiness, "✅")
 
-    # Считаем требования
+    # Count requirements
     functional = reqs.get("functional", [])
     non_functional = reqs.get("non_functional", [])
     constraints = reqs.get("constraints", [])
     business_rules = reqs.get("business_rules", [])
 
     # -----------------------------------------------------------------------
-    # Формируем артефакт
+    # Build the artifact
     # -----------------------------------------------------------------------
     lines = []
-    lines.append("# Подтверждённые результаты выявления (BABOK 4.3)\n")
-    lines.append(f"**Проект:** {project_name}  ")
-    lines.append(f"**Стейкхолдер:** {stakeholder_role}  ")
-    lines.append(f"**Дата подтверждения:** {today}  ")
-    lines.append(f"**Статус:** {status_icon} {final_readiness}  ")
-    lines.append(f"**На основе проверки:** `{consistency_check_path}`\n")
+    lines.append("# Confirmed Elicitation Results (BABOK 4.3)\n")
+    lines.append(f"**Project:** {project_name}  ")
+    lines.append(f"**Stakeholder:** {stakeholder_role}  ")
+    lines.append(f"**Confirmation date:** {today}  ")
+    lines.append(f"**Status:** {status_icon} {final_readiness}  ")
+    lines.append(f"**Based on check:** `{consistency_check_path}`\n")
     lines.append("---\n")
 
-    # Сводка
-    lines.append("## Сводка\n")
-    lines.append(f"| Тип | Количество |")
+    # Summary
+    lines.append("## Summary\n")
+    lines.append(f"| Type | Count |")
     lines.append(f"|---|---|")
-    lines.append(f"| Функциональные требования | {len(functional)} |")
-    lines.append(f"| Нефункциональные требования | {len(non_functional)} |")
-    lines.append(f"| Ограничения | {len(constraints)} |")
-    lines.append(f"| Бизнес-правила | {len(business_rules)} |")
-    lines.append(f"| Закрытых проблем | {len(resolved)} |")
-    lines.append(f"| Открытых проблем (known issues) | {len(open_iss)} |\n")
+    lines.append(f"| Functional requirements | {len(functional)} |")
+    lines.append(f"| Non-functional requirements | {len(non_functional)} |")
+    lines.append(f"| Constraints | {len(constraints)} |")
+    lines.append(f"| Business rules | {len(business_rules)} |")
+    lines.append(f"| Closed issues | {len(resolved)} |")
+    lines.append(f"| Open issues (known issues) | {len(open_iss)} |\n")
 
-    # Функциональные требования
+    # Functional requirements
     if functional:
         lines.append("---\n")
-        lines.append("## Функциональные требования\n")
+        lines.append("## Functional Requirements\n")
         for r in functional:
             lines.append(f"**{r.get('id', '—')}:** {r.get('statement', '—')}  ")
             if r.get("acceptance_criteria"):
-                lines.append(f"*Критерий приёмки: {r['acceptance_criteria']}*\n")
+                lines.append(f"*Acceptance criteria: {r['acceptance_criteria']}*\n")
             else:
                 lines.append("")
 
-    # Нефункциональные требования
+    # Non-functional requirements
     if non_functional:
         lines.append("---\n")
-        lines.append("## Нефункциональные требования\n")
+        lines.append("## Non-Functional Requirements\n")
         for r in non_functional:
             lines.append(f"**{r.get('id', '—')}:** {r.get('statement', '—')}  ")
             if r.get("metric"):
-                lines.append(f"*Метрика: {r['metric']}*\n")
+                lines.append(f"*Metric: {r['metric']}*\n")
             else:
                 lines.append("")
 
-    # Ограничения
+    # Constraints
     if constraints:
         lines.append("---\n")
-        lines.append("## Ограничения\n")
+        lines.append("## Constraints\n")
         for c in constraints:
             lines.append(f"- {c}")
         lines.append("")
 
-    # Бизнес-правила
+    # Business rules
     if business_rules:
         lines.append("---\n")
-        lines.append("## Бизнес-правила\n")
+        lines.append("## Business Rules\n")
         for br in business_rules:
             lines.append(f"- {br}")
         lines.append("")
 
-    # Закрытые проблемы
+    # Closed issues
     if resolved:
         lines.append("---\n")
-        lines.append("## Закрытые проблемы\n")
+        lines.append("## Closed Issues\n")
         for r in resolved:
-            upd = f" → обновлено `{r['updated_requirement_id']}`" if r.get("updated_requirement_id") else ""
+            upd = f" → updated `{r['updated_requirement_id']}`" if r.get("updated_requirement_id") else ""
             lines.append(f"- **{r.get('issue_id', '—')}:** {r.get('resolution', '—')}{upd}")
         lines.append("")
 
-    # Открытые проблемы (known issues)
+    # Open issues (known issues)
     if open_iss:
         lines.append("---\n")
-        lines.append("## ⚠️ Открытые проблемы (known issues)\n")
-        lines.append("_Передаются в следующие задачи как явные риски._\n")
+        lines.append("## ⚠️ Open Issues (Known Issues)\n")
+        lines.append("_Passed to subsequent tasks as explicit risks._\n")
         for iss in open_iss:
             lines.append(f"**{iss.get('issue_id', '—')}:** {iss.get('description', '—')}  ")
             if iss.get("risk"):
-                lines.append(f"- Риск: {iss['risk']}  ")
+                lines.append(f"- Risk: {iss['risk']}  ")
             if iss.get("owner"):
-                lines.append(f"- Владелец: {iss['owner']}\n")
+                lines.append(f"- Owner: {iss['owner']}\n")
             else:
                 lines.append("")
 
-    # Следующие шаги
+    # Next steps
     lines.append("---\n")
-    lines.append("## Следующие шаги\n")
+    lines.append("## Next Steps\n")
     lines.append(f"{next_tasks}\n")
     lines.append("---\n")
-    lines.append("## Передаётся в\n")
-    lines.append("- **6.1** — Анализ текущего состояния  ")
-    lines.append("- **6.3** — Оценка рисков\n")
+    lines.append("## Passed to\n")
+    lines.append("- **6.1** — Current State Analysis  ")
+    lines.append("- **6.3** — Risk Assessment\n")
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.3 — Confirmed Elicitation Result. "
-        f"Проект: {project_name}. Дата: {today}.*\n"
+        f"Project: {project_name}. Date: {today}.*\n"
     )
 
     content = "\n".join(lines)
@@ -393,13 +393,13 @@ def save_confirmed_elicitation_result(
     meta = (
         f"<!--\n"
         f"  BABOK 4.3 — Confirmed Result\n"
-        f"  Проект: {project_name}\n"
-        f"  Стейкхолдер: {stakeholder_role}\n"
-        f"  ФТ: {len(functional)}, НФТ: {len(non_functional)}\n"
-        f"  Ограничения: {len(constraints)}, БП: {len(business_rules)}\n"
-        f"  Закрытых проблем: {len(resolved)}, Открытых: {len(open_iss)}\n"
-        f"  Статус: {final_readiness}\n"
-        f"  Создан: {today}\n"
+        f"  Project: {project_name}\n"
+        f"  Stakeholder: {stakeholder_role}\n"
+        f"  FR: {len(functional)}, NFR: {len(non_functional)}\n"
+        f"  Constraints: {len(constraints)}, BR: {len(business_rules)}\n"
+        f"  Closed issues: {len(resolved)}, Open: {len(open_iss)}\n"
+        f"  Status: {final_readiness}\n"
+        f"  Created: {today}\n"
         f"-->\n\n"
     )
 

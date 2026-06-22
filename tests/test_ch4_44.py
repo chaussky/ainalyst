@@ -78,11 +78,11 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
         defaults = {
             "project_name": "crm_upgrade",
             "source_artifact_path": "governance_plans/reports/4_3_confirmed_crm_upgrade.md",
-            "audience_role": "Бизнес-заказчик",
+            "audience_role": "Business Sponsor",
             "audience_profile_json": AUDIENCE_BUSINESS,
             "adapted_content": "Требования к CRM утверждены. Интеграция с 1С согласована. Запуск 01.06.2025.",
             "key_messages_json": KEY_MESSAGES,
-            "recommended_format": "Формальный документ",
+            "recommended_format": "Formal Document",
             "recommended_channel": "Email",
             "open_questions": "",
             "ba_notes": "",
@@ -95,52 +95,52 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
     # --- happy path по всем аудиториям ---
 
     def test_audience_business(self):
-        """Аудитория: Бизнес-заказчик."""
+        """Аудитория: Business Sponsor."""
         result = self._call(
-            audience_role="Бизнес-заказчик",
+            audience_role="Business Sponsor",
             audience_profile_json=AUDIENCE_BUSINESS,
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_manager(self):
-        """Аудитория: Руководитель."""
+        """Аудитория: Manager."""
         result = self._call(
-            audience_role="Руководитель",
+            audience_role="Manager",
             audience_profile_json=AUDIENCE_BUSINESS,
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_developer(self):
-        """Аудитория: Разработчик."""
+        """Аудитория: Developer."""
         result = self._call(
-            audience_role="Разработчик",
+            audience_role="Developer",
             audience_profile_json=AUDIENCE_DEVELOPER,
             adapted_content="FR-001: REST API /orders/sync, батч каждые 15 минут. Endpoint: POST /api/v1/1c/sync",
-            recommended_format="Неформальный документ",
-            recommended_channel="Confluence / документ",
+            recommended_format="Informal Document",
+            recommended_channel="Confluence / Document",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_architect(self):
-        """Аудитория: Архитектор / Техлид."""
+        """Аудитория: Architect / Tech Lead."""
         result = self._call(
-            audience_role="Архитектор / Техлид",
+            audience_role="Architect / Tech Lead",
             audience_profile_json=AUDIENCE_ARCHITECT,
             adapted_content="Интеграция через REST API. Ограничение: 1С v8.3+. Батч каждые 15 мин.",
-            recommended_format="Формальный документ",
+            recommended_format="Formal Document",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_tester(self):
-        """Аудитория: Тестировщик."""
+        """Аудитория: Tester."""
         result = self._call(
-            audience_role="Тестировщик",
+            audience_role="Tester",
             adapted_content="FR-001 AC: синхронизация без ошибок за 15 мин. NFR-001 AC: P95 < 2с при 100 пользователях.",
-            recommended_format="Формальный документ",
+            recommended_format="Formal Document",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
@@ -148,8 +148,8 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
     # --- happy path по всем форматам ---
 
     def test_format_presentation(self):
-        """Формат: Презентация."""
-        result = self._call(recommended_format="Презентация")
+        """Формат: Presentation."""
+        result = self._call(recommended_format="Presentation")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
@@ -160,14 +160,14 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_format_one_on_one(self):
-        """Формат: Встреча 1-на-1."""
-        result = self._call(recommended_format="Встреча 1-на-1")
+        """Формат: 1-on-1 Meeting."""
+        result = self._call(recommended_format="1-on-1 Meeting")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_format_group_meeting(self):
-        """Формат: Групповая встреча."""
-        result = self._call(recommended_format="Групповая встреча")
+        """Формат: Group Meeting."""
+        result = self._call(recommended_format="Group Meeting")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
@@ -194,7 +194,7 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
             mod44.prepare_communication_package(
                 project_name="crm_upgrade",
                 source_artifact_path="governance_plans/reports/4_3.md",
-                audience_role="Бизнес-заказчик",
+                audience_role="Business Sponsor",
                 audience_profile_json=AUDIENCE_BUSINESS,
                 adapted_content="Резюме требований",
                 key_messages_json=KEY_MESSAGES,
@@ -242,11 +242,11 @@ class TestLogCommunication(BaseMCPTest):
         defaults = {
             "project_name": "crm_upgrade",
             "communication_package_path": COMM_PACKAGE_PATH,
-            "audience_role": "Бизнес-заказчик",
+            "audience_role": "Business Sponsor",
             "communication_date": "2025-03-19",
             "channel_used": "Email",
             "participants_json": self.PARTICIPANTS,
-            "understanding_status": "Понял и согласен",
+            "understanding_status": "Understood and Agreed",
             "feedback_summary": "Одобрил требования, попросил уточнить сроки развёртывания",
             "action_items_json": self.ACTION_ITEMS,
             "needs_followup": False,
@@ -266,51 +266,51 @@ class TestLogCommunication(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_channel_one_on_one(self):
-        """Канал: Встреча 1-на-1."""
-        result = self._call(channel_used="Встреча 1-на-1")
+        """Канал: 1-on-1 Meeting."""
+        result = self._call(channel_used="1-on-1 Meeting")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_group_meeting(self):
-        """Канал: Групповая встреча."""
-        result = self._call(channel_used="Групповая встреча")
+        """Канал: Group Meeting."""
+        result = self._call(channel_used="Group Meeting")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_messenger(self):
-        """Канал: Мессенджер."""
-        result = self._call(channel_used="Мессенджер")
+        """Канал: Messenger."""
+        result = self._call(channel_used="Messenger")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_confluence(self):
-        """Канал: Confluence / документ."""
-        result = self._call(channel_used="Confluence / документ")
+        """Канал: Confluence / Document."""
+        result = self._call(channel_used="Confluence / Document")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_other(self):
-        """Канал: Другое."""
-        result = self._call(channel_used="Другое")
+        """Канал: Other."""
+        result = self._call(channel_used="Other")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     # --- happy path по всем статусам понимания ---
 
     def test_status_understood_agreed(self):
-        result = self._call(understanding_status="Понял и согласен")
+        result = self._call(understanding_status="Understood and Agreed")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_status_partial(self):
-        result = self._call(understanding_status="Понял частично")
+        result = self._call(understanding_status="Partially Understood")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_status_not_understood(self):
-        """Статус: Не понял → нужен followup."""
+        """Статус: Not Understood → нужен followup."""
         result = self._call(
-            understanding_status="Не понял — нужен повтор",
+            understanding_status="Not Understood — Needs Repeat",
             needs_followup=True,
             followup_deadline="2025-03-22",
         )
@@ -319,7 +319,7 @@ class TestLogCommunication(BaseMCPTest):
 
     def test_status_no_response(self):
         result = self._call(
-            understanding_status="Нет ответа",
+            understanding_status="No Response",
             needs_followup=True,
             followup_deadline="2025-03-21",
         )
@@ -327,9 +327,9 @@ class TestLogCommunication(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_disagreed(self):
-        """Статус: Не согласен — эскалация."""
+        """Статус: Disagreed — эскалация."""
         result = self._call(
-            understanding_status="Не согласен",
+            understanding_status="Disagreed",
             feedback_summary="Считает что интеграция с 1С не нужна — достаточно ручного ввода",
             needs_followup=True,
             followup_deadline="2025-03-20",
@@ -399,7 +399,7 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
         {
             "stakeholder_name": "Пётр Сидоров",
             "date": "2025-03-15",
-            "channel": "Confluence / документ",
+            "channel": "Confluence / Document",
             "needs_followup": False,
         },
     ]

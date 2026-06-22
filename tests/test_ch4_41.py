@@ -43,7 +43,7 @@ PLAN_BASE = dict(
     project_name="crm_upgrade",
     goals="Выяснить требования к автоматизации продаж",
     stakeholders_json=STAKEHOLDERS_VALID,
-    technique="Интервью",
+    technique="Interview",
     technique_rationale="Глубокое понимание болей стейкхолдеров",
     questions_or_agenda="1. Текущие процессы?\n2. Что мешает работе?\n3. Ожидания от системы?",
     expected_outcomes="Список функциональных требований и болей",
@@ -67,14 +67,14 @@ class TestSaveElicitationPlan(BaseMCPTest):
 
     def test_technique_interview(self):
         """Техника Интервью — базовый сценарий."""
-        result = self._call(technique="Интервью")
+        result = self._call(technique="Interview")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_workshop(self):
         """Техника Воркшоп."""
         result = self._call(
-            technique="Воркшоп",
+            technique="Workshop",
             technique_rationale="Нужно согласование между отделами",
             questions_or_agenda="09:00 Вступление\n09:30 Анализ AS-IS\n10:30 TO-BE",
         )
@@ -84,7 +84,7 @@ class TestSaveElicitationPlan(BaseMCPTest):
     def test_technique_questionnaire(self):
         """Техника Анкетирование."""
         result = self._call(
-            technique="Анкетирование",
+            technique="Survey",
             technique_rationale="Много участников, нужен масштаб",
         )
         self.assertIsInstance(result, str)
@@ -92,37 +92,37 @@ class TestSaveElicitationPlan(BaseMCPTest):
 
     def test_technique_brainstorm(self):
         """Техника Мозговой штурм."""
-        result = self._call(technique="Мозговой штурм")
+        result = self._call(technique="Brainstorming")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_document_analysis(self):
         """Техника Анализ документов."""
-        result = self._call(technique="Анализ документов")
+        result = self._call(technique="Document Analysis")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_observation(self):
         """Техника Наблюдение."""
-        result = self._call(technique="Наблюдение")
+        result = self._call(technique="Observation")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_prototyping(self):
         """Техника Прототипирование."""
-        result = self._call(technique="Прототипирование")
+        result = self._call(technique="Prototyping")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_focus_group(self):
         """Техника Фокус-группа."""
-        result = self._call(technique="Фокус-группа")
+        result = self._call(technique="Focus Group")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_benchmarking(self):
         """Техника Бенчмаркинг."""
-        result = self._call(technique="Бенчмаркинг")
+        result = self._call(technique="Benchmarking")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 

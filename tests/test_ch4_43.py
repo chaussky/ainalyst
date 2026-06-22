@@ -36,8 +36,8 @@ SOURCE_ARTIFACTS = [
 ]
 
 ISSUE_HIGH = {
-    "criterion": "Однозначность",
-    "severity": "High",
+    "criterion": "Unambiguity",
+    "severity": "Critical",
     "description": "FR-001 можно трактовать как синхронизацию в реальном времени или батч",
     "affected_requirement": "FR-001",
     "recommendation": "Уточнить у ИТ-директора: real-time или батч-обработка?",
@@ -45,8 +45,8 @@ ISSUE_HIGH = {
 }
 
 ISSUE_LOW = {
-    "criterion": "Полнота",
-    "severity": "Low",
+    "criterion": "Completeness",
+    "severity": "Minor",
     "description": "NFR-001 не содержит метрики для нагрузочного тестирования",
     "affected_requirement": "NFR-001",
     "recommendation": "Добавить условие нагрузки (например: 100 одновременных пользователей)",
@@ -84,7 +84,7 @@ class TestRunConsistencyCheck(BaseMCPTest):
             "project_name": "crm_upgrade",
             "source_artifacts_json": json.dumps(SOURCE_ARTIFACTS),
             "issues_json": json.dumps([]),
-            "readiness_status": "Готов к анализу",
+            "readiness_status": "Ready for Analysis",
             "readiness_rationale": "Все требования однозначны и полны",
             "needs_clarification": False,
             "clarification_questions_json": json.dumps([]),
@@ -98,9 +98,9 @@ class TestRunConsistencyCheck(BaseMCPTest):
     # --- happy path по всем статусам готовности ---
 
     def test_status_ready_no_issues(self):
-        """Статус: Готов к анализу, нет проблем."""
+        """Статус: Ready for Analysis, нет проблем."""
         result = self._call(
-            readiness_status="Готов к анализу",
+            readiness_status="Ready for Analysis",
             issues_json=json.dumps([]),
             needs_clarification=False,
         )
@@ -108,9 +108,9 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_conditional_with_low_issues(self):
-        """Статус: Готов условно, Low-severity проблемы."""
+        """Статус: Conditionally Ready, Minor-severity проблемы."""
         result = self._call(
-            readiness_status="Готов условно",
+            readiness_status="Conditionally Ready",
             readiness_rationale="Minor issues — не блокируют анализ",
             issues_json=json.dumps([ISSUE_LOW]),
             needs_clarification=False,
@@ -119,9 +119,9 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_needs_rework_high_issues(self):
-        """Статус: Требует доработки, High-severity проблемы с вопросами."""
+        """Статус: Needs Rework, Critical-severity проблемы с вопросами."""
         result = self._call(
-            readiness_status="Требует доработки",
+            readiness_status="Needs Rework",
             readiness_rationale="Критическая неоднозначность в FR-001",
             issues_json=json.dumps([ISSUE_HIGH]),
             needs_clarification=True,
@@ -140,7 +140,7 @@ class TestRunConsistencyCheck(BaseMCPTest):
     def test_multiple_issues_mixed_severity(self):
         """Несколько проблем разного severity."""
         result = self._call(
-            readiness_status="Готов условно",
+            readiness_status="Conditionally Ready",
             issues_json=json.dumps([ISSUE_HIGH, ISSUE_LOW]),
             needs_clarification=True,
             clarification_questions_json=json.dumps([
@@ -176,7 +176,7 @@ class TestRunConsistencyCheck(BaseMCPTest):
                 project_name="crm_upgrade",
                 source_artifacts_json=json.dumps(SOURCE_ARTIFACTS),
                 issues_json=json.dumps([]),
-                readiness_status="Готов к анализу",
+                readiness_status="Ready for Analysis",
                 readiness_rationale="OK",
                 needs_clarification=False,
                 clarification_questions_json=json.dumps([]),
@@ -226,7 +226,7 @@ class TestSaveConfirmedElicitationResult(BaseMCPTest):
                 {"issue_id": "ISS-001", "resolution": "Уточнено: батч каждые 15 минут"}
             ]),
             "open_issues_json": json.dumps([]),
-            "final_readiness": "Готов к анализу",
+            "final_readiness": "Ready for Analysis",
             "next_tasks": "Передать в 6.1 — анализ текущего состояния",
         }
         kwargs = {**defaults, **overrides}
@@ -243,9 +243,9 @@ class TestSaveConfirmedElicitationResult(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_conditional_readiness(self):
-        """Статус: Готов условно — есть открытые вопросы."""
+        """Статус: Conditionally Ready — есть открытые вопросы."""
         result = self._call(
-            final_readiness="Готов условно",
+            final_readiness="Conditionally Ready",
             open_issues_json=json.dumps([
                 {"issue_id": "ISS-002",
                  "description": "NFR метрики не подтверждены нагрузочным тестом",
@@ -293,7 +293,7 @@ class TestSaveConfirmedElicitationResult(BaseMCPTest):
                 confirmed_requirements_json=json.dumps(CONFIRMED_REQUIREMENTS),
                 resolved_issues_json=json.dumps([]),
                 open_issues_json=json.dumps([]),
-                final_readiness="Готов к анализу",
+                final_readiness="Ready for Analysis",
                 next_tasks="→ 6.1",
             )
             mock_sa.assert_called_once()
