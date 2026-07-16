@@ -1,16 +1,16 @@
 """
-tests/test_ch6_61.py — Тесты для BABOK 6.1 Analyze Current State.
+tests/test_ch6_61.py — Tests for BABOK 6.1 Analyze Current State.
 
-Структура:
-  - Unit (12): утилиты _safe, _next_need_id, _next_rca_id, _load/_save helpers
-  - scope_current_state (12): типы инициатив, глубина, custom elements, session_ids, обновление
-  - capture_current_state_element (12): успех, обновление, черновик, вне скоупа, валидация
-  - run_root_cause_analysis (11): три техники, валидация, накопление RCA
-  - define_business_needs (12): регистрация в 5.1, без репо, дубликат, RCA-ссылки
-  - check_current_state_completeness (9): полный, частичный, без скоупа, вердикты
-  - save_current_state (8): финализация, push_to_business_context, без скоупа
-  - Pipeline (6): полный predictive, light, deep с импортом 4.3, без RCA
-  - Интеграция 7.3 from_current_state_project_id (8): ADR-055 предзаполнение
+Structure:
+  - Unit (12): utilities _safe, _next_need_id, _next_rca_id, _load/_save helpers
+  - scope_current_state (12): initiative types, depth, custom elements, session_ids, update
+  - capture_current_state_element (12): success, update, draft, out of scope, validation
+  - run_root_cause_analysis (11): three techniques, validation, RCA accumulation
+  - define_business_needs (12): registration in 5.1, no repo, duplicate, RCA links
+  - check_current_state_completeness (9): full, partial, no scope, verdicts
+  - save_current_state (8): finalization, push_to_business_context, no scope
+  - Pipeline (6): full predictive, light, deep with 4.3 import, no RCA
+  - Integration 7.3 from_current_state_project_id (8): ADR-055 pre-fill
 """
 
 import json
@@ -49,11 +49,11 @@ PROJECT = "test_project"
 
 
 # ---------------------------------------------------------------------------
-# Утилиты для тестов
+# Helper utilities for the tests
 # ---------------------------------------------------------------------------
 
 def _scope(project=PROJECT, initiative="process_improvement", depth="standard",
-           problems="Процесс медленный", elements="", sessions=""):
+           problems="The process is slow", elements="", sessions=""):
     return scope_current_state(
         project_id=project,
         initiative_type=initiative,
@@ -65,8 +65,8 @@ def _scope(project=PROJECT, initiative="process_improvement", depth="standard",
 
 
 def _capture(project=PROJECT, element="business_needs",
-             description="Описание текущего состояния",
-             pain_points='["Проблема 1"]', metrics='{}', sources='["interview"]', notes=""):
+             description="Current-state description",
+             pain_points='["Problem 1"]', metrics='{}', sources='["interview"]', notes=""):
     return capture_current_state_element(
         project_id=project,
         element=element,
@@ -78,9 +78,9 @@ def _capture(project=PROJECT, element="business_needs",
     )
 
 
-def _rca(project=PROJECT, problem="Время выросло с 2 до 8 часов",
-         technique="fishbone", root_cause="Лишние уровни согласования",
-         factors='["Нет автоматизации"]', evidence='["Данные Q1 2025"]',
+def _rca(project=PROJECT, problem="Time grew from 2 to 8 hours",
+         technique="fishbone", root_cause="Extra approval levels",
+         factors='["No automation"]', evidence='["Q1 2025 data"]',
          affected='["capabilities","policies"]'):
     return run_root_cause_analysis(
         project_id=project,
@@ -93,9 +93,9 @@ def _rca(project=PROJECT, problem="Время выросло с 2 до 8 час�
     )
 
 
-def _needs(project=PROJECT, title="Снизить время обработки",
-           description="Время выросло с 2 до 8 часов, потери 18% клиентов",
-           need_type="problem", priority="High", source="Директор по операциям",
+def _needs(project=PROJECT, title="Reduce processing time",
+           description="Time grew from 2 to 8 hours, 18% customer loss",
+           need_type="problem", priority="High", source="Operations Director",
            root_cause_ids="[]", register=True):
     return define_business_needs(
         project_id=project,
@@ -110,18 +110,18 @@ def _needs(project=PROJECT, title="Снизить время обработки"
 
 
 def _save_needs_json(project=PROJECT, needs_list=None):
-    """Сохраняет business_needs.json напрямую для тестов интеграции."""
+    """Saves business_needs.json directly for integration tests."""
     if needs_list is None:
         needs_list = [
             {
                 "id": "BN-001",
-                "need_title": "Ускорить обработку",
-                "description": "Время выросло с 2 до 8 часов",
+                "need_title": "Speed up processing",
+                "description": "Time grew from 2 to 8 hours",
                 "need_type": "problem",
                 "priority": "High",
-                "source": "Иванов",
-                "cost_of_inaction": "Потеря 18% клиентов",
-                "expected_benefits": "Сокращение времени до 2 часов",
+                "source": "Ivanov",
+                "cost_of_inaction": "18% customer loss",
+                "expected_benefits": "Reduce time to 2 hours",
                 "root_cause_ids": ["RCA-001"],
                 "created": str(date.today()),
             }
@@ -140,12 +140,12 @@ def _save_needs_json(project=PROJECT, needs_list=None):
 
 
 def _save_scope_json(project=PROJECT):
-    """Сохраняет scope JSON напрямую для тестов интеграции."""
+    """Saves the scope JSON directly for integration tests."""
     data = {
         "project_id": project,
         "initiative_type": "process_improvement",
         "analysis_depth": "standard",
-        "known_problems": "Процесс медленный",
+        "known_problems": "The process is slow",
         "elements_in_scope": ["business_needs", "capabilities", "technology", "policies"],
         "session_ids_imported": [],
         "created": str(date.today()),
@@ -159,7 +159,7 @@ def _save_scope_json(project=PROJECT):
 
 
 # ---------------------------------------------------------------------------
-# Unit — утилиты
+# Unit — utilities
 # ---------------------------------------------------------------------------
 
 class TestUtils(BaseMCPTest):
@@ -257,7 +257,7 @@ class TestScopeCurrentState(BaseMCPTest):
     def test_session_ids_creates_drafts(self):
         _scope(sessions='["session_001"]')
         state = _load_state(PROJECT)
-        # Хотя бы один элемент должен быть черновиком
+        # At least one element should be a draft
         has_draft = any(
             v.get("draft") for v in state.get("elements", {}).values()
         )
@@ -271,13 +271,13 @@ class TestScopeCurrentState(BaseMCPTest):
     def test_market_opportunity_deep_by_default(self):
         _scope(initiative="market_opportunity", depth="standard")
         scope = _load_scope(PROJECT)
-        # market_opportunity всегда все 8 элементов
+        # market_opportunity always uses all 8 elements
         self.assertEqual(len(scope["elements_in_scope"]), 8)
 
     def test_known_problems_stored(self):
-        _scope(problems="Клиенты жалуются на долгое ожидание")
+        _scope(problems="Customers complain about long waits")
         scope = _load_scope(PROJECT)
-        self.assertIn("жалуются", scope["known_problems"])
+        self.assertIn("complain", scope["known_problems"])
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +288,7 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
 
     def setUp(self):
         super().setUp()
-        _scope()  # создаём скоуп перед каждым тестом
+        _scope()  # create the scope before each test
 
     def test_basic_success(self):
         result = _capture()
@@ -296,10 +296,10 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
         self.assertIn("business_needs", result)
 
     def test_element_saved_to_state(self):
-        _capture(element="capabilities", description="Низкая производительность")
+        _capture(element="capabilities", description="Low performance")
         state = _load_state(PROJECT)
         self.assertIn("capabilities", state["elements"])
-        self.assertEqual(state["elements"]["capabilities"]["description"], "Низкая производительность")
+        self.assertEqual(state["elements"]["capabilities"]["description"], "Low performance")
 
     def test_draft_false_after_capture(self):
         _capture()
@@ -307,7 +307,7 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
         self.assertFalse(state["elements"]["business_needs"].get("draft", True))
 
     def test_pain_points_stored(self):
-        _capture(pain_points='["Проблема A","Проблема B"]')
+        _capture(pain_points='["Problem A","Problem B"]')
         state = _load_state(PROJECT)
         self.assertEqual(len(state["elements"]["business_needs"]["pain_points"]), 2)
 
@@ -317,19 +317,19 @@ class TestCaptureCurrentStateElement(BaseMCPTest):
         self.assertIn("time", state["elements"]["business_needs"]["metrics"])
 
     def test_update_replaces_element(self):
-        _capture(description="Первое описание")
-        _capture(description="Обновлённое описание")
+        _capture(description="First description")
+        _capture(description="Updated description")
         state = _load_state(PROJECT)
-        self.assertIn("Обновлённое", state["elements"]["business_needs"]["description"])
+        self.assertIn("Updated", state["elements"]["business_needs"]["description"])
 
     def test_update_marks_updated_in_result(self):
-        _capture(description="Первое")
-        result = _capture(description="Второе")
+        _capture(description="First")
+        result = _capture(description="Second")
         self.assertIn("UPDATED", result)
 
     def test_out_of_scope_warning(self):
-        # external не входит в standard process_improvement scope
-        result = _capture(element="external", description="Рыночные условия")
+        # external is not in the standard process_improvement scope
+        result = _capture(element="external", description="Market conditions")
         self.assertIn("⚠️", result)
         self.assertIn("scope", result)
 
@@ -386,7 +386,7 @@ class TestRunRootCauseAnalysis(BaseMCPTest):
         self.assertIn("RCA-002", ids)
 
     def test_normalized_format_stored(self):
-        _rca(technique="fishbone", root_cause="Корневая причина")
+        _rca(technique="fishbone", root_cause="Root cause")
         state = _load_state(PROJECT)
         rca = state["root_causes"][0]
         self.assertIn("technique_used", rca)
@@ -434,8 +434,8 @@ class TestDefineBusinessNeeds(BaseMCPTest):
         self.assertEqual(needs_data["needs"][0]["id"], "BN-001")
 
     def test_id_increments(self):
-        _needs(title="Первая потребность")
-        _needs(title="Вторая потребность")
+        _needs(title="First need")
+        _needs(title="Second need")
         needs_data = _load_needs(PROJECT)
         ids = [n["id"] for n in needs_data["needs"]]
         self.assertIn("BN-001", ids)
@@ -446,7 +446,7 @@ class TestDefineBusinessNeeds(BaseMCPTest):
         repo = make_test_repo(PROJECT)
         save_test_repo(repo, governance_dir="governance_plans/data")
         _needs(register=True)
-        # Проверяем что BN-001 появился в репозитории
+        # Check that BN-001 appeared in the repository
         with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
             repo = json.load(f)
         ids = [r["id"] for r in repo["requirements"]]
@@ -522,14 +522,14 @@ class TestCheckCompleteness(BaseMCPTest):
 
     def test_all_filled_is_ready(self):
         _scope(elements='["business_needs"]')
-        _capture(element="business_needs", description="Описание")
+        _capture(element="business_needs", description="Description")
         _rca()
         _needs()
         result = check_current_state_completeness(PROJECT)
         self.assertIn("✅", result)
 
     def test_missing_elements_shown(self):
-        _scope()  # 4 элемента в scope
+        _scope()  # 4 elements in scope
         result = check_current_state_completeness(PROJECT)
         self.assertIn("not filled in", result)
 
@@ -560,7 +560,7 @@ class TestCheckCompleteness(BaseMCPTest):
         _scope(elements='["business_needs"]')
         _capture()
         _rca()
-        _needs(root_cause_ids="[]")  # без RCA ссылки
+        _needs(root_cause_ids="[]")  # without an RCA link
         result = check_current_state_completeness(PROJECT)
         self.assertIn("no RCA", result)
 
@@ -574,111 +574,111 @@ class TestSaveCurrentState(BaseMCPTest):
     def setUp(self):
         super().setUp()
         _scope()
-        _capture(element="business_needs", description="Текущие потребности")
+        _capture(element="business_needs", description="Current needs")
 
     def test_basic_success(self):
-        result = save_current_state(PROJECT, "Тестовый Проект")
+        result = save_current_state(PROJECT, "Test Project")
         self.assertIn("✅", result)
         self.assertIn(PROJECT, result)
 
     def test_report_file_created(self):
-        # save_artifact создаёт reports/ автоматически через _ensure_dirs()
-        result = save_current_state(PROJECT, "Тестовый Проект")
+        # save_artifact creates reports/ automatically via _ensure_dirs()
+        result = save_current_state(PROJECT, "Test Project")
         self.assertIn("✅", result)
-        # Проверяем что отчёт упоминается в выводе
+        # Check that the report is mentioned in the output
         self.assertIn("current_state", result)
 
     def test_without_scope_error(self):
-        # Создаём проект без скоупа
-        result = save_current_state("noscopeproject", "Без скоупа")
+        # Create a project without a scope
+        result = save_current_state("noscopeproject", "No scope")
         self.assertIn("⚠️", result)
         self.assertIn("scope_current_state", result)
 
     def test_push_to_business_context_info(self):
         _needs()
-        result = save_current_state(PROJECT, "Проект", push_to_business_context=True)
+        result = save_current_state(PROJECT, "Project", push_to_business_context=True)
         self.assertIn("7.3", result)
         self.assertIn("set_business_context", result)
 
     def test_draft_warning_in_report(self):
-        # Добавляем черновик через session_ids
+        # Add a draft via session_ids
         _scope(sessions='["session_001"]')
-        result = save_current_state(PROJECT, "Проект")
+        result = save_current_state(PROJECT, "Project")
         self.assertIn("draft", result.lower())
 
     def test_statistics_shown(self):
         _rca()
         _needs()
-        result = save_current_state(PROJECT, "Проект")
+        result = save_current_state(PROJECT, "Project")
         self.assertIn("RCA", result)
         self.assertIn("business need", result.lower())
 
     def test_analyst_notes_included(self):
-        result = save_current_state(PROJECT, "Проект", analyst_notes="Важное замечание аналитика")
-        # Заметки попадают в markdown отчёт, не обязательно в summary
-        # Проверяем что функция не вернула ошибку
+        result = save_current_state(PROJECT, "Project", analyst_notes="An important analyst note")
+        # The notes go into the markdown report, not necessarily the summary
+        # Check that the function didn't return an error
         self.assertIn("✅", result)
 
     def test_next_steps_shown(self):
-        result = save_current_state(PROJECT, "Проект")
+        result = save_current_state(PROJECT, "Project")
         self.assertIn("6.2", result)
         self.assertIn("7.3", result)
 
 
 # ---------------------------------------------------------------------------
-# Pipeline — сквозные тесты
+# Pipeline — end-to-end tests
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_standard_pipeline(self):
-        """Полный pipeline: scope → capture × 2 → RCA → needs → check → save."""
-        # Скоуп
+        """Full pipeline: scope → capture × 2 → RCA → needs → check → save."""
+        # Scope
         r1 = _scope(initiative="process_improvement", depth="standard")
         self.assertIn("✅", r1)
 
-        # Захват элементов
-        r2 = _capture(element="business_needs", description="Высокое время обработки",
-                      pain_points='["Клиенты ждут 8 часов"]',
+        # Capture elements
+        r2 = _capture(element="business_needs", description="High processing time",
+                      pain_points='["Customers wait 8 hours"]',
                       metrics='{"avg_time": "8h"}')
         self.assertIn("✅", r2)
 
-        r3 = _capture(element="capabilities", description="Процесс согласования устарел")
+        r3 = _capture(element="capabilities", description="The approval process is outdated")
         self.assertIn("✅", r3)
 
         # RCA
         r4 = _rca(technique="fishbone",
-                  problem="Время выросло с 2 до 8 часов",
-                  root_cause="Устаревший регламент 2012 года",
-                  factors='["Нет автоматизации","Дублирование проверок"]')
+                  problem="Time grew from 2 to 8 hours",
+                  root_cause="Outdated 2012 regulation",
+                  factors='["No automation","Duplicated checks"]')
         self.assertIn("RCA-001", r4)
 
-        # Бизнес-потребность
-        r5 = _needs(title="Оптимизировать процесс согласования",
+        # Business need
+        r5 = _needs(title="Optimize the approval process",
                     root_cause_ids='["RCA-001"]',
                     register=False)
         self.assertIn("BN-001", r5)
 
-        # Проверка полноты
+        # Completeness check
         r6 = check_current_state_completeness(PROJECT)
         self.assertIn("%", r6)
 
-        # Сохранение
-        r7 = save_current_state(PROJECT, "Проект оптимизации", analyst_notes="Готово")
+        # Save
+        r7 = save_current_state(PROJECT, "Optimization project", analyst_notes="Done")
         self.assertIn("✅", r7)
 
     def test_light_pipeline(self):
-        """Light pipeline: 3 элемента, один RCA, одна BN."""
+        """Light pipeline: 3 elements, one RCA, one BN."""
         _scope(initiative="cost_reduction", depth="light")
-        _capture(element="business_needs", description="Высокие операционные затраты")
-        _rca(technique="five_whys", problem="Затраты выросли на 40%",
-             root_cause="Ручные операции не автоматизированы")
-        _needs(title="Снизить операционные затраты", register=False)
+        _capture(element="business_needs", description="High operating costs")
+        _rca(technique="five_whys", problem="Costs grew by 40%",
+             root_cause="Manual operations are not automated")
+        _needs(title="Reduce operating costs", register=False)
         r = save_current_state(PROJECT, "Cost Reduction")
         self.assertIn("✅", r)
 
     def test_pipeline_with_traceability(self):
-        """Pipeline с регистрацией в 5.1."""
+        """Pipeline with registration in 5.1."""
         os.makedirs("governance_plans/data", exist_ok=True)
         repo = make_test_repo(PROJECT)
         save_test_repo(repo, governance_dir="governance_plans/data")
@@ -688,19 +688,19 @@ class TestPipeline(BaseMCPTest):
         r = _needs(register=True)
         self.assertIn("BN-001", r)
         self.assertIn("5.1", r)
-        # Проверяем что узел есть в репо
+        # Check that the node is in the repo
         with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
             repo = json.load(f)
         types = [req["type"] for req in repo["requirements"]]
         self.assertIn("business_need", types)
 
     def test_multiple_needs_multiple_rca(self):
-        """Несколько RCA и несколько BN."""
+        """Several RCAs and several BNs."""
         _scope(elements='["business_needs","capabilities","policies"]')
-        _capture(element="business_needs", description="Множество проблем")
-        _capture(element="capabilities", description="Слабые процессы")
-        _rca(technique="fishbone", root_cause="Причина 1", affected='["capabilities"]')
-        _rca(technique="five_whys", problem="Проблема 2", root_cause="Причина 2",
+        _capture(element="business_needs", description="Many problems")
+        _capture(element="capabilities", description="Weak processes")
+        _rca(technique="fishbone", root_cause="Cause 1", affected='["capabilities"]')
+        _rca(technique="five_whys", problem="Problem 2", root_cause="Cause 2",
              affected='["policies"]')
         _needs(title="BN-1", root_cause_ids='["RCA-001"]', register=False)
         _needs(title="BN-2", root_cause_ids='["RCA-002"]', register=False)
@@ -710,145 +710,145 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(len(state["root_causes"]), 2)
 
     def test_session_ids_import_then_refine(self):
-        """Импорт из 4.3 → уточнение через capture."""
+        """Import from 4.3 → refinement via capture."""
         _scope(sessions='["session_001","session_002"]')
         state_before = _load_state(PROJECT)
-        # Должны быть черновики
+        # There should be drafts
         has_draft = any(v.get("draft") for v in state_before.get("elements", {}).values())
         self.assertTrue(has_draft)
 
-        # Уточняем один элемент
-        _capture(element="business_needs", description="Уточнённое описание")
+        # Refine one element
+        _capture(element="business_needs", description="Refined description")
         state_after = _load_state(PROJECT)
         self.assertFalse(state_after["elements"]["business_needs"].get("draft", True))
 
     def test_completeness_check_gates_finalization(self):
-        """check перед save показывает пробелы."""
+        """check before save shows the gaps."""
         _scope()
-        # Заполняем только один элемент из четырёх
-        _capture(element="business_needs", description="Частичный анализ")
+        # Fill in only one element out of four
+        _capture(element="business_needs", description="Partial analysis")
         r = check_current_state_completeness(PROJECT)
-        # Должны быть предупреждения
+        # There should be warnings
         self.assertIn("⚠️", r)
-        # Но save всё равно работает (не блокировка)
-        r2 = save_current_state(PROJECT, "Проект")
+        # But save still works (not a blocker)
+        r2 = save_current_state(PROJECT, "Project")
         self.assertIn("✅", r2)
 
 
 # ---------------------------------------------------------------------------
-# Интеграция 7.3 — ADR-055: from_current_state_project_id
+# Integration 7.3 — ADR-055: from_current_state_project_id
 # ---------------------------------------------------------------------------
 
 class TestADR055Integration(BaseMCPTest):
-    """Тесты параметра from_current_state_project_id в set_business_context."""
+    """Tests for the from_current_state_project_id parameter in set_business_context."""
 
     def test_without_param_backward_compatible(self):
-        """Без параметра — поведение 7.3 не меняется."""
+        """Without the parameter — 7.3 behavior doesn't change."""
         result = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-001","title":"Цель","description":"Описание"}]',
-            future_state="Будущее состояние",
-            solution_scope="Граница решения",
+            business_goals_json='[{"id":"BG-001","title":"Goal","description":"Description"}]',
+            future_state="Future state",
+            solution_scope="Solution boundary",
         )
         self.assertIn("✅", result)
         self.assertNotIn("ADR-055", result)
 
     def test_with_param_file_not_found_warning(self):
-        """Если 6.1 не завершён — предупреждение, не падение."""
+        """If 6.1 is not complete — a warning, not a crash."""
         result = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-001","title":"Цель"}]',
-            future_state="Будущее",
-            solution_scope="Скоуп",
+            business_goals_json='[{"id":"BG-001","title":"Goal"}]',
+            future_state="Future",
+            solution_scope="Scope",
             from_current_state_project_id="nonexistent_project",
         )
-        # Функция работает, предупреждает
+        # The function works and warns
         self.assertIn("⚠️", result)
 
     def test_prefill_goals_from_needs(self):
-        """Если BN есть — business_goals_json предзаполняется."""
+        """If there are BNs — business_goals_json is pre-filled."""
         _save_needs_json()
         result = set_business_context(
             project_id=PROJECT,
-            business_goals_json="",  # явно пусто
-            future_state="Будущее состояние",
-            solution_scope="Граница решения",
+            business_goals_json="",  # explicitly empty
+            future_state="Future state",
+            solution_scope="Solution boundary",
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
         self.assertIn("ADR-055", result)
 
     def test_explicit_goals_not_overwritten(self):
-        """Если BA явно передал business_goals_json — не перезаписываем."""
+        """If the BA explicitly passed business_goals_json — don't overwrite it."""
         _save_needs_json()
-        explicit_goals = '[{"id":"BG-001","title":"Явная цель","description":"Описание"}]'
+        explicit_goals = '[{"id":"BG-001","title":"Explicit goal","description":"Description"}]'
         result = set_business_context(
             project_id=PROJECT,
             business_goals_json=explicit_goals,
-            future_state="Будущее",
-            solution_scope="Скоуп",
+            future_state="Future",
+            solution_scope="Scope",
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
-        # ADR-055 не должен упоминаться — не предзаполняли
+        # ADR-055 must not be mentioned — nothing was pre-filled
         self.assertNotIn("ADR-055", result)
 
     def test_scope_prefills_solution_scope(self):
-        """Если solution_scope пуст и есть файл scope — предзаполняется."""
+        """If solution_scope is empty and a scope file exists — it's pre-filled."""
         _save_needs_json()
         _save_scope_json()
         result = set_business_context(
             project_id=PROJECT,
             business_goals_json="",
-            future_state="Будущее",
-            solution_scope="",  # пусто
+            future_state="Future",
+            solution_scope="",  # empty
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
 
     def test_empty_needs_list_no_crash(self):
-        """Пустой список BN — без предзаполнения, без ошибки."""
+        """An empty BN list — no pre-fill, no error."""
         path = _save_needs_json(needs_list=[])
         result = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-001","title":"Цель"}]',
-            future_state="Будущее",
-            solution_scope="Скоуп",
+            business_goals_json='[{"id":"BG-001","title":"Goal"}]',
+            future_state="Future",
+            solution_scope="Scope",
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
 
     def test_end_to_end_61_to_73(self):
-        """Полный E2E: завершаем 6.1 → вызываем 7.3 с from_current_state_project_id."""
-        # Завершаем 6.1
+        """Full E2E: complete 6.1 → call 7.3 with from_current_state_project_id."""
+        # Complete 6.1
         _scope(elements='["business_needs"]')
-        _capture(element="business_needs", description="Описание потребностей")
+        _capture(element="business_needs", description="Needs description")
         _rca()
-        _needs(title="Ускорить обработку", register=False)
-        save_current_state(PROJECT, "Проект")
+        _needs(title="Speed up processing", register=False)
+        save_current_state(PROJECT, "Project")
 
-        # 7.3 читает данные 6.1
+        # 7.3 reads the 6.1 data
         result = set_business_context(
             project_id=PROJECT,
             business_goals_json="",
-            future_state="Ускоренный процесс обработки",
+            future_state="An accelerated processing process",
             solution_scope="",
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
 
     def test_from_different_project(self):
-        """from_current_state_project_id может указывать на другой проект."""
+        """from_current_state_project_id can point to a different project."""
         other = "other_project"
         _save_needs_json(project=other)
         result = set_business_context(
             project_id=PROJECT,
             business_goals_json="",
-            future_state="Будущее",
-            solution_scope="Скоуп",
+            future_state="Future",
+            solution_scope="Scope",
             from_current_state_project_id=other,
         )
-        # Должно найти файл other_project и сработать
+        # It should find the other_project file and work
         self.assertIn("✅", result)
 
 
