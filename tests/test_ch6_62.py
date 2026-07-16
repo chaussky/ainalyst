@@ -1117,7 +1117,7 @@ class TestIntegration73(BaseMCPTest):
             solution_scope="Скоуп",
             from_current_state_project_id=PROJECT,
         )
-        self.assertIn("устарел", r.lower())
+        self.assertIn("deprecated", r.lower())
 
     def test_deprecated_still_works(self):
         """Deprecated параметр работает, но показывает предупреждение."""
@@ -1131,7 +1131,7 @@ class TestIntegration73(BaseMCPTest):
         )
         # Должно предзаполнить и предупредить
         self.assertIn("BG-001", r)
-        self.assertIn("устарел", r.lower())
+        self.assertIn("deprecated", r.lower())
 
     def test_from_strategy_does_not_override_explicit_goals(self):
         """from_strategy_project_id не перебивает явно переданные goals."""
