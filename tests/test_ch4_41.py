@@ -1,10 +1,10 @@
 """
-tests/test_ch4_41.py — Тесты для Главы 4.1: Prepare for Elicitation
-MCP-файл: skills/elicitation_mcp.py
-Инструменты: save_elicitation_plan, create_google_form, get_form_responses
+tests/test_ch4_41.py — Tests for Chapter 4.1: Prepare for Elicitation
+MCP file: skills/elicitation_mcp.py
+Tools: save_elicitation_plan, create_google_form, get_form_responses
 
-Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
-save_artifact патчится через patch() по правилу ADR-068.
+Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
+save_artifact is patched via patch() per ADR-068.
 """
 
 import json
@@ -23,30 +23,30 @@ import skills.elicitation_mcp as mod41
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные данные
+# Helper data
 # ---------------------------------------------------------------------------
 
 STAKEHOLDERS_VALID = json.dumps([
     {
-        "name": "Иван Петров",
-        "role": "Менеджер продаж",
-        "key_questions": ["Какие процессы автоматизировать?", "Какие KPI?"],
+        "name": "Ivan Petrov",
+        "role": "Sales Manager",
+        "key_questions": ["Which processes to automate?", "Which KPIs?"],
     },
     {
-        "name": "Анна Смирнова",
-        "role": "ИТ-директор",
-        "key_questions": ["Какие интеграции?", "Какие ограничения по безопасности?"],
+        "name": "Anna Smirnova",
+        "role": "IT Director",
+        "key_questions": ["Which integrations?", "Which security constraints?"],
     },
 ])
 
 PLAN_BASE = dict(
     project_name="crm_upgrade",
-    goals="Выяснить требования к автоматизации продаж",
+    goals="Elicit requirements for sales automation",
     stakeholders_json=STAKEHOLDERS_VALID,
     technique="Interview",
-    technique_rationale="Глубокое понимание болей стейкхолдеров",
-    questions_or_agenda="1. Текущие процессы?\n2. Что мешает работе?\n3. Ожидания от системы?",
-    expected_outcomes="Список функциональных требований и болей",
+    technique_rationale="Deep understanding of stakeholder pains",
+    questions_or_agenda="1. Current processes?\n2. What hinders the work?\n3. Expectations from the system?",
+    expected_outcomes="A list of functional requirements and pains",
 )
 
 
@@ -55,73 +55,73 @@ PLAN_BASE = dict(
 # ---------------------------------------------------------------------------
 
 class TestSaveElicitationPlan(BaseMCPTest):
-    """Тесты для инструмента 4.1: save_elicitation_plan."""
+    """Tests for the 4.1 tool: save_elicitation_plan."""
 
     def _call(self, **overrides):
         kwargs = {**PLAN_BASE, **overrides}
         with patch("skills.elicitation_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod41.save_elicitation_plan(**kwargs)
 
-    # --- happy path по всем техникам ---
+    # --- happy path across all techniques ---
 
     def test_technique_interview(self):
-        """Техника Интервью — базовый сценарий."""
+        """Interview technique — basic scenario."""
         result = self._call(technique="Interview")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_workshop(self):
-        """Техника Воркшоп."""
+        """Workshop technique."""
         result = self._call(
             technique="Workshop",
-            technique_rationale="Нужно согласование между отделами",
-            questions_or_agenda="09:00 Вступление\n09:30 Анализ AS-IS\n10:30 TO-BE",
+            technique_rationale="Alignment between departments is needed",
+            questions_or_agenda="09:00 Introduction\n09:30 AS-IS analysis\n10:30 TO-BE",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_questionnaire(self):
-        """Техника Анкетирование."""
+        """Survey technique."""
         result = self._call(
             technique="Survey",
-            technique_rationale="Много участников, нужен масштаб",
+            technique_rationale="Many participants, scale is needed",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_brainstorm(self):
-        """Техника Мозговой штурм."""
+        """Brainstorming technique."""
         result = self._call(technique="Brainstorming")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_document_analysis(self):
-        """Техника Анализ документов."""
+        """Document Analysis technique."""
         result = self._call(technique="Document Analysis")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_observation(self):
-        """Техника Наблюдение."""
+        """Observation technique."""
         result = self._call(technique="Observation")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_prototyping(self):
-        """Техника Прототипирование."""
+        """Prototyping technique."""
         result = self._call(technique="Prototyping")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_focus_group(self):
-        """Техника Фокус-группа."""
+        """Focus Group technique."""
         result = self._call(technique="Focus Group")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_technique_benchmarking(self):
-        """Техника Бенчмаркинг."""
+        """Benchmarking technique."""
         result = self._call(technique="Benchmarking")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
@@ -129,27 +129,27 @@ class TestSaveElicitationPlan(BaseMCPTest):
     # --- edge cases ---
 
     def test_single_stakeholder(self):
-        """Один стейкхолдер — граничный случай."""
+        """A single stakeholder — an edge case."""
         result = self._call(
             stakeholders_json=json.dumps([
-                {"name": "Директор", "role": "CEO", "key_questions": ["Зачем проект?"]}
+                {"name": "Director", "role": "CEO", "key_questions": ["Why the project?"]}
             ])
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_empty_questions_or_agenda(self):
-        """Пустая повестка — не должна падать."""
+        """Empty agenda — must not crash."""
         result = self._call(questions_or_agenda="")
         self.assertIsInstance(result, str)
 
     def test_empty_expected_outcomes(self):
-        """Пустые ожидаемые результаты — не должны падать."""
+        """Empty expected outcomes — must not crash."""
         result = self._call(expected_outcomes="")
         self.assertIsInstance(result, str)
 
     def test_different_project_names(self):
-        """Разные project_name не вызывают коллизий."""
+        """Different project_name values don't cause collisions."""
         result1 = self._call(project_name="project_alpha")
         result2 = self._call(project_name="project_beta")
         self.assertNotIn("❌", result1)
@@ -158,29 +158,29 @@ class TestSaveElicitationPlan(BaseMCPTest):
     # --- error cases ---
 
     def test_invalid_json_stakeholders(self):
-        """Невалидный JSON стейкхолдеров → ошибка."""
+        """Invalid stakeholders JSON → error."""
         result = self._call(stakeholders_json="{bad json}")
         self.assertIn("❌", result)
 
     def test_empty_json_stakeholders(self):
-        """Пустая строка вместо JSON → ошибка."""
+        """Empty string instead of JSON → error."""
         result = self._call(stakeholders_json="")
         self.assertIn("❌", result)
 
     def test_stakeholders_not_a_list(self):
-        """JSON-объект вместо списка → ошибка."""
-        result = self._call(stakeholders_json=json.dumps({"name": "Иван"}))
+        """A JSON object instead of a list → error."""
+        result = self._call(stakeholders_json=json.dumps({"name": "Ivan"}))
         self.assertIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается ровно один раз."""
+        """save_artifact is called exactly once."""
         with patch("skills.elicitation_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod41.save_elicitation_plan(**PLAN_BASE)
             mock_sa.assert_called_once()
 
     def test_returns_string(self):
-        """Функция всегда возвращает строку."""
+        """The function always returns a string."""
         result = self._call()
         self.assertIsInstance(result, str)
 
@@ -190,64 +190,64 @@ class TestSaveElicitationPlan(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestCreateGoogleForm(BaseMCPTest):
-    """Тесты для инструмента 4.1: create_google_form."""
+    """Tests for the 4.1 tool: create_google_form."""
 
     QUESTIONS_VALID = json.dumps([
         {
-            "question": "Какие процессы чаще всего вызывают задержки?",
+            "question": "Which processes most often cause delays?",
             "type": "paragraph",
             "required": True,
         },
         {
-            "question": "Насколько вы довольны текущей системой? (1–5)",
+            "question": "How satisfied are you with the current system? (1–5)",
             "type": "scale",
             "required": True,
         },
         {
-            "question": "Какой функционал вы хотели бы видеть?",
+            "question": "What functionality would you like to see?",
             "type": "multiple_choice",
-            "options": ["Отчёты", "Интеграции", "Автоматизация"],
+            "options": ["Reports", "Integrations", "Automation"],
             "required": False,
         },
     ])
 
     def _call(self, **overrides):
         defaults = {
-            "title": "Анкета: требования к CRM",
-            "description": "Помогите нам понять ваши потребности",
+            "title": "Survey: CRM requirements",
+            "description": "Help us understand your needs",
             "questions_json": self.QUESTIONS_VALID,
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod41.create_google_form(**kwargs)
 
     def test_basic_form(self):
-        """Базовая форма создаётся без ошибок."""
+        """A basic form is created without errors."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_single_question(self):
-        """Форма с одним вопросом."""
+        """A form with a single question."""
         result = self._call(
             questions_json=json.dumps([
-                {"question": "Что улучшить?", "type": "paragraph", "required": True}
+                {"question": "What to improve?", "type": "paragraph", "required": True}
             ])
         )
         self.assertIsInstance(result, str)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
     def test_invalid_questions_json(self):
-        """Невалидный JSON вопросов → ошибка."""
+        """Invalid questions JSON → error."""
         result = self._call(questions_json="{invalid}")
         self.assertIn("❌", result)
 
     def test_empty_title(self):
-        """Пустой заголовок — не должен падать с исключением."""
+        """An empty title — must not crash with an exception."""
         result = self._call(title="")
         self.assertIsInstance(result, str)
 
@@ -257,38 +257,38 @@ class TestCreateGoogleForm(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestGetFormResponses(BaseMCPTest):
-    """Тесты для инструмента 4.1: get_form_responses."""
+    """Tests for the 4.1 tool: get_form_responses."""
 
     def _call(self, form_id="form_12345", export_format="summary"):
         with patch("skills.elicitation_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod41.get_form_responses(
                 form_id=form_id,
                 export_format=export_format,
             )
 
     def test_summary_format(self):
-        """Формат summary."""
+        """summary format."""
         result = self._call(export_format="summary")
         self.assertIsInstance(result, str)
 
     def test_full_format(self):
-        """Формат full."""
+        """full format."""
         result = self._call(export_format="full")
         self.assertIsInstance(result, str)
 
     def test_csv_format(self):
-        """Формат csv."""
+        """csv format."""
         result = self._call(export_format="csv")
         self.assertIsInstance(result, str)
 
     def test_empty_form_id(self):
-        """Пустой form_id — функция не должна падать с исключением."""
+        """An empty form_id — the function must not crash with an exception."""
         result = self._call(form_id="")
         self.assertIsInstance(result, str)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 

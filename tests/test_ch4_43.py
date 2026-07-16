@@ -1,10 +1,10 @@
 """
-tests/test_ch4_43.py — Тесты для Главы 4.3: Confirm Elicitation Results
-MCP-файл: skills/elicitation_confirm_mcp.py
-Инструменты: run_consistency_check, save_confirmed_elicitation_result
+tests/test_ch4_43.py — Tests for Chapter 4.3: Confirm Elicitation Results
+MCP file: skills/elicitation_confirm_mcp.py
+Tools: run_consistency_check, save_confirmed_elicitation_result
 
-Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
-save_artifact патчится через patch() по правилу ADR-068.
+Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
+save_artifact is patched via patch() per ADR-068.
 """
 
 import json
@@ -23,52 +23,52 @@ import skills.elicitation_confirm_mcp as mod43
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные данные
+# Helper data
 # ---------------------------------------------------------------------------
 
 SOURCE_ARTIFACTS = [
     {"path": "governance_plans/reports/4_2_crm_interview.md",
-     "stakeholder_role": "Менеджер продаж",
+     "stakeholder_role": "Sales Manager",
      "session_date": "2025-03-17"},
     {"path": "governance_plans/reports/4_2_crm_it_director.md",
-     "stakeholder_role": "ИТ-директор",
+     "stakeholder_role": "IT Director",
      "session_date": "2025-03-18"},
 ]
 
 ISSUE_HIGH = {
     "criterion": "Unambiguity",
     "severity": "Critical",
-    "description": "FR-001 можно трактовать как синхронизацию в реальном времени или батч",
+    "description": "FR-001 can be interpreted as real-time synchronization or batch",
     "affected_requirement": "FR-001",
-    "recommendation": "Уточнить у ИТ-директора: real-time или батч-обработка?",
+    "recommendation": "Clarify with the IT Director: real-time or batch processing?",
     "source_artifact": "governance_plans/reports/4_2_crm_interview.md",
 }
 
 ISSUE_LOW = {
     "criterion": "Completeness",
     "severity": "Minor",
-    "description": "NFR-001 не содержит метрики для нагрузочного тестирования",
+    "description": "NFR-001 contains no metrics for load testing",
     "affected_requirement": "NFR-001",
-    "recommendation": "Добавить условие нагрузки (например: 100 одновременных пользователей)",
+    "recommendation": "Add a load condition (for example: 100 concurrent users)",
     "source_artifact": "governance_plans/reports/4_2_crm_it_director.md",
 }
 
 CONFIRMED_REQUIREMENTS = {
     "functional": [
         {"id": "FR-001",
-         "statement": "Интеграция с 1С v8.3 через REST API (батч, раз в 15 минут)",
-         "acceptance_criteria": "Данные синхронизируются без ошибок за 15 минут"},
+         "statement": "Integration with 1C v8.3 via REST API (batch, every 15 minutes)",
+         "acceptance_criteria": "Data is synchronized without errors within 15 minutes"},
         {"id": "FR-002",
-         "statement": "Email-уведомление клиенту при изменении статуса заявки",
-         "acceptance_criteria": "Письмо доходит в течение 5 минут после смены статуса"},
+         "statement": "Email notification to the customer when the request status changes",
+         "acceptance_criteria": "The email arrives within 5 minutes of the status change"},
     ],
     "non_functional": [
         {"id": "NFR-001",
-         "statement": "Время отклика системы не более 2 секунд при 100 одновременных пользователях",
-         "acceptance_criteria": "Нагрузочный тест показывает P95 < 2с"},
+         "statement": "System response time no more than 2 seconds at 100 concurrent users",
+         "acceptance_criteria": "The load test shows P95 < 2s"},
     ],
-    "constraints": ["Бюджет — до 3 млн рублей", "Запуск — до 01.06.2025"],
-    "business_rules": ["Заявки обрабатываются в порядке поступления"],
+    "constraints": ["Budget — up to 3 million rubles", "Launch — by 2025-06-01"],
+    "business_rules": ["Requests are processed in order of arrival"],
 }
 
 
@@ -77,7 +77,7 @@ CONFIRMED_REQUIREMENTS = {
 # ---------------------------------------------------------------------------
 
 class TestRunConsistencyCheck(BaseMCPTest):
-    """Тесты для 4.3: run_consistency_check."""
+    """Tests for 4.3: run_consistency_check."""
 
     def _call(self, **overrides):
         defaults = {
@@ -85,20 +85,20 @@ class TestRunConsistencyCheck(BaseMCPTest):
             "source_artifacts_json": json.dumps(SOURCE_ARTIFACTS),
             "issues_json": json.dumps([]),
             "readiness_status": "Ready for Analysis",
-            "readiness_rationale": "Все требования однозначны и полны",
+            "readiness_rationale": "All requirements are unambiguous and complete",
             "needs_clarification": False,
             "clarification_questions_json": json.dumps([]),
-            "ba_decision": "Передаём в анализ текущего состояния (6.1)",
+            "ba_decision": "Hand off to current-state analysis (6.1)",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_confirm_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod43.run_consistency_check(**kwargs)
 
-    # --- happy path по всем статусам готовности ---
+    # --- happy path across all readiness statuses ---
 
     def test_status_ready_no_issues(self):
-        """Статус: Ready for Analysis, нет проблем."""
+        """Status: Ready for Analysis, no issues."""
         result = self._call(
             readiness_status="Ready for Analysis",
             issues_json=json.dumps([]),
@@ -108,10 +108,10 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_conditional_with_low_issues(self):
-        """Статус: Conditionally Ready, Minor-severity проблемы."""
+        """Status: Conditionally Ready, Minor-severity issues."""
         result = self._call(
             readiness_status="Conditionally Ready",
-            readiness_rationale="Minor issues — не блокируют анализ",
+            readiness_rationale="Minor issues — don't block the analysis",
             issues_json=json.dumps([ISSUE_LOW]),
             needs_clarification=False,
         )
@@ -119,40 +119,40 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_needs_rework_high_issues(self):
-        """Статус: Needs Rework, Critical-severity проблемы с вопросами."""
+        """Status: Needs Rework, Critical-severity issues with questions."""
         result = self._call(
             readiness_status="Needs Rework",
-            readiness_rationale="Критическая неоднозначность в FR-001",
+            readiness_rationale="Critical ambiguity in FR-001",
             issues_json=json.dumps([ISSUE_HIGH]),
             needs_clarification=True,
             clarification_questions_json=json.dumps([
                 {
-                    "stakeholder_role": "ИТ-директор",
+                    "stakeholder_role": "IT Director",
                     "issue_id": "ISS-001",
-                    "question": "FR-001: нужна синхронизация в реальном времени или батч каждые 15 минут?",
+                    "question": "FR-001: real-time synchronization or batch every 15 minutes?",
                 }
             ]),
-            ba_decision="Уточнить у ИТ-директора до 20.03",
+            ba_decision="Clarify with the IT Director by 2025-03-20",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_multiple_issues_mixed_severity(self):
-        """Несколько проблем разного severity."""
+        """Several issues of different severity."""
         result = self._call(
             readiness_status="Conditionally Ready",
             issues_json=json.dumps([ISSUE_HIGH, ISSUE_LOW]),
             needs_clarification=True,
             clarification_questions_json=json.dumps([
-                {"stakeholder_role": "ИТ-директор", "issue_id": "ISS-001",
-                 "question": "Real-time или батч?"}
+                {"stakeholder_role": "IT Director", "issue_id": "ISS-001",
+                 "question": "Real-time or batch?"}
             ]),
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_single_artifact(self):
-        """Только один источник данных."""
+        """Only one data source."""
         result = self._call(
             source_artifacts_json=json.dumps([SOURCE_ARTIFACTS[0]])
         )
@@ -160,7 +160,7 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_no_clarification_questions_when_not_needed(self):
-        """needs_clarification=False, пустой список вопросов."""
+        """needs_clarification=False, empty questions list."""
         result = self._call(
             needs_clarification=False,
             clarification_questions_json=json.dumps([]),
@@ -169,9 +169,9 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается ровно один раз."""
+        """save_artifact is called exactly once."""
         with patch("skills.elicitation_confirm_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod43.run_consistency_check(
                 project_name="crm_upgrade",
                 source_artifacts_json=json.dumps(SOURCE_ARTIFACTS),
@@ -180,24 +180,24 @@ class TestRunConsistencyCheck(BaseMCPTest):
                 readiness_rationale="OK",
                 needs_clarification=False,
                 clarification_questions_json=json.dumps([]),
-                ba_decision="Передать в 6.1",
+                ba_decision="Hand off to 6.1",
             )
             mock_sa.assert_called_once()
 
     # --- error cases ---
 
     def test_invalid_artifacts_json(self):
-        """Невалидный JSON артефактов → ошибка."""
+        """Invalid artifacts JSON → error."""
         result = self._call(source_artifacts_json="{bad json}")
         self.assertIn("❌", result)
 
     def test_invalid_issues_json(self):
-        """Невалидный JSON проблем → ошибка."""
+        """Invalid issues JSON → error."""
         result = self._call(issues_json="not a list")
         self.assertIn("❌", result)
 
     def test_invalid_questions_json(self):
-        """Невалидный JSON вопросов → ошибка."""
+        """Invalid questions JSON → error."""
         result = self._call(
             needs_clarification=True,
             clarification_questions_json="{bad}",
@@ -205,7 +205,7 @@ class TestRunConsistencyCheck(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -214,57 +214,57 @@ class TestRunConsistencyCheck(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestSaveConfirmedElicitationResult(BaseMCPTest):
-    """Тесты для 4.3: save_confirmed_elicitation_result."""
+    """Tests for 4.3: save_confirmed_elicitation_result."""
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
-            "stakeholder_role": "Менеджер продаж",
+            "stakeholder_role": "Sales Manager",
             "consistency_check_path": "governance_plans/reports/4_3_consistency_crm_upgrade.md",
             "confirmed_requirements_json": json.dumps(CONFIRMED_REQUIREMENTS),
             "resolved_issues_json": json.dumps([
-                {"issue_id": "ISS-001", "resolution": "Уточнено: батч каждые 15 минут"}
+                {"issue_id": "ISS-001", "resolution": "Clarified: batch every 15 minutes"}
             ]),
             "open_issues_json": json.dumps([]),
             "final_readiness": "Ready for Analysis",
-            "next_tasks": "Передать в 6.1 — анализ текущего состояния",
+            "next_tasks": "Hand off to 6.1 — current-state analysis",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_confirm_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod43.save_confirmed_elicitation_result(**kwargs)
 
     # --- happy path ---
 
     def test_fully_confirmed(self):
-        """Все требования подтверждены, нет открытых вопросов."""
+        """All requirements confirmed, no open issues."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_conditional_readiness(self):
-        """Статус: Conditionally Ready — есть открытые вопросы."""
+        """Status: Conditionally Ready — there are open issues."""
         result = self._call(
             final_readiness="Conditionally Ready",
             open_issues_json=json.dumps([
                 {"issue_id": "ISS-002",
-                 "description": "NFR метрики не подтверждены нагрузочным тестом",
-                 "owner": "ИТ-директор",
+                 "description": "NFR metrics not confirmed by a load test",
+                 "owner": "IT Director",
                  "deadline": "2025-03-25"}
             ]),
-            next_tasks="Дождаться подтверждения NFR-001 от ИТ; затем 6.1",
+            next_tasks="Wait for NFR-001 confirmation from IT; then 6.1",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_resolved_issues(self):
-        """Нет решённых вопросов (не было проблем изначально)."""
+        """No resolved issues (there were no issues to begin with)."""
         result = self._call(resolved_issues_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_requirements_with_only_functional(self):
-        """Требования только функциональные."""
+        """Only functional requirements."""
         only_functional = {
             "functional": CONFIRMED_REQUIREMENTS["functional"],
             "non_functional": [],
@@ -276,19 +276,19 @@ class TestSaveConfirmedElicitationResult(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_different_stakeholder_roles(self):
-        """Разные роли стейкхолдеров."""
-        for role in ["ИТ-директор", "Архитектор", "Конечный пользователь"]:
+        """Different stakeholder roles."""
+        for role in ["IT Director", "Architect", "End User"]:
             result = self._call(stakeholder_role=role)
             self.assertIsInstance(result, str)
             self.assertNotIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается ровно один раз."""
+        """save_artifact is called exactly once."""
         with patch("skills.elicitation_confirm_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod43.save_confirmed_elicitation_result(
                 project_name="crm_upgrade",
-                stakeholder_role="Менеджер",
+                stakeholder_role="Manager",
                 consistency_check_path="governance_plans/reports/check.md",
                 confirmed_requirements_json=json.dumps(CONFIRMED_REQUIREMENTS),
                 resolved_issues_json=json.dumps([]),
@@ -301,22 +301,22 @@ class TestSaveConfirmedElicitationResult(BaseMCPTest):
     # --- error cases ---
 
     def test_invalid_requirements_json(self):
-        """Невалидный JSON требований → ошибка."""
+        """Invalid requirements JSON → error."""
         result = self._call(confirmed_requirements_json="{bad}")
         self.assertIn("❌", result)
 
     def test_invalid_resolved_json(self):
-        """Невалидный JSON решённых вопросов → ошибка."""
+        """Invalid resolved-issues JSON → error."""
         result = self._call(resolved_issues_json="not json")
         self.assertIn("❌", result)
 
     def test_invalid_open_issues_json(self):
-        """Невалидный JSON открытых вопросов → ошибка."""
+        """Invalid open-issues JSON → error."""
         result = self._call(open_issues_json="{bad}")
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
