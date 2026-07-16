@@ -1,14 +1,14 @@
 """
-tests/test_ch5_55.py — Тесты для BABOK 5.5 Approve Requirements.
+tests/test_ch5_55.py — Tests for BABOK 5.5 Approve Requirements.
 
-Структура:
-  - Unit (14): утилиты, _compute_req_status, _get_cr_context
-  - prepare_approval_package (8): успех, дубликат, missing req, agile, audiences
-  - record_approval_decision (14): approved, conditional, rejected, RACI-анализ, конфликты
-  - close_approval_condition (7): успех, уже закрыто, не найдено, статус обновлён
-  - check_approval_status (10): дашборд, блокеры, open conditions, вердикты
-  - create_requirements_baseline (11): успех, блокеры, force, snapshot, история
-  - Pipeline (6): полный predictive, полный agile, конфликт + разрешение, два пакета независимы
+Structure:
+  - Unit (14): utilities, _compute_req_status, _get_cr_context
+  - prepare_approval_package (8): success, duplicate, missing req, agile, audiences
+  - record_approval_decision (14): approved, conditional, rejected, RACI analysis, conflicts
+  - close_approval_condition (7): success, already closed, not found, status updated
+  - check_approval_status (10): dashboard, blockers, open conditions, verdicts
+  - create_requirements_baseline (11): success, blockers, force, snapshot, history
+  - Pipeline (6): full predictive, full agile, conflict + resolution, two independent packages
 """
 
 import json
@@ -18,7 +18,7 @@ import unittest
 from datetime import date, timedelta
 from unittest.mock import patch
 
-# conftest регистрирует моки и предоставляет базовый класс
+# conftest registers the mocks and provides the base class
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
 
@@ -42,14 +42,14 @@ from skills.requirements_approve_mcp import (
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные утилиты для тестов
+# Helper utilities for the tests
 # ---------------------------------------------------------------------------
 
 PROJECT = "test_project"
 
 
 def _make_repo_with_verified(tmp_dir):
-    """Репозиторий с verified требованиями (готовы к 5.5)."""
+    """A repository with verified requirements (ready for 5.5)."""
     repo = make_test_repo(PROJECT)
     for req in repo["requirements"]:
         if req["type"] != "test":
@@ -60,12 +60,12 @@ def _make_repo_with_verified(tmp_dir):
 
 
 def _make_repo_with_cr(tmp_dir):
-    """Репозиторий с CR, затрагивающим FR-001."""
+    """A repository with a CR that affects FR-001."""
     repo = _make_repo_with_verified(tmp_dir)
     repo["requirements"].append({
         "id": "CR-001",
         "type": "change_request",
-        "title": "Изменить логику распределения",
+        "title": "Change the distribution logic",
         "status": "open",
         "target_req_ids": ["FR-001"],
     })
@@ -80,22 +80,22 @@ def _make_repo_with_cr(tmp_dir):
 
 
 def _open_package(project=PROJECT, package_id="APKG-001", req_ids=None, approach="predictive"):
-    """Создаёт пакет и возвращает результат prepare_approval_package."""
+    """Creates a package and returns the result of prepare_approval_package."""
     if req_ids is None:
         req_ids = ["FR-001", "FR-002"]
     return prepare_approval_package(
         project_name=project,
         package_id=package_id,
-        package_title="Тестовый пакет",
+        package_title="Test package",
         req_ids_json=json.dumps(req_ids),
         approach=approach,
     )
 
 
-def _record(project=PROJECT, package_id="APKG-001", stakeholder="Иванов",
+def _record(project=PROJECT, package_id="APKG-001", stakeholder="Ivanov",
             raci="accountable", decision="approved", req_decisions=None,
             rejection_reason=""):
-    """Вспомогательная обёртка для record_approval_decision."""
+    """A helper wrapper for record_approval_decision."""
     rdj = json.dumps(req_decisions) if req_decisions else "[]"
     return record_approval_decision(
         project_name=project,
@@ -109,7 +109,7 @@ def _record(project=PROJECT, package_id="APKG-001", stakeholder="Иванов",
 
 
 # ---------------------------------------------------------------------------
-# Unit — утилиты
+# Unit — utilities
 # ---------------------------------------------------------------------------
 
 class TestComputeReqStatus(BaseMCPTest):
@@ -126,7 +126,7 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_approved_by_accountable(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "approved"}],
         }
@@ -134,7 +134,7 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_rejected_by_accountable_blocks(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "rejected"}],
         }
@@ -142,25 +142,25 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_rejected_by_consulted_does_not_block(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Петров"] = {
+        pkg["stakeholder_decisions"]["Petrov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "approved"}],
         }
-        pkg["stakeholder_decisions"]["Сидоров"] = {
+        pkg["stakeholder_decisions"]["Sidorov"] = {
             "raci": "consulted",
             "req_decisions": [{"req_id": "FR-001", "decision": "rejected"}],
         }
-        # Consulted rejected, но Accountable approved → approved
+        # Consulted rejected, but Accountable approved → approved
         self.assertEqual(_compute_req_status("FR-001", pkg), STATUS_APPROVED)
 
     def test_open_conditional_by_accountable_gives_conditional_approved(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{
                 "req_id": "FR-001",
                 "decision": "conditional",
-                "condition_text": "Уточнить формулировку",
+                "condition_text": "Clarify the wording",
                 "condition_closed": False,
             }],
         }
@@ -168,12 +168,12 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_closed_conditional_gives_approved(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{
                 "req_id": "FR-001",
                 "decision": "conditional",
-                "condition_text": "Уточнить формулировку",
+                "condition_text": "Clarify the wording",
                 "condition_closed": True,
             }],
         }
@@ -181,7 +181,7 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_abstained_by_accountable_gives_approved(self):
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "abstained"}],
         }
@@ -189,11 +189,11 @@ class TestComputeReqStatus(BaseMCPTest):
 
     def test_req_not_in_decisions_gives_pending(self):
         pkg = self._make_pkg(["FR-001", "FR-002"])
-        pkg["stakeholder_decisions"]["Иванов"] = {
+        pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "approved"}],
         }
-        # FR-002 не упомянуто → pending
+        # FR-002 not mentioned → pending
         self.assertEqual(_compute_req_status("FR-002", pkg), STATUS_PENDING)
 
 
@@ -229,7 +229,7 @@ class TestGetCrContext(BaseMCPTest):
         save_test_repo(repo)
         from skills.requirements_approve_mcp import _load_repo
         loaded = _load_repo(PROJECT)
-        # verifies-связь не должна возвращаться как CR
+        # a verifies link must not be returned as a CR
         refs = _get_cr_context(loaded, "FR-001")
         self.assertFalse(any(r for r in refs if r.get("cr_id") == "TC-001"))
 
@@ -247,7 +247,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
     def test_success_creates_package(self):
         result = _open_package()
         self.assertIn("APKG-001", result)
-        self.assertIn("Тестовый пакет", result)
+        self.assertIn("Test package", result)
         history = _load_approval_history(PROJECT)
         self.assertIn("APKG-001", history["packages"])
 
@@ -267,7 +267,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         result = prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-X",
-            package_title="Тест",
+            package_title="Test",
             req_ids_json='["FR-999"]',
             approach="predictive",
         )
@@ -277,7 +277,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         result = prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-X",
-            package_title="Тест",
+            package_title="Test",
             req_ids_json="not-json",
             approach="predictive",
         )
@@ -287,7 +287,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         result = prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-X",
-            package_title="Тест",
+            package_title="Test",
             req_ids_json="[]",
             approach="predictive",
         )
@@ -310,7 +310,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         result = prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-CR",
-            package_title="Пакет с CR",
+            package_title="Package with CR",
             req_ids_json='["FR-001"]',
             approach="predictive",
         )
@@ -331,7 +331,7 @@ class TestRecordApprovalDecision(BaseMCPTest):
     def test_approved_all_requirements(self):
         result = _record(decision="approved")
         self.assertIn("✅", result)
-        self.assertIn("Иванов", result)
+        self.assertIn("Ivanov", result)
 
     def test_approved_updates_repo_status(self):
         _record(decision="approved")
@@ -344,12 +344,12 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {"req_id": "FR-001", "decision": "conditional"}
-                # нет condition_text
+                # no condition_text
             ]),
         )
         self.assertIn("❌", result)
@@ -358,29 +358,29 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Уточнить критерий",
+                    "condition_text": "Clarify the criterion",
                     "condition_deadline": "2026-05-01",
-                    "condition_owner": "Петров",
+                    "condition_owner": "Petrov",
                 }
             ]),
         )
-        self.assertIn("Уточнить критерий", result)
+        self.assertIn("Clarify the criterion", result)
 
     def test_rejected_requires_reason_when_no_req_decisions(self):
         result = _record(decision="rejected", rejection_reason="")
         self.assertIn("❌", result)
 
     def test_rejected_with_reason_ok(self):
-        result = _record(decision="rejected", rejection_reason="За пределами скоупа")
+        result = _record(decision="rejected", rejection_reason="Out of scope")
         self.assertIn("❌", result)
-        self.assertIn("За пределами скоупа", result)
+        self.assertIn("Out of scope", result)
 
     def test_abstained_is_recorded(self):
         result = _record(decision="abstained")
@@ -390,13 +390,13 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = _record(
             decision="rejected",
             raci="consulted",
-            rejection_reason="Не согласен с формулировкой",
+            rejection_reason="Disagree with the wording",
         )
         self.assertIn("Consulted", result)
 
     def test_conflict_flagged_for_must_priority(self):
-        # Требование с Must приоритетом отклонено — должен быть флаг
-        result = _record(decision="rejected", rejection_reason="Не нужно")
+        # A requirement with Must priority is rejected — there should be a flag
+        result = _record(decision="rejected", rejection_reason="Not needed")
         self.assertIn("Must", result)
 
     def test_conflict_flagged_for_open_cr(self):
@@ -405,10 +405,10 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-CR",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="rejected",
-            rejection_reason="Требование изменяется",
+            rejection_reason="The requirement is being changed",
         )
         self.assertIn("CR-001", result)
 
@@ -416,12 +416,12 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="approved",
             req_decisions_json=json.dumps([
                 {"req_id": "FR-001", "decision": "approved"},
-                {"req_id": "FR-002", "decision": "rejected", "rejection_reason": "Неясная формулировка"},
+                {"req_id": "FR-002", "decision": "rejected", "rejection_reason": "Unclear wording"},
             ]),
         )
         self.assertIn("FR-001", result)
@@ -431,7 +431,7 @@ class TestRecordApprovalDecision(BaseMCPTest):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="approved",
             req_decisions_json=json.dumps([
@@ -445,12 +445,12 @@ class TestRecordApprovalDecision(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_multiple_stakeholders_recorded(self):
-        _record(stakeholder="Иванов", decision="approved")
-        _record(stakeholder="Петров", raci="responsible", decision="approved")
+        _record(stakeholder="Ivanov", decision="approved")
+        _record(stakeholder="Petrov", raci="responsible", decision="approved")
         history = _load_approval_history(PROJECT)
         pkg = history["packages"]["APKG-001"]
-        self.assertIn("Иванов", pkg["stakeholder_decisions"])
-        self.assertIn("Петров", pkg["stakeholder_decisions"])
+        self.assertIn("Ivanov", pkg["stakeholder_decisions"])
+        self.assertIn("Petrov", pkg["stakeholder_decisions"])
 
 
 # ---------------------------------------------------------------------------
@@ -463,20 +463,20 @@ class TestCloseApprovalCondition(BaseMCPTest):
         super().setUp()
         _make_repo_with_verified(self.tmp_dir)
         _open_package()
-        # Создаём conditional от Иванова на FR-001
+        # Create a conditional from Ivanov on FR-001
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Уточнить критерий приёмки",
+                    "condition_text": "Clarify the acceptance criterion",
                     "condition_deadline": "2026-05-01",
-                    "condition_owner": "Петров",
+                    "condition_owner": "Petrov",
                 },
                 {"req_id": "FR-002", "decision": "approved"},
             ]),
@@ -487,8 +487,8 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Критерий уточнён, добавлен acceptance test",
+            stakeholder_name="Ivanov",
+            resolution_notes="Criterion clarified, acceptance test added",
         )
         self.assertIn("✅", result)
         self.assertIn("FR-001", result)
@@ -498,8 +498,8 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Критерий уточнён",
+            stakeholder_name="Ivanov",
+            resolution_notes="Criterion clarified",
         )
         from skills.requirements_approve_mcp import _load_repo
         repo = _load_repo(PROJECT)
@@ -511,15 +511,15 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Первое закрытие",
+            stakeholder_name="Ivanov",
+            resolution_notes="First closure",
         )
         result = close_approval_condition(
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Второе закрытие",
+            stakeholder_name="Ivanov",
+            resolution_notes="Second closure",
         )
         self.assertIn("already closed", result)
 
@@ -528,8 +528,8 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="НеСуществующий",
-            resolution_notes="Закрываю",
+            stakeholder_name="Nonexistent",
+            resolution_notes="Closing",
         )
         self.assertIn("❌", result)
 
@@ -538,8 +538,8 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-999",
-            stakeholder_name="Иванов",
-            resolution_notes="Закрываю",
+            stakeholder_name="Ivanov",
+            resolution_notes="Closing",
         )
         self.assertIn("❌", result)
 
@@ -548,8 +548,8 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-MISSING",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Закрываю",
+            stakeholder_name="Ivanov",
+            resolution_notes="Closing",
         )
         self.assertIn("❌", result)
 
@@ -558,12 +558,12 @@ class TestCloseApprovalCondition(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Критерий уточнён",
+            stakeholder_name="Ivanov",
+            resolution_notes="Criterion clarified",
         )
         history = _load_approval_history(PROJECT)
         pkg = history["packages"]["APKG-001"]
-        sh_data = pkg["stakeholder_decisions"]["Иванов"]
+        sh_data = pkg["stakeholder_decisions"]["Ivanov"]
         fr001_decision = next(
             rd for rd in sh_data["req_decisions"] if rd["req_id"] == "FR-001"
         )
@@ -588,17 +588,17 @@ class TestCheckApprovalStatus(BaseMCPTest):
         self.assertIn("✅", result)
 
     def test_rejected_accountable_blocks_baseline(self):
-        _record(decision="rejected", rejection_reason="Не согласен")
+        _record(decision="rejected", rejection_reason="Disagree")
         result = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("Not ready", result)
         self.assertIn("🔴", result)
 
     def test_rejected_consulted_does_not_block(self):
-        _record(stakeholder="Иванов", decision="approved")
-        _record(stakeholder="Консалт", raci="consulted",
-                decision="rejected", rejection_reason="Сомнения")
+        _record(stakeholder="Ivanov", decision="approved")
+        _record(stakeholder="Consultant", raci="consulted",
+                decision="rejected", rejection_reason="Doubts")
         result = check_approval_status(PROJECT, "APKG-001")
-        # Consulted rejected — предупреждение, не блокировщик
+        # Consulted rejected — a warning, not a blocker
         self.assertIn("Consulted", result)
         self.assertIn("Ready for baseline", result)
 
@@ -606,38 +606,38 @@ class TestCheckApprovalStatus(BaseMCPTest):
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Уточнить",
+                    "condition_text": "Clarify",
                     "condition_deadline": "2026-12-01",
-                    "condition_owner": "Иванов",
+                    "condition_owner": "Ivanov",
                 },
                 {"req_id": "FR-002", "decision": "approved"},
             ]),
         )
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Уточнить", result)
+        self.assertIn("Clarify", result)
 
     def test_overdue_conditions_block_baseline(self):
         yesterday = str(date.today() - timedelta(days=1))
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Уточнить",
+                    "condition_text": "Clarify",
                     "condition_deadline": yesterday,
-                    "condition_owner": "Иванов",
+                    "condition_owner": "Ivanov",
                 },
                 {"req_id": "FR-002", "decision": "approved"},
             ]),
@@ -647,7 +647,7 @@ class TestCheckApprovalStatus(BaseMCPTest):
         self.assertIn("Not ready", result)
 
     def test_pending_requirements_block_baseline(self):
-        # Не записываем ни одного решения — все pending
+        # Don't record any decision — everything is pending
         result = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("Not ready", result)
         self.assertIn("pending", result)
@@ -663,13 +663,13 @@ class TestCheckApprovalStatus(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_low_approval_pct_blocks_baseline(self):
-        # Открываем большой пакет, одобряем только 1 из 4
+        # Open a large package, approve only 1 of 4
         repo = make_test_repo(PROJECT)
         for req in repo["requirements"]:
             req["status"] = "verified"
         repo["requirements"].append({
             "id": "NFR-001", "type": "non_functional",
-            "title": "Производительность", "status": "verified",
+            "title": "Performance", "status": "verified",
             "version": "1.0",
         })
         save_test_repo(repo)
@@ -677,32 +677,32 @@ class TestCheckApprovalStatus(BaseMCPTest):
         prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-BIG",
-            package_title="Большой пакет",
+            package_title="Large package",
             req_ids_json=json.dumps(["BR-001", "FR-001", "FR-002", "NFR-001"]),
             approach="predictive",
         )
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-BIG",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="approved",
             req_decisions_json=json.dumps([
                 {"req_id": "BR-001", "decision": "approved"},
-                {"req_id": "FR-001", "decision": "rejected", "rejection_reason": "Нет"},
-                {"req_id": "FR-002", "decision": "rejected", "rejection_reason": "Нет"},
-                {"req_id": "NFR-001", "decision": "rejected", "rejection_reason": "Нет"},
+                {"req_id": "FR-001", "decision": "rejected", "rejection_reason": "No"},
+                {"req_id": "FR-002", "decision": "rejected", "rejection_reason": "No"},
+                {"req_id": "NFR-001", "decision": "rejected", "rejection_reason": "No"},
             ]),
         )
         result = check_approval_status(PROJECT, "APKG-BIG")
         self.assertIn("Not ready", result)
 
     def test_multiple_stakeholders_mixed(self):
-        _record(stakeholder="Иванов", decision="approved")
-        _record(stakeholder="Петров", raci="responsible", decision="approved")
+        _record(stakeholder="Ivanov", decision="approved")
+        _record(stakeholder="Petrov", raci="responsible", decision="approved")
         result = check_approval_status(PROJECT, "APKG-001")
-        self.assertIn("Иванов", result)
-        self.assertIn("Петров", result)
+        self.assertIn("Ivanov", result)
+        self.assertIn("Petrov", result)
         self.assertIn("Ready for baseline", result)
 
 
@@ -717,7 +717,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
         _make_repo_with_verified(self.tmp_dir)
         _open_package()
 
-    def _approve_all(self, stakeholder="Иванов"):
+    def _approve_all(self, stakeholder="Ivanov"):
         _record(stakeholder=stakeholder, decision="approved")
 
     def test_baseline_success(self):
@@ -726,7 +726,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         self.assertIn("v1.0", result)
         self.assertIn("✅", result)
@@ -737,7 +737,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         from skills.requirements_approve_mcp import _load_repo
         repo = _load_repo(PROJECT)
@@ -750,35 +750,35 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         history = _load_approval_history(PROJECT)
         self.assertEqual(len(history["baselines"]), 1)
         self.assertEqual(history["baselines"][0]["baseline_version"], "v1.0")
 
     def test_baseline_blocked_by_rejected_accountable(self):
-        _record(decision="rejected", rejection_reason="Не согласен")
+        _record(decision="rejected", rejection_reason="Disagree")
         result = create_requirements_baseline(
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         self.assertIn("❌", result)
         self.assertIn("blocked", result)
 
     def test_force_overrides_blocker(self):
-        _record(decision="rejected", rejection_reason="Не согласен")
+        _record(decision="rejected", rejection_reason="Disagree")
         result = create_requirements_baseline(
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
             force=True,
         )
-        # При force=True baseline должен создаться
-        # (rejected от accountable — блокер, но force разрешает)
-        # На самом деле наш код блокирует только pending/rejected без force
+        # With force=True the baseline should be created
+        # (rejected by accountable — a blocker, but force allows it)
+        # In fact our code blocks only pending/rejected without force
         self.assertIsNotNone(result)
 
     def test_package_already_baselined_error(self):
@@ -787,13 +787,13 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         result = create_requirements_baseline(
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.1",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         self.assertIn("already has baseline", result)
 
@@ -802,7 +802,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-MISSING",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         self.assertIn("❌", result)
 
@@ -812,26 +812,26 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         history = _load_approval_history(PROJECT)
         bl = history["baselines"][0]
-        self.assertIn("Иванов", bl["stakeholder_summary"])
+        self.assertIn("Ivanov", bl["stakeholder_summary"])
 
     def test_baseline_with_open_conditions_and_force(self):
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Уточнить",
+                    "condition_text": "Clarify",
                     "condition_deadline": "2026-12-01",
-                    "condition_owner": "Петров",
+                    "condition_owner": "Petrov",
                 },
                 {"req_id": "FR-002", "decision": "approved"},
             ]),
@@ -840,7 +840,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
             force=True,
         )
         self.assertIn("v1.0", result)
@@ -854,14 +854,14 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
-        # Второй пакет
+        # Second package
         _make_repo_with_verified(self.tmp_dir)
         prepare_approval_package(
             project_name=PROJECT,
             package_id="APKG-002",
-            package_title="Второй пакет",
+            package_title="Second package",
             req_ids_json='["BR-001"]',
             approach="agile",
         )
@@ -870,7 +870,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-002",
             baseline_version="sprint-1",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         history = _load_approval_history(PROJECT)
         self.assertEqual(len(history["baselines"]), 2)
@@ -895,7 +895,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Pipeline интеграционные тесты
+# Pipeline integration tests
 # ---------------------------------------------------------------------------
 
 class TestApprovalPipeline(BaseMCPTest):
@@ -905,17 +905,17 @@ class TestApprovalPipeline(BaseMCPTest):
         _make_repo_with_verified(self.tmp_dir)
 
     def test_full_predictive_pipeline(self):
-        """Полный Predictive pipeline: prepare → record × 2 → check → baseline."""
+        """Full Predictive pipeline: prepare → record × 2 → check → baseline."""
         # 1. prepare
         result = _open_package()
         self.assertIn("APKG-001", result)
 
-        # 2. record — Спонсор одобряет
-        r1 = _record(stakeholder="Спонсор", raci="accountable", decision="approved")
+        # 2. record — the Sponsor approves
+        r1 = _record(stakeholder="Sponsor", raci="accountable", decision="approved")
         self.assertIn("✅", r1)
 
-        # 3. record — Бизнес-эксперт одобряет
-        r2 = _record(stakeholder="Эксперт", raci="responsible", decision="approved")
+        # 3. record — the Business Expert approves
+        r2 = _record(stakeholder="Expert", raci="responsible", decision="approved")
         self.assertIn("✅", r2)
 
         # 4. check
@@ -927,16 +927,16 @@ class TestApprovalPipeline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Спонсор",
+            decided_by="Sponsor",
         )
         self.assertIn("v1.0", bl)
 
-        # Проверяем историю
+        # Check the history
         history = _load_approval_history(PROJECT)
         self.assertEqual(len(history["baselines"]), 1)
 
     def test_full_agile_pipeline(self):
-        """Agile pipeline: prepare sprint → PO одобряет → sprint baseline."""
+        """Agile pipeline: prepare sprint → PO approves → sprint baseline."""
         prepare_approval_package(
             project_name=PROJECT,
             package_id="SPRINT-1",
@@ -969,34 +969,34 @@ class TestApprovalPipeline(BaseMCPTest):
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Иванов",
+            stakeholder_name="Ivanov",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {
                     "req_id": "FR-001",
                     "decision": "conditional",
-                    "condition_text": "Добавить acceptance criteria",
+                    "condition_text": "Add acceptance criteria",
                     "condition_deadline": "2026-12-01",
                     "condition_owner": "BA",
                 }
             ]),
         )
 
-        # Статус ещё не ready
+        # Status not ready yet
         status = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("condition", status)
 
-        # Закрываем условие
+        # Close the condition
         close_approval_condition(
             project_name=PROJECT,
             package_id="APKG-001",
             req_id="FR-001",
-            stakeholder_name="Иванов",
-            resolution_notes="Acceptance criteria добавлены в документ",
+            stakeholder_name="Ivanov",
+            resolution_notes="Acceptance criteria added to the document",
         )
 
-        # Теперь готов
+        # Now it's ready
         status2 = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("Ready for baseline", status2)
 
@@ -1005,28 +1005,28 @@ class TestApprovalPipeline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Иванов",
+            decided_by="Ivanov",
         )
         self.assertIn("v1.0", bl)
 
     def test_conflict_consulted_rejected_does_not_block(self):
-        """Rejected от Consulted не блокирует baseline."""
+        """Rejected by a Consulted stakeholder doesn't block the baseline."""
         _open_package()
-        _record(stakeholder="Спонсор", raci="accountable", decision="approved")
-        _record(stakeholder="Пользователь", raci="consulted",
-                decision="rejected", rejection_reason="Не удобно")
+        _record(stakeholder="Sponsor", raci="accountable", decision="approved")
+        _record(stakeholder="User", raci="consulted",
+                decision="rejected", rejection_reason="Inconvenient")
 
         status = check_approval_status(PROJECT, "APKG-001")
         self.assertIn("Ready for baseline", status)
         self.assertIn("Consulted", status)
 
     def test_two_packages_independent(self):
-        """Два пакета не влияют друг на друга."""
+        """Two packages don't affect each other."""
         _open_package(package_id="APKG-A", req_ids=["FR-001"])
         _open_package(package_id="APKG-B", req_ids=["FR-002"])
 
         _record(package_id="APKG-A", decision="approved")
-        # APKG-B остаётся без решений
+        # APKG-B stays without decisions
 
         status_a = check_approval_status(PROJECT, "APKG-A")
         status_b = check_approval_status(PROJECT, "APKG-B")
@@ -1035,22 +1035,22 @@ class TestApprovalPipeline(BaseMCPTest):
         self.assertIn("Not ready", status_b)
 
     def test_baseline_version_history_grows(self):
-        """История baseline-ов растёт при каждом новом пакете."""
+        """The baseline history grows with each new package."""
         # v1.0
         _open_package(package_id="V1", req_ids=["FR-001"])
         _record(package_id="V1", decision="approved")
-        create_requirements_baseline(PROJECT, "V1", "v1.0", "Спонсор")
+        create_requirements_baseline(PROJECT, "V1", "v1.0", "Sponsor")
 
-        # v1.1 — новый пакет
+        # v1.1 — a new package
         prepare_approval_package(
             project_name=PROJECT,
             package_id="V11",
-            package_title="Патч",
+            package_title="Patch",
             req_ids_json='["FR-002"]',
             approach="predictive",
         )
         _record(package_id="V11", decision="approved")
-        create_requirements_baseline(PROJECT, "V11", "v1.1", "Спонсор")
+        create_requirements_baseline(PROJECT, "V11", "v1.1", "Sponsor")
 
         history = _load_approval_history(PROJECT)
         versions = [bl["baseline_version"] for bl in history["baselines"]]
@@ -1059,7 +1059,7 @@ class TestApprovalPipeline(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Точка входа
+# Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
