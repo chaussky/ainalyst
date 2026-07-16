@@ -1,11 +1,11 @@
 """
-tests/test_ch5_53.py — Тесты для Главы 5.3: Prioritize Requirements
-MCP-файл: skills/requirements_prioritize_mcp.py
-Инструменты: start_prioritization_session, add_stakeholder_scores,
-             run_aggregation, resolve_conflict, save_prioritization_result
+tests/test_ch5_53.py — Tests for Chapter 5.3: Prioritize Requirements
+MCP file: skills/requirements_prioritize_mcp.py
+Tools: start_prioritization_session, add_stakeholder_scores,
+       run_aggregation, resolve_conflict, save_prioritization_result
 
-Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
-save_artifact патчится через patch() по правилу ADR-068.
+Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
+save_artifact is patched via patch() per ADR-068.
 """
 
 import json
@@ -26,7 +26,7 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные данные
+# Helper data
 # ---------------------------------------------------------------------------
 
 PROJECT = "prio_test"
@@ -34,14 +34,14 @@ SESSION = "MVP scope"
 
 
 def _setup_repo(project=PROJECT):
-    """Создаёт тестовый трассировочный репозиторий для 5.3."""
+    """Creates a test traceability repository for 5.3."""
     repo = make_test_repo(project)
     save_test_repo(repo)
     return repo
 
 
 def _start_session(project=PROJECT, session=SESSION, method="MoSCoW"):
-    """Открывает сессию приоритизации."""
+    """Opens a prioritization session."""
     with patch("skills.requirements_prioritize_mcp.save_artifact"):
         return mod53.start_prioritization_session(
             project_name=project,
@@ -52,7 +52,7 @@ def _start_session(project=PROJECT, session=SESSION, method="MoSCoW"):
 
 def _add_scores_moscow(project=PROJECT, session=SESSION, sh_id="SH-001",
                        influence="High", req_ids=None):
-    """Добавляет MoSCoW-оценки стейкхолдера."""
+    """Adds a stakeholder's MoSCoW scores."""
     if req_ids is None:
         req_ids = ["BR-001", "FR-001", "FR-002"]
     scores = [{"req_id": r, "score": "Must"} for r in req_ids]
@@ -71,7 +71,7 @@ def _add_scores_moscow(project=PROJECT, session=SESSION, sh_id="SH-001",
 # ---------------------------------------------------------------------------
 
 class TestUtils53(unittest.TestCase):
-    """Тесты вспомогательных функций модуля 5.3."""
+    """Tests for the 5.3 module's helper functions."""
 
     def test_minor_version_normal(self):
         """1.3 → minor = 3."""
@@ -82,32 +82,32 @@ class TestUtils53(unittest.TestCase):
         self.assertEqual(mod53._minor_version("1.0"), 0)
 
     def test_minor_version_invalid(self):
-        """Невалидная строка не бросает исключение."""
+        """An invalid string doesn't raise an exception."""
         result = mod53._minor_version("bad")
         self.assertIsInstance(result, int)
 
     def test_stability_flag_critical(self):
-        """Версия 1.4 → критический флаг нестабильности."""
+        """Version 1.4 → a critical instability flag."""
         flag = mod53._stability_flag({"version": "1.4"})
         self.assertIsNotNone(flag)
 
     def test_stability_flag_warning(self):
-        """Версия 1.3 → предупреждающий флаг (VOLATILITY_WARNING = 3)."""
+        """Version 1.3 → a warning flag (VOLATILITY_WARNING = 3)."""
         flag = mod53._stability_flag({"version": "1.3"})
         self.assertIsNotNone(flag)
 
     def test_stability_flag_ok(self):
-        """Версия 1.1 → нет флага."""
+        """Version 1.1 → no flag."""
         flag = mod53._stability_flag({"version": "1.1"})
         self.assertIsNone(flag)
 
     def test_stability_flag_no_version(self):
-        """Нет поля version → нет флага."""
+        """No version field → no flag."""
         flag = mod53._stability_flag({})
         self.assertIsNone(flag)
 
     def test_aggregate_moscow_consensus_must(self):
-        """Все голосуют Must → результат Must."""
+        """Everyone votes Must → result Must."""
         scores = {
             "SH-001": {"FR-001": "Must"},
             "SH-002": {"FR-001": "Must"},
@@ -119,7 +119,7 @@ class TestUtils53(unittest.TestCase):
         self.assertEqual(priority, "Must")
 
     def test_aggregate_moscow_conflict(self):
-        """Must vs Won't → конфликт или решение по весу."""
+        """Must vs Won't → a conflict or a weight-based resolution."""
         scores = {
             "SH-001": {"FR-001": "Must"},
             "SH-002": {"FR-001": "Won't"},
@@ -129,7 +129,7 @@ class TestUtils53(unittest.TestCase):
         self.assertIn("FR-001", result)
 
     def test_aggregate_wsjf_calculates_score(self):
-        """WSJF: суммарный CoD и JS → числовой WSJF-score."""
+        """WSJF: total CoD and JS → a numeric WSJF score."""
         scores = {
             "SH-001": {"FR-001": {"bv": 8, "tc": 3, "rr": 2, "js": 5}},
         }
@@ -148,7 +148,7 @@ class TestUtils53(unittest.TestCase):
         self.assertIn("FR-001", result)
 
     def test_detect_conflicts_critical(self):
-        """Must vs Won't → конфликт обнаруживается."""
+        """Must vs Won't → a conflict is detected."""
         scores = {
             "SH-001": {"FR-001": "Must"},
             "SH-002": {"FR-001": "Won't"},
@@ -157,7 +157,7 @@ class TestUtils53(unittest.TestCase):
         self.assertTrue(len(conflicts) > 0)
 
     def test_detect_no_conflict_same_scores(self):
-        """Одинаковые оценки → нет конфликтов."""
+        """Identical scores → no conflicts."""
         scores = {
             "SH-001": {"FR-001": "Must"},
             "SH-002": {"FR-001": "Must"},
@@ -166,7 +166,7 @@ class TestUtils53(unittest.TestCase):
         self.assertEqual(len(conflicts), 0)
 
     def test_must_inflation_detected(self):
-        """Более 60% Must → инфляция обнаруживается."""
+        """More than 60% Must → inflation is detected."""
         priorities = {
             "FR-001": {"priority": "Must"}, "FR-002": {"priority": "Must"},
             "FR-003": {"priority": "Must"}, "FR-004": {"priority": "Must"},
@@ -176,13 +176,13 @@ class TestUtils53(unittest.TestCase):
         self.assertIsNotNone(result)
 
     def test_must_inflation_not_triggered(self):
-        """Менее 60% Must → инфляция не зафиксирована (inflated=False)."""
+        """Less than 60% Must → inflation not recorded (inflated=False)."""
         priorities = {
             "FR-001": {"priority": "Must"}, "FR-002": {"priority": "Should"},
             "FR-003": {"priority": "Could"}, "FR-004": {"priority": "Won't"},
         }
         result = mod53._check_must_inflation(priorities)
-        # Функция возвращает dict {"inflated": bool, "must_ratio": float}
+        # The function returns a dict {"inflated": bool, "must_ratio": float}
         self.assertFalse(result["inflated"])
 
 
@@ -191,7 +191,7 @@ class TestUtils53(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestStartPrioritizationSession(BaseMCPTest):
-    """Тесты для инструмента 5.3: start_prioritization_session."""
+    """Tests for the 5.3 tool: start_prioritization_session."""
 
     def setUp(self):
         super().setUp()
@@ -205,58 +205,58 @@ class TestStartPrioritizationSession(BaseMCPTest):
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod53.start_prioritization_session(**kwargs)
 
-    # --- методы ---
+    # --- methods ---
 
     def test_method_moscow(self):
-        """Метод MoSCoW — сессия создаётся."""
+        """MoSCoW method — the session is created."""
         result = self._call(method="MoSCoW")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_method_wsjf(self):
-        """Метод WSJF — сессия создаётся."""
+        """WSJF method — the session is created."""
         result = self._call(method="WSJF", session_label="WSJF session")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_method_impact_effort(self):
-        """Метод ImpactEffort — сессия создаётся."""
+        """ImpactEffort method — the session is created."""
         result = self._call(method="ImpactEffort", session_label="IE session")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- файл создаётся ---
+    # --- file is created ---
 
     def test_creates_prio_file(self):
-        """Файл приоритизации создаётся на диске."""
+        """The prioritization file is created on disk."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_prioritization.json")
-        self.assertTrue(os.path.exists(path), f"Файл не найден: {path}")
+        self.assertTrue(os.path.exists(path), f"File not found: {path}")
 
-    # --- дубликат метки ---
+    # --- duplicate label ---
 
     def test_duplicate_session_label_warns(self):
-        """Повторная метка сессии → предупреждение."""
+        """A repeated session label → warning."""
         self._call()
-        result = self._call()  # второй вызов с той же меткой
+        result = self._call()  # second call with the same label
         self.assertTrue("⚠️" in result or "❌" in result)
 
-    # --- нет репозитория ---
+    # --- no repository ---
 
     def test_no_repo_warns(self):
-        """Нет репозитория 5.1 → предупреждение."""
+        """No 5.1 repository → warning."""
         result = self._call(project_name="nonexistent_xyz")
         self.assertIsInstance(result, str)
         self.assertTrue("⚠️" in result or "❌" in result)
 
-    # --- волатильное требование ---
+    # --- volatile requirement ---
 
     def test_flags_volatile_requirement(self):
-        """Нестабильное требование (версия 1.4+) упоминается в отчёте."""
+        """An unstable requirement (version 1.4+) is mentioned in the report."""
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -270,10 +270,10 @@ class TestStartPrioritizationSession(BaseMCPTest):
         result = self._call(session_label="Volatile test session")
         self.assertIn("FR-001", result)
 
-    # --- WSJF шкала ---
+    # --- WSJF scale ---
 
     def test_wsjf_fibonacci_scale(self):
-        """WSJF Fibonacci scale упоминается в отчёте."""
+        """The WSJF Fibonacci scale is mentioned in the report."""
         result = self._call(method="WSJF", session_label="WSJF Fib",
                             wsjf_scale="Fibonacci")
         self.assertIsInstance(result, str)
@@ -282,7 +282,7 @@ class TestStartPrioritizationSession(BaseMCPTest):
     # --- ImpactEffort custom mapping ---
 
     def test_impact_effort_custom_mapping(self):
-        """Кастомный маппинг квадрантов применяется."""
+        """A custom quadrant mapping is applied."""
         qmap = json.dumps({"QuickWins": "Must", "BigBets": "Could"})
         result = self._call(method="ImpactEffort", session_label="IE custom",
                             quadrant_mapping_json=qmap)
@@ -290,7 +290,7 @@ class TestStartPrioritizationSession(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -299,7 +299,7 @@ class TestStartPrioritizationSession(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestAddStakeholderScores(BaseMCPTest):
-    """Тесты для инструмента 5.3: add_stakeholder_scores."""
+    """Tests for the 5.3 tool: add_stakeholder_scores."""
 
     def setUp(self):
         super().setUp()
@@ -320,17 +320,17 @@ class TestAddStakeholderScores(BaseMCPTest):
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod53.add_stakeholder_scores(**kwargs)
 
     def test_moscow_scores_saved(self):
-        """MoSCoW-оценки сохраняются без ошибок."""
+        """MoSCoW scores are saved without errors."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_scores_persisted(self):
-        """Оценки записываются в файл."""
+        """Scores are written to the file."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_prioritization.json")
@@ -340,7 +340,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         self.assertIn("SH-001", session["stakeholder_scores"])
 
     def test_two_stakeholders_both_saved(self):
-        """Оценки двух стейкхолдеров сохраняются независимо."""
+        """Two stakeholders' scores are saved independently."""
         self._call(stakeholder_id="SH-001")
         self._call(stakeholder_id="SH-002", stakeholder_influence="Medium")
         safe_name = PROJECT.lower().replace(" ", "_")
@@ -352,7 +352,7 @@ class TestAddStakeholderScores(BaseMCPTest):
         self.assertIn("SH-002", session["stakeholder_scores"])
 
     def test_update_existing_stakeholder_scores(self):
-        """Повторный вызов заменяет предыдущие оценки."""
+        """A repeated call replaces the previous scores."""
         self._call(stakeholder_id="SH-001")
         updated_scores = json.dumps([{"req_id": "BR-001", "score": "Won't"}])
         self._call(stakeholder_id="SH-001", scores_json=updated_scores)
@@ -362,11 +362,11 @@ class TestAddStakeholderScores(BaseMCPTest):
             data = json.load(f)
         session = mod53._find_session(data["sessions"], SESSION)
         sh_scores = session["stakeholder_scores"]["SH-001"]
-        # Оценка должна быть обновлена
+        # The score should be updated
         self.assertIsNotNone(sh_scores)
 
     def test_wsjf_scores(self):
-        """WSJF-оценки валидируются и сохраняются."""
+        """WSJF scores are validated and saved."""
         _start_session(session="WSJF session", method="WSJF")
         result = mod53.add_stakeholder_scores.__wrapped__(*[], **{}) if hasattr(
             mod53.add_stakeholder_scores, "__wrapped__"
@@ -387,20 +387,20 @@ class TestAddStakeholderScores(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_invalid_moscow_value(self):
-        """Невалидное MoSCoW значение → ошибка."""
+        """An invalid MoSCoW value → error."""
         result = self._call(
             scores_json=json.dumps([{"req_id": "BR-001", "score": "INVALID"}])
         )
         self.assertIn("❌", result)
 
     def test_invalid_json_scores(self):
-        """Невалидный JSON scores_json → ошибка."""
+        """Invalid scores_json JSON → error."""
         result = self._call(scores_json="{bad}")
         self.assertIn("❌", result)
 
     def test_closed_session_rejected(self):
-        """Оценки в закрытую сессию не принимаются."""
-        # Вручную закрываем сессию
+        """Scores are not accepted into a closed session."""
+        # Manually close the session
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_prioritization.json")
         with open(path, encoding="utf-8") as f:
@@ -414,12 +414,12 @@ class TestAddStakeholderScores(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_nonexistent_session_rejected(self):
-        """Несуществующая сессия → ошибка."""
+        """A nonexistent session → error."""
         result = self._call(session_label="Nonexistent session")
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -428,7 +428,7 @@ class TestAddStakeholderScores(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestRunAggregation(BaseMCPTest):
-    """Тесты для инструмента 5.3: run_aggregation."""
+    """Tests for the 5.3 tool: run_aggregation."""
 
     def setUp(self):
         super().setUp()
@@ -444,29 +444,29 @@ class TestRunAggregation(BaseMCPTest):
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod53.run_aggregation(**kwargs)
 
     def test_aggregation_produces_priorities(self):
-        """Агрегация возвращает результат с приоритетами."""
+        """Aggregation returns a result with priorities."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_threshold_strict(self):
-        """Строгий порог — конфликты детектируются активнее."""
+        """A strict threshold — conflicts are detected more aggressively."""
         _add_scores_moscow(sh_id="SH-002", influence="Low",
                            req_ids=["BR-001", "FR-001", "FR-002"])
         result = self._call(conflict_threshold="Strict")
         self.assertIsInstance(result, str)
 
     def test_threshold_loose(self):
-        """Мягкий порог — меньше конфликтов."""
+        """A loose threshold — fewer conflicts."""
         result = self._call(conflict_threshold="Loose")
         self.assertIsInstance(result, str)
 
     def test_detects_stakeholder_conflict(self):
-        """Конфликт между стейкхолдерами обнаруживается."""
+        """A conflict between stakeholders is detected."""
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             mod53.add_stakeholder_scores(
                 project_name=PROJECT,
@@ -483,13 +483,13 @@ class TestRunAggregation(BaseMCPTest):
         self.assertIsInstance(result, str)
 
     def test_detects_must_inflation(self):
-        """Must Inflation обнаруживается когда >60% требований Must."""
+        """Must Inflation is detected when >60% of requirements are Must."""
         result = self._call()
-        # При оценках только Must от одного стейкхолдера — инфляция возможна
+        # With only-Must scores from one stakeholder — inflation is possible
         self.assertIsInstance(result, str)
 
     def test_no_scores_warns(self):
-        """Нет оценок → предупреждение."""
+        """No scores → warning."""
         _start_session(session="Empty session")
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             result = mod53.run_aggregation(
@@ -500,7 +500,7 @@ class TestRunAggregation(BaseMCPTest):
         self.assertTrue("⚠️" in result or "❌" in result)
 
     def test_nonexistent_session_error(self):
-        """Несуществующая сессия → ошибка."""
+        """A nonexistent session → error."""
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             result = mod53.run_aggregation(
                 project_name=PROJECT,
@@ -509,7 +509,7 @@ class TestRunAggregation(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -518,14 +518,14 @@ class TestRunAggregation(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestResolveConflict(BaseMCPTest):
-    """Тесты для инструмента 5.3: resolve_conflict."""
+    """Tests for the 5.3 tool: resolve_conflict."""
 
     def setUp(self):
         super().setUp()
         _setup_repo()
         _start_session()
         _add_scores_moscow(sh_id="SH-001", influence="High")
-        # Добавляем второго стейкхолдера с противоположными оценками
+        # Add a second stakeholder with opposite scores
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             mod53.add_stakeholder_scores(
                 project_name=PROJECT,
@@ -548,22 +548,22 @@ class TestResolveConflict(BaseMCPTest):
             req_id="BR-001",
             conflict_type="stakeholder_conflict",
             final_priority="Must",
-            rationale="Бизнес-спонсор настаивает на включении",
+            rationale="The business sponsor insists on including it",
             decided_by="Sponsor",
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod53.resolve_conflict(**kwargs)
 
     def test_resolve_marks_resolved(self):
-        """Разрешение конфликта отрабатывает без ошибок."""
+        """Resolving a conflict works without errors."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_resolve_updates_priority(self):
-        """Итоговый приоритет обновляется в данных сессии."""
+        """The final priority is updated in the session data."""
         self._call(req_id="BR-001", final_priority="Should")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_prioritization.json")
@@ -575,28 +575,28 @@ class TestResolveConflict(BaseMCPTest):
             self.assertEqual(agg.get("priority"), "Should")
 
     def test_resolve_all_priority_values(self):
-        """Все значения final_priority принимаются."""
+        """All final_priority values are accepted."""
         for priority in ["Must", "Should", "Could", "Won't"]:
             result = self._call(final_priority=priority)
             self.assertIsInstance(result, str)
 
     def test_resolve_dependency_violation(self):
-        """conflict_type=dependency_violation — разрешается."""
+        """conflict_type=dependency_violation — resolved."""
         result = self._call(conflict_type="dependency_violation")
         self.assertIsInstance(result, str)
 
     def test_resolve_inflation(self):
-        """conflict_type=inflation — разрешается."""
+        """conflict_type=inflation — resolved."""
         result = self._call(conflict_type="inflation")
         self.assertIsInstance(result, str)
 
     def test_nonexistent_session_error(self):
-        """Несуществующая сессия → ошибка."""
+        """A nonexistent session → error."""
         result = self._call(session_label="Ghost session")
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -605,7 +605,7 @@ class TestResolveConflict(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestSavePrioritizationResult(BaseMCPTest):
-    """Тесты для инструмента 5.3: save_prioritization_result."""
+    """Tests for the 5.3 tool: save_prioritization_result."""
 
     def setUp(self):
         super().setUp()
@@ -623,24 +623,24 @@ class TestSavePrioritizationResult(BaseMCPTest):
             return mod53.save_prioritization_result(**kwargs)
 
     def test_save_result_works(self):
-        """Финализация сессии проходит без ошибок."""
+        """Finalizing the session goes through without errors."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_updates_traceability_repo(self):
-        """Приоритеты записываются в трассировочный репозиторий."""
+        """Priorities are written to the traceability repository."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-        # Хотя бы одно требование должно получить приоритет
+        # At least one requirement should get a priority
         has_priority = any(r.get("priority") for r in data["requirements"])
-        self.assertTrue(has_priority, "Ни одно требование не получило приоритет")
+        self.assertTrue(has_priority, "No requirement received a priority")
 
     def test_history_written_to_repo(self):
-        """История изменений записывается в трассировочный репозиторий."""
+        """The change history is written to the traceability repository."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -649,7 +649,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         self.assertIn("history", data)
 
     def test_session_closes(self):
-        """Сессия помечается как closed после финализации."""
+        """The session is marked as closed after finalization."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_prioritization.json")
@@ -659,8 +659,8 @@ class TestSavePrioritizationResult(BaseMCPTest):
         self.assertEqual(session["status"], "closed")
 
     def test_second_session_snapshot_appended(self):
-        """Вторая сессия создаёт отдельный снапшот."""
-        self._call()  # закрываем первую
+        """A second session creates a separate snapshot."""
+        self._call()  # close the first one
 
         _start_session(session="Sprint 2 planning")
         _add_scores_moscow(session="Sprint 2 planning", sh_id="SH-001")
@@ -678,21 +678,21 @@ class TestSavePrioritizationResult(BaseMCPTest):
         self.assertNotIn("❌", result2)
 
     def test_nonexistent_session_error(self):
-        """Несуществующая сессия → ошибка."""
+        """A nonexistent session → error."""
         result = self._call(session_label="Phantom session")
         self.assertIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается при финализации."""
+        """save_artifact is called on finalization."""
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod53.save_prioritization_result(
                 project_name=PROJECT, session_label=SESSION
             )
             mock_sa.assert_called_once()
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -701,14 +701,14 @@ class TestSavePrioritizationResult(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestIntegration53(BaseMCPTest):
-    """Интеграционные тесты: полный цикл 5.3."""
+    """Integration tests: the full 5.3 cycle."""
 
     def setUp(self):
         super().setUp()
         _setup_repo()
 
     def test_full_moscow_workflow(self):
-        """Полный цикл MoSCoW: start → scores × 2 → aggregate → save."""
+        """The full MoSCoW cycle: start → scores × 2 → aggregate → save."""
         _start_session()
 
         _add_scores_moscow(sh_id="SH-001", influence="High",
@@ -732,7 +732,7 @@ class TestIntegration53(BaseMCPTest):
         self.assertNotIn("❌", save_result)
 
     def test_conflict_resolution_then_save(self):
-        """Цикл с разрешением конфликта."""
+        """A cycle with conflict resolution."""
         _start_session()
         _add_scores_moscow(sh_id="SH-001", influence="High")
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
@@ -756,7 +756,7 @@ class TestIntegration53(BaseMCPTest):
                 req_id="BR-001",
                 conflict_type="stakeholder_conflict",
                 final_priority="Must",
-                rationale="Спонсор настаивает",
+                rationale="The sponsor insists",
                 decided_by="Sponsor",
             )
         with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
