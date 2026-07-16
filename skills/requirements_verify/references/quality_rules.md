@@ -29,20 +29,21 @@ BABOK v3 defines 9 requirements quality characteristics:
 
 **Definition:** A single requirement describes exactly one capability or characteristic of the system.
 
-**Note:** The platform's requirements text is written in Russian by the BA, so the detection lists below operate on Russian-language signal words. They are reproduced here exactly as implemented in `requirements_verify_mcp.py` — do not alter them when updating this document.
+**Note:** The detection lists below operate on English-language signal words. They are reproduced here exactly as implemented in `requirements_verify_mcp.py` — do not alter them when updating this document.
 
 **Violation signals (atomicity stop words):**
 ```python
 ATOMICITY_SIGNALS = [
-    " и ", " и\n", " а также ", " а так же ",
-    " а ещё ", " а еще ", " плюс ", " кроме того ",
-    " помимо этого ", " вдобавок ", " одновременно с ",
+    " and ", " as well as ", " plus ",
+    " in addition ", " additionally ", " also ",
+    " besides ", " moreover ", " furthermore ",
+    " along with ", " together with ",
 ]
 ```
 
 **Rule:** If the requirement text (title + description) contains 2+ stop words — flag `not_atomic`. A single stop word — a warning (it may be part of a single condition).
 
-**Exceptions:** The conjunction "и" ("and") in a list of field values (e.g., "fields First Name and Last Name") is not an atomicity violation if it doesn't describe two distinct system actions. MCP does not do semantic parsing — Claude Code interprets it.
+**Exceptions:** The conjunction "and" in a list of field values (e.g., "fields First Name and Last Name") is not an atomicity violation if it doesn't describe two distinct system actions. MCP does not do semantic parsing — Claude Code interprets it.
 
 ---
 
@@ -54,34 +55,29 @@ ATOMICITY_SIGNALS = [
 ```python
 AMBIGUITY_SIGNALS = [
     # Speed/quality without a metric
-    "быстро", "быстрый", "быстрая", "быстрое",
-    "медленно", "медленный",
-    "удобно", "удобный", "удобная", "удобное", "удобен",
-    "легко", "легкий", "лёгкий", "легкая", "лёгкая",
-    "хорошо", "хороший", "хорошая", "хорошее",
-    "качественно", "качественный",
-    "эффективно", "эффективный",
-    "оптимально", "оптимальный",
+    "fast", "quick", "quickly", "faster",
+    "slow", "slowly",
+    "convenient", "conveniently", "user-friendly", "user friendly",
+    "easy", "easily", "simple",
+    "good", "nice",
+    "high-quality", "high quality", "quality",
+    "efficient", "efficiently",
+    "optimal", "optimally",
     # Frequency without a value
-    "часто", "редко", "периодически", "иногда", "регулярно",
-    "обычно", "как правило", "как правило,", "в большинстве случаев",
-    "как правило", "зачастую", "нередко",
+    "often", "rarely", "periodically", "sometimes",
+    "usually", "as a rule", "in most cases", "frequently",
     # Vague obligations
-    "должен стараться", "по возможности", "по мере возможности",
-    "в разумные сроки", "в кратчайшие сроки", "максимально быстро",
-    "при необходимости", "в случае необходимости", "при наличии",
-    "желательно", "предпочтительно", "рекомендуется",
-    "допустимо", "допускается",
+    "should try to", "if possible", "where possible",
+    "in a timely manner", "as soon as possible", "as fast as possible",
+    "if necessary", "desirable", "preferably", "recommended",
+    "acceptable", "allowed",
     # Relative assessments
-    "небольшой", "большой", "крупный", "значительный", "существенный",
-    "достаточно", "достаточный", "адекватный", "приемлемый",
-    "минимальный", "максимальный",  # without a specific value
+    "small", "large", "significant", "substantial",
+    "enough", "sufficient", "adequate", "appropriate",
     # Vague time references
-    "вовремя", "своевременно", "без задержек", "оперативно",
+    "on time", "promptly", "without delays", "swiftly",
     # Technical ambiguities
-    "и/или", "и / или",
-    "современный", "актуальный", "последний",
-    "стандартный", "типовой", "обычный",
+    "and/or", "modern", "up-to-date", "standard", "typical",
 ]
 ```
 
@@ -105,10 +101,11 @@ AMBIGUITY_SIGNALS = [
 - **Measurability presence signals:**
   ```
   MEASURABILITY_PATTERNS = [
-      r'\d+\s*(?:мс|с|сек|мин|час|%|мб|гб|тб|rpm|rps|tps|запрос)',
-      r'не более \d+', r'не менее \d+', r'до \d+', r'от \d+',
-      r'\d+ секунд', r'\d+ минут', r'\d+ пользовател',
-      r'100%', r'0 ошибок', r'нулевой', r'полностью',
+      r'\d+\s*(?:ms|s\b|sec|min|hr|hour|%|mb|gb|tb|rpm|rps|tps)',
+      r'no more than \d+', r'no less than \d+', r'up to \d+', r'from \d+',
+      r'\d+\s*seconds?', r'\d+\s*minutes?', r'\d+\s*users?',
+      r'100\s*%', r'0 errors', r'zero', r'fully',
+      r'\d+\s*requests?', r'\d+\s*transactions?',
   ]
   ```
 - **Flag:** `not_testable` if no pattern is found in the description.
@@ -118,7 +115,7 @@ AMBIGUITY_SIGNALS = [
 - **Flag:** `not_testable` if there is no numeric value.
 
 #### Business Rule (type: business_rule)
-- **Looser:** A rule is considered testable if it contains a clear condition (если/when/при/в случае).
+- **Looser:** A rule is considered testable if it contains a clear condition (if/when/upon/in case).
 - **Warning** if there is no condition.
 
 #### Use Case (type: use_case)
@@ -153,14 +150,11 @@ AMBIGUITY_SIGNALS = [
 ```python
 CONCISENESS_SIGNALS = [
     # Explaining the solution instead of the need
-    "реализовать через", "реализовать с помощью", "использовать технологию",
-    "использовать фреймворк", "написать код", "создать таблицу в базе",
-    "использовать REST", "использовать API", "вызвать метод",
+    "implement via", "implement using", "use the technology",
+    "use the framework", "write code", "create a table in the database",
+    "use rest", "use api", "call the method",
     # Historical background (not needed in a requirement)
-    "ранее", "до этого", "исторически", "изначально было",
-    "в предыдущей версии",
-    # Duplicating the obvious
-    "система должна быть системой", "функция функционирует",
+    "previously was", "historically", "in the previous version",
 ]
 ```
 
@@ -267,7 +261,7 @@ CONCISENESS_SIGNALS = [
   "title": "...",
   "checks": {
     "atomic": {"passed": true, "signals_found": [], "warning": null},
-    "unambiguous": {"passed": false, "signals_found": ["быстро", "удобно"], "warning": null},
+    "unambiguous": {"passed": false, "signals_found": ["fast", "convenient"], "warning": null},
     "testable": {"passed": false, "issue": "missing_ac", "ac_count": 1},
     "prioritized": {"passed": true, "priority": "High"},
     "concise": {"passed": true, "warning": "title length 110 characters"}

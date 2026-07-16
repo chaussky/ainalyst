@@ -1,10 +1,10 @@
 """
-tests/test_ch7_74.py — Тесты для Главы 7, задача 7.4 (Define Requirements Architecture)
+tests/test_ch7_74.py — Tests for Chapter 7, task 7.4 (Define Requirements Architecture)
 
-Покрытие (75 тестов):
-  - Утилиты: _safe, _repo_path, _architecture_path, _load_repo, _load_architecture,
-             _save_architecture, _load_stakeholders, _load_context,
-             _find_req, _get_linked_ids, _build_views_from_repo
+Coverage (75 tests):
+  - Utilities: _safe, _repo_path, _architecture_path, _load_repo, _load_architecture,
+               _save_architecture, _load_stakeholders, _load_context,
+               _find_req, _get_linked_ids, _build_views_from_repo
 
   - analyze_requirements_architecture: empty repo, auto viewpoints built,
     missing types reported, custom viewpoints included, coverage matrix with BG,
@@ -50,10 +50,10 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные функции
+# Helper functions
 # ---------------------------------------------------------------------------
 
-def make_req(req_id, req_type, title="Тестовое требование", status="verified"):
+def make_req(req_id, req_type, title="Test requirement", status="verified"):
     return {
         "id": req_id,
         "type": req_type,
@@ -96,8 +96,8 @@ def make_stakeholders(project_id, stakeholders=None):
     return {
         "project": project_id,
         "stakeholders": stakeholders or [
-            {"id": "SH-001", "name": "Иванов", "role": "Заказчик"},
-            {"id": "SH-002", "name": "Петрова", "role": "Пользователь"},
+            {"id": "SH-001", "name": "Ivanov", "role": "Sponsor"},
+            {"id": "SH-002", "name": "Petrova", "role": "User"},
         ],
     }
 
@@ -114,11 +114,11 @@ def make_context(project_id, goals=None):
     return {
         "project_id": project_id,
         "business_goals": goals or [
-            {"id": "BG-001", "title": "Снизить время обработки", "kpi": "с 24ч до 4ч"},
-            {"id": "BG-002", "title": "Увеличить NPS", "kpi": "с 45 до 65"},
+            {"id": "BG-001", "title": "Reduce processing time", "kpi": "from 24h to 4h"},
+            {"id": "BG-002", "title": "Increase NPS", "kpi": "from 45 to 65"},
         ],
-        "future_state": "Единое окно для операторов",
-        "solution_scope": "Входит: CRM. Не входит: мобилка",
+        "future_state": "Single window for operators",
+        "solution_scope": "In scope: CRM. Out of scope: mobile app",
         "created_at": str(date.today()),
         "updated_at": str(date.today()),
     }
@@ -133,20 +133,20 @@ def save_context(ctx):
 
 
 def make_full_repo(project_id):
-    """Репозиторий со всеми типами артефактов."""
+    """Repository with all artifact types."""
     reqs = [
-        make_req("BP-001", "business_process", "Приём заявки от клиента"),
-        make_req("BP-002", "business_process", "Обработка заявки оператором"),
-        make_req("DD-001", "data_dictionary", "Сущность: Заявка"),
-        make_req("ERD-001", "erd", "ERD: Клиент — Заявка — Оператор"),
-        make_req("US-001", "user_story", "Как оператор хочу видеть очередь"),
-        make_req("US-002", "user_story", "Как менеджер хочу видеть статистику"),
-        make_req("UC-001", "use_case", "UC: Назначить оператора на заявку"),
-        make_req("FR-001", "functional", "Автоматическое распределение заявок"),
-        make_req("FR-002", "functional", "Уведомления о смене статуса"),
-        make_req("NFR-001", "non_functional", "Время ответа < 2 сек"),
-        make_req("BR-001", "business_rule", "Заявка назначается оператору с минимальной нагрузкой"),
-        make_req("BG-001", "business", "Снизить время обработки"),
+        make_req("BP-001", "business_process", "Receive a request from the client"),
+        make_req("BP-002", "business_process", "Process the request by an operator"),
+        make_req("DD-001", "data_dictionary", "Entity: Request"),
+        make_req("ERD-001", "erd", "ERD: Client — Request — Operator"),
+        make_req("US-001", "user_story", "As an operator I want to see the queue"),
+        make_req("US-002", "user_story", "As a manager I want to see statistics"),
+        make_req("UC-001", "use_case", "UC: Assign an operator to a request"),
+        make_req("FR-001", "functional", "Automated distribution of requests"),
+        make_req("FR-002", "functional", "Notifications on status change"),
+        make_req("NFR-001", "non_functional", "Response time < 2 sec"),
+        make_req("BR-001", "business_rule", "A request is assigned to the least loaded operator"),
+        make_req("BG-001", "business", "Reduce processing time"),
     ]
     links = [
         {"from": "UC-001", "to": "BP-001", "relation": "derives", "added": str(date.today())},
@@ -158,7 +158,7 @@ def make_full_repo(project_id):
 
 
 # ---------------------------------------------------------------------------
-# Тесты утилит
+# Utility tests
 # ---------------------------------------------------------------------------
 
 class TestUtilities(BaseMCPTest):
@@ -196,7 +196,7 @@ class TestUtilities(BaseMCPTest):
 
     def test_save_and_load_architecture(self):
         arch = mod74._load_architecture("save_test")
-        arch["viewpoints"]["custom_test"] = {"label": "Тест", "auto": False, "req_ids": ["FR-001"]}
+        arch["viewpoints"]["custom_test"] = {"label": "Test", "auto": False, "req_ids": ["FR-001"]}
         mod74._save_architecture(arch)
         loaded = mod74._load_architecture("save_test")
         self.assertIn("custom_test", loaded["viewpoints"])
@@ -227,7 +227,7 @@ class TestUtilities(BaseMCPTest):
         # UC-001 → BP-001
         linked_from_uc = mod74._get_linked_ids(repo, "UC-001")
         self.assertIn("BP-001", linked_from_uc)
-        # BP-001 ← UC-001 (обратная сторона)
+        # BP-001 ← UC-001 (reverse direction)
         linked_from_bp = mod74._get_linked_ids(repo, "BP-001")
         self.assertIn("UC-001", linked_from_bp)
 
@@ -245,8 +245,8 @@ class TestUtilities(BaseMCPTest):
             make_req("BP-001", "business_process"),
             make_req("FR-001", "functional"),
             make_req("US-001", "user_story"),
-            make_req("BG-001", "business"),   # должен быть пропущен
-            make_req("TC-001", "test"),        # должен быть пропущен
+            make_req("BG-001", "business"),   # should be skipped
+            make_req("TC-001", "test"),        # should be skipped
         ])
         views = mod74._build_views_from_repo(repo)
         self.assertIn("business_process", views)
@@ -259,38 +259,38 @@ class TestUtilities(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты analyze_requirements_architecture
+# analyze_requirements_architecture tests
 # ---------------------------------------------------------------------------
 
 class TestAnalyzeRequirementsArchitecture(BaseMCPTest):
 
     def test_empty_repo_returns_warning(self):
         result = mod74.analyze_requirements_architecture("empty_proj")
-        self.assertIn("пуст", result)
+        self.assertIn("empty", result)
 
     def test_builds_auto_viewpoints(self):
         repo = make_full_repo("crm")
         save_repo(repo)
         result = mod74.analyze_requirements_architecture("crm")
-        self.assertIn("Бизнес-процессы", result)
-        self.assertIn("Функциональность", result)
-        self.assertIn("Пользователи и взаимодействие", result)
-        self.assertIn("Данные и информация", result)
-        self.assertIn("Бизнес-правила", result)
+        self.assertIn("Business processes", result)
+        self.assertIn("Functionality", result)
+        self.assertIn("Users and interaction", result)
+        self.assertIn("Data and information", result)
+        self.assertIn("Business rules", result)
 
     def test_reports_missing_types(self):
-        # Только BP — остальные типы должны быть в "отсутствующих"
+        # Only BP — the other types should be in "missing"
         repo = make_repo("partial", [make_req("BP-001", "business_process")])
         save_repo(repo)
         result = mod74.analyze_requirements_architecture("partial")
-        self.assertIn("Отсутствующие", result)
+        self.assertIn("Missing", result)
 
     def test_no_missing_when_all_types_present(self):
         repo = make_full_repo("full")
         save_repo(repo)
         result = mod74.analyze_requirements_architecture("full")
-        # При наличии всех типов — секция отсутствующих не должна содержать все
-        # (может быть пуста или содержать не все типы)
+        # With all types present — the missing section should not contain all of them
+        # (it may be empty or contain not all types)
         arch = load_arch("full")
         self.assertIn("business_process", arch["views"])
         self.assertIn("functional", arch["views"])
@@ -298,15 +298,15 @@ class TestAnalyzeRequirementsArchitecture(BaseMCPTest):
     def test_includes_custom_viewpoints_from_existing_arch(self):
         repo = make_repo("proj", [make_req("FR-001", "functional")])
         save_repo(repo)
-        # Предварительно создаём кастомный viewpoint в архитектуре
+        # Pre-create a custom viewpoint in the architecture
         arch = mod74._load_architecture("proj")
         arch["viewpoints"]["security"] = {
-            "label": "Безопасность", "auto": False,
-            "req_ids": ["FR-001"], "description": "Тест",
+            "label": "Security", "auto": False,
+            "req_ids": ["FR-001"], "description": "Test",
         }
         mod74._save_architecture(arch)
         result = mod74.analyze_requirements_architecture("proj")
-        self.assertIn("Кастомные точки зрения", result)
+        self.assertIn("Custom viewpoints", result)
         self.assertIn("security", result)
 
     def test_coverage_matrix_shown_when_context_exists(self):
@@ -321,7 +321,7 @@ class TestAnalyzeRequirementsArchitecture(BaseMCPTest):
         repo = make_full_repo("no_ctx")
         save_repo(repo)
         result = mod74.analyze_requirements_architecture("no_ctx")
-        # Без business_context — матрицы нет
+        # Without business_context — no matrix
         self.assertNotIn("Coverage Matrix", result)
 
     def test_updates_architecture_file(self):
@@ -346,7 +346,7 @@ class TestAnalyzeRequirementsArchitecture(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты add_custom_viewpoint
+# add_custom_viewpoint tests
 # ---------------------------------------------------------------------------
 
 class TestAddCustomViewpoint(BaseMCPTest):
@@ -364,12 +364,12 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="sec_proj",
             viewpoint_id="security",
-            label="Безопасность и доступ",
+            label="Security and access",
             req_ids_json='["FR-001", "NFR-001"]',
-            description="Требования к безопасности",
+            description="Security requirements",
             stakeholder_roles="CISO",
         )
-        self.assertIn("создана", result)
+        self.assertIn("created", result)
         self.assertIn("security", result)
         arch = load_arch("sec_proj")
         self.assertIn("security", arch["viewpoints"])
@@ -381,16 +381,16 @@ class TestAddCustomViewpoint(BaseMCPTest):
         mod74.add_custom_viewpoint(
             project_id="upd_proj",
             viewpoint_id="audit",
-            label="Аудит",
+            label="Audit",
             req_ids_json='["BR-001"]',
         )
         result = mod74.add_custom_viewpoint(
             project_id="upd_proj",
             viewpoint_id="audit",
-            label="Аудит и compliance",
+            label="Audit and compliance",
             req_ids_json='["BR-001", "FR-001"]',
         )
-        self.assertIn("обновлена", result)
+        self.assertIn("updated", result)
         arch = load_arch("upd_proj")
         self.assertIn("FR-001", arch["viewpoints"]["audit"]["req_ids"])
 
@@ -399,22 +399,22 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="space_proj",
             viewpoint_id="my security",
-            label="Безопасность",
+            label="Security",
             req_ids_json='["FR-001"]',
         )
         self.assertIn("❌", result)
-        self.assertIn("пробел", result.lower())
+        self.assertIn("space", result.lower())
 
     def test_viewpoint_id_conflicts_with_standard_type(self):
         self._setup_repo_with_reqs("conflict_proj")
         result = mod74.add_custom_viewpoint(
             project_id="conflict_proj",
             viewpoint_id="functional",
-            label="Функциональность кастомная",
+            label="Custom functionality",
             req_ids_json='["FR-001"]',
         )
         self.assertIn("❌", result)
-        self.assertIn("стандартным", result)
+        self.assertIn("standard", result)
 
     def test_empty_label(self):
         self._setup_repo_with_reqs("lbl_proj")
@@ -432,7 +432,7 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="json_proj",
             viewpoint_id="custom",
-            label="Тест",
+            label="Test",
             req_ids_json='not-json',
         )
         self.assertIn("❌", result)
@@ -442,7 +442,7 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="empty_ids_proj",
             viewpoint_id="custom",
-            label="Тест",
+            label="Test",
             req_ids_json='[]',
         )
         self.assertIn("❌", result)
@@ -452,7 +452,7 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="notfound_proj",
             viewpoint_id="custom",
-            label="Тест",
+            label="Test",
             req_ids_json='["XX-999", "YY-000"]',
         )
         self.assertIn("❌", result)
@@ -463,11 +463,11 @@ class TestAddCustomViewpoint(BaseMCPTest):
         result = mod74.add_custom_viewpoint(
             project_id="partial_proj",
             viewpoint_id="custom",
-            label="Тест",
+            label="Test",
             req_ids_json='["FR-001", "XX-999"]',
         )
         self.assertIn("❌", result)
-        # Файл архитектуры не должен содержать этот viewpoint
+        # The architecture file must not contain this viewpoint
         arch = mod74._load_architecture("partial_proj")
         self.assertNotIn("custom", arch["viewpoints"])
 
@@ -476,7 +476,7 @@ class TestAddCustomViewpoint(BaseMCPTest):
         mod74.add_custom_viewpoint(
             project_id="views_upd",
             viewpoint_id="migration",
-            label="Миграция данных",
+            label="Data migration",
             req_ids_json='["FR-001", "NFR-001"]',
         )
         arch = load_arch("views_upd")
@@ -485,17 +485,17 @@ class TestAddCustomViewpoint(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты check_architecture_gaps
+# check_architecture_gaps tests
 # ---------------------------------------------------------------------------
 
 class TestCheckArchitectureGaps(BaseMCPTest):
 
     def test_empty_repo_returns_warning(self):
         result = mod74.check_architecture_gaps("empty_gaps")
-        self.assertIn("пуст", result)
+        self.assertIn("empty", result)
 
     def test_empty_viewpoint_info_gap(self):
-        # Есть только FR — нет BP, UC и т.д. → пустые viewpoints как info
+        # Only FR — no BP, UC, etc. → empty viewpoints as info
         repo = make_repo("info_gaps", [make_req("FR-001", "functional")])
         save_repo(repo)
         result = mod74.check_architecture_gaps("info_gaps")
@@ -504,13 +504,13 @@ class TestCheckArchitectureGaps(BaseMCPTest):
     def test_no_stakeholders_file_graceful(self):
         repo = make_repo("no_sh", [make_req("FR-001", "functional")])
         save_repo(repo)
-        # Файла стейкхолдеров нет — не должно падать, info-сообщение
+        # No stakeholders file — must not crash, info message
         result = mod74.check_architecture_gaps("no_sh")
-        self.assertNotIn("❌ Ошибка", result)
-        self.assertIn("Реестр стейкхолдеров", result)
+        self.assertNotIn("❌ Error", result)
+        self.assertIn("Stakeholder registry", result)
 
     def test_bg_not_in_graph_warning(self):
-        # BG в business_context но нет как узла в репозитории 5.1
+        # BG in business_context but not as a node in the 5.1 repository
         repo = make_repo("bg_gap", [make_req("FR-001", "functional")])
         save_repo(repo)
         save_context(make_context("bg_gap"))
@@ -519,50 +519,50 @@ class TestCheckArchitectureGaps(BaseMCPTest):
         self.assertIn("BG-001", result)
 
     def test_bg_in_graph_no_warning(self):
-        # BG есть как узел в репозитории → предупреждения по BG нет
+        # BG exists as a node in the repository → no BG warning
         repo = make_repo("bg_ok", [
             make_req("FR-001", "functional"),
-            make_req("BG-001", "business", "Снизить время обработки"),
+            make_req("BG-001", "business", "Reduce processing time"),
         ])
         save_repo(repo)
         save_context(make_context("bg_ok", goals=[
-            {"id": "BG-001", "title": "Снизить время обработки", "kpi": ""}
+            {"id": "BG-001", "title": "Reduce processing time", "kpi": ""}
         ]))
         result = mod74.check_architecture_gaps("bg_ok")
-        # Не должно быть warning о BG-001 не в графе
+        # There should be no warning about BG-001 not being in the graph
         self.assertNotIn("BG-001` (", result.split("Warning")[1] if "Warning" in result else result)
 
     def test_uc_without_bp_warning(self):
-        # UC без связи с BP → warning
+        # UC with no link to BP → warning
         repo = make_repo("uc_gap", [
-            make_req("UC-001", "use_case", "UC без BP"),
-            make_req("BP-001", "business_process", "Процесс"),
+            make_req("UC-001", "use_case", "UC without BP"),
+            make_req("BP-001", "business_process", "Process"),
         ])
-        # Без связей UC→BP
+        # No UC→BP links
         save_repo(repo)
         result = mod74.check_architecture_gaps("uc_gap")
         self.assertIn("UC-001", result)
         self.assertIn("Warning", result)
 
     def test_uc_with_bp_no_warning(self):
-        # UC связан с BP → warning нет
+        # UC linked to BP → no warning
         links = [{"from": "UC-001", "to": "BP-001", "relation": "derives", "added": str(date.today())}]
         repo = make_repo("uc_ok", [
-            make_req("UC-001", "use_case", "UC с BP"),
-            make_req("BP-001", "business_process", "Процесс"),
+            make_req("UC-001", "use_case", "UC with BP"),
+            make_req("BP-001", "business_process", "Process"),
         ], links)
         save_repo(repo)
         result = mod74.check_architecture_gaps("uc_ok")
-        # UC-001 не должен появляться в warning о UC без BP
+        # UC-001 must not appear in a warning about UC without BP
         if "UC-001" in result:
-            # Проверяем что это не warning о uc_without_bp
-            self.assertNotIn("без соответствующего Business Process", result)
+            # Make sure it is not the uc_without_bp warning
+            self.assertNotIn("is not linked to any Business Process", result)
 
     def test_nfr_without_fr_warning(self):
-        links = []  # Нет связей
+        links = []  # No links
         repo = make_repo("nfr_gap", [
-            make_req("NFR-001", "non_functional", "Производительность"),
-            make_req("FR-001", "functional", "Функция"),
+            make_req("NFR-001", "non_functional", "Performance"),
+            make_req("FR-001", "functional", "Function"),
         ], links)
         save_repo(repo)
         result = mod74.check_architecture_gaps("nfr_gap")
@@ -572,18 +572,18 @@ class TestCheckArchitectureGaps(BaseMCPTest):
     def test_nfr_with_fr_no_warning(self):
         links = [{"from": "NFR-001", "to": "FR-001", "relation": "satisfies", "added": str(date.today())}]
         repo = make_repo("nfr_ok", [
-            make_req("NFR-001", "non_functional", "Производительность"),
-            make_req("FR-001", "functional", "Функция"),
+            make_req("NFR-001", "non_functional", "Performance"),
+            make_req("FR-001", "functional", "Function"),
         ], links)
         save_repo(repo)
         result = mod74.check_architecture_gaps("nfr_ok")
-        # NFR-001 не в разрыве
+        # NFR-001 not in a gap
         self.assertNotIn("NFR-001` — NFR", result)
 
     def test_fr_without_uc_us_info(self):
-        # FR без UC или US → info
+        # FR without UC or US → info
         repo = make_repo("fr_gap", [
-            make_req("FR-001", "functional", "Функция без сценария"),
+            make_req("FR-001", "functional", "Function without a scenario"),
         ])
         save_repo(repo)
         result = mod74.check_architecture_gaps("fr_gap")
@@ -598,18 +598,18 @@ class TestCheckArchitectureGaps(BaseMCPTest):
         ], links)
         save_repo(repo)
         result = mod74.check_architecture_gaps("fr_us_ok")
-        # FR-001 не должен быть в info о FR без сценария
+        # FR-001 must not appear in an info about FR without a scenario
         if "FR-001" in result and "Info" in result:
-            # Проверяем что это не наш info о FR без сценария
-            self.assertNotIn("FR-001` — FR «Функциональный", result)
+            # Make sure it is not our info about FR without a scenario
+            self.assertNotIn("FR-001` — FR", result)
 
     def test_no_gaps_clean_verdict(self):
-        # Полный репозиторий с правильными связями — нет critical разрывов
+        # Full repository with proper links — no critical gaps
         repo = make_full_repo("clean_proj")
         save_repo(repo)
         result = mod74.check_architecture_gaps("clean_proj")
-        # Critical = 0, вердикт без critical gaps
-        self.assertIn("Нет критических разрывов", result)
+        # Critical = 0, verdict without critical gaps
+        self.assertIn("No critical gaps", result)
         self.assertIn("Critical | 0", result)
 
     def test_gaps_saved_to_architecture(self):
@@ -618,11 +618,11 @@ class TestCheckArchitectureGaps(BaseMCPTest):
         mod74.check_architecture_gaps("save_gaps")
         arch = load_arch("save_gaps")
         self.assertIn("gaps", arch)
-        # NFR без FR → warning → должно быть в gaps
+        # NFR without FR → warning → must be in gaps
         self.assertTrue(len(arch["gaps"]["warning"]) > 0)
 
     def test_all_gap_types_in_one_run(self):
-        # Репо с UC без BP (warning), NFR без FR (warning), FR без UC (info)
+        # Repo with UC without BP (warning), NFR without FR (warning), FR without UC (info)
         repo = make_repo("all_gaps", [
             make_req("UC-001", "use_case"),
             make_req("NFR-001", "non_functional"),
@@ -635,14 +635,14 @@ class TestCheckArchitectureGaps(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты save_architecture_snapshot
+# save_architecture_snapshot tests
 # ---------------------------------------------------------------------------
 
 class TestSaveArchitectureSnapshot(BaseMCPTest):
 
     def test_empty_repo_rejected(self):
         result = mod74.save_architecture_snapshot("empty_snap", "v1.0")
-        self.assertIn("пуст", result.lower())
+        self.assertIn("empty", result.lower())
 
     def test_empty_version_rejected(self):
         repo = make_repo("ver_proj", [make_req("FR-001", "functional")])
@@ -654,9 +654,9 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
     def test_success_v1(self):
         repo = make_full_repo("snap_proj")
         save_repo(repo)
-        result = mod74.save_architecture_snapshot("snap_proj", "v1.0", "Первая версия", "Иванов")
+        result = mod74.save_architecture_snapshot("snap_proj", "v1.0", "First version", "Ivanov")
         self.assertIn("v1.0", result)
-        self.assertIn("зафиксирован", result)
+        self.assertIn("recorded", result)
 
     def test_snapshot_added_to_history(self):
         repo = make_full_repo("hist_proj")
@@ -670,7 +670,7 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         repo = make_full_repo("multi_snap")
         save_repo(repo)
         mod74.save_architecture_snapshot("multi_snap", "v1.0")
-        mod74.save_architecture_snapshot("multi_snap", "v1.1", "Добавлены UC")
+        mod74.save_architecture_snapshot("multi_snap", "v1.1", "UCs added")
         arch = load_arch("multi_snap")
         self.assertEqual(len(arch["snapshots"]), 2)
         versions = [s["version"] for s in arch["snapshots"]]
@@ -683,8 +683,8 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         mod74.save_architecture_snapshot("dup_proj", "v1.0")
         result = mod74.save_architecture_snapshot("dup_proj", "v1.0")
         self.assertIn("⚠️", result)
-        self.assertIn("уже существует", result)
-        # Второй снапшот не добавлен
+        self.assertIn("already exists", result)
+        # The second snapshot is not added
         arch = load_arch("dup_proj")
         v1_count = sum(1 for s in arch["snapshots"] if s["version"] == "v1.0")
         self.assertEqual(v1_count, 1)
@@ -692,11 +692,11 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
     def test_notes_and_author_saved(self):
         repo = make_full_repo("notes_proj")
         save_repo(repo)
-        mod74.save_architecture_snapshot("notes_proj", "v1.0", "Первый baseline", "Петрова")
+        mod74.save_architecture_snapshot("notes_proj", "v1.0", "First baseline", "Petrova")
         arch = load_arch("notes_proj")
         snap = arch["snapshots"][0]
-        self.assertEqual(snap["notes"], "Первый baseline")
-        self.assertEqual(snap["author"], "Петрова")
+        self.assertEqual(snap["notes"], "First baseline")
+        self.assertEqual(snap["author"], "Petrova")
 
     def test_summary_counts_correct(self):
         repo = make_full_repo("counts_proj")
@@ -704,12 +704,12 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         mod74.save_architecture_snapshot("counts_proj", "v1.0")
         arch = load_arch("counts_proj")
         snap = arch["snapshots"][0]
-        # total_reqs > 0 (в full_repo много req, исключая business и test)
+        # total_reqs > 0 (full_repo has many req, excluding business and test)
         self.assertGreater(snap["summary"]["total_reqs"], 0)
         self.assertGreater(snap["summary"]["viewpoints_count"], 0)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается при создании снапшота."""
+        """save_artifact is called when creating a snapshot."""
         repo = make_full_repo("artifact_proj")
         save_repo(repo)
         calls = []
@@ -722,19 +722,19 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         self.assertTrue(any("7_4" in str(c) for c in calls))
 
     def test_critical_gaps_warning_in_result(self):
-        # Сначала создаём gaps с critical
+        # First create gaps with critical
         repo = make_repo("crit_proj", [make_req("FR-001", "functional")])
         save_repo(repo)
         save_stakeholders(make_stakeholders("crit_proj"))
         mod74.check_architecture_gaps("crit_proj")
         result = mod74.save_architecture_snapshot("crit_proj", "v1.0")
-        # Если есть critical gaps — предупреждение в результате
+        # If there are critical gaps — a warning in the result
         arch = load_arch("crit_proj")
         if arch["gaps"].get("critical"):
             self.assertIn("critical", result.lower())
 
     def test_architecture_doc_contains_viewpoints_section(self):
-        """Architecture Document содержит секцию Viewpoints."""
+        """The Architecture Document contains a Viewpoints section."""
         doc_content = []
         original = mod74.save_artifact
         mod74.save_artifact = lambda content, prefix="", project_id=None: doc_content.append(content) or "✅"
@@ -748,7 +748,7 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
         self.assertIn("Viewpoints", doc_content[0])
 
     def test_architecture_doc_contains_delivery_section(self):
-        """Architecture Document содержит секцию передачи в 4.4 и 7.5."""
+        """The Architecture Document contains a handoff section to 4.4 and 7.5."""
         doc_content = []
         original = mod74.save_artifact
         mod74.save_artifact = lambda content, prefix="", project_id=None: doc_content.append(content) or "✅"
@@ -764,15 +764,15 @@ class TestSaveArchitectureSnapshot(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Pipeline — полный сценарий
+# Pipeline — full scenario
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_happy_path(self):
         """
-        Полный pipeline: analyze → add_custom_viewpoint → check_gaps → snapshot.
-        Все шаги отрабатывают без ошибок.
+        Full pipeline: analyze → add_custom_viewpoint → check_gaps → snapshot.
+        All steps run without errors.
         """
         project_id = "pipeline_proj"
         repo = make_full_repo(project_id)
@@ -780,31 +780,31 @@ class TestPipeline(BaseMCPTest):
         save_context(make_context(project_id))
         save_stakeholders(make_stakeholders(project_id))
 
-        # Шаг 1: analyze
+        # Step 1: analyze
         r1 = mod74.analyze_requirements_architecture(project_id)
-        self.assertIn("Бизнес-процессы", r1)
-        self.assertNotIn("пуст", r1)
+        self.assertIn("Business processes", r1)
+        self.assertNotIn("empty", r1)
 
-        # Шаг 2: add_custom_viewpoint
+        # Step 2: add_custom_viewpoint
         r2 = mod74.add_custom_viewpoint(
             project_id=project_id,
             viewpoint_id="security",
-            label="Безопасность",
+            label="Security",
             req_ids_json='["NFR-001"]',
-            description="Нефункциональные требования к безопасности",
+            description="Non-functional security requirements",
         )
-        self.assertIn("создана", r2)
+        self.assertIn("created", r2)
 
-        # Шаг 3: check_gaps
+        # Step 3: check_gaps
         r3 = mod74.check_architecture_gaps(project_id)
-        self.assertNotIn("❌ Ошибка", r3)
+        self.assertNotIn("❌ Error", r3)
 
-        # Шаг 4: snapshot
-        r4 = mod74.save_architecture_snapshot(project_id, "v1.0", "После полного анализа")
+        # Step 4: snapshot
+        r4 = mod74.save_architecture_snapshot(project_id, "v1.0", "After full analysis")
         self.assertIn("v1.0", r4)
-        self.assertIn("зафиксирован", r4)
+        self.assertIn("recorded", r4)
 
-        # Проверяем финальный архитектурный файл
+        # Check the final architecture file
         arch = load_arch(project_id)
         self.assertEqual(len(arch["snapshots"]), 1)
         self.assertIn("security", arch["viewpoints"])
@@ -812,7 +812,7 @@ class TestPipeline(BaseMCPTest):
 
     def test_graceful_without_stakeholders_and_context(self):
         """
-        Pipeline без реестра стейкхолдеров и business_context — не падает.
+        Pipeline without a stakeholder registry and business_context — does not crash.
         """
         project_id = "minimal_proj"
         repo = make_repo(project_id, [
@@ -822,18 +822,18 @@ class TestPipeline(BaseMCPTest):
         save_repo(repo)
 
         r1 = mod74.analyze_requirements_architecture(project_id)
-        self.assertNotIn("❌ Ошибка", r1)
+        self.assertNotIn("❌ Error", r1)
 
         r2 = mod74.check_architecture_gaps(project_id)
-        self.assertNotIn("❌ Ошибка", r2)
-        # Нет файла стейкхолдеров → info, не critical
-        self.assertIn("Реестр стейкхолдеров", r2)
+        self.assertNotIn("❌ Error", r2)
+        # No stakeholders file → info, not critical
+        self.assertIn("Stakeholder registry", r2)
 
         r3 = mod74.save_architecture_snapshot(project_id, "v1.0")
         self.assertIn("v1.0", r3)
 
     def test_custom_viewpoint_in_snapshot(self):
-        """Кастомный viewpoint виден в Architecture Document."""
+        """A custom viewpoint is visible in the Architecture Document."""
         project_id = "custom_snap_proj"
         repo = make_repo(project_id, [
             make_req("FR-001", "functional"),
@@ -844,7 +844,7 @@ class TestPipeline(BaseMCPTest):
         mod74.add_custom_viewpoint(
             project_id=project_id,
             viewpoint_id="compliance",
-            label="Соответствие регуляторным требованиям",
+            label="Regulatory compliance",
             req_ids_json='["NFR-001"]',
         )
 
@@ -857,8 +857,8 @@ class TestPipeline(BaseMCPTest):
             mod74.save_artifact = original
 
         self.assertTrue(len(doc_content) > 0)
-        self.assertIn("Соответствие регуляторным требованиям", doc_content[0])
-        self.assertIn("кастомный", doc_content[0])
+        self.assertIn("Regulatory compliance", doc_content[0])
+        self.assertIn("custom", doc_content[0])
 
 
 if __name__ == "__main__":

@@ -1,19 +1,19 @@
 """
-tests/test_ch7_71.py — Тесты для Главы 7, задача 7.1 (Specify and Model Requirements)
+tests/test_ch7_71.py — Tests for Chapter 7, task 7.1 (Specify and Model Requirements)
 
-Покрытие (~70 тестов):
-  - Утилиты: _repo_path, _load_repo, _save_repo, _register_in_repo, _specs_dir,
+Coverage (~70 tests):
+  - Utilities: _repo_path, _load_repo, _save_repo, _register_in_repo, _specs_dir,
              _find_confirmed_artifact, _save_spec
-  - analyze_elicitation_context: файл найден, context_text fallback, оба отсутствуют
-  - create_user_story: success, недостаточно AC, плохой JSON, дубль в реестре
-  - create_functional_requirement: все три типа, невалидный тип, related_ids
-  - create_use_case: success, альтернативы/исключения, без вторичных акторов
-  - generate_use_case_diagram: UC есть, UC нет, актор из файла спецификации
-  - create_business_process: success, .md и .puml файлы, регистрация
-  - create_data_dictionary: success, плохой JSON, пустой список
-  - create_erd: success, нотация кардинальности, плохой JSON
-  - build_coverage_matrix: с требованиями, без требований, флаги покрытия
-  - Интеграция: полный пайплайн (analyze → create → coverage)
+  - analyze_elicitation_context: file found, context_text fallback, both absent
+  - create_user_story: success, not enough AC, bad JSON, duplicate in the registry
+  - create_functional_requirement: all three types, invalid type, related_ids
+  - create_use_case: success, alternatives/exceptions, without secondary actors
+  - generate_use_case_diagram: UC present, no UC, actor from the specification file
+  - create_business_process: success, .md and .puml files, registration
+  - create_data_dictionary: success, bad JSON, empty list
+  - create_erd: success, cardinality notation, bad JSON
+  - build_coverage_matrix: with requirements, without requirements, coverage flags
+  - Integration: full pipeline (analyze -> create -> coverage)
 """
 
 import json
@@ -25,7 +25,7 @@ from datetime import date
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-# Моки применяются через conftest
+# Mocks are applied via conftest
 from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo
 
 import skills.requirements_spec_mcp as mod71
@@ -33,11 +33,11 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные функции
+# Helper functions
 # ---------------------------------------------------------------------------
 
 def make_spec_repo(project_id: str, requirements: list = None) -> dict:
-    """Создаёт и сохраняет репозиторий 5.1 с заданными требованиями."""
+    """Creates and saves a 5.1 repository with the given requirements."""
     repo = {
         "project": project_id,
         "formality_level": "Standard",
@@ -51,7 +51,7 @@ def make_spec_repo(project_id: str, requirements: list = None) -> dict:
 
 
 def save_spec_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
-    """Сохраняет репозиторий 5.1 для тестов."""
+    """Saves the 5.1 repository for the tests."""
     safe = repo["project"].lower().replace(" ", "_")
     path = os.path.join(governance_dir, f"{safe}_traceability_repo.json")
     os.makedirs(governance_dir, exist_ok=True)
@@ -61,7 +61,7 @@ def save_spec_repo(repo: dict, governance_dir: str = "governance_plans/data") ->
 
 
 def load_spec_repo(project_id: str, governance_dir: str = "governance_plans/data") -> dict:
-    """Загружает репозиторий 5.1."""
+    """Loads the 5.1 repository."""
     safe = project_id.lower().replace(" ", "_")
     path = data_path(project_id, f"{safe}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
@@ -69,29 +69,29 @@ def load_spec_repo(project_id: str, governance_dir: str = "governance_plans/data
 
 
 def make_confirmed_artifact(project_id: str, content: str = None) -> str:
-    """Создаёт тестовый артефакт 4.3 и возвращает путь."""
+    """Creates a test 4.3 artifact and returns the path."""
     safe = project_id.lower().replace(" ", "_")
     filename = f"4_3_{safe}_confirmed_test.md"
     path = os.path.join("governance_plans", "data", filename)
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
-    artifact_content = content or f"""# Подтверждённые результаты выявления
+    artifact_content = content or f"""# Confirmed elicitation results
 
-## Бизнес-цели
+## Business objectives
 
-1. Сократить время обработки заявок до 2 дней
-2. Автоматизировать распределение заявок между менеджерами
-3. Обеспечить прозрачность процесса для клиента
+1. Reduce application processing time to 2 days
+2. Automate the distribution of applications between managers
+3. Provide process transparency for the customer
 
-## Выявленные потребности
+## Elicited needs
 
-- Менеджеры хотят видеть все активные заявки в одном месте
-- Руководитель хочет получать отчёты по эффективности менеджеров
-- Клиент хочет знать статус своей заявки
+- Managers want to see all active applications in one place
+- The head wants to receive reports on manager performance
+- The customer wants to know the status of their application
 
-## Нефункциональные требования
+## Non-functional requirements
 
-- Система должна работать 24/7
-- Время отклика не более 3 секунд
+- The system must operate 24/7
+- Response time no more than 3 seconds
 """
     with open(path, "w", encoding="utf-8") as f:
         f.write(artifact_content)
@@ -99,7 +99,7 @@ def make_confirmed_artifact(project_id: str, content: str = None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 7.1 — Тесты утилит
+# 7.1 — Utility tests
 # ---------------------------------------------------------------------------
 
 class TestSpecUtilities(unittest.TestCase):
@@ -115,7 +115,7 @@ class TestSpecUtilities(unittest.TestCase):
         self.assertIn("crm_2024", path)
 
     def test_specs_dir_format(self):
-        # issue #1: спеки в data/<project>/specs/ (новая вложенная раскладка)
+        # issue #1: specs in data/<project>/specs/ (new nested layout)
         d = mod71._specs_dir("crm_2024")
         self.assertIn(os.path.join("crm_2024", "specs"), d)
         self.assertIn("governance_plans", d)
@@ -126,7 +126,7 @@ class TestSpecUtilities(unittest.TestCase):
         self.assertIn(os.path.join("my_project", "specs"), d)
 
     def test_load_repo_empty_when_missing(self):
-        """Загрузка несуществующего репозитория возвращает пустую структуру."""
+        """Loading a non-existent repository returns an empty structure."""
         repo = mod71._load_repo("nonexistent_project_xyz")
         self.assertEqual(repo["project"], "nonexistent_project_xyz")
         self.assertEqual(repo["requirements"], [])
@@ -138,14 +138,14 @@ class TestSpecUtilities(unittest.TestCase):
         self.assertIn("formality_level", repo)
 
     def test_cardinality_map_complete(self):
-        """Все нужные типы кардинальности присутствуют в нотации."""
-        # Проверяем через create_erd с разными cardinality
+        """All required cardinality types are present in the notation."""
+        # Check via create_erd with different cardinality values
         expected = [
             "one-to-one", "one-to-many", "many-to-one",
             "many-to-many", "zero-or-one-to-many"
         ]
-        # Убеждаемся что маппинг существует в модуле
-        # (косвенная проверка через строку в исходнике)
+        # Make sure the mapping exists in the module
+        # (indirect check via the string in the source)
         import inspect
         source = inspect.getsource(mod71.create_erd)
         for card in expected:
@@ -153,48 +153,48 @@ class TestSpecUtilities(unittest.TestCase):
 
 
 class TestRegisterInRepo(BaseMCPTest):
-    """Тесты функции _register_in_repo (ADR-022)."""
+    """Tests for the _register_in_repo function (ADR-022)."""
 
     P = "reg_test_proj"
 
     def test_register_creates_repo_if_missing(self):
-        """Если репозиторий не существует — создаёт его."""
-        mod71._register_in_repo(self.P, "FR-001", "functional", "Тест", "test.md")
+        """If the repository does not exist — creates it."""
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Test", "test.md")
         repo = load_spec_repo(self.P)
         self.assertEqual(len(repo["requirements"]), 1)
         self.assertEqual(repo["requirements"][0]["id"], "FR-001")
 
     def test_register_status_is_draft(self):
-        mod71._register_in_repo(self.P, "FR-001", "functional", "Тест", "test.md")
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Test", "test.md")
         repo = load_spec_repo(self.P)
         self.assertEqual(repo["requirements"][0]["status"], "draft")
 
     def test_register_version_is_1_0(self):
-        mod71._register_in_repo(self.P, "US-001", "user_story", "История", "test.md")
+        mod71._register_in_repo(self.P, "US-001", "user_story", "Story", "test.md")
         repo = load_spec_repo(self.P)
         self.assertEqual(repo["requirements"][0]["version"], "1.0")
 
     def test_register_writes_history(self):
-        mod71._register_in_repo(self.P, "UC-001", "use_case", "Сценарий", "test.md")
+        mod71._register_in_repo(self.P, "UC-001", "use_case", "Scenario", "test.md")
         repo = load_spec_repo(self.P)
         self.assertTrue(len(repo["history"]) > 0)
         self.assertEqual(repo["history"][0]["req_id"], "UC-001")
 
     def test_register_no_duplicate(self):
-        """Повторная регистрация одного ID не создаёт дубль."""
-        mod71._register_in_repo(self.P, "FR-001", "functional", "Тест", "test.md")
-        mod71._register_in_repo(self.P, "FR-001", "functional", "Тест v2", "test2.md")
+        """Re-registering one ID does not create a duplicate."""
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Test", "test.md")
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Test v2", "test2.md")
         repo = load_spec_repo(self.P)
         count = sum(1 for r in repo["requirements"] if r["id"] == "FR-001")
         self.assertEqual(count, 1)
 
     def test_register_duplicate_returns_info(self):
-        mod71._register_in_repo(self.P, "FR-001", "functional", "Тест", "test.md")
-        result = mod71._register_in_repo(self.P, "FR-001", "functional", "Тест v2", "test2.md")
-        self.assertIn("уже зарегистрирован", result)
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Test", "test.md")
+        result = mod71._register_in_repo(self.P, "FR-001", "functional", "Test v2", "test2.md")
+        self.assertIn("is already registered", result)
 
     def test_register_priority_stored(self):
-        mod71._register_in_repo(self.P, "BR-001", "business_rule", "Правило", "test.md", "High")
+        mod71._register_in_repo(self.P, "BR-001", "business_rule", "Rule", "test.md", "High")
         repo = load_spec_repo(self.P)
         self.assertEqual(repo["requirements"][0]["priority"], "High")
 
@@ -214,48 +214,48 @@ class TestAnalyzeElicitationContext(BaseMCPTest):
     P = "analyze_test"
 
     def test_returns_guide_when_no_file_no_text(self):
-        """Без файла и без текста — возвращает инструкцию."""
+        """Without a file and without text — returns instructions."""
         result = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("не найден", result)
+        self.assertIn("not found", result)
         self.assertIn("context_text", result)
 
     def test_uses_file_when_found(self):
-        """Если файл 4.3 найден — использует его."""
+        """If the 4.3 file is found — uses it."""
         make_confirmed_artifact(self.P)
         result = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("Файл найден", result)
-        self.assertNotIn("не найден", result.split("##")[0])
+        self.assertIn("File found", result)
+        self.assertNotIn("not found", result.split("##")[0])
 
     def test_uses_context_text_when_no_file(self):
-        """Если файл не найден но передан context_text — использует текст."""
+        """If the file is not found but context_text is passed — uses the text."""
         result = mod71.analyze_elicitation_context(
             "nonexistent_project_42",
-            context_text="Бизнес-цели: 1. Ускорить процесс. Потребности стейкхолдеров: ..."
+            context_text="Business objectives: 1. Speed up the process. Stakeholder needs: ..."
         )
-        self.assertIn("вручную", result)
+        self.assertIn("manually", result)
 
     def test_shows_analysis_guide(self):
-        """Результат содержит инструкцию по анализу для Claude Code."""
+        """The result contains the analysis instructions for Claude Code."""
         make_confirmed_artifact(self.P)
         result = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("Инструкция по анализу", result)
+        self.assertIn("Analysis instructions", result)
 
     def test_shows_classification_table(self):
-        """Результат содержит таблицу типов требований."""
+        """The result contains the requirement types table."""
         result = mod71.analyze_elicitation_context(
-            "proj_text", context_text="Содержимое артефакта 4.3"
+            "proj_text", context_text="Contents of the 4.3 artifact"
         )
         self.assertIn("user_story", result)
         self.assertIn("functional", result)
 
     def test_context_text_overrides_file_not_found(self):
-        """context_text позволяет работать без файла."""
+        """context_text allows working without a file."""
         result = mod71.analyze_elicitation_context(
             "completely_new_project_99",
-            context_text="Требования: нужна система учёта заявок"
+            context_text="Requirements: an application tracking system is needed"
         )
-        self.assertNotIn("Варианты действий", result)
-        self.assertIn("Следующий шаг", result)
+        self.assertNotIn("Options", result)
+        self.assertIn("Next step", result)
 
 
 # ---------------------------------------------------------------------------
@@ -268,14 +268,14 @@ class TestCreateUserStory(BaseMCPTest):
 
     def _make(self, story_id="US-001", criteria=None):
         if criteria is None:
-            criteria = ["Система сохраняет заявку с ID", "Менеджер получает уведомление"]
+            criteria = ["The system saves the application with an ID", "The manager receives a notification"]
         return mod71.create_user_story(
             project_id=self.P,
             story_id=story_id,
-            title="Создать заявку на кредит",
-            role="Менеджер",
-            action="создать новую заявку",
-            benefit="заявка попала в очередь обработки",
+            title="Create a loan application",
+            role="Manager",
+            action="create a new application",
+            benefit="the application enters the processing queue",
             acceptance_criteria_json=json.dumps(criteria),
             priority="High",
             source_artifact="governance_plans/4_3_test_confirmed.md",
@@ -294,7 +294,7 @@ class TestCreateUserStory(BaseMCPTest):
     def test_success_contains_acceptance_criteria(self):
         result = self._make()
         self.assertIn("Acceptance Criteria", result)
-        self.assertIn("Система сохраняет заявку с ID", result)
+        self.assertIn("The system saves the application with an ID", result)
 
     def test_success_registers_in_repo(self):
         self._make()
@@ -321,20 +321,20 @@ class TestCreateUserStory(BaseMCPTest):
         self.assertTrue(any("us_001" in f for f in files))
 
     def test_too_few_criteria_returns_error(self):
-        """Менее 2 критериев — ошибка."""
+        """Fewer than 2 criteria — error."""
         result = mod71.create_user_story(
             project_id=self.P, story_id="US-002", title="T",
             role="R", action="A", benefit="B",
-            acceptance_criteria_json=json.dumps(["Только один критерий"]),
+            acceptance_criteria_json=json.dumps(["Only one criterion"]),
         )
         self.assertIn("❌", result)
-        self.assertIn("минимум 2", result)
+        self.assertIn("At least 2", result)
 
     def test_invalid_json_returns_error(self):
         result = mod71.create_user_story(
             project_id=self.P, story_id="US-003", title="T",
             role="R", action="A", benefit="B",
-            acceptance_criteria_json="не JSON",
+            acceptance_criteria_json="not JSON",
         )
         self.assertIn("❌", result)
 
@@ -343,12 +343,12 @@ class TestCreateUserStory(BaseMCPTest):
             project_id=self.P, story_id="US-004", title="T",
             role="R", action="A", benefit="B",
             acceptance_criteria_json=json.dumps(["AC1", "AC2"]),
-            notes="Важный контекст для разработчика",
+            notes="Important context for the developer",
         )
-        self.assertIn("Важный контекст для разработчика", result)
+        self.assertIn("Important context for the developer", result)
 
     def test_multiple_stories_no_duplication_in_repo(self):
-        """Несколько историй — каждая регистрируется один раз."""
+        """Several stories — each is registered once."""
         for i in range(3):
             self._make(story_id=f"US-{i + 1:03d}")
         repo = load_spec_repo(self.P)
@@ -375,28 +375,28 @@ class TestCreateFunctionalRequirement(BaseMCPTest):
             project_id=self.P,
             req_id=req_id,
             req_type=req_type,
-            title="Автоматическое распределение заявок",
-            description="Система ДОЛЖНА автоматически распределять заявки.",
-            rationale="Снижает нагрузку на менеджеров.",
+            title="Automatic distribution of applications",
+            description="The system SHALL automatically distribute applications.",
+            rationale="Reduces the load on managers.",
             priority="High",
-            owner="Руководитель отдела",
+            owner="Department head",
             source_artifact="governance_plans/4_3_test.md",
         )
 
     def test_functional_success(self):
         result = self._make("FR-001", "functional")
         self.assertIn("FR-001", result)
-        self.assertIn("Функциональное требование", result)
+        self.assertIn("Functional requirement", result)
 
     def test_non_functional_success(self):
         result = self._make("NFR-001", "non_functional")
         self.assertIn("NFR-001", result)
-        self.assertIn("Нефункциональное требование", result)
+        self.assertIn("Non-functional requirement", result)
 
     def test_business_rule_success(self):
         result = self._make("BR-001", "business_rule")
         self.assertIn("BR-001", result)
-        self.assertIn("Бизнес-правило", result)
+        self.assertIn("Business rule", result)
 
     def test_invalid_type_returns_error(self):
         result = mod71.create_functional_requirement(
@@ -440,14 +440,14 @@ class TestCreateFunctionalRequirement(BaseMCPTest):
         self.assertIn("UC-001", result)
 
     def test_related_ids_invalid_json_fallback(self):
-        """Невалидный related_ids_json — не падает, просто игнорирует."""
+        """Invalid related_ids_json — does not crash, just ignores it."""
         result = mod71.create_functional_requirement(
             project_id=self.P, req_id="FR-003", req_type="functional",
             title="T", description="D", rationale="R",
-            related_ids_json="не_json",
+            related_ids_json="not_json",
         )
         self.assertIn("FR-003", result)
-        # Не должен упасть с ошибкой регистрации
+        # Must not crash with a registration error
         repo = load_spec_repo(self.P)
         ids = [r["id"] for r in repo["requirements"]]
         self.assertIn("FR-003", ids)
@@ -456,15 +456,15 @@ class TestCreateFunctionalRequirement(BaseMCPTest):
         result = mod71.create_functional_requirement(
             project_id=self.P, req_id="FR-004", req_type="functional",
             title="T", description="D", rationale="R",
-            constraints="Работает только в рабочее время (9:00–18:00)",
+            constraints="Works only during business hours (9:00-18:00)",
         )
-        self.assertIn("Ограничения", result)
-        self.assertIn("рабочее время", result)
+        self.assertIn("Constraints", result)
+        self.assertIn("business hours", result)
 
     def test_formulation_hint_in_output(self):
-        """Вывод содержит подсказку о формулировке для типа."""
+        """The output contains a statement hint for the type."""
         result = self._make("FR-005", "functional")
-        self.assertIn("ДОЛЖНА", result)
+        self.assertIn("SHALL", result)
 
 
 # ---------------------------------------------------------------------------
@@ -479,12 +479,12 @@ class TestCreateUseCase(BaseMCPTest):
         return mod71.create_use_case(
             project_id=self.P,
             uc_id=uc_id,
-            title="Рассмотреть заявку",
-            primary_actor="Кредитный аналитик",
-            precondition="Заявка в статусе 'На рассмотрении'",
-            postcondition="Заявка одобрена или отклонена",
-            trigger="Аналитик открывает заявку",
-            main_scenario="1. Аналитик открывает заявку.\n2. Система отображает данные.",
+            title="Review the application",
+            primary_actor="Credit analyst",
+            precondition="Application in status 'Under review'",
+            postcondition="Application approved or rejected",
+            trigger="The analyst opens the application",
+            main_scenario="1. The analyst opens the application.\n2. The system displays the data.",
             priority="High",
             source_artifact="governance_plans/4_3_test.md",
         )
@@ -495,7 +495,7 @@ class TestCreateUseCase(BaseMCPTest):
 
     def test_success_contains_actors(self):
         result = self._make()
-        self.assertIn("Кредитный аналитик", result)
+        self.assertIn("Credit analyst", result)
 
     def test_success_contains_happy_path(self):
         result = self._make()
@@ -503,7 +503,7 @@ class TestCreateUseCase(BaseMCPTest):
 
     def test_success_contains_precondition(self):
         result = self._make()
-        self.assertIn("Предусловие", result)
+        self.assertIn("Precondition", result)
 
     def test_registers_use_case_type(self):
         self._make()
@@ -520,42 +520,42 @@ class TestCreateUseCase(BaseMCPTest):
     def test_alt_scenarios_included(self):
         result = mod71.create_use_case(
             project_id=self.P, uc_id="UC-002",
-            title="Оформить кредит",
-            primary_actor="Клиент",
-            precondition="Клиент авторизован",
-            postcondition="Заявка создана",
-            trigger="Клиент нажал 'Подать заявку'",
-            main_scenario="1. Клиент заполняет форму.\n2. Система сохраняет.",
-            alt_scenarios="1а. Клиент ввёл некорректные данные: система выдаёт ошибку.",
+            title="Apply for a loan",
+            primary_actor="Customer",
+            precondition="Customer is authorized",
+            postcondition="Application created",
+            trigger="The customer clicked 'Submit application'",
+            main_scenario="1. The customer fills in the form.\n2. The system saves it.",
+            alt_scenarios="1a. The customer entered incorrect data: the system raises an error.",
         )
-        self.assertIn("Альтернативные", result)
-        self.assertIn("некорректные данные", result)
+        self.assertIn("Alternative", result)
+        self.assertIn("incorrect data", result)
 
     def test_exc_scenarios_included(self):
         result = mod71.create_use_case(
             project_id=self.P, uc_id="UC-003",
-            title="Получить справку",
-            primary_actor="Клиент",
-            precondition="Авторизован",
-            postcondition="Справка выдана",
-            trigger="Запрос клиента",
-            main_scenario="1. Клиент запрашивает справку.",
-            exc_scenarios="Xа. Сервис недоступен: уведомить клиента.",
+            title="Get a certificate",
+            primary_actor="Customer",
+            precondition="Authorized",
+            postcondition="Certificate issued",
+            trigger="Customer request",
+            main_scenario="1. The customer requests a certificate.",
+            exc_scenarios="Xa. The service is unavailable: notify the customer.",
         )
-        self.assertIn("исключений", result)
+        self.assertIn("Exception", result)
 
     def test_secondary_actors_included(self):
         result = mod71.create_use_case(
             project_id=self.P, uc_id="UC-004",
-            title="Проверить скоринг",
-            primary_actor="Аналитик",
-            secondary_actors="Система скоринга, Служба безопасности",
-            precondition="Заявка открыта",
-            postcondition="Скоринг получен",
-            trigger="Запрос аналитика",
-            main_scenario="1. Аналитик запрашивает скоринг.",
+            title="Check the scoring",
+            primary_actor="Analyst",
+            secondary_actors="Scoring system, Security service",
+            precondition="Application is open",
+            postcondition="Scoring obtained",
+            trigger="Analyst request",
+            main_scenario="1. The analyst requests the scoring.",
         )
-        self.assertIn("Служба безопасности", result)
+        self.assertIn("Security service", result)
 
 
 # ---------------------------------------------------------------------------
@@ -567,53 +567,53 @@ class TestGenerateUseCaseDiagram(BaseMCPTest):
     P = "ucd_test"
 
     def _seed_use_cases(self):
-        """Создаём несколько UC в репозитории."""
+        """Create several UCs in the repository."""
         repo = make_spec_repo(self.P, [
-            {"id": "UC-001", "type": "use_case", "title": "Подать заявку",
+            {"id": "UC-001", "type": "use_case", "title": "Submit an application",
              "version": "1.0", "status": "draft", "priority": "High", "added": str(date.today())},
-            {"id": "UC-002", "type": "use_case", "title": "Рассмотреть заявку",
+            {"id": "UC-002", "type": "use_case", "title": "Review an application",
              "version": "1.0", "status": "draft", "priority": "High", "added": str(date.today())},
-            {"id": "FR-001", "type": "functional", "title": "FR не UC",
+            {"id": "FR-001", "type": "functional", "title": "FR not UC",
              "version": "1.0", "status": "draft", "priority": "Medium", "added": str(date.today())},
         ])
         save_spec_repo(repo)
 
     def test_no_use_cases_returns_warning(self):
-        """Если нет UC — возвращает предупреждение."""
+        """If there are no UCs — returns a warning."""
         repo = make_spec_repo(self.P, [
             {"id": "FR-001", "type": "functional", "title": "FR",
              "version": "1.0", "status": "draft", "added": str(date.today())}
         ])
         save_spec_repo(repo)
-        result = mod71.generate_use_case_diagram(self.P, "Тест")
+        result = mod71.generate_use_case_diagram(self.P, "Test")
         self.assertIn("⚠️", result)
         self.assertIn("Use Cases", result)
 
     def test_generates_plantuml(self):
         self._seed_use_cases()
-        result = mod71.generate_use_case_diagram(self.P, "CRM-система")
+        result = mod71.generate_use_case_diagram(self.P, "CRM system")
         self.assertIn("@startuml", result)
         self.assertIn("@enduml", result)
 
     def test_contains_system_boundary(self):
         self._seed_use_cases()
-        result = mod71.generate_use_case_diagram(self.P, "CRM-система")
-        self.assertIn("CRM-система", result)
+        result = mod71.generate_use_case_diagram(self.P, "CRM system")
+        self.assertIn("CRM system", result)
 
     def test_all_ucs_on_diagram(self):
         self._seed_use_cases()
         result = mod71.generate_use_case_diagram(self.P, "CRM")
-        self.assertIn("Подать заявку", result)
-        self.assertIn("Рассмотреть заявку", result)
+        self.assertIn("Submit an application", result)
+        self.assertIn("Review an application", result)
 
     def test_fr_not_on_diagram(self):
-        """Функциональные требования не попадают на UC Diagram."""
+        """Functional requirements do not appear on the UC Diagram."""
         self._seed_use_cases()
         result = mod71.generate_use_case_diagram(self.P, "CRM")
-        # FR-001 должен быть в таблице но не как UC
-        # Диаграмма не должна содержать "FR не UC" как usecase
+        # FR-001 should be in the table but not as a UC
+        # The diagram must not contain "FR not UC" as a usecase
         puml_block = result.split("```plantuml")[1].split("```")[0] if "```plantuml" in result else result
-        self.assertNotIn("FR не UC", puml_block)
+        self.assertNotIn("FR not UC", puml_block)
 
     def test_creates_puml_file(self):
         self._seed_use_cases()
@@ -640,12 +640,12 @@ class TestCreateBusinessProcess(BaseMCPTest):
         return mod71.create_business_process(
             project_id=self.P,
             bp_id=bp_id,
-            title="Обработка заявки",
-            process_owner="Руководитель отдела",
-            trigger="Клиент подаёт заявку",
-            outcome="Заявка одобрена или закрыта",
-            participants="Менеджер, Аналитик, Система",
-            steps="1. Менеджер: принять заявку.\n2. Аналитик: проверить документы.\n3. Система: уведомить клиента.",
+            title="Application processing",
+            process_owner="Department head",
+            trigger="The customer submits an application",
+            outcome="Application approved or closed",
+            participants="Manager, Analyst, System",
+            steps="1. Manager: accept the application.\n2. Analyst: check the documents.\n3. System: notify the customer.",
             priority="High",
             source_artifact="governance_plans/4_3_test.md",
         )
@@ -656,10 +656,10 @@ class TestCreateBusinessProcess(BaseMCPTest):
 
     def test_success_contains_trigger(self):
         result = self._make()
-        self.assertIn("Клиент подаёт заявку", result)
+        self.assertIn("The customer submits an application", result)
 
     def test_success_contains_plantuml(self):
-        """ADR-024: должен содержать PlantUML Activity Diagram."""
+        """ADR-024: must contain a PlantUML Activity Diagram."""
         result = self._make()
         self.assertIn("@startuml", result)
         self.assertIn("@enduml", result)
@@ -670,14 +670,14 @@ class TestCreateBusinessProcess(BaseMCPTest):
         self.assertIn("stop", result)
 
     def test_creates_md_file(self):
-        """ADR-024: создаёт .md файл."""
+        """ADR-024: creates a .md file."""
         self._make()
         specs_dir = mod71._specs_dir(self.P)
         files = os.listdir(specs_dir)
         self.assertTrue(any("bp_001" in f and f.endswith(".md") for f in files))
 
     def test_creates_puml_file(self):
-        """ADR-024: создаёт .puml файл."""
+        """ADR-024: creates a .puml file."""
         self._make()
         specs_dir = mod71._specs_dir(self.P)
         files = os.listdir(specs_dir)
@@ -698,29 +698,29 @@ class TestCreateBusinessProcess(BaseMCPTest):
     def test_business_rules_included(self):
         result = mod71.create_business_process(
             project_id=self.P, bp_id="BP-002",
-            title="Выдача кредита",
-            process_owner="Директор",
-            trigger="Решение принято",
-            outcome="Кредит выдан",
-            participants="Кассир",
-            steps="1. Кассир: выдать деньги.",
-            business_rules="Максимальная сумма — 1 000 000 руб.",
+            title="Loan disbursement",
+            process_owner="Director",
+            trigger="Decision made",
+            outcome="Loan disbursed",
+            participants="Teller",
+            steps="1. Teller: hand out the money.",
+            business_rules="Maximum amount — 1,000,000.",
         )
-        self.assertIn("Бизнес-правила", result)
-        self.assertIn("1 000 000", result)
+        self.assertIn("Business rules", result)
+        self.assertIn("1,000,000", result)
 
     def test_metrics_included(self):
         result = mod71.create_business_process(
             project_id=self.P, bp_id="BP-003",
-            title="Проверка документов",
-            process_owner="Аналитик",
-            trigger="Заявка поступила",
-            outcome="Документы проверены",
-            participants="Аналитик",
-            steps="1. Аналитик: проверяет.",
-            metrics="Среднее время: 30 минут.",
+            title="Document verification",
+            process_owner="Analyst",
+            trigger="Application received",
+            outcome="Documents verified",
+            participants="Analyst",
+            steps="1. Analyst: checks.",
+            metrics="Average time: 30 minutes.",
         )
-        self.assertIn("Метрики", result)
+        self.assertIn("Process metrics", result)
 
 
 # ---------------------------------------------------------------------------
@@ -735,51 +735,51 @@ class TestCreateDataDictionary(BaseMCPTest):
         return json.dumps([
             {
                 "name": "Application",
-                "description": "Заявка на кредит",
+                "description": "Loan application",
                 "attributes": [
                     {"name": "id", "type": "Integer", "required": True,
-                     "constraints": "PK, AUTO_INCREMENT", "description": "ID заявки"},
+                     "constraints": "PK, AUTO_INCREMENT", "description": "Application ID"},
                     {"name": "status", "type": "Enum", "required": True,
-                     "constraints": "draft|submitted|approved|rejected", "description": "Статус"},
+                     "constraints": "draft|submitted|approved|rejected", "description": "Status"},
                 ],
-                "business_rules": ["Статус меняется только по бизнес-правилам"]
+                "business_rules": ["The status changes only per business rules"]
             }
         ])
 
     def test_success_contains_dd_id(self):
         result = mod71.create_data_dictionary(
-            self.P, "DD-001", "Сущности CRM", self._make_entities()
+            self.P, "DD-001", "CRM entities", self._make_entities()
         )
         self.assertIn("DD-001", result)
 
     def test_success_contains_entity_name(self):
         result = mod71.create_data_dictionary(
-            self.P, "DD-001", "Сущности CRM", self._make_entities()
+            self.P, "DD-001", "CRM entities", self._make_entities()
         )
         self.assertIn("Application", result)
 
     def test_success_contains_attributes_table(self):
         result = mod71.create_data_dictionary(
-            self.P, "DD-001", "Сущности CRM", self._make_entities()
+            self.P, "DD-001", "CRM entities", self._make_entities()
         )
-        self.assertIn("Тип данных", result)
-        self.assertIn("Обязательный", result)
+        self.assertIn("Data type", result)
+        self.assertIn("Required", result)
 
     def test_success_contains_attribute_values(self):
         result = mod71.create_data_dictionary(
-            self.P, "DD-001", "Сущности CRM", self._make_entities()
+            self.P, "DD-001", "CRM entities", self._make_entities()
         )
         self.assertIn("Integer", result)
         self.assertIn("AUTO_INCREMENT", result)
 
     def test_success_contains_business_rules(self):
         result = mod71.create_data_dictionary(
-            self.P, "DD-001", "Сущности CRM", self._make_entities()
+            self.P, "DD-001", "CRM entities", self._make_entities()
         )
-        self.assertIn("Бизнес-правила", result)
+        self.assertIn("Business rules", result)
 
     def test_registers_in_repo(self):
-        mod71.create_data_dictionary(self.P, "DD-001", "Сущности CRM", self._make_entities())
+        mod71.create_data_dictionary(self.P, "DD-001", "CRM entities", self._make_entities())
         repo = load_spec_repo(self.P)
         ids = [r["id"] for r in repo["requirements"]]
         self.assertIn("DD-001", ids)
@@ -791,13 +791,13 @@ class TestCreateDataDictionary(BaseMCPTest):
         self.assertEqual(req["type"], "data_dictionary")
 
     def test_creates_md_file(self):
-        mod71.create_data_dictionary(self.P, "DD-001", "Сущности", self._make_entities())
+        mod71.create_data_dictionary(self.P, "DD-001", "Entities", self._make_entities())
         specs_dir = mod71._specs_dir(self.P)
         files = os.listdir(specs_dir)
         self.assertTrue(any("dd_001" in f for f in files))
 
     def test_invalid_json_returns_error(self):
-        result = mod71.create_data_dictionary(self.P, "DD-002", "T", "не JSON")
+        result = mod71.create_data_dictionary(self.P, "DD-002", "T", "not JSON")
         self.assertIn("❌", result)
 
     def test_empty_list_returns_error(self):
@@ -806,14 +806,14 @@ class TestCreateDataDictionary(BaseMCPTest):
 
     def test_multiple_entities(self):
         entities = json.dumps([
-            {"name": "Client", "description": "Клиент", "attributes": [
+            {"name": "Client", "description": "Client", "attributes": [
                 {"name": "id", "type": "Integer", "required": True, "constraints": "PK", "description": "ID"}
             ], "business_rules": []},
-            {"name": "Manager", "description": "Менеджер", "attributes": [
+            {"name": "Manager", "description": "Manager", "attributes": [
                 {"name": "id", "type": "Integer", "required": True, "constraints": "PK", "description": "ID"}
             ], "business_rules": []},
         ])
-        result = mod71.create_data_dictionary(self.P, "DD-004", "Все сущности", entities)
+        result = mod71.create_data_dictionary(self.P, "DD-004", "All entities", entities)
         self.assertIn("Client", result)
         self.assertIn("Manager", result)
 
@@ -829,7 +829,7 @@ class TestCreateERD(BaseMCPTest):
     def _make_entities(self):
         return json.dumps([
             {"name": "Application", "pk": "id", "attributes": ["client_id FK", "status Enum"]},
-            {"name": "Client", "pk": "id", "attributes": ["name String", "inn String"]},
+            {"name": "Client", "pk": "id", "attributes": ["name String", "tin String"]},
         ])
 
     def _make_relations(self):
@@ -838,12 +838,12 @@ class TestCreateERD(BaseMCPTest):
         ])
 
     def test_success_contains_erd_id(self):
-        result = mod71.create_erd(self.P, "ERD-001", "Основные сущности",
+        result = mod71.create_erd(self.P, "ERD-001", "Core entities",
                                    self._make_entities(), self._make_relations())
         self.assertIn("ERD-001", result)
 
     def test_success_contains_plantuml(self):
-        """ADR-025: содержит PlantUML ER Diagram."""
+        """ADR-025: contains a PlantUML ER Diagram."""
         result = mod71.create_erd(self.P, "ERD-001", "T",
                                    self._make_entities(), self._make_relations())
         self.assertIn("@startuml", result)
@@ -858,7 +858,7 @@ class TestCreateERD(BaseMCPTest):
     def test_plantuml_contains_relation_notation(self):
         result = mod71.create_erd(self.P, "ERD-001", "T",
                                    self._make_entities(), self._make_relations())
-        # many-to-one → }o--||
+        # many-to-one -> }o--||
         self.assertIn("}o--||", result)
 
     def test_plantuml_contains_relation_label(self):
@@ -881,24 +881,24 @@ class TestCreateERD(BaseMCPTest):
         self.assertEqual(req["type"], "erd")
 
     def test_creates_md_file(self):
-        mod71.create_erd(self.P, "ERD-001", "Сущности", self._make_entities(), self._make_relations())
+        mod71.create_erd(self.P, "ERD-001", "Entities", self._make_entities(), self._make_relations())
         specs_dir = mod71._specs_dir(self.P)
         files = os.listdir(specs_dir)
         self.assertTrue(any("erd_001" in f and f.endswith(".md") for f in files))
 
     def test_creates_puml_file(self):
-        """ADR-025: создаёт .puml файл."""
-        mod71.create_erd(self.P, "ERD-001", "Сущности", self._make_entities(), self._make_relations())
+        """ADR-025: creates a .puml file."""
+        mod71.create_erd(self.P, "ERD-001", "Entities", self._make_entities(), self._make_relations())
         specs_dir = mod71._specs_dir(self.P)
         files = os.listdir(specs_dir)
         self.assertTrue(any("erd_001" in f and f.endswith(".puml") for f in files))
 
     def test_invalid_entities_json_returns_error(self):
-        result = mod71.create_erd(self.P, "ERD-002", "T", "не JSON", "[]")
+        result = mod71.create_erd(self.P, "ERD-002", "T", "not JSON", "[]")
         self.assertIn("❌", result)
 
     def test_empty_relations_no_error(self):
-        """Пустой список связей — не ошибка."""
+        """An empty relationships list — not an error."""
         result = mod71.create_erd(self.P, "ERD-003", "T", self._make_entities(), "[]")
         self.assertIn("ERD-003", result)
         self.assertNotIn("❌", result)
@@ -922,51 +922,51 @@ class TestBuildCoverageMatrix(BaseMCPTest):
     P = "cov_test"
 
     def test_no_requirements_returns_warning(self):
-        """Пустой репозиторий — возвращает предупреждение."""
+        """Empty repository — returns a warning."""
         save_spec_repo(make_spec_repo(self.P, []))
         result = mod71.build_coverage_matrix(self.P)
         self.assertIn("⚠️", result)
 
     def test_with_requirements_shows_matrix(self):
-        """С требованиями — показывает матрицу."""
+        """With requirements — shows the matrix."""
         repo = make_spec_repo(self.P, [
-            {"id": "FR-001", "type": "functional", "title": "Тест",
+            {"id": "FR-001", "type": "functional", "title": "Test",
              "version": "1.0", "status": "draft", "added": str(date.today()),
              "source_artifact": "governance_plans/4_3_cov_test_confirmed.md"},
         ])
         save_spec_repo(repo)
         make_confirmed_artifact(self.P)
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("Матрица покрытия", result)
+        self.assertIn("coverage matrix", result)
 
     def test_deprecated_excluded(self):
-        """Deprecated требования не включаются в матрицу."""
+        """Deprecated requirements are not included in the matrix."""
         repo = make_spec_repo(self.P, [
-            {"id": "FR-001", "type": "functional", "title": "Активный",
+            {"id": "FR-001", "type": "functional", "title": "Active",
              "version": "1.0", "status": "draft", "added": str(date.today()),
              "source_artifact": ""},
-            {"id": "FR-DEP", "type": "functional", "title": "Устаревший",
+            {"id": "FR-DEP", "type": "functional", "title": "Deprecated",
              "version": "1.0", "status": "deprecated", "added": str(date.today()),
              "source_artifact": ""},
         ])
         save_spec_repo(repo)
         result = mod71.build_coverage_matrix(self.P)
-        # FR-001 должен быть, FR-DEP — нет
+        # FR-001 should be present, FR-DEP should not
         self.assertIn("FR-001", result)
         self.assertNotIn("FR-DEP", result)
 
     def test_shows_summary_table(self):
         repo = make_spec_repo(self.P, [
-            {"id": "FR-001", "type": "functional", "title": "Тест",
+            {"id": "FR-001", "type": "functional", "title": "Test",
              "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
         ])
         save_spec_repo(repo)
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("Сводка", result)
-        self.assertIn("Требований в реестре", result)
+        self.assertIn("Summary", result)
+        self.assertIn("Requirements in the registry", result)
 
     def test_over_engineering_flag_triggers(self):
-        """10+ требований на одну цель → флаг over-engineering."""
+        """10+ requirements for one objective -> over-engineering flag."""
         reqs = [
             {"id": f"FR-{i:03d}", "type": "functional", "title": f"Req {i}",
              "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""}
@@ -977,53 +977,53 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         self.assertIn("🟡", result)
 
     def test_reads_business_goals_from_artifact(self):
-        """Если артефакт 4.3 есть — использует его бизнес-цели."""
-        make_confirmed_artifact(self.P, content="""## Бизнес-цели
+        """If a 4.3 artifact exists — uses its business objectives."""
+        make_confirmed_artifact(self.P, content="""## Business objectives
 
-1. Сократить время обработки заявок
-2. Автоматизировать распределение
+1. Reduce application processing time
+2. Automate distribution
 """)
         repo = make_spec_repo(self.P, [
-            {"id": "FR-001", "type": "functional", "title": "Тест",
+            {"id": "FR-001", "type": "functional", "title": "Test",
              "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
         ])
         save_spec_repo(repo)
         result = mod71.build_coverage_matrix(self.P)
-        # Должна быть упомянута хотя бы одна бизнес-цель из файла
+        # At least one business objective from the file should be mentioned
         self.assertTrue(
-            "Сократить" in result or "Автоматизировать" in result,
-            "Бизнес-цели из артефакта 4.3 не найдены в матрице"
+            "Reduce" in result or "Automate" in result,
+            "Business objectives from the 4.3 artifact were not found in the matrix"
         )
 
 
 # ---------------------------------------------------------------------------
-# Интеграционные тесты — полный пайплайн
+# Integration tests — full pipeline
 # ---------------------------------------------------------------------------
 
 class TestIntegrationPipeline(BaseMCPTest):
     """
-    Проверяем что созданные артефакты корректно взаимодействуют.
+    Verify that the created artifacts interact correctly.
     """
 
     P = "integration_test"
 
     def test_full_pipeline_spec_to_repo(self):
         """
-        Полный пайплайн: создаём US + FR + UC → все регистрируются в репозитории 5.1.
+        Full pipeline: create US + FR + UC -> all are registered in repository 5.1.
         """
         mod71.create_user_story(
-            project_id=self.P, story_id="US-001", title="История",
-            role="Пользователь", action="сделать действие", benefit="получить результат",
+            project_id=self.P, story_id="US-001", title="Story",
+            role="User", action="perform an action", benefit="obtain a result",
             acceptance_criteria_json=json.dumps(["AC1", "AC2"]),
         )
         mod71.create_functional_requirement(
             project_id=self.P, req_id="FR-001", req_type="functional",
-            title="Требование", description="Система ДОЛЖНА...", rationale="Потому что"
+            title="Requirement", description="The system SHALL...", rationale="Because"
         )
         mod71.create_use_case(
-            project_id=self.P, uc_id="UC-001", title="Сценарий",
-            primary_actor="Актор", precondition="Условие", postcondition="Результат",
-            trigger="Триггер", main_scenario="1. Актор делает. 2. Система отвечает.",
+            project_id=self.P, uc_id="UC-001", title="Scenario",
+            primary_actor="Actor", precondition="Condition", postcondition="Result",
+            trigger="Trigger", main_scenario="1. The actor acts. 2. The system responds.",
         )
 
         repo = load_spec_repo(self.P)
@@ -1034,16 +1034,16 @@ class TestIntegrationPipeline(BaseMCPTest):
 
     def test_specs_dir_created_with_files(self):
         """
-        После создания артефактов папка specs существует и содержит файлы.
+        After creating artifacts the specs folder exists and contains files.
         """
         mod71.create_user_story(
-            project_id=self.P, story_id="US-001", title="История",
-            role="Р", action="А", benefit="Б",
+            project_id=self.P, story_id="US-001", title="Story",
+            role="R", action="A", benefit="B",
             acceptance_criteria_json=json.dumps(["AC1", "AC2"]),
         )
         mod71.create_functional_requirement(
             project_id=self.P, req_id="FR-001", req_type="functional",
-            title="Т", description="Д", rationale="О",
+            title="T", description="D", rationale="O",
         )
         specs_dir = mod71._specs_dir(self.P)
         self.assertTrue(os.path.isdir(specs_dir))
@@ -1052,41 +1052,41 @@ class TestIntegrationPipeline(BaseMCPTest):
 
     def test_coverage_matrix_after_creation(self):
         """
-        После создания нескольких требований coverage matrix строится без ошибок.
+        After creating several requirements the coverage matrix builds without errors.
         """
         for i in range(3):
             mod71.create_functional_requirement(
                 project_id=self.P, req_id=f"FR-{i + 1:03d}", req_type="functional",
-                title=f"Требование {i + 1}", description="D", rationale="R",
+                title=f"Requirement {i + 1}", description="D", rationale="R",
             )
         result = mod71.build_coverage_matrix(self.P)
         self.assertNotIn("⚠️", result.split("##")[0])
-        self.assertIn("Матрица", result)
+        self.assertIn("matrix", result)
 
     def test_uc_diagram_after_use_cases_created(self):
         """
-        generate_use_case_diagram видит UC созданные через create_use_case.
+        generate_use_case_diagram sees UCs created via create_use_case.
         """
         for i in range(2):
             mod71.create_use_case(
                 project_id=self.P, uc_id=f"UC-{i + 1:03d}",
-                title=f"Сценарий {i + 1}",
-                primary_actor="Актор",
-                precondition="Условие", postcondition="Результат",
-                trigger="Триггер", main_scenario="1. Шаг.",
+                title=f"Scenario {i + 1}",
+                primary_actor="Actor",
+                precondition="Condition", postcondition="Result",
+                trigger="Trigger", main_scenario="1. Step.",
             )
-        result = mod71.generate_use_case_diagram(self.P, "Тестовая система")
+        result = mod71.generate_use_case_diagram(self.P, "Test system")
         self.assertIn("@startuml", result)
-        self.assertIn("Сценарий 1", result)
-        self.assertIn("Сценарий 2", result)
+        self.assertIn("Scenario 1", result)
+        self.assertIn("Scenario 2", result)
 
     def test_all_types_registered_correctly(self):
         """
-        Все типы артефактов регистрируются с правильным type в репозитории.
+        All artifact types are registered with the correct type in the repository.
         """
         mod71.create_user_story(
-            project_id=self.P, story_id="US-001", title="История",
-            role="Р", action="А", benefit="Б",
+            project_id=self.P, story_id="US-001", title="Story",
+            role="R", action="A", benefit="B",
             acceptance_criteria_json=json.dumps(["AC1", "AC2"]),
         )
         mod71.create_functional_requirement(
@@ -1095,16 +1095,16 @@ class TestIntegrationPipeline(BaseMCPTest):
         )
         mod71.create_use_case(
             project_id=self.P, uc_id="UC-001", title="UC",
-            primary_actor="А", precondition="П", postcondition="Р",
-            trigger="Т", main_scenario="1. Шаг.",
+            primary_actor="A", precondition="P", postcondition="R",
+            trigger="T", main_scenario="1. Step.",
         )
         mod71.create_business_process(
-            project_id=self.P, bp_id="BP-001", title="Процесс",
-            process_owner="Владелец", trigger="Триггер", outcome="Результат",
-            participants="Участник", steps="1. Участник: шаг.",
+            project_id=self.P, bp_id="BP-001", title="Process",
+            process_owner="Owner", trigger="Trigger", outcome="Result",
+            participants="Participant", steps="1. Participant: step.",
         )
         mod71.create_data_dictionary(
-            project_id=self.P, dd_id="DD-001", title="Сущности",
+            project_id=self.P, dd_id="DD-001", title="Entities",
             entities_json=json.dumps([{
                 "name": "E", "description": "D",
                 "attributes": [{"name": "id", "type": "Integer", "required": True,

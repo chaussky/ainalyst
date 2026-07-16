@@ -1,25 +1,25 @@
 """
-tests/test_ch7_72.py — Тесты для Главы 7, задача 7.2 (Verify Requirements)
+tests/test_ch7_72.py — Tests for Chapter 7, task 7.2 (Verify Requirements)
 
-Покрытие (~80 тестов):
-  - Утилиты: _repo_path, _issues_path, _load_repo, _load_issues, _save_issues,
+Coverage (~80 tests):
+  - Utilities: _repo_path, _issues_path, _load_repo, _load_issues, _save_issues,
              _next_issue_id, _open_blockers_for_req, _check_atomicity,
              _check_ambiguity, _check_testability_us, _check_testability_fr,
              _check_testability_uc, _check_prioritized, _check_conciseness,
              _check_group_b, _check_single_req
-  - check_req_quality: пустой репо, все draft, фильтр по типу, батч по ID,
-    несуществующий ID, атомарность/однозначность/тестируемость флаги
-  - check_model_consistency: нет директории, пустая директория,
-    рассинхрон DD vs ERD, рассинхрон UC vs diagram, OK
+  - check_req_quality: empty repo, all draft, filter by type, batch by ID,
+    nonexistent ID, atomicity/unambiguousness/testability flags
+  - check_model_consistency: no directory, empty directory,
+    DD vs ERD mismatch, UC vs diagram mismatch, OK
   - open_verification_issue: success, invalid type, invalid severity, empty description,
-    blocker warning, нумерация VI-001/VI-002
-  - resolve_verification_issue: success, уже закрыт, не найден, blockers remain,
-    все blockers закрыты — сигнал
-  - mark_req_verified: success, blocker блокирует, не найден, смена статуса в репо,
-    история, несколько req
-  - get_verification_report: нет req, 0% verified, 100% verified, blocker list,
-    открытые issues, готовность к 5.5
-  - Pipeline: полный сценарий check → open_issue → resolve → mark_verified → report
+    blocker warning, numbering VI-001/VI-002
+  - resolve_verification_issue: success, already closed, not found, blockers remain,
+    all blockers closed — signal
+  - mark_req_verified: success, blocker blocks, not found, status change in the repo,
+    history, multiple reqs
+  - get_verification_report: no reqs, 0% verified, 100% verified, blocker list,
+    open issues, readiness for 5.5
+  - Pipeline: full scenario check -> open_issue -> resolve -> mark_verified -> report
 """
 
 import json
@@ -38,7 +38,7 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные функции
+# Helper functions
 # ---------------------------------------------------------------------------
 
 def make_repo(project_id: str, requirements: list = None, links: list = None) -> dict:
@@ -76,42 +76,42 @@ def load_issues(project_id: str) -> dict:
         return json.load(f)
 
 
-def make_us_req(req_id="US-001", title="Оформить заявку", status="draft",
+def make_us_req(req_id="US-001", title="Submit application", status="draft",
                 priority="High", source_artifact="governance_plans/4_3_test.md",
                 ac_count=3, ac_texts=None):
     return {
         "id": req_id, "type": "user_story", "title": title,
         "status": status, "priority": priority,
-        "source_artifact": source_artifact, "owner": "Иванов",
+        "source_artifact": source_artifact, "owner": "Ivanov",
         "ac_count": ac_count, "ac_texts": ac_texts or ["AC 1", "AC 2", "AC 3"],
         "version": "1.0", "added": str(date.today()),
     }
 
 
-def make_fr_req(req_id="FR-001", title="Возвращать список заявок", status="draft",
-                priority="High", description="Система ДОЛЖНА возвращать список заявок за 2 секунды",
+def make_fr_req(req_id="FR-001", title="Return the list of applications", status="draft",
+                priority="High", description="The system SHALL return the list of applications within 2 seconds",
                 source_artifact="governance_plans/4_3_test.md"):
     return {
         "id": req_id, "type": "functional", "title": title,
         "description": description, "status": status, "priority": priority,
-        "source_artifact": source_artifact, "owner": "Петрова",
+        "source_artifact": source_artifact, "owner": "Petrova",
         "version": "1.0", "added": str(date.today()),
     }
 
 
-def make_uc_req(req_id="UC-001", title="Создать заявку", status="draft",
-                priority="High", exc_scenarios="Исключение: данные некорректны"):
+def make_uc_req(req_id="UC-001", title="Create an application", status="draft",
+                priority="High", exc_scenarios="Exception: data is incorrect"):
     return {
         "id": req_id, "type": "use_case", "title": title,
         "status": status, "priority": priority,
-        "exc_scenarios": exc_scenarios, "owner": "Сидоров",
+        "exc_scenarios": exc_scenarios, "owner": "Sidorov",
         "source_artifact": "governance_plans/4_3_test.md",
         "version": "1.0", "added": str(date.today()),
     }
 
 
 # ---------------------------------------------------------------------------
-# Тесты утилит
+# Utility tests
 # ---------------------------------------------------------------------------
 
 class TestUtilities(BaseMCPTest):
@@ -178,86 +178,86 @@ class TestUtilities(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты rule-based проверок
+# Rule-based check tests
 # ---------------------------------------------------------------------------
 
 class TestRuleBasedChecks(BaseMCPTest):
 
     def test_atomicity_passed_no_signals(self):
-        result = mod72._check_atomicity("Система отображает список заявок")
+        result = mod72._check_atomicity("The system displays the list of applications")
         self.assertTrue(result["passed"])
         self.assertEqual(result["signals_found"], [])
 
     def test_atomicity_warning_one_signal(self):
-        result = mod72._check_atomicity("Система создаёт заявку и сохраняет её в базе")
-        # Один сигнал " и " — passed=True с предупреждением
+        result = mod72._check_atomicity("The system creates an application and saves it in the database")
+        # One signal " and " — passed=True with a warning
         self.assertTrue(result["passed"])
-        self.assertTrue(any("и" in s for s in result["signals_found"]))
+        self.assertTrue(any("and" in s for s in result["signals_found"]))
 
     def test_atomicity_failed_two_signals(self):
         result = mod72._check_atomicity(
-            "Система создаёт заявку и сохраняет её в базе, а также отправляет уведомление"
+            "The system creates an application and saves it in the database, as well as sends a notification"
         )
         self.assertFalse(result["passed"])
         self.assertGreaterEqual(len(result["signals_found"]), 2)
 
     def test_ambiguity_passed(self):
-        result = mod72._check_ambiguity("Система ДОЛЖНА возвращать данные за 2 секунды")
+        result = mod72._check_ambiguity("The system SHALL return data within 2 seconds")
         self.assertTrue(result["passed"])
         self.assertEqual(result["signals_found"], [])
 
     def test_ambiguity_failed(self):
-        result = mod72._check_ambiguity("Система должна быть быстрой и удобной")
+        result = mod72._check_ambiguity("The system must be fast and convenient")
         self.assertFalse(result["passed"])
-        self.assertIn("быстро" if "быстро" in result["signals_found"] else "удобно",
+        self.assertIn("fast" if "fast" in result["signals_found"] else "convenient",
                       result["signals_found"])
 
-    def test_ambiguity_failed_kak_pravilo(self):
-        result = mod72._check_ambiguity("Система как правило возвращает данные")
+    def test_ambiguity_failed_as_a_rule(self):
+        result = mod72._check_ambiguity("As a rule the system returns data")
         self.assertFalse(result["passed"])
 
     def test_testability_us_passed(self):
-        result = mod72._check_testability_us("Оформить заявку", 3, ["AC1", "AC2", "AC3"])
+        result = mod72._check_testability_us("Submit application", 3, ["AC1", "AC2", "AC3"])
         self.assertTrue(result["passed"])
         self.assertIsNone(result["issue"])
 
     def test_testability_us_missing_ac(self):
-        result = mod72._check_testability_us("Оформить заявку", 1, ["AC1"])
+        result = mod72._check_testability_us("Submit application", 1, ["AC1"])
         self.assertFalse(result["passed"])
         self.assertEqual(result["issue"], "missing_ac")
 
     def test_testability_us_zero_ac(self):
-        result = mod72._check_testability_us("Оформить заявку", 0, [])
+        result = mod72._check_testability_us("Submit application", 0, [])
         self.assertFalse(result["passed"])
         self.assertEqual(result["issue"], "missing_ac")
 
     def test_testability_fr_passed_with_number(self):
         result = mod72._check_testability_fr(
-            "Система ДОЛЖНА возвращать список за 2 секунды", "functional"
+            "The system SHALL return the list within 2 seconds", "functional"
         )
         self.assertTrue(result["passed"])
 
     def test_testability_fr_failed_no_metric(self):
         result = mod72._check_testability_fr(
-            "Система должна быстро обрабатывать данные", "functional"
+            "The system must process data fast", "functional"
         )
         self.assertFalse(result["passed"])
         self.assertEqual(result["issue"], "not_testable")
 
     def test_testability_fr_percent(self):
         result = mod72._check_testability_fr(
-            "Система ДОЛЖНА обеспечивать доступность 99.9%", "non_functional"
+            "The system SHALL provide 99.9% availability", "non_functional"
         )
         self.assertTrue(result["passed"])
 
     def test_testability_br_with_condition(self):
         result = mod72._check_testability_fr(
-            "Если сумма превышает 1000000, заявка требует одобрения", "business_rule"
+            "If the amount exceeds 1000000, the application requires approval", "business_rule"
         )
         self.assertTrue(result["passed"])
 
     def test_testability_uc_with_exceptions(self):
-        result = mod72._check_testability_uc("Исключение: данные некорректны")
+        result = mod72._check_testability_uc("Exception: data is incorrect")
         self.assertTrue(result["passed"])
 
     def test_testability_uc_no_exceptions(self):
@@ -279,12 +279,12 @@ class TestRuleBasedChecks(BaseMCPTest):
         self.assertFalse(result["passed"])
 
     def test_conciseness_passed(self):
-        result = mod72._check_conciseness("Оформить заявку", "Описание", "user_story")
+        result = mod72._check_conciseness("Submit application", "Description", "user_story")
         self.assertTrue(result["passed"])
         self.assertIsNone(result.get("warning"))
 
     def test_conciseness_long_title_us(self):
-        long_title = "Как менеджер по заявкам я хочу просматривать все активные заявки клиентов системы ХХХ"
+        long_title = "As an applications manager I want to view all active applications of customers in the XXX system"
         result = mod72._check_conciseness(long_title, "", "user_story")
         self.assertTrue(result["passed"])
         if len(long_title) > 100:
@@ -292,8 +292,8 @@ class TestRuleBasedChecks(BaseMCPTest):
 
     def test_conciseness_impl_signal(self):
         result = mod72._check_conciseness(
-            "Создать заявку",
-            "Реализовать через REST API вызов метода POST /api/v1/applications",
+            "Create an application",
+            "Implement via REST API call the method POST /api/v1/applications",
             "functional"
         )
         self.assertTrue(result["passed"])
@@ -301,7 +301,7 @@ class TestRuleBasedChecks(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты check_group_b
+# check_group_b tests
 # ---------------------------------------------------------------------------
 
 class TestGroupB(BaseMCPTest):
@@ -311,7 +311,7 @@ class TestGroupB(BaseMCPTest):
             {"from": "US-001", "to": "BR-001", "relation": "derives", "added": str(date.today())}
         ])
         req = make_us_req("US-001", source_artifact="governance_plans/4_3_test.md")
-        req["owner"] = "Иванов"
+        req["owner"] = "Ivanov"
         result = mod72._check_group_b(req, repo)
         self.assertEqual(result["consistent"]["status"], "ok")
         self.assertEqual(result["complete"]["warnings"], [])
@@ -328,7 +328,7 @@ class TestGroupB(BaseMCPTest):
         req = make_us_req("US-001")
         result = mod72._check_group_b(req, repo)
         warnings = result["complete"]["warnings"]
-        self.assertTrue(any("связей" in w or "link" in w.lower() for w in warnings))
+        self.assertTrue(any("link" in w.lower() for w in warnings))
 
     def test_group_b_conflict_status(self):
         repo = make_repo("p")
@@ -353,14 +353,14 @@ class TestGroupB(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Тесты check_req_quality
+# check_req_quality tests
 # ---------------------------------------------------------------------------
 
 class TestCheckReqQuality(BaseMCPTest):
 
     def test_empty_repo(self):
         result = mod72.check_req_quality("empty_proj")
-        self.assertIn("пуст", result)
+        self.assertIn("empty", result)
 
     def test_all_draft_checked(self):
         repo = make_repo("proj_q", [
@@ -423,67 +423,67 @@ class TestCheckReqQuality(BaseMCPTest):
 
     def test_ambiguity_detected(self):
         repo = make_repo("proj_q8", [
-            make_fr_req("FR-001", title="Быстрая загрузка удобного интерфейса",
-                        description="Система должна быстро и удобно отображать данные")
+            make_fr_req("FR-001", title="Fast loading of a convenient interface",
+                        description="The system must display data fast and conveniently")
         ])
         save_repo(repo)
         result = mod72.check_req_quality("proj_q8")
-        self.assertIn("Однозначность", result)
+        self.assertIn("Unambiguousness", result)
 
     def test_atomicity_detected(self):
         repo = make_repo("proj_q9", [
             make_us_req("US-001",
-                        title="Создать заявку и отправить уведомление, а также обновить реестр")
+                        title="Create an application and send a notification, as well as update the registry")
         ])
         save_repo(repo)
         result = mod72.check_req_quality("proj_q9")
-        self.assertIn("Атомарность", result)
+        self.assertIn("Atomicity", result)
 
     def test_no_req_after_filter(self):
         repo = make_repo("proj_q10", [make_us_req("US-001")])
         save_repo(repo)
         result = mod72.check_req_quality("proj_q10", req_type="use_case")
-        self.assertIn("Нет требований", result)
+        self.assertIn("No requirements", result)
 
     def test_summary_counts(self):
         repo = make_repo("proj_q11", [
-            make_us_req("US-001"),  # хороший
+            make_us_req("US-001"),  # good
             make_us_req("US-002", ac_count=0, ac_texts=[]),  # blocker
         ])
         save_repo(repo)
         result = mod72.check_req_quality("proj_q11")
-        self.assertIn("Найдены проблемы", result)
+        self.assertIn("Issues found", result)
 
 
 # ---------------------------------------------------------------------------
-# Тесты check_model_consistency
+# check_model_consistency tests
 # ---------------------------------------------------------------------------
 
 class TestCheckModelConsistency(BaseMCPTest):
 
     def test_no_specs_dir(self):
         result = mod72.check_model_consistency("proj_mc1")
-        self.assertIn("не найдена", result)
+        self.assertIn("not found", result)
 
     def test_empty_specs_dir(self):
         os.makedirs("governance_plans/data/proj_mc2_specs", exist_ok=True)
         result = mod72.check_model_consistency("proj_mc2")
-        self.assertIn("нет файлов", result)
+        self.assertIn("no .md or .puml files", result)
 
     def test_dd_erd_mismatch(self):
         specs_dir = "governance_plans/data/proj_mc3_specs"
         os.makedirs(specs_dir, exist_ok=True)
 
-        # DD с сущностью Application
+        # DD with entity Application
         with open(os.path.join(specs_dir, "dd_001_test.md"), "w", encoding="utf-8") as f:
-            f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
+            f.write("# DD-001\n\n## Entity: Application\n\n## Entity: Client\n")
 
-        # ERD с другой сущностью
+        # ERD with a different entity
         with open(os.path.join(specs_dir, "erd_001_test.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\nentity "Order" as Ord {}\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc3")
-        self.assertIn("несоответствий", result.lower())
+        self.assertIn("inconsistencies", result.lower())
         self.assertIn("Client", result)
 
     def test_dd_erd_consistent(self):
@@ -491,37 +491,37 @@ class TestCheckModelConsistency(BaseMCPTest):
         os.makedirs(specs_dir, exist_ok=True)
 
         with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:
-            f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
+            f.write("# DD-001\n\n## Entity: Application\n\n## Entity: Client\n")
 
         with open(os.path.join(specs_dir, "erd_001.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\nentity "Client" as Cli {}\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc4")
-        self.assertIn("не найдено", result)
+        self.assertIn("No inconsistencies found", result)
 
     def test_uc_actor_not_in_diagram(self):
         specs_dir = "governance_plans/data/proj_mc5_specs"
         os.makedirs(specs_dir, exist_ok=True)
 
-        # UC spec с актором
+        # UC spec with an actor
         with open(os.path.join(specs_dir, "uc_001_create.md"), "w", encoding="utf-8") as f:
             f.write(
-                "# UC-001 — Создать заявку\n\n"
-                "| Атрибут | Значение |\n"
+                "# UC-001 — Create an application\n\n"
+                "| Attribute | Value |\n"
                 "|---------|----------|\n"
-                "| Актор (primary) | Менеджер |\n"
+                "| Actor (primary) | Manager |\n"
             )
 
-        # UC Diagram без этого актора
+        # UC Diagram without that actor
         with open(os.path.join(specs_dir, "uc_diagram_test.puml"), "w", encoding="utf-8") as f:
-            f.write('@startuml\nactor "Администратор" as A1\nusecase "Создать заявку" as UC1\n@enduml\n')
+            f.write('@startuml\nactor "Administrator" as A1\nusecase "Create an application" as UC1\n@enduml\n')
 
         result = mod72.check_model_consistency("proj_mc5")
-        self.assertIn("Менеджер", result)
+        self.assertIn("Manager", result)
 
 
 # ---------------------------------------------------------------------------
-# Тесты open_verification_issue
+# open_verification_issue tests
 # ---------------------------------------------------------------------------
 
 class TestOpenVerificationIssue(BaseMCPTest):
@@ -531,7 +531,7 @@ class TestOpenVerificationIssue(BaseMCPTest):
         save_repo(repo)
         result = mod72.open_verification_issue(
             "proj_i1", "US-001", "missing_ac",
-            "User Story не содержит Acceptance Criteria", "blocker"
+            "User Story does not contain Acceptance Criteria", "blocker"
         )
         self.assertIn("VI-001", result)
         self.assertIn("blocker", result)
@@ -546,7 +546,7 @@ class TestOpenVerificationIssue(BaseMCPTest):
         save_repo(repo)
         result = mod72.open_verification_issue(
             "proj_i2", "FR-001", "ambiguity",
-            "FR содержит слово 'быстро' без метрики", "major"
+            "FR contains the word 'fast' without a metric", "major"
         )
         self.assertIn("VI-001", result)
         data = load_issues("proj_i2")
@@ -585,13 +585,13 @@ class TestOpenVerificationIssue(BaseMCPTest):
         repo = make_repo("proj_i7", [make_us_req("US-001")])
         save_repo(repo)
         mod72.open_verification_issue(
-            "proj_i7", "US-001", "other", "Desc", "minor", assigned_to="Иванов"
+            "proj_i7", "US-001", "other", "Desc", "minor", assigned_to="Ivanov"
         )
         data = load_issues("proj_i7")
-        self.assertEqual(data["issues"]["VI-001"]["assigned_to"], "Иванов")
+        self.assertEqual(data["issues"]["VI-001"]["assigned_to"], "Ivanov")
 
     def test_req_not_in_repo(self):
-        # req нет в репо — issue всё равно создаётся (не блокируем)
+        # req not in repo — issue is still created (we don't block)
         result = mod72.open_verification_issue(
             "proj_i8", "US-999", "other", "Desc", "minor"
         )
@@ -600,13 +600,13 @@ class TestOpenVerificationIssue(BaseMCPTest):
     def test_model_inconsistency_type(self):
         result = mod72.open_verification_issue(
             "proj_i9", "US-001", "model_inconsistency",
-            "Сущность Application в DD но нет в ERD", "major"
+            "Entity Application in DD but not in ERD", "major"
         )
         self.assertIn("VI-001", result)
 
 
 # ---------------------------------------------------------------------------
-# Тесты resolve_verification_issue
+# resolve_verification_issue tests
 # ---------------------------------------------------------------------------
 
 class TestResolveVerificationIssue(BaseMCPTest):
@@ -614,23 +614,23 @@ class TestResolveVerificationIssue(BaseMCPTest):
     def _create_issue(self, project_id, req_id, issue_type="missing_ac", severity="blocker"):
         repo = make_repo(project_id, [make_us_req(req_id)])
         save_repo(repo)
-        mod72.open_verification_issue(project_id, req_id, issue_type, "Проблема", severity)
+        mod72.open_verification_issue(project_id, req_id, issue_type, "Problem", severity)
         data = load_issues(project_id)
         return list(data["issues"].keys())[0]
 
     def test_success(self):
         issue_id = self._create_issue("proj_r1", "US-001")
-        result = mod72.resolve_verification_issue("proj_r1", issue_id, "Добавлено 3 AC")
-        self.assertIn("закрыт", result)
+        result = mod72.resolve_verification_issue("proj_r1", issue_id, "Added 3 AC")
+        self.assertIn("closed", result)
         data = load_issues("proj_r1")
         self.assertEqual(data["issues"][issue_id]["status"], "closed")
-        self.assertEqual(data["issues"][issue_id]["resolution_note"], "Добавлено 3 AC")
+        self.assertEqual(data["issues"][issue_id]["resolution_note"], "Added 3 AC")
 
     def test_already_closed(self):
         issue_id = self._create_issue("proj_r2", "US-001")
         mod72.resolve_verification_issue("proj_r2", issue_id, "First resolution")
         result = mod72.resolve_verification_issue("proj_r2", issue_id, "Second")
-        self.assertIn("уже закрыт", result)
+        self.assertIn("already closed", result)
 
     def test_not_found(self):
         result = mod72.resolve_verification_issue("proj_r3", "VI-999", "Desc")
@@ -656,18 +656,18 @@ class TestResolveVerificationIssue(BaseMCPTest):
         mod72.open_verification_issue("proj_r6", "US-001", "missing_ac", "Desc 1", "blocker")
         mod72.open_verification_issue("proj_r6", "US-001", "ambiguity", "Desc 2", "blocker")
         result = mod72.resolve_verification_issue("proj_r6", "VI-001", "Resolved")
-        self.assertIn("VI-002", result)  # второй blocker ещё открыт
+        self.assertIn("VI-002", result)  # the second blocker is still open
 
     def test_all_blockers_closed_signal(self):
         repo = make_repo("proj_r7", [make_us_req("US-001")])
         save_repo(repo)
         mod72.open_verification_issue("proj_r7", "US-001", "missing_ac", "Desc", "blocker")
-        result = mod72.resolve_verification_issue("proj_r7", "VI-001", "Все AC добавлены")
+        result = mod72.resolve_verification_issue("proj_r7", "VI-001", "All AC added")
         self.assertIn("mark_req_verified", result)
 
 
 # ---------------------------------------------------------------------------
-# Тесты mark_req_verified
+# mark_req_verified tests
 # ---------------------------------------------------------------------------
 
 class TestMarkReqVerified(BaseMCPTest):
@@ -676,7 +676,7 @@ class TestMarkReqVerified(BaseMCPTest):
         repo = make_repo("proj_v1", [make_us_req("US-001")])
         save_repo(repo)
         result = mod72.mark_req_verified("proj_v1", '["US-001"]')
-        self.assertIn("верифицировано", result)
+        self.assertIn("verified", result)
         updated = load_repo("proj_v1")
         req = mod72._find_req(updated, "US-001")
         self.assertEqual(req["status"], "verified")
@@ -700,7 +700,7 @@ class TestMarkReqVerified(BaseMCPTest):
         save_repo(repo)
         mod72.open_verification_issue("proj_v3", "US-001", "missing_ac", "Desc", "blocker")
         result = mod72.mark_req_verified("proj_v3", '["US-001"]')
-        self.assertIn("ЗАБЛОКИРОВАН", result)
+        self.assertIn("BLOCKED", result)
         updated = load_repo("proj_v3")
         req = mod72._find_req(updated, "US-001")
         self.assertNotEqual(req["status"], "verified")
@@ -710,7 +710,7 @@ class TestMarkReqVerified(BaseMCPTest):
         save_repo(repo)
         mod72.open_verification_issue("proj_v4", "US-001", "ambiguity", "Minor warning", "minor")
         result = mod72.mark_req_verified("proj_v4", '["US-001"]')
-        self.assertIn("верифицировано", result)
+        self.assertIn("verified", result)
 
     def test_not_found_req(self):
         repo = make_repo("proj_v5", [make_us_req("US-001")])
@@ -741,23 +741,23 @@ class TestMarkReqVerified(BaseMCPTest):
         save_repo(repo)
         mod72.open_verification_issue("proj_v8", "US-001", "missing_ac", "Desc", "blocker")
         result = mod72.mark_req_verified("proj_v8", '["US-001", "US-002"]')
-        # US-002 верифицирован, US-001 заблокирован
-        self.assertIn("ЗАБЛОКИРОВАН", result)
-        self.assertIn("верифицировано", result)
+        # US-002 verified, US-001 blocked
+        self.assertIn("BLOCKED", result)
+        self.assertIn("verified", result)
         updated = load_repo("proj_v8")
         us2 = mod72._find_req(updated, "US-002")
         self.assertEqual(us2["status"], "verified")
 
 
 # ---------------------------------------------------------------------------
-# Тесты get_verification_report
+# get_verification_report tests
 # ---------------------------------------------------------------------------
 
 class TestGetVerificationReport(BaseMCPTest):
 
     def test_empty_repo(self):
         result = mod72.get_verification_report("proj_rep1")
-        self.assertIn("нет активных требований", result.lower())
+        self.assertIn("no active requirements", result.lower())
 
     def test_zero_percent_verified(self):
         repo = make_repo("proj_rep2", [
@@ -767,7 +767,7 @@ class TestGetVerificationReport(BaseMCPTest):
         save_repo(repo)
         result = mod72.get_verification_report("proj_rep2")
         self.assertIn("0.0%", result)
-        self.assertIn("не готово", result.lower())
+        self.assertIn("not ready", result.lower())
 
     def test_100_percent_verified(self):
         repo = make_repo("proj_rep3", [
@@ -801,14 +801,14 @@ class TestGetVerificationReport(BaseMCPTest):
         repo = make_repo("proj_rep6", reqs)
         save_repo(repo)
         result = mod72.get_verification_report("proj_rep6")
-        self.assertIn("Готово к Approve", result)
+        self.assertIn("Ready for Approve", result)
 
     def test_not_ready_with_blockers(self):
         repo = make_repo("proj_rep7", [make_us_req("US-001")])
         save_repo(repo)
         mod72.open_verification_issue("proj_rep7", "US-001", "missing_ac", "Desc", "blocker")
         result = mod72.get_verification_report("proj_rep7")
-        self.assertIn("Не готово", result)
+        self.assertIn("Not ready", result)
 
     def test_deprecated_excluded(self):
         repo = make_repo("proj_rep8", [
@@ -817,7 +817,7 @@ class TestGetVerificationReport(BaseMCPTest):
         ])
         save_repo(repo)
         result = mod72.get_verification_report("proj_rep8")
-        # deprecated не считается в total — значит из 1 активного, 1 верифицирован = 100%
+        # deprecated does not count toward total — so out of 1 active, 1 verified = 100%
         self.assertIn("100.0%", result)
 
     def test_issue_type_stats(self):
@@ -834,123 +834,123 @@ class TestGetVerificationReport(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Pipeline — интеграционные тесты
+# Pipeline — integration tests
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_happy_path(self):
-        """Полный пайплайн: check → open issue → resolve → verify → report."""
+        """Full pipeline: check -> open issue -> resolve -> verify -> report."""
         project_id = "pipeline_happy"
         repo = make_repo(project_id, [
             make_us_req("US-001", ac_count=3),
             make_fr_req("FR-001",
-                        description="Система ДОЛЖНА возвращать список за 2 секунды"),
+                        description="The system SHALL return the list within 2 seconds"),
         ])
         save_repo(repo)
 
-        # check_req_quality — оба должны пройти
+        # check_req_quality — both should pass
         check_result = mod72.check_req_quality(project_id)
         self.assertIn("US-001", check_result)
         self.assertIn("FR-001", check_result)
 
-        # mark_req_verified — оба без blockers
+        # mark_req_verified — both without blockers
         verify_result = mod72.mark_req_verified(project_id, '["US-001", "FR-001"]')
-        self.assertIn("верифицировано", verify_result)
+        self.assertIn("verified", verify_result)
 
         # report
         report = mod72.get_verification_report(project_id)
         self.assertIn("100.0%", report)
 
     def test_full_pipeline_with_issue(self):
-        """Пайплайн с проблемой: check → open → resolve → verify → report."""
+        """Pipeline with a problem: check -> open -> resolve -> verify -> report."""
         project_id = "pipeline_issue"
         repo = make_repo(project_id, [
             make_us_req("US-001", ac_count=0, ac_texts=[]),  # blocker
         ])
         save_repo(repo)
 
-        # check выявляет missing_ac
+        # check detects missing_ac
         check_result = mod72.check_req_quality(project_id)
         self.assertIn("missing_ac", check_result.lower())
 
-        # Открываем issue
+        # Open an issue
         issue_result = mod72.open_verification_issue(
             project_id, "US-001", "missing_ac",
-            "User Story без AC — нет критериев приёмки", "blocker"
+            "User Story without AC — no acceptance criteria", "blocker"
         )
         self.assertIn("VI-001", issue_result)
 
-        # mark_req_verified — заблокирован
+        # mark_req_verified — blocked
         blocked = mod72.mark_req_verified(project_id, '["US-001"]')
-        self.assertIn("ЗАБЛОКИРОВАН", blocked)
+        self.assertIn("BLOCKED", blocked)
 
-        # Исправление — resolve
+        # Fix — resolve
         resolve_result = mod72.resolve_verification_issue(
             project_id, "VI-001",
-            "Добавлено 3 AC: успешная авторизация, неверный пароль, блокировка"
+            "Added 3 AC: successful authorization, wrong password, lockout"
         )
         self.assertIn("mark_req_verified", resolve_result)
 
-        # mark_req_verified — теперь OK
+        # mark_req_verified — now OK
         verify_result = mod72.mark_req_verified(project_id, '["US-001"]')
-        self.assertIn("верифицировано", verify_result)
+        self.assertIn("verified", verify_result)
 
-        # report — 100% и ready
+        # report — 100% and ready
         report = mod72.get_verification_report(project_id)
         self.assertIn("100.0%", report)
 
     def test_pipeline_mixed_results(self):
-        """Пайплайн: часть req верифицирована, часть заблокирована."""
+        """Pipeline: some reqs verified, some blocked."""
         project_id = "pipeline_mixed"
         repo = make_repo(project_id, [
-            make_us_req("US-001"),                          # чистый
+            make_us_req("US-001"),                          # clean
             make_us_req("US-002", ac_count=0, ac_texts=[]),  # blocker
             make_fr_req("FR-001",
-                        description="Система ДОЛЖНА за 2 секунды"),  # чистый
+                        description="The system SHALL within 2 seconds"),  # clean
         ])
         save_repo(repo)
 
-        mod72.open_verification_issue(project_id, "US-002", "missing_ac", "Нет AC", "blocker")
+        mod72.open_verification_issue(project_id, "US-002", "missing_ac", "No AC", "blocker")
 
-        # Верифицируем двух чистых
+        # Verify the two clean ones
         result = mod72.mark_req_verified(project_id, '["US-001", "FR-001"]')
-        self.assertIn("верифицировано", result)
+        self.assertIn("verified", result)
 
-        # US-002 заблокирован — отдельно
+        # US-002 is blocked — separately
         blocked = mod72.mark_req_verified(project_id, '["US-002"]')
-        self.assertIn("ЗАБЛОКИРОВАН", blocked)
+        self.assertIn("BLOCKED", blocked)
 
         report = mod72.get_verification_report(project_id)
-        # 2 из 3 верифицированы → ~66.7%
+        # 2 of 3 verified -> ~66.7%
         self.assertIn("66.7%", report)
-        self.assertIn("Не готово", report)
+        self.assertIn("Not ready", report)
 
     def test_pipeline_model_consistency(self):
-        """check_model_consistency находит рассинхрон DD vs ERD."""
+        """check_model_consistency finds a DD vs ERD mismatch."""
         project_id = "pipeline_models"
         specs_dir = f"governance_plans/data/{project_id}_specs"
         os.makedirs(specs_dir, exist_ok=True)
 
         with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:
-            f.write("# DD-001\n\n## Сущность: Application\n\n## Сущность: Client\n")
+            f.write("# DD-001\n\n## Entity: Application\n\n## Entity: Client\n")
 
         with open(os.path.join(specs_dir, "erd_001.puml"), "w", encoding="utf-8") as f:
             f.write('@startuml\nentity "Application" as App {}\n@enduml\n')
 
         result = mod72.check_model_consistency(project_id)
         self.assertIn("Client", result)
-        self.assertIn("несоответствий", result.lower())
+        self.assertIn("inconsistencies", result.lower())
 
     def test_pipeline_report_saved(self):
-        """get_verification_report вызывает save_artifact."""
+        """get_verification_report calls save_artifact."""
         from unittest.mock import patch
         project_id = "pipeline_save"
         repo = make_repo(project_id, [make_us_req("US-001", status="verified")])
         save_repo(repo)
 
         with patch("skills.requirements_verify_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod72.get_verification_report(project_id)
             mock_sa.assert_called_once()
 

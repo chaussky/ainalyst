@@ -1,10 +1,10 @@
 """
-tests/test_ch7_75.py — Тесты для Главы 7, задача 7.5 (Define Design Options)
+tests/test_ch7_75.py — Tests for Chapter 7, task 7.5 (Define Design Options)
 
-Покрытие (70 тестов):
-  - Утилиты: _safe, _repo_path, _design_options_path, _change_strategy_path,
-             _load_repo, _load_design_options, _save_design_options,
-             _load_change_strategy, _find_req, _get_depends_links
+Coverage (70 tests):
+  - Utilities: _safe, _repo_path, _design_options_path, _change_strategy_path,
+               _load_repo, _load_design_options, _save_design_options,
+               _load_change_strategy, _find_req, _get_depends_links
 
   - set_change_strategy: success create, success update, invalid change_type,
     empty scope, empty constraints, empty timeline,
@@ -57,10 +57,10 @@ import skills.design_options_mcp as mod75
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные функции
+# Helper functions
 # ---------------------------------------------------------------------------
 
-def make_req(req_id, req_type, title="Тестовое требование", priority=None, status="verified"):
+def make_req(req_id, req_type, title="Test requirement", priority=None, status="verified"):
     r = {"id": req_id, "type": req_type, "title": title, "status": status}
     if priority:
         r["priority"] = priority
@@ -79,15 +79,15 @@ def make_link(from_id, to_id, relation="depends"):
     return {"from": from_id, "to": to_id, "relation": relation}
 
 
-def make_option(option_id="OPT-001", title="Вариант 1", approach="build",
+def make_option(option_id="OPT-001", title="Option 1", approach="build",
                 components=None, opportunities=None, measures=None):
     return {
         "option_id": option_id,
         "title": title,
         "approach": approach,
-        "components": components or ["Компонент A"],
+        "components": components or ["Component A"],
         "improvement_opportunities": opportunities or [
-            {"type": "efficiency", "description": "Автоматизация процесса"}
+            {"type": "efficiency", "description": "Process automation"}
         ],
         "effectiveness_measures": measures or ["KPI 1"],
         "notes": "",
@@ -109,16 +109,16 @@ def make_design_options(project_id="test_proj", options=None, allocation=None):
 
 
 # ---------------------------------------------------------------------------
-# Базовый класс
+# Base class
 # ---------------------------------------------------------------------------
 
 class Base75Test(BaseMCPTest):
-    """Базовый класс: мокает save_artifact и переключает paths на tmp dir."""
+    """Base class: mocks save_artifact and switches paths to a tmp dir."""
 
     def setUp(self):
         super().setUp()
         self._orig_gp = None
-        # Патчим governance_plans путь через переопределение функций-путей
+        # Patch the governance_plans path by overriding the path functions
         mod75.save_artifact = self._mock_save_artifact
         self._saved_artifacts = []
 
@@ -167,7 +167,7 @@ class Base75Test(BaseMCPTest):
 
 
 # ===========================================================================
-# Тесты утилит
+# Utility tests
 # ===========================================================================
 
 class TestUtils(Base75Test):
@@ -218,7 +218,7 @@ class TestUtils(Base75Test):
     def test_get_depends_links_filtered(self):
         repo = make_repo(links=[
             make_link("FR-001", "FR-002", "depends"),
-            make_link("FR-001", "FR-003", "derives"),  # не depends
+            make_link("FR-001", "FR-003", "derives"),  # not depends
         ])
         links = mod75._get_depends_links(repo)
         self.assertEqual(len(links), 1)
@@ -230,7 +230,7 @@ class TestUtils(Base75Test):
 
 
 # ===========================================================================
-# Тесты set_change_strategy
+# set_change_strategy tests
 # ===========================================================================
 
 class TestSetChangeStrategy(Base75Test):
@@ -239,26 +239,26 @@ class TestSetChangeStrategy(Base75Test):
         result = mod75.set_change_strategy(
             project_id="proj_cs",
             change_type="technology",
-            scope="Замена CRM",
-            constraints="Бюджет $100k",
-            timeline="12 месяцев",
+            scope="CRM replacement",
+            constraints="Budget $100k",
+            timeline="12 months",
         )
         self.assertIn("✅", result)
         self.assertIn("technology", result)
         data = self._read_change_strategy("proj_cs")
         self.assertEqual(data["change_type"], "technology")
-        self.assertEqual(data["scope"], "Замена CRM")
+        self.assertEqual(data["scope"], "CRM replacement")
 
     def test_success_update(self):
         mod75.set_change_strategy(
             project_id="proj_cs2", change_type="technology",
-            scope="Скоуп 1", constraints="Ограничение 1", timeline="Q1"
+            scope="Scope 1", constraints="Constraint 1", timeline="Q1"
         )
         result = mod75.set_change_strategy(
             project_id="proj_cs2", change_type="process",
-            scope="Скоуп 2", constraints="Ограничение 2", timeline="Q2"
+            scope="Scope 2", constraints="Constraint 2", timeline="Q2"
         )
-        self.assertIn("обновлена", result)
+        self.assertIn("updated", result)
         data = self._read_change_strategy("proj_cs2")
         self.assertEqual(data["change_type"], "process")
 
@@ -302,11 +302,11 @@ class TestSetChangeStrategy(Base75Test):
     def test_notes_optional(self):
         result = mod75.set_change_strategy(
             project_id="proj_cs7", change_type="technology",
-            scope="x", constraints="y", timeline="z", notes="Доп. инфо"
+            scope="x", constraints="y", timeline="z", notes="Extra info"
         )
         self.assertIn("✅", result)
         data = self._read_change_strategy("proj_cs7")
-        self.assertEqual(data["notes"], "Доп. инфо")
+        self.assertEqual(data["notes"], "Extra info")
 
     def test_updates_design_options_ref(self):
         mod75.set_change_strategy(
@@ -318,7 +318,7 @@ class TestSetChangeStrategy(Base75Test):
 
 
 # ===========================================================================
-# Тесты create_design_option
+# create_design_option tests
 # ===========================================================================
 
 class TestCreateDesignOption(Base75Test):
@@ -327,11 +327,11 @@ class TestCreateDesignOption(Base75Test):
         defaults = dict(
             project_id="proj_do",
             option_id="OPT-001",
-            title="Разработка своего решения",
+            title="Build our own solution",
             approach="build",
             components_json='["Backend", "UI", "DB"]',
-            improvement_opportunities_json='[{"type": "efficiency", "description": "Автоматизация"}]',
-            effectiveness_measures_json='["Снижение времени обработки на 40%"]',
+            improvement_opportunities_json='[{"type": "efficiency", "description": "Automation"}]',
+            effectiveness_measures_json='["Reduce processing time by 40%"]',
         )
         defaults.update(kwargs)
         return mod75.create_design_option(**defaults)
@@ -345,12 +345,12 @@ class TestCreateDesignOption(Base75Test):
         self.assertEqual(do_data["options"][0]["option_id"], "OPT-001")
 
     def test_success_update_idempotent(self):
-        self._make_call(title="Версия 1")
-        result = self._make_call(title="Версия 2")
-        self.assertIn("обновлён", result)
+        self._make_call(title="Version 1")
+        result = self._make_call(title="Version 2")
+        self.assertIn("updated", result)
         do_data = self._read_design_options("proj_do")
         self.assertEqual(len(do_data["options"]), 1)
-        self.assertEqual(do_data["options"][0]["title"], "Версия 2")
+        self.assertEqual(do_data["options"][0]["title"], "Version 2")
 
     def test_invalid_approach(self):
         result = self._make_call(approach="outsource")
@@ -412,15 +412,15 @@ class TestCreateDesignOption(Base75Test):
             project_id="proj_vendor2",
             option_id="OPT-001",
             approach="buy",
-            vendor_notes="Salesforce, $50k/год"
+            vendor_notes="Salesforce, $50k/year"
         )
         do_data = self._read_design_options("proj_vendor2")
-        self.assertEqual(do_data["options"][0]["vendor_notes"], "Salesforce, $50k/год")
+        self.assertEqual(do_data["options"][0]["vendor_notes"], "Salesforce, $50k/year")
 
     def test_opportunities_saved_correctly(self):
         self._make_call(
             project_id="proj_opp",
-            improvement_opportunities_json='[{"type": "new_capability", "description": "API интеграция"}]'
+            improvement_opportunities_json='[{"type": "new_capability", "description": "API integration"}]'
         )
         do_data = self._read_design_options("proj_opp")
         self.assertEqual(do_data["options"][0]["improvement_opportunities"][0]["type"], "new_capability")
@@ -433,7 +433,7 @@ class TestCreateDesignOption(Base75Test):
 
 
 # ===========================================================================
-# Тесты allocate_requirements
+# allocate_requirements tests
 # ===========================================================================
 
 class TestAllocateRequirements(Base75Test):
@@ -488,13 +488,13 @@ class TestAllocateRequirements(Base75Test):
     def test_no_priority_reported(self):
         self._setup_project("proj_alloc_noprio", [make_req("FR-001", "functional")])  # no priority
         result = mod75.allocate_requirements(project_id="proj_alloc_noprio", option_id="OPT-001", auto_suggest=True)
-        self.assertIn("Без приоритета", result)
+        self.assertIn("Without priority", result)
 
     def test_manual_assignment_overrides_auto(self):
         self._setup_project("proj_alloc_manual", [make_req("FR-001", "functional", priority="Must")])
         mod75.allocate_requirements(
             project_id="proj_alloc_manual", option_id="OPT-001",
-            assignments_json='[{"req_id": "FR-001", "version": "out_of_scope", "rationale": "Убираем"}]',
+            assignments_json='[{"req_id": "FR-001", "version": "out_of_scope", "rationale": "Remove"}]',
             auto_suggest=True
         )
         do_data = self._read_design_options("proj_alloc_manual")
@@ -526,7 +526,7 @@ class TestAllocateRequirements(Base75Test):
         result = mod75.allocate_requirements(
             project_id="proj_alloc_conflict", option_id="OPT-001", auto_suggest=True
         )
-        self.assertIn("Конфликты", result)
+        self.assertIn("Conflicts", result)
         self.assertIn("FR-001", result)
         self.assertIn("FR-002", result)
 
@@ -578,7 +578,7 @@ class TestAllocateRequirements(Base75Test):
 
 
 # ===========================================================================
-# Тесты compare_design_options
+# compare_design_options tests
 # ===========================================================================
 
 class TestCompareDesignOptions(Base75Test):
@@ -605,7 +605,7 @@ class TestCompareDesignOptions(Base75Test):
         result = mod75.compare_design_options("proj_cmp_two")
         self.assertIn("OPT-001", result)
         self.assertIn("OPT-002", result)
-        self.assertIn("Сравнительная матрица", result)
+        self.assertIn("Comparison matrix", result)
 
     def test_req_coverage_calculated_from_allocation(self):
         reqs = [
@@ -622,7 +622,7 @@ class TestCompareDesignOptions(Base75Test):
         ], allocation=allocation)
         self._write_design_options("proj_cmp_cov", do_data)
         result = mod75.compare_design_options("proj_cmp_cov")
-        self.assertIn("50%", result)  # 1/2 Must в v1
+        self.assertIn("50%", result)  # 1/2 Must in v1
 
     def test_custom_criteria_merged(self):
         do_data = make_design_options("proj_cmp_crit", options=[
@@ -631,10 +631,10 @@ class TestCompareDesignOptions(Base75Test):
         self._write_design_options("proj_cmp_crit", do_data)
         result = mod75.compare_design_options(
             "proj_cmp_crit",
-            criteria_json='[{"id": "vendor_support", "label": "Поддержка вендора", "weight": "medium"}]'
+            criteria_json='[{"id": "vendor_support", "label": "Vendor support", "weight": "medium"}]'
         )
-        self.assertIn("Поддержка вендора", result)
-        self.assertIn("Стоимость реализации", result)  # дефолтный тоже есть
+        self.assertIn("Vendor support", result)
+        self.assertIn("Implementation cost", result)  # a default one is present too
 
     def test_invalid_criteria_json(self):
         do_data = make_design_options("proj_cmp_bad", options=[
@@ -647,17 +647,17 @@ class TestCompareDesignOptions(Base75Test):
     def test_options_details_shown(self):
         opts = [
             make_option("OPT-001", approach="build"),
-            make_option("OPT-002", approach="hybrid", title="Гибридное решение"),
+            make_option("OPT-002", approach="hybrid", title="Hybrid solution"),
         ]
         do_data = make_design_options("proj_cmp_det", options=opts)
         self._write_design_options("proj_cmp_det", do_data)
         result = mod75.compare_design_options("proj_cmp_det")
-        self.assertIn("Гибридное решение", result)
+        self.assertIn("Hybrid solution", result)
         self.assertIn("Hybrid", result)
 
 
 # ===========================================================================
-# Тесты save_design_options_report
+# save_design_options_report tests
 # ===========================================================================
 
 class TestSaveDesignOptionsReport(Base75Test):
@@ -700,53 +700,53 @@ class TestSaveDesignOptionsReport(Base75Test):
         self._write_change_strategy("proj_rep_cs", {
             "project_id": "proj_rep_cs",
             "change_type": "technology",
-            "scope": "Замена системы",
-            "constraints": "Бюджет $200k",
-            "timeline": "12 мес",
+            "scope": "System replacement",
+            "constraints": "Budget $200k",
+            "timeline": "12 months",
             "notes": "",
         })
         mod75.save_design_options_report("proj_rep_cs")
         content = self._saved_artifacts[0]["content"]
-        self.assertIn("Стратегия изменения", content)
+        self.assertIn("Change strategy", content)
         self.assertIn("technology", content)
 
     def test_business_context_included(self):
         do_data = make_design_options("proj_rep_ctx", options=[make_option()])
         self._write_design_options("proj_rep_ctx", do_data)
         self._write_context("proj_rep_ctx", {
-            "business_goals": [{"id": "BG-001", "title": "Рост продаж"}],
-            "future_state": "Цифровая платформа"
+            "business_goals": [{"id": "BG-001", "title": "Sales growth"}],
+            "future_state": "Digital platform"
         })
         mod75.save_design_options_report("proj_rep_ctx")
         content = self._saved_artifacts[0]["content"]
-        self.assertIn("Бизнес-контекст", content)
-        self.assertIn("Рост продаж", content)
+        self.assertIn("Business context", content)
+        self.assertIn("Sales growth", content)
 
     def test_architecture_included(self):
         do_data = make_design_options("proj_rep_arch", options=[make_option()])
         self._write_design_options("proj_rep_arch", do_data)
         self._write_architecture("proj_rep_arch", {
             "project_id": "proj_rep_arch",
-            "viewpoints": {"functional": {"label": "Функциональность", "auto": True}},
+            "viewpoints": {"functional": {"label": "Functionality", "auto": True}},
             "views": {},
-            "gaps": {"critical": ["критический разрыв"], "warning": [], "info": []},
+            "gaps": {"critical": ["critical gap"], "warning": [], "info": []},
             "snapshots": [],
         })
         mod75.save_design_options_report("proj_rep_arch")
         content = self._saved_artifacts[0]["content"]
-        self.assertIn("Архитектурный контекст", content)
+        self.assertIn("Architecture context", content)
 
     def test_unallocated_req_warning(self):
         reqs = [make_req("FR-001", "functional", priority="Must")]
         self._write_repo("proj_rep_unalloc", make_repo(reqs=reqs))
         do_data = make_design_options("proj_rep_unalloc", options=[make_option()])
-        # allocation пустой — req не распределён
+        # allocation empty — the req is not allocated
         self._write_design_options("proj_rep_unalloc", do_data)
         result = mod75.save_design_options_report("proj_rep_unalloc")
-        self.assertIn("не распределены", result)
+        self.assertIn("not allocated", result)
 
     def test_allocation_map_in_document(self):
-        reqs = [make_req("FR-001", "functional", priority="Must", title="Главная функция")]
+        reqs = [make_req("FR-001", "functional", priority="Must", title="Main function")]
         self._write_repo("proj_rep_alloc_doc", make_repo(reqs=reqs))
         allocation = {
             "FR-001": {"version": "v1", "option_id": "OPT-001", "rationale": "Must→v1", "source": "auto"}
@@ -766,56 +766,56 @@ class TestSaveDesignOptionsReport(Base75Test):
 
 
 # ===========================================================================
-# Тест Pipeline — полный сценарий
+# Pipeline test — full scenario
 # ===========================================================================
 
 class TestPipeline(Base75Test):
 
     def test_full_happy_path(self):
-        """Полный pipeline: set_strategy → create × 2 → allocate → compare → report"""
+        """Full pipeline: set_strategy → create × 2 → allocate → compare → report"""
         pid = "proj_pipeline"
 
-        # Репозиторий с требованиями
+        # Repository with requirements
         reqs = [
-            make_req("FR-001", "functional", title="Авторизация", priority="Must"),
-            make_req("FR-002", "functional", title="Поиск", priority="Should"),
-            make_req("FR-003", "functional", title="Экспорт", priority="Could"),
-            make_req("FR-004", "functional", title="Аналитика", priority="Won't"),
+            make_req("FR-001", "functional", title="Authorization", priority="Must"),
+            make_req("FR-002", "functional", title="Search", priority="Should"),
+            make_req("FR-003", "functional", title="Export", priority="Could"),
+            make_req("FR-004", "functional", title="Analytics", priority="Won't"),
         ]
         self._write_repo(pid, make_repo(reqs=reqs))
 
-        # Шаг 1: set_change_strategy
+        # Step 1: set_change_strategy
         r1 = mod75.set_change_strategy(
             project_id=pid,
             change_type="technology",
-            scope="Замена legacy системы",
-            constraints="Бюджет $300k",
-            timeline="18 месяцев",
+            scope="Legacy system replacement",
+            constraints="Budget $300k",
+            timeline="18 months",
         )
         self.assertIn("✅", r1)
 
-        # Шаг 2: create OPT-001 (Build)
+        # Step 2: create OPT-001 (Build)
         r2a = mod75.create_design_option(
-            project_id=pid, option_id="OPT-001", title="Разработка с нуля",
+            project_id=pid, option_id="OPT-001", title="Build from scratch",
             approach="build",
             components_json='["API", "UI", "DB"]',
-            improvement_opportunities_json='[{"type": "efficiency", "description": "Автоматизация"}]',
-            effectiveness_measures_json='["Время обработки -40%"]',
+            improvement_opportunities_json='[{"type": "efficiency", "description": "Automation"}]',
+            effectiveness_measures_json='["Processing time -40%"]',
         )
         self.assertIn("✅", r2a)
 
-        # Шаг 2: create OPT-002 (Buy)
+        # Step 2: create OPT-002 (Buy)
         r2b = mod75.create_design_option(
             project_id=pid, option_id="OPT-002", title="Salesforce CRM",
             approach="buy",
-            components_json='["Salesforce", "Интеграционный слой"]',
-            improvement_opportunities_json='[{"type": "information_access", "description": "360 вид клиента"}]',
+            components_json='["Salesforce", "Integration layer"]',
+            improvement_opportunities_json='[{"type": "information_access", "description": "360 customer view"}]',
             effectiveness_measures_json='["NPS > 8"]',
-            vendor_notes="Salesforce, $80k/год, стандартная кастомизация"
+            vendor_notes="Salesforce, $80k/year, standard customization"
         )
         self.assertIn("✅", r2b)
 
-        # Шаг 3: allocate OPT-001
+        # Step 3: allocate OPT-001
         r3 = mod75.allocate_requirements(
             project_id=pid, option_id="OPT-001", auto_suggest=True
         )
@@ -824,30 +824,30 @@ class TestPipeline(Base75Test):
         self.assertEqual(do_data["allocation"]["FR-001"]["version"], "v1")
         self.assertEqual(do_data["allocation"]["FR-004"]["version"], "out_of_scope")
 
-        # Шаг 4: compare
+        # Step 4: compare
         r4 = mod75.compare_design_options(pid)
         self.assertIn("OPT-001", r4)
         self.assertIn("OPT-002", r4)
-        self.assertIn("Сравнительная матрица", r4)
+        self.assertIn("Comparison matrix", r4)
 
-        # Шаг 5: save report
-        r5 = mod75.save_design_options_report(pid, recommended_option_id="OPT-001", notes="Build более гибкий")
+        # Step 5: save report
+        r5 = mod75.save_design_options_report(pid, recommended_option_id="OPT-001", notes="Build is more flexible")
         self.assertIn("✅", r5)
         self.assertEqual(len(self._saved_artifacts), 1)
         content = self._saved_artifacts[0]["content"]
         self.assertIn("Design Options Report", content)
-        self.assertIn("РЕКОМЕНДУЕТСЯ", content)
+        self.assertIn("RECOMMENDED", content)
         self.assertIn("OPT-001", content)
 
     def test_graceful_without_optional_inputs(self):
-        """Pipeline работает без 5.3, 7.3, 7.4, 6.4 — graceful degradation."""
+        """Pipeline works without 5.3, 7.3, 7.4, 6.4 — graceful degradation."""
         pid = "proj_pipeline_minimal"
 
-        # Только репозиторий с req без приоритетов
+        # Only a repository with req without priorities
         self._write_repo(pid, make_repo(reqs=[make_req("FR-001", "functional")]))
 
         r1 = mod75.create_design_option(
-            project_id=pid, option_id="OPT-001", title="Минимальный вариант",
+            project_id=pid, option_id="OPT-001", title="Minimal option",
             approach="build",
             components_json='["API"]',
             improvement_opportunities_json='[]',
@@ -856,7 +856,7 @@ class TestPipeline(Base75Test):
         self.assertIn("✅", r1)
 
         r2 = mod75.create_design_option(
-            project_id=pid, option_id="OPT-002", title="Второй вариант",
+            project_id=pid, option_id="OPT-002", title="Second option",
             approach="buy",
             components_json='["SaaS"]',
             improvement_opportunities_json='[]',
@@ -864,11 +864,11 @@ class TestPipeline(Base75Test):
         )
         self.assertIn("✅", r2)
 
-        # Allocation без приоритетов — предупреждение, не ошибка
+        # Allocation without priorities — a warning, not an error
         r3 = mod75.allocate_requirements(pid, "OPT-001", auto_suggest=True)
         self.assertNotIn("❌", r3)
 
-        # Report без change_strategy и context
+        # Report without change_strategy and context
         r4 = mod75.save_design_options_report(pid)
         self.assertIn("✅", r4)
 

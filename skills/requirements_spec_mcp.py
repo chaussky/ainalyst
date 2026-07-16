@@ -1,26 +1,26 @@
 """
 BABOK 7.1 — Specify and Model Requirements
-MCP-инструменты для формализации требований из результатов выявления.
+MCP tools for formalizing requirements from elicitation results.
 
-Инструменты:
-  - analyze_elicitation_context  — анализ артефактов 4.3, список требований-кандидатов
-  - create_user_story            — User Story с AC, авторегистрация в 5.1
-  - create_functional_requirement — SRS-style (functional/non_functional/business_rule), авторегистрация в 5.1
-  - create_use_case              — текстовая спецификация UC, авторегистрация в 5.1
-  - generate_use_case_diagram    — PlantUML Use Case Diagram по всем UC проекта
-  - create_business_process      — текст + PlantUML Activity Diagram, авторегистрация в 5.1
-  - create_data_dictionary       — реестр сущностей и атрибутов, авторегистрация в 5.1
-  - create_erd                   — описание связей + PlantUML ER Diagram, авторегистрация в 5.1
-  - build_coverage_matrix        — матрица «бизнес-цель → требования» с флагами покрытия
+Tools:
+  - analyze_elicitation_context  — analyzes 4.3 artifacts, list of candidate requirements
+  - create_user_story            — User Story with AC, auto-registration in 5.1
+  - create_functional_requirement — SRS-style (functional/non_functional/business_rule), auto-registration in 5.1
+  - create_use_case              — textual UC specification, auto-registration in 5.1
+  - generate_use_case_diagram    — PlantUML Use Case Diagram for all project UCs
+  - create_business_process      — text + PlantUML Activity Diagram, auto-registration in 5.1
+  - create_data_dictionary       — registry of entities and attributes, auto-registration in 5.1
+  - create_erd                   — description of relationships + PlantUML ER Diagram, auto-registration in 5.1
+  - build_coverage_matrix        — "business objective -> requirements" matrix with coverage flags
 
-ADR-022: каждый создающий инструмент регистрирует req в 5.1 автоматически (статус draft)
-ADR-023: analyze_elicitation_context — гибридное чтение (файл 4.3 → fallback на context_text)
-ADR-024: create_business_process генерирует .md + .puml
-ADR-025: PlantUML для всех диаграмм
+ADR-022: every creating tool registers the req in 5.1 automatically (status draft)
+ADR-023: analyze_elicitation_context — hybrid reading (4.3 file -> fallback to context_text)
+ADR-024: create_business_process generates .md + .puml
+ADR-025: PlantUML for all diagrams
 
-Хранение артефактов: governance_plans/{project_id}_specs/
+Artifact storage: governance_plans/{project_id}_specs/
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -38,7 +38,7 @@ CONFIRMED_GLOB = "4_3_*_confirmed*.md"
 
 
 # ---------------------------------------------------------------------------
-# Утилиты — репозиторий 5.1
+# Utilities — repository 5.1
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_id: str) -> str:
@@ -68,22 +68,22 @@ def _save_repo(repo: dict) -> None:
     repo["updated"] = str(date.today())
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
-    logger.info(f"Репозиторий 5.1 обновлён (7.1): {path}")
+    logger.info(f"Repository 5.1 updated (7.1): {path}")
 
 
 def _register_in_repo(project_id: str, req_id: str, req_type: str,
                       title: str, source_artifact: str, priority: str = "Medium") -> str:
     """
-    ADR-022: регистрирует требование в репозитории 5.1 со статусом draft.
-    Если требование с таким ID уже есть — пропускает (без ошибки).
-    Возвращает строку-пометку для включения в артефакт.
+    ADR-022: registers a requirement in repository 5.1 with status draft.
+    If a requirement with this ID already exists — skips it (without an error).
+    Returns a marker string to include in the artifact.
     """
     repo = _load_repo(project_id)
     existing_ids = {r["id"] for r in repo["requirements"]}
 
     if req_id in existing_ids:
-        logger.info(f"_register_in_repo: {req_id} уже в репозитории, пропускаем")
-        return f"ℹ️ `{req_id}` уже зарегистрирован в репозитории 5.1."
+        logger.info(f"_register_in_repo: {req_id} already in repository, skipping")
+        return f"ℹ️ `{req_id}` is already registered in repository 5.1."
 
     entry = {
         "id": req_id,
@@ -106,34 +106,34 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
         "date": str(date.today()),
     })
     _save_repo(repo)
-    return f"✅ `{req_id}` зарегистрирован в репозитории 5.1 (статус: draft)."
+    return f"✅ `{req_id}` registered in repository 5.1 (status: draft)."
 
 
 # ---------------------------------------------------------------------------
-# Утилиты — файловая система
+# Utilities — file system
 # ---------------------------------------------------------------------------
 
 def _specs_dir(project_id: str) -> str:
-    # issue #1: спеки в data/<project>/specs/, с fallback на legacy-раскладки.
-    # Единый источник истины — common.specs_dir.
+    # issue #1: specs live in data/<project>/specs/, with a fallback to legacy layouts.
+    # Single source of truth — common.specs_dir.
     return specs_dir(project_id)
 
 
 def _save_spec(content: str, project_id: str, filename: str) -> str:
-    """Сохраняет артефакт в governance_plans/{project_id}_specs/. Возвращает путь."""
+    """Saves an artifact to governance_plans/{project_id}_specs/. Returns the path."""
     specs_dir = _specs_dir(project_id)
     os.makedirs(specs_dir, exist_ok=True)
     filepath = os.path.join(specs_dir, filename)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
-    logger.info(f"Спецификация сохранена: {filepath}")
+    logger.info(f"Specification saved: {filepath}")
     return filepath
 
 
 def _find_confirmed_artifact(project_id: str) -> Optional[str]:
     """
-    ADR-023: ищет последний подтверждённый артефакт 4.3 для project_id.
-    Паттерн: governance_plans/4_3_{project_id}_confirmed*.md (регистронезависимо).
+    ADR-023: finds the latest confirmed 4.3 artifact for project_id.
+    Pattern: governance_plans/4_3_{project_id}_confirmed*.md (case-insensitive).
     """
     safe = project_id.lower().replace(" ", "_")
     patterns = [
@@ -144,19 +144,19 @@ def _find_confirmed_artifact(project_id: str) -> Optional[str]:
     for pattern in patterns:
         matches = glob.glob(pattern)
         if matches:
-            # берём самый свежий по имени
+            # take the latest by name
             return sorted(matches)[-1]
     return None
 
 
 def _read_confirmed_artifact(path: str) -> str:
-    """Читает содержимое артефакта 4.3."""
+    """Reads the contents of the 4.3 artifact."""
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 # ---------------------------------------------------------------------------
-# 7.1.1 — Анализ контекста выявления (ADR-023)
+# 7.1.1 — Analyze elicitation context (ADR-023)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -165,68 +165,68 @@ def analyze_elicitation_context(
     context_text: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Анализирует подтверждённые результаты выявления (4.3) и предлагает
-    список требований-кандидатов с классификацией по типу и рекомендуемым ID-префиксом.
+    BABOK 7.1 — Analyzes confirmed elicitation results (4.3) and proposes
+    a list of candidate requirements classified by type with a recommended ID prefix.
 
-    ADR-023 (гибридное чтение):
-      1. Пробует найти файл 4.3 по project_id в governance_plans/
-      2. Если не найден и context_text пустой — возвращает инструкцию
-      3. Если не найден, но context_text задан — использует переданный текст
+    ADR-023 (hybrid reading):
+      1. Tries to find the 4.3 file by project_id in governance_plans/
+      2. If not found and context_text is empty — returns instructions
+      3. If not found but context_text is provided — uses the supplied text
 
     Args:
-        project_id:    Идентификатор проекта (используется для поиска файла 4.3).
-        context_text:  Текст артефакта 4.3 (если файл не найден автоматически).
-                       Оставить пустым — инструмент попробует найти файл сам.
+        project_id:    Project identifier (used to locate the 4.3 file).
+        context_text:  Text of the 4.3 artifact (if the file is not found automatically).
+                       Leave empty — the tool will try to find the file itself.
 
     Returns:
-        Список бизнес-целей, требований-кандидатов и информационных пробелов.
+        A list of business objectives, candidate requirements and information gaps.
     """
     logger.info(f"analyze_elicitation_context: project_id='{project_id}'")
 
-    # ADR-023: гибридное чтение
+    # ADR-023: hybrid reading
     source_used = ""
     content_to_analyze = ""
 
     artifact_path = _find_confirmed_artifact(project_id)
     if artifact_path:
         content_to_analyze = _read_confirmed_artifact(artifact_path)
-        source_used = f"📂 Файл найден автоматически: `{artifact_path}`"
-        logger.info(f"Найден артефакт 4.3: {artifact_path}")
+        source_used = f"📂 File found automatically: `{artifact_path}`"
+        logger.info(f"4.3 artifact found: {artifact_path}")
     elif context_text.strip():
         content_to_analyze = context_text.strip()
-        source_used = "📋 Использован текст, переданный вручную."
-        logger.info("Артефакт 4.3 не найден — используем context_text")
+        source_used = "📋 Used text supplied manually."
+        logger.info("4.3 artifact not found — using context_text")
     else:
         return (
-            f"⚠️ Артефакт 4.3 не найден для проекта `{project_id}`.\n\n"
-            f"Инструмент искал файлы по паттерну:\n"
+            f"⚠️ 4.3 artifact not found for project `{project_id}`.\n\n"
+            f"The tool searched for files matching the pattern:\n"
             f"`governance_plans/4_3_{project_id.lower().replace(' ', '_')}_confirmed*.md`\n\n"
-            f"**Варианты действий:**\n"
-            f"1. Убедись что артефакт 4.3 создан через `save_confirmed_elicitation_result` (4.3)\n"
-            f"2. Передай содержимое вручную: `analyze_elicitation_context("
-            f"project_id='{project_id}', context_text='[вставь текст артефакта 4.3]')`"
+            f"**Options:**\n"
+            f"1. Make sure the 4.3 artifact was created via `save_confirmed_elicitation_result` (4.3)\n"
+            f"2. Pass the content manually: `analyze_elicitation_context("
+            f"project_id='{project_id}', context_text='[paste the 4.3 artifact text]')`"
         )
 
-    # Формируем аналитический запрос к содержимому
-    # (Инструмент выполняется Claude Code — он читает контент и рассуждает о нём)
+    # Build the analytical query over the content
+    # (The tool is executed by Claude Code — it reads the content and reasons about it)
     word_count = len(content_to_analyze.split())
     line_count = content_to_analyze.count("\n")
 
     lines = [
-        f"<!-- BABOK 7.1 — Анализ контекста | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Context analysis | Project: {project_id} | {date.today()} -->",
         "",
-        f"# 🔍 Анализ контекста выявления",
+        f"# 🔍 Elicitation context analysis",
         "",
-        f"**Проект:** {project_id}  ",
-        f"**Дата:** {date.today()}  ",
-        f"**Источник:** {source_used}  ",
-        f"**Объём:** {word_count} слов, {line_count} строк",
+        f"**Project:** {project_id}  ",
+        f"**Date:** {date.today()}  ",
+        f"**Source:** {source_used}  ",
+        f"**Size:** {word_count} words, {line_count} lines",
         "",
         "---",
         "",
-        "## Содержимое артефакта 4.3 для анализа",
+        "## Contents of the 4.3 artifact to analyze",
         "",
-        "Claude Code: прочти содержимое ниже и выполни анализ согласно шагам.",
+        "Claude Code: read the content below and perform the analysis per the steps.",
         "",
         "```",
         content_to_analyze[:3000] + ("..." if len(content_to_analyze) > 3000 else ""),
@@ -234,46 +234,46 @@ def analyze_elicitation_context(
         "",
         "---",
         "",
-        "## Инструкция по анализу (для Claude Code)",
+        "## Analysis instructions (for Claude Code)",
         "",
-        "На основе содержимого артефакта 4.3 выше выполни следующее:",
+        "Based on the contents of the 4.3 artifact above, do the following:",
         "",
-        "### 1. Извлеки бизнес-цели",
-        "Найди все упомянутые бизнес-цели (раздел 'Бизнес-цели' или эквивалент).",
-        "Если явного раздела нет — выведи цели из контекста.",
+        "### 1. Extract business objectives",
+        "Find all mentioned business objectives (the 'Business objectives' section or equivalent).",
+        "If there is no explicit section — infer the objectives from the context.",
         "",
-        "### 2. Классифицируй требования-кандидаты",
-        "Для каждого выявленного требования/потребности определи тип:",
+        "### 2. Classify candidate requirements",
+        "For each elicited requirement/need, determine the type:",
         "",
-        "| Тип | ID-префикс | Когда использовать |",
+        "| Type | ID prefix | When to use |",
         "|-----|-----------|-------------------|",
-        "| user_story | US- | Пользовательская потребность в Agile-контексте |",
-        "| functional | FR- | Поведение системы, Predictive-контекст |",
-        "| non_functional | NFR- | Качественные характеристики (SLA, скорость, безопасность) |",
-        "| business_rule | BR- | Бизнес-правило или ограничение предметной области |",
-        "| use_case | UC- | Сценарий взаимодействия актора с системой |",
-        "| business_process | BP- | Бизнес-процесс с несколькими участниками |",
-        "| data_dictionary | DD- | Описание структуры данных/сущностей |",
-        "| erd | ERD- | Связи между сущностями |",
+        "| user_story | US- | User need in an Agile context |",
+        "| functional | FR- | System behavior, Predictive context |",
+        "| non_functional | NFR- | Quality characteristics (SLA, speed, security) |",
+        "| business_rule | BR- | Business rule or domain constraint |",
+        "| use_case | UC- | Scenario of an actor interacting with the system |",
+        "| business_process | BP- | Business process with several participants |",
+        "| data_dictionary | DD- | Description of the data/entity structure |",
+        "| erd | ERD- | Relationships between entities |",
         "",
-        "### 3. Выяви информационные пробелы",
-        "Укажи темы, по которым выявление не дало достаточно информации для спецификации.",
-        "Для каждого пробела — рекомендация: провести дополнительную сессию выявления или уточнить у стейкхолдера.",
+        "### 3. Identify information gaps",
+        "List topics for which elicitation did not yield enough information for specification.",
+        "For each gap — a recommendation: run an additional elicitation session or clarify with the stakeholder.",
         "",
-        "### 4. Предложи порядок создания артефактов",
-        "Порядок от общего к частному: бизнес-правила → use cases → functional requirements → данные.",
+        "### 4. Propose an order for creating artifacts",
+        "Order from general to specific: business rules → use cases → functional requirements → data.",
         "",
         "---",
         "",
-        "## Следующий шаг",
+        "## Next step",
         "",
-        "После анализа используй инструменты 7.1 для создания артефактов:",
-        "- `create_user_story` — для User Stories",
-        "- `create_functional_requirement` — для FR/NFR/BR",
-        "- `create_use_case` — для Use Cases",
-        "- `create_business_process` — для Business Processes",
-        "- `create_data_dictionary` + `create_erd` — для данных",
-        "- `build_coverage_matrix` — в конце для проверки покрытия",
+        "After the analysis, use the 7.1 tools to create artifacts:",
+        "- `create_user_story` — for User Stories",
+        "- `create_functional_requirement` — for FR/NFR/BR",
+        "- `create_use_case` — for Use Cases",
+        "- `create_business_process` — for Business Processes",
+        "- `create_data_dictionary` + `create_erd` — for data",
+        "- `build_coverage_matrix` — at the end to check coverage",
     ]
 
     result = "\n".join(lines)
@@ -299,57 +299,57 @@ def create_user_story(
     notes: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт User Story с Acceptance Criteria.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a User Story with Acceptance Criteria.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:                Идентификатор проекта.
-        story_id:                  ID истории: US-001, US-002 и т.д.
-        title:                     Краткое название (для заголовка и реестра 5.1).
-        role:                      Роль пользователя: «Менеджер по заявкам», «Клиент», «Администратор».
-        action:                    Что пользователь хочет сделать (без «я хочу»).
-        benefit:                   Бизнес-ценность (без «чтобы»).
-        acceptance_criteria_json:  JSON-список критериев приёмки: ["Критерий 1", "Критерий 2"]
-                                   Минимум 2 критерия.
-        priority:                  High | Medium | Low. По умолчанию Medium.
-        source_artifact:           Путь к артефакту 4.3 (для трассировки).
-        notes:                     Дополнительный контекст, ограничения, ссылки.
+        project_id:                Project identifier.
+        story_id:                  Story ID: US-001, US-002, etc.
+        title:                     Short title (for the heading and the 5.1 registry).
+        role:                      User role: "Application Manager", "Customer", "Administrator".
+        action:                    What the user wants to do (without "I want").
+        benefit:                   Business value (without "so that").
+        acceptance_criteria_json:  JSON list of acceptance criteria: ["Criterion 1", "Criterion 2"]
+                                   At least 2 criteria.
+        priority:                  High | Medium | Low. Default Medium.
+        source_artifact:           Path to the 4.3 artifact (for traceability).
+        notes:                     Additional context, constraints, references.
 
     Returns:
-        Markdown-артефакт User Story + подтверждение регистрации в 5.1.
+        Markdown User Story artifact + confirmation of registration in 5.1.
     """
-    logger.info(f"create_user_story: {story_id} в проекте '{project_id}'")
+    logger.info(f"create_user_story: {story_id} in project '{project_id}'")
 
     try:
         criteria = json.loads(acceptance_criteria_json)
         if not isinstance(criteria, list):
-            raise ValueError("Должен быть список")
+            raise ValueError("Must be a list")
     except (json.JSONDecodeError, ValueError) as e:
-        return f"❌ Ошибка парсинга acceptance_criteria_json: {e}\nОжидается JSON-список: [\"Критерий 1\", \"Критерий 2\"]"
+        return f"❌ Error parsing acceptance_criteria_json: {e}\nExpected a JSON list: [\"Criterion 1\", \"Criterion 2\"]"
 
     if len(criteria) < 2:
-        return "❌ Необходимо минимум 2 Acceptance Criteria. User Story без AC — не требование."
+        return "❌ At least 2 Acceptance Criteria are required. A User Story without AC is not a requirement."
 
     criteria_md = "\n".join(f"{i + 1}. {c}" for i, c in enumerate(criteria))
 
     lines = [
-        f"<!-- BABOK 7.1 — User Story | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — User Story | Project: {project_id} | {date.today()} -->",
         "",
         f"# {story_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | User Story |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Приоритет | {priority} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | User Story |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Priority | {priority} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
         "",
-        "## История",
+        "## Story",
         "",
         f"As a **{role}**,  ",
         f"I want **{action}**,  ",
@@ -361,32 +361,32 @@ def create_user_story(
     ]
 
     if notes:
-        lines += ["", "## Дополнительный контекст", "", notes]
+        lines += ["", "## Additional context", "", notes]
 
     lines += [
         "",
         "---",
         "",
-        "## Трассировка",
+        "## Traceability",
         "",
-        f"| Связь | Артефакт |",
+        f"| Link | Artifact |",
         f"|-------|----------|",
-        f"| Источник (4.3) | {source_artifact or '—'} |",
-        f"| Реестр (5.1) | регистрация автоматическая |",
+        f"| Source (4.3) | {source_artifact or '—'} |",
+        f"| Registry (5.1) | automatic registration |",
     ]
 
     content = "\n".join(lines)
 
-    # Сохраняем артефакт
+    # Save the artifact
     safe_id = story_id.lower().replace("-", "_")
     safe_title = title.lower().replace(" ", "_")[:30]
     filename = f"{safe_id}_{safe_title}.md"
     spec_path = _save_spec(content, project_id, filename)
 
-    # ADR-022: авторегистрация в 5.1
+    # ADR-022: auto-registration in 5.1
     reg_note = _register_in_repo(project_id, story_id, "user_story", title, spec_path, priority)
 
-    return content + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}\n**Файл:** `{spec_path}`"
+    return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
 
 # ---------------------------------------------------------------------------
@@ -408,35 +408,35 @@ def create_functional_requirement(
     related_ids_json: str = "[]",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт формальное требование в стиле SRS.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a formal SRS-style requirement.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:        Идентификатор проекта.
-        req_id:            ID требования: FR-001, NFR-001, BR-001.
+        project_id:        Project identifier.
+        req_id:            Requirement ID: FR-001, NFR-001, BR-001.
         req_type:          functional | non_functional | business_rule
-        title:             Краткое название требования.
-        description:       Полная формулировка.
-                           functional:     «Система ДОЛЖНА [действие]...»
-                           non_functional: «Система ДОЛЖНА [метрика] [значение] при [условии]»
-                           business_rule:  «[Субъект] [ограничение/правило]»
-        rationale:         Обоснование — зачем нужно это требование.
+        title:             Short requirement title.
+        description:       Full statement.
+                           functional:     "The system SHALL [action]..."
+                           non_functional: "The system SHALL [metric] [value] under [condition]"
+                           business_rule:  "[Subject] [constraint/rule]"
+        rationale:         Rationale — why this requirement is needed.
         priority:          High | Medium | Low.
-        owner:             Владелец/стейкхолдер ответственный за требование.
-        source_artifact:   Путь к артефакту 4.3.
-        constraints:       Ограничения и допущения.
-        related_ids_json:  JSON-список связанных ID: ["BR-001", "UC-001"]
+        owner:             Owner/stakeholder responsible for the requirement.
+        source_artifact:   Path to the 4.3 artifact.
+        constraints:       Constraints and assumptions.
+        related_ids_json:  JSON list of related IDs: ["BR-001", "UC-001"]
 
     Returns:
-        Markdown-артефакт требования + подтверждение регистрации в 5.1.
+        Markdown requirement artifact + confirmation of registration in 5.1.
     """
-    logger.info(f"create_functional_requirement: {req_id} ({req_type}) в проекте '{project_id}'")
+    logger.info(f"create_functional_requirement: {req_id} ({req_type}) in project '{project_id}'")
 
     valid_types = {"functional", "non_functional", "business_rule"}
     if req_type not in valid_types:
         return (
-            f"❌ Недопустимый req_type: '{req_type}'.\n"
-            f"Допустимые значения: functional | non_functional | business_rule"
+            f"❌ Invalid req_type: '{req_type}'.\n"
+            f"Allowed values: functional | non_functional | business_rule"
         )
 
     try:
@@ -447,65 +447,65 @@ def create_functional_requirement(
         related_ids = []
 
     type_labels = {
-        "functional": "Функциональное требование",
-        "non_functional": "Нефункциональное требование",
-        "business_rule": "Бизнес-правило",
+        "functional": "Functional requirement",
+        "non_functional": "Non-functional requirement",
+        "business_rule": "Business rule",
     }
 
     type_hints = {
-        "functional": "Формулировка: «Система ДОЛЖНА [действие]...»",
-        "non_functional": "Формулировка: «Система ДОЛЖНА [метрика] [значение] при [условии]»",
-        "business_rule": "Формулировка: «[Субъект] [ограничение]» — без привязки к системе",
+        "functional": "Statement: \"The system SHALL [action]...\"",
+        "non_functional": "Statement: \"The system SHALL [metric] [value] under [condition]\"",
+        "business_rule": "Statement: \"[Subject] [constraint]\" — not tied to the system",
     }
 
     related_md = ", ".join(f"`{r}`" for r in related_ids) if related_ids else "—"
 
     lines = [
-        f"<!-- BABOK 7.1 — {type_labels[req_type]} | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — {type_labels[req_type]} | Project: {project_id} | {date.today()} -->",
         "",
         f"# {req_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | {type_labels[req_type]} |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Приоритет | {priority} |",
-        f"| Владелец | {owner or '—'} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | {type_labels[req_type]} |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Priority | {priority} |",
+        f"| Owner | {owner or '—'} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
         "",
-        "## Формулировка",
+        "## Statement",
         "",
         f"> _{type_hints[req_type]}_",
         "",
         description,
         "",
-        "## Обоснование",
+        "## Rationale",
         "",
         rationale,
     ]
 
     if constraints:
-        lines += ["", "## Ограничения и допущения", "", constraints]
+        lines += ["", "## Constraints and assumptions", "", constraints]
 
     lines += [
         "",
-        "## Связанные требования",
+        "## Related requirements",
         "",
         related_md,
         "",
         "---",
         "",
-        "## Трассировка",
+        "## Traceability",
         "",
-        "| Связь | Артефакт |",
+        "| Link | Artifact |",
         "|-------|----------|",
-        f"| Источник (4.3) | {source_artifact or '—'} |",
-        f"| Реестр (5.1) | регистрация автоматическая |",
+        f"| Source (4.3) | {source_artifact or '—'} |",
+        f"| Registry (5.1) | automatic registration |",
     ]
 
     content = "\n".join(lines)
@@ -515,7 +515,7 @@ def create_functional_requirement(
     filename = f"{safe_id}_{safe_title}.md"
     spec_path = _save_spec(content, project_id, filename)
 
-    # ADR-022: авторегистрация
+    # ADR-022: auto-registration
     repo_type_map = {
         "functional": "functional",
         "non_functional": "non_functional",
@@ -523,7 +523,7 @@ def create_functional_requirement(
     }
     reg_note = _register_in_repo(project_id, req_id, repo_type_map[req_type], title, spec_path, priority)
 
-    return content + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}\n**Файл:** `{spec_path}`"
+    return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
 
 # ---------------------------------------------------------------------------
@@ -548,81 +548,81 @@ def create_use_case(
     source_artifact: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт текстовую спецификацию Use Case.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a textual Use Case specification.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:        Идентификатор проекта.
-        uc_id:             ID use case: UC-001, UC-002.
-        title:             Название UC в формате «Глагол + Объект»: «Оформить заявку».
-        primary_actor:     Основной актор инициирующий UC.
-        precondition:      Условие которое должно быть истинно до начала UC.
-        postcondition:     Состояние системы после успешного завершения UC.
-        trigger:           Событие запускающее UC.
-        main_scenario:     Основной сценарий (Happy Path). Нумерованные шаги через \\n.
+        project_id:        Project identifier.
+        uc_id:             Use case ID: UC-001, UC-002.
+        title:             UC title in the form "Verb + Object": "Submit application".
+        primary_actor:     Primary actor initiating the UC.
+        precondition:      Condition that must be true before the UC starts.
+        postcondition:     System state after the UC completes successfully.
+        trigger:           Event that triggers the UC.
+        main_scenario:     Main scenario (Happy Path). Numbered steps separated by \\n.
         priority:          High | Medium | Low.
-        secondary_actors:  Вторичные акторы через запятую.
-        alt_scenarios:     Альтернативные сценарии (нумерация: 2а, 3б...).
-        exc_scenarios:     Сценарии исключений (нумерация: Xа, Yб...).
-        business_rules:    Бизнес-правила применяемые в UC.
-        source_artifact:   Путь к артефакту 4.3.
+        secondary_actors:  Secondary actors, comma-separated.
+        alt_scenarios:     Alternative scenarios (numbering: 2a, 3b...).
+        exc_scenarios:     Exception scenarios (numbering: Xa, Yb...).
+        business_rules:    Business rules applied in the UC.
+        source_artifact:   Path to the 4.3 artifact.
 
     Returns:
-        Markdown-артефакт Use Case + подтверждение регистрации в 5.1.
+        Markdown Use Case artifact + confirmation of registration in 5.1.
     """
-    logger.info(f"create_use_case: {uc_id} в проекте '{project_id}'")
+    logger.info(f"create_use_case: {uc_id} in project '{project_id}'")
 
     lines = [
-        f"<!-- BABOK 7.1 — Use Case | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Use Case | Project: {project_id} | {date.today()} -->",
         "",
         f"# {uc_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | Use Case |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Приоритет | {priority} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | Use Case |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Priority | {priority} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
         "",
-        "## Общая информация",
+        "## General information",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Актор (primary) | {primary_actor} |",
-        f"| Акторы (secondary) | {secondary_actors or '—'} |",
-        f"| Предусловие | {precondition} |",
-        f"| Постусловие | {postcondition} |",
-        f"| Триггер | {trigger} |",
+        f"| Actor (primary) | {primary_actor} |",
+        f"| Actors (secondary) | {secondary_actors or '—'} |",
+        f"| Precondition | {precondition} |",
+        f"| Postcondition | {postcondition} |",
+        f"| Trigger | {trigger} |",
         "",
-        "## Основной сценарий (Happy Path)",
+        "## Main scenario (Happy Path)",
         "",
         main_scenario,
     ]
 
     if alt_scenarios:
-        lines += ["", "## Альтернативные сценарии", "", alt_scenarios]
+        lines += ["", "## Alternative scenarios", "", alt_scenarios]
 
     if exc_scenarios:
-        lines += ["", "## Сценарии исключений", "", exc_scenarios]
+        lines += ["", "## Exception scenarios", "", exc_scenarios]
 
     if business_rules:
-        lines += ["", "## Бизнес-правила и ограничения", "", business_rules]
+        lines += ["", "## Business rules and constraints", "", business_rules]
 
     lines += [
         "",
         "---",
         "",
-        "## Трассировка",
+        "## Traceability",
         "",
-        "| Связь | Артефакт |",
+        "| Link | Artifact |",
         "|-------|----------|",
-        f"| Источник (4.3) | {source_artifact or '—'} |",
-        f"| Реестр (5.1) | регистрация автоматическая |",
+        f"| Source (4.3) | {source_artifact or '—'} |",
+        f"| Registry (5.1) | automatic registration |",
     ]
 
     content = "\n".join(lines)
@@ -634,7 +634,7 @@ def create_use_case(
 
     reg_note = _register_in_repo(project_id, uc_id, "use_case", title, spec_path, priority)
 
-    return content + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}\n**Файл:** `{spec_path}`"
+    return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
 
 # ---------------------------------------------------------------------------
@@ -648,19 +648,19 @@ def generate_use_case_diagram(
     diagram_name: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Генерирует PlantUML Use Case Diagram по всем UC из репозитория 5.1.
-    ADR-025: PlantUML нотация.
+    BABOK 7.1 — Generates a PlantUML Use Case Diagram from all UCs in repository 5.1.
+    ADR-025: PlantUML notation.
 
-    Читает все требования типа 'use_case' из репозитория 5.1 и строит сводную диаграмму.
-    Акторы извлекаются из файлов спецификаций UC (если доступны).
+    Reads all requirements of type 'use_case' from repository 5.1 and builds a summary diagram.
+    Actors are extracted from the UC specification files (if available).
 
     Args:
-        project_id:      Идентификатор проекта.
-        system_boundary: Название системы/подсистемы (прямоугольник на диаграмме).
-        diagram_name:    Имя файла диаграммы (без расширения). По умолчанию: {project_id}_uc.
+        project_id:      Project identifier.
+        system_boundary: Name of the system/subsystem (the rectangle on the diagram).
+        diagram_name:    Diagram file name (without extension). Default: {project_id}_uc.
 
     Returns:
-        PlantUML-код диаграммы + путь к .puml файлу.
+        PlantUML diagram code + path to the .puml file.
     """
     logger.info(f"generate_use_case_diagram: '{project_id}'")
 
@@ -669,13 +669,13 @@ def generate_use_case_diagram(
 
     if not use_cases:
         return (
-            f"⚠️ В репозитории проекта `{project_id}` нет Use Cases.\n"
-            f"Сначала создай Use Cases с помощью `create_use_case`."
+            f"⚠️ Repository for project `{project_id}` has no Use Cases.\n"
+            f"First create Use Cases with `create_use_case`."
         )
 
     name = diagram_name or f"{project_id.lower().replace(' ', '_')}_uc"
 
-    # Генерируем PlantUML
+    # Generate PlantUML
     puml_lines = [
         f"@startuml {name}",
         "left to right direction",
@@ -691,38 +691,38 @@ def generate_use_case_diagram(
         "",
     ]
 
-    # Пробуем извлечь акторов из файлов спецификаций
+    # Try to extract actors from the specification files
     actors = set()
     uc_actor_map = {}  # uc_id -> primary_actor
 
     specs_dir = _specs_dir(project_id)
     for uc in use_cases:
         uc_id = uc["id"]
-        # Ищем файл спецификации
+        # Look for the specification file
         pattern = os.path.join(specs_dir, f"{uc_id.lower().replace('-', '_')}*.md")
         matches = glob.glob(pattern)
         if matches:
             try:
                 with open(matches[0], "r", encoding="utf-8") as f:
                     spec_content = f.read()
-                # Простой парсинг primary actor из таблицы
+                # Simple parsing of the primary actor from the table
                 for line in spec_content.split("\n"):
-                    if "Актор (primary)" in line:
+                    if "Actor (primary)" in line:
                         parts = line.split("|")
                         if len(parts) >= 3:
                             actor = parts[2].strip()
-                            if actor and actor != "Значение":
+                            if actor and actor != "Value":
                                 actors.add(actor)
                                 uc_actor_map[uc_id] = actor
             except (IOError, IndexError):
                 pass
 
     if not actors:
-        actors = {"Пользователь"}  # fallback
+        actors = {"User"}  # fallback
         for uc in use_cases:
-            uc_actor_map[uc["id"]] = "Пользователь"
+            uc_actor_map[uc["id"]] = "User"
 
-    # Объявляем акторов
+    # Declare actors
     actor_aliases = {}
     for i, actor in enumerate(sorted(actors)):
         alias = f"A{i + 1}"
@@ -731,7 +731,7 @@ def generate_use_case_diagram(
 
     puml_lines.append("")
 
-    # Прямоугольник системы
+    # System rectangle
     puml_lines.append(f'rectangle "{system_boundary}" {{')
 
     for uc in use_cases:
@@ -741,7 +741,7 @@ def generate_use_case_diagram(
     puml_lines.append("}")
     puml_lines.append("")
 
-    # Связи актор → UC
+    # Actor -> UC links
     for uc in use_cases:
         uc_id = uc["id"]
         actor = uc_actor_map.get(uc_id, sorted(actors)[0])
@@ -754,24 +754,24 @@ def generate_use_case_diagram(
 
     puml_content = "\n".join(puml_lines)
 
-    # Сохраняем .puml
+    # Save .puml
     puml_filename = f"uc_diagram_{name}.puml"
     puml_path = _save_spec(puml_content, project_id, puml_filename)
 
     result_lines = [
-        f"<!-- BABOK 7.1 — Use Case Diagram | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Use Case Diagram | Project: {project_id} | {date.today()} -->",
         "",
         f"# Use Case Diagram — {system_boundary}",
         "",
-        f"**Проект:** {project_id}  ",
-        f"**Use Cases на диаграмме:** {len(use_cases)}  ",
-        f"**Акторы:** {', '.join(sorted(actors))}  ",
-        f"**Файл диаграммы:** `{puml_path}`  ",
-        f"**Дата:** {date.today()}",
+        f"**Project:** {project_id}  ",
+        f"**Use Cases on the diagram:** {len(use_cases)}  ",
+        f"**Actors:** {', '.join(sorted(actors))}  ",
+        f"**Diagram file:** `{puml_path}`  ",
+        f"**Date:** {date.today()}",
         "",
         "---",
         "",
-        "## PlantUML код",
+        "## PlantUML code",
         "",
         "```plantuml",
         puml_content,
@@ -779,17 +779,17 @@ def generate_use_case_diagram(
         "",
         "---",
         "",
-        "## Как рендерить",
+        "## How to render",
         "",
         "1. **PlantUML Online:** https://www.plantuml.com/plantuml/uml/",
-        "2. **VS Code:** расширение «PlantUML» (jebbs.plantuml)",
+        "2. **VS Code:** the \"PlantUML\" extension (jebbs.plantuml)",
         "3. **CLI:** `plantuml " + puml_path + "`",
         "",
         "---",
         "",
-        "## Use Cases на диаграмме",
+        "## Use Cases on the diagram",
         "",
-        "| ID | Название | Статус |",
+        "| ID | Title | Status |",
         "|----|----------|--------|",
     ]
 
@@ -822,90 +822,90 @@ def create_business_process(
     source_artifact: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт описание бизнес-процесса.
-    ADR-024: генерирует ДВА файла — текстовое описание .md и Activity Diagram .puml.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a business process description.
+    ADR-024: generates TWO files — a textual description .md and an Activity Diagram .puml.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:      Идентификатор проекта.
-        bp_id:           ID процесса: BP-001, BP-002.
-        title:           Название процесса: «Жизненный цикл заявки».
-        process_owner:   Роль/подразделение ответственное за процесс.
-        trigger:         Событие запускающее процесс.
-        outcome:         Результат успешного завершения процесса.
-        participants:    Участники процесса через запятую (роли/системы).
-        steps:           Шаги процесса. Формат: «1. Роль: действие\\n2. Роль: действие».
-                         Ветвления: «2а. Если [условие]: → шаг X. 2б. Иначе: → шаг Y.»
+        project_id:      Project identifier.
+        bp_id:           Process ID: BP-001, BP-002.
+        title:           Process name: "Application life cycle".
+        process_owner:   Role/department responsible for the process.
+        trigger:         Event that starts the process.
+        outcome:         Result of successful process completion.
+        participants:    Process participants, comma-separated (roles/systems).
+        steps:           Process steps. Format: "1. Role: action\\n2. Role: action".
+                         Branches: "2a. If [condition]: → step X. 2b. Otherwise: → step Y."
         priority:        High | Medium | Low.
-        business_rules:  Бизнес-правила и ограничения процесса.
-        metrics:         Метрики: время, конверсия, стоимость.
-        exceptions:      Нештатные ситуации и обработка ошибок.
-        source_artifact: Путь к артефакту 4.3.
+        business_rules:  Business rules and constraints of the process.
+        metrics:         Metrics: time, conversion, cost.
+        exceptions:      Exceptional situations and error handling.
+        source_artifact: Path to the 4.3 artifact.
 
     Returns:
-        Markdown-артефакт процесса + PlantUML Activity Diagram + подтверждение регистрации в 5.1.
+        Markdown process artifact + PlantUML Activity Diagram + confirmation of registration in 5.1.
     """
-    logger.info(f"create_business_process: {bp_id} в проекте '{project_id}'")
+    logger.info(f"create_business_process: {bp_id} in project '{project_id}'")
 
-    # --- Текстовое описание .md ---
+    # --- Textual description .md ---
     participants_list = [p.strip() for p in participants.split(",") if p.strip()]
 
     md_lines = [
-        f"<!-- BABOK 7.1 — Business Process | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Business Process | Project: {project_id} | {date.today()} -->",
         "",
         f"# {bp_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | Business Process |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Приоритет | {priority} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | Business Process |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Priority | {priority} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
         "",
-        "## Общая информация",
+        "## General information",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Владелец процесса | {process_owner} |",
-        f"| Триггер | {trigger} |",
-        f"| Результат | {outcome} |",
-        f"| Участники | {', '.join(participants_list)} |",
+        f"| Process owner | {process_owner} |",
+        f"| Trigger | {trigger} |",
+        f"| Result | {outcome} |",
+        f"| Participants | {', '.join(participants_list)} |",
         "",
-        "## Шаги процесса",
+        "## Process steps",
         "",
         steps,
     ]
 
     if business_rules:
-        md_lines += ["", "## Бизнес-правила", "", business_rules]
+        md_lines += ["", "## Business rules", "", business_rules]
 
     if metrics:
-        md_lines += ["", "## Метрики процесса", "", metrics]
+        md_lines += ["", "## Process metrics", "", metrics]
 
     if exceptions:
-        md_lines += ["", "## Исключения и нештатные ситуации", "", exceptions]
+        md_lines += ["", "## Exceptions and abnormal situations", "", exceptions]
 
     md_lines += [
         "",
         "---",
         "",
-        "## Связанная диаграмма",
+        "## Related diagram",
         "",
         f"Activity Diagram: `{bp_id.lower().replace('-', '_')}_{title.lower().replace(' ', '_')[:20]}.puml`",
         "",
-        "Для рендеринга: https://www.plantuml.com/plantuml/uml/",
+        "To render: https://www.plantuml.com/plantuml/uml/",
     ]
 
     md_content = "\n".join(md_lines)
 
     # --- PlantUML Activity Diagram .puml ---
-    # ADR-024: генерируем из шагов текстового описания
-    # Простая структура: swimlanes для участников + шаги из steps
+    # ADR-024: generate from the steps of the textual description
+    # Simple structure: swimlanes for participants + steps from steps
     puml_name = f"{bp_id.lower().replace('-', '_')}_{title.lower().replace(' ', '_')[:20]}"
 
     puml_lines = [
@@ -919,35 +919,35 @@ def create_business_process(
         "",
     ]
 
-    # Swimlanes для участников
+    # Swimlanes for participants
     if participants_list:
         first_participant = participants_list[0]
         puml_lines.append(f"|{first_participant}|")
     else:
-        puml_lines.append("|Участник|")
+        puml_lines.append("|Participant|")
 
     puml_lines.append("start")
     puml_lines.append("")
 
-    # Добавляем триггер и шаги
+    # Add the trigger and the steps
     puml_lines.append(f":{trigger};")
     puml_lines.append("")
 
-    # Парсим шаги — каждую строку начинающуюся с цифры добавляем как активность
-    current_swimlane = participants_list[0] if participants_list else "Участник"
+    # Parse steps — each line starting with a digit is added as an activity
+    current_swimlane = participants_list[0] if participants_list else "Participant"
     step_count = 0
     for line in steps.split("\n"):
         line = line.strip()
         if not line:
             continue
 
-        # Ищем смену участника (формат "1. Роль: действие")
+        # Look for a participant change (format "1. Role: action")
         if ". " in line and ":" in line:
             parts = line.split(":", 1)
             if len(parts) == 2:
-                # Пытаемся определить участника
+                # Try to determine the participant
                 step_part = parts[0]
-                # Убираем номер шага
+                # Strip the step number
                 for p in participants_list:
                     if p.lower() in step_part.lower():
                         if p != current_swimlane:
@@ -959,14 +959,14 @@ def create_business_process(
                 if action:
                     puml_lines.append(f":{action};")
                     step_count += 1
-        elif line.startswith(("2а", "2б", "3а", "3б")) or "Если" in line or "если" in line:
-            # Упрощённая обработка ветвлений — как текстовая заметка
-            note = line.lstrip("0123456789абвгдеёжзийклмнопрстуфхцчшщъыьэюяabcdefghijklmnopqrstuvwxyz. ")
+        elif line.startswith(("2a", "2b", "3a", "3b")) or "If" in line or "if" in line:
+            # Simplified branch handling — as a text note
+            note = line.lstrip("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ. ")
             if note:
                 puml_lines.append(f"note right: {note[:50]}")
 
     if step_count == 0:
-        # Fallback: просто добавляем outcome как конечное состояние
+        # Fallback: simply add the outcome as the final state
         puml_lines.append(f":{outcome};")
 
     puml_lines.append("")
@@ -975,7 +975,7 @@ def create_business_process(
 
     puml_content = "\n".join(puml_lines)
 
-    # Сохраняем оба файла
+    # Save both files
     safe_id = bp_id.lower().replace("-", "_")
     safe_title = title.lower().replace(" ", "_")[:30]
 
@@ -985,14 +985,14 @@ def create_business_process(
     md_path = _save_spec(md_content, project_id, md_filename)
     puml_path = _save_spec(puml_content, project_id, puml_filename)
 
-    # ADR-022: авторегистрация в 5.1
+    # ADR-022: auto-registration in 5.1
     reg_note = _register_in_repo(project_id, bp_id, "business_process", title, md_path, priority)
 
     result = (
         md_content
         + f"\n\n---\n\n## PlantUML Activity Diagram\n\n```plantuml\n{puml_content}\n```"
-        + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}"
-        + f"\n**Файлы:** `{md_path}`, `{puml_path}`"
+        + f"\n\n---\n\n**Registration in 5.1:** {reg_note}"
+        + f"\n**Files:** `{md_path}`, `{puml_path}`"
     )
 
     return result
@@ -1011,61 +1011,61 @@ def create_data_dictionary(
     source_artifact: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт Data Dictionary: реестр сущностей с атрибутами, типами и ограничениями.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a Data Dictionary: a registry of entities with attributes, types and constraints.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:      Идентификатор проекта.
-        dd_id:           ID артефакта: DD-001.
-        title:           Название: «Сущности заявочной системы».
-        entities_json:   JSON-список сущностей. Формат:
+        project_id:      Project identifier.
+        dd_id:           Artifact ID: DD-001.
+        title:           Name: "Entities of the application system".
+        entities_json:   JSON list of entities. Format:
                          [
                            {
                              "name": "Application",
-                             "description": "Заявка на кредит",
+                             "description": "Loan application",
                              "attributes": [
                                {
                                  "name": "id",
                                  "type": "Integer",
                                  "required": true,
                                  "constraints": "PK, AUTO_INCREMENT",
-                                 "description": "Уникальный идентификатор"
+                                 "description": "Unique identifier"
                                }
                              ],
-                             "business_rules": ["Правило 1", "Правило 2"]
+                             "business_rules": ["Rule 1", "Rule 2"]
                            }
                          ]
-        source_artifact: Путь к артефакту 4.3.
+        source_artifact: Path to the 4.3 artifact.
 
     Returns:
-        Markdown Data Dictionary + подтверждение регистрации в 5.1.
+        Markdown Data Dictionary + confirmation of registration in 5.1.
     """
-    logger.info(f"create_data_dictionary: {dd_id} в проекте '{project_id}'")
+    logger.info(f"create_data_dictionary: {dd_id} in project '{project_id}'")
 
     try:
         entities = json.loads(entities_json)
         if not isinstance(entities, list) or len(entities) == 0:
-            raise ValueError("Должен быть непустой список")
+            raise ValueError("Must be a non-empty list")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Ошибка парсинга entities_json: {e}\n"
-            f"Ожидается JSON-список сущностей. Пример в references/templates.md."
+            f"❌ Error parsing entities_json: {e}\n"
+            f"Expected a JSON list of entities. See an example in references/templates.md."
         )
 
     lines = [
-        f"<!-- BABOK 7.1 — Data Dictionary | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Data Dictionary | Project: {project_id} | {date.today()} -->",
         "",
         f"# {dd_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | Data Dictionary |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Сущностей | {len(entities)} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | Data Dictionary |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Entities | {len(entities)} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
     ]
@@ -1078,30 +1078,30 @@ def create_data_dictionary(
 
         lines += [
             "",
-            f"## Сущность: {name}",
+            f"## Entity: {name}",
             "",
         ]
 
         if description:
-            lines += [f"**Описание:** {description}", ""]
+            lines += [f"**Description:** {description}", ""]
 
         if attributes:
             lines += [
-                "| Атрибут | Тип данных | Обязательный | Ограничения | Описание |",
+                "| Attribute | Data type | Required | Constraints | Description |",
                 "|---------|-----------|--------------|-------------|----------|",
             ]
             for attr in attributes:
                 attr_name = attr.get("name", "—")
                 attr_type = attr.get("type", "—")
-                required = "Да" if attr.get("required", False) else "Нет"
+                required = "Yes" if attr.get("required", False) else "No"
                 constraints = attr.get("constraints", "—")
                 attr_desc = attr.get("description", "—")
                 lines.append(f"| `{attr_name}` | {attr_type} | {required} | {constraints} | {attr_desc} |")
         else:
-            lines.append("_Атрибуты не заданы._")
+            lines.append("_No attributes specified._")
 
         if rules:
-            lines += ["", "**Бизнес-правила:**"]
+            lines += ["", "**Business rules:**"]
             for rule in rules:
                 lines.append(f"- {rule}")
 
@@ -1110,12 +1110,12 @@ def create_data_dictionary(
     lines += [
         "---",
         "",
-        "## Трассировка",
+        "## Traceability",
         "",
-        "| Связь | Артефакт |",
+        "| Link | Artifact |",
         "|-------|----------|",
-        f"| Источник (4.3) | {source_artifact or '—'} |",
-        f"| Реестр (5.1) | регистрация автоматическая |",
+        f"| Source (4.3) | {source_artifact or '—'} |",
+        f"| Registry (5.1) | automatic registration |",
     ]
 
     content = "\n".join(lines)
@@ -1127,7 +1127,7 @@ def create_data_dictionary(
 
     reg_note = _register_in_repo(project_id, dd_id, "data_dictionary", title, spec_path)
 
-    return content + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}\n**Файл:** `{spec_path}`"
+    return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
 
 # ---------------------------------------------------------------------------
@@ -1144,15 +1144,15 @@ def create_erd(
     source_artifact: str = "",
 ) -> str:
     """
-    BABOK 7.1 — Создаёт описание сущностей и связей + PlantUML ER Diagram (.puml).
-    ADR-025: PlantUML нотация.
-    Автоматически регистрирует в репозитории 5.1 (статус draft). ADR-022.
+    BABOK 7.1 — Creates a description of entities and relationships + PlantUML ER Diagram (.puml).
+    ADR-025: PlantUML notation.
+    Automatically registers it in repository 5.1 (status draft). ADR-022.
 
     Args:
-        project_id:      Идентификатор проекта.
-        erd_id:          ID артефакта: ERD-001.
-        title:           Название: «Основные сущности CRM».
-        entities_json:   JSON-список сущностей. Формат:
+        project_id:      Project identifier.
+        erd_id:          Artifact ID: ERD-001.
+        title:           Name: "Core CRM entities".
+        entities_json:   JSON list of entities. Format:
                          [
                            {
                              "name": "Application",
@@ -1160,7 +1160,7 @@ def create_erd(
                              "attributes": ["client_id FK", "status Enum", "created_at DateTime"]
                            }
                          ]
-        relations_json:  JSON-список связей. Формат:
+        relations_json:  JSON list of relationships. Format:
                          [
                            {
                              "from": "Application",
@@ -1169,22 +1169,22 @@ def create_erd(
                              "label": "belongs to"
                            }
                          ]
-                         Допустимые cardinality:
+                         Allowed cardinality:
                          one-to-one | one-to-many | many-to-one | many-to-many |
                          zero-or-one-to-many | zero-or-one-to-one
-        source_artifact: Путь к артефакту 4.3.
+        source_artifact: Path to the 4.3 artifact.
 
     Returns:
-        Markdown ERD описание + PlantUML код + подтверждение регистрации в 5.1.
+        Markdown ERD description + PlantUML code + confirmation of registration in 5.1.
     """
-    logger.info(f"create_erd: {erd_id} в проекте '{project_id}'")
+    logger.info(f"create_erd: {erd_id} in project '{project_id}'")
 
     try:
         entities = json.loads(entities_json)
         if not isinstance(entities, list) or len(entities) == 0:
-            raise ValueError("Должен быть непустой список")
+            raise ValueError("Must be a non-empty list")
     except (json.JSONDecodeError, ValueError) as e:
-        return f"❌ Ошибка парсинга entities_json: {e}"
+        return f"❌ Error parsing entities_json: {e}"
 
     try:
         relations = json.loads(relations_json)
@@ -1193,7 +1193,7 @@ def create_erd(
     except (json.JSONDecodeError, ValueError):
         relations = []
 
-    # Нотация кардинальности PlantUML
+    # PlantUML cardinality notation
     cardinality_map = {
         "one-to-one": "||--||",
         "one-to-many": "||--o{",
@@ -1249,28 +1249,28 @@ def create_erd(
     puml_lines.append("@enduml")
     puml_content = "\n".join(puml_lines)
 
-    # --- Markdown описание ---
+    # --- Markdown description ---
     md_lines = [
-        f"<!-- BABOK 7.1 — ERD | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — ERD | Project: {project_id} | {date.today()} -->",
         "",
         f"# {erd_id} — {title}",
         "",
-        "| Атрибут | Значение |",
+        "| Attribute | Value |",
         "|---------|----------|",
-        f"| Тип | ERD |",
-        f"| Проект | {project_id} |",
-        f"| Источник | {source_artifact or '—'} |",
-        f"| Сущностей | {len(entities)} |",
-        f"| Связей | {len(relations)} |",
-        f"| Статус | draft |",
-        f"| Версия | 1.0 |",
-        f"| Дата | {date.today()} |",
+        f"| Type | ERD |",
+        f"| Project | {project_id} |",
+        f"| Source | {source_artifact or '—'} |",
+        f"| Entities | {len(entities)} |",
+        f"| Relationships | {len(relations)} |",
+        f"| Status | draft |",
+        f"| Version | 1.0 |",
+        f"| Date | {date.today()} |",
         "",
         "---",
         "",
-        "## Сущности",
+        "## Entities",
         "",
-        "| Сущность | PK | Атрибуты |",
+        "| Entity | PK | Attributes |",
         "|----------|----|----------|",
     ]
 
@@ -1283,9 +1283,9 @@ def create_erd(
     if relations:
         md_lines += [
             "",
-            "## Связи",
+            "## Relationships",
             "",
-            "| От | К | Кардинальность | Описание |",
+            "| From | To | Cardinality | Description |",
             "|----|---|----------------|----------|",
         ]
         for rel in relations:
@@ -1298,17 +1298,17 @@ def create_erd(
         "",
         "---",
         "",
-        "## Трассировка",
+        "## Traceability",
         "",
-        "| Связь | Артефакт |",
+        "| Link | Artifact |",
         "|-------|----------|",
-        f"| Источник (4.3) | {source_artifact or '—'} |",
-        f"| Реестр (5.1) | регистрация автоматическая |",
+        f"| Source (4.3) | {source_artifact or '—'} |",
+        f"| Registry (5.1) | automatic registration |",
     ]
 
     md_content = "\n".join(md_lines)
 
-    # Сохраняем оба файла
+    # Save both files
     safe_id = erd_id.lower().replace("-", "_")
     safe_title = title.lower().replace(" ", "_")[:30]
 
@@ -1323,8 +1323,8 @@ def create_erd(
     result = (
         md_content
         + f"\n\n---\n\n## PlantUML ER Diagram\n\n```plantuml\n{puml_content}\n```"
-        + f"\n\n---\n\n**Регистрация в 5.1:** {reg_note}"
-        + f"\n**Файлы:** `{md_path}`, `{puml_path}`"
+        + f"\n\n---\n\n**Registration in 5.1:** {reg_note}"
+        + f"\n**Files:** `{md_path}`, `{puml_path}`"
     )
     return result
 
@@ -1338,19 +1338,19 @@ def build_coverage_matrix(
     project_id: str,
 ) -> str:
     """
-    BABOK 7.1 — Строит матрицу покрытия «бизнес-цель → требования».
+    BABOK 7.1 — Builds a "business objective → requirements" coverage matrix.
 
-    Читает бизнес-цели из последнего артефакта 4.3 и список требований из репозитория 5.1.
-    Флаги:
-      🔴 Бизнес-цель не покрыта ни одним требованием
-      🟡 Бизнес-цель покрыта 10+ требованиями (возможный over-engineering)
-      🟢 Нормальное покрытие (1–9 требований)
+    Reads business objectives from the latest 4.3 artifact and the list of requirements from repository 5.1.
+    Flags:
+      🔴 Business objective not covered by any requirement
+      🟡 Business objective covered by 10+ requirements (possible over-engineering)
+      🟢 Normal coverage (1–9 requirements)
 
     Args:
-        project_id: Идентификатор проекта.
+        project_id: Project identifier.
 
     Returns:
-        Markdown Coverage Matrix с флагами и рекомендациями.
+        Markdown Coverage Matrix with flags and recommendations.
     """
     logger.info(f"build_coverage_matrix: '{project_id}'")
 
@@ -1362,11 +1362,11 @@ def build_coverage_matrix(
 
     if not requirements:
         return (
-            f"⚠️ В репозитории проекта `{project_id}` нет требований.\n"
-            f"Сначала создай требования с помощью инструментов 7.1."
+            f"⚠️ Repository for project `{project_id}` has no requirements.\n"
+            f"First create requirements with the 7.1 tools."
         )
 
-    # Пробуем найти артефакт 4.3 для извлечения бизнес-целей
+    # Try to find the 4.3 artifact to extract business objectives
     artifact_path = _find_confirmed_artifact(project_id)
     business_goals = []
     source_info = ""
@@ -1374,14 +1374,14 @@ def build_coverage_matrix(
     if artifact_path:
         try:
             content = _read_confirmed_artifact(artifact_path)
-            source_info = f"📂 Бизнес-цели извлечены из: `{artifact_path}`"
-            # Простой парсинг: ищем раздел с бизнес-целями
+            source_info = f"📂 Business objectives extracted from: `{artifact_path}`"
+            # Simple parsing: look for the section with business objectives
             lines = content.split("\n")
             in_goals_section = False
             for line in lines:
                 line_stripped = line.strip()
                 lower = line_stripped.lower()
-                if any(kw in lower for kw in ["бизнес-цел", "business goal", "цели проекта", "цели:"]):
+                if any(kw in lower for kw in ["business objective", "business goal", "project objectives", "objectives:"]):
                     in_goals_section = True
                     continue
                 if in_goals_section:
@@ -1398,7 +1398,7 @@ def build_coverage_matrix(
             pass
 
     if not business_goals:
-        # Fallback: синтетические "цели" из source_artifact требований
+        # Fallback: synthetic "objectives" from the requirements' source_artifact
         source_artifacts = set()
         for r in requirements:
             sa = r.get("source_artifact", "")
@@ -1406,21 +1406,21 @@ def build_coverage_matrix(
                 source_artifacts.add(sa)
 
         if source_artifacts:
-            business_goals = [f"Цели из: {sa}" for sa in sorted(source_artifacts)]
-            source_info = "📋 Бизнес-цели не извлечены из 4.3. Показана группировка по источникам."
+            business_goals = [f"Objectives from: {sa}" for sa in sorted(source_artifacts)]
+            source_info = "📋 Business objectives not extracted from 4.3. Showing grouping by source."
         else:
-            business_goals = ["Бизнес-цели не определены"]
-            source_info = "⚠️ Артефакт 4.3 не найден. Запусти `analyze_elicitation_context` для анализа."
+            business_goals = ["Business objectives not defined"]
+            source_info = "⚠️ 4.3 artifact not found. Run `analyze_elicitation_context` to analyze."
 
-    # Строим матрицу
-    # Для реальной трассировки используем source_artifact как связь
+    # Build the matrix
+    # For real traceability we use source_artifact as the link
     goal_coverage = {}
     for goal in business_goals:
         goal_coverage[goal] = []
 
     for req in requirements:
         req_source = req.get("source_artifact", "")
-        # Привязываем к цели по source_artifact или ко всем целям если один источник
+        # Map to an objective by source_artifact or to all objectives if there is a single source
         matched = False
         for goal in business_goals:
             if req_source and (req_source in goal or goal in req_source):
@@ -1429,7 +1429,7 @@ def build_coverage_matrix(
         if not matched and business_goals:
             goal_coverage[business_goals[0]].append(req)
 
-    # Статистика
+    # Statistics
     uncovered = [g for g, reqs in goal_coverage.items() if len(reqs) == 0]
     over_engineered = [g for g, reqs in goal_coverage.items() if len(reqs) >= 10]
     normal = [g for g, reqs in goal_coverage.items() if 1 <= len(reqs) < 10]
@@ -1438,31 +1438,31 @@ def build_coverage_matrix(
     covered_reqs = sum(len(r) for r in goal_coverage.values())
 
     lines = [
-        f"<!-- BABOK 7.1 — Coverage Matrix | Проект: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.1 — Coverage Matrix | Project: {project_id} | {date.today()} -->",
         "",
-        f"# 📊 Матрица покрытия требований",
+        f"# 📊 Requirements coverage matrix",
         "",
-        f"**Проект:** {project_id}  ",
-        f"**Дата:** {date.today()}  ",
-        f"**Источник целей:** {source_info}",
+        f"**Project:** {project_id}  ",
+        f"**Date:** {date.today()}  ",
+        f"**Objectives source:** {source_info}",
         "",
-        "## Сводка",
+        "## Summary",
         "",
-        "| Показатель | Значение |",
+        "| Metric | Value |",
         "|------------|----------|",
-        f"| Бизнес-целей | {len(business_goals)} |",
-        f"| Требований в реестре | {total_reqs} |",
-        f"| 🔴 Целей без покрытия | {len(uncovered)} |",
-        f"| 🟡 Целей с 10+ требованиями | {len(over_engineered)} |",
-        f"| 🟢 Целей с нормальным покрытием | {len(normal)} |",
+        f"| Business objectives | {len(business_goals)} |",
+        f"| Requirements in the registry | {total_reqs} |",
+        f"| 🔴 Objectives without coverage | {len(uncovered)} |",
+        f"| 🟡 Objectives with 10+ requirements | {len(over_engineered)} |",
+        f"| 🟢 Objectives with normal coverage | {len(normal)} |",
         "",
     ]
 
     if uncovered:
         lines += [
-            "## 🔴 Не покрытые бизнес-цели",
+            "## 🔴 Uncovered business objectives",
             "",
-            "> Для каждой цели необходимо создать хотя бы одно требование.",
+            "> For each objective, at least one requirement must be created.",
             "",
         ]
         for goal in uncovered:
@@ -1471,20 +1471,20 @@ def build_coverage_matrix(
 
     if over_engineered:
         lines += [
-            "## 🟡 Возможный over-engineering",
+            "## 🟡 Possible over-engineering",
             "",
-            "> 10+ требований на одну цель — стоит проверить, не дублируются ли требования.",
+            "> 10+ requirements for a single objective — worth checking whether the requirements are duplicated.",
             "",
         ]
         for goal in over_engineered:
             req_ids = [r["id"] for r in goal_coverage[goal]]
-            lines.append(f"- **{goal}** ({len(req_ids)} требований): {', '.join(f'`{i}`' for i in req_ids[:5])}{'...' if len(req_ids) > 5 else ''}")
+            lines.append(f"- **{goal}** ({len(req_ids)} requirements): {', '.join(f'`{i}`' for i in req_ids[:5])}{'...' if len(req_ids) > 5 else ''}")
         lines.append("")
 
     lines += [
-        "## Полная матрица",
+        "## Full matrix",
         "",
-        "| Бизнес-цель | Требования | Покрытие |",
+        "| Business objective | Requirements | Coverage |",
         "|-------------|-----------|---------|",
     ]
 
@@ -1508,24 +1508,24 @@ def build_coverage_matrix(
         "",
         "---",
         "",
-        "## Рекомендации",
+        "## Recommendations",
         "",
     ]
 
     if uncovered:
         lines.append(
-            f"1. 🔴 **{len(uncovered)} целей без покрытия** — создай требования через инструменты 7.1."
+            f"1. 🔴 **{len(uncovered)} objectives without coverage** — create requirements via the 7.1 tools."
         )
     if over_engineered:
         lines.append(
-            f"2. 🟡 **{len(over_engineered)} целей с избыточным покрытием** — "
-            f"проверь на дублирование через `check_coverage` (5.1)."
+            f"2. 🟡 **{len(over_engineered)} objectives with excessive coverage** — "
+            f"check for duplication via `check_coverage` (5.1)."
         )
     if not uncovered and not over_engineered:
-        lines.append("✅ Все бизнес-цели покрыты. Готово к верификации (7.2) и валидации (7.3).")
+        lines.append("✅ All business objectives are covered. Ready for verification (7.2) and validation (7.3).")
     else:
         lines.append(
-            f"\n**Следующий шаг:** после устранения пробелов — запусти верификацию (7.2)."
+            f"\n**Next step:** after closing the gaps — run verification (7.2)."
         )
 
     content = "\n".join(lines)
