@@ -1,11 +1,11 @@
 """
-tests/test_ch5_52.py — Тесты для Главы 5.2: Maintain Requirements
-MCP-файл: skills/requirements_maintain_mcp.py
-Инструменты: update_requirement, deprecate_requirements,
-             check_requirements_health, find_reusable_requirements
+tests/test_ch5_52.py — Tests for Chapter 5.2: Maintain Requirements
+MCP file: skills/requirements_maintain_mcp.py
+Tools: update_requirement, deprecate_requirements,
+       check_requirements_health, find_reusable_requirements
 
-Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
-save_artifact патчится через patch() по правилу ADR-068.
+Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
+save_artifact is patched via patch() per ADR-068.
 """
 
 import json
@@ -26,14 +26,14 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные данные
+# Helper data
 # ---------------------------------------------------------------------------
 
 PROJECT = "maintain_test"
 
 
 def _setup_repo(project=PROJECT, extras=None):
-    """Создаёт тестовый репозиторий с базовыми требованиями."""
+    """Creates a test repository with baseline requirements."""
     repo = make_test_repo(project)
     if extras:
         repo["requirements"].extend(extras)
@@ -46,7 +46,7 @@ def _setup_repo(project=PROJECT, extras=None):
 # ---------------------------------------------------------------------------
 
 class TestUtils52(unittest.TestCase):
-    """Тесты вспомогательных функций модуля 5.2."""
+    """Tests for the 5.2 module's helper functions."""
 
     def test_minor_version_normal(self):
         """1.3 → minor = 3."""
@@ -57,21 +57,21 @@ class TestUtils52(unittest.TestCase):
         self.assertEqual(mod52._minor_version("1.0"), 0)
 
     def test_minor_version_invalid(self):
-        """Невалидная версия не бросает исключение."""
+        """An invalid version doesn't raise an exception."""
         result = mod52._minor_version("invalid")
         self.assertIsInstance(result, int)
 
     def test_days_since_today(self):
-        """Сегодняшняя дата → 0 дней."""
+        """Today's date → 0 days."""
         self.assertEqual(mod52._days_since(str(date.today())), 0)
 
     def test_days_since_past(self):
-        """Дата 10 дней назад → 10."""
+        """A date 10 days ago → 10."""
         past = str(date.today() - timedelta(days=10))
         self.assertEqual(mod52._days_since(past), 10)
 
     def test_days_since_invalid(self):
-        """Невалидная дата → большое число (или не падает)."""
+        """An invalid date → a large number (or doesn't crash)."""
         result = mod52._days_since("not-a-date")
         self.assertIsInstance(result, int)
 
@@ -81,7 +81,7 @@ class TestUtils52(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestUpdateRequirement(BaseMCPTest):
-    """Тесты для инструмента 5.2: update_requirement."""
+    """Tests for the 5.2 tool: update_requirement."""
 
     def setUp(self):
         super().setUp()
@@ -91,23 +91,23 @@ class TestUpdateRequirement(BaseMCPTest):
         defaults = dict(
             project_name=PROJECT,
             req_id="BR-001",
-            change_reason="Уточнение по итогам воркшопа",
+            change_reason="Clarification after the workshop",
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod52.update_requirement(**kwargs)
 
     # --- happy path ---
 
     def test_update_status(self):
-        """Обновление статуса проходит без ошибок."""
+        """Updating the status goes through without errors."""
         result = self._call(new_status="approved")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_status_persisted(self):
-        """Новый статус сохраняется в файл."""
+        """The new status is saved to the file."""
         self._call(new_status="approved")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -117,7 +117,7 @@ class TestUpdateRequirement(BaseMCPTest):
         self.assertEqual(req["status"], "approved")
 
     def test_update_writes_history(self):
-        """История изменений записывается в репозиторий."""
+        """The change history is written to the repository."""
         self._call(new_status="approved")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -127,51 +127,51 @@ class TestUpdateRequirement(BaseMCPTest):
         self.assertGreater(len(data["history"]), 0)
 
     def test_update_minor_version(self):
-        """Установка minor-версии применяется."""
+        """Setting a minor version is applied."""
         result = self._call(new_version="1.1")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_major_version(self):
-        """Установка major-версии применяется."""
+        """Setting a major version is applied."""
         result = self._call(new_version="2.0")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_owner(self):
-        """Смена owner не меняет версию."""
+        """Changing the owner doesn't change the version."""
         result = self._call(new_owner="product_owner@example.com")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_priority(self):
-        """Установка приоритета."""
+        """Setting the priority."""
         result = self._call(new_priority="Must")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_title(self):
-        """Смена заголовка требования."""
-        result = self._call(new_title="Снизить время до 3 минут")
+        """Changing the requirement title."""
+        result = self._call(new_title="Reduce the time to 3 minutes")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_stability_flag(self):
-        """Установка флага стабильности."""
+        """Setting the stability flag."""
         result = self._call(new_stability="unstable")
         self.assertIsInstance(result, str)
 
     def test_update_reuse_candidate(self):
-        """Пометить как кандидат на переиспользование."""
+        """Mark as a reuse candidate."""
         result = self._call(reuse_candidate="true", reuse_scope="program")
         self.assertIsInstance(result, str)
 
     def test_update_auto_volatility(self):
-        """Автоматически присваивается флаг волатильности при версии 1.4+."""
+        """The volatility flag is set automatically at version 1.4+."""
         _call_with_version = dict(
             project_name=PROJECT,
             req_id="FR-001",
-            change_reason="Итерационные правки",
+            change_reason="Iterative edits",
             new_version="1.4",
         )
         with patch("skills.requirements_maintain_mcp.save_artifact"):
@@ -182,38 +182,38 @@ class TestUpdateRequirement(BaseMCPTest):
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         req = next(r for r in data["requirements"] if r["id"] == "FR-001")
-        # Версия 1.4 → нестабильное требование
+        # Version 1.4 → an unstable requirement
         minor = mod52._minor_version(req.get("version", "1.0"))
         self.assertGreaterEqual(minor, 4)
 
-    # --- ошибки ---
+    # --- errors ---
 
     def test_update_unknown_id(self):
-        """Неизвестный req_id → сообщение об ошибке."""
+        """An unknown req_id → error message."""
         result = self._call(req_id="XX-999")
         self.assertIn("❌", result)
 
     def test_update_no_changes(self):
-        """Вызов без изменений — не должен падать."""
+        """A call with no changes — must not crash."""
         result = self._call()
         self.assertIsInstance(result, str)
 
     # --- save_artifact ---
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается при обновлении."""
+        """save_artifact is called on update."""
         with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod52.update_requirement(
                 project_name=PROJECT,
                 req_id="BR-001",
-                change_reason="тест",
+                change_reason="test",
                 new_status="approved",
             )
             mock_sa.assert_called_once()
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -222,7 +222,7 @@ class TestUpdateRequirement(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestDeprecateRequirements(BaseMCPTest):
-    """Тесты для инструмента 5.2: deprecate_requirements."""
+    """Tests for the 5.2 tool: deprecate_requirements."""
 
     def setUp(self):
         super().setUp()
@@ -233,37 +233,37 @@ class TestDeprecateRequirements(BaseMCPTest):
             project_name=PROJECT,
             req_ids_json=json.dumps(["FR-002"]),
             final_status="deprecated",
-            reason="Требование устарело после рефакторинга",
+            reason="The requirement became outdated after the refactoring",
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod52.deprecate_requirements(**kwargs)
 
-    # --- happy path по final_status ---
+    # --- happy path across final_status ---
 
     def test_deprecated_status(self):
-        """final_status=deprecated — работает."""
+        """final_status=deprecated — works."""
         result = self._call(final_status="deprecated")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_superseded_status_with_superseded_by(self):
-        """final_status=superseded + superseded_by — работает."""
+        """final_status=superseded + superseded_by — works."""
         result = self._call(final_status="superseded", superseded_by="FR-001")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_retired_status(self):
-        """final_status=retired — работает."""
+        """final_status=retired — works."""
         result = self._call(final_status="retired")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- статус сохраняется ---
+    # --- status is persisted ---
 
     def test_status_set_in_file(self):
-        """Статус deprecated сохраняется в репозиторий."""
+        """The deprecated status is saved to the repository."""
         self._call(req_ids_json=json.dumps(["FR-002"]), final_status="deprecated")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -273,7 +273,7 @@ class TestDeprecateRequirements(BaseMCPTest):
         self.assertEqual(req["status"], "deprecated")
 
     def test_record_preserved(self):
-        """Устаревшее требование не удаляется, а остаётся в репозитории."""
+        """A deprecated requirement is not deleted, but stays in the repository."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -283,27 +283,27 @@ class TestDeprecateRequirements(BaseMCPTest):
         self.assertIn("FR-002", ids)
 
     def test_multiple_requirements_deprecated(self):
-        """Несколько требований помечаются за один вызов."""
+        """Several requirements are marked in a single call."""
         result = self._call(req_ids_json=json.dumps(["FR-001", "FR-002"]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- ошибки ---
+    # --- errors ---
 
     def test_superseded_without_superseded_by_warns(self):
-        """superseded без superseded_by → предупреждение или ошибка."""
+        """superseded without superseded_by → warning or error."""
         result = self._call(final_status="superseded", superseded_by="")
         self.assertIsInstance(result, str)
-        # Ожидаем ❌ или ⚠️
-        self.assertTrue("❌" in result or "⚠️" in result, f"Нет предупреждения: {result[:200]}")
+        # Expect ❌ or ⚠️
+        self.assertTrue("❌" in result or "⚠️" in result, f"No warning: {result[:200]}")
 
     def test_invalid_ids_json(self):
-        """Невалидный JSON req_ids_json → ошибка."""
+        """Invalid req_ids_json → error."""
         result = self._call(req_ids_json="{invalid}")
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -312,7 +312,7 @@ class TestDeprecateRequirements(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestCheckRequirementsHealth(BaseMCPTest):
-    """Тесты для инструмента 5.2: check_requirements_health."""
+    """Tests for the 5.2 tool: check_requirements_health."""
 
     def setUp(self):
         super().setUp()
@@ -322,18 +322,18 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         defaults = dict(project_name=PROJECT)
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod52.check_requirements_health(**kwargs)
 
     def test_basic_health_check(self):
-        """Базовый аудит здоровья работает без ошибок."""
+        """A basic health audit works without errors."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_detects_volatile_requirement(self):
-        """Требование с версией 1.4+ помечается как волатильное."""
-        # Напрямую прописываем версию 1.5 в репозиторий
+        """A requirement with version 1.4+ is flagged as volatile."""
+        # Write version 1.5 directly to the repository
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -348,7 +348,7 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         self.assertIn("FR-001", result)
 
     def test_excludes_deprecated(self):
-        """Deprecated-требования исключаются из аудита (без фильтра)."""
+        """Deprecated requirements are excluded from the audit (with no filter)."""
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -360,29 +360,29 @@ class TestCheckRequirementsHealth(BaseMCPTest):
             json.dump(data, f, ensure_ascii=False)
 
         result = self._call()
-        # Устаревшие требования не должны фигурировать в аудите здоровья
+        # Deprecated requirements must not appear in the health audit
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_filter_by_type(self):
-        """Фильтр по типу сужает список проверяемых требований."""
+        """Filtering by type narrows the list of checked requirements."""
         result = self._call(filter_type="business")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_filter_by_status(self):
-        """Фильтр по статусу работает."""
+        """Filtering by status works."""
         result = self._call(filter_status="confirmed")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_empty_project_no_crash(self):
-        """Пустой (несуществующий) проект — не падает с исключением."""
+        """An empty (nonexistent) project — doesn't crash with an exception."""
         result = self._call(project_name="nonexistent_project_xyz")
         self.assertIsInstance(result, str)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -391,16 +391,16 @@ class TestCheckRequirementsHealth(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestFindReusableRequirements(BaseMCPTest):
-    """Тесты для инструмента 5.2: find_reusable_requirements."""
+    """Tests for the 5.2 tool: find_reusable_requirements."""
 
     def setUp(self):
         super().setUp()
-        # Добавляем кандидата на переиспользование
+        # Add a reuse candidate
         _setup_repo(extras=[
             {
                 "id": "BR-002",
                 "type": "business",
-                "title": "Единая система аутентификации",
+                "title": "Unified authentication system",
                 "version": "1.0",
                 "status": "approved",
                 "reuse_candidate": True,
@@ -413,51 +413,51 @@ class TestFindReusableRequirements(BaseMCPTest):
         defaults = dict(project_name=PROJECT)
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod52.find_reusable_requirements(**kwargs)
 
     def test_finds_approved_candidate(self):
-        """Одобренный кандидат на переиспользование находится."""
+        """An approved reuse candidate is found."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_search_query_filters(self):
-        """Поисковый запрос фильтрует по тексту требования."""
-        # BR-002 имеет title "Единая система аутентификации" — поиск должен найти
-        result = self._call(search_query="единая система")
+        """The search query filters by the requirement text."""
+        # BR-002 has the title "Unified authentication system" — the search should find it
+        result = self._call(search_query="authentication")
         self.assertIsInstance(result, str)
         self.assertIn("BR-002", result)
 
     def test_filter_by_type_business(self):
-        """Фильтр по типу business."""
+        """Filter by type business."""
         result = self._call(filter_type="business")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_filter_by_type_solution(self):
-        """Фильтр по типу solution — не должен находить BR-002."""
+        """Filter by type solution — must not find BR-002."""
         result = self._call(filter_type="solution")
         self.assertIsInstance(result, str)
 
     def test_min_scope_enterprise(self):
-        """Минимальный scope enterprise — находит только enterprise-кандидатов."""
+        """Minimum scope enterprise — finds only enterprise candidates."""
         result = self._call(min_reuse_scope="enterprise")
         self.assertIsInstance(result, str)
         self.assertIn("BR-002", result)
 
     def test_min_scope_program_includes_enterprise(self):
-        """Минимальный scope program включает enterprise."""
+        """Minimum scope program includes enterprise."""
         result = self._call(min_reuse_scope="program")
         self.assertIsInstance(result, str)
 
     def test_no_candidates_graceful(self):
-        """Если нет кандидатов — функция не падает."""
+        """If there are no candidates — the function doesn't crash."""
         result = self._call(filter_type="transition")
         self.assertIsInstance(result, str)
 
     def test_deprecated_excluded(self):
-        """Deprecated-требования не попадают в результат."""
+        """Deprecated requirements are not included in the result."""
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -469,13 +469,13 @@ class TestFindReusableRequirements(BaseMCPTest):
             json.dump(data, f, ensure_ascii=False)
 
         result = self._call()
-        # BR-002 deprecated — не должен быть в рекомендациях
-        # (может присутствовать в тексте как исключённый, поэтому просто проверяем тип)
+        # BR-002 is deprecated — must not be in the recommendations
+        # (it may appear in the text as excluded, so we just check the type)
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -484,19 +484,19 @@ class TestFindReusableRequirements(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestIntegration52(BaseMCPTest):
-    """Интеграционные тесты: связка инструментов 5.2."""
+    """Integration tests: the 5.2 tools working together."""
 
     def setUp(self):
         super().setUp()
         _setup_repo()
 
     def test_update_then_health_check(self):
-        """Обновление требования → аудит здоровья отражает изменения."""
+        """Updating a requirement → the health audit reflects the changes."""
         with patch("skills.requirements_maintain_mcp.save_artifact"):
             mod52.update_requirement(
                 project_name=PROJECT,
                 req_id="FR-001",
-                change_reason="Расширение scope",
+                change_reason="Scope expansion",
                 new_version="1.4",
             )
         with patch("skills.requirements_maintain_mcp.save_artifact"):
@@ -504,29 +504,29 @@ class TestIntegration52(BaseMCPTest):
         self.assertIn("FR-001", result)
 
     def test_deprecate_then_health_check_excludes(self):
-        """Устаревание требования → оно исключается из аудита здоровья."""
+        """Deprecating a requirement → it's excluded from the health audit."""
         with patch("skills.requirements_maintain_mcp.save_artifact"):
             mod52.deprecate_requirements(
                 project_name=PROJECT,
                 req_ids_json=json.dumps(["FR-002"]),
                 final_status="deprecated",
-                reason="Не нужен в текущей итерации",
+                reason="Not needed in the current iteration",
             )
         with patch("skills.requirements_maintain_mcp.save_artifact"):
             result = mod52.check_requirements_health(project_name=PROJECT)
-        # Deprecated FR-002 не должен быть проблемой в отчёте здоровья
+        # The deprecated FR-002 must not be a problem in the health report
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_history_accumulates_across_calls(self):
-        """История накапливается при нескольких обновлениях одного требования."""
-        for reason in ["Правка 1", "Правка 2", "Правка 3"]:
+        """History accumulates across several updates to one requirement."""
+        for reason in ["Edit 1", "Edit 2", "Edit 3"]:
             with patch("skills.requirements_maintain_mcp.save_artifact"):
                 mod52.update_requirement(
                     project_name=PROJECT,
                     req_id="BR-001",
                     change_reason=reason,
-                    note=f"Заметка: {reason}",
+                    note=f"Note: {reason}",
                     new_status="approved",
                 )
         safe_name = PROJECT.lower().replace(" ", "_")

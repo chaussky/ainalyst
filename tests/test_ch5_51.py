@@ -1,11 +1,11 @@
 """
-tests/test_ch5_51.py — Тесты для Главы 5.1: Traceability and Monitoring
-MCP-файл: skills/requirements_traceability_mcp.py
-Инструменты: init_traceability_repo, add_trace_link, run_impact_analysis,
-             check_coverage, export_traceability_matrix
+tests/test_ch5_51.py — Tests for Chapter 5.1: Traceability and Monitoring
+MCP file: skills/requirements_traceability_mcp.py
+Tools: init_traceability_repo, add_trace_link, run_impact_analysis,
+       check_coverage, export_traceability_matrix
 
-Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
-save_artifact патчится через patch() по правилу ADR-068.
+Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
+save_artifact is patched via patch() per ADR-068.
 """
 
 import json
@@ -25,14 +25,14 @@ from skills.common import data_path
 
 
 # ---------------------------------------------------------------------------
-# Вспомогательные данные
+# Helper data
 # ---------------------------------------------------------------------------
 
 REQS_VALID = json.dumps([
     {
         "id": "BR-001",
         "type": "business",
-        "title": "Снизить время обработки заявки до 5 минут",
+        "title": "Reduce request processing time to 5 minutes",
         "version": "1.0",
         "status": "confirmed",
         "source_artifact": "governance_plans/4_3_test_confirmed.md",
@@ -40,7 +40,7 @@ REQS_VALID = json.dumps([
     {
         "id": "FR-001",
         "type": "solution",
-        "title": "Система автоматически распределяет заявки",
+        "title": "The system automatically distributes requests",
         "version": "1.0",
         "status": "confirmed",
         "source_artifact": "governance_plans/4_3_test_confirmed.md",
@@ -48,7 +48,7 @@ REQS_VALID = json.dumps([
     {
         "id": "FR-002",
         "type": "solution",
-        "title": "Уведомления о смене статуса заявки",
+        "title": "Notifications on request status change",
         "version": "1.0",
         "status": "draft",
         "source_artifact": "governance_plans/4_3_test_confirmed.md",
@@ -56,7 +56,7 @@ REQS_VALID = json.dumps([
     {
         "id": "TC-001",
         "type": "test",
-        "title": "Тест автораспределения",
+        "title": "Auto-distribution test",
         "version": "1.0",
         "status": "draft",
     },
@@ -66,11 +66,11 @@ PROJECT = "traceability_test"
 
 
 def _init_repo(project=PROJECT, formality="Standard", reqs_json=None):
-    """Инициализирует репозиторий и возвращает результат."""
+    """Initializes the repository and returns the result."""
     if reqs_json is None:
         reqs_json = REQS_VALID
     with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-        mock_sa.return_value = "✅ Сохранено"
+        mock_sa.return_value = "✅ Saved"
         return mod51.init_traceability_repo(
             project_name=project,
             formality_level=formality,
@@ -83,7 +83,7 @@ def _init_repo(project=PROJECT, formality="Standard", reqs_json=None):
 # ---------------------------------------------------------------------------
 
 class TestInitTraceabilityRepo(BaseMCPTest):
-    """Тесты для инструмента 5.1: init_traceability_repo."""
+    """Tests for the 5.1 tool: init_traceability_repo."""
 
     def _call(self, **overrides):
         defaults = dict(
@@ -93,40 +93,40 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod51.init_traceability_repo(**kwargs)
 
-    # --- формальность ---
+    # --- formality ---
 
     def test_formality_lite(self):
-        """Уровень Lite — создаётся без ошибок."""
+        """Lite level — created without errors."""
         result = self._call(formality_level="Lite")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_formality_standard(self):
-        """Уровень Standard — создаётся без ошибок."""
+        """Standard level — created without errors."""
         result = self._call(formality_level="Standard")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_formality_full(self):
-        """Уровень Full — создаётся без ошибок."""
+        """Full level — created without errors."""
         result = self._call(formality_level="Full")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- файл создаётся ---
+    # --- file is created ---
 
     def test_creates_json_file(self):
-        """Репозиторий записывается на диск."""
+        """The repository is written to disk."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
-        self.assertTrue(os.path.exists(path), f"Файл не найден: {path}")
+        self.assertTrue(os.path.exists(path), f"File not found: {path}")
 
     def test_correct_structure(self):
-        """Файл содержит project, requirements, links, history."""
+        """The file contains project, requirements, links, history."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -138,7 +138,7 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         self.assertIn("history", data)
 
     def test_requirements_count_correct(self):
-        """Все 4 требования попадают в репозиторий."""
+        """All 4 requirements make it into the repository."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -146,35 +146,35 @@ class TestInitTraceabilityRepo(BaseMCPTest):
             data = json.load(f)
         self.assertEqual(len(data["requirements"]), 4)
 
-    # --- дедупликация ---
+    # --- deduplication ---
 
     def test_deduplication_no_duplicate_ids(self):
-        """Повторный вызов с теми же ID не дублирует требования."""
+        """Calling again with the same IDs doesn't duplicate requirements."""
         self._call()
-        self._call()  # второй вызов
+        self._call()  # second call
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         ids = [r["id"] for r in data["requirements"]]
-        self.assertEqual(len(ids), len(set(ids)), "Дубликаты ID в репозитории")
+        self.assertEqual(len(ids), len(set(ids)), "Duplicate IDs in the repository")
 
     # --- single requirement ---
 
     def test_single_requirement(self):
-        """Один тип требования — граничный случай."""
+        """A single requirement type — an edge case."""
         result = self._call(
             requirements_json=json.dumps([
-                {"id": "BR-001", "type": "business", "title": "Единственное требование",
+                {"id": "BR-001", "type": "business", "title": "The only requirement",
                  "version": "1.0", "status": "draft"}
             ])
         )
         self.assertNotIn("❌", result)
 
-    # --- разные проекты ---
+    # --- different projects ---
 
     def test_different_projects_no_collision(self):
-        """Разные проекты пишут в разные файлы."""
+        """Different projects write to different files."""
         self._call(project_name="project_alpha")
         self._call(project_name="project_beta")
         self.assertTrue(os.path.exists(
@@ -182,33 +182,33 @@ class TestInitTraceabilityRepo(BaseMCPTest):
         self.assertTrue(os.path.exists(
             data_path("project_beta", "project_beta_traceability_repo.json")))
 
-    # --- ошибки ---
+    # --- errors ---
 
     def test_invalid_json_requirements(self):
-        """Невалидный JSON → сообщение об ошибке."""
+        """Invalid JSON → error message."""
         result = self._call(requirements_json="{bad}")
         self.assertIn("❌", result)
 
     def test_empty_requirements_json(self):
-        """Пустая строка вместо JSON → ошибка."""
+        """Empty string instead of JSON → error."""
         result = self._call(requirements_json="")
         self.assertIn("❌", result)
 
     def test_requirements_not_a_list(self):
-        """Объект вместо списка — не должен падать с необработанным исключением."""
+        """An object instead of a list — must not crash with an unhandled exception."""
         try:
             result = self._call(requirements_json=json.dumps({"id": "BR-001"}))
-            # Если не упало — результат должен быть строкой
+            # If it didn't crash — the result must be a string
             self.assertIsInstance(result, str)
         except (AttributeError, TypeError):
-            pass  # модуль не валидирует этот случай — приемлемо
+            pass  # the module doesn't validate this case — acceptable
 
     # --- save_artifact ---
 
     def test_save_artifact_called_once(self):
-        """save_artifact вызывается ровно один раз."""
+        """save_artifact is called exactly once."""
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod51.init_traceability_repo(
                 project_name=PROJECT,
                 formality_level="Standard",
@@ -217,7 +217,7 @@ class TestInitTraceabilityRepo(BaseMCPTest):
             mock_sa.assert_called_once()
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -226,7 +226,7 @@ class TestInitTraceabilityRepo(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestAddTraceLink(BaseMCPTest):
-    """Тесты для инструмента 5.1: add_trace_link."""
+    """Tests for the 5.1 tool: add_trace_link."""
 
     def setUp(self):
         super().setUp()
@@ -238,44 +238,44 @@ class TestAddTraceLink(BaseMCPTest):
             from_id="FR-001",
             to_id="BR-001",
             relation="derives",
-            rationale="FR вытекает из бизнес-требования",
+            rationale="FR derives from the business requirement",
             remove=False,
         )
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod51.add_trace_link(**kwargs)
 
-    # --- happy path по типам связей ---
+    # --- happy path across link types ---
 
     def test_add_derives_link(self):
-        """Связь derives добавляется без ошибок."""
+        """A derives link is added without errors."""
         result = self._call(relation="derives")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_add_verifies_link(self):
-        """Связь verifies добавляется без ошибок."""
+        """A verifies link is added without errors."""
         result = self._call(from_id="TC-001", to_id="FR-001", relation="verifies")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_add_depends_link(self):
-        """Связь depends добавляется без ошибок."""
+        """A depends link is added without errors."""
         result = self._call(from_id="FR-002", to_id="FR-001", relation="depends")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_add_satisfies_link(self):
-        """Связь satisfies добавляется без ошибок."""
+        """A satisfies link is added without errors."""
         result = self._call(relation="satisfies")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- запись в репозиторий ---
+    # --- write to the repository ---
 
     def test_link_persisted_in_file(self):
-        """Добавленная связь сохраняется в файл."""
+        """The added link is saved to the file."""
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -284,10 +284,10 @@ class TestAddTraceLink(BaseMCPTest):
         link_pairs = [(l["from"], l["to"]) for l in data["links"]]
         self.assertIn(("FR-001", "BR-001"), link_pairs)
 
-    # --- дедупликация связей ---
+    # --- link deduplication ---
 
     def test_no_duplicate_link(self):
-        """Повторное добавление той же связи не создаёт дубликат."""
+        """Adding the same link again doesn't create a duplicate."""
         self._call()
         self._call()
         safe_name = PROJECT.lower().replace(" ", "_")
@@ -295,24 +295,24 @@ class TestAddTraceLink(BaseMCPTest):
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         pairs = [(l["from"], l["to"], l["relation"]) for l in data["links"]]
-        self.assertEqual(len(pairs), len(set(pairs)), "Дубликаты связей в репозитории")
+        self.assertEqual(len(pairs), len(set(pairs)), "Duplicate links in the repository")
 
-    # --- удаление ---
+    # --- removal ---
 
     def test_remove_existing_link(self):
-        """Удаление существующей связи проходит без ошибок."""
+        """Removing an existing link goes through without errors."""
         self._call(remove=False)
         result = self._call(remove=True)
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_remove_nonexistent_link(self):
-        """Удаление несуществующей связи — не падает с исключением."""
+        """Removing a nonexistent link — doesn't crash with an exception."""
         result = self._call(remove=True, from_id="FR-999", to_id="BR-999")
         self.assertIsInstance(result, str)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -321,7 +321,7 @@ class TestAddTraceLink(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestRunImpactAnalysis(BaseMCPTest):
-    """Тесты для инструмента 5.1: run_impact_analysis."""
+    """Tests for the 5.1 tool: run_impact_analysis."""
 
     def setUp(self):
         super().setUp()
@@ -330,57 +330,57 @@ class TestRunImpactAnalysis(BaseMCPTest):
             mod51.add_trace_link(
                 project_name=PROJECT,
                 from_id="FR-001", to_id="BR-001",
-                relation="derives", rationale="вытекает из BR",
+                relation="derives", rationale="derives from BR",
                 remove=False,
             )
             mod51.add_trace_link(
                 project_name=PROJECT,
                 from_id="TC-001", to_id="FR-001",
-                relation="verifies", rationale="тест проверяет FR",
+                relation="verifies", rationale="the test verifies FR",
                 remove=False,
             )
 
     def _call(self, changed_req_id="BR-001", depth="full"):
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod51.run_impact_analysis(
                 project_name=PROJECT,
                 changed_req_id=changed_req_id,
-                change_description="Тестовое изменение",
+                change_description="Test change",
                 depth=depth,
             )
 
     def test_finds_affected_requirements(self):
-        """Анализ возвращает список затронутых требований."""
+        """The analysis returns a list of affected requirements."""
         result = self._call(changed_req_id="BR-001")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_depth_direct_limits_traversal(self):
-        """Глубина direct ограничивает обход графа."""
+        """direct depth limits the graph traversal."""
         result = self._call(changed_req_id="BR-001", depth="direct")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_depth_full_traversal(self):
-        """Глубина full — полный обход без ошибок."""
+        """full depth — a full traversal without errors."""
         result = self._call(changed_req_id="BR-001", depth="full")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_unknown_req_id(self):
-        """Неизвестный changed_req_id — функция не падает."""
+        """An unknown changed_req_id — the function doesn't crash."""
         result = self._call(changed_req_id="XX-999")
         self.assertIsInstance(result, str)
 
     def test_isolated_node(self):
-        """Требование без связей — анализ отрабатывает корректно."""
+        """A requirement without links — the analysis works correctly."""
         result = self._call(changed_req_id="FR-002")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -389,7 +389,7 @@ class TestRunImpactAnalysis(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestCheckCoverage(BaseMCPTest):
-    """Тесты для инструмента 5.1: check_coverage."""
+    """Tests for the 5.1 tool: check_coverage."""
 
     def setUp(self):
         super().setUp()
@@ -398,7 +398,7 @@ class TestCheckCoverage(BaseMCPTest):
             mod51.add_trace_link(
                 project_name=PROJECT,
                 from_id="FR-001", to_id="BR-001",
-                relation="derives", rationale="тест",
+                relation="derives", rationale="test",
                 remove=False,
             )
 
@@ -406,18 +406,18 @@ class TestCheckCoverage(BaseMCPTest):
         defaults = dict(project_name=PROJECT)
         params = {**defaults, **kwargs}
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod51.check_coverage(**params)
 
     def test_basic_coverage_check(self):
-        """Базовая проверка покрытия работает."""
+        """A basic coverage check works."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_deprecated_excluded_from_coverage(self):
-        """Deprecated-требования не попадают в аудит."""
-        # Помечаем FR-002 как deprecated через репозиторий напрямую
+        """Deprecated requirements are not included in the audit."""
+        # Mark FR-002 as deprecated directly in the repository
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -433,13 +433,13 @@ class TestCheckCoverage(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_orphan_fr_detected(self):
-        """FR-002 без связи — аудит должен отметить проблему."""
+        """FR-002 without a link — the audit should flag the problem."""
         result = self._call()
-        # FR-002 не имеет связей — должно быть упоминание в отчёте
+        # FR-002 has no links — it should be mentioned in the report
         self.assertIn("FR-002", result)
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -448,7 +448,7 @@ class TestCheckCoverage(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestExportTraceabilityMatrix(BaseMCPTest):
-    """Тесты для инструмента 5.1: export_traceability_matrix."""
+    """Tests for the 5.1 tool: export_traceability_matrix."""
 
     def setUp(self):
         super().setUp()
@@ -457,7 +457,7 @@ class TestExportTraceabilityMatrix(BaseMCPTest):
             mod51.add_trace_link(
                 project_name=PROJECT,
                 from_id="FR-001", to_id="BR-001",
-                relation="derives", rationale="тест",
+                relation="derives", rationale="test",
                 remove=False,
             )
 
@@ -465,50 +465,50 @@ class TestExportTraceabilityMatrix(BaseMCPTest):
         defaults = dict(project_name=PROJECT)
         kwargs = {**defaults, **overrides}
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             return mod51.export_traceability_matrix(**kwargs)
 
     def test_basic_export(self):
-        """Базовый экспорт матрицы."""
+        """A basic matrix export."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_export_filter_by_relation(self):
-        """Фильтрация по типу связи."""
+        """Filtering by link type."""
         result = self._call(filter_relation="derives")
         self.assertIsInstance(result, str)
 
     def test_export_filter_by_type(self):
-        """Фильтрация по типу требования."""
+        """Filtering by requirement type."""
         result = self._call(filter_type="solution")
         self.assertIsInstance(result, str)
 
     def test_export_filter_by_status(self):
-        """Фильтрация по статусу требования."""
+        """Filtering by requirement status."""
         result = self._call(filter_status="confirmed")
         self.assertIsInstance(result, str)
 
     def test_export_contains_requirement_ids(self):
-        """Матрица содержит ID требований."""
+        """The matrix contains the requirement IDs."""
         result = self._call()
         self.assertIn("BR-001", result)
         self.assertIn("FR-001", result)
 
     def test_export_empty_filter(self):
-        """Пустые фильтры — все требования включаются."""
+        """Empty filters — all requirements are included."""
         result = self._call(filter_relation="", filter_type="", filter_status="")
         self.assertIsInstance(result, str)
 
     def test_save_artifact_called(self):
-        """save_artifact вызывается при экспорте."""
+        """save_artifact is called on export."""
         with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             mod51.export_traceability_matrix(project_name=PROJECT)
             mock_sa.assert_called_once()
 
     def test_returns_string(self):
-        """Всегда возвращает строку."""
+        """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -517,33 +517,33 @@ class TestExportTraceabilityMatrix(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestUtils51(unittest.TestCase):
-    """Тесты для вспомогательных функций модуля 5.1."""
+    """Tests for the 5.1 module's helper functions."""
 
     def test_repo_path_normalizes_spaces(self):
-        """Пробелы в project_name преобразуются в подчёркивания."""
+        """Spaces in project_name are converted to underscores."""
         path = mod51._repo_path("My Project")
         self.assertIn("my_project", path)
         self.assertNotIn(" ", path)
 
     def test_repo_path_lowercase(self):
-        """Имя проекта приводится к нижнему регистру."""
+        """The project name is lowercased."""
         path = mod51._repo_path("CRM_UPGRADE")
         self.assertEqual(path, mod51._repo_path("crm_upgrade"))
 
     def test_find_req_existing(self):
-        """_find_req находит требование по ID."""
+        """_find_req finds a requirement by ID."""
         repo = {"requirements": [{"id": "BR-001", "title": "Test"}], "links": []}
         req = mod51._find_req(repo, "BR-001")
         self.assertIsNotNone(req)
         self.assertEqual(req["id"], "BR-001")
 
     def test_find_req_missing(self):
-        """_find_req возвращает None для отсутствующего ID."""
+        """_find_req returns None for a missing ID."""
         repo = {"requirements": [], "links": []}
         self.assertIsNone(mod51._find_req(repo, "BR-999"))
 
     def test_find_links_both_directions(self):
-        """_find_links возвращает связи в обоих направлениях."""
+        """_find_links returns links in both directions."""
         repo = {
             "requirements": [],
             "links": [
@@ -558,7 +558,7 @@ class TestUtils51(unittest.TestCase):
         self.assertIn("FR-001", froms + tos)
 
     def test_find_links_isolated_node(self):
-        """_find_links возвращает пустой список для изолированного требования."""
+        """_find_links returns an empty list for an isolated requirement."""
         repo = {
             "requirements": [],
             "links": [{"from": "FR-001", "to": "BR-001", "relation": "derives"}],
