@@ -1,11 +1,11 @@
 """
-tests/test_artifact_layout.py — раскладка артефактов по подкаталогам проекта (issue #1).
+tests/test_artifact_layout.py — artifact layout in project subfolders (issue #1).
 
-Покрывает:
-  - безопасную нормализацию project_id (защита от path traversal);
-  - резолвер пути data_path (вложенная запись + flat-fallback);
-  - save_artifact с project_id (markdown в reports/<project_id>/);
-  - скрипт миграции migrate_artifacts.py (move-only, dry-run, idempotent).
+Covers:
+  - safe normalization of project_id (protection against path traversal);
+  - the data_path resolver (nested write + flat fallback);
+  - save_artifact with project_id (markdown in reports/<project_id>/);
+  - the migrate_artifacts.py migration script (move-only, dry-run, idempotent).
 """
 
 import os
@@ -14,7 +14,7 @@ import shutil
 import tempfile
 import unittest
 
-import tests.conftest  # noqa: F401  — применяет моки sys.modules до импорта проекта
+import tests.conftest  # noqa: F401  — applies the sys.modules mocks before importing the project
 import skills.common as common
 
 
@@ -73,11 +73,11 @@ class TestDataPath(unittest.TestCase):
         self.assertEqual(os.path.normpath(p), os.path.normpath(nested))
 
     def test_legacy_exotic_name_is_found(self):
-        # legacy-файл создан ДОмиграционной нормализацией (точка сохранена старым _safe)
+        # legacy file created by pre-migration normalization (the dot was kept by the old _safe)
         legacy = "governance_plans/data/demo.v2_traceability_repo.json"
         with open(legacy, "w", encoding="utf-8") as f:
             f.write("{}")
-        # рантайм строит имя через normalize_project_id (demo_v2_...), но обязан найти legacy
+        # the runtime builds the name via normalize_project_id (demo_v2_...), but must find the legacy file
         p = common.data_path("demo.v2", "demo_v2_traceability_repo.json")
         self.assertEqual(os.path.normpath(p), os.path.normpath(legacy))
 
@@ -112,13 +112,13 @@ class TestSaveArtifact(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self._cwd = os.getcwd()
         os.chdir(self.tmp)
-        # conftest замокал common.save_artifact — восстановим реальную через reload
+        # conftest mocked common.save_artifact — restore the real one via reload
         importlib.reload(common)
 
     def tearDown(self):
         os.chdir(self._cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
-        importlib.reload(common)  # вернуть состояние модуля (моки conftest)
+        importlib.reload(common)  # restore the module state (conftest mocks)
 
     def test_with_project_id_nests(self):
         common.save_artifact("# hi", "6_1_current_state_crm", project_id="crm")
@@ -162,7 +162,7 @@ class TestMigration(unittest.TestCase):
         self.assertTrue(os.path.exists("governance_plans/data/crm/crm_traceability_repo.json"))
         self.assertFalse(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
         with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
-            self.assertEqual(f.read(), '{"x":1}')  # данные не повреждены
+            self.assertEqual(f.read(), '{"x":1}')  # data is intact
 
     def test_dry_run_moves_nothing(self):
         import migrate_artifacts
@@ -174,7 +174,7 @@ class TestMigration(unittest.TestCase):
         import migrate_artifacts
         self._write("governance_plans/data/crm/crm_traceability_repo.json", '{"nested":1}')
         self._write("governance_plans/data/crm_traceability_repo.json", '{"flat":1}')
-        migrate_artifacts.migrate(apply=True)  # цель занята → не трогаем оба
+        migrate_artifacts.migrate(apply=True)  # target is occupied → don't touch either
         with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
             self.assertEqual(f.read(), '{"nested":1}')
         self.assertTrue(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
@@ -200,14 +200,14 @@ class TestMigration(unittest.TestCase):
             "governance_plans/reports/4_4_comm_package_20260616_120000.md"))
 
     def test_migration_canonicalizes_exotic_name(self):
-        # legacy-файл экзотического имени → каноническая раскладка (нормализованы и папка, и имя)
+        # legacy file with an exotic name → canonical layout (both folder and name normalized)
         import migrate_artifacts
         import skills.common as c
         self._write("governance_plans/data/demo.v2_traceability_repo.json", '{"x":1}')
         migrate_artifacts.migrate(apply=True)
         self.assertTrue(os.path.exists(
             "governance_plans/data/demo_v2/demo_v2_traceability_repo.json"))
-        # и рантайм находит файл по исходному (экзотическому) project_id
+        # and the runtime finds the file by the original (exotic) project_id
         self.assertTrue(os.path.exists(c.data_path("demo.v2", "demo_v2_traceability_repo.json")))
         with open("governance_plans/data/demo_v2/demo_v2_traceability_repo.json", encoding="utf-8") as f:
             self.assertEqual(f.read(), '{"x":1}')

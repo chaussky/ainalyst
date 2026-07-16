@@ -763,8 +763,8 @@ class TestResolveCR(BaseMCPTest):
             self.P, "CR-001", "Approved",
             decided_by="Sponsor", rationale="OK"
         )
-        # save_artifact мокирован в conftest — проверяем что он вызван (результат присутствует)
-        self.assertIn("Сохранено", result)
+        # save_artifact is mocked in conftest — we check it was called (its result is present)
+        self.assertIn("Saved", result)
 
     def test_resolve_unknown_cr_fails(self):
         repo = make_test_repo(self.P)
