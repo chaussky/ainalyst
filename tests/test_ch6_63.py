@@ -1,16 +1,16 @@
 """
-tests/test_ch6_63.py — Тесты задачи 6.3 (Assess Risks)
+tests/test_ch6_63.py — Tests for task 6.3 (Assess Risks)
 
-Покрытие:
-  - scope_risk_assessment         (10 тестов)
-  - import_risks_from_context     (12 тестов)
-  - add_risk                      (18 тестов)
-  - set_risk_tolerance            (10 тестов)
-  - run_risk_matrix               (15 тестов)
-  - generate_recommendation       (14 тестов)
-  - save_risk_assessment          (16 тестов)
-  - Интеграционные pipeline-тесты  (10 тестов)
-Итого: ~105 тестов
+Coverage:
+  - scope_risk_assessment         (10 tests)
+  - import_risks_from_context     (12 tests)
+  - add_risk                      (18 tests)
+  - set_risk_tolerance            (10 tests)
+  - run_risk_matrix               (15 tests)
+  - generate_recommendation       (14 tests)
+  - save_risk_assessment          (16 tests)
+  - Integration pipeline tests     (10 tests)
+Total: ~105 tests
 """
 
 import json
@@ -20,10 +20,10 @@ import unittest
 from datetime import date
 from unittest.mock import patch
 
-# Настройка path
+# Path setup
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Импорт conftest для мокинга
+# Import conftest for mocking
 from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
@@ -43,7 +43,7 @@ from skills.risk_assessment_mcp import (
 
 
 # ---------------------------------------------------------------------------
-# Хелперы
+# Helpers
 # ---------------------------------------------------------------------------
 
 PROJECT = "test_project"
@@ -82,11 +82,11 @@ def _add_sample_risk(project_id: str = PROJECT, likelihood: int = 3, impact: int
         project_id=project_id,
         category="technical",
         source="future_state",
-        description="Если интеграция с ERP займёт больше времени, то сроки сдвинутся на 4 недели",
+        description="If ERP integration takes longer than expected, the timeline will slip by 4 weeks",
         likelihood=likelihood,
         impact=impact,
         response_strategy="mitigate",
-        mitigation_plan="Провести прототипирование в Sprint 0",
+        mitigation_plan="Conduct prototyping in Sprint 0",
     )
     params.update(kwargs)
     return add_risk(**params)
@@ -98,7 +98,7 @@ def _setup_full_pipeline(
     tolerance: str = "neutral",
     threshold: int = 15,
 ) -> dict:
-    """Создаёт полностью заполненный assessment для тестов финальных шагов."""
+    """Creates a fully populated assessment for final-step tests."""
     _make_scope(project_id)
     _make_tolerance(project_id, tolerance_level=tolerance, max_acceptable_score=threshold)
     for i in range(num_risks):
@@ -106,14 +106,14 @@ def _setup_full_pipeline(
             project_id=project_id,
             category="technical",
             source="future_state",
-            description=f"Если риск {i + 1} реализуется, то последствие {i + 1}",
+            description=f"If risk {i + 1} materializes, then consequence {i + 1}",
             likelihood=3 + (i % 2),
             impact=3 + (i % 3),
             response_strategy="mitigate",
-            mitigation_plan=f"План снижения риска {i + 1}",
+            mitigation_plan=f"Mitigation plan for risk {i + 1}",
         )
     run_risk_matrix(project_id)
-    generate_recommendation(project_id, potential_value_summary="Снижение затрат на 20%")
+    generate_recommendation(project_id, potential_value_summary="20% cost reduction")
     return _load_assessment(project_id)
 
 
@@ -203,8 +203,8 @@ class TestImportRisksFromContext(BaseMCPTest):
     def _write_fs_state(self, project_id: str = PROJECT):
         self._write_json(f"{_safe(project_id)}_future_state.json", {
             "constraints": [
-                {"description": "Бюджет ограничен", "category": "financial"},
-                {"description": "Дедлайн Q3", "category": "time"},
+                {"description": "Budget is limited", "category": "financial"},
+                {"description": "Q3 deadline", "category": "time"},
             ]
         })
 
@@ -220,7 +220,7 @@ class TestImportRisksFromContext(BaseMCPTest):
         self._write_json(f"{_safe(project_id)}_current_state.json", {
             "rca": {
                 "root_causes": [
-                    {"description": "Устаревшие процессы"},
+                    {"description": "Outdated processes"},
                 ]
             }
         })
@@ -228,15 +228,15 @@ class TestImportRisksFromContext(BaseMCPTest):
     def _write_cs_needs(self, project_id: str = PROJECT):
         self._write_json(f"{_safe(project_id)}_business_needs.json", {
             "business_needs": [
-                {"id": "BN-001", "title": "Автоматизация HR", "priority": "high"},
-                {"id": "BN-002", "title": "Снижение затрат", "priority": "medium"},
+                {"id": "BN-001", "title": "HR Automation", "priority": "high"},
+                {"id": "BN-002", "title": "Cost Reduction", "priority": "medium"},
             ]
         })
 
     def _write_elicitation(self, project_id: str = PROJECT):
         self._write_json(f"{_safe(project_id)}_elicitation_results.json", {
             "risks_mentioned": [
-                {"description": "Сопротивление сотрудников", "stakeholder": "HR Director"},
+                {"description": "Employee resistance to change", "stakeholder": "HR Director"},
             ]
         })
 
@@ -277,7 +277,7 @@ class TestImportRisksFromContext(BaseMCPTest):
         import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         data = _load_assessment()
         gap_drafts = [r for r in data["risks"] if "gap_analysis" in r.get("import_source", "")]
-        # Только technology (high), не capabilities (low)
+        # Only technology (high), not capabilities (low)
         self.assertEqual(len(gap_drafts), 1)
 
     def test_import_from_root_causes(self):
@@ -294,7 +294,7 @@ class TestImportRisksFromContext(BaseMCPTest):
         import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         data = _load_assessment()
         needs_drafts = [r for r in data["risks"] if "business_needs" in r.get("import_source", "")]
-        # Только BN-001 (high), не BN-002 (medium)
+        # Only BN-001 (high), not BN-002 (medium)
         self.assertEqual(len(needs_drafts), 1)
 
     def test_import_from_elicitation(self):
@@ -308,7 +308,7 @@ class TestImportRisksFromContext(BaseMCPTest):
     def test_import_graceful_no_sources(self):
         _make_scope()
         result = import_risks_from_context(PROJECT, f'["{PROJECT}"]')
-        # Нет артефактов — предупреждение, не ошибка
+        # No artifacts — warning, not error
         self.assertNotIn("❌", result)
 
     def test_import_warnings_for_missing_sources(self):
@@ -335,13 +335,13 @@ class TestImportRisksFromContext(BaseMCPTest):
         import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         data2 = _load_assessment()
         cnt2 = len([r for r in data2["risks"] if r.get("status") == "draft"])
-        # Не накапливаются — черновики заменяются
+        # Do not accumulate — drafts are replaced
         self.assertEqual(cnt1, cnt2)
 
     def test_import_uses_default_project_id(self):
         _make_scope()
         self._write_fs_state()
-        # Без source_project_ids — используется project_id
+        # Without source_project_ids — project_id is used
         result = import_risks_from_context(PROJECT)
         self.assertNotIn("❌", result)
 
@@ -420,7 +420,7 @@ class TestAddRisk(BaseMCPTest):
             project_id=PROJECT,
             category="technical",
             source="future_state",
-            description="Если X, то Y",
+            description="If X occurs, then Y follows",
             likelihood=3,
             impact=3,
             response_strategy="mitigate",
@@ -440,9 +440,9 @@ class TestAddRisk(BaseMCPTest):
         self.assertEqual(identified[0]["linked_bn"], "BN-001")
 
     def test_add_risk_removes_matching_draft(self):
-        # Добавляем черновик вручную
+        # Manually add a draft
         assessment = _load_assessment()
-        desc = "Если X, то Y"
+        desc = "If X occurs, then Y follows"
         assessment["risks"].append({
             "status": "draft",
             "description": desc,
@@ -472,7 +472,7 @@ class TestAddRisk(BaseMCPTest):
                 project_id=f"proj_{cat}",
                 category=cat,
                 source="change",
-                description=f"Если {cat} риск, то последствие",
+                description=f"If {cat} risk materializes, then consequence follows",
                 likelihood=2,
                 impact=2,
                 response_strategy="accept",
@@ -484,7 +484,7 @@ class TestAddRisk(BaseMCPTest):
             project_id=PROJECT,
             category="operational",
             source="change",
-            description="Если X, то Y",
+            description="If X occurs, then Y follows",
             likelihood=2,
             impact=2,
             response_strategy="accept",
@@ -519,9 +519,9 @@ class TestSetRiskTolerance(BaseMCPTest):
         self.assertEqual(data["risk_tolerance"]["max_acceptable_score"], 12)
 
     def test_tolerance_stores_context(self):
-        _make_tolerance(organization_context="Банковский сектор")
+        _make_tolerance(organization_context="Banking sector")
         data = _load_assessment()
-        self.assertEqual(data["risk_tolerance"]["organization_context"], "Банковский сектор")
+        self.assertEqual(data["risk_tolerance"]["organization_context"], "Banking sector")
 
     def test_tolerance_invalid_threshold_zero(self):
         result = set_risk_tolerance(PROJECT, "neutral", max_acceptable_score=0)
@@ -552,7 +552,7 @@ class TestSetRiskTolerance(BaseMCPTest):
 
     def test_tolerance_hint_in_result(self):
         result = _make_tolerance(tolerance_level="risk_averse")
-        self.assertIn("10–12", result)  # hint для risk_averse
+        self.assertIn("10–12", result)  # hint for risk_averse
 
 
 # ---------------------------------------------------------------------------
@@ -634,7 +634,7 @@ class TestRunRiskMatrix(BaseMCPTest):
             project_id=PROJECT,
             category="regulatory",
             source="constraint",
-            description="Если регулятор изменит требования, то нужен рефакторинг",
+            description="If the regulator changes requirements, a refactor will be needed",
             likelihood=2,
             impact=2,  # score 4 - normally low
             response_strategy="accept",
@@ -642,7 +642,7 @@ class TestRunRiskMatrix(BaseMCPTest):
         run_risk_matrix(PROJECT)
         data = _load_assessment()
         reg_risks = [r for r in data["risk_matrix"]["classified_risks"] if r["category"] == "regulatory"]
-        # regulatory в mandatory_avoid → должно быть помечено как high
+        # regulatory in mandatory_avoid → must be flagged as high
         self.assertEqual(reg_risks[0]["zone"], "high")
 
     def test_matrix_result_contains_zones(self):
@@ -693,11 +693,11 @@ class TestGenerateRecommendation(BaseMCPTest):
                 project_id=PROJECT,
                 category=r.get("category", "technical"),
                 source="future_state",
-                description=r.get("description", "Если X, то Y"),
+                description=r.get("description", "If X occurs, then Y follows"),
                 likelihood=r.get("likelihood", 3),
                 impact=r.get("impact", 3),
                 response_strategy=r.get("strategy", "mitigate"),
-                mitigation_plan=r.get("plan", "Снизить"),
+                mitigation_plan=r.get("plan", "Mitigate"),
             )
         run_risk_matrix(PROJECT)
 
@@ -723,10 +723,10 @@ class TestGenerateRecommendation(BaseMCPTest):
             project_id=PROJECT,
             category="technical",
             source="future_state",
-            description="Если X, то Y",
+            description="If X occurs, then Y follows",
             likelihood=5,
             impact=5,  # Critical, score 25
-            response_strategy="accept",  # без mitigation_plan
+            response_strategy="accept",  # without mitigation_plan
         )
         run_risk_matrix(PROJECT)
         result = generate_recommendation(PROJECT)
@@ -778,7 +778,7 @@ class TestGenerateRecommendation(BaseMCPTest):
         self.assertIn("proceed_despite_risk", result)
 
     def test_proceed_with_mitigation_shows_priority_actions(self):
-        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "Sprint 0 прототип"}])
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "Sprint 0 prototype"}])
         result = generate_recommendation(PROJECT)
         self.assertIn("Sprint 0", result)
 
@@ -813,7 +813,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_empty_risks_warning(self):
         _make_scope()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT)
         self.assertIn("⚠️", result)
 
@@ -828,21 +828,21 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_creates_json(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
         self.assertTrue(os.path.exists(_assessment_path(PROJECT)))
 
     def test_save_calls_save_artifact(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
             mock_sa.assert_called_once()
 
     def test_save_sets_finalized_status(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
         data = _load_assessment()
         self.assertEqual(data["status"], "finalized")
@@ -850,7 +850,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_stores_finalized_date(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
         data = _load_assessment()
         self.assertEqual(data["finalized_on"], TODAY)
@@ -858,27 +858,27 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_returns_json_path(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT)
         self.assertIn("risk_assessment.json", result)
 
     def test_save_result_contains_risk_counts(self):
         _setup_full_pipeline(num_risks=3)
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT)
         self.assertIn("3", result)
 
     def test_save_push_traceability_no_repo_warning(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT, push_to_traceability=True)
         self.assertIn("⚠️", result)
 
     def test_save_push_traceability_with_repo(self):
         _setup_full_pipeline()
-        # Создаём репозиторий трассировки
+        # Create traceability repository
         repo = {
             "project": PROJECT,
             "requirements": [{"id": "BN-001", "type": "business_need", "title": "Test", "version": "1.0", "status": "confirmed", "added": TODAY}],
@@ -889,7 +889,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
-        # Добавим linked_bn к риску
+        # Add linked_bn to the risk
         data = _load_assessment()
         if data["risks"]:
             data["risks"][0]["linked_bn"] = "BN-001"
@@ -897,11 +897,11 @@ class TestSaveRiskAssessment(BaseMCPTest):
                 json.dump(data, f)
 
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT, push_to_traceability=True)
         self.assertIn("✅", result)
 
-        # Проверяем что риски добавлены в репозиторий
+        # Verify risks were added to the repository
         with open(repo_path, encoding="utf-8") as f:
             updated_repo = json.load(f)
         risk_nodes = [r for r in updated_repo["requirements"] if r.get("type") == "risk"]
@@ -914,7 +914,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
             project_id=PROJECT,
             category="technical",
             source="future_state",
-            description="Если X, то Y",
+            description="If X occurs, then Y follows",
             likelihood=3,
             impact=3,
             response_strategy="mitigate",
@@ -945,7 +945,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_assessment_json_structure(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
         data = _load_assessment()
         for key in ["project_id", "risks", "risk_tolerance", "cumulative_profile", "recommendation"]:
@@ -954,7 +954,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_report_prefix(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             save_risk_assessment(PROJECT)
         call_args = mock_sa.call_args
         self.assertIn("6_3_risk_assessment", call_args[0][1])
@@ -962,23 +962,23 @@ class TestSaveRiskAssessment(BaseMCPTest):
     def test_save_next_steps_shown(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Сохранено"
+            mock_sa.return_value = "✅ Saved"
             result = save_risk_assessment(PROJECT)
         self.assertIn("6.4", result)
 
 
 # ---------------------------------------------------------------------------
-# 8. Интеграционные тесты (pipeline)
+# 8. Integration tests (pipeline)
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_no_high_risks(self):
-        """Полный пайплайн: нет High-рисков → proceed_despite_risk."""
+        """Full pipeline: no High risks → proceed_despite_risk."""
         scope_risk_assessment(PROJECT, "new_system", "standard")
         set_risk_tolerance(PROJECT, "neutral", max_acceptable_score=15)
-        add_risk(PROJECT, "technical", "future_state", "Если X, то Y", 1, 2, "accept")
-        add_risk(PROJECT, "people", "stakeholder", "Если Y, то Z", 2, 2, "accept")
+        add_risk(PROJECT, "technical", "future_state", "If X occurs, then Y follows", 1, 2, "accept")
+        add_risk(PROJECT, "people", "stakeholder", "If Y occurs, then Z follows", 2, 2, "accept")
         run_risk_matrix(PROJECT)
         generate_recommendation(PROJECT, potential_value_summary="Value")
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
@@ -989,11 +989,11 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(data["recommendation"]["type"], "proceed_despite_risk")
 
     def test_full_pipeline_with_high_risks(self):
-        """Полный пайплайн: есть High-риски → proceed_with_mitigation."""
+        """Full pipeline: High risks present → proceed_with_mitigation."""
         scope_risk_assessment(PROJECT, "new_system", "comprehensive")
         set_risk_tolerance(PROJECT, "neutral", max_acceptable_score=15)
-        add_risk(PROJECT, "technical", "future_state", "Если интеграция сложная, то задержка", 5, 5, "mitigate", mitigation_plan="Прототип")
-        add_risk(PROJECT, "people", "stakeholder", "Если нет adoption, то провал", 3, 3, "mitigate", mitigation_plan="Обучение")
+        add_risk(PROJECT, "technical", "future_state", "If integration is complex, then delay", 5, 5, "mitigate", mitigation_plan="Prototype")
+        add_risk(PROJECT, "people", "stakeholder", "If there is no adoption, then failure", 3, 3, "mitigate", mitigation_plan="Training")
         run_risk_matrix(PROJECT)
         generate_recommendation(PROJECT)
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
@@ -1003,30 +1003,30 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(data["recommendation"]["type"], "proceed_with_mitigation")
 
     def test_full_pipeline_risk_averse(self):
-        """Пайплайн с risk_averse и низким порогом."""
+        """Pipeline with risk_averse and a low threshold."""
         scope_risk_assessment(PROJECT, "regulatory", "standard")
         set_risk_tolerance(PROJECT, "risk_averse", max_acceptable_score=10)
-        add_risk(PROJECT, "regulatory", "constraint", "Если регулятор изменит нормы, то штрафы", 3, 4, "mitigate", mitigation_plan="Мониторинг")
+        add_risk(PROJECT, "regulatory", "constraint", "If the regulator changes rules, then fines apply", 3, 4, "mitigate", mitigation_plan="Monitoring")
         run_risk_matrix(PROJECT)
         result = generate_recommendation(PROJECT)
         self.assertIn("proceed_with_mitigation", result)
 
     def test_pipeline_without_import(self):
-        """Пайплайн без import_risks_from_context работает корректно."""
+        """Pipeline without import_risks_from_context works correctly."""
         scope_risk_assessment(PROJECT, "cost_reduction", "quick")
         set_risk_tolerance(PROJECT, "neutral")
-        add_risk(PROJECT, "financial", "change", "Если бюджет урежут, то скоуп сократится", 3, 4, "mitigate", mitigation_plan="Резерв 20%")
+        add_risk(PROJECT, "financial", "change", "If the budget is cut, then scope will shrink", 3, 4, "mitigate", mitigation_plan="20% reserve")
         run_risk_matrix(PROJECT)
-        generate_recommendation(PROJECT, potential_value_summary="Сокращение OPEX на 15%")
+        generate_recommendation(PROJECT, potential_value_summary="15% OPEX reduction")
         data = _load_assessment()
         self.assertIn("type", data["recommendation"])
 
     def test_pipeline_multiple_projects_isolated(self):
-        """Два проекта не мешают друг другу."""
+        """Two projects do not interfere with each other."""
         for pid in ["project_a", "project_b"]:
             scope_risk_assessment(pid, "new_system", "quick")
             set_risk_tolerance(pid, "neutral")
-            add_risk(pid, "technical", "future_state", f"Риск для {pid}", 3, 3, "mitigate", mitigation_plan="Plan")
+            add_risk(pid, "technical", "future_state", f"Risk for {pid}", 3, 3, "mitigate", mitigation_plan="Plan")
             run_risk_matrix(pid)
             generate_recommendation(pid)
 
@@ -1047,23 +1047,23 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(data["cumulative_profile"]["total_risks"], 5)
 
     def test_pipeline_do_not_proceed(self):
-        """Critical risk без mitigation → do_not_proceed."""
+        """Critical risk without mitigation → do_not_proceed."""
         _make_scope()
         _make_tolerance()
-        add_risk(PROJECT, "technical", "future_state", "Критический риск", 5, 5, "accept")
+        add_risk(PROJECT, "technical", "future_state", "Critical risk", 5, 5, "accept")
         run_risk_matrix(PROJECT)
         generate_recommendation(PROJECT)
         data = _load_assessment()
         self.assertEqual(data["recommendation"]["type"], "do_not_proceed")
 
     def test_assessment_json_is_valid_for_64(self):
-        """JSON-файл содержит все поля контракта для 6.4 (ADR-076)."""
+        """JSON file contains all contract fields for 6.4 (ADR-076)."""
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅"
             save_risk_assessment(PROJECT)
         data = _load_assessment()
-        # Контракт ADR-076
+        # ADR-076 contract
         self.assertIn("project_id", data)
         self.assertIn("risk_tolerance", data)
         self.assertIn("risks", data)
@@ -1071,7 +1071,7 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("recommendation", data)
 
     def test_utility_zone_for_score(self):
-        """Тест вспомогательной функции _zone_for_score."""
+        """Test for helper function _zone_for_score."""
         self.assertEqual(_zone_for_score(5, 15), "low")
         self.assertEqual(_zone_for_score(6, 15), "medium")
         self.assertEqual(_zone_for_score(14, 15), "medium")
@@ -1079,7 +1079,7 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(_zone_for_score(25, 15), "high")
 
     def test_utility_next_risk_id(self):
-        """Тест вспомогательной функции _next_risk_id."""
+        """Test for helper function _next_risk_id."""
         self.assertEqual(_next_risk_id([]), "RK-001")
         risks = [{"risk_id": "RK-003"}, {"risk_id": "RK-001"}]
         self.assertEqual(_next_risk_id(risks), "RK-004")
