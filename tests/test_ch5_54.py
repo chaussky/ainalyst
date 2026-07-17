@@ -889,5 +889,37 @@ class TestFullPipeline(BaseMCPTest):
         self.assertIsNotNone(cr_b.get("score"))
 
 
+class TestScheduleRiskDirection(BaseMCPTest):
+    """Regression: a HIGH schedule risk must LOWER a CR's score, not raise it.
+
+    run_cr_impact stored schedule_score inverted (High risk -> 1, Low risk -> 3)
+    while _calc_score subtracts schedule_risk as a penalty proportional to risk.
+    The net effect ranked risky CRs above safe ones."""
+
+    P = "proj_54_sched"
+
+    def _score_with_phase(self, cr_id, phase):
+        # Both CRs target the isolated FR-002 (no links) so Impact is identical;
+        # only the project phase changes the schedule risk.
+        mod54.open_cr(
+            project_name=self.P, cr_id=cr_id, title="T", description="d",
+            initiator="PO", cr_type="change_existing", formality="standard",
+            target_req_ids_json='["FR-002"]', project_phase=phase,
+        )
+        mod54.run_cr_impact(self.P, cr_id)
+        mod54.score_cr(self.P, cr_id, "Medium", "Medium", "Normal")
+        repo = load_test_repo(self.P)
+        return mod54._find_node(repo, cr_id)["score"]["total_score"]
+
+    def test_high_schedule_risk_scores_lower_than_low(self):
+        save_test_repo(make_test_repo(self.P))
+        score_high = self._score_with_phase("CR-HIGH", "pre_release")   # High schedule risk
+        score_low = self._score_with_phase("CR-LOW", "development")     # Low schedule risk
+        self.assertLess(
+            score_high, score_low,
+            "A CR with HIGH schedule risk must score lower than an identical CR with LOW risk",
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

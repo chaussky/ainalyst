@@ -55,7 +55,7 @@ BENEFIT_MAP = {"High": 3, "Medium": 2, "Low": 1}
 COST_MAP = {"High": 3, "Medium": 2, "Low": 1}   # High cost = high penalty (not inverted)
 URGENCY_MAP = {"Critical": 3, "High": 2, "Normal": 1}
 IMPACT_MAP = {"High": 3, "Medium": 2, "Low": 1}
-SCHEDULE_MAP = {"Low": 3, "Medium": 2, "High": 1}  # inverted: Low risk = good
+SCHEDULE_MAP = {"High": 3, "Medium": 2, "Low": 1}  # High risk = high penalty (matches the formula)
 
 
 # ---------------------------------------------------------------------------
@@ -400,20 +400,22 @@ def run_cr_impact(
         impact_auto = "Low"
         impact_score = 1
 
-    # Automatic Schedule Risk calculation
+    # Automatic Schedule Risk calculation.
+    # Non-inverted (High risk = 3): the formula subtracts ScheduleRisk*1, so a higher
+    # risk value must yield a bigger penalty. High risk=3 → -3.0, Low risk=1 → -1.0.
     project_phase = cr.get("project_phase", "development")
     if project_phase == "pre_release":
         schedule_auto = "High"
-        schedule_score = 1  # inverted: High risk = 1
+        schedule_score = 3
     elif total_affected >= 8 or project_phase == "post_release":
         schedule_auto = "High"
-        schedule_score = 1
+        schedule_score = 3
     elif total_affected >= 3:
         schedule_auto = "Medium"
         schedule_score = 2
     else:
         schedule_auto = "Low"
-        schedule_score = 3
+        schedule_score = 1
 
     # Warnings: volatile requirements
     # Check both the affected (BFS) set and the target_req_ids themselves
@@ -614,10 +616,10 @@ def score_cr(
 
     # Numeric axis values
     benefit_n = BENEFIT_MAP[benefit]
-    cost_n = COST_MAP[cost]          # Low=3, Medium=2, High=1 (inverted)
+    cost_n = COST_MAP[cost]          # High cost=3 → penalty via the negative weight
     urgency_n = URGENCY_MAP[urgency]
     impact_n = impact_data["impact_score"]
-    schedule_n = impact_data["schedule_score"]  # Low risk=3, High risk=1 (inverted)
+    schedule_n = impact_data["schedule_score"]  # High risk=3, Low risk=1 (penalty via negative weight)
 
     # Score calculation
     score = _calc_score(benefit_n, cost_n, urgency_n, impact_n, schedule_n)
