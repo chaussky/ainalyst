@@ -1,323 +1,323 @@
-# Пользовательская инструкция
-## AI Платформа AIналитик
-**Скачать:** https://github.com/chaussky/ainalyst.git
+# User Guide
+## AInalyst
+**Download:** https://github.com/chaussky/ainalyst.git
 
-**Телеграм:** https://t.me/platform_ainalyst
-
----
-# Глава 5 — Requirements Life Cycle Management
+**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
 
 ---
-
-## Общая характеристика Главы 5
-
-Глава 5 BABOK — «Requirements Life Cycle Management» — это то, что происходит с требованиями **после** их выявления. Если Глава 4 производит сырьё (транскрипты, факты, наблюдения), то Глава 5 превращает это сырьё в управляемый, живой реестр требований, который сопровождает проект от старта до сдачи.
-
-Ключевая идея главы: требования — не документ, написанный один раз. Они живут, меняются, стареют, конфликтуют, получают статусы, обрастают связями. Задача BA — быть «смотрителем» этого реестра на протяжении всего проекта.
-
-Глава 5 отвечает на пять главных вопросов практикующего BA:
-
-- **5.1** — *Откуда взялось это требование, и что изменится, если оно поменяется?* (трассировка)
-- **5.2** — *Актуальны ли мои требования прямо сейчас?* (поддержание)
-- **5.3** — *Что из этого делать сначала, и как согласовать мнения разных стейкхолдеров?* (приоритизация)
-- **5.4** — *Стоит ли принимать это изменение, и что за ним тянется?* (оценка изменений)
-- **5.5** — *Требования согласованы официально?* (утверждение и baseline)
-
-Работа по Главе 5 идёт параллельно с Главой 4: каждое подтверждённое требование из 4.3 сразу попадает в инфраструктуру Главы 5. А потом задачи 5.1–5.5 сопровождают проект до самого перехода в Главу 6.
+# Chapter 5: Requirements Life Cycle Management
 
 ---
 
-## Задача 5.1 — Trace Requirements (Трассировка требований)
+## Overview of Chapter 5
 
-### Краткое описание
+Chapter 5 of BABOK, "Requirements Life Cycle Management," covers what happens to requirements **after** they are elicited. Chapter 4 produces raw material (transcripts, facts, observations); Chapter 5 turns that raw material into a managed, living requirements registry that follows the project from start to delivery.
 
-BA строит и поддерживает граф связей между всеми артефактами проекта: бизнес-потребностями, требованиями стейкхолдеров, функциональными требованиями, тестами, компонентами. Этот граф — «скелет», который держит проект вместе и делает любое изменение управляемым.
+The key idea of this chapter: requirements are not a document written once. They live, change, age, conflict, acquire statuses, and accumulate relationships. The BA's job is to act as the "steward" of this registry throughout the project.
 
-### Боли и проблемы BA
+Chapter 5 answers five key questions every practicing BA faces:
 
-**Изменение требования — это непредсказуемая реакция.** Пришёл CR: «поменяем логику расчёта скидки». BA меняет FR-014. И только потом, в середине спринта, выясняется: FR-014 зависит от FR-022, FR-022 связано с NFR-005 по производительности, и к этой же цепочке привязано 4 тест-кейса в QA. Ничего этого не было видно заранее, потому что связи держались в голове или в Excel.
+- **5.1**: *Where did this requirement come from, and what changes if it changes?* (traceability)
+- **5.2**: *Are my requirements still current right now?* (maintenance)
+- **5.3**: *What should be done first, and how do we reconcile different stakeholders' opinions?* (prioritization)
+- **5.4**: *Should this change be accepted, and what does it drag along with it?* (change assessment)
+- **5.5**: *Are the requirements formally agreed?* (approval and baseline)
 
-**«Откуда взялось это требование?»** — типичный вопрос при ревью или аудите. BA листает ноутбук, пытается вспомнить. В регуляторных проектах (банки, фарма, госсектор) отсутствие трассировки — это уже не просто риск, а нарушение требований compliance.
-
-**Покрытие проверяется вручную или не проверяется вовсе.** Перед передачей в разработку BA не знает: у всех ли требований есть «родитель» (бизнес-потребность)? Все ли требования покрыты тест-кейсами? Все ли функции реализованы? Такой аудит вручную — это часы работы в Excel.
-
-**«Мёртвая» трассировка.** BA создал матрицу в начале проекта — красиво. Потом требования менялись, а матрица нет. Через три месяца она описывает реальность только наполовину. Стейкхолдер, который на неё опирается, работает с устаревшими данными.
-
-### Что мы реализовали
-
-**Граф связей как живой репозиторий.** `init_traceability_repo` создаёт структурированный JSON-репозиторий проекта. С этого момента каждое требование — это узел графа, а каждая связь между ними — рёбра с типом: `derives` (происходит из), `depends` (зависит от), `satisfies` (реализует), `verifies` (проверяет), `modifies` (изменяет, для CR).
-
-**Добавление связей в один шаг.** `add_trace_link` принимает два узла и тип связи. BA не заполняет таблицы — он описывает ситуацию голосом: *«FR-014 происходит из SR-003, запиши»*, AIналитик вызывает инструмент. Граф растёт автоматически.
-
-**Impact analysis за секунды.** `run_impact_analysis` обходит граф в глубину от изменённого требования и возвращает полный список затронутых артефактов: какие требования, тесты, компоненты, CR-ы. Это механика для задачи 5.4 — оценки стоимости изменения.
-
-**Аудит покрытия.** `check_coverage` проверяет весь граф и возвращает список проблем с цветовой маркировкой: 🔴 требование без источника (orphan), 🟡 требование без реализации или без теста, 🟢 полное покрытие. Это делается перед приоритизацией и перед утверждением.
-
-**Матрица трассировки по требованию.** `export_traceability_matrix` генерирует готовую матрицу в Markdown. Её можно сразу включить в пакет согласования для стейкхолдеров или отправить на аудит.
-
-**Три пресета формальности.** Lite (Agile, стартап), Standard (средние проекты), Full (regulated, внешний аудит, enterprise). Выбирается один раз под контекст проекта. BA не гадает, какой уровень документации нужен — скилл рекомендует на основе нескольких вопросов.
-
-### Ценности для BA
-
-**Любое изменение — управляемое.** Вместо «давайте посмотрим что затронет» — моментальный список всего затронутого с указанием типа связи. BA может принести на встречу с заказчиком полный impact report, сгенерированный за 10 секунд, а не за несколько часов.
-
-**Готовность к аудиту в любой момент.** Трассировка хранится в структурированном JSON, из которого в один шаг генерируется матрица. Для регуляторных проектов это принципиально: *«покажите трассировку требования FR-047 к бизнес-потребности»* — ответ готов немедленно.
-
-**Покрытие не упускается.** `check_coverage` перед каждым ключевым шагом (приоритизация, утверждение) гарантирует что BA не передаёт в следующий этап требования без бизнес-обоснования. Это снижает риск споров на этапе разработки: «зачем это вообще делать?»
-
-**Трассировка живёт вместе с проектом.** Каждый CR, каждое изменение требования — проходит через граф. Матрица не устаревает, потому что обновляется не вручную, а через инструменты скилла.
-
-### Как пользоваться: пример
-
-Проект стартовал, из задачи 4.3 получены первые подтверждённые требования. BA говорит:
-
-*«Начинаем трассировку по проекту CRM. У нас Agile, команда 12 человек, внешнего аудита нет.»*
-
-AIналитик рекомендует пресет Standard, инициализирует репозиторий. Дальше BA добавляет первое требование:
-
-*«FR-001 — Авторизация пользователя. Происходит из SR-002 — требование безопасности от IT-директора.»*
-
-AIналитик вызывает `add_trace_link`, фиксирует связь `FR-001 derives SR-002`. После нескольких итераций BA просит проверку:
-
-*«Сделай аудит покрытия перед тем как мы уйдём на приоритизацию.»*
-
-`check_coverage` возвращает: FR-007 без родителя (🔴), NFR-003 без теста (🟡), остальные в порядке (🟢). BA выясняет у аналитиков откуда взялся FR-007 — оказывается, это требование вообще не было подтверждено в 4.3, добавили «на ходу». Проблема выявлена до, а не во время разработки.
+Work on Chapter 5 runs in parallel with Chapter 4: every requirement confirmed in 4.3 immediately enters the Chapter 5 infrastructure. From there, tasks 5.1-5.5 accompany the project all the way through the transition to Chapter 6.
 
 ---
 
-## Задача 5.2 — Maintain Requirements (Поддержание требований)
+## Task 5.1: Trace Requirements (Requirements Traceability)
 
-### Краткое описание
+### Summary
 
-BA следит за актуальностью реестра требований: обновляет статусы и версии, помечает устаревшие требования, регулярно проводит аудит «здоровья» реестра, выявляет кандидатов на повторное использование в других инициативах. Задача сквозная — она выполняется на протяжении всего проекта.
+The BA builds and maintains a graph of relationships among all project artifacts: business needs, stakeholder requirements, functional requirements, tests, components. This graph is the "skeleton" that holds the project together and makes every change manageable.
 
-### Боли и проблемы BA
+### BA pain points
 
-**Реестр застывает в момент своего создания.** BA собрал требования, зафиксировал — и больше не возвращается. Через месяц активной работы: 5 требований изменились содержательно, 3 потеряли актуальность, у 2 сменился владелец. В реестре всё по-прежнему как в день создания.
+**A requirement change triggers an unpredictable reaction.** A CR comes in: "let's change the discount calculation logic." The BA changes FR-014. Only later, mid-sprint, does it turn out that FR-014 depends on FR-022, FR-022 is linked to NFR-005 for performance, and 4 QA test cases are tied to that same chain. None of this was visible in advance, because the relationships lived in someone's head or in a spreadsheet.
 
-**Версионность требований не ведётся.** Пришёл CR, BA поправил формулировку FR-017. Прошлая версия не сохранена. Через неделю заказчик: *«почему в требовании теперь написано вот это? Мы же договорились иначе»*. BA не может показать историю изменений — нет документального следа.
+"Where did this requirement come from?" is a typical question during a review or audit. The BA flips through a notebook, trying to remember. In regulated projects (banking, pharma, government), the absence of traceability is not just a risk, it is a compliance violation.
 
-**Статусы требований не актуальны.** Требование в статусе «на согласовании» уже три недели — но это потому что согласование прошло, просто никто не обновил. Разработчик смотрит в реестр и не понимает: брать в работу или ждать?
+**Coverage is checked manually, or not checked at all.** Before handing off to development, the BA doesn't know: does every requirement have a "parent" (a business need)? Is every requirement covered by test cases? Is every feature implemented? Doing this audit by hand takes hours in a spreadsheet.
 
-**«Дрейф Must».** К концу этапа выявления в категории Must оказывается 70% требований. Все «обязательные», приоритет у всего высокий. Реестр теряет структуру — он больше не помогает принимать решения, он только создаёт вид работы.
+**"Dead" traceability.** The BA created a matrix at the start of the project, and it looked great. Then requirements changed, and the matrix didn't. Three months later it describes reality only half the time. A stakeholder relying on it is working with stale data.
 
-**Повторное использование не происходит.** BA начинает новый проект и пишет требования с нуля. Хотя в предыдущем проекте уже было «Пользователь должен авторизоваться через корпоративный SSO» — требование, применимое в трёх из пяти инициатив. Но оно лежит в папке прошлого проекта и о нём никто не вспоминает.
+### What we built
 
-### Что мы реализовали
+**A relationship graph as a living repository.** `init_traceability_repo` creates a structured JSON repository for the project. From that point on, every requirement is a node in the graph, and every relationship between them is an edge with a type: `derives` (originates from), `depends` (depends on), `satisfies` (fulfills), `verifies` (verifies), `modifies` (changes, for CRs).
 
-**Обновление требований с историей.** `update_requirement` обновляет атрибуты требования — статус, приоритет, формулировку, версию — и автоматически сохраняет историю: что было, что стало, дата, причина. Через три месяца можно посмотреть полную хронологию любого требования.
+**Adding relationships in one step.** `add_trace_link` takes two nodes and a relationship type. The BA doesn't fill out tables: they describe the situation out loud, *"FR-014 originates from SR-003, note that down,"* and AInalyst calls the tool. The graph grows automatically.
 
-**Правильное устаревание.** `deprecate_requirements` помечает требование как устаревшее с выбором финального статуса: `deprecated` (устарело, замены нет), `superseded` (заменено другим требованием, указывается чем), `retired` (проект завершён). Требование не удаляется из репозитория — история сохраняется для аудита.
+**Impact analysis in seconds.** `run_impact_analysis` traverses the graph in depth from the changed requirement and returns a full list of affected artifacts: which requirements, tests, components, and CRs. This is the underlying mechanism for Task 5.4, assessing the cost of a change.
 
-**Аудит здоровья реестра.** `check_requirements_health` анализирует весь реестр и возвращает: 🔴 высоковолатильные требования (менялись слишком часто — это сигнал нестабильного стейкхолдера или плохой формулировки), 🟡 требования которые давно не обновлялись (возможно устарели), 🟡 требования надолго застрявшие в статусе `draft`. По каждой позиции — рекомендация действия.
+**Coverage audit.** `check_coverage` checks the entire graph and returns a list of issues with color coding: 🔴 a requirement with no source (orphan), 🟡 a requirement with no implementation or no test, 🟢 full coverage. This is done before prioritization and before approval.
 
-**Поиск кандидатов на повторное использование.** `find_reusable_requirements` фильтрует реестр по типу, теме, статусу и флагу `reuse_candidate`. Возвращает список требований с оценкой пригодности: стабильные, сформулированные без привязки к конкретной системе, с финальным статусом — лучшие кандидаты.
+**Traceability matrix on demand.** `export_traceability_matrix` generates a ready-made matrix in Markdown. It can be dropped straight into the approval package for stakeholders or sent off for audit.
 
-**Автоматическая детекция «дрейфа Must».** При аудите `check_requirements_health` система считает долю Must в общем количестве требований. Если она превышает порог (по умолчанию 40%) — BA получает предупреждение. Это сигнал для пересмотра перед следующей сессией приоритизации.
+**Three formality presets.** Lite (Agile, startup), Standard (mid-size projects), Full (regulated, external audit, enterprise). Chosen once, based on the project context. The BA doesn't have to guess which documentation level is needed: the skill recommends one based on a few questions.
 
-### Ценности для BA
+### Value for the BA
 
-**Реестр отражает реальность, а не историю.** Когда разработчик открывает реестр перед спринтом, он видит актуальные статусы, текущие версии, актуальных владельцев. Время на вопросы «а это уже согласовано?» и «а это ещё актуально?» сокращается в разы.
+**Every change is manageable.** Instead of "let's see what this affects," there's an instant list of everything affected, with the relationship type for each item. The BA can bring a complete impact report to a meeting with the customer, generated in 10 seconds instead of several hours.
 
-**История изменений — это доказательная база.** При любом «мы же договорились по-другому» BA открывает историю конкретного требования: версия 1.0 выглядела так, 23 февраля пришёл CR, версия 1.1 согласована с такими-то. Разговор переходит в конструктивное русло немедленно.
+**Audit-ready at any moment.** Traceability is stored in structured JSON, from which the matrix is generated in a single step. For regulated projects this matters a great deal: when asked *"show the traceability of requirement FR-047 back to the business need,"* the answer is ready immediately.
 
-**Здоровый реестр к каждому ключевому шагу.** `check_requirements_health` запускается перед приоритизацией (5.3) и перед утверждением (5.5). Это гарантирует что BA уходит на следующий этап с чистым, актуальным материалом, а не с накопленным техническим долгом.
+**Coverage is never missed.** Running `check_coverage` before each key step (prioritization, approval) guarantees that the BA doesn't carry requirements without business justification into the next stage. This reduces the risk of disputes during development: "why are we even doing this?"
 
-**Экономия на старте новых проектов.** `find_reusable_requirements` — это поиск по всем прошлым проектам в платформе. Готовое требование из прошлого проекта с историей изменений и статусом `approved` экономит часы работы по выявлению и формулировке. Особенно ценно в организациях с множеством похожих инициатив.
+**Traceability lives alongside the project.** Every CR, every requirement change passes through the graph. The matrix never goes stale, because it's updated through the skill's tools rather than by hand.
 
-### Как пользоваться: пример
+### How to use it: an example
 
-Середина проекта. Пришёл CR: заказчик хочет изменить логику уведомлений. BA попросил разработчиков внести правки в FR-031, 5.4 уже одобрила CR. Теперь нужно обновить реестр.
+The project has kicked off, and the first confirmed requirements have come out of Task 4.3. The BA says:
 
-*«Обнови FR-031: статус меняется на `under_change`, версия с 1.0 на 1.1, формулировка вот такая. Причина — CR-005, одобрен спонсором.»*
+*"Let's start traceability for the CRM project. We're Agile, a team of 12, no external audit."*
 
-AIналитик обновляет, история фиксируется. Через месяц аудит:
+AInalyst recommends the Standard preset and initializes the repository. Next, the BA adds the first requirement:
 
-*«Сделай проверку здоровья реестра перед тем как мы уйдём на согласование.»*
+*"FR-001: user authentication. Originates from SR-002, a security requirement from the IT director."*
 
-`check_requirements_health` возвращает: NFR-002 — последнее обновление 6 недель назад, возможно устарело; FR-019 — в статусе `draft` уже 3 недели. BA уточняет у стейкхолдеров, закрывает вопросы. На согласование уходит чистый реестр.
+AInalyst calls `add_trace_link` and records the relationship `FR-001 derives SR-002`. After a few more iterations, the BA asks for a check:
 
----
+*"Run a coverage audit before we move on to prioritization."*
 
-## Задача 5.3 — Prioritize Requirements (Приоритизация требований)
-
-### Краткое описание
-
-BA определяет относительную важность требований для стейкхолдеров, выбирает метод приоритизации под контекст проекта, собирает оценки, агрегирует их, выявляет конфликты между стейкхолдерами и фасилитирует их разрешение. Задача повторяется при каждом цикле планирования — не только один раз.
-
-### Боли и проблемы BA
-
-**«Всё важно».** Классическая ситуация: после выявления 80 требований и 5 стейкхолдеров, каждый из которых считает свои требования приоритетными, BA должен составить осмысленный порядок реализации. Без метода — это невозможно. С методом — нужно ещё убедить стейкхолдеров.
-
-**Конфликты между стейкхолдерами не документируются.** Директор по продажам хочет FR-024 в первый спринт. IT-директор — FR-048. Оба правы с точки зрения своего подразделения. BA фиксирует конфликт у себя в голове и пытается разрулить на встрече. Если встречи не было — конфликт остаётся неразрешённым и всплывает в разработке.
-
-**Выбор метода приоритизации — интуитивный.** Большинство BA используют MoSCoW потому что все так делают. MoSCoW хорош для категоризации, но плохо работает при большом количестве Must и не учитывает стоимость реализации. WSJF лучше для Agile, но требует оценок от разработчиков, которых у BA может не быть. Правильный метод — тот, который подходит под контекст.
-
-**Dependency violations не проверяются.** FR-019 поставили в `Could`, FR-020 — в `Must`. Но FR-020 зависит от FR-019 — без него его невозможно реализовать. Конфликт обнаруживается в планировании спринта, не в приоритизации.
-
-**Нестабильные требования получают высокий приоритет.** FR-011 поставили в Must, хотя его формулировка менялась 4 раза за 3 недели. Планировать Must-требование с высокой волатильностью — риск для командного ресурса: сделают, а оно снова поменяется.
-
-### Что мы реализовали
-
-**Три метода приоритизации под контекст.** Скилл поддерживает MoSCoW (быстро, понятно стейкхолдерам), WSJF (числовое ранжирование с учётом стоимости и time-criticality, лучше для Agile), Impact/Effort Matrix (визуальный, удобен для воркшопов). Выбор метода не интуитивный — скилл задаёт вопросы о контексте и рекомендует.
-
-**Сессионный сбор оценок.** `start_prioritization_session` открывает сессию и формирует список требований для оценки. `add_stakeholder_scores` собирает оценки по одному стейкхолдеру за раз. Это позволяет проводить оценку асинхронно: каждый стейкхолдер даёт оценки в удобное время, BA агрегирует всё одной командой.
-
-**Автоматическая агрегация и выявление конфликтов.** `run_aggregation` агрегирует оценки с учётом influence-весов стейкхолдеров (из реестра 4.2) и автоматически выявляет: dependency violations (приоритет выше зависимости — невозможно), конфликты между стейкхолдерами (большой разброс оценок), волатильные требования с высоким приоритетом. Каждый конфликт — отдельная запись с типом и участниками.
-
-**Структурированное разрешение конфликтов.** `resolve_conflict` фиксирует разрешение каждого конфликта: метод (эскалация, компромисс, экспертная оценка, pilot-тест), участников, итоговое решение, обоснование. Это не просто «поговорили» — это документальная запись, защищающая BA.
-
-**Итог → в репозиторий.** `save_prioritization_result` обновляет атрибуты приоритета в репозитории 5.2 для каждого требования и сохраняет Markdown-отчёт по сессии: метод, участники, итоговые приоритеты, разрешённые конфликты, обоснование. Это документ для стейкхолдеров.
-
-### Ценности для BA
-
-**Приоритизация становится защищаемой, а не интуитивной.** Когда заказчик через месяц спрашивает «почему FR-019 не вошло в первый релиз?» — BA открывает отчёт сессии приоритизации: вот оценки стейкхолдеров, вот агрегация с весами, вот решение. Это разговор с данными, а не с воспоминаниями.
-
-**Конфликты видны до разработки.** Dependency violation между FR-019 и FR-020, выявленный при агрегации — это несколько минут работы BA по устранению. Тот же конфликт, обнаруженный в середине спринта — это пересмотр планирования и объяснения команде.
-
-**Стейкхолдеры вовлечены асинхронно.** BA не собирает всех одновременно на двухчасовой воркшоп (и не борется с расписаниями директоров). Оценки собираются отдельно по каждому, агрегация — после. Для большого количества стейкхолдеров это принципиальная экономия.
-
-**Нестабильные требования не попадают в Must без предупреждения.** Флаг волатильности в `run_aggregation` не запрещает BA ставить нестабильное требование в высокий приоритет — но заставляет сделать это осознанно, с пониманием риска.
-
-### Как пользоваться: пример
-
-Завершился этап выявления, BA готов к первой сессии приоритизации. 45 требований, 4 стейкхолдера с разными influence-весами.
-
-*«Открой сессию приоритизации по проекту CRM. Метод MoSCoW, будем оценивать все 45 подтверждённых требований.»*
-
-AIналитик открывает сессию, формирует список. BA проводит оценки с каждым стейкхолдером отдельно и вносит их через `add_stakeholder_scores`. После четвёртого стейкхолдера:
-
-*«Агрегируй результаты.»*
-
-`run_aggregation` возвращает: 3 конфликта (FR-007 — большой разброс между продажами и IT), 1 dependency violation (FR-031 в Must, но зависит от FR-044 в Could), 2 волатильных требования в Must. BA разрешает конфликты, корректирует очевидный dependency violation, сохраняет результат.
-
-*«Сохрани итоги сессии.»* — готов отчёт для стейкхолдеров.
+`check_coverage` returns: FR-007 has no parent (🔴), NFR-003 has no test (🟡), everything else is fine (🟢). The BA asks the analysts where FR-007 came from: it turns out this requirement was never confirmed in 4.3, someone added it "on the fly." The problem is caught before development, not during it.
 
 ---
 
-## Задача 5.4 — Assess Requirements Changes (Оценка изменений требований)
+## Task 5.2: Maintain Requirements (Requirements Maintenance)
 
-### Краткое описание
+### Summary
 
-BA играет роль «привратника изменений»: структурировано оценивает каждый Change Request, считает его влияние на граф требований, скорит по формуле бизнес- и технических осей, готовит обоснованную рекомендацию для спонсора или CCB. Решение принимает не BA — он готовит аргументированный материал для принятия решения.
+The BA keeps the requirements registry current: updating statuses and versions, flagging obsolete requirements, regularly auditing the registry's "health," and identifying candidates for reuse in other initiatives. This is an ongoing task that runs throughout the entire project.
 
-### Боли и проблемы BA
+### BA pain points
 
-**Изменения принимаются под давлением, а не по анализу.** Приходит менеджер проекта: «заказчик хочет добавить эту фичу, давай быстренько». BA говорит ок. Через неделю: оказывается, эта фича конфликтует с двумя существующими требованиями, тянет за собой переделку архитектуры, и заказчик не осознавал эту цену, когда просил.
+**The registry freezes at the moment it's created.** The BA gathers requirements, records them, and never comes back. A month of active work later: 5 requirements have changed substantively, 3 are no longer relevant, 2 have a new owner. The registry still looks exactly like it did on day one.
 
-**«Cтоимость» изменения никто не считает системно.** Impact analysis делается вручную (если делается вообще). BA обходит по памяти связанные требования — и неизбежно что-то упускает. Итог: CR принят, а затронутые артефакты выясняются уже в разработке.
+**Requirement versioning isn't tracked.** A CR comes in, and the BA tweaks the wording of FR-017. The previous version isn't saved. A week later the customer asks: *"why does the requirement now say this? We agreed on something different."* The BA can't show the change history: there's no documentary trail.
 
-**Каждый CR — это «а не связано ли это с тем, что мы уже решили?»** Изменение FR-017 может конфликтовать с decision из протокола встречи трёхнедельной давности. BA не помнит все принятые решения по проекту, а лезть в архив некогда.
+**Requirement statuses are out of date.** A requirement has been sitting "in approval" for three weeks, but only because the approval actually went through and nobody updated the status. A developer looks at the registry and can't tell: start working on it, or wait?
 
-**Нет единого места для истории всех CR.** Один CR — в письме, другой — в Jira, третий — вообще устно договорились. Через месяц невозможно восстановить: сколько CR было принято? Какие требования сейчас находятся под изменением? Что из обещанного ещё не реализовано?
+**"Must drift."** By the end of the elicitation stage, 70% of requirements end up in the Must category. Everything is "mandatory," everything has high priority. The registry loses its structure: it no longer helps anyone make decisions, it just creates the appearance of work.
 
-**Решение «брать / не брать» без структуры.** BA даёт рекомендацию интуитивно или под давлением. Без скоринга по бизнес-осям и техническому влиянию — это не рекомендация, это мнение. Спонсор принимает решение без данных.
+**Reuse never happens.** The BA starts a new project and writes requirements from scratch. Yet a previous project already had "The user must authenticate through corporate SSO," a requirement applicable to three out of five initiatives. But it sits in last project's folder, and nobody remembers it's there.
 
-### Что мы реализовали
+### What we built
 
-**Стадийный pipeline для каждого CR.** `open_cr` → `run_cr_impact` → `score_cr` → `resolve_cr`. Это не лишняя формальность — каждый шаг добавляет данные, которые нужны на следующем. Для небольшого CR цикл проходится быстро; для крупного — даёт полную картину.
+**Updating requirements with history.** `update_requirement` updates a requirement's attributes (status, priority, wording, version) and automatically saves the history: what it was, what it became, the date, the reason. Three months later, you can pull up the full timeline of any requirement.
 
-**CR как узел в графе трассировки.** Каждый Change Request хранится в репозитории 5.1 как узел с типом `change_request`, связанный с затронутыми требованиями связью `modifies`. Вся история изменений видна прямо в матрице трассировки — не нужно отдельного реестра CR.
+**Proper deprecation.** `deprecate_requirements` marks a requirement as obsolete with a choice of final status: `deprecated` (obsolete, no replacement), `superseded` (replaced by another requirement, which is specified), `retired` (project completed). The requirement is not deleted from the repository; the history is preserved for audit.
 
-**Автоматический impact analysis.** `run_cr_impact` использует граф трассировки из 5.1 (BFS-обход) и возвращает полный список затронутых артефактов: требования, тест-кейсы, компоненты. Это технический input для скоринга — BA не пропустит ничего что «тянется» за изменением.
+**Registry health audit.** `check_requirements_health` analyzes the entire registry and returns: 🔴 highly volatile requirements (changed too often, a signal of an unstable stakeholder or poor wording), 🟡 requirements that haven't been updated in a long time (possibly stale), 🟡 requirements stuck in `draft` status for too long. Each item comes with a recommended action.
 
-**Скоринг по формуле с обоснованием.** `score_cr` считает: `Score = Benefit×2 + Urgency×1.5 + Impact×1 - Cost×1.5 - ScheduleRisk×1`. Технические оси (Impact, ScheduleRisk) вычисляются автоматически из BFS-обхода. Бизнес-оси (Benefit, Cost, Urgency) вводит BA после консультации с заказчиком. Формула даёт предварительный вердикт (Approve / Modify / Defer / Reject), AIналитик добавляет текстовое обоснование.
+**Finding reuse candidates.** `find_reusable_requirements` filters the registry by type, topic, status, and the `reuse_candidate` flag. It returns a list of requirements with a suitability rating: stable ones, worded without ties to a specific system, with a final status, make the best candidates.
 
-**Автообновление статусов при решении.** `resolve_cr` при решении Approved автоматически переводит затронутые требования в статус `under_change`. BA не забывает обновить реестр вручную. CR Decision Record сохраняется и уходит в 4.4 (коммуникация стейкхолдерам) и в 5.5 (как контекст для утверждения).
+**Automatic detection of "Must drift."** During the `check_requirements_health` audit, the system calculates the share of Must requirements out of the total. If it exceeds the threshold (40% by default), the BA gets a warning. This is a signal to revisit priorities before the next prioritization session.
 
-### Ценности для BA
+### Value for the BA
 
-**Рекомендация с данными, а не с мнением.** BA приходит к спонсору не с «я думаю, стоит принять», а с: технически затронуто 7 артефактов, скор 6.5 (Modify), вот что нужно изменить чтобы снизить риск. Решение принимается с пониманием последствий — и ответственность правильно распределена.
+**The registry reflects reality, not history.** When a developer opens the registry before a sprint, they see current statuses, current versions, current owners. The time spent asking "is this approved yet?" and "is this still relevant?" drops sharply.
 
-**История всех CR в одном месте.** `open_cr` с уникальным ID, связи в графе трассировки, Decision Records — это полный аудиторский след. Через 3 месяца: сколько CR было? Какие приняты, какие отклонены? Почему? Ответ моментальный.
+**Change history is the evidence base.** Whenever someone says "but we agreed on something else," the BA opens up the history of that specific requirement: version 1.0 looked like this, a CR came in on February 23, version 1.1 was agreed with so-and-so. The conversation turns constructive immediately.
 
-**Изменения не «улетают в разработку» без оценки.** Pipeline с обязательным impact analysis создаёт барьер: прежде чем рекомендовать принять CR, BA понимает что за ним тянется. Это снижает количество сюрпризов в разработке — одну из главных причин задержек.
+**A healthy registry at every key step.** `check_requirements_health` runs before prioritization (5.3) and before approval (5.5). This guarantees the BA moves into the next stage with clean, current material rather than accumulated technical debt.
 
-**BA защищён при scope creep.** Когда менеджер через два месяца удивляется что «мы добавили так много» — BA открывает реестр CR: вот 12 принятых изменений, вот даты, вот Decision Records с подписью спонсора. Это профессиональная документация scope creep, а не апелляция к памяти.
+**Savings at the start of new projects.** `find_reusable_requirements` searches across every past project on the platform. A ready-made requirement from a previous project, complete with change history and an `approved` status, saves hours of elicitation and wording work. This is especially valuable in organizations running many similar initiatives.
 
-### Как пользоваться: пример
+### How to use it: an example
 
-Поступает запрос: заказчик хочет добавить интеграцию с новой CRM-системой, о которой не было речи в начале.
+Midway through the project. A CR comes in: the customer wants to change the notification logic. The BA asked the developers to update FR-031, and 5.4 has already approved the CR. Now the registry needs updating.
 
-*«Открой Change Request: заказчик просит добавить интеграцию с Salesforce. Влияет на FR-022, FR-033, скорее всего ещё на что-то.»*
+*"Update FR-031: status changes to `under_change`, version goes from 1.0 to 1.1, here's the new wording. Reason: CR-005, approved by the sponsor."*
 
-`open_cr` создаёт CR-008. `run_cr_impact` пробегает по графу трассировки — оказывается, затронуты ещё NFR-004 (производительность API) и 3 тест-кейса. BA фиксирует оценки бизнес-осей после разговора с заказчиком, запускает скоринг. Скор 4.2 — «Modify»: принять, но с изменёнными условиями по срокам. BA готовит рекомендацию для спонсора, тот принимает решение, `resolve_cr` обновляет все статусы.
+AInalyst updates it, and the history is recorded. A month later, an audit:
 
----
+*"Run a registry health check before we move on to approval."*
 
-## Задача 5.5 — Approve Requirements (Утверждение требований)
-
-### Краткое описание
-
-BA организует официальное согласование требований со стейкхолдерами и создаёт Requirements Baseline — зафиксированную версию требований, которая становится контрактом для разработки. Задача поддерживает как Predictive-подход (baseline в конце фазы), так и Agile (Sprint Backlog Baseline).
-
-### Боли и проблемы BA
-
-**«Согласовано» означает разное для разных людей.** Кто-то кивнул на встрече, кто-то написал «ок» в письме, кто-то вообще не ответил — BA всё равно считает это согласованием. Потом приходит разработчик: «а мне никто не говорил что FR-019 утверждено, я ждал официального подтверждения». Или стейкхолдер: «я же не подписывал ничего, как вы могли это брать в работу».
-
-**Условные согласования теряются.** Стейкхолдер дал согласие с условием: «принимаю, но только если добавите раздел о безопасности». BA зафиксировал у себя, пообещал. Условие выполнено через неделю — но нигде не закрыто официально. Стейкхолдер через месяц: «а вы добавили то, о чём мы договорились?»
-
-**Нет понимания готовности пакета к baseline.** BA собрал ответы от 5 стейкхолдеров. Три одобрили, один — с условием, один — отклонил. Можно ли уже создавать baseline? Кто из них Accountable, а кто Consulted? Блокирует ли отклонение от Consulted?
-
-**Разные форматы пакета для разных аудиторий.** Бизнес-заказчику нужно одно, разработчикам — другое, регулятору — третье. BA готовит один документ «для всех» — и ни одна из аудиторий не получает то, что ей действительно нужно.
-
-**Baseline нет как такового.** Требования «согласованы» где-то в переписке, но нет зафиксированной версии, нет даты, нет списка кто согласовал. Через месяц невозможно ответить: «что именно было в baseline v1.0?»
-
-### Что мы реализовали
-
-**Пакет согласования с адаптацией под аудиторию.** `prepare_approval_package` собирает требования, добавляет матрицу трассировки (5.1), приоритеты (5.3) и CR Decision Records (5.4), и форматирует документ под конкретную аудиторию: `business` — без технических деталей, `developer` — с техническими атрибутами и зависимостями, `regulator` — с полной трассировкой и историей изменений.
-
-**Фиксация каждого решения стейкхолдера.** `record_approval_decision` записывает ответ каждого участника: Approved, Conditional (с текстом условия, дедлайном, ответственным), Rejected (с причиной), Abstained. Можно фиксировать решения как по всему пакету, так и по отдельным требованиям внутри него.
-
-**Закрытие условных одобрений.** `close_approval_condition` фиксирует выполнение условия: что было сделано, дата закрытия. Требование переходит из `conditional_approved` в `approved`. История условия сохраняется.
-
-**Готовность к baseline — по критериям, а не по ощущению.** `check_approval_status` считает: сколько Approved / Conditional / Rejected / ещё не ответили. Выявляет просроченные условия. Флагует rejected от Accountable-стейкхолдеров (это блокеры). Даёт чёткий вердикт: готово к baseline или нет, и почему.
-
-**Официальный Requirements Baseline.** `create_requirements_baseline` создаёт snapshot пакета в `{project}_approval_history.json`, обновляет статусы требований в репозитории 5.1 (→ `approved`), генерирует Approval Record — Markdown-документ с версией, датой, списком согласовавших. Этот артефакт уходит в 4.4 (коммуникация) и становится входом для Главы 6.
-
-**Поддержка Predictive и Agile.** В Predictive-проекте baseline создаётся в конце фазы — включает все требования этапа. В Agile — перед каждым спринтом Product Owner согласует Sprint Backlog Baseline с конкретным номером спринта.
-
-### Ценности для BA
-
-**«Согласовано» теперь имеет точный смысл.** Есть Approval Record с датой, версией baseline, списком участников и их решениями. Нет больше ситуации «ну мы же обсуждали на встрече». Есть документальный след, который защищает BA и даёт разработчикам уверенность в материале.
-
-**Conditional-согласования не теряются.** Каждое условие фиксируется с дедлайном и ответственным. `check_approval_status` покажет просроченные условия — BA не пропустит их в потоке других задач. Baseline не будет создан пока условие не закрыто (если только BA не использует `force`-флаг осознанно).
-
-**BA знает когда можно создавать baseline.** `check_approval_status` снимает неопределённость: вот 4 Approved, вот 1 Conditional с открытым условием, вот 1 Rejected от Consulted (не блокирует). Вердикт: можно создавать baseline с документированным риском по отклонению Consulted. Или: нет, Accountable не одобрил, нужно разрешить конфликт.
-
-**Разные стейкхолдеры получают нужный им формат.** Директор по продажам читает бизнес-версию пакета без технического языка. Разработчики — версию с зависимостями и атрибутами. Это снижает количество вопросов «что это значит?» и ускоряет цикл согласования.
-
-**Baseline — это юридически значимый момент проекта.** После создания baseline изменить требования можно только через официальный CR (5.4). Это не ограничение — это защита BA от неформального scope creep. «Заказчик хочет добавить...» — хорошо, откроем CR.
-
-### Как пользоваться: пример
-
-Завершена фаза выявления, все требования прошли 4.3 и занесены в 5.1. Первая сессия согласования.
-
-*«Подготовь пакет согласования по проекту CRM. Predictive-подход, требования FR-001 до FR-045. Для бизнес-аудитории — нам идёт к директору по продажам и финдиректору.»*
-
-`prepare_approval_package` собирает пакет APKG-001. BA отправляет документ через 4.4. Приходят ответы:
-
-*«Директор по продажам — одобрил всё. Финдиректор — принял, но с условием: FR-037 (интеграция с 1С) должна пройти security review до начала разработки. Технический директор — воздержался.»*
-
-BA фиксирует каждое решение через `record_approval_decision`. `check_approval_status` возвращает: 1 Approved, 1 Conditional (дедлайн через 2 недели), 1 Abstained. Вердикт: не готов к baseline, нужно закрыть условие финдиректора.
-
-Через 10 дней security review пройден. *«Закрой условие финдиректора по FR-037: security review завершён, протокол прикреплён.»* `close_approval_condition` фиксирует выполнение.
-
-*«Создай baseline v1.0.»* — Approval Record сохранён, требования получили статус `approved`, проект переходит в Главу 6.
+`check_requirements_health` returns: NFR-002, last updated 6 weeks ago, possibly stale; FR-019, sitting in `draft` status for 3 weeks. The BA checks with stakeholders and closes out the open questions. A clean registry moves on to approval.
 
 ---
 
-## Финальный синтез по Главе 5
+## Task 5.3: Prioritize Requirements (Requirements Prioritization)
 
-**Глава 5 — это инфраструктура качества всего проекта.** Если Глава 4 производит сырьё, то Глава 5 даёт этому сырью структуру, историю, статус и официальный вес. Всё что будет делаться в Главах 6, 7 и 8 — строится на фундаменте, заложенном в Главе 5.
+### Summary
 
-**Каждая задача Главы 5 снимает конкретный класс риска:**
-- 5.1 убирает риск непредсказуемых последствий изменений
-- 5.2 убирает риск работы с устаревшими данными
-- 5.3 убирает риск субъективной приоритизации и скрытых конфликтов
-- 5.4 убирает риск неуправляемого scope creep
-- 5.5 убирает риск спорного согласования и размытой ответственности
+The BA determines the relative importance of requirements for stakeholders, chooses a prioritization method that fits the project context, collects scores, aggregates them, identifies conflicts between stakeholders, and facilitates their resolution. This task repeats with every planning cycle, not just once.
 
-**Ответственность BA в Главе 5** сосредоточена там, где она и должна быть: аналитические решения (какой уровень формальности трассировки нужен?), фасилитация (как разрешить конфликт приоритетов?), оценка (какова бизнес-ценность этого CR?). Платформа берёт на себя инфраструктуру: хранение, версионирование, агрегацию, генерацию отчётов, проверку покрытия.
+### BA pain points
 
-**Практический результат:** BA, работающий через Главу 5 платформы, к моменту перехода в Главу 6 приходит с чётким ответом на вопрос «что именно мы разрабатываем?» — с утверждённым baseline, полной трассировкой, актуальным реестром и историей всех изменений. Это не бюрократия ради бюрократии — это условие для качественной работы на последующих этапах.
+**"Everything is important."** A classic situation: after elicitation you have 80 requirements and 5 stakeholders, each convinced their own requirements are the priority. The BA has to build a sensible order of implementation. Without a method, that's impossible. With a method, stakeholders still need convincing.
+
+**Conflicts between stakeholders go undocumented.** The sales director wants FR-024 in the first sprint. The IT director wants FR-048. Both are right from their own department's point of view. The BA keeps track of the conflict in their head and tries to sort it out in a meeting. If the meeting never happens, the conflict stays unresolved and resurfaces during development.
+
+**Choosing a prioritization method is a gut call.** Most BAs use MoSCoW because everyone does. MoSCoW is good for categorization, but it breaks down when there's a large number of Musts, and it ignores implementation cost. WSJF works better for Agile, but it needs estimates from developers that the BA may not have. The right method is the one that fits the context.
+
+**Dependency violations go unchecked.** FR-019 is set to `Could`, FR-020 to `Must`. But FR-020 depends on FR-019, and it's impossible to implement without it. The conflict surfaces during sprint planning, not during prioritization.
+
+**Unstable requirements get high priority.** FR-011 is set to Must, even though its wording has changed 4 times in 3 weeks. Planning a Must requirement with high volatility is a risk to the team's capacity: they build it, and then it changes again.
+
+### What we built
+
+**Three prioritization methods matched to context.** The skill supports MoSCoW (fast, easy for stakeholders to understand), WSJF (numeric ranking that accounts for cost and time-criticality, better for Agile), and the Impact/Effort Matrix (visual, convenient for workshops). Choosing a method isn't a gut call: the skill asks about the context and recommends one.
+
+**Session-based score collection.** `start_prioritization_session` opens a session and builds the list of requirements to score. `add_stakeholder_scores` collects scores one stakeholder at a time. This lets scoring happen asynchronously: each stakeholder submits scores whenever it's convenient, and the BA aggregates everything with a single command.
+
+**Automatic aggregation and conflict detection.** `run_aggregation` aggregates scores using stakeholder influence weights (from the 4.2 registry) and automatically flags: dependency violations (a requirement prioritized above something it depends on, which is impossible), conflicts between stakeholders (a wide spread of scores), and volatile requirements with high priority. Each conflict is logged as a separate record with a type and participants.
+
+**Structured conflict resolution.** `resolve_conflict` records how each conflict was resolved: the method (escalation, compromise, expert judgment, pilot test), the participants, the final decision, and the rationale. This isn't just "we talked it over": it's a documented record that protects the BA.
+
+**Results flow into the repository.** `save_prioritization_result` updates the priority attributes in the 5.2 repository for every requirement and saves a Markdown session report: the method, participants, final priorities, resolved conflicts, and rationale. This document is meant for stakeholders.
+
+### Value for the BA
+
+**Prioritization becomes defensible, not intuitive.** When the customer asks a month later, "why didn't FR-019 make it into the first release?", the BA opens the prioritization session report: here are the stakeholder scores, here's the weighted aggregation, here's the decision. It's a conversation backed by data, not by memory.
+
+**Conflicts surface before development.** A dependency violation between FR-019 and FR-020, caught during aggregation, takes the BA a few minutes to fix. The same conflict, discovered mid-sprint, means reworking the plan and explaining it to the team.
+
+**Stakeholders are engaged asynchronously.** The BA doesn't need to get everyone into the same two-hour workshop (and doesn't have to fight with directors' calendars). Scores are collected separately from each person, and aggregation happens afterward. For a large number of stakeholders, this is a substantial time saver.
+
+**Unstable requirements don't slip into Must unnoticed.** The volatility flag in `run_aggregation` doesn't stop the BA from assigning high priority to an unstable requirement, but it forces that choice to be made consciously, with the risk understood.
+
+### How to use it: an example
+
+The elicitation stage has wrapped up, and the BA is ready for the first prioritization session. 45 requirements, 4 stakeholders with different influence weights.
+
+*"Open a prioritization session for the CRM project. MoSCoW method, we'll score all 45 confirmed requirements."*
+
+AInalyst opens the session and builds the list. The BA runs scoring with each stakeholder separately and enters the results via `add_stakeholder_scores`. After the fourth stakeholder:
+
+*"Aggregate the results."*
+
+`run_aggregation` returns: 3 conflicts (FR-007, a wide spread between sales and IT), 1 dependency violation (FR-031 in Must, but it depends on FR-044 in Could), 2 volatile requirements in Must. The BA resolves the conflicts, fixes the obvious dependency violation, and saves the result.
+
+*"Save the session results."* The stakeholder report is ready.
+
+---
+
+## Task 5.4: Assess Requirements Changes (Requirements Change Assessment)
+
+### Summary
+
+The BA plays the role of "change gatekeeper": systematically assessing every Change Request, calculating its impact on the requirements graph, scoring it against a formula of business and technical axes, and preparing a well-reasoned recommendation for the sponsor or CCB. The decision itself isn't the BA's to make; the BA prepares the evidence-based material the decision gets made on.
+
+### BA pain points
+
+**Changes get accepted under pressure, not through analysis.** The project manager shows up: "the customer wants this feature added, let's just do it quickly." The BA says okay. A week later it turns out the feature conflicts with two existing requirements, drags along an architecture rework, and the customer had no idea about that cost when they asked for it.
+
+**Nobody calculates the "cost" of a change systematically.** Impact analysis is done by hand, if it's done at all. The BA walks through related requirements from memory and inevitably misses something. The result: the CR gets accepted, and the affected artifacts only surface once development is underway.
+
+**Every CR raises the question: "does this conflict with something we already decided?"** A change to FR-017 might conflict with a decision recorded in meeting minutes from three weeks ago. The BA can't remember every decision made on the project, and there's no time to dig through the archive.
+
+**There's no single place for the history of all CRs.** One CR lives in an email, another in Jira, a third was just agreed verbally. A month later it's impossible to reconstruct: how many CRs were accepted? Which requirements are currently under change? What's still promised but not yet delivered?
+
+**The "accept or not" decision has no structure.** The BA gives a recommendation on gut feel or under pressure. Without scoring against business axes and technical impact, that's not a recommendation, it's an opinion. The sponsor ends up deciding without data.
+
+### What we built
+
+**A staged pipeline for every CR.** `open_cr` → `run_cr_impact` → `score_cr` → `resolve_cr`. This isn't unnecessary formality: each step adds data the next one needs. For a small CR the cycle moves fast; for a large one, it delivers the full picture.
+
+**A CR as a node in the traceability graph.** Every Change Request is stored in the 5.1 repository as a node with type `change_request`, linked to the affected requirements through a `modifies` relationship. The entire change history is visible right in the traceability matrix; there's no need for a separate CR register.
+
+**Automatic impact analysis.** `run_cr_impact` uses the traceability graph from 5.1 (a BFS traversal) and returns a full list of affected artifacts: requirements, test cases, components. This is the technical input for scoring; the BA won't miss anything that gets "dragged along" by the change.
+
+**Formula-based scoring with rationale.** `score_cr` calculates: `Score = Benefit×2 + Urgency×1.5 + Impact×1 - Cost×1.5 - ScheduleRisk×1`. The technical axes (Impact, ScheduleRisk) are computed automatically from the BFS traversal. The business axes (Benefit, Cost, Urgency) are entered by the BA after consulting the customer. The formula produces a preliminary verdict (Approve / Modify / Defer / Reject), and AInalyst adds a written rationale.
+
+**Automatic status updates on resolution.** When `resolve_cr` is called with an Approved decision, it automatically moves the affected requirements into `under_change` status. The BA never forgets to update the registry by hand. The CR Decision Record is saved and flows into 4.4 (stakeholder communication) and into 5.5 (as context for approval).
+
+### Value for the BA
+
+**A recommendation backed by data, not opinion.** The BA doesn't go to the sponsor with "I think we should accept this," but with: 7 artifacts technically affected, a score of 6.5 (Modify), and here's what needs to change to reduce risk. The decision gets made with a clear understanding of the consequences, and accountability lands where it should.
+
+**The history of every CR in one place.** `open_cr` with a unique ID, relationships in the traceability graph, Decision Records: together they form a complete audit trail. Three months later: how many CRs were there? Which were accepted, which rejected? Why? The answer is immediate.
+
+**Changes don't "fly into development" unassessed.** The pipeline's mandatory impact analysis creates a checkpoint: before recommending a CR for acceptance, the BA understands what it drags along. This cuts down on surprises during development, one of the leading causes of delay.
+
+**The BA is protected against scope creep.** When the manager is surprised two months later that "we added so much," the BA opens the CR register: here are the 12 accepted changes, here are the dates, here are the Decision Records signed off by the sponsor. This is professional documentation of scope creep, not an appeal to memory.
+
+### How to use it: an example
+
+A request comes in: the customer wants to add integration with a new CRM system that was never mentioned at the start.
+
+*"Open a Change Request: the customer is asking to add Salesforce integration. It affects FR-022, FR-033, and probably something else too."*
+
+`open_cr` creates CR-008. `run_cr_impact` runs through the traceability graph, and it turns out NFR-004 (API performance) and 3 test cases are also affected. The BA records the business-axis scores after talking with the customer, then runs the scoring. The score comes out to 4.2, "Modify": accept, but with adjusted timeline conditions. The BA prepares a recommendation for the sponsor, who makes the decision, and `resolve_cr` updates all the statuses.
+
+---
+
+## Task 5.5: Approve Requirements (Requirements Approval)
+
+### Summary
+
+The BA organizes formal sign-off of requirements with stakeholders and creates the Requirements Baseline: a fixed version of the requirements that becomes the contract for development. This task supports both the Predictive approach (a baseline at the end of a phase) and Agile (a Sprint Backlog Baseline).
+
+### BA pain points
+
+**"Approved" means something different to everyone.** Someone nodded in a meeting, someone wrote "ok" in an email, someone never responded at all, and the BA counts all of it as approval anyway. Then a developer shows up: "nobody told me FR-019 was approved, I was waiting for official confirmation." Or a stakeholder: "I never signed off on anything, how could you have started building this?"
+
+**Conditional approvals get lost.** A stakeholder gives conditional approval: "I accept this, but only if you add a security section." The BA notes it privately and promises to follow up. The condition is fulfilled a week later, but it's never closed out officially anywhere. A month later, the stakeholder asks: "did you add what we agreed on?"
+
+**No clear picture of whether the package is ready for baseline.** The BA has collected responses from 5 stakeholders. Three approved, one approved with a condition, one rejected. Is it time to create the baseline? Who's Accountable and who's just Consulted? Does a rejection from a Consulted stakeholder block anything?
+
+**Different audiences need different package formats.** The business customer needs one thing, developers need another, the regulator needs a third. The BA prepares a single "one size fits all" document, and none of the audiences gets what they actually need.
+
+**There's no baseline to speak of.** Requirements are "approved" somewhere in an email thread, but there's no fixed version, no date, no list of who signed off. A month later, it's impossible to answer: "what exactly was in baseline v1.0?"
+
+### What we built
+
+**An approval package tailored to the audience.** `prepare_approval_package` gathers the requirements, adds the traceability matrix (5.1), priorities (5.3), and CR Decision Records (5.4), then formats the document for a specific audience: `business` (no technical detail), `developer` (with technical attributes and dependencies), `regulator` (with full traceability and change history).
+
+**Recording every stakeholder decision.** `record_approval_decision` logs each participant's response: Approved, Conditional (with the condition text, deadline, and owner), Rejected (with a reason), or Abstained. Decisions can be recorded for the whole package or for individual requirements within it.
+
+**Closing out conditional approvals.** `close_approval_condition` records the fulfillment of a condition: what was done, and the closing date. The requirement moves from `conditional_approved` to `approved`. The history of the condition is preserved.
+
+**Baseline readiness measured by criteria, not gut feel.** `check_approval_status` counts how many responses are Approved / Conditional / Rejected / still outstanding. It flags overdue conditions and flags rejections from Accountable stakeholders (these are blockers). It gives a clear verdict: ready for baseline or not, and why.
+
+**An official Requirements Baseline.** `create_requirements_baseline` creates a snapshot of the package in `{project}_approval_history.json`, updates requirement statuses in the 5.1 repository (to `approved`), and generates an Approval Record: a Markdown document with the version, date, and the list of who signed off. This artifact flows into 4.4 (communication) and becomes an input to Chapter 6.
+
+**Support for Predictive and Agile.** In a Predictive project, the baseline is created at the end of a phase and includes every requirement from that stage. In Agile, before each sprint, the Product Owner signs off on a Sprint Backlog Baseline tied to a specific sprint number.
+
+### Value for the BA
+
+**"Approved" now has a precise meaning.** There's an Approval Record with a date, a baseline version, and a list of participants and their decisions. The "well, we discussed it in the meeting" situation is gone. There's a documented trail that protects the BA and gives developers confidence in the material.
+
+**Conditional approvals don't get lost.** Every condition is recorded with a deadline and an owner. `check_approval_status` will surface overdue conditions, so the BA won't lose track of them amid other work. The baseline won't be created until the condition is closed, unless the BA deliberately uses the `force` flag.
+
+**The BA knows exactly when it's time to create the baseline.** `check_approval_status` removes the uncertainty: 4 Approved, 1 Conditional with an open condition, 1 Rejected from a Consulted stakeholder (not a blocker). Verdict: the baseline can be created with a documented risk around the Consulted rejection. Or: no, an Accountable stakeholder hasn't approved, the conflict needs to be resolved first.
+
+**Different stakeholders get the format they need.** The sales director reads the business version of the package, free of technical language. Developers get the version with dependencies and attributes. This cuts down on "what does this mean?" questions and speeds up the approval cycle.
+
+**The baseline is a legally meaningful moment in the project.** After the baseline is created, requirements can only be changed through a formal CR (5.4). This isn't a restriction, it's protection for the BA against informal scope creep. "The customer wants to add..." Fine, let's open a CR.
+
+### How to use it: an example
+
+The elicitation phase is complete, all requirements have gone through 4.3 and been entered into 5.1. Time for the first approval session.
+
+*"Prepare the approval package for the CRM project. Predictive approach, requirements FR-001 through FR-045. For a business audience, this is going to the sales director and the CFO."*
+
+`prepare_approval_package` assembles package APKG-001. The BA sends the document out through 4.4. Responses come in:
+
+*"Sales director: approved everything. CFO: accepted, with one condition: FR-037 (the 1C integration) must pass a security review before development starts. Technical director: abstained."*
+
+The BA records each decision via `record_approval_decision`. `check_approval_status` returns: 1 Approved, 1 Conditional (deadline in 2 weeks), 1 Abstained. Verdict: not ready for baseline, the CFO's condition needs to be closed first.
+
+Ten days later, the security review is complete. *"Close out the CFO's condition on FR-037: the security review is done, the report is attached."* `close_approval_condition` records the fulfillment.
+
+*"Create baseline v1.0."* The Approval Record is saved, the requirements get `approved` status, and the project moves into Chapter 6.
+
+---
+
+## Final synthesis for Chapter 5
+
+**Chapter 5 is the quality infrastructure for the entire project.** If Chapter 4 produces raw material, Chapter 5 gives that material structure, history, status, and official weight. Everything that happens in Chapters 6, 7, and 8 is built on the foundation laid in Chapter 5.
+
+**Each task in Chapter 5 removes a specific class of risk:**
+- 5.1 removes the risk of unpredictable change consequences
+- 5.2 removes the risk of working with stale data
+- 5.3 removes the risk of subjective prioritization and hidden conflicts
+- 5.4 removes the risk of uncontrolled scope creep
+- 5.5 removes the risk of disputed approvals and diffused accountability
+
+**The BA's responsibility in Chapter 5** stays right where it should: analytical judgment (what level of traceability formality is needed?), facilitation (how do we resolve a priority conflict?), assessment (what's the business value of this CR?). The platform takes on the infrastructure: storage, versioning, aggregation, report generation, coverage checks.
+
+**The practical result:** a BA who works through the platform's Chapter 5 arrives at the transition to Chapter 6 with a clear answer to "what exactly are we building?": an approved baseline, full traceability, a current registry, and the history of every change. This isn't bureaucracy for its own sake, it's the precondition for quality work in every stage that follows.
