@@ -72,7 +72,7 @@ Regardless of which technique is chosen, the result is normalized into a single 
 
 **Protection against "treating symptoms."** RCA tools are built into the workflow, so the BA cannot "accidentally" skip cause analysis and jump straight to solutions. Once the root cause is explicitly documented and linked to a business need, every subsequent decision is checked against it. This reduces the risk of a costly reversal midway through development.
 
-**A measurable justification for change.** Business needs backed by metrics speak the sponsor's language. Instead of "we need improvements," the BA shows up with "we are losing 2.4 million rubles per quarter due to manual request processing (RCA-001); with automation, we expect processing time to drop from 8 hours to 1.5 hours." That is a convincing case, not a request for resources.
+**A measurable justification for change.** Business needs backed by metrics speak the sponsor's language. Instead of "we need improvements," the BA shows up with "we are losing 2.4 million dollars per quarter due to manual request processing (RCA-001); with automation, we expect processing time to drop from 8 hours to 1.5 hours." That is a convincing case, not a request for resources.
 
 **Traceability from day one.** The BN-xxx nodes created in 6.1 become the roots of the entire traceability tree. By the end of the project, it will be clear: this feature (FR-045) was built because business need BN-002 exists, which came from root cause RCA-001, confirmed by specific data. That is professional defensibility for every decision.
 
@@ -156,7 +156,7 @@ The AInalyst platform checks SMART: there's a metric, there's a baseline, there'
 
 Three key gaps: no unified status registry (HIGH, replacement), no automatic notifications (MEDIUM, new), approval requires an in-person signature (LOW, improvement).
 
-*"Record the constraint: budget no more than 3 million rubles, timeline: 6 months."*
+*"Record the constraint: budget no more than 3 million dollars, timeline: 6 months."*
 
 The report and gap_analysis.json are saved, ready to be used in 6.3 and 6.4.
 

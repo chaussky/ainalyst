@@ -297,7 +297,7 @@ The elicitation phase is complete, all requirements have gone through 4.3 and be
 
 `prepare_approval_package` assembles package APKG-001. The BA sends the document out through 4.4. Responses come in:
 
-*"Sales director: approved everything. CFO: accepted, with one condition: FR-037 (the 1C integration) must pass a security review before development starts. Technical director: abstained."*
+*"Sales director: approved everything. CFO: accepted, with one condition: FR-037 (the SAP integration) must pass a security review before development starts. Technical director: abstained."*
 
 The BA records each decision via `record_approval_decision`. `check_approval_status` returns: 1 Approved, 1 Conditional (deadline in 2 weeks), 1 Abstained. Verdict: not ready for baseline, the CFO's condition needs to be closed first.
 

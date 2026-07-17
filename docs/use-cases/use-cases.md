@@ -211,7 +211,7 @@ Daniel could spend two hours reviewing it by hand. Instead he writes one line.
 > *(12 more requirements)*
 >
 > **Business rules (3):**
-> Category A claims (over 500K rubles) must go through senior expert review before payout.
+> Category A claims (over 500K dollars) must go through senior expert review before payout.
 >
 > **Metrics:**
 > Target processing time for a standard claim: 4 business days (currently 9).
@@ -267,7 +267,7 @@ Everything was fine until she asked the platform to compare the results.
 >
 > **Consensus, stakeholders agree:**
 > All four consider visualizing production capacity utilization a priority
-> Three of four want integration with 1C:ERP
+> Three of four want integration with SAP ERP
 >
 > **Conflict 🔴, requires resolution:**
 > Speed vs. data accuracy.
@@ -676,7 +676,7 @@ Three different projects, three different tools. One principle: the platform doe
 
 **Context B, a bank:** Client churn is rising. The causes are clearly multifactorial: complaints about service, technology, competitors, processes. A full picture is needed.
 
-**Context C, manufacturing:** Needs an argument for a 15-million-ruble budget committee. The directors want to see cause-and-effect logic.
+**Context C, manufacturing:** Needs an argument for a 15-million-dollar budget committee. The directors want to see cause-and-effect logic.
 
 ### Context A: Five Whys in 20 minutes
 
@@ -1187,9 +1187,9 @@ A manufacturing company. The current MES (manufacturing execution system) is out
 
 BA Ian put together three options. Now he doesn't just need to choose, he needs to defend the choice in front of people who will ask uncomfortable questions.
 
-**Option A, Build:** Build a custom system. Budget 40 million rubles, 18-month timeline.
-**Option B, Buy SAP ME:** Purchase and implement an off-the-shelf solution. Budget 25 million rubles, 8-month timeline.
-**Option C, Hybrid Odoo:** Implement Odoo customized for manufacturing specifics. Budget 18 million rubles, 12-month timeline.
+**Option A, Build:** Build a custom system. Budget 40 million dollars, 18-month timeline.
+**Option B, Buy SAP ME:** Purchase and implement an off-the-shelf solution. Budget 25 million dollars, 8-month timeline.
+**Option C, Hybrid Odoo:** Implement Odoo customized for manufacturing specifics. Budget 18 million dollars, 12-month timeline.
 
 ### What Ian does
 

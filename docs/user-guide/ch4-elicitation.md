@@ -68,7 +68,7 @@ The BA is preparing for a first interview with a new stakeholder, Sarah, the war
 
 They tell AInalyst: *"I'm preparing for an interview with Sarah. She's the warehouse manager and will be one of the key users of the new WMS. I want to understand her pain points with the current system and what matters to her in the new one."*
 
-AInalyst asks clarifying questions: how much time is available, has anyone from the warehouse already been interviewed, are there specific hypotheses that need testing. The BA answers. AInalyst proposes a structured 45-minute interview with three blocks of questions: current situation, pain points, and success criteria. The BA says "add one more question about the 1C integration," and AInalyst adds it. "Save it," and the plan is recorded.
+AInalyst asks clarifying questions: how much time is available, has anyone from the warehouse already been interviewed, are there specific hypotheses that need testing. The BA answers. AInalyst proposes a structured 45-minute interview with three blocks of questions: current situation, pain points, and success criteria. The BA says "add one more question about the SAP integration," and AInalyst adds it. "Save it," and the plan is recorded.
 
 **The BA goes into the actual interview with a ready list of questions, understanding exactly why they're there.**
 
