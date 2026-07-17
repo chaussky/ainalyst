@@ -5,26 +5,26 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Переменные окружения (ключи Confluence и др.)
+# Environment variables (Confluence keys, etc.)
 .env
 .env.local
 #.env.*
 
-# Входные материалы — транскрипты, регламенты, конфиденциальные документы клиентов
+# Input materials: transcripts, regulations, confidential client documents
 inputs/*
 !inputs/README.md
 
-# Артефакты проекта — данные конкретных BA-проектов, не часть инструмента
+# Project artifacts: data for specific BA projects, not part of the tool
 governance_plans/data/*
 governance_plans/reports/*
-# Сохраняем сами папки в репозитории
+# Keep the folders themselves in the repository
 !governance_plans/data/.gitkeep
 !governance_plans/reports/.gitkeep
 
-# Генерируется автоматически через: python phase.py <фаза>
+# Generated automatically by: python phase.py <phase>
 .mcp.json
 
-# Системные файлы редакторов и ОС
+# Editor and OS system files
 .DS_Store
 .DS_Store?
 ._*
@@ -34,14 +34,14 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# IDE и редакторы
+# IDE and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Внутренние артефакты процесса (brainstorming-спеки, планы реализации).
-# Содержат внутреннюю стратегию — не часть продукта, не публикуются на GitHub.
+# Internal process artifacts (brainstorming specs, implementation plans).
+# They contain internal strategy, not part of the product, and are not published on GitHub.
 docs/superpowers/
 .superpowers/

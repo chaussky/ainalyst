@@ -1,9 +1,9 @@
-# AInalyst — зависимости для разработки и тестирования
-# Установка: pip install -r requirements-dev.txt
+# AInalyst dev and test dependencies
+# Install: pip install -r requirements-dev.txt
 
-# Основные зависимости платформы
+# Core platform dependencies
 -r requirements.txt
 
-# Тестирование
+# Testing
 pytest==8.3.5
-pytest-cov==6.1.0        # отчёт о покрытии тестами
+pytest-cov==6.1.0        # test coverage report

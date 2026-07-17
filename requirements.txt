@@ -1,8 +1,8 @@
-# Зафиксированные версии (протестировано, ADR-REVIEW-п7)
-# Для обновления: проверить совместимость вручную, затем обновить версии ниже
+# Pinned versions (tested, ADR-REVIEW item 7)
+# To update: check compatibility by hand, then bump the versions below
 mcp[cli]==1.6.0
-# fastmcp (standalone) убран: код использует FastMCP из пакета mcp (mcp.server.fastmcp),
-# а standalone fastmcp 2.x требует mcp>=1.8.0 и конфликтовал с mcp==1.6.0 (issue #3)
+# fastmcp (standalone) removed: the code uses FastMCP from the mcp package (mcp.server.fastmcp),
+# and standalone fastmcp 2.x requires mcp>=1.8.0 and conflicted with mcp==1.6.0 (issue #3)
 pydantic==2.11.1
-atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC интеграция
-markdown2==2.5.3               # Markdown → HTML для Confluence storage format
+atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC integration
+markdown2==2.5.3               # Markdown → HTML for Confluence storage format
