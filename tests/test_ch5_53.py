@@ -465,6 +465,33 @@ class TestRunAggregation(BaseMCPTest):
         result = self._call(conflict_threshold="Loose")
         self.assertIsInstance(result, str)
 
+    def _add_should_for_fr001(self):
+        """SH-002 scores FR-001 as Should; SH-001 (from setUp) scored it Must.
+        Category spread = Must(4) - Should(3) = 1."""
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label=SESSION,
+                stakeholder_id="SH-002", stakeholder_influence="Medium",
+                scores_json=json.dumps([{"req_id": "FR-001", "score": "Should"}]),
+            )
+
+    def test_strict_threshold_detects_one_category_spread(self):
+        """Strict (spread >= 1) must surface a one-category disagreement
+        (Must vs Should). Regression: the conflict detector hard-coded a
+        spread >= 2 floor, so Strict could never reach 1-category conflicts
+        and behaved identically to Normal."""
+        self._add_should_for_fr001()
+        result = self._call(conflict_threshold="Strict")
+        self.assertIn("Stakeholder conflicts (1)", result)
+        self.assertNotIn("No conflicts found", result)
+
+    def test_normal_threshold_ignores_one_category_spread(self):
+        """Normal (spread >= 2) must NOT flag a one-category disagreement —
+        guards the fix against over-reporting."""
+        self._add_should_for_fr001()
+        result = self._call(conflict_threshold="Normal")
+        self.assertIn("No conflicts found", result)
+
     def test_detects_stakeholder_conflict(self):
         """A conflict between stakeholders is detected."""
         with patch("skills.requirements_prioritize_mcp.save_artifact"):

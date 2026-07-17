@@ -332,7 +332,10 @@ def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
 
         values = [order.get(v, 2) for v in req_scores.values()]
         spread = max(values) - min(values)
-        if spread >= 2:
+        # Detect ANY disagreement (spread >= 1). run_aggregation applies the
+        # caller's conflict_threshold (Strict=1 / Normal=2 / Loose=3) afterwards.
+        # A hard floor here would make the Strict threshold unreachable.
+        if spread >= 1:
             severity = "🔴 Critical" if spread >= 3 else "🟠 Significant"
             conflicts.append({
                 "req_id": req_id,
