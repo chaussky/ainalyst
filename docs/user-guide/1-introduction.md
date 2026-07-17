@@ -1,5 +1,5 @@
 # User Guide
-## AInalyst AI Platform
+## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
 **LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
@@ -39,7 +39,7 @@ You're not just getting an AI assistant that answers questions. You're getting a
 
 At the core of the platform is Claude, a large language model (LLM) from Anthropic. Of course, you could simply open a regular chat with Claude and ask it questions. That works. But this approach has a fundamental limitation: if you don't know what to ask and in what order, the chat becomes a smart but unstructured conversation partner. It will answer your question, but it won't tell you whether that's the right question for this point in the project.
 
-The AInalyst AI Platform solves this problem through three layers:
+AInalyst solves this problem through three layers:
 
 **Claude Code**, an AI agent that doesn't just respond but acts: it reads files, runs commands, manages the project, and guides you through the process. It's the entry point for all your work with the platform.
 

@@ -1,4 +1,4 @@
-## AInalyst
+## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
 **LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
