@@ -862,6 +862,12 @@ def save_risk_assessment(
                 repo = json.load(f)
 
             existing_ids = {r["id"] for r in repo.get("requirements", [])}
+            # Existing threatens edges — so a re-run (re-finalize) does not duplicate them.
+            existing_threatens = {
+                (l.get("from"), l.get("to"))
+                for l in repo.get("links", [])
+                if l.get("relation") == "threatens"
+            }
             added_nodes = 0
             added_links = 0
 
@@ -879,10 +885,10 @@ def save_risk_assessment(
                     existing_ids.add(rid)
                     added_nodes += 1
 
-                # threatens links
+                # threatens links (deduplicated by from/to so re-runs don't pile up)
                 for linked_field in ["linked_bn", "linked_bg", "linked_req"]:
                     linked_id = risk.get(linked_field, "")
-                    if linked_id and linked_id in existing_ids:
+                    if linked_id and linked_id in existing_ids and (rid, linked_id) not in existing_threatens:
                         repo.setdefault("links", []).append({
                             "from": rid,
                             "to": linked_id,
@@ -890,6 +896,7 @@ def save_risk_assessment(
                             "rationale": f"Risk threatens {linked_id}",
                             "added": str(date.today()),
                         })
+                        existing_threatens.add((rid, linked_id))
                         added_links += 1
 
             repo["updated"] = str(date.today())

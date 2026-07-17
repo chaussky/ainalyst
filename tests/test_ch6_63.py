@@ -942,6 +942,39 @@ class TestSaveRiskAssessment(BaseMCPTest):
         threatens = [lnk for lnk in updated.get("links", []) if lnk.get("relation") == "threatens"]
         self.assertGreater(len(threatens), 0)
 
+    def test_save_push_traceability_is_idempotent_no_duplicate_threatens(self):
+        """Re-running save_risk_assessment(push=True) must NOT duplicate threatens
+        links. The risk node is deduplicated, but the threatens links were appended
+        unconditionally on every call."""
+        _make_scope()
+        _make_tolerance()
+        add_risk(
+            project_id=PROJECT, category="technical", source="future_state",
+            description="If X occurs, then Y follows", likelihood=3, impact=3,
+            response_strategy="mitigate", mitigation_plan="Plan", linked_bn="BN-001",
+        )
+        run_risk_matrix(PROJECT)
+        generate_recommendation(PROJECT, potential_value_summary="Value")
+
+        repo = {
+            "project": PROJECT,
+            "requirements": [{"id": "BN-001", "type": "business_need", "title": "T", "version": "1.0", "status": "confirmed", "added": TODAY}],
+            "links": [],
+        }
+        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        with open(repo_path, "w", encoding="utf-8") as f:
+            json.dump(repo, f)
+
+        with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅"
+            save_risk_assessment(PROJECT, push_to_traceability=True)
+            save_risk_assessment(PROJECT, push_to_traceability=True)  # re-finalize
+
+        with open(repo_path, encoding="utf-8") as f:
+            updated = json.load(f)
+        threatens = [lnk for lnk in updated.get("links", []) if lnk.get("relation") == "threatens"]
+        self.assertEqual(len(threatens), 1, "threatens links must not be duplicated on re-push")
+
     def test_save_assessment_json_structure(self):
         _setup_full_pipeline()
         with patch("skills.risk_assessment_mcp.save_artifact") as mock_sa:
