@@ -21,9 +21,6 @@ governance_plans/reports/*
 !governance_plans/data/.gitkeep
 !governance_plans/reports/.gitkeep
 
-# PDF-экспорт отчётов (генерируется утилитой export_pdf.py, ADR-092)
-governance_plans/reports/*.pdf
-
 # Генерируется автоматически через: python phase.py <фаза>
 .mcp.json
 
@@ -47,3 +44,4 @@ desktop.ini
 # Внутренние артефакты процесса (brainstorming-спеки, планы реализации).
 # Содержат внутреннюю стратегию — не часть продукта, не публикуются на GitHub.
 docs/superpowers/
+.superpowers/

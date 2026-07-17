@@ -200,6 +200,8 @@ The most convenient way to share them with the team is to publish them directly 
 
 If you don't have Confluence, send the `.md` file from `reports/` to a colleague directly, or open it in VS Code and copy the contents wherever you like.
 
+**Need a PDF?** AInalyst produces Markdown artifacts. To get a PDF, use any tool you like: `pandoc`, the "Print to PDF" option in a Markdown editor such as VS Code, or simply ask the assistant to convert a file.
+
 The `governance_plans/data/` folder holds internal data in JSON format — this is the system's "memory" between sessions: the requirements graph, prioritization data, assessment results. There's no need to edit these by hand.
 
 ---

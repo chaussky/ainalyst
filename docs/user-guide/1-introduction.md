@@ -77,7 +77,7 @@ The platform takes care of the methodology and the technical work. But three thi
 
 All input information (interview transcripts, meeting minutes, business documents, regulations) goes into the **`inputs/`** folder. Just copy the files there and tell AInalyst what to process.
 
-The platform saves all its output to the **`governance_plans/reports/`** folder in Markdown format. These are your working artifacts: plans, registries, specifications, minutes. If you need a PDF, use the `export_pdf.py` utility.
+The platform saves all its output to the **`governance_plans/reports/`** folder in Markdown format. These are your working artifacts: plans, registries, specifications, minutes. If you need a PDF, convert the Markdown file with any tool you like (for example, the "Print to PDF" option in VS Code), or just ask AInalyst to convert it.
 
 The **`governance_plans/data/`** folder is internal. It holds the JSON files the platform uses internally: the requirements graph, prioritization data, assessment results. You don't need to go in there; it's the platform's internal "memory" of the project.
 
