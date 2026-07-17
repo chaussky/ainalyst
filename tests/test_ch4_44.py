@@ -486,6 +486,40 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
     def test_returns_string(self):
         self.assertIsInstance(self._call(), str)
 
+    def test_urgent_queue_ordered_by_influence_high_first(self):
+        """The urgent (overdue) queue must be ordered by influence: High before
+        Medium before Low. Regression for the label-string sort bug that ranked
+        'Medium' > 'Low' > 'High' alphabetically, burying High-influence
+        stakeholders at the bottom of the queue."""
+        stakeholders = [
+            {"role": "Low Dev", "influence": "Low",
+             "comm_frequency": "Weekly", "last_communication_date": "01.03.2025"},
+            {"role": "High Sponsor", "influence": "High",
+             "comm_frequency": "Weekly", "last_communication_date": "01.03.2025"},
+            {"role": "Medium Manager", "influence": "Medium",
+             "comm_frequency": "Weekly", "last_communication_date": "01.03.2025"},
+        ]
+        with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            mod44.check_communication_schedule(
+                project_name="crm_upgrade",
+                today_date="20.03.2025",  # all three ~19 days overdue on a Weekly (7d) cadence
+                stakeholders_json=json.dumps(stakeholders),
+                communication_log_json=json.dumps([]),
+                triggered_events_json=json.dumps([]),
+            )
+            content = mock_sa.call_args.args[0]
+
+        # All three must be present in the urgent section.
+        pos_high = content.find("High Sponsor")
+        pos_medium = content.find("Medium Manager")
+        pos_low = content.find("Low Dev")
+        self.assertNotEqual(pos_high, -1, "High-influence stakeholder missing from report")
+        self.assertNotEqual(pos_medium, -1, "Medium-influence stakeholder missing from report")
+        self.assertNotEqual(pos_low, -1, "Low-influence stakeholder missing from report")
+        self.assertLess(pos_high, pos_medium, "High influence must appear before Medium")
+        self.assertLess(pos_medium, pos_low, "Medium influence must appear before Low")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

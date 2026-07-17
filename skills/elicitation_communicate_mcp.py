@@ -539,11 +539,14 @@ def check_communication_schedule(
     else:
         lines.append(f"## Need Attention Today: {total_actions} stakeholder(s)\n")
 
-    # Urgent (overdue)
+    # Urgent (overdue) — ranked by influence (High first). Sorting the raw
+    # "High"/"Medium"/"Low" label alphabetically is wrong: alphabetical order
+    # (High < Low < Medium) does not match the ordinal, so map to a numeric rank.
+    influence_rank = {"High": 3, "Medium": 2, "Low": 1}
     if urgent:
         lines.append("---\n")
         lines.append("## 🔴 Urgent — Overdue\n")
-        for item in sorted(urgent, key=lambda x: x.get("influence", "Low"), reverse=True):
+        for item in sorted(urgent, key=lambda x: influence_rank.get(x.get("influence"), 0), reverse=True):
             lines.append(f"**{item['role']}** (influence: {item['influence']})  ")
             lines.append(f"- {item['reason']}  ")
             if item.get("last_topic"):
