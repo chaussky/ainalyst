@@ -64,9 +64,9 @@ The BA prepares for a specific elicitation session: defines the goals of the mee
 
 ### How to use it: an example
 
-The BA is preparing for a first interview with a new stakeholder, Elena, the warehouse manager.
+The BA is preparing for a first interview with a new stakeholder, Sarah, the warehouse manager.
 
-They tell AInalyst: *"I'm preparing for an interview with Elena. She's the warehouse manager and will be one of the key users of the new WMS. I want to understand her pain points with the current system and what matters to her in the new one."*
+They tell AInalyst: *"I'm preparing for an interview with Sarah. She's the warehouse manager and will be one of the key users of the new WMS. I want to understand her pain points with the current system and what matters to her in the new one."*
 
 AInalyst asks clarifying questions: how much time is available, has anyone from the warehouse already been interviewed, are there specific hypotheses that need testing. The BA answers. AInalyst proposes a structured 45-minute interview with three blocks of questions: current situation, pain points, and success criteria. The BA says "add one more question about the 1C integration," and AInalyst adds it. "Save it," and the plan is recorded.
 
@@ -88,9 +88,9 @@ After a session is complete, the BA hands off the raw material (transcript, note
 
 **Gaps are only visible when it's too late.** The BA realizes they didn't ask about something important only after the stakeholder has moved on to something else, gone on a business trip, or left the project altogether. The gap in knowledge is discovered not right after the interview, but in the middle of Chapter 5, when the requirements have already been written.
 
-**Contradictions between stakeholders go unnoticed.** Sergei said one thing, Anna said another, but the BA processed the interviews separately and didn't cross-check them. The conflict surfaces at the prioritization or approval stage, when it's much harder to fix.
+**Contradictions between stakeholders go unnoticed.** James said one thing, Rachel said another, but the BA processed the interviews separately and didn't cross-check them. The conflict surfaces at the prioritization or approval stage, when it's much harder to fix.
 
-**The stakeholder registry doesn't grow.** In every interview, the stakeholder names other participants ("talk to Maxim from IT too" or "we have a chief accountant, Vera, she also works with the system"). The BA nods, but these people never make it into the registry. A month later it turns out a key stakeholder was never included in the process at all.
+**The stakeholder registry doesn't grow.** In every interview, the stakeholder names other participants ("talk to Max from IT too" or "we have a chief accountant, Grace, she also works with the system"). The BA nods, but these people never make it into the registry. A month later it turns out a key stakeholder was never included in the process at all.
 
 **A Change Request means "start over."** A CR comes in. The BA doesn't know: which of the already collected requirements are affected? Which stakeholders need additional elicitation? What has changed in what they said before? This is several hours of manual work.
 
@@ -102,7 +102,7 @@ After a session is complete, the BA hands off the raw material (transcript, note
 
 **Change Request analysis.** `save_cr_elicitation_analysis` takes a CR description and determines: which previously collected requirements are affected, who needs additional elicitation and about what, and what information is now outdated. This is a technical input for Task 5.4.
 
-**Automatic registry expansion.** `update_stakeholder_registry` adds a new stakeholder or updates an existing one. It's called right during interview analysis: "Sergei mentioned Maxim" leads to one request, and Maxim is in the registry with a note on the source.
+**Automatic registry expansion.** `update_stakeholder_registry` adds a new stakeholder or updates an existing one. It's called right during interview analysis: "James mentioned Max" leads to one request, and Max is in the registry with a note on the source.
 
 ### Value for the BA
 
@@ -118,11 +118,11 @@ After a session is complete, the BA hands off the raw material (transcript, note
 
 ### How to use it: an example
 
-The BA has interviewed Elena and hands the transcript to AInalyst: *"Here's the recording of our conversation [text]. What's in it?"*
+The BA has interviewed Sarah and hands the transcript to AInalyst: *"Here's the recording of our conversation [text]. What's in it?"*
 
-AInalyst analyzes it and returns: three functional requirements, one business problem with a metric ("recounting inventory currently takes 4 hours, needs to be under 30 minutes"), two business rules that need to be checked against a possible contradiction with what Sergei said, a gap ("Elena said nothing about mobile access, needs clarifying"), and: "Elena mentioned Denis from IT support. Add him to the stakeholder registry?"
+AInalyst analyzes it and returns: three functional requirements, one business problem with a metric ("recounting inventory currently takes 4 hours, needs to be under 30 minutes"), two business rules that need to be checked against a possible contradiction with what James said, a gap ("Sarah said nothing about mobile access, needs clarifying"), and: "Sarah mentioned Dennis from IT support. Add him to the stakeholder registry?"
 
-The BA says "yes, add him," and Denis is in the registry. "Save the results," and the artifact is ready.
+The BA says "yes, add him," and Dennis is in the registry. "Save the results," and the artifact is ready.
 
 ---
 
@@ -160,9 +160,9 @@ The BA checks the quality of the collected material **before** moving forward. T
 
 ### How to use it: an example
 
-The BA says: *"Here's my artifact from the interview with Elena [text]. Check whether it's ready to move forward."*
+The BA says: *"Here's my artifact from the interview with Sarah [text]. Check whether it's ready to move forward."*
 
-AInalyst reviews it and returns: "🟡 FR-003: 'the system should work quickly,' has no specific metric. I recommend clarifying with Elena: 'What is the maximum system response time that's acceptable to you, 3 seconds, 5 seconds?'" One issue, one specific action. The BA checks with Elena, gets the answer "no more than 3 seconds," updates the artifact, and says "close it." The artifact is confirmed.
+AInalyst reviews it and returns: "🟡 FR-003: 'the system should work quickly,' has no specific metric. I recommend clarifying with Sarah: 'What is the maximum system response time that's acceptable to you, 3 seconds, 5 seconds?'" One issue, one specific action. The BA checks with Sarah, gets the answer "no more than 3 seconds," updates the artifact, and says "close it." The artifact is confirmed.
 
 ---
 
@@ -202,7 +202,7 @@ The BA adapts finished artifacts for different audiences, chooses the right form
 
 **The BA stops being a bottleneck.** When everyone gets a document they can understand, the questions "what does this mean?" and "can you explain?" disappear. Stakeholders read the artifact and make decisions instead of waiting for a verbal explanation from the BA.
 
-**No one falls out of the communication loop.** `check_communication_schedule` is "don't forget to write to Sergei" implemented at the system level. This matters especially during periods of intense work, when it's easy to miss that someone hasn't gotten an update in a while.
+**No one falls out of the communication loop.** `check_communication_schedule` is "don't forget to write to James" implemented at the system level. This matters especially during periods of intense work, when it's easy to miss that someone hasn't gotten an update in a while.
 
 **Provability.** The communication log is the BA's protection in a conflict. "You never warned us about this risk" is answered with "here's the message from February 3rd, here's the read date." A professional position.
 
@@ -250,13 +250,13 @@ A cross-cutting task throughout Chapter 4. The BA diagnoses stakeholder engageme
 
 ### How to use it: an example
 
-The BA notices that Mikhail (the head of IT, who was initially skeptical) unexpectedly started actively supporting the project at the last meeting, but immediately afterward wrote an email to the PM raising objections, bypassing the BA.
+The BA notices that Michael (the head of IT, who was initially skeptical) unexpectedly started actively supporting the project at the last meeting, but immediately afterward wrote an email to the PM raising objections, bypassing the BA.
 
-*"Mikhail agrees at the meeting, but then writes emails to the PM with objections. What's going on?"*
+*"Michael agrees at the meeting, but then writes emails to the PM with objections. What's going on?"*
 
-AInalyst: "🟡 Signal. Two likely scenarios: 1) Mikhail doesn't feel his opinion is genuinely being taken into account at meetings, so he agrees publicly but tries to influence things privately. 2) He has specific concerns he doesn't want to voice in front of the group. I recommend a short 1:1 with Mikhail, with no agenda, just to hear his real position. Update his status in the registry?"
+AInalyst: "🟡 Signal. Two likely scenarios: 1) Michael doesn't feel his opinion is genuinely being taken into account at meetings, so he agrees publicly but tries to influence things privately. 2) He has specific concerns he doesn't want to voice in front of the group. I recommend a short 1:1 with Michael, with no agenda, just to hear his real position. Update his status in the registry?"
 
-The BA holds the 1:1 and learns that Mikhail has a specific fear about the workload on his team. The problem turns out to be solvable; no one had simply asked. They update the status in the registry: was "skeptic," became "on board, needs monitoring."
+The BA holds the 1:1 and learns that Michael has a specific fear about the workload on his team. The problem turns out to be solvable; no one had simply asked. They update the status in the registry: was "skeptic," became "on board, needs monitoring."
 
 ---
 

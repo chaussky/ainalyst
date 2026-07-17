@@ -24,7 +24,7 @@ The contexts differ. The analysts differ. But the principle is the same: you des
 
 ### Situation
 
-It's month five of a project to implement an assortment management system at a large retail chain. The key business analyst, Anton, the person who knows every stakeholder personally, remembers why FR-034 was dropped back in March, and keeps three unresolved approval conditions with the CFO in his head, suddenly resigns.
+It's month five of a project to implement an assortment management system at a large retail chain. The key business analyst, Anthony, the person who knows every stakeholder personally, remembers why FR-034 was dropped back in March, and keeps three unresolved approval conditions with the CFO in his head, suddenly resigns.
 
 The project has: 14 stakeholders with different histories of engagement, 87 requirements in various statuses, 9 approved change requests, and a Steering Committee presentation in three weeks.
 
@@ -38,7 +38,7 @@ With AInalyst, this story looks different.
 
 She opens AInalyst, looks at the project folder, and types one line:
 
-> **Julia:** I just started on the assortment-2026 project. The previous business analyst, Anton, resigned. Tell me about the current state: stakeholders, open questions, unresolved approvals.
+> **Julia:** I just started on the assortment-2026 project. The previous business analyst, Anthony, resigned. Tell me about the current state: stakeholders, open questions, unresolved approvals.
 
 ### How AInalyst responds
 
@@ -49,15 +49,15 @@ AInalyst reads all the project artifacts and produces a structured summary in a 
 > **AInalyst:** Project assortment-2026, active phase: lifecycle. Here's the current context:
 >
 > **Stakeholders (14 people):**
-> Irina Sokolova (CFO): Key Player, Manage Closely. Status: ⚠️ Concerned since March 28. Last interaction: April 3, an email that went unanswered. Needs attention.
-> Mikhail Drozdov (IT Director): Context Setter. Status: ✅ Champion. Active.
+> Karen Foster (CFO): Key Player, Manage Closely. Status: ⚠️ Concerned since March 28. Last interaction: April 3, an email that went unanswered. Needs attention.
+> Michael Turner (IT Director): Context Setter. Status: ✅ Champion. Active.
 > *(12 more participants with history and statuses)*
 >
 > **Open approval questions:**
 > 3 conditional approvals are still open. One is overdue: the CFO's condition on FR-037 (security review) had a deadline of April 1.
 >
 > **Recent decisions from the Decision Log:**
-> March 15: FR-034 moved to v2. Reason: high cost, low priority after prioritization. Decision made by Anton together with the Product Owner.
+> March 15: FR-034 moved to v2. Reason: high cost, low priority after prioritization. Decision made by Anthony together with the Product Owner.
 > March 22: CR-008 (ERP integration) approved with a condition: implement asynchronously.
 >
 > Would you like me to show the full stakeholder registry, or should we jump straight to the unresolved approvals?
@@ -70,12 +70,12 @@ Julia continues:
 
 ---
 
-> **AInalyst:** Irina Sokolova moved to Concerned status on March 28, after the CR-008 meeting. In the Decision Log: she raised security concerns about the ERP integration. Anton promised a security review by April 1.
+> **AInalyst:** Karen Foster moved to Concerned status on March 28, after the CR-008 meeting. In the Decision Log: she raised security concerns about the ERP integration. Anthony promised a security review by April 1.
 >
 > CR-008 condition: "FR-037 must pass a security review before development of the integration module begins."
-> Status: ⛔ Overdue. Owner: Anton (resigned).
+> Status: ⛔ Overdue. Owner: Anthony (resigned).
 >
-> Recommendation: write to Irina today, introduce yourself, explain the situation, and agree on a new deadline. Should I draft the email?
+> Recommendation: write to Karen today, introduce yourself, explain the situation, and agree on a new deadline. Should I draft the email?
 
 ---
 
@@ -98,7 +98,7 @@ Context that usually lives in one person's head and disappears with them is here
 
 On the first request, AInalyst pulls from several sources at once: it reads the stakeholder registry with its status change history (Chapter 3 MCP server, `planning_mcp`), retrieves the Decision Log with every recorded decision (Task 4.5 MCP server, `elicitation_collaborate_mcp`), and checks approval statuses and open conditions (Task 5.5 MCP server, `requirements_approve_mcp`). The traceability graph (Task 5.1 MCP server, `requirements_traceability_mcp`) lets it instantly answer, for any requirement, "where did this come from and what depends on it."
 
-All this information accumulated in structured JSON files in the `governance_plans/data/` folder throughout the project, every time Anton saved interview results, updated a stakeholder status, recorded a decision, or closed a CR. Automatically, as a side effect of routine work.
+All this information accumulated in structured JSON files in the `governance_plans/data/` folder throughout the project, every time Anthony saved interview results, updated a stakeholder status, recorded a decision, or closed a CR. Automatically, as a side effect of routine work.
 
 For Julia this means: she doesn't get a folder of documents that takes hours to read, she gets a living, structured project memory she can talk to right away.
 
@@ -118,11 +118,11 @@ The same analyst. The same platform feature. Two projects, and fundamentally dif
 
 **Project B:** A credit risk assessment system at a bank. Requirements are formally defined. There are regulatory obligations to the central bank, with an audit in a year. The team wants Scrum: "that's how we always do it."
 
-BA Pavel opens AInalyst for each project.
+BA Paul opens AInalyst for each project.
 
-### What Pavel does: Project A
+### What Paul does: Project A
 
-> **Pavel:** New project. HR startup, we're automating employee onboarding. Small team, the client doesn't fully know what they want yet, requirements will definitely change.
+> **Paul:** New project. HR startup, we're automating employee onboarding. Small team, the client doesn't fully know what they want yet, requirements will definitely change.
 
 ### How AInalyst responds: Project A
 
@@ -132,7 +132,7 @@ BA Pavel opens AInalyst for each project.
 > 1. How often will requirements change: rarely, regularly, or constantly?
 > 2. How high is the uncertainty about the end result right now?
 
-> **Pavel:** Constantly. Uncertainty is high.
+> **Paul:** Constantly. Uncertainty is high.
 
 > **AInalyst:** Recommendation: **Adaptive (Agile)**.
 >
@@ -144,9 +144,9 @@ BA Pavel opens AInalyst for each project.
 
 ---
 
-### What Pavel does: Project B
+### What Paul does: Project B
 
-> **Pavel:** New project. A bank, credit risk assessment system. Requirements are laid out in regulatory documents, the team wants Scrum. There are central bank regulatory requirements, and an audit in a year.
+> **Paul:** New project. A bank, credit risk assessment system. Requirements are laid out in regulatory documents, the team wants Scrum. There are central bank regulatory requirements, and an audit in a year.
 
 ### How AInalyst responds: Project B
 
@@ -169,7 +169,7 @@ BA Pavel opens AInalyst for each project.
 
 ---
 
-### What Pavel gets
+### What Paul gets
 
 In the first case: quick confirmation of the right intuitive call. In the second: protection from a mistake he might not have caught himself, one that would only have surfaced during the audit.
 
@@ -191,13 +191,13 @@ The `planning` phase MCP server (`planning_mcp`), when the `select_ba_approach` 
 
 ### Situation
 
-An insurance company. BA Dmitry conducted a 90-minute interview with the director of claims settlement. The transcript is a raw Zoom recording: interruptions, digressions, two places where the interviewee contradicts herself, and one place where she clearly contradicts something the IT director said a week earlier. The file sits in the `inputs/` folder.
+An insurance company. BA Daniel conducted a 90-minute interview with the director of claims settlement. The transcript is a raw Zoom recording: interruptions, digressions, two places where the interviewee contradicts herself, and one place where she clearly contradicts something the IT director said a week earlier. The file sits in the `inputs/` folder.
 
-Dmitry could spend two hours reviewing it by hand. Instead he writes one line.
+Daniel could spend two hours reviewing it by hand. Instead he writes one line.
 
-### What Dmitry does
+### What Daniel does
 
-> **Dmitry:** Process the interview transcript with Elena Vasilyeva from the file interview_elena_20260401.txt
+> **Daniel:** Process the interview transcript with Helen Walsh from the file interview_helen_20260401.txt
 
 ### How AInalyst responds
 
@@ -221,19 +221,19 @@ Dmitry could spend two hours reviewing it by hand. Instead he writes one line.
 > Unclear: how should the system handle claims on foreign policies?
 >
 > **Contradiction ⚠️:**
-> Elena says: "the tax authority database integration is urgent, it's blocking our work." The IT director (interview from March 25): "the tax authority integration is next year, there's no capacity right now." Needs resolution.
+> Helen says: "the tax authority database integration is urgent, it's blocking our work." The IT director (interview from March 25): "the tax authority integration is next year, there's no capacity right now." Needs resolution.
 
-> **Dmitry:** Elena mentioned someone named Maxim from IT support, add him to the stakeholder registry.
+> **Daniel:** Helen mentioned someone named Max from IT support, add him to the stakeholder registry.
 
-> **AInalyst:** Added. Maxim (last name not mentioned): IT support, specific role not yet determined. Source: interview with Vasilyeva, April 1, 2026, min. 47. Recommend confirming his last name and role at the next contact.
+> **AInalyst:** Added. Max (last name not mentioned): IT support, specific role not yet determined. Source: interview with Walsh, April 1, 2026, min. 47. Recommend confirming his last name and role at the next contact.
 
 ---
 
-### What Dmitry gets
+### What Daniel gets
 
-Instead of two hours of manual review, a structured artifact in minutes. Every requirement is captured, the key metric wasn't lost, and the gaps and the contradiction are visible right away, while Elena still remembers the conversation and can easily answer a follow-up.
+Instead of two hours of manual review, a structured artifact in minutes. Every requirement is captured, the key metric wasn't lost, and the gaps and the contradiction are visible right away, while Helen still remembers the conversation and can easily answer a follow-up.
 
-Maxim, whom Dmitry "caught out of the corner of his ear," is now in the stakeholder registry with a note on where he came from.
+Max, whom Daniel "caught out of the corner of his ear," is now in the stakeholder registry with a note on where he came from.
 
 ### What happens under the hood
 
@@ -251,13 +251,13 @@ AInalyst reads the file from `inputs/` and passes it to the Task 4.2 MCP server 
 
 ### Situation
 
-A manufacturing holding. The project: a unified production planning system. Over three weeks, BA Natalia conducted four interviews: the production director, the chief technologist, the head of supply chain, and the CFO. She processed each interview separately, got the requirements, saved the artifacts, and moved on.
+A manufacturing holding. The project: a unified production planning system. Over three weeks, BA Natalie conducted four interviews: the production director, the chief technologist, the head of supply chain, and the CFO. She processed each interview separately, got the requirements, saved the artifacts, and moved on.
 
 Everything was fine until she asked the platform to compare the results.
 
-### What Natalia does
+### What Natalie does
 
-> **Natalia:** Compare the results of the four interviews for the production-planning project. I want to understand where there are contradictions and where stakeholders agree.
+> **Natalie:** Compare the results of the four interviews for the production-planning project. I want to understand where there are contradictions and where stakeholders agree.
 
 ### How AInalyst responds
 
@@ -271,19 +271,19 @@ Everything was fine until she asked the platform to compare the results.
 >
 > **Conflict 🔴, requires resolution:**
 > Speed vs. data accuracy.
-> Production director (Borisov): "The main thing is replanning speed. We need data within 15 minutes, even if it's slightly stale."
-> CFO (Kuznetsova): "We need 100% real-time accuracy for financial reporting. Speed is secondary."
+> Production director (Bennett): "The main thing is replanning speed. We need data within 15 minutes, even if it's slightly stale."
+> CFO (Reed): "We need 100% real-time accuracy for financial reporting. Speed is secondary."
 >
 > This is a fundamental architectural conflict: real-time vs. batch processing. Both requirements can't be satisfied without an explicit trade-off.
 >
 > **Gap, nobody clarified:**
 > Who has the authority to manually adjust the plan? This is critical for the business rules.
 >
-> **Recommendation:** Hold a joint workshop with Borisov and Kuznetsova. There's no moving to architecture without a decision on data.
+> **Recommendation:** Hold a joint workshop with Bennett and Reed. There's no moving to architecture without a decision on data.
 >
 > Log the conflict as an open issue?
 
-> **Natalia:** Yes. And suggest a workshop structure: what to discuss, in what order.
+> **Natalie:** Yes. And suggest a workshop structure: what to discuss, in what order.
 
 > **AInalyst:** Conflict logged. A 60-minute workshop structure:
 >
@@ -297,7 +297,7 @@ Everything was fine until she asked the platform to compare the results.
 
 ---
 
-### What Natalia gets
+### What Natalie gets
 
 A conflict that could have surfaced at the requirements approval stage (and demanded rework of already-finished artifacts) is caught now, while it's still easy to resolve with a single workshop. There's a concrete action plan.
 
@@ -317,17 +317,17 @@ The Task 4.2 MCP server (`elicitation_conduct_mcp`), when `compare_elicitation_r
 
 ### Situation
 
-A government organization. A document archive digitization project. BA Sergei has been on it for three months.
+A government organization. A document archive digitization project. BA Steven has been on it for three months.
 
-The deputy IT director, Vladimir, was initially one of the biggest supporters: he helped organize interviews, proposed ideas himself, showed up to every meeting. In the stakeholder registry: Champion status.
+The deputy IT director, David, was initially one of the biggest supporters: he helped organize interviews, proposed ideas himself, showed up to every meeting. In the stakeholder registry: Champion status.
 
-Three weeks ago something changed. Vladimir replies to emails after 3-4 days, briefly. He was silent through the entire last meeting. And yesterday the director wrote to Sergei: "Vladimir sent me a list of project risks. Let's discuss."
+Three weeks ago something changed. David replies to emails after 3-4 days, briefly. He was silent through the entire last meeting. And yesterday the director wrote to Steven: "David sent me a list of project risks. Let's discuss."
 
-Sergei is confused and doesn't know how to interpret what's happening.
+Steven is confused and doesn't know how to interpret what's happening.
 
-### What Sergei does
+### What Steven does
 
-> **Sergei:** Vladimir used to actively support the project. For the last three weeks: he doesn't answer emails, stays silent in meetings, and yesterday wrote to the director going around me with a list of risks. What's going on and what should I do?
+> **Steven:** David used to actively support the project. For the last three weeks: he doesn't answer emails, stays silent in meetings, and yesterday wrote to the director going around me with a list of risks. What's going on and what should I do?
 
 ### How AInalyst responds
 
@@ -335,18 +335,18 @@ Sergei is confused and doesn't know how to interpret what's happening.
 
 > **AInalyst:** Signal 🟡, requires a proactive response. This is a pattern of passive resistance. Three most likely causes:
 >
-> **Option 1: Vladimir doesn't feel heard.**
+> **Option 1: David doesn't feel heard.**
 > He agrees publicly because disagreeing feels awkward in his role. He influences privately through the director, the only channel available to him. Tactic: a 1-on-1 meeting with no agenda. "I sense you have concerns. I want to hear them directly."
 >
 > **Option 2: Specific technical concerns that are awkward to raise publicly.**
 > He may understand something about the architecture or integration that others don't see. He stays silent in meetings because the audience isn't technical. Tactic: the same 1-on-1, with a specific ask: "Tell me more about the risks you described to the director."
 >
 > **Option 3: A shift in leadership positioning or personal interests.**
-> Something changed in the organizational context: new priorities, a threat to budget or to Vladimir's authority. Tactic: carefully probe through indirect sources before meeting directly.
+> Something changed in the organizational context: new priorities, a threat to budget or to David's authority. Tactic: carefully probe through indirect sources before meeting directly.
 >
 > Which option seems most likely to you?
 
-> **Sergei:** Probably option 2, he definitely has technical knowledge the rest of us don't. I'll go through a 1-on-1. Update his registry status: was Champion, now Concerned. I've scheduled a meeting for Friday.
+> **Steven:** Probably option 2, he definitely has technical knowledge the rest of us don't. I'll go through a 1-on-1. Update his registry status: was Champion, now Concerned. I've scheduled a meeting for Friday.
 
 > **AInalyst:** Updated. History:
 > Champion (since January 2026) → Concerned (April 14, 2026).
@@ -357,11 +357,11 @@ Sergei is confused and doesn't know how to interpret what's happening.
 
 ---
 
-### What Sergei gets
+### What Steven gets
 
 Instead of a nagging "something's wrong, I don't know what," a concrete diagnosis with three hypotheses and tactics for each. A specific next step.
 
-And importantly: the status change history is recorded. If Sergei goes on leave or leaves the project, the next analyst will open the registry and see this whole history. No need to explain "why Vladimir suddenly became a problem."
+And importantly: the status change history is recorded. If Steven goes on leave or leaves the project, the next analyst will open the registry and see this whole history. No need to explain "why David suddenly became a problem."
 
 ### What happens under the hood
 
@@ -379,19 +379,19 @@ AInalyst passes the situation description to the Task 4.5 MCP server (`elicitati
 
 ### Situation
 
-A financial company. A credit underwriting process automation project has been running for three months. BA Kirill just joined the team, the previous analyst moved to another project.
+A financial company. A credit underwriting process automation project has been running for three months. BA Kevin just joined the team, the previous analyst moved to another project.
 
 A lot has piled up: a Confluence page with 60 requirements, four interview transcripts in a shared folder, several email threads with stakeholders, an informal priority table in Excel. All of it exists scattered, no unified structure, no traceability, no decision history.
 
 Starting from scratch and re-asking stakeholders about things already discussed would mean losing their trust. But moving forward while keeping everything in different places is a risk too.
 
-Kirill decides to plug AInalyst into the live project right now.
+Kevin decides to plug AInalyst into the live project right now.
 
-### What Kirill does
+### What Kevin does
 
 He starts the `planning` phase and begins not with a "new project," but by describing what's already there:
 
-> **Kirill:** I need to connect the platform to a project that's already underway. The project is called credit-underwriting-2026. It's been running three months, I just joined. Requirements are collected on a Confluence page called "Underwriting / System Requirements." I know six stakeholders: Petrova (business owner), Gromov (IT architect), Smirnova (compliance), and three more business analysts. Four interviews have been done, transcripts are in inputs/.
+> **Kevin:** I need to connect the platform to a project that's already underway. The project is called credit-underwriting-2026. It's been running three months, I just joined. Requirements are collected on a Confluence page called "Underwriting / System Requirements." I know six stakeholders: Peters (business owner), Grant (IT architect), Sheridan (compliance), and three more business analysts. Four interviews have been done, transcripts are in inputs/.
 
 ### How AInalyst responds
 
@@ -403,7 +403,7 @@ He starts the `planning` phase and begins not with a "new project," but by descr
 > Project credit-underwriting-2026 registered. Active phase: planning.
 >
 > **Step 2: Adding stakeholders.**
-> Added all six. Petrova: provisionally Key Player (confirm influence/interest when you can). Statuses set to Unknown, update after you've met them.
+> Added all six. Peters: provisionally Key Player (confirm influence/interest when you can). Statuses set to Unknown, update after you've met them.
 >
 > **Step 3: Pulling requirements from Confluence.**
 > Reading the page "Underwriting / System Requirements"...
@@ -414,7 +414,7 @@ He starts the `planning` phase and begins not with a "new project," but by descr
 > (B) Normalize the format on import, will take a bit longer
 > (C) Show me the first 10 first so I can decide
 
-> **Kirill:** Let's go with option B, normalize on import.
+> **Kevin:** Let's go with option B, normalize on import.
 
 > **AInalyst:** Normalizing... done.
 > Imported 58 requirements: 51 correctly structured, 7 flagged as "needs clarification", incomplete wording, no acceptance criteria. I'll show you the list later.
@@ -423,7 +423,7 @@ He starts the `planning` phase and begins not with a "new project," but by descr
 
 ---
 
-> **Kirill:** Objectives aren't recorded yet, but Petrova mentioned cutting application review time from 5 days to 2. That's the main goal.
+> **Kevin:** Objectives aren't recorded yet, but Peters mentioned cutting application review time from 5 days to 2. That's the main goal.
 
 > **AInalyst:** Recording business objective: BG-001, "Reduce credit application review time from 5 to 2 business days by Q3 2026."
 >
@@ -431,7 +431,7 @@ He starts the `planning` phase and begins not with a "new project," but by descr
 
 ---
 
-### What Kirill gets
+### What Kevin gets
 
 In one working session, not starting from zero, but picking up exactly where the previous analyst left off:
 
@@ -460,17 +460,17 @@ When initializing an existing project, AInalyst uses the `planning` phase MCP se
 
 A tech startup. The team is building a B2B SaaS product for managing corporate business travel. Eight people: three developers, a designer, a QA engineer, a CEO, and a CPO who is de facto the product manager.
 
-CPO Alexey understands the market and users well. But he has no experience with requirements methodology: requirements live in his head, in Notion as scattered notes, and in team chats. The architect has already rebuilt the booking module twice because "it turned out that wasn't what was meant."
+CPO Alex understands the market and users well. But he has no experience with requirements methodology: requirements live in his head, in Notion as scattered notes, and in team chats. The architect has already rebuilt the booking module twice because "it turned out that wasn't what was meant."
 
 Hiring a BA is expensive and premature. But continuing to work as they are means continuing to rebuild.
 
-Alexey decides to try AInalyst on his own.
+Alex decides to try AInalyst on his own.
 
-### What Alexey does
+### What Alex does
 
 He doesn't prepare anything special and doesn't study BABOK. He just opens AInalyst and describes the situation in his own words:
 
-> **Alexey:** We're building a B2B SaaS for corporate business travel. I'm the CPO, we don't have a BA. I want to get our requirements in order, right now it's all in my head and in Notion. We keep rebuilding things because of misunderstandings. Where do I start?
+> **Alex:** We're building a B2B SaaS for corporate business travel. I'm the CPO, we don't have a BA. I want to get our requirements in order, right now it's all in my head and in Notion. We keep rebuilding things because of misunderstandings. Where do I start?
 
 ### How AInalyst responds
 
@@ -484,21 +484,21 @@ He doesn't prepare anything special and doesn't study BABOK. He just opens AInal
 >
 > Shall we start? Tell me: who pays for your product, and who uses it, are those different people?
 
-> **Alexey:** The company's HR director or CFO pays. It's used by the employees themselves who travel, and by travel coordinators who arrange everything.
+> **Alex:** The company's HR director or CFO pays. It's used by the employees themselves who travel, and by travel coordinators who arrange everything.
 
 > **AInalyst:** Good, you've got three different groups with potentially different needs. Let's go through each one. One more question: is there anyone on your team whose opinion of the product is critical, like a CTO or someone who's worked directly with clients?
 
 ---
 
-*Twenty minutes into the conversation, AInalyst has built a map of 8 stakeholders with roles and preliminary statuses. Alexey didn't know the term "stakeholder registry," now he has a structured artifact for BABOK Task 3.2.*
+*Twenty minutes into the conversation, AInalyst has built a map of 8 stakeholders with roles and preliminary statuses. Alex didn't know the term "stakeholder registry," now he has a structured artifact for BABOK Task 3.2.*
 
 ---
 
-> **Alexey:** Okay, stakeholders are clear. What's next?
+> **Alex:** Okay, stakeholders are clear. What's next?
 
 > **AInalyst:** Now, objectives. You mentioned you keep rebuilding the booking module. Try to put it this way: what should change in your product or process in six months for you to say "we did this right"?
 
-> **Alexey:** Well... travel coordinators stop calling us with questions every day. And developers stop rebuilding the same thing twice.
+> **Alex:** Well... travel coordinators stop calling us with questions every day. And developers stop rebuilding the same thing twice.
 
 > **AInalyst:** Good, those are two different objectives, let's make them measurable:
 
@@ -509,9 +509,9 @@ He doesn't prepare anything special and doesn't study BABOK. He just opens AInal
 
 ---
 
-From there, AInalyst walks Alexey step by step through structuring the requirements, suggesting they record what's already built and what's planned, asking clarifying questions wherever the wording is vague, and pointing out contradictions between what's written in Notion and what Alexey describes verbally.
+From there, AInalyst walks Alex step by step through structuring the requirements, suggesting they record what's already built and what's planned, asking clarifying questions wherever the wording is vague, and pointing out contradictions between what's written in Notion and what Alex describes verbally.
 
-### What Alexey gets
+### What Alex gets
 
 After a few working sessions, no consultants, no BABOK courses, no new hire:
 
@@ -520,7 +520,7 @@ After a few working sessions, no consultants, no BABOK courses, no new hire:
 - A structured requirements repository with traceability
 - An understanding of why specific requirements conflict with each other, and how to resolve it
 
-Methodology here became the platform's job, not his. Alexey brought knowledge of the product and the market. The rest, process, structure, artifacts, AInalyst took on itself.
+Methodology here became the platform's job, not his. Alex brought knowledge of the product and the market. The rest, process, structure, artifacts, AInalyst took on itself.
 
 ### What happens under the hood
 
@@ -538,15 +538,15 @@ AInalyst adapts its questions and explanations for a non-technical audience: BAB
 
 ### Situation
 
-A logistics company. The project: a route management system. Work is on track, everything on schedule. Then the commercial director sends BA Andrey a short message: "We need to add real-time CO2 emissions calculation for each route, for the ESG report. That's simple, right?"
+A logistics company. The project: a route management system. Work is on track, everything on schedule. Then the commercial director sends BA Andrew a short message: "We need to add real-time CO2 emissions calculation for each route, for the ESG report. That's simple, right?"
 
-At first glance, a small addition. But Andrey is experienced enough to be wary. "Simple" from a stakeholder's mouth is one of the most dangerous signals in requirements management.
+At first glance, a small addition. But Andrew is experienced enough to be wary. "Simple" from a stakeholder's mouth is one of the most dangerous signals in requirements management.
 
 He opens the Platform.
 
-### What Andrey does
+### What Andrew does
 
-> **Andrey:** Open a change request: the commercial director wants to add real-time CO2 emissions calculation for each route. Says it's simple.
+> **Andrew:** Open a change request: the commercial director wants to add real-time CO2 emissions calculation for each route. Says it's simple.
 
 ### How AInalyst responds
 
@@ -569,7 +569,7 @@ He opens the Platform.
 >
 > Send it to the commercial director for approval?
 
-> **Andrey:** Yes. And prepare the arguments for why real time isn't possible without consequences.
+> **Andrew:** Yes. And prepare the arguments for why real time isn't possible without consequences.
 
 > **AInalyst:** Done. Arguments for the meeting:
 >
@@ -579,7 +579,7 @@ He opens the Platform.
 
 ---
 
-### What Andrey gets
+### What Andrew gets
 
 He goes to the commercial director not with a refusal, but with data and an alternative. The conversation shifts from "you don't want to do this" to "here's why it has to be this way and how we'll implement it." The CR gets accepted, but in a form that doesn't create technical debt.
 
@@ -601,7 +601,7 @@ The Task 5.4 MCP server (`requirements_assess_changes_mcp`), on receiving a CR, 
 
 ### Situation
 
-One tool, three fundamentally different scenarios. BA Tatiana works on three projects at once. Each has its own audience, its own constraints, its own expectations for prioritization.
+One tool, three fundamentally different scenarios. BA Rachel works on three projects at once. Each has its own audience, its own constraints, its own expectations for prioritization.
 
 **Project A:** An internal HR tool, 25 requirements, three stakeholders, a deadline in two weeks. Needs to be fast.
 
@@ -611,7 +611,7 @@ One tool, three fundamentally different scenarios. BA Tatiana works on three pro
 
 ### Project A: MoSCoW in 20 minutes
 
-> **Tatiana:** I need to prioritize 25 requirements for the HR tool. Three stakeholders, deadline in two weeks. Fast.
+> **Rachel:** I need to prioritize 25 requirements for the HR tool. Three stakeholders, deadline in two weeks. Fast.
 
 > **AInalyst:** I recommend MoSCoW, the fastest method for a small set with a tight deadline. Starting a prioritization session. I'll name the requirements one at a time, tell me for each: Must / Should / Could / Won't.
 
@@ -619,7 +619,7 @@ One tool, three fundamentally different scenarios. BA Tatiana works on three pro
 
 ### Project B: WSJF for an Agile team
 
-> **Tatiana:** For the content management project I need numeric prioritization. 60 requirements, we work in Scrum, need a score for each.
+> **Rachel:** For the content management project I need numeric prioritization. 60 requirements, we work in Scrum, need a score for each.
 
 > **AInalyst:** I recommend WSJF (Weighted Shortest Job First), the standard for SAFe and Agile teams, it produces a numeric score from business value, time criticality, and risk. For 60 requirements this is the right fit.
 >
@@ -629,7 +629,7 @@ One tool, three fundamentally different scenarios. BA Tatiana works on three pro
 
 ### Project C: A workshop with directors
 
-> **Tatiana:** Tomorrow there's a workshop with three directors to prioritize product features. Non-technical audience, an hour max, needs to be visual, no formulas or numbers.
+> **Rachel:** Tomorrow there's a workshop with three directors to prioritize product features. Non-technical audience, an hour max, needs to be visual, no formulas or numbers.
 
 > **AInalyst:** I recommend the Impact/Effort Matrix. Two dimensions, no math involved, the directors place features themselves on a "high/low impact" vs "high/low effort" grid. Intuitive, gets everyone involved.
 >
@@ -637,7 +637,7 @@ One tool, three fundamentally different scenarios. BA Tatiana works on three pro
 
 The day after the workshop:
 
-> **Tatiana:** Entering the workshop scores: FR-001, high impact, low effort; FR-007, high impact, high effort; FR-019, low impact, high effort...
+> **Rachel:** Entering the workshop scores: FR-001, high impact, low effort; FR-007, high impact, high effort; FR-019, low impact, high effort...
 
 > **AInalyst:** Building the matrix...
 >
@@ -650,7 +650,7 @@ The day after the workshop:
 >
 > What do you want to do?
 
-### What Tatiana gets
+### What Rachel gets
 
 On each project, a method that fits the context, not "always MoSCoW." And crucially: the dependency violation on Project C surfaced right there in the workshop, while the directors were still in the room, not during sprint planning when changing anything is already painful.
 
@@ -680,21 +680,21 @@ Three different projects, three different tools. One principle: the platform doe
 
 ### Context A: Five Whys in 20 minutes
 
-> **BA Igor:** I need to quickly figure out why patients are waiting so long for test results. I have 20 minutes.
+> **BA Ian:** I need to quickly figure out why patients are waiting so long for test results. I have 20 minutes.
 
 > **AInalyst:** Starting Five Whys, the fastest method for a linear problem.
 >
 > Why do patients wait a long time for results?
 
-> **Igor:** The lab enters results into the system late.
+> **Ian:** The lab enters results into the system late.
 
 > **AInalyst:** Why does the lab enter them late?
 
-> **Igor:** Lab technicians enter data manually at the end of their shift, not right away.
+> **Ian:** Lab technicians enter data manually at the end of their shift, not right away.
 
 > **AInalyst:** Why do they enter it at the end of the shift?
 
-> **Igor:** Because the data entry system only sits on one computer in the corner, it's inconvenient to walk over there after every test.
+> **Ian:** Because the data entry system only sits on one computer in the corner, it's inconvenient to walk over there after every test.
 
 > **AInalyst:** Root cause: an **infrastructure constraint**, not enough data entry points. This isn't a motivation or process problem.
 >
@@ -702,21 +702,21 @@ Three different projects, three different tools. One principle: the platform doe
 >
 > Log it?
 
-*Two questions, and the root cause is found. Igor walks into the meeting with the chief physician with a concrete diagnosis, not a vague "we need to improve processes."*
+*Two questions, and the root cause is found. Ian walks into the meeting with the chief physician with a concrete diagnosis, not a vague "we need to improve processes."*
 
 ### Context B: Fishbone for a multifactorial problem
 
-> **BA Olga:** The bank is losing clients. The causes are definitely multifactorial, complaints about everything. We need the full picture.
+> **BA Olivia:** The bank is losing clients. The causes are definitely multifactorial, complaints about everything. We need the full picture.
 
 > **AInalyst:** For a multifactorial problem I recommend Fishbone (Ishikawa diagram). It organizes causes by category and makes sure you don't miss a whole branch of factors.
 
 > Suggested categories for a banking context: Service, Technology, Process, Personnel, Product, External Environment. Which of these are definitely relevant?
 
-> **Olga:** All six.
+> **Olivia:** All six.
 
 > **AInalyst:** Let's start with Technology, that usually has the most concrete factors. What do you know about technology-related problems?
 
-> **Olga:** Opening an account takes 4 days, there's no online application. The mobile app crashes on transfers above 100,000. There's no integration with the Faster Payments System.
+> **Olivia:** Opening an account takes 4 days, there's no online application. The mobile app crashes on transfers above 100,000. There's no integration with the Faster Payments System.
 
 > **AInalyst:** Logged three factors under the Technology branch. Move on to Service?
 
@@ -752,13 +752,13 @@ The Task 6.1 MCP server (`current_state_mcp`) supports three modes through the `
 
 ### Situation
 
-An EdTech company. A new LMS (learning management system) is launching. BA Ksenia is starting the analysis phase, needing to record the future-state objectives.
+An EdTech company. A new LMS (learning management system) is launching. BA Chloe is starting the analysis phase, needing to record the future-state objectives.
 
 The first attempt at wording is the kind that usually comes out of a strategy meeting.
 
-### What Ksenia does
+### What Chloe does
 
-> **Ksenia:** Recording the project objective: improve employee engagement in training.
+> **Chloe:** Recording the project objective: improve employee engagement in training.
 
 ### How AInalyst responds
 
@@ -773,7 +773,7 @@ The first attempt at wording is the kind that usually comes out of a strategy me
 >
 > Let's try rewording it. What's currently measured in your training system? Do you have data on completion rate or other metrics?
 
-> **Ksenia:** Yes, completion rate right now is 34%. We want 70% by year end.
+> **Chloe:** Yes, completion rate right now is 34%. We want 70% by year end.
 
 > **AInalyst:** New wording: "Increase corporate training program completion rate from 34% to 70% by Q4 2026."
 >
@@ -786,7 +786,7 @@ The first attempt at wording is the kind that usually comes out of a strategy me
 >
 > Log it as BG-001?
 
-> **Ksenia:** Yes. Now run gap analysis.
+> **Chloe:** Yes. Now run gap analysis.
 
 > **AInalyst:** Gap analysis for the LMS-2026 project:
 >
@@ -806,7 +806,7 @@ The first attempt at wording is the kind that usually comes out of a strategy me
 
 ---
 
-### What Ksenia gets
+### What Chloe gets
 
 Instead of a vague "improve engagement," a concrete, measurable target and four clearly described gaps with priorities. The gap analysis shows immediately: not everything needs fixing, closing GAP-001 and GAP-002 is enough to make the objective achievable.
 
@@ -897,7 +897,7 @@ The Task 7.2 MCP server (`requirements_analysis_mcp`), when `check_req_quality` 
 
 ### Situation
 
-A pharmacy chain, 150 retail locations nationwide. The director of development, Ignatiev, has set the goal: roll out a new inventory management system across all locations at once by September 1. "Big bang." The team is afraid to push back, the director is used to fast results.
+A pharmacy chain, 150 retail locations nationwide. The director of development, Hastings, has set the goal: roll out a new inventory management system across all locations at once by September 1. "Big bang." The team is afraid to push back, the director is used to fast results.
 
 BA Vera senses something is off. Past major rollouts at the company have ended in chaos, but that's not something people say openly. She doesn't have the authority to say "no," but she has an obligation to present the data.
 
@@ -1058,11 +1058,11 @@ The Task 4.4 MCP server (`elicitation_communicate_mcp`), when `prepare_communica
 
 An enterprise software company. Over three years it delivered three similar projects: an HR portal, an internal CRM, and a document management system. Each time the BA wrote requirements for authentication, the role model, and the notification system from a blank page.
 
-Now a fourth project is starting: an employee self-service portal. BA Artem knows: authentication, roles, and notifications are coming again. He decides not to reinvent the wheel.
+Now a fourth project is starting: an employee self-service portal. BA Adam knows: authentication, roles, and notifications are coming again. He decides not to reinvent the wheel.
 
-### What Artem does
+### What Adam does
 
-> **Artem:** Starting a new project: self-service-portal-2026. Before writing requirements for authentication and the role model, check if there's anything reusable from past projects.
+> **Adam:** Starting a new project: self-service-portal-2026. Before writing requirements for authentication and the role model, check if there's anything reusable from past projects.
 
 ### How AInalyst responds
 
@@ -1084,7 +1084,7 @@ Now a fourth project is starting: an employee self-service portal. BA Artem know
 >
 > On the role model (`roles`, `rbac`) found another 11 requirements. Show them?
 
-> **Artem:** Yes. And tell me right away, of what you found, what can be added to the new project unchanged?
+> **Adam:** Yes. And tell me right away, of what you found, what can be added to the new project unchanged?
 
 > **AInalyst:** Of the 19 requirements found:
 >
@@ -1096,7 +1096,7 @@ Now a fourth project is starting: an employee self-service portal. BA Artem know
 >
 > Add the 13 requirements to the self-service-portal-2026 repository, keeping a link back to the source?
 
-> **Artem:** Yes, add them.
+> **Adam:** Yes, add them.
 
 > **AInalyst:** Done. 13 requirements added to the self-service-portal-2026 repository. Source and version preserved for traceability. Total savings: roughly 3-4 hours of drafting and approvals.
 >
@@ -1104,7 +1104,7 @@ Now a fourth project is starting: an employee self-service portal. BA Artem know
 
 ---
 
-### What Artem gets
+### What Adam gets
 
 Three to four hours of work he'd already done isn't done again. 13 requirements in the new repository from minute one, all previously approved on past projects. And importantly: traceability is preserved, if a problem ever turns up in a source requirement, the platform will flag every project where it's used.
 
@@ -1124,11 +1124,11 @@ The Task 5.2 MCP server (`requirements_maintain_mcp`), when `find_reusable_requi
 
 ### Situation
 
-A large telecom. The project: a self-service portal for B2B clients: contract management, invoice viewing, support tickets. The repository has grown to 55 requirements. BA Svetlana suspects some of them appeared "along the way," with no link to real business objectives. And one critical assumption that nobody has verified is bothering her too.
+A large telecom. The project: a self-service portal for B2B clients: contract management, invoice viewing, support tickets. The repository has grown to 55 requirements. BA Stephanie suspects some of them appeared "along the way," with no link to real business objectives. And one critical assumption that nobody has verified is bothering her too.
 
-### What Svetlana does
+### What Stephanie does
 
-> **Svetlana:** Check business alignment for all 55 requirements on the b2b-portal-2026 project. I want to find orphan requirements, ones not linked to any business objective.
+> **Stephanie:** Check business alignment for all 55 requirements on the b2b-portal-2026 project. I want to find orphan requirements, ones not linked to any business objective.
 
 ### How AInalyst responds
 
@@ -1146,7 +1146,7 @@ A large telecom. The project: a self-service portal for B2B clients: contract ma
 >
 > What do you want to do with each one?
 
-> **Svetlana:** Accepted for all seven. Now I want to log a critical assumption: we're assuming the ERP system supports a REST API for exporting invoice data. This hasn't been confirmed.
+> **Stephanie:** Accepted for all seven. Now I want to log a critical assumption: we're assuming the ERP system supports a REST API for exporting invoice data. This hasn't been confirmed.
 
 > **AInalyst:** Logging assumption AS-001:
 > "The ERP system (SAP version x.x) supports a REST API and provides an endpoint for exporting a customer's invoice data."
@@ -1157,13 +1157,13 @@ A large telecom. The project: a self-service portal for B2B clients: contract ma
 >
 > Assign an owner to verify the assumption?
 
-> **Svetlana:** Yes, owner is Gromov (IT architect). Deadline: April 18.
+> **Stephanie:** Yes, owner is Grant (IT architect). Deadline: April 18.
 
 ---
 
-### What Svetlana gets
+### What Stephanie gets
 
-Seven "extra" requirements removed before development, that's several days of developer work saved that wasn't needed. A critical assumption is logged, its risk assessed, and four dependent requirements are flagged "don't validate until confirmed." Gromov knows what's expected of him and by when.
+Seven "extra" requirements removed before development, that's several days of developer work saved that wasn't needed. A critical assumption is logged, its risk assessed, and four dependent requirements are flagged "don't validate until confirmed." Grant knows what's expected of him and by when.
 
 If the assumption hadn't been logged, it might have been discovered mid-development, when a developer tried to call an API that doesn't exist.
 
@@ -1185,15 +1185,15 @@ The Task 7.3 MCP server (`requirements_analysis_mcp`), when `check_business_alig
 
 A manufacturing company. The current MES (manufacturing execution system) is outdated: it breaks down, doesn't integrate with new equipment, and vendor support ends in a year. The board is waiting for a recommendation: what to do.
 
-BA Igor put together three options. Now he doesn't just need to choose, he needs to defend the choice in front of people who will ask uncomfortable questions.
+BA Ian put together three options. Now he doesn't just need to choose, he needs to defend the choice in front of people who will ask uncomfortable questions.
 
 **Option A, Build:** Build a custom system. Budget 40 million rubles, 18-month timeline.
 **Option B, Buy SAP ME:** Purchase and implement an off-the-shelf solution. Budget 25 million rubles, 8-month timeline.
 **Option C, Hybrid Odoo:** Implement Odoo customized for manufacturing specifics. Budget 18 million rubles, 12-month timeline.
 
-### What Igor does
+### What Ian does
 
-> **Igor:** I need to compare three options for replacing the MES and prepare a recommendation for the board. Options: Build (40M / 18 mo), SAP ME (25M / 8 mo), Hybrid Odoo (18M / 12 mo). Critical requirements: SCADA loop integration, compliance with Russian production accounting regulations, scalability to 3 new plants.
+> **Ian:** I need to compare three options for replacing the MES and prepare a recommendation for the board. Options: Build (40M / 18 mo), SAP ME (25M / 8 mo), Hybrid Odoo (18M / 12 mo). Critical requirements: SCADA loop integration, compliance with Russian production accounting regulations, scalability to 3 new plants.
 
 ### How AInalyst responds
 
@@ -1203,7 +1203,7 @@ BA Igor put together three options. Now he doesn't just need to choose, he needs
 >
 > You mentioned SCADA loop integration as a critical requirement. Clarify: does each option have a ready connector, or will custom development be needed?
 
-> **Igor:** SAP ME, no ready connector for our SCADA. Needs custom development, that's +4-5 months and +8-10 million on top. Build, we write it ourselves, already included in the estimate. Odoo, there's a ready module, tested on a similar production line.
+> **Ian:** SAP ME, no ready connector for our SCADA. Needs custom development, that's +4-5 months and +8-10 million on top. Build, we write it ourselves, already included in the estimate. Odoo, there's a ready module, tested on a similar production line.
 
 > **AInalyst:** Key point: this changes the picture for Option B. Realistic parameters for SAP ME: budget 33-35 million, timeline 12-13 months. Recalculating the scores...
 >
@@ -1231,11 +1231,11 @@ BA Igor put together three options. Now he doesn't just need to choose, he needs
 >
 > Put together a Recommendation Document for the board?
 
-> **Igor:** Yes. And add a section on "what happens if we do nothing," for the directors who'll want to defer the decision.
+> **Ian:** Yes. And add a section on "what happens if we do nothing," for the directors who'll want to defer the decision.
 
 ---
 
-### What Igor gets
+### What Ian gets
 
 A recommendation with numbers that can be checked. The board sees not "we think Odoo is better" but a weighted matrix with a formula and parameters that can be challenged, and recalculated with different weights right there in the meeting if needed.
 
@@ -1251,7 +1251,7 @@ The Task 7.6 MCP server (`requirements_analysis_design_mcp`), when `add_value_as
 
 ## Conclusion: why this works, and for whom
 
-Reading all 17 scenarios above closely, one common thread stands out: in none of them does the business analyst type commands, recall tool names, or dig through documentation. Julia just talks about the project. Andrey describes the commercial director's request. Roman asks to "check the requirements." Ordinary human sentences, and the platform does the work.
+Reading all 17 scenarios above closely, one common thread stands out: in none of them does the business analyst type commands, recall tool names, or dig through documentation. Julia just talks about the project. Andrew describes the commercial director's request. Roman asks to "check the requirements." Ordinary human sentences, and the platform does the work.
 
 That's not an accident and not a marketing trick. It's an architectural decision.
 

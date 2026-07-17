@@ -75,7 +75,7 @@ The BA builds a registry of all project participants, determines their influence
 
 **The stakeholder registry is a "dead" document.** The BA creates a table at the start of the project, files it away, and never opens it again. Two months later it still has 4 outdated rows, even though there are really 12 stakeholders by now.
 
-**The communication strategy lives in someone's head.** The BA remembers "write to Sergey once a week, Anna only on request," but nothing is written down. If the BA changes or gets sick, all of that information simply gets lost.
+**The communication strategy lives in someone's head.** The BA remembers "write to James once a week, Rachel only on request," but nothing is written down. If the BA changes or gets sick, all of that information simply gets lost.
 
 **Conflicts of interest go unnoticed in advance.** The BA doesn't realize two key stakeholders have opposing goals until an open conflict breaks out, and by then it's a matter of firefighting instead of managed facilitation.
 
@@ -99,22 +99,22 @@ The BA builds a registry of all project participants, determines their influence
 
 - **The stakeholder registry finally lives.** This is probably the hardest artifact to maintain in BA practice. The platform builds its update into the workflow: after every interview, AInalyst offers to add the participants who were mentioned. The registry grows organically instead of requiring a separate effort to "refresh the table."
 - **Nothing gets lost when a project changes hands.** The new BA opens the registry and sees who's involved, how to treat them, when they last talked, and whether there were engagement issues. All the context that usually lives in one person's head is documented.
-- **Early detection of engagement risk.** When Sergey stops answering emails, it gets logged as a 🟡 signal, and the platform suggests possible reasons and tactics. The BA reacts proactively, before the problem becomes critical.
+- **Early detection of engagement risk.** When James stops answering emails, it gets logged as a 🟡 signal, and the platform suggests possible reasons and tactics. The BA reacts proactively, before the problem becomes critical.
 - **The communication schedule removes the nagging worry of "did I forget to write to someone."** Task 4.4 checks the schedule and produces a prioritized list of who to write to today. The BA doesn't have to keep it in their head.
 
 ### How to use it: an example
 
 At the start of the project, the BA knows only two people. They tell AInalyst:
 
-> *"Stakeholders: Irina, CFO, very influential, very interested, supports the project. Mikhail, head of IT, high influence, medium interest, skeptical."*
+> *"Stakeholders: Patricia, CFO, very influential, very interested, supports the project. Michael, head of IT, high influence, medium interest, skeptical."*
 
-AInalyst immediately determines: Irina is a Key Player (Manage Closely, weekly), Mikhail is a Context Setter with a negative attitude (Keep Satisfied, needs special attention). The registry is saved.
+AInalyst immediately determines: Patricia is a Key Player (Manage Closely, weekly), Michael is a Context Setter with a negative attitude (Keep Satisfied, needs special attention). The registry is saved.
 
-A week later, during an interview, Irina mentions Tatiana, the chief accountant, who also works with the system. The BA tells AInalyst:
+A week later, during an interview, Patricia mentions Diane, the chief accountant, who also works with the system. The BA tells AInalyst:
 
-> *"Irina mentioned Tatiana, the chief accountant, who also uses the system."*
+> *"Patricia mentioned Diane, the chief accountant, who also uses the system."*
 
-And Tatiana gets added to the registry with a note about the source.
+And Diane gets added to the registry with a note about the source.
 
 ---
 
@@ -144,7 +144,7 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 
 ### Value for the BA
 
-- **The BA gets "cover" for saying no.** When yet another change request shows up, the BA can say: "Under our process, this is a CR that needs to be submitted in this format and approved by Sergey." That's not a refusal, it's a process. Professional scope protection.
+- **The BA gets "cover" for saying no.** When yet another change request shows up, the BA can say: "Under our process, this is a CR that needs to be submitted in this format and approved by James." That's not a refusal, it's a process. Professional scope protection.
 - **The first CR doesn't turn into a crisis.** If governance isn't documented, the first serious change request causes chaos: nobody knows who decides, how to assess impact, or whether already-completed work needs to be redone. When governance is in place, it's just a routine procedure.
 - **The level of formality matches the context.** A small internal tool doesn't get buried in bureaucracy. A mission-critical system gets the right level of control. The platform helps find that balance instead of forcing a single standard.
 
@@ -152,7 +152,7 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 
 The BA says:
 
-> *"This is a critical project: an order management system for 300 users. Decisions are made by Viktor (CEO), Olga (Product Owner), and me as Lead BA."*
+> *"This is a critical project: an order management system for 300 users. Decisions are made by Victor (CEO), Susan (Product Owner), and me as Lead BA."*
 
 AInalyst suggests the High-criticality template: a formal CR process with a CAB, weekly review, and escalation from BA to PM to Steering Committee. The BA can accept it as-is or adjust it. One phrase saves it.
 
