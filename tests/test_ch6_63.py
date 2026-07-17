@@ -217,19 +217,20 @@ class TestImportRisksFromContext(BaseMCPTest):
         })
 
     def _write_cs_state(self, project_id: str = PROJECT):
+        # REAL 6.1 structure: root_causes at the top level, each with a `root_cause` field.
         self._write_json(f"{_safe(project_id)}_current_state.json", {
-            "rca": {
-                "root_causes": [
-                    {"description": "Outdated processes"},
-                ]
-            }
+            "root_causes": [
+                {"rca_id": "RCA-001", "problem_statement": "P", "root_cause": "Outdated processes"},
+            ]
         })
 
     def _write_cs_needs(self, project_id: str = PROJECT):
+        # REAL 6.1 structure: key `needs`, field `need_title`, capitalized priority.
         self._write_json(f"{_safe(project_id)}_business_needs.json", {
-            "business_needs": [
-                {"id": "BN-001", "title": "HR Automation", "priority": "high"},
-                {"id": "BN-002", "title": "Cost Reduction", "priority": "medium"},
+            "needs": [
+                {"id": "BN-001", "need_title": "HR Automation", "priority": "High"},
+                {"id": "BN-002", "need_title": "Cost Reduction", "priority": "Medium"},
+                {"id": "BN-003", "need_title": "Compliance", "priority": "Critical"},
             ]
         })
 
@@ -294,8 +295,8 @@ class TestImportRisksFromContext(BaseMCPTest):
         import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         data = _load_assessment()
         needs_drafts = [r for r in data["risks"] if "business_needs" in r.get("import_source", "")]
-        # Only BN-001 (high), not BN-002 (medium)
-        self.assertEqual(len(needs_drafts), 1)
+        # BN-001 (High) and BN-003 (Critical) import; BN-002 (Medium) does not.
+        self.assertEqual(len(needs_drafts), 2)
 
     def test_import_from_elicitation(self):
         _make_scope()

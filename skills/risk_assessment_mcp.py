@@ -324,10 +324,10 @@ def import_risks_from_context(
         # --- 6.1: root causes ---
         cs_data = _safe_load_json(_cs_state_path(src_id))
         if cs_data:
-            rca = cs_data.get("rca", {})
-            root_causes = rca.get("root_causes", []) or rca.get("contributing_factors", [])
+            # 6.1 stores root_causes at the TOP level; each record's cause is `root_cause`.
+            root_causes = cs_data.get("root_causes", [])
             for rc in root_causes:
-                desc = rc if isinstance(rc, str) else rc.get("description", "")
+                desc = rc if isinstance(rc, str) else rc.get("root_cause", rc.get("description", ""))
                 if desc:
                     drafts.append({
                         "status": "draft",
@@ -345,11 +345,12 @@ def import_risks_from_context(
         # --- 6.1: high-priority business needs ---
         needs_data = _safe_load_json(_cs_needs_path(src_id))
         if needs_data:
-            needs = needs_data.get("business_needs", [])
+            # 6.1 stores needs under `needs`; title is `need_title`; priority is capitalized.
+            needs = needs_data.get("needs", [])
             for need in needs:
-                if need.get("priority") == "high":
+                if str(need.get("priority", "")).lower() in ("high", "critical"):
                     bn_id = need.get("id", "BN-?")
-                    title = need.get("title", need.get("description", ""))
+                    title = need.get("need_title", need.get("title", need.get("description", "")))
                     if title:
                         drafts.append({
                             "status": "draft",
