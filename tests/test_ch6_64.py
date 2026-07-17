@@ -249,10 +249,10 @@ class TestScopeChangeStrategy(BaseMCPTest):
         self.assertIn("⚠️", result)  # warning present
 
     def test_autoimport_from_6_1(self):
-        """Test import of business_needs from 6.1."""
+        """Test import of business_needs from 6.1 (REAL 6.1 structure)."""
         needs_data = {
-            "business_needs": [
-                {"id": "BN-001", "title": "CRM Required", "priority": "high"}
+            "needs": [
+                {"id": "BN-001", "need_title": "CRM Required", "priority": "High"}
             ]
         }
         needs_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_business_needs.json")
@@ -266,16 +266,19 @@ class TestScopeChangeStrategy(BaseMCPTest):
         self.assertEqual(bns[0]["id"], "BN-001")
 
     def test_autoimport_from_6_2(self):
-        """Test import of business_goals from 6.2."""
-        fs_data = {"goals": [{"id": "BG-001", "title": "NPS growth by 15%"}]}
-        fs_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_future_state.json")
-        with open(fs_path, "w", encoding="utf-8") as f:
-            json.dump(fs_data, f)
+        """Test import of business_goals from 6.2 (REAL 6.2: goals live in the
+        future_state_goals.json file with a goal_title field)."""
+        goals_data = {"goals": [{"id": "BG-001", "goal_title": "NPS growth by 15%"}]}
+        goals_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_future_state_goals.json")
+        with open(goals_path, "w", encoding="utf-8") as f:
+            json.dump(goals_data, f)
 
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         strategy = _load_strategy()
         bgs = strategy["imported_context"]["business_goals"]
         self.assertTrue(len(bgs) > 0)
+        self.assertEqual(bgs[0]["id"], "BG-001")
+        self.assertEqual(bgs[0]["title"], "NPS growth by 15%")
 
     def test_autoimport_from_6_3(self):
         """Test import of risks from 6.3."""
@@ -1176,6 +1179,36 @@ class TestPipeline(BaseMCPTest):
             save_change_strategy(project_id=PROJECT)
             args = mock_sa.call_args[0]
             self.assertIn("6_4_change_strategy", args[1])
+
+    def test_save_push_traceability_is_idempotent_no_duplicate_satisfies(self):
+        """Re-running save_change_strategy(push=True) must NOT duplicate satisfies
+        links. The solution node is deduplicated, but the satisfies links were
+        appended unconditionally each call (same class as the 6.3 threatens bug)."""
+        _setup_full_pipeline()
+        strategy = _load_strategy()
+        strategy["imported_context"]["business_goals"] = [{"id": "BG-001", "title": "Goal"}]
+        from skills.change_strategy_mcp import _save_strategy
+        _save_strategy(strategy, PROJECT)
+
+        repo = {
+            "project": PROJECT,
+            "requirements": [{"id": "BG-001", "type": "business_goal", "title": "Goal",
+                              "version": "1.0", "status": "confirmed", "added": TODAY}],
+            "links": [],
+        }
+        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        with open(repo_path, "w", encoding="utf-8") as f:
+            json.dump(repo, f)
+
+        with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅"
+            save_change_strategy(project_id=PROJECT, push_to_traceability=True)
+            save_change_strategy(project_id=PROJECT, push_to_traceability=True)  # re-finalize
+
+        with open(repo_path, encoding="utf-8") as f:
+            updated = json.load(f)
+        satisfies = [l for l in updated.get("links", []) if l.get("relation") == "satisfies"]
+        self.assertEqual(len(satisfies), 1, "satisfies links must not be duplicated on re-push")
 
 
 if __name__ == "__main__":

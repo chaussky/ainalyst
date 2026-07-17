@@ -47,6 +47,7 @@ REPO_FILENAME = "traceability_repo.json"
 # Files from previous tasks (optional sources)
 BUSINESS_NEEDS_FILENAME = "business_needs.json"
 FUTURE_STATE_FILENAME = "future_state.json"
+FUTURE_STATE_GOALS_FILENAME = "future_state_goals.json"  # 6.2 stores goals separately
 GAP_FILENAME = "gap_analysis.json"
 RISK_ASSESSMENT_FILENAME = "risk_assessment.json"
 
@@ -231,32 +232,32 @@ def scope_change_strategy(
         source_ids = [project_id]
 
     for src_id in source_ids:
-        # 6.1: business_needs
+        # 6.1: business needs (6.1 stores them under the `needs` key, field `need_title`)
         needs_path = data_path(src_id, f"{_safe(src_id)}_{BUSINESS_NEEDS_FILENAME}")
         needs_data = _safe_load_json(needs_path)
         if needs_data:
-            for bn in needs_data.get("business_needs", []):
+            for bn in needs_data.get("needs", []):
                 imported_bn.append({
                     "id": bn.get("id", ""),
-                    "title": bn.get("title", bn.get("description", ""))[:80],
+                    "title": bn.get("need_title", bn.get("title", bn.get("description", "")))[:80],
                     "priority": bn.get("priority", ""),
                     "source_project": src_id,
                 })
         else:
             warnings.append(f"⚠️ 6.1 business_needs not found for '{src_id}'")
 
-        # 6.2: future_state (goals)
-        fs_path = data_path(src_id, f"{_safe(src_id)}_{FUTURE_STATE_FILENAME}")
-        fs_data = _safe_load_json(fs_path)
-        if fs_data:
-            for bg in fs_data.get("goals", []):
+        # 6.2: goals (6.2 stores goals in future_state_goals.json, field `goal_title`)
+        goals_path = data_path(src_id, f"{_safe(src_id)}_{FUTURE_STATE_GOALS_FILENAME}")
+        goals_data = _safe_load_json(goals_path)
+        if goals_data:
+            for bg in goals_data.get("goals", []):
                 imported_bg.append({
                     "id": bg.get("id", ""),
-                    "title": bg.get("title", bg.get("description", ""))[:80],
+                    "title": bg.get("goal_title", bg.get("title", bg.get("description", "")))[:80],
                     "source_project": src_id,
                 })
         else:
-            warnings.append(f"⚠️ 6.2 future_state not found for '{src_id}'")
+            warnings.append(f"⚠️ 6.2 goals not found for '{src_id}'")
 
         # 6.3: risk_assessment
         risk_path = data_path(src_id, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
@@ -990,6 +991,12 @@ def save_change_strategy(
                 repo = json.load(f)
 
             existing_ids = {r["id"] for r in repo.get("requirements", [])}
+            # Existing satisfies edges — so a re-run (re-finalize) does not duplicate them.
+            existing_satisfies = {
+                (l.get("from"), l.get("to"))
+                for l in repo.get("links", [])
+                if l.get("relation") == "satisfies"
+            }
             sol_id = "SOL-001"
 
             # solution node
@@ -1010,7 +1017,7 @@ def save_change_strategy(
             bg_list = strategy.get("imported_context", {}).get("business_goals", [])
             for bg in bg_list:
                 bg_id = bg.get("id", "")
-                if bg_id and bg_id in existing_ids:
+                if bg_id and bg_id in existing_ids and (sol_id, bg_id) not in existing_satisfies:
                     repo.setdefault("links", []).append({
                         "from": sol_id,
                         "to": bg_id,
@@ -1018,6 +1025,7 @@ def save_change_strategy(
                         "rationale": f"Solution scope fulfills {bg_id}",
                         "added": str(date.today()),
                     })
+                    existing_satisfies.add((sol_id, bg_id))
                     added_links += 1
 
             if added_links:
