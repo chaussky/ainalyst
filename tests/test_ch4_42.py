@@ -405,6 +405,72 @@ class TestUpdateStakeholderRegistry(BaseMCPTest):
         """Always returns a string."""
         self.assertIsInstance(self._call(), str)
 
+    # --- living-document (read-merge) behavior ---
+
+    def _call_capture(self, **overrides):
+        """Call the tool and return (result_string, rendered_md_content)."""
+        defaults = {
+            "project_name": "crm_upgrade",
+            "session_source": "Interview 2025-03-17",
+            "new_stakeholders_json": self.NEW_STAKEHOLDERS_VALID,
+        }
+        kwargs = {**defaults, **overrides}
+        with patch("skills.elicitation_conduct_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            result = mod42.update_stakeholder_registry(**kwargs)
+            md = mock_sa.call_args.args[0] if mock_sa.call_args else ""
+        return result, md
+
+    def _load_registry(self, project_name="crm_upgrade"):
+        from skills.common import data_path, normalize_project_id
+        path = data_path(project_name, f"{normalize_project_id(project_name)}_stakeholder_registry.json")
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_registry_accumulates_across_calls(self):
+        """The registry is a living document: a later call's report shows people
+        added in earlier calls, not only the current batch."""
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Alice Stone", "role": "CFO", "attitude": "Neutral"}]))
+        _result, md = self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Bob Reeves", "role": "CTO", "attitude": "Champion"}]))
+        self.assertIn("Alice Stone", md, "earlier stakeholder must persist in the registry")
+        self.assertIn("Bob Reeves", md, "current stakeholder must be present")
+
+    def test_existing_stakeholder_updated_not_duplicated(self):
+        """Re-submitting the same person updates in place (partial, non-empty fields)
+        instead of creating a duplicate; untouched fields are preserved."""
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Carol Diaz", "role": "PM", "attitude": "Neutral", "department": "Ops"}]))
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Carol Diaz", "role": "PM", "attitude": "Champion"}]))
+        reg = self._load_registry()
+        carols = [s for s in reg["stakeholders"] if s.get("name") == "Carol Diaz"]
+        self.assertEqual(len(carols), 1, "must not duplicate the same person")
+        self.assertEqual(carols[0]["attitude"], "Champion", "non-empty field must be updated")
+        self.assertEqual(carols[0].get("department"), "Ops", "untouched field must be preserved")
+
+    def test_merge_by_role_when_name_empty(self):
+        """When name is empty, identity falls back to role."""
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "", "role": "Head of Legal", "attitude": "Neutral"}]))
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "", "role": "Head of Legal", "attitude": "Blocker"}]))
+        reg = self._load_registry()
+        legal = [s for s in reg["stakeholders"] if s.get("role") == "Head of Legal"]
+        self.assertEqual(len(legal), 1, "same role with empty name must merge")
+        self.assertEqual(legal[0]["attitude"], "Blocker")
+
+    def test_duplicate_role_warning_for_new_person(self):
+        """Adding a NEW person whose role matches a DIFFERENT existing stakeholder
+        surfaces a soft duplicate warning referencing the existing one."""
+        self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Dave Ruiz", "role": "Backend Developer"}]))
+        _result, md = self._call_capture(new_stakeholders_json=json.dumps(
+            [{"name": "Erin Park", "role": "Backend Developer"}]))
+        self.assertIn("Possibly the same person", md)
+        self.assertIn("Dave Ruiz", md)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
