@@ -65,7 +65,7 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 **Test coverage**
 - 1,556 tests across 24 files — 100% passing
-- Full coverage of all 21 MCP servers
+- Full coverage of all 21 BABOK MCP servers
 - Integration pipeline tests for every BABOK chapter
 
 **Licensing**

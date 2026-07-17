@@ -19,6 +19,13 @@ import os
 import sys
 from pathlib import Path
 
+# Make non-ASCII output (box glyphs, arrows) safe on Windows consoles (cp1251/cp866)
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # ---------------------------------------------------------------------------
 # Project root — for absolute paths in .mcp.json (ADR-REVIEW item 10)
 # ---------------------------------------------------------------------------
@@ -51,7 +58,7 @@ PHASES = {
     "planning": {
         "label": "Chapter 3 — Business Analysis Planning",
         "hint": "New project, approach selection, stakeholder map, BA plan",
-        "tokens_saved": "~33,000",
+        "tokens_saved": "33,000",
         "servers": {
             **BASE_SERVER,
         }
@@ -60,7 +67,7 @@ PHASES = {
     "elicitation": {
         "label": "Chapter 4 — Elicitation and Collaboration",
         "hint": "Interviews, workshops, surveys, meeting minutes",
-        "tokens_saved": "~27,000",
+        "tokens_saved": "27,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch4-41": _server("skills/elicitation_mcp.py"),
@@ -74,7 +81,7 @@ PHASES = {
     "lifecycle": {
         "label": "Chapter 5 — Requirements Lifecycle Management",
         "hint": "Traceability, prioritization, CRs, approval, maintenance",
-        "tokens_saved": "~27,000",
+        "tokens_saved": "27,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch5-51": _server("skills/requirements_traceability_mcp.py"),
@@ -88,7 +95,7 @@ PHASES = {
     "analysis": {
         "label": "Chapter 6 — Strategy Analysis",
         "hint": "Current state analysis (as-is), future state (to-be), gap analysis, risk assessment, change strategy",
-        "tokens_saved": "~28,000",
+        "tokens_saved": "28,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch6-61": _server("skills/current_state_mcp.py"),
@@ -101,7 +108,7 @@ PHASES = {
     "design": {
         "label": "Chapter 7 — Requirements Analysis and Design",
         "hint": "Specification, verification, validation, architecture, design, value assessment",
-        "tokens_saved": "~18,000",
+        "tokens_saved": "18,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch7-71": _server("skills/requirements_spec_mcp.py"),
