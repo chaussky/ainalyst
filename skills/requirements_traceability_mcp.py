@@ -597,9 +597,18 @@ def check_coverage(
             for lnk in links
         )
 
-        # Business requirements have no "source" above them — that's expected
-        if req_type == "business":
+        # Root requirement types have no "source" above them — that's expected
+        # (a business need is the root of the derivation chain, like a business req).
+        if req_type in ("business", "business_need"):
             has_source = True
+        # A test's source is the requirement it verifies: tests link via `verifies`
+        # (from=test -> to=req), never `derives`, so a test that verifies something
+        # is not an orphan.
+        elif req_type == "test":
+            has_source = has_source or any(
+                lnk["relation"] == "verifies" and lnk["from"] == req_id
+                for lnk in links
+            )
 
         issues = []
         if not has_source:

@@ -456,6 +456,49 @@ class TestCheckCoverage(BaseMCPTest):
         # FR-002 has no links — it should be mentioned in the report
         self.assertIn("FR-002", result)
 
+    def test_test_node_with_verifies_is_not_orphan(self):
+        """A test (type=test) linked via `verifies` has its source — the
+        requirement it verifies — and must NOT be flagged 'no source'. Tests link
+        via verifies, never derives, so a derives-only source check false-flags them."""
+        with patch("skills.requirements_traceability_mcp.save_artifact"):
+            mod51.add_trace_link(
+                project_name=PROJECT, from_id="TC-001", to_id="FR-001",
+                relation="verifies", rationale="the test verifies FR-001", remove=False,
+            )
+        result = self._call()
+        marker = "requirements with no source"
+        low = result.lower()
+        self.assertIn(marker, low)  # FR-002 is a genuine orphan -> section exists
+        section = low.split(marker, 1)[1].split("\n## ", 1)[0]
+        self.assertNotIn(
+            "`tc-001`", section,
+            "TC-001 verifies FR-001; it must not be an orphan with no source",
+        )
+
+    def test_business_need_root_is_not_orphan(self):
+        """A business_need is a root of the derivation chain (goals derive from it),
+        so it has no upward source and must NOT be flagged 'no source' — like `business`."""
+        safe_name = PROJECT.lower().replace(" ", "_")
+        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["requirements"].append({
+            "id": "BN-001", "type": "business_need", "title": "Cut approval time",
+            "version": "1.0", "status": "confirmed", "added": "2026-01-01",
+        })
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+
+        result = self._call()
+        marker = "requirements with no source"
+        low = result.lower()
+        self.assertIn(marker, low)
+        section = low.split(marker, 1)[1].split("\n## ", 1)[0]
+        self.assertNotIn(
+            "`bn-001`", section,
+            "business_need is a root; it must not be an orphan with no source",
+        )
+
     def test_returns_string(self):
         """Always returns a string."""
         self.assertIsInstance(self._call(), str)
