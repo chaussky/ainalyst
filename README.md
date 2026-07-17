@@ -286,5 +286,6 @@ The change history is in [CHANGELOG.md](CHANGELOG.md).
 
 For questions about commercial licensing, custom development (additional MCP servers), or deployment in a closed/air-gapped environment with local models:
 
-**Anatoly Chaussky**
-Email: chaussky@gmail.com
+**Anatoly Chaussky**  
+Email: chaussky@gmail.com  
+LinkedIn: https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
