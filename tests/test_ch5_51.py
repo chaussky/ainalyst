@@ -432,6 +432,24 @@ class TestCheckCoverage(BaseMCPTest):
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
+    def test_child_with_derives_link_is_not_orphan(self):
+        """A requirement that derives from a parent must NOT be flagged 'no source'.
+
+        Canonical direction is from=child -> to=parent (FR-001 derives BR-001,
+        added in setUp). Regression: has_source used to check to==req_id (inverted),
+        which wrongly marked every child requirement as an orphan.
+        """
+        result = self._call()
+        # Header of the orphan table (distinct from the summary row "No source (orphan)")
+        marker = "requirements with no source"
+        low = result.lower()
+        if marker in low:
+            section = low.split(marker, 1)[1].split("\n## ", 1)[0]
+            self.assertNotIn(
+                "`fr-001`", section,
+                "FR-001 derives from BR-001; it must not be listed as an orphan with no source",
+            )
+
     def test_orphan_fr_detected(self):
         """FR-002 without a link — the audit should flag the problem."""
         result = self._call()

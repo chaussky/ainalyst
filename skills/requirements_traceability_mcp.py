@@ -579,12 +579,16 @@ def check_coverage(
 
         links = _find_links(repo, req_id)
 
+        # Canonical derives direction: from=child -> to=parent (the child derives
+        # from its source). So a requirement HAS a source when it is the `from`
+        # of a derives link, and HAS an implementation when something derives from
+        # it (children point in as `to`) or a component satisfies it.
         has_source = any(
-            lnk["relation"] == "derives" and lnk["to"] == req_id
+            lnk["relation"] == "derives" and lnk["from"] == req_id
             for lnk in links
         )
         has_impl = any(
-            (lnk["relation"] == "derives" and lnk["from"] == req_id) or
+            (lnk["relation"] == "derives" and lnk["to"] == req_id) or
             (lnk["relation"] == "satisfies" and lnk["to"] == req_id)
             for lnk in links
         )
