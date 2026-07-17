@@ -1,61 +1,62 @@
-# Вклад в проект AIналитик / Contributing to AInalyst
+# Contributing to AInalyst
 
-Спасибо за интерес к проекту! Мы рады вкладу сообщества.
-
----
-
-## Прежде чем начать
-
-Ознакомьтесь с [CLA.md](CLA.md) — Contributor License Agreement.  
-Отправляя Pull Request, вы автоматически принимаете его условия.
+Thanks for your interest in the project! We welcome contributions from the community.
 
 ---
 
-## Как внести вклад
+## Before you start
 
-### Сообщить об ошибке
+Please review [CLA.md](CLA.md) — the Contributor License Agreement.
+By submitting a Pull Request, you automatically agree to its terms.
 
-Откройте [Issue](https://github.com/chaussky/ainalyst/issues) с описанием:
-- Что вы делали
-- Что ожидали получить
-- Что произошло на самом деле
-- Версия Python, OS
+---
 
-### Предложить улучшение
+## How to contribute
 
-Откройте Issue с тегом `enhancement` — опишите идею и зачем она нужна.  
-Для крупных изменений лучше обсудить подход до написания кода.
+### Report a bug
 
-### Отправить Pull Request
+Open an [Issue](https://github.com/chaussky/ainalyst/issues) describing:
+- What you were doing
+- What you expected to happen
+- What actually happened
+- Python version, OS
 
-1. Форкните репозиторий
-2. Создайте ветку: `git checkout -b feature/my-improvement`
-3. Внесите изменения
-4. Убедитесь что тесты проходят:
+### Suggest an improvement
+
+Open an Issue tagged `enhancement` — describe the idea and why it's needed.
+For larger changes, it's best to discuss the approach before writing code.
+
+### Submit a Pull Request
+
+1. Fork the repository
+2. Create a branch: `git checkout -b feature/my-improvement`
+3. Make your changes
+4. Make sure the tests pass:
    ```bash
    pip install -r requirements-dev.txt
    pytest tests/
    ```
-5. Если добавляете новый MCP-сервер или скилл — добавьте тесты в `tests/`
-6. Отправьте PR с описанием изменений
+5. If you're adding a new MCP server or skill, add tests under `tests/`
+6. Submit a PR describing your changes
 
 ---
 
-## Структура проекта
+## Project structure
 
-Перед работой с кодом рекомендуем ознакомиться:
+Before working with the code, we recommend reviewing:
 
-- `CLAUDE.md` — главный файл инструкций для Claude Code, архитектура платформы
-- `docs/developer-guide/developer-guide.md` — подробное техническое руководство
-- `skills/` — MCP-серверы и скиллы по главам BABOK
-- `tests/` — тесты (unittest, без внешних зависимостей при запуске)
+- `CLAUDE.md` — the main instruction file for Claude Code, platform architecture
+- `docs/developer-guide/developer-guide.md` — detailed technical guide
+- `skills/` — MCP servers and skills organized by BABOK chapter
+- `tests/` — tests (unittest, no external dependencies required to run)
 
 ---
 
-## Коммерческая разработка
+## Commercial development
 
-Если вам нужны кастомные MCP-серверы, интеграции или развёртывание в закрытом контуре — пишите напрямую:
+If you need custom MCP servers, integrations, or a deployment in a closed
+environment, reach out directly:
 
-**Анатолий Чаусский / Anatoly Chaussky**  
-Email: chaussky@gmail.com  
-Телеграм-канал: [t.me/platform_ainalyst](https://t.me/platform_ainalyst)
+**Anatoly Chaussky**
+Email: chaussky@gmail.com
+LinkedIn: https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/

@@ -1,80 +1,90 @@
-# Changelog — AI Платформа AIналитик (AInalyst)
+# Changelog — AInalyst
 
-Все значимые изменения в проекте документируются здесь.  
-Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).  
-Проект придерживается [Semantic Versioning](https://semver.org/lang/ru/).
+All notable changes to the project are documented here.  
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).  
+The project follows [Semantic Versioning](https://semver.org/).
+
+---
+
+## [Unreleased]
+
+### Changed
+- The flagship version of the project is now in English. The Russian version is kept on the `ru` branch.
+
+### Removed
+- PDF export (`export_pdf.py`) and the `reportlab` dependency. Artifacts are produced as Markdown; convert them to PDF with a tool of your choice (for example `pandoc` or a Markdown editor's "Print to PDF").
 
 ---
 
 ## [1.0.0-beta] — 2026-04-07
 
 > [!IMPORTANT]
-> **Статус: Public Beta.** Первый публичный релиз для открытого тестирования. 
-> Мы активно проверяем логику инструментов в реальных боевых условиях. 
+> **Status: Public Beta.** First public release for open testing.
+> We are actively validating the tools' logic under real-world production conditions.
 
-### Добавлено
+### Added
 
-**Архитектура платформы**
-- Система фаз BABOK: `planning`, `elicitation`, `lifecycle`, `analysis`, `design`, `full`
-- Переключатель фаз `phase.py` с отображением экономии токенов
-- SessionStart и PostToolUse хуки для автоматического контекста и уведомлений об артефактах
-- Rules для Claude Code: `artifacts.md`, `babok_process.md`
-- Утилита экспорта в PDF `export_pdf.py`
-- Интеграция с Confluence Cloud и Server/Data Center
+**Platform architecture**
+- BABOK phase system: `planning`, `elicitation`, `lifecycle`, `analysis`, `design`, `full`
+- Phase switcher `phase.py` with a token-savings display
+- SessionStart and PostToolUse hooks for automatic context and artifact notifications
+- Rules for Claude Code: `artifacts.md`, `babok_process.md`
+- PDF export utility `export_pdf.py`
+- Integration with Confluence Cloud and Server/Data Center
 
-**21 скилл и 22 MCP-сервера (111 инструментов)**
+**21 skills and 22 MCP servers (111 tools)**
 
-| Глава | Скилл / MCP-сервер |
+| Chapter | Skill / MCP server |
 |-------|-------------------|
-| 3 | Планирование бизнес-анализа (`planning_mcp.py`) |
-| 4.1 | Подготовка к выявлению (`elicitation_mcp.py`) |
-| 4.2 | Проведение выявления (`elicitation_conduct_mcp.py`) |
-| 4.3 | Подтверждение результатов (`elicitation_confirm_mcp.py`) |
-| 4.4 | Коммуникация результатов (`elicitation_communicate_mcp.py`) |
-| 4.5 | Управление сотрудничеством (`elicitation_collaborate_mcp.py`) |
-| 5.1 | Трассировка требований (`requirements_traceability_mcp.py`) |
-| 5.2 | Поддержка требований (`requirements_maintain_mcp.py`) |
-| 5.3 | Приоритизация требований (`requirements_prioritize_mcp.py`) |
-| 5.4 | Оценка изменений — CR (`requirements_assess_changes_mcp.py`) |
-| 5.5 | Утверждение требований (`requirements_approve_mcp.py`) |
-| 6.1 | Анализ текущего состояния (`current_state_mcp.py`) |
-| 6.2 | Определение будущего состояния (`future_state_mcp.py`) |
-| 6.3 | Оценка рисков (`risk_assessment_mcp.py`) |
-| 6.4 | Стратегия изменения (`change_strategy_mcp.py`) |
-| 7.1 | Спецификация требований (`requirements_spec_mcp.py`) |
-| 7.2 | Верификация требований (`requirements_verify_mcp.py`) |
-| 7.3 | Валидация требований (`requirements_validate_mcp.py`) |
-| 7.4 | Архитектура требований (`requirements_architecture_mcp.py`) |
-| 7.5 | Варианты дизайна (`design_options_mcp.py`) |
-| 7.6 | Оценка ценности и рекомендация (`value_recommend_mcp.py`) |
+| 3 | Business analysis planning (`planning_mcp.py`) |
+| 4.1 | Prepare for elicitation (`elicitation_mcp.py`) |
+| 4.2 | Conduct elicitation (`elicitation_conduct_mcp.py`) |
+| 4.3 | Confirm elicitation results (`elicitation_confirm_mcp.py`) |
+| 4.4 | Communicate elicitation results (`elicitation_communicate_mcp.py`) |
+| 4.5 | Manage stakeholder collaboration (`elicitation_collaborate_mcp.py`) |
+| 5.1 | Trace requirements (`requirements_traceability_mcp.py`) |
+| 5.2 | Maintain requirements (`requirements_maintain_mcp.py`) |
+| 5.3 | Prioritize requirements (`requirements_prioritize_mcp.py`) |
+| 5.4 | Assess changes — CR (`requirements_assess_changes_mcp.py`) |
+| 5.5 | Approve requirements (`requirements_approve_mcp.py`) |
+| 6.1 | Analyze current state (`current_state_mcp.py`) |
+| 6.2 | Define future state (`future_state_mcp.py`) |
+| 6.3 | Assess risks (`risk_assessment_mcp.py`) |
+| 6.4 | Change strategy (`change_strategy_mcp.py`) |
+| 7.1 | Specify requirements (`requirements_spec_mcp.py`) |
+| 7.2 | Verify requirements (`requirements_verify_mcp.py`) |
+| 7.3 | Validate requirements (`requirements_validate_mcp.py`) |
+| 7.4 | Requirements architecture (`requirements_architecture_mcp.py`) |
+| 7.5 | Design options (`design_options_mcp.py`) |
+| 7.6 | Value assessment and recommendation (`value_recommend_mcp.py`) |
 
-**Документация**
-- Пользовательское руководство по всем главам BABOK (`docs/user-guide/`)
-- Сценарии использования платформы (`docs/use-cases/use-cases.md`)
-- Руководство разработчика (`docs/developer-guide/developer-guide.md`)
+**Documentation**
+- User guide covering all BABOK chapters (`docs/user-guide/`)
+- Platform use cases (`docs/use-cases/use-cases.md`)
+- Developer guide (`docs/developer-guide/developer-guide.md`)
 
-**Тестовое покрытие**
-- 1 556 тестов по 24 файлам — 100% зелёных
-- Полное покрытие всех 21 MCP-сервера
-- Интеграционные pipeline-тесты для каждой главы BABOK
+**Test coverage**
+- 1,556 tests across 24 files — 100% passing
+- Full coverage of all 21 MCP servers
+- Integration pipeline tests for every BABOK chapter
 
-**Лицензирование**
-- GNU AGPL v3 для открытого использования
-- Коммерческая лицензия для SaaS и проприетарных интеграций (`COMMERCIAL_LICENSE.md`)
+**Licensing**
+- GNU AGPL v3 for open use
+- Commercial license for SaaS and proprietary integrations (`COMMERCIAL_LICENSE.md`)
 - Contributor License Agreement (`CLA.md`)
 
 ---
 
-## Как читать этот файл
+## How to read this file
 
-Каждый релиз содержит секции:
+Each release contains the following sections:
 
-- **Добавлено** — новые возможности
-- **Изменено** — изменения в существующей функциональности
-- **Исправлено** — исправления ошибок
-- **Удалено** — удалённые возможности
-- **Устарело** — возможности, которые будут удалены в следующих версиях
-- **Безопасность** — исправления уязвимостей
+- **Added** — new features
+- **Changed** — changes to existing functionality
+- **Fixed** — bug fixes
+- **Removed** — removed features
+- **Deprecated** — features that will be removed in an upcoming version
+- **Security** — vulnerability fixes
 
 ---
 

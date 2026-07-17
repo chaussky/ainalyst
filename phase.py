@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-AInalyst — переключатель фаз BABOK.
+AInalyst — BABOK phase switcher.
 
-Использование:
-    python phase.py              # показать текущую фазу и список всех фаз
-    python phase.py planning     # переключиться на фазу планирования (Гл. 3)
-    python phase.py elicitation  # Гл. 4 — выявление требований
-    python phase.py lifecycle    # Гл. 5 — управление жизненным циклом
-    python phase.py analysis     # Гл. 6 — анализ стратегии
-    python phase.py design       # Гл. 7 — определение и проектирование требований
-    python phase.py full         # все серверы (режим без ограничений)
+Usage:
+    python phase.py              # show the current phase and the list of all phases
+    python phase.py planning     # switch to the planning phase (Ch. 3)
+    python phase.py elicitation  # Ch. 4 — requirements elicitation
+    python phase.py lifecycle    # Ch. 5 — requirements lifecycle management
+    python phase.py analysis     # Ch. 6 — strategy analysis
+    python phase.py design       # Ch. 7 — requirements analysis and design
+    python phase.py full         # all servers (unrestricted mode)
 
-После переключения — перезапустить Claude Code: /restart
+After switching — restart Claude Code: /restart
 """
 
 import json
@@ -20,47 +20,47 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Корень проекта — для абсолютных путей в .mcp.json (ADR-REVIEW-п10)
+# Project root — for absolute paths in .mcp.json (ADR-REVIEW item 10)
 # ---------------------------------------------------------------------------
 
-# Абсолютный путь к корню проекта (там где лежит этот файл).
-# Используется при генерации .mcp.json чтобы Claude Code находил серверы
-# независимо от рабочей директории при запуске.
+# Absolute path to the project root (where this file lives).
+# Used when generating .mcp.json so Claude Code can find the servers
+# regardless of the working directory at startup.
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 
 def _server(script: str) -> dict:
-    """Возвращает конфигурацию MCP-сервера с абсолютным путём к скрипту."""
+    """Returns the MCP server configuration with an absolute path to the script."""
     return {"command": "python", "args": [str(PROJECT_ROOT / script)]}
 
 
 # ---------------------------------------------------------------------------
-# Конфигурация фаз
+# Phase configuration
 # ---------------------------------------------------------------------------
 
-# Базовый сервер (Гл. 3 — планирование) присутствует во ВСЕХ фазах.
-# Он лёгкий (5 tools) и нужен всегда: project_id, stakeholder registry и т.д.
+# The base server (Ch. 3 — planning) is present in ALL phases.
+# It's lightweight (5 tools) and always needed: project_id, stakeholder registry, etc.
 BASE_SERVER = {
     "babok-ch3": _server("skills/planning_mcp.py"),
-    # Confluence присутствует во всех фазах — сервер маленький (3 инструмента),
-    # стартует без .env (ошибка возникает только при вызове инструмента).
+    # Confluence is present in all phases — the server is small (3 tools),
+    # it starts without .env (the error only occurs when a tool is called).
     "babok-confluence": _server("skills/integrations/confluence_mcp.py"),
 }
 
 PHASES = {
     "planning": {
-        "label": "Глава 3 — Планирование бизнес-анализа",
-        "hint": "Новый проект, выбор подхода, карта стейкхолдеров, план BA",
-        "tokens_saved": "~33 000",
+        "label": "Chapter 3 — Business Analysis Planning",
+        "hint": "New project, approach selection, stakeholder map, BA plan",
+        "tokens_saved": "~33,000",
         "servers": {
             **BASE_SERVER,
         }
     },
 
     "elicitation": {
-        "label": "Глава 4 — Выявление и сотрудничество",
-        "hint": "Интервью, воркшопы, анкеты, протоколы встреч",
-        "tokens_saved": "~27 000",
+        "label": "Chapter 4 — Elicitation and Collaboration",
+        "hint": "Interviews, workshops, surveys, meeting minutes",
+        "tokens_saved": "~27,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch4-41": _server("skills/elicitation_mcp.py"),
@@ -72,9 +72,9 @@ PHASES = {
     },
 
     "lifecycle": {
-        "label": "Глава 5 — Управление жизненным циклом требований",
-        "hint": "Трассировка, приоритизация, CR, утверждение, поддержка",
-        "tokens_saved": "~27 000",
+        "label": "Chapter 5 — Requirements Lifecycle Management",
+        "hint": "Traceability, prioritization, CRs, approval, maintenance",
+        "tokens_saved": "~27,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch5-51": _server("skills/requirements_traceability_mcp.py"),
@@ -86,9 +86,9 @@ PHASES = {
     },
 
     "analysis": {
-        "label": "Глава 6 — Анализ стратегии",
-        "hint": "Анализ текущего состояния (as-is), будущее состояние (to-be), GAP, оценка рисков, стратегия изменения",
-        "tokens_saved": "~28 000",
+        "label": "Chapter 6 — Strategy Analysis",
+        "hint": "Current state analysis (as-is), future state (to-be), gap analysis, risk assessment, change strategy",
+        "tokens_saved": "~28,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch6-61": _server("skills/current_state_mcp.py"),
@@ -99,9 +99,9 @@ PHASES = {
     },
 
     "design": {
-        "label": "Глава 7 — Определение и проектирование требований",
-        "hint": "Спецификация, верификация, валидация, архитектура, дизайн, оценка ценности",
-        "tokens_saved": "~18 000",
+        "label": "Chapter 7 — Requirements Analysis and Design",
+        "hint": "Specification, verification, validation, architecture, design, value assessment",
+        "tokens_saved": "~18,000",
         "servers": {
             **BASE_SERVER,
             "babok-ch7-71": _server("skills/requirements_spec_mcp.py"),
@@ -114,8 +114,8 @@ PHASES = {
     },
 
     "full": {
-        "label": "Все главы (полный режим)",
-        "hint": "Все 18 серверов. Используй только если нужны инструменты из разных глав одновременно",
+        "label": "All chapters (full mode)",
+        "hint": "All 18 servers. Use only when you need tools from different chapters at the same time",
         "tokens_saved": "0",
         "servers": {
             **BASE_SERVER,
@@ -144,11 +144,11 @@ PHASES = {
 }
 
 # ---------------------------------------------------------------------------
-# Файлы
+# Files
 # ---------------------------------------------------------------------------
 
 MCP_FILE = Path(".mcp.json")
-STATE_FILE = Path(".ainalyst_phase")  # запоминаем текущую фазу
+STATE_FILE = Path(".ainalyst_phase")  # remembers the current phase
 
 
 def read_current_phase() -> str | None:
@@ -183,53 +183,53 @@ def c(color: str, text: str) -> str:
 
 
 def _confluence_env_set() -> bool:
-    """Проверяет что заданы минимально необходимые переменные для Confluence."""
+    """Checks whether the minimum required Confluence environment variables are set."""
     return bool(os.environ.get("CONFLUENCE_URL") and os.environ.get("CONFLUENCE_API_TOKEN"))
 
 
 def show_status():
     current = read_current_phase()
     print()
-    print(c("bold", "AInalyst — переключатель фаз BABOK"))
+    print(c("bold", "AInalyst — BABOK phase switcher"))
     print(c("gray", "─" * 55))
 
     if current:
         phase_info = PHASES[current]
-        print(f"  Текущая фаза: {c('green', current)} — {phase_info['label']}")
+        print(f"  Current phase: {c('green', current)} — {phase_info['label']}")
         server_count = len(phase_info["servers"])
-        print(f"  Активных серверов: {c('cyan', str(server_count))} из {len(PHASES['full']['servers'])}")
+        print(f"  Active servers: {c('cyan', str(server_count))} of {len(PHASES['full']['servers'])}")
     else:
-        print(f"  Текущая фаза: {c('yellow', 'не задана')} (используется .mcp.json как есть)")
+        print(f"  Current phase: {c('yellow', 'not set')} (using .mcp.json as is)")
 
     print()
-    print(c("bold", "Доступные фазы:"))
+    print(c("bold", "Available phases:"))
     print()
 
     for key, info in PHASES.items():
         marker = c("green", "▶ ") if key == current else "  "
         saved = info["tokens_saved"]
         servers = len(info["servers"])
-        saved_str = f"экономия ~{saved} токенов" if saved != "0" else "все серверы"
+        saved_str = f"saves ~{saved} tokens" if saved != "0" else "all servers"
         print(f"{marker}{c('cyan', key):<22} {info['label']}")
         print(f"   {c('gray', info['hint'])}")
-        print(f"   {c('gray', f'{servers} серверов · {saved_str}')}")
+        print(f"   {c('gray', f'{servers} servers · {saved_str}')}")
         print()
 
     confluence_available = _confluence_env_set()
-    confluence_status = c("green", "настроен") if confluence_available else c("yellow", "не настроен — заполните .env")
+    confluence_status = c("green", "configured") if confluence_available else c("yellow", "not configured — fill in .env")
     print(c("gray", "─" * 55))
     print(f"  Confluence: {confluence_status}")
     print()
     print(c("gray", "─" * 55))
-    print(f"  Использование: {c('bold', 'python phase.py <фаза>')}")
-    print(f"  После переключения: {c('yellow', '/restart')} в Claude Code")
+    print(f"  Usage: {c('bold', 'python phase.py <phase>')}")
+    print(f"  After switching: {c('yellow', '/restart')} in Claude Code")
     print()
 
 
 def switch_phase(phase: str):
     if phase not in PHASES:
-        print(c("red", f"Ошибка: фаза '{phase}' не существует."))
-        print(f"Доступные: {', '.join(PHASES.keys())}")
+        print(c("red", f"Error: phase '{phase}' does not exist."))
+        print(f"Available: {', '.join(PHASES.keys())}")
         sys.exit(1)
 
     old_phase = read_current_phase()
@@ -240,25 +240,25 @@ def switch_phase(phase: str):
     full_count = len(PHASES["full"]["servers"])
 
     print()
-    print(c("green", "✓") + f" Фаза переключена: {c('bold', phase)}")
+    print(c("green", "✓") + f" Phase switched: {c('bold', phase)}")
     print(f"  {info['label']}")
     print(f"  {c('gray', info['hint'])}")
     print()
-    print(f"  Активных серверов: {c('cyan', str(server_count))} из {full_count}")
+    print(f"  Active servers: {c('cyan', str(server_count))} of {full_count}")
 
     if info["tokens_saved"] != "0":
-        print(f"  Экономия контекста: ~{c('green', info['tokens_saved'])} токенов")
+        print(f"  Context savings: ~{c('green', info['tokens_saved'])} tokens")
 
     if old_phase and old_phase != phase:
-        print(f"  {c('gray', f'Было: {old_phase}')}")
+        print(f"  {c('gray', f'Previous: {old_phase}')}")
 
     print()
-    print(c("yellow", "  → Перезапусти Claude Code: /restart"))
+    print(c("yellow", "  → Restart Claude Code: /restart"))
     print()
 
 
 # ---------------------------------------------------------------------------
-# Точка входа
+# Entry point
 # ---------------------------------------------------------------------------
 
 def main():
@@ -267,7 +267,7 @@ def main():
     elif len(sys.argv) == 2:
         switch_phase(sys.argv[1])
     else:
-        print(c("red", "Использование: python phase.py [фаза]"))
+        print(c("red", "Usage: python phase.py [phase]"))
         sys.exit(1)
 
 

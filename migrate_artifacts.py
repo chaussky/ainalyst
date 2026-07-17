@@ -1,13 +1,13 @@
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
-"""Одноразовый перенос плоских артефактов governance_plans/ в подпапки проекта (issue #1).
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+"""One-time migration of flat artifacts in governance_plans/ into per-project subfolders (issue #1).
 
-Только перемещает (никогда не удаляет). По умолчанию dry-run — ничего не трогает,
-пока не передан --apply. Идемпотентен: уже вложенные файлы пропускает, занятую
-цель не перезаписывает.
+Only moves files (never deletes). Dry-run by default -- nothing is touched
+until --apply is passed. Idempotent: already-nested files are skipped, and an
+occupied target is never overwritten.
 
-Использование:
-    python migrate_artifacts.py            # показать, что будет перемещено (dry-run)
-    python migrate_artifacts.py --apply    # реально переместить
+Usage:
+    python migrate_artifacts.py            # show what would be moved (dry-run)
+    python migrate_artifacts.py --apply    # actually move the files
 """
 import argparse
 import os
@@ -20,7 +20,7 @@ BASE_DIR = "governance_plans"
 DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 
-# Известные хвосты json-артефактов (project_id всегда лидирующий сегмент имени).
+# Known json-artifact suffixes (project_id is always the leading segment of the name).
 DATA_SUFFIXES = [
     "traceability_repo.json", "prioritization.json", "approval_history.json",
     "design_options.json", "recommendation.json", "business_context.json",
@@ -31,7 +31,7 @@ DATA_SUFFIXES = [
     "verification_issues.json", "change_scope.json",
 ]
 
-# Префиксы markdown-отчётов, в которых project_id встроен ПОСЛЕ кода задачи.
+# Markdown-report prefixes where the project_id is embedded AFTER the task code.
 REPORT_PREFIXES = [
     "3_ba_plan_", "5_3_prioritization_", "6_1_current_state_", "6_2_future_state_",
     "6_3_risk_assessment_", "6_4_change_strategy_", "Elicitation_Plan_",
@@ -69,7 +69,7 @@ def _move(src, dst, apply, log):
 
 
 def migrate(apply=False):
-    """Возвращает список строк-операций (для отчёта и тестов)."""
+    """Returns a list of operation strings (for the report and for tests)."""
     log = []
 
     # --- data/ ---
@@ -85,8 +85,8 @@ def migrate(apply=False):
                 continue
             pid = _project_from_data(entry)
             if pid:
-                # Каноническая раскладка: нормализуем И папку, И префикс имени файла,
-                # чтобы рантайм (data_path → normalize_project_id) точно нашёл файл.
+                # Canonical layout: normalize BOTH the folder AND the file-name prefix,
+                # so the runtime (data_path -> normalize_project_id) reliably finds the file.
                 norm = normalize_project_id(pid)
                 base = entry[len(pid) + 1:]
                 _move(full, os.path.join(DATA_DIR, norm, f"{norm}_{base}"), apply, log)
@@ -101,8 +101,8 @@ def migrate(apply=False):
                 continue
             pid = _project_from_report(entry)
             if pid:
-                # Отчёты читаются только перечислением (glob) — нормализуем папку,
-                # имя файла оставляем как есть (внутри префикс — лишь метка).
+                # Reports are only ever read via directory listing (glob) -- normalize the
+                # folder, but leave the file name as-is (the embedded prefix is just a label).
                 _move(full, os.path.join(REPORTS_DIR, normalize_project_id(pid), entry), apply, log)
             else:
                 log.append(f"skip (project unknown): {entry}")
@@ -111,15 +111,15 @@ def migrate(apply=False):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="Перенос артефактов в подпапки проекта.")
+    ap = argparse.ArgumentParser(description="Move artifacts into per-project subfolders.")
     ap.add_argument("--apply", action="store_true",
-                    help="реально перемещать (без флага — dry-run)")
+                    help="actually move the files (without this flag: dry-run)")
     args = ap.parse_args()
-    header = "=== МИГРАЦИЯ АРТЕФАКТОВ ==="
+    header = "=== ARTIFACT MIGRATION ==="
     if not args.apply:
-        header += " (DRY-RUN, ничего не перемещается)"
+        header += " (DRY-RUN, nothing will be moved)"
     print(header)
     for line in migrate(apply=args.apply):
         print(line)
     if not args.apply:
-        print("\nЗапусти с --apply чтобы выполнить перемещение.")
+        print("\nRun with --apply to perform the move.")
