@@ -776,10 +776,37 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             decided_by="Ivanov",
             force=True,
         )
-        # With force=True the baseline should be created
-        # (rejected by accountable — a blocker, but force allows it)
-        # In fact our code blocks only pending/rejected without force
+        # With force=True the baseline should be created despite the A/R rejection.
         self.assertIsNotNone(result)
+
+    def test_low_approval_pct_blocks_baseline_without_force(self):
+        """Baseline creation must enforce the same readiness gate as
+        check_approval_status: below 70% approved (here 50%: one open conditional,
+        one approved) it must block unless force=True, instead of silently
+        baselining only the approved subset."""
+        record_approval_decision(
+            project_name=PROJECT,
+            package_id="APKG-001",
+            stakeholder_name="Ivanov",
+            stakeholder_raci="accountable",
+            decision="conditional",
+            req_decisions_json=json.dumps([
+                {"req_id": "FR-001", "decision": "conditional",
+                 "condition_text": "Clarify", "condition_deadline": "2026-12-01",
+                 "condition_owner": "Petrov"},   # open, NOT overdue
+                {"req_id": "FR-002", "decision": "approved"},
+            ]),
+        )
+        result = create_requirements_baseline(
+            project_name=PROJECT,
+            package_id="APKG-001",
+            baseline_version="v1.0",
+            decided_by="Ivanov",
+        )  # no force
+        self.assertIn("❌", result)
+        self.assertIn("blocked", result)
+        history = _load_approval_history(PROJECT)
+        self.assertEqual(len(history["baselines"]), 0, "no baseline may be created when not ready")
 
     def test_package_already_baselined_error(self):
         self._approve_all()

@@ -1023,7 +1023,11 @@ def create_requirements_baseline(
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
 
-    # Check for blockers
+    # Readiness gate — must match check_approval_status so the dashboard's
+    # "Ready / Not ready" verdict is the real contract. Everything below blocks
+    # the baseline unless force=True (the deliberate override).
+    statuses = {rid: _compute_req_status(rid, package) for rid in req_ids}
+
     blockers = []
     for sh_name, sh_data in package["stakeholder_decisions"].items():
         if sh_data["raci"] in ("accountable", "responsible"):
@@ -1031,12 +1035,28 @@ def create_requirements_baseline(
                 if rd["decision"] == "rejected":
                     blockers.append(f"`{rd['req_id']}` rejected by {sh_name} ({sh_data['raci']})")
 
-    pending_reqs = [
-        rid for rid in req_ids
-        if _compute_req_status(rid, package) == STATUS_PENDING
-    ]
+    pending_reqs = [rid for rid in req_ids if statuses[rid] == STATUS_PENDING]
 
-    if (blockers or pending_reqs) and not force:
+    # Overdue open conditions (same check as the dashboard).
+    overdue_conditions = []
+    _today = date.today()
+    for sh_name, sh_data in package["stakeholder_decisions"].items():
+        for rd in sh_data["req_decisions"]:
+            if rd["decision"] == "conditional" and not rd.get("condition_closed") and rd.get("condition_deadline"):
+                try:
+                    if date.fromisoformat(rd["condition_deadline"]) < _today:
+                        overdue_conditions.append(f"`{rd['req_id']}` ({sh_name})")
+                except ValueError:
+                    pass
+
+    # Approved percentage (same 70% minimum as the dashboard). An empty approved
+    # set is 0% and is therefore blocked here too.
+    total = len(req_ids)
+    approved_count = sum(1 for s in statuses.values() if s == STATUS_APPROVED)
+    approved_pct = round(approved_count / total * 100) if total else 0
+    low_approval = approved_pct < 70
+
+    if (blockers or pending_reqs or overdue_conditions or low_approval) and not force:
         lines = ["❌ Baseline blocked:", ""]
         if blockers:
             lines.append("**Rejections from Accountable/Responsible:**")
@@ -1044,9 +1064,13 @@ def create_requirements_baseline(
                 lines.append(f"  - {b}")
         if pending_reqs:
             lines.append(f"**Requirements in pending_approval status:** {pending_reqs}")
+        if overdue_conditions:
+            lines.append(f"**Overdue conditions:** {', '.join(overdue_conditions)}")
+        if low_approval:
+            lines.append(f"**Only {approved_pct}% of requirements approved** (minimum 70%).")
         lines += [
             "",
-            "Resolve the blockers, or use `force=true` to force the baseline creation.",
+            "Resolve the issues above, or use `force=true` to force the baseline creation.",
         ]
         return "\n".join(lines)
 
