@@ -49,7 +49,7 @@ def _server(script: str) -> dict:
 # It's lightweight (5 tools) and always needed: project_id, stakeholder registry, etc.
 BASE_SERVER = {
     "babok-ch3": _server("skills/planning_mcp.py"),
-    # Confluence is present in all phases — the server is small (3 tools),
+    # Confluence is present in all phases — the server is small (4 tools),
     # it starts without .env (the error only occurs when a tool is called).
     "babok-confluence": _server("skills/integrations/confluence_mcp.py"),
 }

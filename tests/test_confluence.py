@@ -235,8 +235,17 @@ if __name__ == "__main__":
 # MCP tool tests (with a mocked atlassian Confluence client)
 # ===========================================================================
 
+CLOUD_BASE = "https://test.atlassian.net/wiki"
+
+
 def _make_mock_confluence(page_exists=True, page_title="Test", page_id="12345"):
-    """Returns a configured mock of the atlassian Confluence client."""
+    """Returns a configured mock of the atlassian Confluence client.
+
+    The `_links` shapes mirror the REAL Confluence API:
+      - `webui` is relative to the deployment's context path and does NOT contain /wiki;
+      - content objects (create_page / update_page) carry `_links.base`;
+      - a get_page_by_title hit is a search result and carries NO `base`.
+    """
     mock = MagicMock()
     page_stub = {
         "id": page_id,
@@ -247,18 +256,18 @@ def _make_mock_confluence(page_exists=True, page_title="Test", page_id="12345"):
                 "value": f"<p>FR-001 — Authentication</p><p>BR-001 — Business goal</p>"
             }
         },
-        "_links": {"webui": f"/wiki/spaces/BA/pages/{page_id}"},
+        "_links": {"webui": f"/spaces/BA/pages/{page_id}"},
     }
     mock.get_page_by_title.return_value = page_stub if page_exists else None
     mock.update_page.return_value = {
         "id": page_id,
         "version": {"number": 4},
-        "_links": {"webui": f"/wiki/spaces/BA/pages/{page_id}"},
+        "_links": {"base": CLOUD_BASE, "webui": f"/spaces/BA/pages/{page_id}"},
     }
     mock.create_page.return_value = {
         "id": "99999",
         "version": {"number": 1},
-        "_links": {"webui": "/wiki/spaces/BA/pages/99999"},
+        "_links": {"base": CLOUD_BASE, "webui": "/spaces/BA/pages/99999"},
     }
     mock.get_all_pages_from_space.return_value = [
         {"id": "111", "title": "Requirements FR", "version": {"when": "2026-03-01T00:00:00Z"}},
@@ -618,6 +627,207 @@ class TestListSpacePages(BaseMCPTest):
                    return_value=(None, "❌ No config")):
             result = self._call()
         self.assertIn("❌", result)
+
+
+class TestConfluenceAuditRegressions(BaseMCPTest):
+    """Regression tests for the audit findings in integrations/confluence_mcp.py."""
+
+    # --- C1: Python 3.10/3.11 compatibility (PEP 701) -----------------------
+
+    def test_no_backslash_inside_fstring_expressions(self):
+        """A backslash inside an f-string replacement field is a SyntaxError before
+        Python 3.12 (lifted only by PEP 701). The project supports Python 3.10+, and
+        this module is loaded in EVERY phase (phase.py BASE_SERVER), so such a line
+        takes the whole Confluence server down on the declared minimum version."""
+        import ast
+        import pathlib
+
+        src_path = pathlib.Path(confluence_mod.__file__)
+        src = src_path.read_text(encoding="utf-8")
+        tree = ast.parse(src)
+
+        offenders = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FormattedValue):
+                segment = ast.get_source_segment(src, node.value) or ""
+                if "\\" in segment:
+                    offenders.append((getattr(node, "lineno", "?"), segment))
+
+        self.assertEqual(
+            offenders, [],
+            f"Backslash inside an f-string expression (SyntaxError on Python <3.12): {offenders}",
+        )
+
+    def test_list_space_pages_renders_filter_note(self):
+        """The line that carried the backslash still renders the filter note."""
+        mock_client = _make_mock_confluence()
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA", search_title="Requirements")
+        self.assertIn('filter: "Requirements"', result)
+
+    # --- C2: URL building for Cloud vs Server/DC ----------------------------
+
+    def test_cloud_url_has_exactly_one_wiki_context(self):
+        """Cloud: base already ends with /wiki and webui is relative to it."""
+        mock_client = _make_mock_confluence(page_exists=False)
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.push_to_confluence(
+                content_markdown="# X", page_title="P", space_key="BA")
+        self.assertIn("https://test.atlassian.net/wiki/spaces/BA/pages/99999", result)
+        self.assertNotIn("/wiki/wiki", result)
+
+    def test_server_dc_url_has_no_wiki_context(self):
+        """Server/DC serves the web UI at the site root — a hardcoded /wiki 404s.
+
+        Uses a response WITHOUT `_links.base` to exercise the env-var fallback.
+        """
+        server_env = {
+            "CONFLUENCE_URL": "https://wiki.company.com",
+            "CONFLUENCE_API_TOKEN": "pat-token",
+            "CONFLUENCE_CLOUD": "false",
+            "CONFLUENCE_SPACE_KEY": "BA",
+        }
+        mock_client = _make_mock_confluence(page_exists=False)
+        mock_client.create_page.return_value = {
+            "id": "777",
+            "version": {"number": 1},
+            "_links": {"webui": "/display/BA/Requirements"},
+        }
+        with patch.dict(os.environ, server_env, clear=True), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.push_to_confluence(
+                content_markdown="# X", page_title="Requirements", space_key="BA")
+        self.assertIn("https://wiki.company.com/display/BA/Requirements", result)
+        self.assertNotIn("/wiki/display", result)
+
+    def test_page_url_prefers_links_base_over_env(self):
+        """`_links.base` from the API wins — it carries the correct context path."""
+        with patch.dict(os.environ, VALID_ENV):
+            url = confluence_mod._page_url(
+                {"_links": {"base": "https://other.example.com", "webui": "/display/X/Y"}}
+            )
+        self.assertEqual(url, "https://other.example.com/display/X/Y")
+
+    # --- I1/I2: fidelity of the Confluence → requirements import path -------
+
+    def test_paragraphs_do_not_merge_into_one_line(self):
+        """Storage format writes each requirement in its own block element. If the
+        closing tag does not end the line, the next ID gets glued to the previous
+        text ('routingBR-002'), the \\b in the ID pattern stops matching, and the
+        requirement is SILENTLY dropped from the import."""
+        html = "<p>FR-001 — Automated routing</p><p>BR-002 — Cut handling time</p>"
+        text = confluence_mod._confluence_storage_to_text(html)
+        reqs = confluence_mod._extract_requirements_heuristic(text, "")
+        ids = [r["id"] for r in reqs]
+        self.assertIn("FR-001", ids)
+        self.assertIn("BR-002", ids, "the second paragraph's requirement was lost on import")
+
+    def test_html_entities_are_decoded(self):
+        """Confluence storage format is XHTML — entities must not reach titles."""
+        html = "<p>BR-002 &mdash; Cut cost &amp; time</p><p>NFR-003 &mdash; Response &lt; 2s</p>"
+        text = confluence_mod._confluence_storage_to_text(html)
+        self.assertNotIn("&mdash;", text)
+        self.assertNotIn("&amp;", text)
+        self.assertNotIn("&lt;", text)
+        titles = {r["id"]: r["title"] for r in confluence_mod._extract_requirements_heuristic(text, "")}
+        self.assertEqual(titles.get("BR-002"), "Cut cost & time")
+        self.assertEqual(titles.get("NFR-003"), "Response < 2s")
+
+    def test_title_has_no_leading_dash_or_trailing_pipe(self):
+        """Separators from the source markup must not survive into the title."""
+        html = "<table><tr><td>FR-007</td><td>Bulk export</td></tr></table>"
+        text = confluence_mod._confluence_storage_to_text(html)
+        reqs = confluence_mod._extract_requirements_heuristic(text, "")
+        self.assertEqual(reqs[0]["title"], "Bulk export")
+
+    def test_imported_types_are_valid_for_traceability_repo(self):
+        """The pulled JSON is advertised as ready for init_traceability_repo (5.1),
+        whose allowed types are business|stakeholder|solution|transition|test|component."""
+        allowed = {"business", "stakeholder", "solution", "transition", "test", "component"}
+        text = "BR-001 a\nSR-002 b\nFR-003 c\nNFR-004 d\nTR-005 e\nUC-006 f\nUS-007 g\nREQ-008 h"
+        for r in confluence_mod._extract_requirements_heuristic(text, ""):
+            self.assertIn(r["type"], allowed, f"{r['id']} has a type 5.1 would reject")
+            self.assertIn(r["status"], {"draft", "confirmed", "approved", "deprecated"})
+
+    # --- C3: the pull artifact must land in the project's report folder -----
+
+    def test_pull_saves_artifact_under_project_folder(self):
+        """pull_from_confluence computed a project name but never used it: the
+        artifact went to flat reports/ instead of reports/<project_id>/.
+
+        (conftest replaces save_artifact with a mock, so we assert the call; the
+        real on-disk layout is covered by the E2E script.)
+        """
+        mock_client = _make_mock_confluence(page_exists=True)
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)), \
+             patch("skills.integrations.confluence_mcp.save_artifact") as mock_save:
+            confluence_mod.pull_from_confluence(
+                page_title="Project requirements",
+                space_key="BA",
+                project_name="conf_import",
+            )
+        mock_save.assert_called_once()
+        self.assertEqual(
+            mock_save.call_args.kwargs.get("project_id"), "conf_import",
+            "the pull artifact is not routed to the project's report folder",
+        )
+
+    def test_pull_falls_back_to_page_title_as_project(self):
+        """Without project_name the page title becomes the project id."""
+        mock_client = _make_mock_confluence(page_exists=True)
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)), \
+             patch("skills.integrations.confluence_mcp.save_artifact") as mock_save:
+            result = confluence_mod.pull_from_confluence(
+                page_title="CRM Upgrade", space_key="BA", project_name="")
+        self.assertIn("**Project:** CRM Upgrade", result)
+        self.assertEqual(mock_save.call_args.kwargs.get("project_id"), "CRM Upgrade")
+
+
+class TestExportHookErrorSurfacing(BaseMCPTest):
+    """C4 — a configured-but-failing Confluence sync must not fail silently in 5.2."""
+
+    def test_error_from_confluence_is_surfaced_as_note(self):
+        import skills.requirements_maintain_mcp as maintain_mod
+
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp.export_artifact_to_confluence",
+                   return_value={"status": "error", "message": "CONFLUENCE_SPACE_KEY is not set"}):
+            result = maintain_mod._export_hook(
+                "health_report", "# Report", {"project_name": "Test"}
+            )
+        self.assertNotEqual(result.get("status"), "synced")
+        self.assertIn("CONFLUENCE_SPACE_KEY", result.get("note", ""),
+                      "the sync failure reason was swallowed — the BA sees no explanation")
+
+    def test_update_requirement_reports_sync_failure(self):
+        """The reason must reach the artifact text the BA actually reads."""
+        import skills.requirements_traceability_mcp as trace_mod
+        import skills.requirements_maintain_mcp as maintain_mod
+
+        trace_mod.init_traceability_repo(
+            project_name="hooktest",
+            formality_level="Standard",
+            requirements_json='[{"id": "FR-001", "type": "solution", "title": "Login"}]',
+        )
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp.export_artifact_to_confluence",
+                   return_value={"status": "error", "message": "API rate limit"}):
+            content = maintain_mod.update_requirement(
+                project_name="hooktest",
+                req_id="FR-001",
+                change_reason="audit",
+                new_status="confirmed",
+            )
+        self.assertIn("API rate limit", content)
 
 
 class TestExportArtifactToConfluence(BaseMCPTest):

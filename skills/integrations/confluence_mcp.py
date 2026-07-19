@@ -32,6 +32,7 @@ Dependencies (added to requirements.txt):
 import json
 import os
 import re
+from html import unescape as _html_unescape
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
@@ -141,7 +142,18 @@ def _confluence_storage_to_text(storage_content: str) -> str:
     text = re.sub(r'<t[hd][^>]*>(.*?)</t[hd]>', r'\1 | ', text, flags=re.DOTALL)
     text = re.sub(r'<li[^>]*>(.*?)</li>', r'\n- \1', text, flags=re.DOTALL)
     text = re.sub(r'<br\s*/?>', '\n', text)
+    # Block-level elements END A LINE. Without this, "<p>FR-001 …</p><p>BR-002 …</p>"
+    # collapses into a single line, the next ID gets glued to the previous text
+    # ("routingBR-002"), the \b in the ID pattern stops matching — and that
+    # requirement is silently dropped from the import.
+    text = re.sub(r'</(p|div|h[1-6]|blockquote|pre|tr|table|ul|ol)\s*>', '\n', text,
+                  flags=re.IGNORECASE)
     text = re.sub(r'<[^>]+>', '', text)
+    # Confluence storage format is XHTML: '&', '<' and typographic characters are
+    # always entity-encoded. Without decoding, requirement titles carry literal
+    # '&mdash;' / '&amp;' / '&lt;' into the 5.1 repository and every report downstream.
+    text = _html_unescape(text)
+    text = text.replace('\xa0', ' ')
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -175,7 +187,11 @@ def _extract_requirements_heuristic(text: str, source_url: str) -> list:
 
             prefix = match.group(1).upper()
             title = id_pattern.sub("", line).strip()
-            title = re.sub(r'^[\s|\-:]+', '', title).strip()
+            # Trim separators left over from the source markup: leading bullets and
+            # dashes (incl. the en/em dashes Confluence encodes as entities) and the
+            # trailing table-cell pipe produced by the storage→text conversion.
+            title = re.sub(r'^[\s|\-–—:.]+', '', title)
+            title = re.sub(r'[\s|]+$', '', title).strip()
             title = title[:120] if title else f"Requirement {req_id}"
 
             requirements.append({
@@ -192,6 +208,31 @@ def _extract_requirements_heuristic(text: str, source_url: str) -> list:
 
 def _default_space_key() -> str:
     return os.environ.get("CONFLUENCE_SPACE_KEY", "")
+
+
+def _base_web_url() -> str:
+    """Base URL of the Confluence web UI, without a trailing slash.
+
+    Cloud serves the web UI under the /wiki context path; Server/DC serves it at the
+    site root. Used only as a fallback when the API response carries no `_links.base`.
+    """
+    env_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
+    is_cloud = os.environ.get("CONFLUENCE_CLOUD", "true").lower() == "true"
+    return f"{env_url}/wiki" if is_cloud else env_url
+
+
+def _page_url(page: dict) -> str:
+    """Builds the full page URL from a Confluence API response object.
+
+    Prefers the `_links.base` the API itself returns — it already carries the right
+    context path for both deployments (Cloud ends with /wiki, Server/DC does not).
+    Falls back to _base_web_url() for responses that omit it (get_page_by_title
+    returns a search hit whose _links has no `base`).
+    """
+    links = page.get("_links", {}) if isinstance(page, dict) else {}
+    url_path = links.get("webui", "")
+    base = (links.get("base") or "").rstrip("/") or _base_web_url()
+    return f"{base}{url_path}" if url_path else base
 
 
 # ---------------------------------------------------------------------------
@@ -248,11 +289,9 @@ def push_to_confluence(
 
         if existing:
             if not update_if_exists:
-                url_path = existing.get("_links", {}).get("webui", "")
-                base_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
                 return (
                     f"⚠️ Page '{page_title}' already exists.\n"
-                    f"URL: {base_url}/wiki{url_path}\n"
+                    f"URL: {_page_url(existing)}\n"
                     f"Use update_if_exists=True to update it."
                 )
             result = confluence.update_page(
@@ -274,9 +313,7 @@ def push_to_confluence(
         if not result:
             return f"❌ Confluence returned an empty response. Check permissions in space '{space}'."
 
-        url_path = result.get("_links", {}).get("webui", "")
-        base_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
-        full_url = f"{base_url}/wiki{url_path}" if url_path else base_url
+        full_url = _page_url(result)
 
         return (
             f"✅ Page {operation}: **{page_title}**\n\n"
@@ -344,9 +381,7 @@ def pull_from_confluence(
 
     page_version = page.get("version", {}).get("number", 1)
     last_modified = page.get("version", {}).get("when", str(date.today()))[:10]
-    url_path = page.get("_links", {}).get("webui", "")
-    base_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
-    full_url = f"{base_url}/wiki{url_path}" if url_path else ""
+    full_url = _page_url(page)
 
     proj_name = project_name or page_title
     requirements = _extract_requirements_heuristic(plain_text, full_url)
@@ -359,6 +394,7 @@ def pull_from_confluence(
         "",
         f"**Page:** {page_title}  ",
         f"**Space:** {space}  ",
+        f"**Project:** {proj_name}  ",
         f"**Version:** {page_version}, modified {last_modified}  ",
         f"**URL:** {full_url}",
         "",
@@ -378,6 +414,8 @@ def pull_from_confluence(
     lines += [
         "## Next step — pass to init_traceability_repo (5.1)",
         "",
+        f"Call it with `project_name=\"{proj_name}\"` and the list below:",
+        "",
         "```json",
         requirements_json,
         "```",
@@ -394,7 +432,7 @@ def pull_from_confluence(
     ]
 
     content = "\n".join(lines)
-    save_artifact(content, prefix="confluence_pull")
+    save_artifact(content, prefix="confluence_pull", project_id=proj_name)
     return content
 
 
@@ -459,9 +497,7 @@ def sync_page(
             body=html_content,
         )
         new_version = result.get("version", {}).get("number", old_version + 1)
-        url_path = result.get("_links", {}).get("webui", "")
-        base_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
-        full_url = f"{base_url}/wiki{url_path}" if url_path else base_url
+        full_url = _page_url(result)
 
         return (
             f"✅ Page synced: **{page_title}**\n\n"
@@ -515,10 +551,15 @@ def list_space_pages(
     if search_title:
         pages = [p for p in pages if search_title.lower() in p.get("title", "").lower()]
 
+    # NB: keep the quoting out of the f-string expression — a backslash inside an
+    # f-string replacement field is a SyntaxError before Python 3.12 (PEP 701),
+    # and this project supports Python 3.10+.
+    filter_note = f' (filter: "{search_title}")' if search_title else ""
+
     lines = [
         f"# 📋 Pages of space '{space}'",
         "",
-        f"Found: **{len(pages)}**{f' (filter: \"{search_title}\")' if search_title else ''}",
+        f"Found: **{len(pages)}**{filter_note}",
         "",
         "| Title | ID | Modified |",
         "|-------|-----|----------|",
@@ -580,9 +621,7 @@ def export_artifact_to_confluence(
                 body=html_content, parent_id=parent_id,
             )
 
-        url_path = result.get("_links", {}).get("webui", "")
-        base_url = os.environ.get("CONFLUENCE_URL", "").rstrip("/")
-        return {"status": "synced", "url": f"{base_url}/wiki{url_path}" if url_path else base_url}
+        return {"status": "synced", "url": _page_url(result)}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}

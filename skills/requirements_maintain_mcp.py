@@ -158,6 +158,11 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
             page_title=page_title,
         )
         logger.info(f"[export_hook] Confluence: {result.get('status')}")
+        # Callers report the failure reason via `note`; export_artifact_to_confluence
+        # reports it via `message`. Normalize here so a configured-but-failing sync
+        # (bad token, missing CONFLUENCE_SPACE_KEY, no permission) is never silent.
+        if result.get("status") != "synced" and not result.get("note"):
+            result["note"] = result.get("message") or "Confluence sync failed."
         return result
 
     except ImportError:
