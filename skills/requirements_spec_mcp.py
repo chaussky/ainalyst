@@ -133,19 +133,34 @@ def _save_spec(content: str, project_id: str, filename: str) -> str:
 def _find_confirmed_artifact(project_id: str) -> Optional[str]:
     """
     ADR-023: finds the latest confirmed 4.3 artifact for project_id.
-    Pattern: governance_plans/4_3_{project_id}_confirmed*.md (case-insensitive).
+
+    The 4.3 producer (save_confirmed_elicitation_result -> save_artifact) writes the report to
+      reports/<project_id>/4_3_confirmed_result_<timestamp>.md
+    i.e. project_id is the FOLDER name, and the filename itself does NOT contain project_id.
+    The previous implementation searched only flat data/ with masks that REQUIRED project_id
+    inside the filename, so it never matched the real artifact (audit finding 7.1-A). Search the
+    real per-project reports/ layout first, then fall back to legacy layouts for older projects
+    and test fixtures.
     """
-    safe = project_id.lower().replace(" ", "_")
+    from skills.common import report_dir_for, REPORTS_DIR
+    legacy_safe = project_id.lower().replace(" ", "_")
     patterns = [
-        os.path.join(DATA_DIR, f"4_3_{safe}_confirmed*.md"),
-        os.path.join(DATA_DIR, f"4_3_*{safe}*confirmed*.md"),
-        os.path.join(DATA_DIR, f"*4_3*{safe}*confirmed*.md"),
+        # canonical: per-project reports folder (folder filters by project; filename has no pid)
+        os.path.join(report_dir_for(project_id), "4_3_*confirmed*.md"),
+        # legacy flat reports/ (pre per-project layout, issue #1)
+        os.path.join(REPORTS_DIR, f"4_3_*{legacy_safe}*confirmed*.md"),
+        os.path.join(REPORTS_DIR, "4_3_*confirmed*.md"),
+        # very-legacy / test fixtures: flat data/ with project_id in the filename
+        os.path.join(DATA_DIR, f"4_3_{legacy_safe}_confirmed*.md"),
+        os.path.join(DATA_DIR, f"4_3_*{legacy_safe}*confirmed*.md"),
+        os.path.join(DATA_DIR, "4_3_*confirmed*.md"),
     ]
     for pattern in patterns:
         matches = glob.glob(pattern)
         if matches:
-            # take the latest by name
-            return sorted(matches)[-1]
+            # take the latest by modification time (filenames carry a timestamp, but mtime is
+            # robust when legacy and current naming are mixed)
+            return max(matches, key=os.path.getmtime)
     return None
 
 
@@ -153,6 +168,29 @@ def _read_confirmed_artifact(path: str) -> str:
     """Reads the contents of the 4.3 artifact."""
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def _load_future_state_goals(project_id: str) -> list:
+    """Reads the 6.2 business objectives from future_state_goals.json (audit finding 7.1-C).
+
+    6.2 (Define Future State) is the real source of business objectives, not the 4.3 confirmed
+    artifact. Returns a list of goal_title strings (empty if the 6.2 file is absent/unreadable).
+    Contract matches the 6.2 producer: key 'goals', field 'goal_title'.
+    """
+    safe = normalize_project_id(project_id)
+    path = data_path(project_id, f"{safe}_future_state_goals.json")
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return [
+                g.get("goal_title", "").strip()
+                for g in data.get("goals", [])
+                if g.get("goal_title", "").strip()
+            ]
+        except (IOError, json.JSONDecodeError, TypeError):
+            pass
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -1355,47 +1393,71 @@ def build_coverage_matrix(
     logger.info(f"build_coverage_matrix: '{project_id}'")
 
     repo = _load_repo(project_id)
-    requirements = [
+    active = [
         r for r in repo["requirements"]
         if r.get("status") not in {"deprecated", "superseded", "retired"}
     ]
 
-    if not requirements:
+    if not active:
         return (
             f"⚠️ Repository for project `{project_id}` has no requirements.\n"
             f"First create requirements with the 7.1 tools."
         )
 
-    # Try to find the 4.3 artifact to extract business objectives
-    artifact_path = _find_confirmed_artifact(project_id)
+    # Objectives are the 6.2 business_goal nodes; spec requirements are everything specifiable in
+    # 7.1. Exclude the goal/need/business roots so they don't inflate the requirement count or
+    # show up in the requirements list.
+    goal_nodes = [r for r in active if r.get("type") == "business_goal"]
+    requirements = [
+        r for r in active
+        if r.get("type") not in {"business_goal", "business_need", "business"}
+    ]
+
+    # C1 (audit finding 7.1-C): the REAL source of business objectives is 6.2 (Define Future
+    # State), NOT the 4.3 confirmed artifact — which holds requirements/rules/issues, never a
+    # business-objectives section. 6.2 registers each goal as a `business_goal` node in the 5.1
+    # graph AND stores it in future_state_goals.json. Prefer the graph nodes (canonical, and what
+    # a future per-goal traceability pass would traverse), then the 6.2 file, then a legacy
+    # "Business objectives" section written into the 4.3 artifact by hand, then group-by-source.
     business_goals = []
     source_info = ""
 
-    if artifact_path:
-        try:
-            content = _read_confirmed_artifact(artifact_path)
-            source_info = f"📂 Business objectives extracted from: `{artifact_path}`"
-            # Simple parsing: look for the section with business objectives
-            lines = content.split("\n")
-            in_goals_section = False
-            for line in lines:
-                line_stripped = line.strip()
-                lower = line_stripped.lower()
-                if any(kw in lower for kw in ["business objective", "business goal", "project objectives", "objectives:"]):
-                    in_goals_section = True
-                    continue
-                if in_goals_section:
-                    if line_stripped.startswith("#"):
-                        in_goals_section = False
+    if goal_nodes:
+        business_goals = [g["title"] for g in goal_nodes if g.get("title")]
+        source_info = "📂 Business objectives from the 6.2 goals registered in the 5.1 graph (business_goal nodes)."
+
+    if not business_goals:
+        fs_goals = _load_future_state_goals(project_id)
+        if fs_goals:
+            business_goals = fs_goals
+            source_info = "📂 Business objectives from 6.2 `future_state_goals.json`."
+
+    if not business_goals:
+        artifact_path = _find_confirmed_artifact(project_id)
+        if artifact_path:
+            try:
+                content = _read_confirmed_artifact(artifact_path)
+                source_info = f"📂 Business objectives extracted from the 4.3 artifact: `{artifact_path}`"
+                # Simple parsing: look for the section with business objectives
+                in_goals_section = False
+                for line in content.split("\n"):
+                    line_stripped = line.strip()
+                    lower = line_stripped.lower()
+                    if any(kw in lower for kw in ["business objective", "business goal", "project objectives", "objectives:"]):
+                        in_goals_section = True
                         continue
-                    if line_stripped.startswith("-") or (
-                        line_stripped and line_stripped[0].isdigit() and ". " in line_stripped
-                    ):
-                        goal = line_stripped.lstrip("-•*0123456789. ").strip()
-                        if len(goal) > 5:
-                            business_goals.append(goal)
-        except IOError:
-            pass
+                    if in_goals_section:
+                        if line_stripped.startswith("#"):
+                            in_goals_section = False
+                            continue
+                        if line_stripped.startswith("-") or (
+                            line_stripped and line_stripped[0].isdigit() and ". " in line_stripped
+                        ):
+                            goal = line_stripped.lstrip("-•*0123456789. ").strip()
+                            if len(goal) > 5:
+                                business_goals.append(goal)
+            except IOError:
+                pass
 
     if not business_goals:
         # Fallback: synthetic "objectives" from the requirements' source_artifact
@@ -1407,35 +1469,23 @@ def build_coverage_matrix(
 
         if source_artifacts:
             business_goals = [f"Objectives from: {sa}" for sa in sorted(source_artifacts)]
-            source_info = "📋 Business objectives not extracted from 4.3. Showing grouping by source."
+            source_info = "📋 No 6.2 goals and no 4.3 objectives found. Showing grouping by requirement source."
         else:
             business_goals = ["Business objectives not defined"]
-            source_info = "⚠️ 4.3 artifact not found. Run `analyze_elicitation_context` to analyze."
+            source_info = "⚠️ No business objectives found. Define them in 6.2 (`define_goals_and_objectives`) or run `analyze_elicitation_context`."
 
-    # Build the matrix
-    # For real traceability we use source_artifact as the link
-    goal_coverage = {}
-    for goal in business_goals:
-        goal_coverage[goal] = []
-
-    for req in requirements:
-        req_source = req.get("source_artifact", "")
-        # Map to an objective by source_artifact or to all objectives if there is a single source
-        matched = False
-        for goal in business_goals:
-            if req_source and (req_source in goal or goal in req_source):
-                goal_coverage[goal].append(req)
-                matched = True
-        if not matched and business_goals:
-            goal_coverage[business_goals[0]].append(req)
-
-    # Statistics
-    uncovered = [g for g, reqs in goal_coverage.items() if len(reqs) == 0]
-    over_engineered = [g for g, reqs in goal_coverage.items() if len(reqs) >= 10]
-    normal = [g for g, reqs in goal_coverage.items() if 1 <= len(reqs) < 10]
-
+    # HYBRID coverage (audit finding 7.1-B). There is NO honest per-goal link between a business
+    # objective (free text extracted from the 4.3 report) and a requirement (a 5.1 node): the old
+    # code compared a file PATH (source_artifact) against goal TEXT, so every requirement fell into
+    # the FIRST goal and all the others were falsely flagged "uncovered". We therefore do NOT
+    # fabricate a per-goal mapping. Instead we show the objectives as a checklist for the BA to
+    # eyeball, list the requirements, keep a single honest GLOBAL over-engineering hint, and point
+    # to check_coverage (5.1) for real graph-based traceability. Precise per-goal coverage is a
+    # deferred follow-up (register objectives as graph nodes + real satisfies/derives edges).
     total_reqs = len(requirements)
-    covered_reqs = sum(len(r) for r in goal_coverage.values())
+    num_goals = len(business_goals)
+    avg_per_goal = total_reqs / max(1, num_goals)
+    over_engineering = avg_per_goal >= 10  # global heuristic, not a per-goal claim
 
     lines = [
         f"<!-- BABOK 7.1 — Coverage Matrix | Project: {project_id} | {date.today()} -->",
@@ -1450,83 +1500,53 @@ def build_coverage_matrix(
         "",
         "| Metric | Value |",
         "|------------|----------|",
-        f"| Business objectives | {len(business_goals)} |",
+        f"| Business objectives (from 4.3) | {num_goals} |",
         f"| Requirements in the registry | {total_reqs} |",
-        f"| 🔴 Objectives without coverage | {len(uncovered)} |",
-        f"| 🟡 Objectives with 10+ requirements | {len(over_engineered)} |",
-        f"| 🟢 Objectives with normal coverage | {len(normal)} |",
+        f"| Avg requirements per objective | {avg_per_goal:.1f} |",
         "",
-    ]
-
-    if uncovered:
-        lines += [
-            "## 🔴 Uncovered business objectives",
-            "",
-            "> For each objective, at least one requirement must be created.",
-            "",
-        ]
-        for goal in uncovered:
-            lines.append(f"- **{goal}**")
-        lines.append("")
-
-    if over_engineered:
-        lines += [
-            "## 🟡 Possible over-engineering",
-            "",
-            "> 10+ requirements for a single objective — worth checking whether the requirements are duplicated.",
-            "",
-        ]
-        for goal in over_engineered:
-            req_ids = [r["id"] for r in goal_coverage[goal]]
-            lines.append(f"- **{goal}** ({len(req_ids)} requirements): {', '.join(f'`{i}`' for i in req_ids[:5])}{'...' if len(req_ids) > 5 else ''}")
-        lines.append("")
-
-    lines += [
-        "## Full matrix",
+        "> ⚠️ Precise objective-to-requirement mapping is not available here: business objectives "
+        "are free text from the 4.3 report (not graph nodes), and 7.1 requirements are not yet "
+        "linked to specific objectives. For exact coverage, link the requirements to their "
+        "objectives and run `check_coverage` (5.1). Per-objective traceability is a planned "
+        "follow-up.",
         "",
-        "| Business objective | Requirements | Coverage |",
-        "|-------------|-----------|---------|",
+        "## Business objectives (from 4.3) — checklist",
+        "",
+        "> Confirm by eye that each objective is addressed by at least one requirement in the list below.",
+        "",
     ]
 
     for goal in business_goals:
-        reqs = goal_coverage[goal]
-        req_ids = [r["id"] for r in reqs]
-        count = len(req_ids)
-        if count == 0:
-            icon = "🔴"
-        elif count >= 10:
-            icon = "🟡"
-        else:
-            icon = "🟢"
-        ids_str = ", ".join(f"`{i}`" for i in req_ids[:5])
-        if len(req_ids) > 5:
-            ids_str += f"... (+{len(req_ids) - 5})"
-        goal_short = goal[:50] + "..." if len(goal) > 50 else goal
-        lines.append(f"| {goal_short} | {ids_str or '—'} | {icon} {count} req |")
+        goal_short = goal[:80] + "..." if len(goal) > 80 else goal
+        lines.append(f"- [ ] {goal_short}")
+
+    lines += [
+        "",
+        "## Requirements in the registry",
+        "",
+        "| ID | Type | Title |",
+        "|----|------|-------|",
+    ]
+    for req in requirements:
+        lines.append(f"| `{req['id']}` | {req.get('type', '—')} | {req.get('title', '—')} |")
 
     lines += [
         "",
         "---",
         "",
-        "## Recommendations",
+        "## Signals & recommendations",
         "",
     ]
-
-    if uncovered:
+    if over_engineering:
         lines.append(
-            f"1. 🔴 **{len(uncovered)} objectives without coverage** — create requirements via the 7.1 tools."
+            f"- 🟡 **Possible over-engineering / duplication:** {total_reqs} requirements for "
+            f"{num_goals} business objective(s) (avg {avg_per_goal:.1f} per objective). "
+            f"Check for duplicates via `check_coverage` (5.1)."
         )
-    if over_engineered:
-        lines.append(
-            f"2. 🟡 **{len(over_engineered)} objectives with excessive coverage** — "
-            f"check for duplication via `check_coverage` (5.1)."
-        )
-    if not uncovered and not over_engineered:
-        lines.append("✅ All business objectives are covered. Ready for verification (7.2) and validation (7.3).")
-    else:
-        lines.append(
-            f"\n**Next step:** after closing the gaps — run verification (7.2)."
-        )
+    lines.append(
+        "- ✅ **Next:** confirm every objective in the checklist is addressed, then run "
+        "verification (7.2) and validation (7.3)."
+    )
 
     content = "\n".join(lines)
     save_artifact(content, prefix="7_1_coverage_matrix", project_id=project_id)

@@ -66,10 +66,16 @@ Templates for each artifact → see `references/templates.md`.
 - ERD automatically creates a `.puml` file
 
 ### Step 4 — Coverage check
-At the end, call `build_coverage_matrix`. The tool will show:
-- 🟢 Business objectives covered by requirements
-- 🔴 Business objectives without a single requirement (need to create one)
-- 🟡 Business objectives with 10+ requirements (possible over-engineering)
+At the end, call `build_coverage_matrix`. It reads the business objectives from 6.2
+(Define Future State: the `business_goal` nodes registered in the 5.1 graph, or
+`future_state_goals.json`), lists them as a checklist next to the requirements, and shows:
+- a checklist of business objectives (from 6.2) to confirm each is addressed by a requirement
+- 🟡 possible over-engineering (many requirements per objective, worth checking for duplicates)
+
+Note: a precise per-objective coverage link is not built here (objectives are not yet linked
+to specific requirements in the graph). For exact coverage, link the requirements to their
+objectives and run `check_coverage` (5.1). If 6.2 has not been run, the tool falls back to a
+"Business objectives" section in the 4.3 artifact (if you wrote one), then to grouping by source.
 
 ---
 
@@ -232,7 +238,9 @@ create_erd(
 
 ### `build_coverage_matrix`
 
-Builds a "business objective → requirements" coverage matrix.
+Lists the business objectives (from 6.2) as a checklist next to the requirements registry,
+so the BA can confirm each objective is addressed. Objectives come from the 6.2 `business_goal`
+nodes in the 5.1 graph (or `future_state_goals.json`); requirements come from the 5.1 registry.
 
 ```
 build_coverage_matrix(
@@ -241,9 +249,13 @@ build_coverage_matrix(
 ```
 
 **Signals:**
-- 🔴 Business objective not covered — create at least one requirement
-- 🟡 10+ requirements for a single objective — possible over-engineering, worth reviewing
-- 🟢 1–9 requirements per objective — normal coverage
+- Checklist of business objectives (from 6.2) — confirm each is addressed by a requirement
+- 🟡 many requirements per objective (avg 10+) — possible over-engineering, check for duplicates
+
+A precise per-objective coverage link is NOT built here (objectives are not yet linked to
+specific requirements in the graph). For exact coverage, link requirements to their objectives
+and run `check_coverage` (5.1). Without 6.2, falls back to a "Business objectives" section in
+the 4.3 artifact, then to grouping by requirement source.
 
 ---
 

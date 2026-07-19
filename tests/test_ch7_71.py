@@ -68,6 +68,32 @@ def load_spec_repo(project_id: str, governance_dir: str = "governance_plans/data
         return json.load(f)
 
 
+def make_confirmed_artifact_reports(project_id: str, content: str = None) -> str:
+    """Creates a test 4.3 artifact in the REAL producer layout and returns the path.
+
+    The 4.3 producer (save_confirmed_elicitation_result -> save_artifact) writes to
+    reports/<project_id>/4_3_confirmed_result_<timestamp>.md (project_id is the FOLDER,
+    NOT part of the filename). This helper reproduces that real contract, unlike the
+    legacy make_confirmed_artifact which wrote to a flat data/ with pid in the name.
+    """
+    from skills.common import report_dir_for
+    d = report_dir_for(project_id)
+    os.makedirs(d, exist_ok=True)
+    filename = "4_3_confirmed_result_20260101_000000.md"
+    path = os.path.join(d, filename)
+    artifact_content = content or """# Confirmed elicitation results
+
+## Business objectives
+
+1. Reduce application processing time to 2 days
+2. Automate the distribution of applications between managers
+3. Provide process transparency for the customer
+"""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(artifact_content)
+    return path
+
+
 def make_confirmed_artifact(project_id: str, content: str = None) -> str:
     """Creates a test 4.3 artifact and returns the path."""
     safe = project_id.lower().replace(" ", "_")
@@ -1127,6 +1153,145 @@ class TestIntegrationPipeline(BaseMCPTest):
         self.assertEqual(type_map["BP-001"], "business_process")
         self.assertEqual(type_map["DD-001"], "data_dictionary")
         self.assertEqual(type_map["ERD-001"], "erd")
+
+
+# ---------------------------------------------------------------------------
+# 7.1 audit regressions (2026-07-19): producer(4.3)/consumer(7.1) contract + hybrid matrix
+# ---------------------------------------------------------------------------
+
+class TestConfirmedArtifactRealLayout(BaseMCPTest):
+    """Bug 7.1-A: the 4.3 producer writes to reports/<pid>/4_3_confirmed_result_<ts>.md,
+    but the consumer only searched flat data/ with pid-in-filename masks -> never found it."""
+
+    P = "layout_test"
+
+    def test_find_confirmed_artifact_in_reports_layout(self):
+        path = make_confirmed_artifact_reports(self.P)
+        found = mod71._find_confirmed_artifact(self.P)
+        self.assertIsNotNone(found, "consumer must find the artifact in the real reports/<pid>/ layout")
+        self.assertEqual(os.path.abspath(found), os.path.abspath(path))
+
+    def test_find_confirmed_artifact_still_finds_legacy_data_layout(self):
+        # backward compat: the old flat data/ fixture must still be found
+        path = make_confirmed_artifact(self.P)
+        found = mod71._find_confirmed_artifact(self.P)
+        self.assertIsNotNone(found)
+        self.assertEqual(os.path.abspath(found), os.path.abspath(path))
+
+    def test_analyze_finds_real_producer_artifact(self):
+        make_confirmed_artifact_reports(self.P)
+        result = mod71.analyze_elicitation_context(self.P)
+        self.assertIn("File found", result)
+        self.assertNotIn("not found", result.split("##")[0])
+
+
+class TestCoverageMatrixHybrid(BaseMCPTest):
+    """Bug 7.1-B: the goal<->requirement mapping compared a file PATH (source_artifact)
+    against goal TEXT, so every requirement fell into the first goal and all other goals
+    were falsely flagged 🔴 uncovered. Hybrid (B1+B3): no fake per-goal flags; goals as a
+    checklist; explicit limitation note pointing to check_coverage (5.1)."""
+
+    P = "hybrid_test"
+
+    def _multi_goal_artifact(self):
+        make_confirmed_artifact(self.P, content="""## Business objectives
+
+1. Alpha goal reduce processing time
+2. Beta goal automate the routing
+3. Gamma goal transparency for clients
+""")
+
+    def test_no_false_per_goal_uncovered_when_requirements_exist(self):
+        self._multi_goal_artifact()
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "Auto route",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": "governance_plans/reports/hybrid_test/4_3_confirmed_result_x.md"},
+            {"id": "FR-002", "type": "functional", "title": "Transparency",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": "governance_plans/reports/hybrid_test/4_3_confirmed_result_x.md"},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertNotIn("Uncovered business objectives", result)
+        # Beta/Gamma must NOT be flagged as red-uncovered lines
+        self.assertNotIn("🔴", result)
+
+    def test_goals_shown_as_checklist(self):
+        self._multi_goal_artifact()
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "T",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("Alpha goal reduce processing time", result)
+        self.assertIn("Beta goal automate the routing", result)
+        self.assertIn("Gamma goal transparency for clients", result)
+
+    def test_matrix_notes_traceability_limitation_and_points_to_check_coverage(self):
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "T",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("check_coverage", result)
+
+    def test_over_engineering_hint_still_present(self):
+        # keep the global over-engineering signal (>= 10 reqs, no goals)
+        reqs = [
+            {"id": f"FR-{i:03d}", "type": "functional", "title": f"Req {i}",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""}
+            for i in range(12)
+        ]
+        save_spec_repo(make_spec_repo(self.P, reqs))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("🟡", result)
+
+    # --- C1: objectives come from the REAL source (6.2), not the 4.3 artifact ---
+
+    def test_goals_read_from_6_2_graph_nodes(self):
+        """6.2 registers business_goal nodes in the 5.1 repo; the matrix must use them
+        as the objectives checklist, not fall back to synthetic source grouping."""
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut processing time to 2 days",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()), "source_artifact": ""},
+            {"id": "FR-001", "type": "functional", "title": "Auto route",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        # must appear as a checklist objective, not as a requirement row
+        self.assertIn("- [ ] Cut processing time to 2 days", result)
+
+    def test_business_goal_node_not_counted_as_requirement(self):
+        """A business_goal node is an objective, not a spec requirement — it must not inflate
+        the requirements count nor appear in the requirements list."""
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "BG-001", "type": "business_goal", "title": "Goal one",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()), "source_artifact": ""},
+            {"id": "FR-001", "type": "functional", "title": "Req one",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("| Requirements in the registry | 1 |", result)
+
+    def test_goals_read_from_future_state_goals_file(self):
+        """If goals are not in the graph (register_in_traceability=False) but the 6.2 file
+        exists, read objectives from future_state_goals.json."""
+        from skills.common import data_path
+        import os as _os
+        safe = self.P.lower().replace(" ", "_")
+        path = data_path(self.P, f"{safe}_future_state_goals.json")
+        _os.makedirs(_os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"goals": [
+                {"id": "BG-001", "goal_title": "Improve NPS to 60", "description": "d",
+                 "objectives": [], "linked_business_needs": []},
+            ]}, f)
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "Feature",
+             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("Improve NPS to 60", result)
 
 
 if __name__ == "__main__":
