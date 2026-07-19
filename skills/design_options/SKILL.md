@@ -53,9 +53,13 @@ Under BABOK v3 this task merged three tasks from v2:
 ## MCP tools
 
 ### 1. `set_change_strategy`
-**When:** at the start of work on 7.5, if the Change Strategy hasn't been recorded yet.
+**When:** ONLY if task 6.4 (Define Change Strategy) has NOT been done. 6.4 is the authoritative
+source of the Change Strategy (the contract for 7.x/8.x); 7.5 reads it directly. This tool is a
+flat surrogate for projects that skipped Chapter 6.
 **Fields:** `change_type` (technology/process/organizational/hybrid), `scope`, `constraints`, `timeline`
-**Result:** `{project}_change_strategy.json`
+**Result:** `{project}_change_strategy.json` (flat surrogate format)
+**Guard:** if `{project}_change_strategy.json` already exists in the richer 6.4 format, this tool
+refuses to overwrite it — 7.5 will use the 6.4 strategy as-is. Edit it via the 6.4 tools instead.
 
 ---
 

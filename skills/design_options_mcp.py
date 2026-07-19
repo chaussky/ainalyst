@@ -59,6 +59,11 @@ PRIORITY_TO_VERSION = {
     "Won't": "out_of_scope",
 }
 
+# "Critical" priorities for req_coverage (audit finding 7.5-A). 7.1 sets High/Medium/Low; 5.3 sets
+# MoSCoW. Both Must and High map to v1 in PRIORITY_TO_VERSION, so req_coverage must count both —
+# otherwise a project that skipped 5.3 (repo priority = High) always shows req_coverage = N/A.
+MUST_PRIORITIES = {"Must", "High"}
+
 # Default comparison criteria
 DEFAULT_CRITERIA = [
     {"id": "cost", "label": "Implementation cost", "weight": "high"},
@@ -140,6 +145,50 @@ def _load_change_strategy(project_id: str) -> Optional[dict]:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
+
+
+def _is_rich_strategy(strategy: Optional[dict]) -> bool:
+    """True if change_strategy.json is the RICH 6.4 format (the real Chapter 6 contract), not the
+    flat 7.5 surrogate (audit finding 7.5-B). 6.4 nests `scope` as a dict and adds solution_scope /
+    change_strategy sections; the 7.5 surrogate has a flat string `scope` and top-level change_type.
+    """
+    if not strategy:
+        return False
+    return isinstance(strategy.get("scope"), dict) or \
+        "solution_scope" in strategy or "change_strategy" in strategy
+
+
+def _extract_strategy_fields(strategy: Optional[dict]) -> Optional[dict]:
+    """Normalises either the 6.4 rich format or the 7.5 flat surrogate into a flat
+    {change_type, scope, constraints, timeline} for display (audit finding 7.5-B)."""
+    if not strategy:
+        return None
+    if _is_rich_strategy(strategy):
+        scope6 = strategy.get("scope", {}) or {}
+        sol = strategy.get("solution_scope", {}) or {}
+        thm = scope6.get("time_horizon_months")
+        excluded = sol.get("explicitly_excluded", []) or []
+        scope_txt = sol.get("scope_summary", "") or ""
+        if not scope_txt:
+            caps = sol.get("capabilities", []) or []
+            if caps:
+                scope_txt = "Capabilities: " + ", ".join(
+                    str(c.get("name", c) if isinstance(c, dict) else c) for c in caps[:5])
+        constraints = ("Out of scope: " + "; ".join(str(e) for e in excluded)) if excluded \
+            else (scope6.get("ba_notes", "") or "—")
+        return {
+            "change_type": scope6.get("change_type", "—"),
+            "scope": scope_txt or "—",
+            "constraints": constraints,
+            "timeline": f"{thm} months" if thm else "—",
+        }
+    # 7.5 flat surrogate
+    return {
+        "change_type": strategy.get("change_type", "—"),
+        "scope": strategy.get("scope", "—"),
+        "constraints": strategy.get("constraints", "—"),
+        "timeline": strategy.get("timeline", "—"),
+    }
 
 
 def _load_context(project_id: str) -> Optional[dict]:
@@ -224,6 +273,17 @@ def set_change_strategy(
 
     path = _change_strategy_path(project_id)
     is_update = os.path.exists(path)
+
+    # Guard: do NOT clobber a real 6.4 Change Strategy contract with the flat 7.5 surrogate
+    # (audit finding 7.5-B). 6.4 is the authoritative source for 7.x/8.x; 7.5 reads it directly.
+    existing = _load_change_strategy(project_id)
+    if _is_rich_strategy(existing):
+        return (
+            f"⚠️ `{project_id}_change_strategy.json` is already populated by task 6.4 "
+            f"(the richer Change Strategy contract for 7.x/8.x). **Not overwriting.**\n\n"
+            f"7.5 reads the 6.4 Change Strategy directly — no surrogate is needed. "
+            f"To change the strategy, edit it via the 6.4 tools (`change_strategy` phase)."
+        )
 
     strategy = {
         "project_id": project_id,
@@ -867,7 +927,7 @@ def compare_design_options(
 
     # Compute req_coverage automatically
     repo = _load_repo(project_id)
-    all_reqs = [r for r in repo.get("requirements", []) if r.get("priority") == "Must"]
+    all_reqs = [r for r in repo.get("requirements", []) if r.get("priority") in MUST_PRIORITIES]
     must_count = len(all_reqs)
     must_ids = {r["id"] for r in all_reqs}
 
@@ -1097,7 +1157,7 @@ def save_design_options_report(
     allocation = do_data.get("allocation", {})
 
     all_reqs = [r for r in repo.get("requirements", []) if r.get("type", "") not in {"business", "test", "change_request"}]
-    must_reqs = [r for r in all_reqs if r.get("priority") == "Must"]
+    must_reqs = [r for r in all_reqs if r.get("priority") in MUST_PRIORITIES]
     must_ids = {r["id"] for r in must_reqs}
 
     def _calc_coverage(option_id: str) -> tuple:
@@ -1143,15 +1203,18 @@ def save_design_options_report(
 
     # Change Strategy
     if strategy:
+        # Read either the 6.4 rich contract or the 7.5 flat surrogate (audit finding 7.5-B).
+        sf = _extract_strategy_fields(strategy)
+        source_note = " _(from 6.4 Change Strategy)_" if _is_rich_strategy(strategy) else ""
         doc_lines += [
-            "## Change strategy",
+            f"## Change strategy{source_note}",
             "",
             f"| Field | Value |",
             f"|-------|-------|",
-            f"| Type | `{strategy.get('change_type', '—')}` |",
-            f"| Scope | {strategy.get('scope', '—')} |",
-            f"| Constraints | {strategy.get('constraints', '—')} |",
-            f"| Timeline | {strategy.get('timeline', '—')} |",
+            f"| Type | `{sf['change_type']}` |",
+            f"| Scope | {sf['scope']} |",
+            f"| Constraints | {sf['constraints']} |",
+            f"| Timeline | {sf['timeline']} |",
             "",
         ]
     else:

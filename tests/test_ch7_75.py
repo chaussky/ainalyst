@@ -873,5 +873,55 @@ class TestPipeline(Base75Test):
         self.assertIn("✅", r4)
 
 
+# ---------------------------------------------------------------------------
+# 7.5 audit regression (2026-07-19): req_coverage must count High (not only MoSCoW "Must"),
+# and 7.5 must consume the real 6.4 change_strategy format without clobbering it.
+# ---------------------------------------------------------------------------
+
+class TestDesignOptionsAuditRegressions(Base75Test):
+
+    def test_req_coverage_counts_high_priority(self):
+        """Without 5.3 the repo priority is High/Medium/Low (7.1). req_coverage must not be N/A."""
+        P = "cov75a"
+        self._write_repo(P, {"project": P, "requirements": [
+            make_req("FR-001", "functional", priority="High"),
+        ], "links": [], "history": []})
+        opts = [make_option("OPT-001"), make_option("OPT-002", approach="buy")]
+        alloc = {"FR-001": {"version": "v1", "option_id": "OPT-001",
+                            "rationale": "x", "source": "auto"}}
+        self._write_design_options(P, make_design_options(P, options=opts, allocation=alloc))
+        result = mod75.compare_design_options(P)
+        self.assertIn("100%", result)
+
+    def test_save_report_reads_64_rich_change_strategy(self):
+        """save_design_options_report must read the 6.4 rich format (nested), not only 7.5 flat."""
+        P = "cs64read"
+        self._write_repo(P, {"project": P, "requirements": [
+            make_req("FR-001", "functional", priority="High")], "links": [], "history": []})
+        self._write_design_options(P, make_design_options(P, options=[make_option("OPT-001")]))
+        self._write_change_strategy(P, {
+            "project_id": P,
+            "scope": {"change_type": "technology", "time_horizon_months": 12},
+            "solution_scope": {"capabilities": [], "explicitly_excluded": ["Mobile app"],
+                               "scope_summary": "Replace legacy CRM"},
+            "change_strategy": {"options": []},
+        })
+        mod75.save_design_options_report(P)
+        content = self._saved_artifacts[-1]["content"]
+        self.assertIn("Replace legacy CRM", content)  # solution_scope.scope_summary (not read before fix)
+
+    def test_set_change_strategy_does_not_overwrite_64(self):
+        """set_change_strategy (surrogate) must not clobber a real 6.4 change_strategy contract."""
+        P = "cs64prot"
+        self._write_change_strategy(P, {
+            "project_id": P, "scope": {"change_type": "technology"},
+            "solution_scope": {"scope_summary": "6.4 data"}, "change_strategy": {"options": []},
+        })
+        mod75.set_change_strategy(P, "process", "new scope", "constr", "6 months")
+        data = self._read_change_strategy(P)
+        self.assertIn("solution_scope", data)
+        self.assertEqual(data["solution_scope"]["scope_summary"], "6.4 data")
+
+
 if __name__ == "__main__":
     unittest.main()
