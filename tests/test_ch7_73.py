@@ -1056,5 +1056,64 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(fr_upd["status"], "validated")
 
 
+# ---------------------------------------------------------------------------
+# 7.3 audit regression (2026-07-19): the graph traversal must recognise the REAL
+# business-goal node types from 6.1/6.2 (business_goal / business_need), not only the
+# legacy "business" type. Otherwise reqs traced to a goal through the graph are false orphans,
+# and the goal nodes themselves are miscounted as requirements.
+# ---------------------------------------------------------------------------
+
+def _goal_node(req_id="BG-001", title="Reduce client waiting duration", ntype="business_goal"):
+    return {"id": req_id, "type": ntype, "title": title, "status": "confirmed",
+            "version": "1.0", "added": str(date.today())}
+
+
+class TestBusinessNodeTypes(BaseMCPTest):
+
+    def test_bfs_reaches_business_goal_node(self):
+        repo = make_repo("p",
+            requirements=[_goal_node("BG-001", "X", "business_goal"),
+                          make_verified_req("FR-001", "Y", "functional")],
+            links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}])
+        result = mod73._bfs_to_business(repo, "FR-001")
+        self.assertEqual({n["id"] for n in result}, {"BG-001"})
+
+    def test_bfs_reaches_business_need_node(self):
+        repo = make_repo("p",
+            requirements=[_goal_node("BN-001", "X", "business_need"),
+                          make_verified_req("FR-001", "Y", "functional")],
+            links=[{"from": "FR-001", "to": "BN-001", "relation": "derives"}])
+        result = mod73._bfs_to_business(repo, "FR-001")
+        self.assertEqual({n["id"] for n in result}, {"BN-001"})
+
+    def test_alignment_via_bfs_to_business_goal_node(self):
+        """A req traced to a business_goal through the graph is aligned via BFS, not a false orphan.
+        Titles share no >=5-char word, so only the graph link can align it."""
+        P = "align_bg73"
+        save_context(make_context(P, goals=[
+            {"id": "BG-001", "title": "Reduce client waiting duration", "kpi": "24h->4h"}]))
+        save_repo(make_repo(P,
+            requirements=[_goal_node("BG-001", "Reduce client waiting duration", "business_goal"),
+                          make_verified_req("FR-001", "Automatic routing engine", "functional")],
+            links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
+        result = mod73.check_business_alignment(P)
+        self.assertIn("_(BFS)_", result)
+        aligned_section = result.split("Aligned requirements")[-1].split("##")[0]
+        self.assertIn("FR-001", aligned_section)
+
+    def test_report_excludes_business_goal_from_requirements(self):
+        """A business_goal node must not be counted as a requirement nor flagged orphan."""
+        P = "report_bg73"
+        save_context(make_context(P, goals=[
+            {"id": "BG-001", "title": "Reduce client waiting duration", "kpi": "24h->4h"}]))
+        save_repo(make_repo(P,
+            requirements=[_goal_node("BG-001", "Reduce client waiting duration", "business_goal"),
+                          make_verified_req("FR-001", "Automatic routing engine", "functional",
+                                            status="validated")],
+            links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
+        result = mod73.get_validation_report(P)
+        self.assertIn("| Total active reqs | 1 |", result)
+
+
 if __name__ == "__main__":
     unittest.main()

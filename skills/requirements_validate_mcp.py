@@ -39,6 +39,15 @@ REPO_FILENAME = "traceability_repo.json"
 CONTEXT_FILENAME = "business_context.json"
 ASSUMPTIONS_FILENAME = "assumptions.json"
 
+# Node types that represent a business goal / root a requirement can trace UP to (audit finding
+# 7.3-A). 6.2 registers goals as `business_goal`, 6.1 registers needs as `business_need`;
+# `business` is the legacy/manual type. The traversal must recognise all of them, not only the
+# legacy one, or reqs traced to a real 6.1/6.2 goal show up as false orphans.
+BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
+# Node types that are NOT requirements to be validated (goals/roots + test nodes). Excluded from
+# the requirement count and from the orphan check.
+NON_REQUIREMENT_TYPES = BUSINESS_NODE_TYPES | {"test"}
+
 
 # ---------------------------------------------------------------------------
 # Utilities — paths and file loading
@@ -157,7 +166,7 @@ def _bfs_to_business(repo: dict, start_id: str) -> list:
 
         node = reqs_by_id.get(current)
         if node and current != start_id:
-            if node.get("type") == "business":
+            if node.get("type") in BUSINESS_NODE_TYPES:
                 business_nodes.append(node)
 
         # Traverse all edges (in either direction)
@@ -527,8 +536,9 @@ def check_business_alignment(
         req_id = req["id"]
         req_type = req.get("type", "")
 
-        # Skip the repo's own business nodes and test nodes
-        if req_type in ("business", "test"):
+        # Skip the goal/root nodes (business / business_goal / business_need) and test nodes —
+        # they are not requirements to be aligned (audit finding 7.3-A).
+        if req_type in NON_REQUIREMENT_TYPES:
             continue
 
         # Method 1: BFS to 'business'-type nodes
@@ -1212,11 +1222,10 @@ def get_validation_report(
 
     # Statistics by requirements
     skip_statuses = {"deprecated", "superseded", "retired"}
-    skip_types = {"business", "test"}
     active_reqs = [
         r for r in all_reqs
         if r.get("status") not in skip_statuses
-        and r.get("type", "") not in skip_types
+        and r.get("type", "") not in NON_REQUIREMENT_TYPES
     ]
     total = len(active_reqs)
 
