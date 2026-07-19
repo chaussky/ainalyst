@@ -13,6 +13,7 @@ they are tested manually or via atlassian-python-api mocks.
 """
 
 import os
+import re
 import sys
 import unittest
 from unittest.mock import patch, MagicMock
@@ -269,11 +270,26 @@ def _make_mock_confluence(page_exists=True, page_title="Test", page_id="12345"):
         "version": {"number": 1},
         "_links": {"base": CLOUD_BASE, "webui": "/spaces/BA/pages/99999"},
     }
-    mock.get_all_pages_from_space.return_value = [
+    space_pages = [
         {"id": "111", "title": "Requirements FR", "version": {"when": "2026-03-01T00:00:00Z"}},
         {"id": "222", "title": "Requirements BR", "version": {"when": "2026-03-15T00:00:00Z"}},
         {"id": "333", "title": "Architecture",   "version": {"when": "2026-03-20T00:00:00Z"}},
     ]
+    mock.get_all_pages_from_space.return_value = space_pages
+
+    def _cql(cql_query, **kwargs):
+        """Behaves like the server: matches `title ~ "..."` across the whole space
+        and returns hits in the rest/api/search shape (page wrapped in `content`)."""
+        match = re.search(r'title ~ "([^"]*)"', cql_query)
+        needle = (match.group(1) if match else "").lower()
+        return {
+            "results": [
+                {"content": p, "title": p["title"], "lastModified": p["version"]["when"]}
+                for p in space_pages if needle in p["title"].lower()
+            ]
+        }
+
+    mock.cql.side_effect = _cql
     return mock
 
 
@@ -828,6 +844,127 @@ class TestExportHookErrorSurfacing(BaseMCPTest):
                 new_status="confirmed",
             )
         self.assertIn("API rate limit", content)
+
+
+class TestSearchIsServerSide(BaseMCPTest):
+    """INT-H — search_title must query the whole space, not the fetched window."""
+
+    def _client_with_cql(self):
+        mock_client = _make_mock_confluence()
+        mock_client.cql.side_effect = None  # override the fixture's space-search stub
+        mock_client.cql.return_value = {
+            "results": [
+                {   # rest/api/search wraps the page under "content"
+                    "content": {
+                        "id": "888",
+                        "title": "Requirements — deep in the space",
+                        "version": {"number": 2},
+                    },
+                    "title": "Requirements — deep in the space",
+                    "lastModified": "2026-05-05T12:00:00Z",
+                },
+            ]
+        }
+        return mock_client
+
+    def test_search_uses_cql_scoped_to_space_and_title(self):
+        mock_client = self._client_with_cql()
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA", search_title="Requirements")
+
+        mock_client.cql.assert_called_once()
+        query = mock_client.cql.call_args[0][0]
+        self.assertIn('space = "BA"', query)
+        self.assertIn('title ~ "Requirements"', query)
+        self.assertIn("type = page", query)
+        # a page beyond the first `limit` of the space is now found
+        self.assertIn("Requirements — deep in the space", result)
+        self.assertIn("searched the whole space", result)
+        mock_client.get_all_pages_from_space.assert_not_called()
+
+    def test_search_hit_unwrapped_shape_also_supported(self):
+        """Some endpoints/versions return the content object directly."""
+        mock_client = _make_mock_confluence()
+        mock_client.cql.side_effect = None  # override the fixture's space-search stub
+        mock_client.cql.return_value = {
+            "results": [{"id": "888", "title": "Flat shape", "version": {"when": "2026-05-05T12:00:00Z"}}]
+        }
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA", search_title="Flat")
+        self.assertIn("Flat shape", result)
+        self.assertIn("2026-05-05", result)
+
+    def test_search_falls_back_when_cql_unavailable(self):
+        """A deployment that restricts CQL degrades instead of erroring out."""
+        mock_client = _make_mock_confluence()
+        mock_client.cql.side_effect = Exception("CQL disabled")
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA", search_title="Requirements")
+        self.assertIn("Requirements FR", result)
+        self.assertNotIn("Architecture", result)
+        self.assertIn("CQL unavailable", result)
+
+    def test_no_search_still_lists_the_space(self):
+        mock_client = _make_mock_confluence()
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA")
+        mock_client.cql.assert_not_called()
+        self.assertIn("Architecture", result)
+
+    def test_empty_search_result_message_mentions_the_filter(self):
+        mock_client = _make_mock_confluence()
+        mock_client.cql.side_effect = None  # override the fixture's space-search stub
+        mock_client.cql.return_value = {"results": []}
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.list_space_pages(space_key="BA", search_title="Nothing")
+        self.assertIn("ℹ️", result)
+        self.assertIn("Nothing", result)
+
+
+class TestExportPageTitles(BaseMCPTest):
+    """INT-G — auto-published 5.2 page titles must not collide or proliferate."""
+
+    def title(self, artifact_type, metadata):
+        import skills.requirements_maintain_mcp as maintain_mod
+        return maintain_mod._confluence_page_title(artifact_type, "CRM", metadata)
+
+    def test_different_requirements_same_day_get_different_pages(self):
+        """The collision that silently overwrote the earlier page in Confluence."""
+        first = self.title("requirement_update", {"req_id": "FR-001"})
+        second = self.title("requirement_update", {"req_id": "FR-002"})
+        self.assertNotEqual(first, second)
+        self.assertIn("FR-001", first)
+        self.assertIn("FR-002", second)
+
+    def test_living_reports_have_no_date_so_they_update_in_place(self):
+        for artifact_type in ("health_report", "reuse_list"):
+            title = self.title(artifact_type, {})
+            self.assertNotIn(str(date.today()), title,
+                             f"{artifact_type} is a living report — a dated title forks a new page daily")
+
+    def test_living_report_title_is_stable_across_calls(self):
+        self.assertEqual(self.title("health_report", {"health_pct": 80}),
+                         self.title("health_report", {"health_pct": 95}))
+
+    def test_deprecation_batch_lists_ids_and_caps_them(self):
+        few = self.title("deprecation", {"req_ids": ["FR-001", "FR-002"]})
+        self.assertIn("FR-001, FR-002", few)
+        many = self.title("deprecation", {"req_ids": [f"FR-00{i}" for i in range(1, 6)]})
+        self.assertIn("+2", many)
+
+    def test_event_without_ids_still_dated(self):
+        title = self.title("requirement_update", {})
+        self.assertIn(str(date.today()), title)
 
 
 class TestExportArtifactToConfluence(BaseMCPTest):

@@ -113,6 +113,52 @@ def _days_since(date_str: str) -> int:
 # Hook for external storage
 # ---------------------------------------------------------------------------
 
+_ARTIFACT_LABELS = {
+    "requirement_update": "Requirement update",
+    "deprecation": "Deprecated requirements",
+    "health_report": "Requirements health audit",
+    "reuse_list": "Reuse candidates",
+}
+
+# Snapshots of the CURRENT state: there should be exactly one page per project that
+# gets updated in place. Dating their titles creates a new page every day and the
+# "living" report fragments into dozens of copies.
+_LIVING_ARTIFACTS = {"health_report", "reuse_list"}
+
+
+def _requirement_discriminator(metadata: dict) -> str:
+    """Requirement ids that keep event-page titles distinct.
+
+    Without this, two updates of DIFFERENT requirements on the same day produce the
+    same page title and the second silently overwrites the first in Confluence.
+    """
+    req_id = metadata.get("req_id")
+    if req_id:
+        return str(req_id)
+
+    req_ids = metadata.get("req_ids") or []
+    if isinstance(req_ids, str):
+        req_ids = [req_ids]
+    if not req_ids:
+        return ""
+
+    shown = ", ".join(str(r) for r in req_ids[:3])
+    return f"{shown} +{len(req_ids) - 3}" if len(req_ids) > 3 else shown
+
+
+def _confluence_page_title(artifact_type: str, project_name: str, metadata: dict) -> str:
+    """Builds the Confluence page title for an exported 5.2 artifact."""
+    label = _ARTIFACT_LABELS.get(artifact_type, artifact_type)
+
+    if artifact_type in _LIVING_ARTIFACTS:
+        return f"{project_name} — {label}"
+
+    discriminator = _requirement_discriminator(metadata)
+    if discriminator:
+        return f"{project_name} — {label} — {discriminator} ({date.today()})"
+    return f"{project_name} — {label} ({date.today()})"
+
+
 def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
     """
     Export hook — called after every significant update in 5.2.
@@ -144,14 +190,7 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
         from skills.integrations.confluence_mcp import export_artifact_to_confluence
 
         project_name = metadata.get("project_name", "BA Project")
-        type_labels = {
-            "requirement_update": "Requirement update",
-            "deprecation": "Deprecated requirements",
-            "health_report": "Requirements health audit",
-            "reuse_list": "Reuse candidates",
-        }
-        label = type_labels.get(artifact_type, artifact_type)
-        page_title = f"{project_name} — {label} ({date.today()})"
+        page_title = _confluence_page_title(artifact_type, project_name, metadata)
 
         result = export_artifact_to_confluence(
             content_markdown=content,

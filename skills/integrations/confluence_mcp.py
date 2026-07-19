@@ -210,6 +210,35 @@ def _default_space_key() -> str:
     return os.environ.get("CONFLUENCE_SPACE_KEY", "")
 
 
+def _cql_escape(value: str) -> str:
+    """Escapes a value for embedding in a quoted CQL string literal."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _normalize_search_hit(item: dict) -> dict:
+    """Normalizes one CQL search hit to a page object.
+
+    `rest/api/search` wraps the page under a `content` key, while the plain content
+    endpoints return the page object directly. Accept BOTH shapes rather than betting
+    on one. The modification timestamp also lives in different places: `lastModified`
+    on the search hit, `version.when` on the content object.
+    """
+    if not isinstance(item, dict):
+        return {}
+    inner = item.get("content")
+    page = dict(inner) if isinstance(inner, dict) else dict(item)
+
+    version = page.get("version")
+    version = dict(version) if isinstance(version, dict) else {}
+    if not version.get("when") and item.get("lastModified"):
+        version["when"] = item["lastModified"]
+    if version:
+        page["version"] = version
+    if not page.get("title") and item.get("title"):
+        page["title"] = item["title"]
+    return page
+
+
 def _base_web_url() -> str:
     """Base URL of the Confluence web UI, without a trailing slash.
 
@@ -538,23 +567,50 @@ def list_space_pages(
     if not space:
         return "❌ space_key not provided."
 
-    try:
-        pages = confluence.get_all_pages_from_space(
+    def _fetch_all():
+        return confluence.get_all_pages_from_space(
             space=space, start=0, limit=limit, expand="version",
-        )
+        ) or []
+
+    def _filter_locally(all_pages):
+        return [p for p in all_pages if search_title.lower() in p.get("title", "").lower()]
+
+    scope_note = ""
+    try:
+        if search_title:
+            # Search SERVER-SIDE. Filtering client-side would only ever see the first
+            # `limit` pages of the space, so a page that exists beyond that window
+            # reads as "not found" — the BA concludes it isn't there.
+            try:
+                cql_query = (
+                    f'space = "{_cql_escape(space)}" and type = page '
+                    f'and title ~ "{_cql_escape(search_title)}"'
+                )
+                response = confluence.cql(cql_query, limit=limit, expand="version")
+                hits = response.get("results", []) if isinstance(response, dict) else (response or [])
+                pages = [_normalize_search_hit(h) for h in hits]
+                scope_note = "searched the whole space"
+            except Exception as cql_error:
+                # Some deployments restrict CQL — degrade instead of failing outright.
+                logger.warning(f"list_space_pages: CQL search failed ({cql_error}); "
+                               f"falling back to a client-side filter")
+                pages = _filter_locally(_fetch_all())
+                scope_note = f"CQL unavailable — filtered the first {limit} pages only"
+        else:
+            pages = _fetch_all()
     except Exception as e:
         return f"❌ Error while fetching pages: {e}"
-
-    if not pages:
-        return f"ℹ️ No pages found in space '{space}', or no access."
-
-    if search_title:
-        pages = [p for p in pages if search_title.lower() in p.get("title", "").lower()]
 
     # NB: keep the quoting out of the f-string expression — a backslash inside an
     # f-string replacement field is a SyntaxError before Python 3.12 (PEP 701),
     # and this project supports Python 3.10+.
-    filter_note = f' (filter: "{search_title}")' if search_title else ""
+    filter_note = f' (filter: "{search_title}"; {scope_note})' if search_title else ""
+
+    if not pages:
+        if search_title:
+            return (f"ℹ️ No pages matching '{search_title}' in space '{space}' "
+                    f"({scope_note}).")
+        return f"ℹ️ No pages found in space '{space}', or no access."
 
     lines = [
         f"# 📋 Pages of space '{space}'",
