@@ -10,13 +10,14 @@ Tools:
   - save_architecture_snapshot       — records an architecture snapshot, generates Markdown
 
 ADR-034: VIEWPOINT_MAP — constant mapping of types → viewpoints
-ADR-035: reads the stakeholder registry from 4.2 ({project}_stakeholders.json) directly
+ADR-035: reads the stakeholder registry from 4.2 ({project}_stakeholder_registry.json) directly
+         (legacy fallback: {project}_stakeholders.json)
 ADR-036: custom viewpoints are bound to req_ids, not to types
 ADR-037: {project}_architecture.json with snapshots (pattern from 5.5)
 ADR-038: check_architecture_gaps — two levels: coverage matrix + semantic gaps
 
 Reads:  {project}_traceability_repo.json (5.1)
-        {project}_stakeholders.json (4.2) — optional
+        {project}_stakeholder_registry.json (4.2) — optional
         {project}_business_context.json (7.3) — optional
 Writes: {project}_architecture.json
         7_4_architecture_*.md (via save_artifact)
@@ -76,8 +77,14 @@ VIEWPOINT_MAP = {
     },
 }
 
-# Types that are NOT included in viewpoints (they are graph nodes, not artifacts)
-SKIP_TYPES = {"business", "test"}
+# Business-goal / root node types a requirement can trace UP to (audit finding 7.4-B). 6.2
+# registers goals as `business_goal`, 6.1 registers needs as `business_need`; `business` is the
+# legacy/manual type. Recognise all of them, not only the legacy one.
+BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
+
+# Types that are NOT viewpoint artifacts (they are goal/root graph nodes, not requirements) — plus
+# test nodes. Excluded from viewpoints and from the active-requirement count (audit finding 7.4-C).
+SKIP_TYPES = BUSINESS_NODE_TYPES | {"test"}
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +100,15 @@ def _repo_path(project_id: str) -> str:
 
 
 def _stakeholders_path(project_id: str) -> str:
-    return data_path(project_id, f"{_safe(project_id)}_{STAKEHOLDERS_FILENAME}")
+    # 4.2 writes the living registry to <pid>_stakeholder_registry.json (the real producer file);
+    # older data may use the flat <pid>_stakeholders.json. Prefer the registry, fall back to legacy
+    # (audit finding 7.4-A — the consumer read the wrong filename).
+    safe = _safe(project_id)
+    registry = data_path(project_id, f"{safe}_stakeholder_registry.json")
+    if os.path.exists(registry):
+        return registry
+    legacy = data_path(project_id, f"{safe}_{STAKEHOLDERS_FILENAME}")
+    return legacy if os.path.exists(legacy) else registry
 
 
 def _context_path(project_id: str) -> str:
@@ -402,7 +417,7 @@ def analyze_requirements_architecture(
             linked = _get_linked_ids(repo, req_id)
             for linked_id in linked:
                 linked_req = _find_req(repo, linked_id)
-                if linked_req and linked_req.get("type") == "business":
+                if linked_req and linked_req.get("type") in BUSINESS_NODE_TYPES:
                     bg_to_viewpoints[linked_id].add(VIEWPOINT_MAP[vp_key]["label"])
 
         vp_labels = sorted(set(v["label"] for v in VIEWPOINT_MAP.values()))
@@ -654,7 +669,7 @@ def check_architecture_gaps(
         gaps_info.append({
             "type": "no_stakeholder_registry",
             "message": (
-                f"Stakeholder registry not found (`{project_id}_stakeholders.json`). "
+                f"Stakeholder registry not found (`{project_id}_stakeholder_registry.json`). "
                 f"Stakeholder coverage check skipped. "
                 f"Create the registry via the 4.2 tools."
             ),
@@ -700,7 +715,7 @@ def check_architecture_gaps(
     if goals:
         # For each BG, check whether it has at least one link in the graph
         goal_ids = {g["id"] for g in goals}
-        bg_in_graph = {r["id"] for r in all_reqs if r.get("type") == "business"}
+        bg_in_graph = {r["id"] for r in all_reqs if r.get("type") in BUSINESS_NODE_TYPES}
         for g in goals:
             if g["id"] not in bg_in_graph:
                 gaps_warning.append({

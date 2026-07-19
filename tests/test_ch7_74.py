@@ -861,5 +861,53 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("custom", doc_content[0])
 
 
+# ---------------------------------------------------------------------------
+# 7.4 audit regression (2026-07-19): stakeholder-registry filename contract (4.2)
+# and 6.1/6.2 business-goal node types.
+# ---------------------------------------------------------------------------
+
+def save_stakeholder_registry(project_id, stakeholders=None):
+    """Writes the registry under the REAL 4.2 filename (*_stakeholder_registry.json)."""
+    safe = project_id.lower().replace(" ", "_")
+    path = os.path.join("governance_plans", "data", f"{safe}_stakeholder_registry.json")
+    os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"project": project_id, "stakeholders": stakeholders or
+                   [{"name": "Head of Sales", "role": "Sponsor"}], "history": []}, f)
+    return path
+
+
+class TestArchAuditRegressions(BaseMCPTest):
+
+    def test_load_stakeholders_from_registry_filename(self):
+        save_stakeholder_registry("reg74")
+        result = mod74._load_stakeholders("reg74")
+        self.assertIsNotNone(result)
+        self.assertEqual(result["stakeholders"][0]["name"], "Head of Sales")
+
+    def test_gaps_finds_stakeholder_registry(self):
+        save_repo(make_repo("reg74b", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("reg74b")
+        result = mod74.check_architecture_gaps("reg74b")
+        self.assertNotIn("registry not found", result.lower())
+
+    def test_analyze_excludes_business_goal_from_total(self):
+        save_repo(make_repo("bg74", [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("BG-001", "business_goal", "Reduce waiting", status="confirmed"),
+        ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
+        result = mod74.analyze_requirements_architecture("bg74")
+        self.assertIn("**Total active req:** 1", result)
+
+    def test_gaps_recognizes_business_goal_node_in_graph(self):
+        save_repo(make_repo("bg74c", [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("BG-001", "business_goal", "Reduce waiting", status="confirmed"),
+        ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
+        save_context(make_context("bg74c", goals=[{"id": "BG-001", "title": "Reduce waiting"}]))
+        result = mod74.check_architecture_gaps("bg74c")
+        self.assertNotIn("not represented as a node", result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
