@@ -119,6 +119,57 @@ def _empty_plan(project_id: str) -> dict:
     }
 
 
+_LIST_EXAMPLE = '["Sponsor", "Product Owner"]'
+
+
+def _parse_json_list(raw: str, field: str, required: bool = False) -> tuple:
+    """Parses a JSON array. Returns (values, error_message).
+
+    Shared by every Ch3 tool that takes a list, so the validation cannot drift apart
+    between siblings. Malformed input is REPORTED, never silently coerced or dropped:
+    swallowing it makes the tool answer about data the BA never actually supplied.
+    """
+    text = (raw or "").strip()
+    if not text:
+        if required:
+            return [], f"❌ {field} is required. Expected a JSON array, e.g. '{_LIST_EXAMPLE}'."
+        return [], ""
+
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as e:
+        return [], (f"❌ Error parsing {field}: {e}\n"
+                    f"Expected a JSON array, e.g. '{_LIST_EXAMPLE}'.")
+
+    if not isinstance(value, list):
+        return [], (f"❌ {field} must be a JSON array, got {type(value).__name__}. "
+                    f"Example: '{_LIST_EXAMPLE}'.")
+
+    if required and not value:
+        return [], f"❌ {field} must be a non-empty JSON array."
+
+    return value, ""
+
+
+def _parse_string_list(raw: str, field: str, required: bool = False) -> tuple:
+    """Parses a JSON array of strings. Returns (values, error_message).
+
+    A list holding objects/numbers is a caller mistake (easy to make, since sibling
+    parameters like metrics_json DO take objects). Rejecting it here keeps the failure
+    a readable message instead of a TypeError escaping the tool at render time.
+    """
+    values, error = _parse_json_list(raw, field, required=required)
+    if error:
+        return [], error
+
+    bad = next((v for v in values if not isinstance(v, str)), None)
+    if bad is not None:
+        return [], (f"❌ {field} must contain only strings — got "
+                    f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
+                    f"Example: '{_LIST_EXAMPLE}'.")
+    return values, ""
+
+
 def _classify_stakeholder(influence: str, interest: str) -> tuple:
     """Returns (quadrant, strategy, frequency) per the Power/Interest matrix."""
     key = (influence, interest)
@@ -328,13 +379,10 @@ def plan_ba_governance(
         change_control_process: Description of the change control process (optional — filled from a template)
         ba_notes: Additional agreements
     """
-    try:
-        decision_makers = json.loads(decision_makers_json)
-    except json.JSONDecodeError:
-        return "❌ Error parsing decision_makers_json. Expected a JSON array of strings, e.g. '[\"Sponsor\", \"PO\"]'"
-
-    if not isinstance(decision_makers, list):
-        return "❌ decision_makers_json must be a JSON array."
+    decision_makers, error = _parse_string_list(
+        decision_makers_json, "decision_makers_json", required=True)
+    if error:
+        return error
 
     tpl = _GOVERNANCE_TEMPLATES.get(project_criticality, _GOVERNANCE_TEMPLATES["Medium"])
 
@@ -396,18 +444,14 @@ def plan_information_management(
         access_rules: Access rules (who reads, who edits)
         ba_notes: Additional agreements
     """
-    try:
-        storage_tools = json.loads(storage_tools_json)
-    except json.JSONDecodeError:
-        return "❌ Error parsing storage_tools_json. Expected a JSON array of strings."
+    storage_tools, error = _parse_string_list(
+        storage_tools_json, "storage_tools_json", required=True)
+    if error:
+        return error
 
-    try:
-        artifact_types = json.loads(artifact_types_json) if artifact_types_json.strip() else []
-    except json.JSONDecodeError:
-        artifact_types = []
-
-    if not isinstance(storage_tools, list) or not storage_tools:
-        return "❌ storage_tools_json must be a non-empty JSON array."
+    artifact_types, error = _parse_string_list(artifact_types_json, "artifact_types_json")
+    if error:
+        return error
 
     trace_desc = _TRACEABILITY_LEVELS.get(traceability_level, _TRACEABILITY_LEVELS["Medium"])
 
@@ -460,15 +504,14 @@ def evaluate_ba_performance(
             '[{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]'
         ba_notes: Additional context
     """
-    try:
-        current_issues = json.loads(current_issues_json) if current_issues_json.strip() else []
-    except json.JSONDecodeError:
-        current_issues = []
+    current_issues, error = _parse_string_list(current_issues_json, "current_issues_json")
+    if error:
+        return error
 
-    try:
-        metrics = json.loads(metrics_json) if metrics_json.strip() else []
-    except json.JSONDecodeError:
-        metrics = []
+    # metrics entries may be objects ({name, baseline, target}) or plain strings
+    metrics, error = _parse_json_list(metrics_json, "metrics_json")
+    if error:
+        return error
 
     # Match issues to recommendations
     recommendations = []
@@ -556,7 +599,9 @@ def save_ba_plan(
     info_mgmt = plan.get("information_management", {})
     performance = plan.get("performance", {})
 
-    if not any([approach, engagement, governance, info_mgmt]):
+    # `performance` counts too: the report renders a 3.5 section when it is present,
+    # so omitting it here refused a plan that actually had content.
+    if not any([approach, engagement, governance, info_mgmt, performance]):
         return (
             "⚠️ BA plan is empty or not filled in.\n"
             "Complete steps 3.1-3.5 before saving the report."

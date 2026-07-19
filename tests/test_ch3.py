@@ -516,6 +516,102 @@ class TestEvaluateBaPerformance(BaseMCPTest):
 # save_ba_plan (finalization)
 # ---------------------------------------------------------------------------
 
+class TestCh3AuditRegressions(BaseMCPTest):
+    """Regression tests for the Ch3 audit findings (3.3 / 3.4 / 3.5 + save_ba_plan).
+
+    All of these were reachable through the documented parameters and none were
+    covered before: the list parameters accepted shapes that either crashed the tool
+    or were silently mangled.
+    """
+
+    # --- list inputs holding non-strings crashed the tool -------------------
+
+    def test_governance_rejects_object_decision_makers(self):
+        """Was: TypeError from ', '.join(...) escaping the MCP tool."""
+        result = plan_ba_governance(PROJECT, "High", '[{"role": "PO"}]')
+        self.assertIn("❌", result)
+        self.assertIn("decision_makers_json", result)
+
+    def test_performance_rejects_object_issues(self):
+        """Was: AttributeError — 'dict' object has no attribute 'lower'."""
+        result = evaluate_ba_performance(PROJECT, current_issues_json='[{"issue": "x"}]')
+        self.assertIn("❌", result)
+        self.assertIn("current_issues_json", result)
+
+    def test_info_mgmt_rejects_object_tools(self):
+        result = plan_information_management(PROJECT, '[{"tool": "Jira"}]')
+        self.assertIn("❌", result)
+        self.assertIn("storage_tools_json", result)
+
+    # --- a JSON scalar was shredded into characters ------------------------
+
+    def test_artifact_types_bare_string_rejected(self):
+        """Was: '"BRD"' stored as the string 'BRD' and rendered as 'B, R, D'."""
+        result = plan_information_management(PROJECT, '["Confluence"]',
+                                             artifact_types_json='"BRD"')
+        self.assertIn("❌", result)
+        self.assertIn("artifact_types_json", result)
+
+    def test_rejected_call_writes_nothing(self):
+        plan_information_management("untouched_project", '["Confluence"]',
+                                    artifact_types_json='"BRD"')
+        self.assertFalse(os.path.exists(_plan_path("untouched_project")))
+
+    # --- malformed JSON was swallowed, producing a misleading verdict ------
+
+    def test_performance_reports_malformed_issues_json(self):
+        """Was: silently became [] and the tool answered 'no explicit issues'
+        with a 'hold a retrospective' recommendation — about data the BA never gave."""
+        result = evaluate_ba_performance(PROJECT, current_issues_json="no templates, scope creep")
+        self.assertIn("❌", result)
+        self.assertNotIn("retrospective", result.lower())
+
+    def test_performance_reports_malformed_metrics_json(self):
+        result = evaluate_ba_performance(PROJECT, metrics_json="{oops")
+        self.assertIn("❌", result)
+        self.assertIn("metrics_json", result)
+
+    # --- governance with nobody deciding -----------------------------------
+
+    def test_governance_rejects_empty_decision_makers(self):
+        """The sibling tool already rejected an empty list; governance did not."""
+        result = plan_ba_governance(PROJECT, "High", "[]")
+        self.assertIn("❌", result)
+
+    # --- happy paths must survive the stricter validation ------------------
+
+    def test_valid_inputs_still_accepted(self):
+        self.assertIn("✅", plan_ba_governance(PROJECT, "High", '["Sponsor", "PO"]'))
+        self.assertIn("✅", plan_information_management(
+            PROJECT, '["Confluence"]', artifact_types_json='["BRD"]'))
+        self.assertIn("✅", evaluate_ba_performance(
+            PROJECT, current_issues_json='["scope creep"]',
+            metrics_json='[{"name": "Rework Rate", "baseline": "20%", "target": "8%"}]'))
+
+    def test_metrics_accepts_plain_strings_too(self):
+        """metrics entries may be objects OR strings — the renderer handles both."""
+        result = evaluate_ba_performance(PROJECT, metrics_json='["Defect Rate"]')
+        self.assertIn("✅", result)
+
+    def test_optional_lists_may_be_omitted(self):
+        self.assertIn("✅", evaluate_ba_performance(PROJECT))
+        self.assertIn("✅", plan_information_management(PROJECT, '["Jira"]'))
+
+    # --- the "empty plan" gate ignored section 3.5 -------------------------
+
+    def test_performance_only_plan_is_not_empty(self):
+        """Was: refused as 'empty or not filled in' although save_ba_plan renders
+        a 3.5 section whenever performance is present."""
+        evaluate_ba_performance("perf_only", current_issues_json='["no templates"]')
+        result = save_ba_plan("perf_only")
+        self.assertIn("✅", result)
+        self.assertNotIn("empty", result.lower())
+
+    def test_truly_empty_plan_still_warns(self):
+        result = save_ba_plan("nothing_here")
+        self.assertIn("⚠️", result)
+
+
 class TestSaveBaPlan(BaseMCPTest):
 
     def test_full_plan_success(self):
