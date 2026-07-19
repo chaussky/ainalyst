@@ -968,5 +968,50 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(rec["recommendation"]["recommended_option_id"], "")
 
 
+# ---------------------------------------------------------------------------
+# 7.6 audit regression (2026-07-20): consume the REAL 6.3 risk register
+# (filename risk_assessment.json, risks as a list, risk_score instead of risk_level).
+# ---------------------------------------------------------------------------
+
+def save_risk_assessment_63(project_id, tmp_dir, risks_list):
+    """Writes the 6.3 risk register in the REAL producer shape:
+    filename <pid>_risk_assessment.json, key `risks` = LIST, each risk has risk_score (no risk_level)."""
+    pid = project_id.lower().replace(" ", "_")
+    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_risk_assessment.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"project_id": project_id, "risks": risks_list}, f)
+    return path
+
+
+class TestRiskContract63(BaseMCPTest):
+
+    def _benefits_json(self):
+        return json.dumps([make_benefit()])
+
+    def _costs_json(self):
+        return json.dumps(make_costs())
+
+    def test_reads_risks_from_63_risk_assessment_file(self):
+        save_risk_assessment_63("p63read", self.tmp_dir, [
+            {"risk_id": "RK-001", "description": "Vendor lock-in",
+             "likelihood": 5, "impact": 5, "risk_score": 25, "status": "identified"},
+        ])
+        result = mod76.add_value_assessment(
+            "p63read", "OPT-001", self._benefits_json(), self._costs_json(), risks_json="[]")
+        self.assertIn("6.3_file", result)
+
+    def test_risk_penalty_derives_level_from_63_score(self):
+        # 6.3 risks carry risk_score (1-25), not risk_level -> derive the level
+        self.assertEqual(mod76._calc_risk_penalty([{"risk_score": 25}]), 3.0)  # Critical
+        self.assertEqual(mod76._calc_risk_penalty([{"risk_score": 15}]), 2.0)  # High
+        self.assertEqual(mod76._calc_risk_penalty([{"risk_score": 6}]), 1.0)   # Medium
+        self.assertEqual(mod76._calc_risk_penalty([{"risk_score": 4}]), 0.0)   # Low
+
+    def test_risk_level_still_wins_when_present(self):
+        # explicit risk_level (7.5/manual format) must still take precedence
+        self.assertEqual(mod76._calc_risk_penalty([{"risk_level": "Critical", "risk_score": 4}]), 3.0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -93,7 +93,15 @@ def _architecture_path(project_id: str) -> str:
 
 
 def _risks_path(project_id: str) -> str:
-    return data_path(project_id, f"{_safe(project_id)}_{RISKS_FILENAME}")
+    # 6.3 writes the risk register to <pid>_risk_assessment.json (the real producer file); older
+    # data may use the flat <pid>_risks.json. Prefer the real one, fall back to legacy (audit
+    # finding 7.6-A — the consumer read the wrong filename).
+    safe = _safe(project_id)
+    real = data_path(project_id, f"{safe}_risk_assessment.json")
+    if os.path.exists(real):
+        return real
+    legacy = data_path(project_id, f"{safe}_{RISKS_FILENAME}")
+    return legacy if os.path.exists(legacy) else real
 
 
 def _repo_path(project_id: str) -> str:
@@ -196,11 +204,39 @@ def _calc_alignment_score(option: dict, context: Optional[dict]) -> float:
     return round(matched / len(goals), 3)
 
 
+def _risk_level_from_score(score) -> str:
+    """Maps a 6.3 risk_score (likelihood × impact, 1-25) to a 7.6 risk_level (audit finding 7.6-A).
+    Aligned with the 6.3 zones (High at score >= 15, Medium at >= 6); Critical is reserved for the
+    top of the 5×5 matrix (>= 20)."""
+    try:
+        s = float(score)
+    except (TypeError, ValueError):
+        return "Low"
+    if s >= 20:
+        return "Critical"
+    if s >= 15:
+        return "High"
+    if s >= 6:
+        return "Medium"
+    return "Low"
+
+
+def _risk_level_of(risk: dict) -> str:
+    """A risk's level: an explicit risk_level (7.5/manual format) wins; otherwise derive it from a
+    6.3 risk_score. This bridges the 6.3 register (risk_score, no risk_level) to the 7.6 formula."""
+    lvl = risk.get("risk_level")
+    if lvl in RISK_LEVEL_MAP:
+        return lvl
+    if "risk_score" in risk:
+        return _risk_level_from_score(risk.get("risk_score"))
+    return "Low"
+
+
 def _calc_risk_penalty(risks: list) -> float:
-    """Risk_Penalty = the maximum risk_level among all risks of the option."""
+    """Risk_Penalty = the maximum risk level among all risks of the option."""
     if not risks:
         return 0.0
-    penalties = [RISK_LEVEL_MAP.get(r.get("risk_level", "Low"), 0) for r in risks]
+    penalties = [RISK_LEVEL_MAP.get(_risk_level_of(r), 0) for r in risks]
     return float(max(penalties))
 
 
@@ -415,12 +451,22 @@ def add_value_assessment(
     if not risks:
         external_risks = _load_risks(project_id)
         if external_risks:
-            # Take risks for this option_id if present, otherwise all shared risks
-            option_risks = external_risks.get("risks", {}).get(option_id, [])
-            if not option_risks:
-                option_risks = external_risks.get("risks", [])
-                if isinstance(option_risks, dict):
-                    option_risks = []
+            risks_node = external_risks.get("risks", [])
+            if isinstance(risks_node, dict):
+                # legacy shape {option_id: [...]}: take this option, else flatten all option lists
+                option_risks = risks_node.get(option_id, [])
+                if not option_risks:
+                    option_risks = [
+                        r for lst in risks_node.values() if isinstance(lst, list) for r in lst
+                    ]
+            elif isinstance(risks_node, list):
+                # 6.3 shape: a flat list of the project's risks (only identified ones count)
+                option_risks = [
+                    r for r in risks_node
+                    if isinstance(r, dict) and r.get("status", "identified") == "identified"
+                ]
+            else:
+                option_risks = []
             risks = option_risks if isinstance(option_risks, list) else []
             risks_source = "6.3_file" if risks else "none"
 
@@ -1173,7 +1219,7 @@ def save_recommendation(
                 for r in risks:
                     doc_lines.append(
                         f"- `{r.get('risk_id', '?')}` — {r.get('description', '')} "
-                        f"(risk_level: **{r.get('risk_level', '?')}**)"
+                        f"(risk_level: **{_risk_level_of(r)}**)"
                     )
                 doc_lines.append("")
 
