@@ -192,6 +192,82 @@ def _specs_dir(project_id: str) -> str:
     return specs_dir(project_id)
 
 
+def _spec_section_body(content: str, header: str) -> str:
+    """Returns the text of a '## <header>' section up to the next '##' or '---' or EOF."""
+    lines = content.split("\n")
+    body, in_section = [], False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## ") and stripped[3:].strip().lower().startswith(header.lower()):
+            in_section = True
+            continue
+        if in_section:
+            if stripped.startswith("## ") or stripped == "---":
+                break
+            body.append(line)
+    return "\n".join(body).strip()
+
+
+def _read_spec_fields(req: dict, project_id: str) -> Optional[dict]:
+    """Reads the 7.1 spec .md for a requirement and extracts the fields the quality checks need
+    (audit finding 7.2-A). The 5.1 repo stores only metadata; the real text (AC, statement,
+    exception scenarios) lives in the 7.1 spec files. Returns a dict of extracted fields, or None
+    if no spec file is found/readable (the caller then degrades gracefully rather than false-flag).
+
+    File location: the node's source_artifact (7.1 registers the spec path there), else a glob
+    <id>_*.md in the specs directory.
+    """
+    path = None
+    sa = req.get("source_artifact", "") or ""
+    if sa.lower().endswith(".md") and os.path.exists(sa):
+        path = sa
+    else:
+        safe_id = req.get("id", "").lower().replace("-", "_")
+        if safe_id:
+            matches = glob.glob(os.path.join(_specs_dir(project_id), f"{safe_id}_*.md"))
+            if matches:
+                path = sorted(matches)[0]
+    if not path:
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except IOError:
+        return None
+
+    req_type = req.get("type", "")
+    fields: dict = {}
+    if req_type == "user_story":
+        ac_body = _spec_section_body(content, "Acceptance Criteria")
+        ac_texts = [
+            re.sub(r"^\d+\.\s*", "", ln.strip())
+            for ln in ac_body.split("\n")
+            if re.match(r"^\s*\d+\.\s+", ln)
+        ]
+        fields["ac_count"] = len(ac_texts)
+        fields["ac_texts"] = ac_texts
+    elif req_type in ("functional", "non_functional", "business_rule"):
+        stmt = _spec_section_body(content, "Statement")
+        # drop the italic hint line ("> _..._") the 7.1 template prepends
+        stmt = "\n".join(l for l in stmt.split("\n") if not l.strip().startswith(">")).strip()
+        if stmt:
+            fields["description"] = stmt
+    elif req_type == "use_case":
+        # present the exception-scenarios section (empty string if the section is absent)
+        fields["exc_scenarios"] = _spec_section_body(content, "Exception scenarios")
+    return fields
+
+
+def _enrich_req_from_spec(req: dict, project_id: str) -> dict:
+    """Returns a copy of the req augmented with fields parsed from its 7.1 spec file, so the
+    quality checks run on the real requirement text rather than on repo metadata alone."""
+    enriched = dict(req)
+    fields = _read_spec_fields(req, project_id)
+    if fields:
+        enriched.update(fields)
+    return enriched
+
+
 # ---------------------------------------------------------------------------
 # Rule-based checks (ADR-027)
 # ---------------------------------------------------------------------------
@@ -367,25 +443,40 @@ def _check_single_req(req: dict, repo: dict) -> dict:
         majors.append("ambiguity")
 
     # --- Testability (depends on the type) ---
+    # The real text (AC / statement / exception scenarios) lives in the 7.1 spec files; the caller
+    # enriches req from there before this runs (audit finding 7.2-A). "Known" = the relevant field
+    # is present (from the spec file or already on the node). If unknown, DEGRADE gracefully with a
+    # "verify manually" note instead of a false blocker/major.
     if req_type == "user_story":
-        # For US, the AC data is stored in the file. We do not have it from the repo — use a title heuristic.
-        # ac_count is taken from the field if present (backward compatibility), otherwise 0.
-        ac_count = req.get("ac_count", 0)
-        ac_texts = req.get("ac_texts", [])
-        checks["testable"] = _check_testability_us(title, ac_count, ac_texts)
-        if not checks["testable"]["passed"]:
-            blockers.append(checks["testable"].get("issue", "missing_ac"))
+        if "ac_count" in req:
+            ac_count = req.get("ac_count", 0)
+            ac_texts = req.get("ac_texts", [])
+            checks["testable"] = _check_testability_us(title, ac_count, ac_texts)
+            if not checks["testable"]["passed"]:
+                blockers.append(checks["testable"].get("issue", "missing_ac"))
+        else:
+            checks["testable"] = {"passed": True, "issue": None,
+                                  "note": "Acceptance Criteria not found in the 7.1 spec file — verify manually"}
 
     elif req_type in ("functional", "non_functional", "business_rule"):
-        checks["testable"] = _check_testability_fr(description or title, req_type)
-        if not checks["testable"]["passed"]:
-            majors.append(checks["testable"].get("issue", "not_testable"))
+        desc = (description or "").strip()
+        if desc:
+            checks["testable"] = _check_testability_fr(desc, req_type)
+            if not checks["testable"]["passed"]:
+                majors.append(checks["testable"].get("issue", "not_testable"))
+        else:
+            checks["testable"] = {"passed": True, "issue": None,
+                                  "note": "Requirement statement not found in the 7.1 spec file — verify testability manually"}
 
     elif req_type == "use_case":
-        exc = req.get("exc_scenarios", "")
-        checks["testable"] = _check_testability_uc(exc)
-        if not checks["testable"]["passed"]:
-            majors.append(checks["testable"].get("issue", "not_testable"))
+        if "exc_scenarios" in req:
+            exc = req.get("exc_scenarios", "")
+            checks["testable"] = _check_testability_uc(exc)
+            if not checks["testable"]["passed"]:
+                majors.append(checks["testable"].get("issue", "not_testable"))
+        else:
+            checks["testable"] = {"passed": True, "issue": None,
+                                  "note": "Use Case scenarios not found in the 7.1 spec file — verify manually"}
 
     else:
         # business_process, data_dictionary, erd — basic check by title
@@ -500,8 +591,10 @@ def check_req_quality(
         msg += ".\n\nPerhaps all requirements already have the status `verified`."
         return msg
 
-    # Run the checks
-    results = [_check_single_req(r, repo) for r in reqs_to_check]
+    # Run the checks — enrich each req from its 7.1 spec file first (audit finding 7.2-A), so
+    # quality is judged on the real requirement text, not on repo metadata alone.
+    enriched_reqs = [_enrich_req_from_spec(r, project_id) for r in reqs_to_check]
+    results = [_check_single_req(r, repo) for r in enriched_reqs]
 
     # Aggregation
     passed_count = sum(1 for r in results if r["overall"] == "passed")

@@ -955,5 +955,70 @@ class TestPipeline(BaseMCPTest):
             mock_sa.assert_called_once()
 
 
+# ---------------------------------------------------------------------------
+# 7.2 audit regression (2026-07-19): check_req_quality must read the 7.1 spec files,
+# not false-flag from repo metadata that lacks AC / description / exception scenarios.
+# ---------------------------------------------------------------------------
+
+def make_spec_file(project_id: str, req_id: str, content: str) -> str:
+    """Writes a 7.1-style spec .md into data/<pid>/specs/ (real 7.1 layout)."""
+    from skills.common import normalize_project_id, DATA_DIR
+    sd = os.path.join(DATA_DIR, normalize_project_id(project_id), "specs")
+    os.makedirs(sd, exist_ok=True)
+    path = os.path.join(sd, f"{req_id.lower().replace('-', '_')}_spec.md")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return path
+
+
+def make_bare_node(req_id: str, rtype: str, title: str, **extra) -> dict:
+    """A 5.1 node as the REAL 7.1 registration writes it: metadata only, no AC/desc/exc keys."""
+    node = {
+        "id": req_id, "type": rtype, "title": title, "status": "draft",
+        "priority": "High", "owner": "X", "source_artifact": "",
+        "version": "1.0", "added": str(date.today()),
+    }
+    node.update(extra)
+    return node
+
+
+class TestQualityReadsSpecFiles(BaseMCPTest):
+
+    def test_us_with_ac_in_spec_file_not_flagged_missing_ac(self):
+        P = "spec_us"
+        make_spec_file(P, "US-001",
+            "# US-001 — Submit\n\n## Story\n\nAs a X\n\n## Acceptance Criteria\n\n"
+            "1. The system saves within 2 seconds\n2. Sends an email\n3. Unique id\n")
+        save_repo(make_repo(P, [make_bare_node("US-001", "user_story", "Submit")]))
+        result = mod72.check_req_quality(P)
+        self.assertNotIn("missing_ac", result)
+
+    def test_uc_with_exceptions_in_spec_file_not_flagged_not_testable(self):
+        P = "spec_uc"
+        make_spec_file(P, "UC-001",
+            "# UC-001 — Review\n\n## Main scenario (Happy Path)\n\n1. Step\n\n"
+            "## Exception scenarios\n\n4a. Timeout: notify the manager.\n")
+        save_repo(make_repo(P, [make_bare_node("UC-001", "use_case", "Review")]))
+        result = mod72.check_req_quality(P)
+        self.assertNotIn("not_testable", result)
+
+    def test_fr_with_metric_in_spec_file_not_flagged_not_testable(self):
+        P = "spec_fr"
+        make_spec_file(P, "FR-001",
+            "# FR-001 — Routing\n\n## Statement\n\n> _hint_\n\n"
+            "The system SHALL route each application within 3 seconds under up to 1000 requests per second.\n\n"
+            "## Rationale\n\nSpeed.\n")
+        save_repo(make_repo(P, [make_bare_node("FR-001", "functional", "Routing")]))
+        result = mod72.check_req_quality(P)
+        self.assertNotIn("not_testable", result)
+
+    def test_us_without_ac_data_and_no_file_degrades_gracefully(self):
+        P = "spec_deg"
+        save_repo(make_repo(P, [make_bare_node("US-001", "user_story", "Submit")]))
+        result = mod72.check_req_quality(P)
+        self.assertNotIn("missing_ac", result)
+        self.assertIn("verify manually", result.lower())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
