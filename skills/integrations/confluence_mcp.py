@@ -33,10 +33,12 @@ import json
 import os
 import re
 from html import unescape as _html_unescape
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger
+from skills.common import (
+    save_artifact, logger, normalize_project_id, report_dir_for, specs_dir,
+)
 
 mcp = FastMCP("BABOK_Confluence_Integration")
 
@@ -301,6 +303,69 @@ def _page_url(page: dict) -> str:
     url_path = links.get("webui", "")
     base = (links.get("base") or "").rstrip("/") or _base_web_url()
     return f"{base}{url_path}" if url_path else base
+
+
+# ---------------------------------------------------------------------------
+# Artifact publishing: filename -> stable page identity
+# ---------------------------------------------------------------------------
+
+# save_artifact writes "{prefix}_{YYYYmmdd_HHMMSS}.md", so stripping the suffix
+# leaves the prefix — which is the artifact's stable identity, because the
+# producing tool chose it and put its own discriminator in it.
+_TIMESTAMP_RE = re.compile(r"_\d{8}_\d{6}\.md$", re.IGNORECASE)
+
+# A small CLOSED vocabulary, cosmetic only. This is deliberately NOT a per-artifact
+# label map: such a map would need an entry for every new artifact type and would
+# render a wrong title for anything not yet added. An unlisted acronym here renders
+# as "Cr" — still stable, still a correct identity.
+_TITLE_ACRONYMS = {"cr", "uc"}
+
+
+def _strip_timestamp(filename: str) -> str:
+    """'5_5_approval_record_v1.0_20260720_151747.md' -> '5_5_approval_record_v1.0'."""
+    base = os.path.basename(filename)
+    stripped = _TIMESTAMP_RE.sub("", base)
+    if stripped != base:
+        return stripped
+    return base[:-3] if base.lower().endswith(".md") else base
+
+
+def _humanize_stem(stem: str) -> str:
+    """Turns an artifact prefix into a readable page title fragment.
+
+    Tokens containing a digit or an uppercase letter are emitted verbatim — that is
+    what protects version and id discriminators like 'v1.0' and 'CR-003'.
+    """
+    stem = re.sub(r"^(\d)_(\d)_", r"\1.\2 ", stem)
+    words = []
+    for word in stem.replace("_", " ").split():
+        if any(ch.isdigit() for ch in word) or any(ch.isupper() for ch in word):
+            words.append(word)
+        elif word.lower() in _TITLE_ACRONYMS:
+            words.append(word.upper())
+        else:
+            words.append(word[:1].upper() + word[1:])
+    return " ".join(words)
+
+
+def _derive_page_title(project_id: str, path: str) -> str:
+    """Builds the Confluence page title for a stored artifact.
+
+    Several producers already embed the project in the prefix (6_1_current_state_{pid},
+    6_2_future_state_{pid}, 5_3_prioritization_{project}); prepending the project again
+    would title those "crm — 6.1 Current State crm". The trailing project id is stripped
+    instead of skipping the prefix, so every page of a project shares one title shape and
+    sorts together in the wiki.
+
+    `endswith` rather than a substring test: a project literally named "state" would
+    match "6_1_current_state_..." by accident and silently lose its prefix. Every real
+    producer puts the project id last, so this covers all actual cases.
+    """
+    stem = _strip_timestamp(path)
+    norm = normalize_project_id(project_id)
+    if norm and stem.lower().endswith("_" + norm):
+        stem = stem[: -(len(norm) + 1)]
+    return f"{project_id} — {_humanize_stem(stem)}"
 
 
 # ---------------------------------------------------------------------------

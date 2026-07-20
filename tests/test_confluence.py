@@ -1067,3 +1067,81 @@ class TestExportArtifactToConfluence(BaseMCPTest):
             result = self._call()
         self.assertEqual(result["status"], "error")
         self.assertIn("API rate limit", result["message"])
+
+
+# ---------------------------------------------------------------------------
+# A4 — page title derived from the artifact filename
+# ---------------------------------------------------------------------------
+
+class TestDerivePageTitle(unittest.TestCase):
+    """The filename prefix IS the stable page identity — the producer put the
+    discriminator there, so INT-G's living-vs-event semantics fall out mechanically."""
+
+    def title(self, project_id, filename):
+        return confluence_mod._derive_page_title(
+            project_id, os.path.join("governance_plans", "reports", project_id, filename)
+        )
+
+    def test_event_artifact_keeps_its_discriminator(self):
+        self.assertEqual(
+            self.title("crm_upgrade", "5_5_approval_record_v1.0_20260720_151747.md"),
+            "crm_upgrade — 5.5 Approval Record v1.0",
+        )
+
+    def test_living_report_has_no_date_so_it_updates_in_place(self):
+        self.assertEqual(
+            self.title("crm_upgrade", "7_2_verification_report_20260720_151747.md"),
+            "crm_upgrade — 7.2 Verification Report",
+        )
+
+    def test_uppercase_discriminator_is_preserved_verbatim(self):
+        self.assertEqual(
+            self.title("crm_upgrade", "5_4_cr_decision_CR-003_20260720_151747.md"),
+            "crm_upgrade — 5.4 CR Decision CR-003",
+        )
+
+    def test_known_acronym_is_upper_cased(self):
+        self.assertEqual(
+            self.title("crm_upgrade", "7_1_uc_diagram_20260720_151747.md"),
+            "crm_upgrade — 7.1 UC Diagram",
+        )
+
+    def test_project_id_already_in_the_stem_is_not_duplicated(self):
+        """6.1/6.2/5.3 embed the project in the prefix — prepending would double it.
+        The suffix is stripped so every page of a project shares one title shape."""
+        self.assertEqual(
+            self.title("crm", "6_1_current_state_crm_20260720_151747.md"),
+            "crm — 6.1 Current State",
+        )
+
+    def test_project_named_like_a_trailing_word_loses_it_ACCEPTED_TRADEOFF(self):
+        """DELIBERATE, not an oversight — do not "fix" this without reading why.
+
+        The strip cannot tell "the producer appended the project id" from "the prefix
+        happens to end with that word", so a project literally named `state` has the
+        word eaten out of `6_1_current_state`.
+
+        Chosen anyway: without the strip, EVERY 6.1/6.2/5.3 artifact in EVERY project
+        titles as "crm — 6.1 Current State crm" — guaranteed and constant, versus this,
+        which needs the project id to equal the last word of a prefix. Both failure
+        modes are purely cosmetic: neither collides pages, loses data nor overwrites
+        anything, and both are STABLE, so no page proliferation either way.
+
+        A "keep at least 2 tokens" heuristic was tried and rejected: it breaks the real
+        case 5_3_prioritization_{pid}, which legitimately reduces to one token.
+        """
+        self.assertEqual(
+            self.title("state", "6_1_current_state_20260720_151747.md"),
+            "state — 6.1 Current",
+        )
+
+    def test_strip_timestamp_removes_only_the_suffix(self):
+        self.assertEqual(
+            confluence_mod._strip_timestamp("5_5_approval_record_v1.0_20260720_151747.md"),
+            "5_5_approval_record_v1.0",
+        )
+
+    def test_name_without_a_timestamp_is_left_alone(self):
+        self.assertEqual(
+            confluence_mod._strip_timestamp("legacy_report.md"), "legacy_report"
+        )
