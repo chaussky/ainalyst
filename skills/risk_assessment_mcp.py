@@ -386,6 +386,11 @@ def import_risks_from_context(
                         "impact": 3,
                         "response_strategy": "mitigate",
                     })
+        else:
+            warnings.append(
+                f"⚠️ 4.2 elicitation results not found for '{src_id}' — skipping "
+                f"(run `process_elicitation_results` with `risks_json` to produce it)"
+            )
 
     if not drafts and not warnings:
         return (

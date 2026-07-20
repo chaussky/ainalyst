@@ -1164,3 +1164,13 @@ class TestPipeline(BaseMCPTest):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestElicitationSourceWarning(BaseMCPTest):
+    """The 4.2 branch used to skip silently while 6.1/6.2 warned (INT-H class)."""
+
+    def test_missing_elicitation_artifact_is_reported(self):
+        _make_scope()
+        result = import_risks_from_context(PROJECT, f'["{PROJECT}"]')
+        self.assertIn("4.2", result)
+        self.assertIn("not found", result.lower())
