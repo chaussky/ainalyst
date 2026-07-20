@@ -1228,6 +1228,52 @@ class TestVerificationState(BaseMCPTest):
         self.assertEqual(state["forced"], ["FR-001"])
 
 
+class TestDashboardVerificationLine(BaseMCPTest):
+
+    def _prepare(self, repo_factory):
+        repo_factory(self.tmp_dir)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001", "FR-002"]', approach="predictive",
+        )
+
+    def test_all_verified_shows_a_green_line(self):
+        self._prepare(_make_repo_with_verified)
+        out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        self.assertIn("Verified (7.2): 2 of 2", out)
+        self.assertIn("✅ **Verified (7.2)", out)
+
+    def test_partially_verified_shows_the_ids(self):
+        self._prepare(_make_repo_unverified)
+        out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        self.assertIn("Verified (7.2): 0 of 2", out)
+        self.assertIn("🟡 **Verified (7.2)", out)
+        self.assertIn("FR-001", out)
+
+    def test_unknown_package_says_so(self):
+        self._prepare(_make_repo_with_verified)
+        history = _load_approval_history(PROJECT)
+        del history["packages"]["APKG-001"]["verification_snapshot"]
+        _save_approval_history(PROJECT, history)
+        # Also strip the live evidence, so only the missing snapshot remains.
+        repo = load_test_repo(PROJECT)
+        repo["history"] = []
+        save_test_repo(repo)
+        out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        self.assertIn("unknown", out.lower())
+
+    def test_verification_does_not_change_the_verdict(self):
+        """GLOBAL CONSTRAINT: the gate keeps its four conditions."""
+        self._prepare(_make_repo_unverified)
+        # req_decisions_json defaults to "[]" — the overall decision applies to every req.
+        record_approval_decision(
+            project_name=PROJECT, package_id="APKG-001", stakeholder_name="Sponsor",
+            stakeholder_raci="accountable", decision="approved",
+        )
+        out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        self.assertIn("Ready for baseline", out)
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------

@@ -969,6 +969,9 @@ def check_approval_status(
     open_conditions = gate["open_conditions"]
     overdue_conditions = gate["overdue_conditions"]
 
+    # 7.2 verification — reported, never gated. See `_verification_state`.
+    vstate = _verification_state(repo, package)
+
     # Stakeholders without a decision (if the package was sent but there's no response)
     # We don't store an "expected list" — we show those who did respond
     responding_stakeholders = list(package["stakeholder_decisions"].keys())
@@ -1029,6 +1032,27 @@ def check_approval_status(
         f"| **Total** | **{total}** | **100%** |",
         "",
     ]
+
+    if vstate["known"]:
+        v_count = len(vstate["verified"])
+        v_icon = "✅" if v_count == total else "🟡"
+        lines += [f"{v_icon} **Verified (7.2): {v_count} of {total}**", ""]
+        if vstate["unverified"]:
+            ids_str = ", ".join(f"`{rid}`" for rid in vstate["unverified"])
+            lines += [
+                f"Not verified: {ids_str} — approval is not blocked, but the fact "
+                f"is recorded in the Approval Record.",
+                "",
+            ]
+        if vstate["forced"]:
+            forced_str = ", ".join(f"`{rid}`" for rid in vstate["forced"])
+            lines += [f"Verified with override (open blockers): {forced_str}", ""]
+    else:
+        lines += [
+            "⚪ **Verified (7.2): unknown** — this package was created before the "
+            "verification check existed.",
+            "",
+        ]
 
     if blockers:
         lines += ["### 🔴 Blockers (Rejected from Accountable/Responsible)", ""]
