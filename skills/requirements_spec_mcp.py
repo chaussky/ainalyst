@@ -1505,11 +1505,18 @@ def build_coverage_matrix(
     then a legacy hand-written "Business objectives" section in the 4.3 artifact, then
     grouping by source artifact. Requirements come from repository 5.1.
 
-    Coverage is reported per project, not per objective: the matrix does not claim which
-    requirement serves which goal, because no such link exists in the graph yet. Use
-    `check_coverage` (5.1) for per-requirement traceability.
+    Two modes, chosen by whether the objectives carry graph ids:
 
-    Flags:
+      PRECISE — objectives are `business_goal` nodes. Coverage is computed by traversing
+        the `satisfies` links the BA declares (7.1 creating tools, or `add_trace_link` in
+        5.1); `derives` links to an objective are counted too. The per-objective flags are
+        real claims backed by edges.
+      DEGRADED — objectives came from `future_state_goals.json`, a legacy 4.3 section, or
+        grouping by source. That is text without ids, so no per-objective claim is made:
+        the objectives are shown as a checklist and the report says so. A mapping is never
+        inferred from text — doing that was audit finding 7.1-B.
+
+    Flags (precise mode only):
       🔴 Business objective not covered by any requirement
       🟡 Business objective covered by 10+ requirements (possible over-engineering)
       🟢 Normal coverage (1–9 requirements)
@@ -1549,11 +1556,20 @@ def build_coverage_matrix(
     # graph AND stores it in future_state_goals.json. Prefer the graph nodes (canonical, and what
     # a future per-goal traceability pass would traverse), then the 6.2 file, then a legacy
     # "Business objectives" section written into the 4.3 artifact by hand, then group-by-source.
+    #
+    # A1: when the objectives ARE graph nodes they carry an id, and the id is what makes
+    # precise per-objective traversal possible. The other three sources yield text only —
+    # there is no honest way to attach a requirement to a bare string, so the tool degrades
+    # to the C1 checklist instead of guessing.
     business_goals = []
+    goal_entries = []   # (goal_id, title); goal_id is "" in degraded mode
+    precise = False
     source_info = ""
 
     if goal_nodes:
-        business_goals = [g["title"] for g in goal_nodes if g.get("title")]
+        goal_entries = [(g["id"], g.get("title") or g["id"]) for g in goal_nodes]
+        business_goals = [t for _, t in goal_entries]
+        precise = True
         source_info = "📂 Business objectives from the 6.2 goals registered in the 5.1 graph (business_goal nodes)."
 
     if not business_goals:
@@ -1604,18 +1620,55 @@ def build_coverage_matrix(
             business_goals = ["Business objectives not defined"]
             source_info = "⚠️ No business objectives found. Define them in 6.2 (`define_goals_and_objectives`) or run `analyze_elicitation_context`."
 
-    # HYBRID coverage (audit finding 7.1-B). There is NO honest per-goal link between a business
-    # objective (free text extracted from the 4.3 report) and a requirement (a 5.1 node): the old
-    # code compared a file PATH (source_artifact) against goal TEXT, so every requirement fell into
-    # the FIRST goal and all the others were falsely flagged "uncovered". We therefore do NOT
-    # fabricate a per-goal mapping. Instead we show the objectives as a checklist for the BA to
-    # eyeball, list the requirements, keep a single honest GLOBAL over-engineering hint, and point
-    # to check_coverage (5.1) for real graph-based traceability. Precise per-goal coverage is a
-    # deferred follow-up (register objectives as graph nodes + real satisfies/derives edges).
+    if not precise:
+        goal_entries = [("", t) for t in business_goals]
+
+    # A1 coverage. Per-objective claims are made ONLY from real edges in the 5.1 graph.
+    # The original defect (finding 7.1-B) compared a file PATH (source_artifact) against
+    # goal TEXT, so every requirement fell into the FIRST objective and all the others were
+    # falsely flagged uncovered. Nothing here infers a mapping from text — an objective is
+    # covered when a requirement points at its NODE, and not otherwise.
     total_reqs = len(requirements)
     num_goals = len(business_goals)
     avg_per_goal = total_reqs / max(1, num_goals)
-    over_engineering = avg_per_goal >= 10  # global heuristic, not a per-goal claim
+    over_engineering = avg_per_goal >= 10  # global heuristic, kept for the degraded mode
+
+    links = repo.get("links", [])
+    req_ids = {r["id"] for r in requirements}
+    # Read BOTH relations: A1 writes `satisfies` (ADR-082), but a BA may have linked
+    # manually with `derives` via add_trace_link (5.1), and ignoring that encoding would
+    # silently under-report coverage.
+    goal_link_relations = ("satisfies", "derives")
+
+    per_goal = {}              # goal_id -> [req_id, ...]
+    linked_req_ids = set()     # requirements attached to a displayed objective
+    need_only_req_ids = set()  # attached to a business_need/business root only
+
+    if precise:
+        goal_ids_set = {gid for gid, _ in goal_entries}
+        need_ids = {
+            r["id"] for r in active
+            if r.get("type") in ("business_need", "business")
+        }
+        per_goal = {gid: [] for gid in goal_ids_set}
+        for lnk in links:
+            if lnk.get("relation") not in goal_link_relations:
+                continue
+            frm, to = lnk.get("from"), lnk.get("to")
+            if frm not in req_ids:
+                continue
+            if to in goal_ids_set:
+                if frm not in per_goal[to]:
+                    per_goal[to].append(frm)
+                linked_req_ids.add(frm)
+            elif to in need_ids:
+                need_only_req_ids.add(frm)
+        need_only_req_ids -= linked_req_ids
+
+    unattached = [
+        r for r in requirements
+        if r["id"] not in linked_req_ids and r["id"] not in need_only_req_ids
+    ]
 
     lines = [
         f"<!-- BABOK 7.1 — Coverage Matrix | Project: {project_id} | {date.today()} -->",
@@ -1630,28 +1683,62 @@ def build_coverage_matrix(
         "",
         "| Metric | Value |",
         "|------------|----------|",
-        f"| Business objectives (from 4.3) | {num_goals} |",
+        f"| Business objectives | {num_goals} |",
         f"| Requirements in the registry | {total_reqs} |",
         f"| Avg requirements per objective | {avg_per_goal:.1f} |",
         "",
-        "> ⚠️ Precise objective-to-requirement mapping is not available here: business objectives "
-        "are free text from the 4.3 report (not graph nodes), and 7.1 requirements are not yet "
-        "linked to specific objectives. For exact coverage, link the requirements to their "
-        "objectives and run `check_coverage` (5.1). Per-objective traceability is a planned "
-        "follow-up.",
-        "",
-        "## Business objectives (from 4.3) — checklist",
-        "",
-        "> Confirm by eye that each objective is addressed by at least one requirement in the list below.",
-        "",
     ]
 
-    for goal in business_goals:
-        goal_short = goal[:80] + "..." if len(goal) > 80 else goal
-        lines.append(f"- [ ] {goal_short}")
+    if precise:
+        covered_count = sum(1 for gid in per_goal if per_goal[gid])
+        lines += [
+            f"| Objectives covered | {covered_count} of {num_goals} |",
+            "",
+            "> **Per-objective coverage is computed from `satisfies` links in the 5.1 graph.** "
+            "A requirement appears under an objective only because the analyst linked it there — "
+            "nothing is inferred from text.",
+            "",
+            "## Coverage by business objective",
+            "",
+            "| | Objective | Requirements | IDs |",
+            "|---|-----------|--------------|-----|",
+        ]
+        for gid, title in goal_entries:
+            covered = per_goal.get(gid, [])
+            if not covered:
+                flag = "🔴"
+            elif len(covered) >= 10:
+                flag = "🟡"
+            else:
+                flag = "🟢"
+            title_short = title[:70] + "..." if len(title) > 70 else title
+            ids = ", ".join(f"`{i}`" for i in covered) if covered else "—"
+            lines.append(f"| {flag} | `{gid}` {title_short} | {len(covered)} | {ids} |")
+        lines += [
+            "",
+            "> 🔴 no requirement serves this objective &nbsp;|&nbsp; 🟢 1–9 &nbsp;|&nbsp; "
+            "🟡 10+ (possible over-engineering)",
+            "",
+        ]
+    else:
+        lines += [
+            "> **Objectives came from a source without graph ids**, so per-objective coverage "
+            "cannot be computed and none is claimed. Define objectives in 6.2 "
+            "(`define_goals_and_objectives`) — they are registered as graph nodes, and linking "
+            "requirements to them (the `business_goal_ids_json` parameter of the 7.1 creating "
+            "tools) turns this report into a precise per-objective matrix.",
+            "",
+            "## Business objectives — checklist",
+            "",
+            "> Confirm by eye that each objective is addressed by at least one requirement in the list below.",
+            "",
+        ]
+        for goal in business_goals:
+            goal_short = goal[:80] + "..." if len(goal) > 80 else goal
+            lines.append(f"- [ ] {goal_short}")
+        lines.append("")
 
     lines += [
-        "",
         "## Requirements in the registry",
         "",
         "| ID | Type | Title |",
@@ -1660,6 +1747,31 @@ def build_coverage_matrix(
     for req in requirements:
         lines.append(f"| `{req['id']}` | {req.get('type', '—')} | {req.get('title', '—')} |")
 
+    # Precise mode ONLY. In degraded mode nothing is linked because nothing CAN be linked,
+    # so listing every requirement as unattached would be exactly the kind of false claim
+    # this report exists to avoid.
+    if precise and unattached:
+        by_type = {}
+        for r in unattached:
+            by_type.setdefault(r.get("type", "—"), []).append(r["id"])
+        lines += ["", "## Requirements not linked to any objective", ""]
+        for rtype in sorted(by_type):
+            ids = ", ".join(f"`{i}`" for i in sorted(by_type[rtype]))
+            lines.append(f"- **{rtype}** ({len(by_type[rtype])}): {ids}")
+        lines += [
+            "",
+            "> Supporting models (data dictionary, ERD) are normally left unlinked — they "
+            "describe the solution rather than serve an objective directly.",
+        ]
+
+    if need_only_req_ids:
+        ids = ", ".join(f"`{i}`" for i in sorted(need_only_req_ids))
+        lines += [
+            "",
+            f"> **Traced to a business need, not to an objective:** {ids}. "
+            f"This usually means 6.2 has not yet refined that need into objectives.",
+        ]
+
     lines += [
         "",
         "---",
@@ -1667,15 +1779,33 @@ def build_coverage_matrix(
         "## Signals & recommendations",
         "",
     ]
-    if over_engineering:
+    if precise:
+        uncovered = [f"`{gid}`" for gid, _ in goal_entries if not per_goal.get(gid)]
+        if uncovered:
+            lines.append(
+                f"- 🔴 **{len(uncovered)} objective(s) with no requirement:** "
+                f"{', '.join(uncovered)}. Either specify requirements for them, or "
+                f"link existing ones via the 7.1 creating tools / `add_trace_link` (5.1)."
+            )
+        crowded = [f"`{gid}`" for gid, _ in goal_entries if len(per_goal.get(gid, [])) >= 10]
+        if crowded:
+            lines.append(
+                f"- 🟡 **Possible over-engineering:** {', '.join(crowded)} carry 10+ "
+                f"requirements each. Check for duplicates via `check_coverage` (5.1)."
+            )
+    elif over_engineering:
         lines.append(
             f"- 🟡 **Possible over-engineering / duplication:** {total_reqs} requirements for "
             f"{num_goals} business objective(s) (avg {avg_per_goal:.1f} per objective). "
             f"Check for duplicates via `check_coverage` (5.1)."
         )
     lines.append(
-        "- ✅ **Next:** confirm every objective in the checklist is addressed, then run "
+        "- ✅ **Next:** confirm every objective is addressed, then run "
         "verification (7.2) and validation (7.3)."
+    )
+    lines.append(
+        "- ℹ️ For full per-requirement traceability (sources, implementation, tests) run "
+        "`check_coverage` (5.1)."
     )
 
     content = "\n".join(lines)

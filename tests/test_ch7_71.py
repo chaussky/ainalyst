@@ -1251,7 +1251,12 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
 
     def test_goals_read_from_6_2_graph_nodes(self):
         """6.2 registers business_goal nodes in the 5.1 repo; the matrix must use them
-        as the objectives checklist, not fall back to synthetic source grouping."""
+        as the objectives, not fall back to synthetic source grouping.
+
+        A1 note: the ASSERTION changed, the intent did not. Graph nodes carry ids, so the
+        objectives are now rendered as a per-objective coverage table instead of a plain
+        checklist — the checklist survives only for id-less sources.
+        """
         save_spec_repo(make_spec_repo(self.P, [
             {"id": "BG-001", "type": "business_goal", "title": "Cut processing time to 2 days",
              "version": "1.0", "status": "confirmed", "added": str(date.today()), "source_artifact": ""},
@@ -1259,8 +1264,9 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
              "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
         ]))
         result = mod71.build_coverage_matrix(self.P)
-        # must appear as a checklist objective, not as a requirement row
-        self.assertIn("- [ ] Cut processing time to 2 days", result)
+        # appears as an objective row, not as a requirement row
+        self.assertIn("`BG-001` Cut processing time to 2 days", result)
+        self.assertIn("6.2 goals registered in the 5.1 graph", result)
 
     def test_business_goal_node_not_counted_as_requirement(self):
         """A business_goal node is an objective, not a spec requirement — it must not inflate
@@ -1477,6 +1483,137 @@ class TestCreateToolsAcceptGoalIds(BaseMCPTest):
             project_id=self.P, req_id="FR-004", req_type="functional",
             title="X", description="The system SHALL x", rationale="y")
         self.assertEqual(self._edges(), set())
+
+
+class TestCoverageMatrixPrecise(BaseMCPTest):
+    """A1: with real edges in the graph the matrix makes REAL per-objective claims.
+    Without graph ids in the objective source it degrades to the C1 checklist rather
+    than guessing — inferring the mapping from text was finding 7.1-B."""
+
+    P = "matrix_precise"
+
+    def _nodes(self):
+        return [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut handling time",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "BG-002", "type": "business_goal", "title": "Improve transparency",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "BN-001", "type": "business_need", "title": "Routing is manual",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "FR-001", "type": "functional", "title": "Auto-assign",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "FR-002", "type": "functional", "title": "Status page",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "DD-001", "type": "data_dictionary", "title": "Request entity",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+        ]
+
+    def _save(self, links, nodes=None):
+        repo = make_spec_repo(self.P, nodes if nodes is not None else self._nodes())
+        repo["links"] = links
+        save_spec_repo(repo)
+
+    def _edge(self, frm, to, rel="satisfies"):
+        return {"from": frm, "to": to, "relation": rel, "created": str(date.today())}
+
+    def test_covered_objective_lists_its_requirement(self):
+        self._save([self._edge("FR-001", "BG-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("FR-001", result)
+        self.assertIn("Cut handling time", result)
+
+    def test_uncovered_objective_is_flagged_red(self):
+        """A REAL claim now — BG-002 genuinely has no satisfying requirement."""
+        self._save([self._edge("FR-001", "BG-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("🔴", result)
+        self.assertIn("Improve transparency", result)
+
+    def _coverage_table(self, result):
+        """Rows of the per-objective table only. The flag legend below it mentions every
+        symbol by design, so scanning the whole document would never detect a false flag."""
+        if "## Coverage by business objective" not in result:
+            return ""
+        return result.split("## Coverage by business objective", 1)[1].split("\n\n>", 1)[0]
+
+    def test_covered_objective_is_not_flagged_red(self):
+        """Both objectives covered -> no red row."""
+        self._save([self._edge("FR-001", "BG-001"), self._edge("FR-002", "BG-002")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertNotIn("🔴", self._coverage_table(result))
+        self.assertIn("🟢", self._coverage_table(result))
+
+    def test_derives_edge_to_objective_is_counted_on_read(self):
+        """A BA may have linked manually with derives via add_trace_link; ignoring it
+        would silently under-report coverage. Written edges are always satisfies."""
+        self._save([self._edge("FR-001", "BG-001", "derives")])
+        result = mod71.build_coverage_matrix(self.P)
+        red_section = result.split("Improve transparency", 1)[0]
+        self.assertIn("FR-001", red_section)
+
+    def test_requirement_without_any_objective_is_listed_unattached(self):
+        self._save([self._edge("FR-001", "BG-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("not linked to any objective", result.lower())
+        self.assertIn("FR-002", result)
+
+    def test_need_only_link_is_not_called_unattached(self):
+        """Calling it unattached would be false; it means 6.2 has not refined that
+        need into objectives yet."""
+        self._save([self._edge("FR-002", "BN-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("business need", result.lower())
+
+    def test_no_text_similarity_matching(self):
+        """Titles deliberately identical, but with no edge the objective stays
+        uncovered. This is finding 7.1-B, pinned so it cannot come back."""
+        nodes = self._nodes()
+        for n in nodes:
+            if n["id"] == "FR-002":
+                n["title"] = "Improve transparency"
+        self._save([], nodes=nodes)
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("🔴", result)
+
+    def test_objective_nodes_are_not_counted_as_requirements(self):
+        """Roots must not inflate the requirement count (finding 7.1-C)."""
+        self._save([self._edge("FR-001", "BG-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("| Requirements in the registry | 3 |", result)
+
+    def test_degraded_mode_when_objectives_have_no_ids(self):
+        """No business_goal nodes -> objectives come from an id-less source ->
+        checklist, no per-objective flags, and the tool says which mode it is in."""
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "Auto-assign",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": "governance_plans/reports/matrix_precise/4_3_x.md"},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertNotIn("🔴", result)
+        self.assertIn("check_coverage", result)
+
+    def test_degraded_mode_does_not_call_everything_unattached(self):
+        """Nothing is linked because nothing CAN be linked — listing every requirement
+        as unattached would be exactly the kind of false claim A1 removes."""
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "FR-001", "type": "functional", "title": "Auto-assign",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": "governance_plans/reports/matrix_precise/4_3_x.md"},
+        ]))
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertNotIn("not linked to any objective", result.lower())
+
+    def test_precise_mode_is_announced(self):
+        self._save([self._edge("FR-001", "BG-001")])
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("satisfies", result.lower())
 
 
 if __name__ == "__main__":
