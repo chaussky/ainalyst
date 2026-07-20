@@ -34,7 +34,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    BUSINESS_NODE_TYPES,
+    BUSINESS_NODE_TYPES, stakeholder_registry_path,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -103,11 +103,12 @@ def _stakeholders_path(project_id: str) -> str:
     # 4.2 writes the living registry to <pid>_stakeholder_registry.json (the real producer file);
     # older data may use the flat <pid>_stakeholders.json. Prefer the registry, fall back to legacy
     # (audit finding 7.4-A — the consumer read the wrong filename).
-    safe = _safe(project_id)
-    registry = data_path(project_id, f"{safe}_stakeholder_registry.json")
+    # Built by the SAME helper the producers write through, so the path cannot drift
+    # apart again (finding 7.4-A was exactly that drift, and 3.2 is now a second writer).
+    registry = stakeholder_registry_path(project_id)
     if os.path.exists(registry):
         return registry
-    legacy = data_path(project_id, f"{safe}_{STAKEHOLDERS_FILENAME}")
+    legacy = data_path(project_id, f"{_safe(project_id)}_{STAKEHOLDERS_FILENAME}")
     return legacy if os.path.exists(legacy) else registry
 
 

@@ -711,6 +711,16 @@ def update_stakeholder_registry(
 """
 
     suffix = save_artifact(content, "4_2_stakeholder_registry", project_id=project_name)
+    # The JSON is the source of truth; the Markdown is a rendering of it. Reporting
+    # success when the JSON did not persist would tell the BA their session was
+    # recorded while the next session silently starts from the old registry.
+    # 3.2 already surfaces this on its side — the two writers must not disagree.
+    if not merge_result.get("saved"):
+        return (
+            f"⚠️ Stakeholder registry could NOT be saved to disk — the report below was "
+            f"generated, but the changes are not persisted and the next session will not "
+            f"see them. Added: {len(added)}, updated: {len(updated)}.{suffix}"
+        )
     return (
         f"✅ Stakeholder registry updated. Added: {len(added)}, updated: {len(updated)}. "
         f"Total in registry: {len(existing)}.{suffix}"

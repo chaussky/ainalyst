@@ -406,7 +406,12 @@ def merge_stakeholders(existing: list, incoming: list, source: str, today: str,
                         break
             entry = dict(s)
             for field, value in (insert_defaults or {}).items():
-                entry.setdefault(field, value)
+                # `if not entry.get(field)`, not setdefault: this module treats an empty
+                # value as "not supplied" everywhere else (that is what makes partial
+                # updates work), so an incoming `{"coverage_status": ""}` must take the
+                # default rather than store a blank that no later update can dislodge.
+                if not entry.get(field):
+                    entry[field] = value
             entry["_first_seen"] = today
             entry["_last_updated"] = today
             entry["_update_source"] = source

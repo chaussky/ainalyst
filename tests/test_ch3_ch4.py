@@ -522,5 +522,89 @@ class TestElicitationCollaborate(BaseCh4Test):
         self.assertSucceeds(result)
 
 
+class TestPlanSeedsRegistryEndToEnd(BaseMCPTest):
+    """A2 seam, exercised through the REAL producers of all three chapters rather than
+    against the producer's own reader.
+
+    The unit tests assert via `load_stakeholder_registry` — i.e. the writer reading its
+    own file — which structurally cannot catch the class of defect that produced finding
+    7.4-A, where the consumer had the filename, the container key and the field name all
+    wrong at once. This test goes 3.2 → 4.2 → 3.2 re-run → 7.4.
+    """
+
+    P = "seam_e2e"
+
+    def _plan(self, stakeholders):
+        return mod3.plan_stakeholder_engagement(
+            project_id=self.P, stakeholders_json=json.dumps(stakeholders))
+
+    def _registry(self):
+        from skills.common import stakeholder_registry_path
+        with open(stakeholder_registry_path(self.P), encoding="utf-8") as f:
+            return json.load(f)
+
+    def _person(self, name):
+        return next((s for s in self._registry()["stakeholders"]
+                     if s.get("name", "").lower() == name.lower()), None)
+
+    def test_seam_survives_a_rerun_after_elicitation(self):
+        # 3.2 — the BA states no attitude for Jane, so 'Neutral' is an ASSUMPTION
+        self._plan([
+            {"name": "Jane", "role": "CFO", "influence": "High", "interest": "High"},
+            {"name": "John", "role": "PO", "influence": "High", "interest": "Low",
+             "attitude": "Champion"},
+        ])
+        self.assertIsNotNone(self._person("Jane"), "3.2 must seed the living registry")
+        self.assertEqual(self._person("Jane")["attitude"], "Neutral",
+                         "the assumed default applies on creation")
+
+        # 4.2 — an interview establishes what she actually is
+        mod42.update_stakeholder_registry(
+            project_name=self.P, session_source="Interview with Jane, 2026-03-15",
+            new_stakeholders_json=json.dumps([
+                {"name": "Jane", "role": "CFO", "attitude": "Blocker",
+                 "coverage_status": "Elicited", "department": "Finance"},
+            ]))
+        self.assertEqual(self._person("Jane")["attitude"], "Blocker")
+
+        # 3.2 re-run, again stating no attitude
+        self._plan([
+            {"name": "Jane", "role": "CFO", "influence": "Medium", "interest": "High"},
+        ])
+        jane = self._person("Jane")
+        self.assertEqual(jane["attitude"], "Blocker",
+                         "an ASSUMED default must never overwrite an elicited attitude")
+        self.assertEqual(jane["coverage_status"], "Elicited",
+                         "elicitation progress must survive a planning re-run")
+        self.assertEqual(jane["department"], "Finance",
+                         "fields only 4.2 knows about must survive")
+        self.assertEqual(jane["influence"], "Medium",
+                         "a genuinely restated source field must still update")
+        self.assertIsNotNone(self._person("John"),
+                             "someone dropped from the plan is not deleted from the registry")
+
+    def test_74_reads_the_registry_32_seeded(self):
+        """The consumer contract, verified against the real consumer — not asserted
+        against the producer's own reader."""
+        import skills.requirements_architecture_mcp as mod74
+        self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
+                     "interest": "High"}])
+        path = mod74._stakeholders_path(self.P)
+        self.assertTrue(os.path.exists(path),
+                        f"7.4 looks for {path}, which 3.2 must have written")
+        with open(path, encoding="utf-8") as f:
+            names = [s.get("name") for s in json.load(f).get("stakeholders", [])]
+        self.assertIn("Jane", names, "container key and field name must match 7.4's reader")
+
+    def test_wrong_shaped_stakeholders_json_is_rejected_not_crashed(self):
+        """This JSON is written by an LLM: a list of strings is an ordinary case, and an
+        unhandled exception from an MCP tool is a protocol error (class CH3-A / CH4-A)."""
+        for payload in ('["Jane", "John"]',
+                        '[{"name": "A", "influence": "High", "interest": "High"}, "John"]'):
+            result = mod3.plan_stakeholder_engagement(
+                project_id=self.P, stakeholders_json=payload)
+            self.assertIn("❌", result, f"payload {payload} must return a readable error")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

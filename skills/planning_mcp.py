@@ -16,14 +16,17 @@ Storage:
 
 Integration:
   Output: ba_plan.json — the record of the plan, read back by this module only.
-  ⚠️ NOT yet consumed programmatically by any other chapter. In particular:
-    - 4.2 builds its own {project}_stakeholder_registry.json (the file 7.4 reads);
-      the 3.2 Power/Interest map does NOT seed it — stakeholders are entered again.
+  3.2 additionally SEEDS the living stakeholder registry
+  ({project}_stakeholder_registry.json) that 4.2 maintains and 7.4 reads, so the same
+  people are not entered twice. Source fields only, and only on creation for the
+  assumed ones — a re-run must never overwrite what elicitation established.
+
+  ⚠️ The remaining seams are NOT consumed programmatically by any other chapter:
     - 5.5 does not read the 3.3 governance section; approval authority and deadlines
       are applied by the BA, not automatically.
     - 7.3 takes its business context from 6.1/6.2, not from this plan.
-  Wiring these seams is a planned feature, not current behavior — do not promise
-  it to the BA in tool output.
+  Wiring those two is a planned feature, not current behavior — do not promise
+  them to the BA in tool output.
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -38,6 +41,7 @@ from skills.common import (
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
     parse_json_list as _parse_json_list,
     parse_json_str_list as _parse_string_list,
+    parse_json_dict_list as _parse_json_dict_list,
     update_stakeholder_registry_file,
 )
 
@@ -240,6 +244,10 @@ def _seed_stakeholder_registry(project_id: str, stakeholders: list) -> str:
                 # A stakeholder known from planning has by definition not been
                 # elicited yet. Insert-only, so a later 'Elicited' is never reset.
                 "coverage_status": "Not covered",
+                # Insert-only for the same reason: when the BA states no attitude,
+                # 'Neutral' is an assumption, and an assumption must never overwrite
+                # a Blocker/Champion an interview established.
+                "attitude": "Neutral",
             },
         )
     except Exception as e:  # noqa: BLE001 — never let planning fail on this
@@ -282,18 +290,24 @@ def plan_stakeholder_engagement(
             influence/interest: Low | Medium | High
             attitude: Champion | Neutral | Blocker
     """
-    try:
-        stakeholders = json.loads(stakeholders_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing stakeholders_json: {e}\n\nExpected a JSON array of objects."
-
-    if not isinstance(stakeholders, list):
-        return "❌ stakeholders_json must be a JSON array."
+    # Validating that the input PARSES is not validating that it FITS: this JSON is
+    # written by an LLM, so a list of strings for a "list of stakeholders" parameter is
+    # an ordinary case, and indexing it as objects raised AttributeError — a protocol
+    # error out of an MCP tool instead of a readable answer (class CH3-A / CH4-A).
+    # The other Chapter 3 tools were moved onto the shared validators; this one was the
+    # last raw parse left in the module.
+    stakeholders, shape_error = _parse_json_dict_list(
+        stakeholders_json, "stakeholders_json",
+        example='[{"name": "John Smith", "role": "Product Owner", '
+                '"influence": "High", "interest": "High"}]')
+    if shape_error:
+        return shape_error
 
     if not stakeholders:
         return "⚠️ Stakeholder list is empty. Add at least one stakeholder."
 
     valid = []
+    seed_source = []
     errors = []
     for i, s in enumerate(stakeholders):
         name = s.get("name", "")
@@ -320,6 +334,12 @@ def plan_stakeholder_engagement(
             "strategy": strategy,
             "comm_frequency": frequency,
         })
+        # The registry is seeded from what the BA ACTUALLY supplied, not from the plan
+        # record above: that one carries a synthesized `attitude` default, and a
+        # fabricated value is indistinguishable from a stated one once merged, so it
+        # would overwrite an attitude an interview established. Defaults belong in
+        # insert_defaults, which applies on creation only.
+        seed_source.append(s)
 
     if errors:
         return "❌ Errors in stakeholders_json:\n" + "\n".join(f"  • {e}" for e in errors)
@@ -334,7 +354,7 @@ def plan_stakeholder_engagement(
 
     # Seed the living registry 4.2 maintains and 7.4 reads, so the same people are
     # not entered twice. Only ever reached once the plan itself is saved.
-    registry_note = _seed_stakeholder_registry(project_id, valid)
+    registry_note = _seed_stakeholder_registry(project_id, seed_source)
 
     # Quadrant statistics
     quadrants = {}
@@ -345,7 +365,9 @@ def plan_stakeholder_engagement(
     blockers = [s["name"] for s in valid if s.get("attitude") == "Blocker"]
 
     lines = [
-        f"✅ Stakeholder registry saved\n\n",
+        # "map", not "registry": the living registry is a different artifact, and this
+        # tool now reports on both in the same message.
+        f"✅ Stakeholder map saved\n\n",
         f"  Project:          {project_id}\n",
         f"  Stakeholders:     {len(valid)}\n\n",
         f"**Quadrant distribution:**\n",
