@@ -39,6 +39,16 @@ mcp = FastMCP("BABOK_Requirements_Spec")
 REPO_FILENAME = "traceability_repo.json"
 CONFIRMED_GLOB = "4_3_*_confirmed*.md"
 
+# Nodes in the 5.1 graph that are NOT specification requirements, so they must not be
+# counted in the coverage matrix nor reported as "unlinked to an objective". Beyond the
+# business roots these are the nodes other chapters push into the SAME graph: `test`
+# (5.1), `change_request` (5.4), `risk` (6.3, ADR-074) and `solution` (6.4, ADR-082).
+# Found by E2E: a CR opened in 5.4 was being counted as an uncovered requirement here.
+# Same class as findings 7.3-A / 7.4-C — a skip-filter that knows only part of the set.
+NON_SPEC_NODE_TYPES = BUSINESS_NODE_TYPES | {
+    "test", "change_request", "risk", "solution",
+}
+
 
 # ---------------------------------------------------------------------------
 # Utilities — repository 5.1
@@ -1547,7 +1557,7 @@ def build_coverage_matrix(
     goal_nodes = [r for r in active if r.get("type") == "business_goal"]
     requirements = [
         r for r in active
-        if r.get("type") not in {"business_goal", "business_need", "business"}
+        if r.get("type") not in NON_SPEC_NODE_TYPES
     ]
 
     # C1 (audit finding 7.1-C): the REAL source of business objectives is 6.2 (Define Future
@@ -1686,7 +1696,6 @@ def build_coverage_matrix(
         f"| Business objectives | {num_goals} |",
         f"| Requirements in the registry | {total_reqs} |",
         f"| Avg requirements per objective | {avg_per_goal:.1f} |",
-        "",
     ]
 
     if precise:
@@ -1722,6 +1731,7 @@ def build_coverage_matrix(
         ]
     else:
         lines += [
+            "",
             "> **Objectives came from a source without graph ids**, so per-objective coverage "
             "cannot be computed and none is claimed. Define objectives in 6.2 "
             "(`define_goals_and_objectives`) — they are registered as graph nodes, and linking "

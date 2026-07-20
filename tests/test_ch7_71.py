@@ -1615,6 +1615,35 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         result = mod71.build_coverage_matrix(self.P)
         self.assertIn("satisfies", result.lower())
 
+    def test_other_chapters_nodes_are_not_counted_as_requirements(self):
+        """FOUND BY E2E, not by unit tests: other chapters push their own nodes into the
+        SAME 5.1 graph — `change_request` (5.4), `risk` (6.3), `solution` (6.4), plus
+        `test` (5.1). The skip-filter knew only the business roots, so a CR opened in 5.4
+        was counted as a requirement AND listed as 'not linked to any objective'.
+
+        Same class as findings 7.3-A / 7.4-C: a filter that knows only part of the set.
+        """
+        nodes = self._nodes() + [
+            {"id": "CR-001", "type": "change_request", "title": "Change the rule",
+             "version": "1.0", "status": "open", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "RK-001", "type": "risk", "title": "Vendor delay",
+             "version": "1.0", "status": "open", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "SOL-001", "type": "solution", "title": "Phased rollout",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "TC-001", "type": "test", "title": "Assignment test",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+        ]
+        self._save([self._edge("FR-001", "BG-001")], nodes=nodes)
+        result = mod71.build_coverage_matrix(self.P)
+        # unchanged count: FR-001, FR-002, DD-001 only
+        self.assertIn("| Requirements in the registry | 3 |", result)
+        for foreign in ("CR-001", "RK-001", "SOL-001", "TC-001"):
+            self.assertNotIn(foreign, result)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
