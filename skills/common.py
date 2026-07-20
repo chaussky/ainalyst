@@ -276,6 +276,156 @@ def was_verification_forced(repo: dict, req_id: str) -> bool:
     return False
 
 
+# ---------------------------------------------------------------------------
+# Living stakeholder registry (ADR-003) — shared by 3.2 and 4.2
+# ---------------------------------------------------------------------------
+#
+# Extracted from 4.2 so 3.2 can seed the same registry without either chapter
+# importing the other: Chapter 3 sits in phase.py BASE_SERVER and loads in EVERY
+# phase, while Chapter 4 loads only in `elicitation`.
+
+STAKEHOLDER_REGISTRY_SUFFIX = "stakeholder_registry.json"
+
+
+def reg_norm(value) -> str:
+    """Normalize a name/role for identity matching: trim, lowercase, collapse spaces."""
+    return " ".join(str(value or "").strip().lower().split())
+
+
+def stakeholder_identity(s: dict) -> str:
+    """Merge key for a stakeholder: normalized name, or normalized role if name is empty.
+
+    Rationale: the name is the closest stable proxy for a person and survives a role
+    change (a promotion updates the same record instead of duplicating it). Role-only
+    keying is avoided because roles are not unique and would silently collapse distinct
+    people. Entries with neither name nor role have an empty key and are skipped.
+    """
+    return reg_norm(s.get("name")) or reg_norm(s.get("role"))
+
+
+def stakeholder_registry_path(project_id: str) -> str:
+    safe = normalize_project_id(project_id)
+    return data_path(project_id, f"{safe}_{STAKEHOLDER_REGISTRY_SUFFIX}")
+
+
+def _registry_today() -> str:
+    """The registry has always used dd.mm.yyyy — keep it stable for existing files."""
+    return datetime.now().strftime("%d.%m.%Y")
+
+
+def load_stakeholder_registry(project_id: str) -> dict:
+    """Reads the JSON source of truth, or returns a fresh empty registry.
+
+    A corrupt or unreadable file starts a fresh registry rather than blocking the BA.
+    """
+    today = _registry_today()
+    registry = {"project": project_id, "created": today, "updated": today,
+                "stakeholders": [], "history": []}
+    path = stakeholder_registry_path(project_id)
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict) and isinstance(loaded.get("stakeholders"), list):
+                registry = loaded
+        except (json.JSONDecodeError, OSError):
+            pass
+    return registry
+
+
+def save_stakeholder_registry(project_id: str, registry: dict) -> bool:
+    """Persists the registry. Returns False on I/O error instead of raising, so a
+    caller can warn and carry on rather than failing the whole tool."""
+    path = stakeholder_registry_path(project_id)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(registry, f, ensure_ascii=False, indent=2)
+        return True
+    except OSError as e:
+        logger.warning(f"Could not persist stakeholder registry JSON: {e}")
+        return False
+
+
+def merge_stakeholders(existing: list, incoming: list, source: str, today: str,
+                       insert_defaults: Optional[dict] = None) -> dict:
+    """Merges `incoming` into `existing` in place, by stakeholder identity.
+
+    A non-empty incoming field overwrites; an empty one does NOT wipe a stored value.
+
+    `insert_defaults` are applied ONLY when an entry is created, never on update, and
+    never over a value the caller supplied explicitly. This exists because 3.2 seeds
+    `coverage_status` and `found_through`: as ordinary fields, re-running 3.2 after an
+    interview would reset the status from 'Elicited' back to 'Not covered' and
+    overwrite the discovery chain — silently destroying work 4.2 recorded.
+
+    Returns {"added": [names], "updated": [names], "dup_warnings": [(new, existing)]}.
+    """
+    index = {}
+    for s in existing:
+        key = stakeholder_identity(s)
+        if key:
+            index[key] = s
+
+    added, updated, dup_warnings = [], [], []
+    for s in incoming:
+        if not isinstance(s, dict):
+            continue
+        key = stakeholder_identity(s)
+        if not key:
+            continue  # neither name nor role — nothing to identify by
+        if key in index:
+            # Partial update: non-empty incoming fields overwrite; empties do NOT wipe.
+            target = index[key]
+            for field, value in s.items():
+                if value not in (None, "", [], {}):
+                    target[field] = value
+            target["_last_updated"] = today
+            target["_update_source"] = source
+            updated.append(target.get("name") or target.get("role") or key)
+        else:
+            # Duplicate guard: a NEW person whose role matches a DIFFERENT existing one.
+            new_role = reg_norm(s.get("role"))
+            if new_role:
+                for ex in existing:
+                    if stakeholder_identity(ex) != key and reg_norm(ex.get("role")) == new_role:
+                        dup_warnings.append((s.get("name") or s.get("role"),
+                                             ex.get("name") or ex.get("role")))
+                        break
+            entry = dict(s)
+            for field, value in (insert_defaults or {}).items():
+                entry.setdefault(field, value)
+            entry["_first_seen"] = today
+            entry["_last_updated"] = today
+            entry["_update_source"] = source
+            existing.append(entry)
+            index[key] = entry
+            added.append(entry.get("name") or entry.get("role") or key)
+
+    return {"added": added, "updated": updated, "dup_warnings": dup_warnings}
+
+
+def update_stakeholder_registry_file(project_id: str, incoming: list, source: str,
+                                     insert_defaults: Optional[dict] = None) -> dict:
+    """Load + merge + persist, with the history envelope. The one entry point chapters use.
+
+    Returns the merge result plus {"registry": dict, "saved": bool}.
+    """
+    today = _registry_today()
+    registry = load_stakeholder_registry(project_id)
+    result = merge_stakeholders(registry.setdefault("stakeholders", []), incoming,
+                                source=source, today=today,
+                                insert_defaults=insert_defaults)
+    registry["updated"] = today
+    registry.setdefault("created", today)
+    registry.setdefault("history", []).append(
+        {"date": today, "source": source,
+         "added": result["added"], "updated": result["updated"]})
+    result["registry"] = registry
+    result["saved"] = save_stakeholder_registry(project_id, registry)
+    return result
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 

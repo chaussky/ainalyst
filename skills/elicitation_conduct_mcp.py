@@ -11,37 +11,16 @@ Tools:
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
-import os
-import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
-    save_artifact, logger, data_path, normalize_project_id,
+    save_artifact, logger,
     parse_json_dict, parse_json_dict_list,
+    update_stakeholder_registry_file,
 )
 
 mcp = FastMCP("BABOK_Elicitation_Conduct")
-
-
-# ---------------------------------------------------------------------------
-# Stakeholder-registry identity helpers (living document, ADR-003)
-# ---------------------------------------------------------------------------
-
-def _reg_norm(value: str) -> str:
-    """Normalize a name/role for identity matching: trim, lowercase, collapse spaces."""
-    return " ".join(str(value or "").strip().lower().split())
-
-
-def _stakeholder_identity(s: dict) -> str:
-    """Merge key for a stakeholder: normalized name, or normalized role if name is empty.
-
-    Rationale: the name is the closest stable proxy for a person and survives a role
-    change (a promotion updates the same record instead of duplicating it). Role-only
-    keying is avoided because roles are not unique and would silently collapse distinct
-    people. Entries with neither name nor role have an empty key and are skipped.
-    """
-    return _reg_norm(s.get("name")) or _reg_norm(s.get("role"))
 
 
 # ---------------------------------------------------------------------------
@@ -492,73 +471,17 @@ def update_stakeholder_registry(
     # Read the living registry (JSON source of truth), merge, write it back.
     # This is what makes it a living document: the latest artifact always holds
     # the FULL registry, not just the current session's slice.
+    # The merge itself lives in common.py so 3.2 can seed the same registry
+    # without Chapter 3 depending on Chapter 4.
     # -----------------------------------------------------------------------
-    reg_filename = f"{normalize_project_id(project_name)}_stakeholder_registry.json"
-    json_path = data_path(project_name, reg_filename)
+    merge_result = update_stakeholder_registry_file(
+        project_name, incoming, source=session_source)
 
-    registry = {"project": project_name, "created": today, "updated": today,
-                "stakeholders": [], "history": []}
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict) and isinstance(loaded.get("stakeholders"), list):
-                registry = loaded
-        except (json.JSONDecodeError, OSError):
-            pass  # unreadable/corrupt: start fresh rather than blocking the BA
-
-    existing = registry.setdefault("stakeholders", [])
-    index = {}
-    for s in existing:
-        key = _stakeholder_identity(s)
-        if key:
-            index[key] = s
-
-    added, updated, dup_warnings = [], [], []
-    for s in incoming:
-        if not isinstance(s, dict):
-            continue
-        key = _stakeholder_identity(s)
-        if not key:
-            continue  # neither name nor role — nothing to identify by
-        if key in index:
-            # Partial update: non-empty incoming fields overwrite; empties do NOT wipe.
-            target = index[key]
-            for field, value in s.items():
-                if value not in (None, "", [], {}):
-                    target[field] = value
-            target["_last_updated"] = today
-            target["_update_source"] = session_source
-            updated.append(target.get("name") or target.get("role") or key)
-        else:
-            # Duplicate guard: a NEW person whose role matches a DIFFERENT existing one.
-            new_role = _reg_norm(s.get("role"))
-            if new_role:
-                for ex in existing:
-                    if _stakeholder_identity(ex) != key and _reg_norm(ex.get("role")) == new_role:
-                        dup_warnings.append((s.get("name") or s.get("role"),
-                                             ex.get("name") or ex.get("role")))
-                        break
-            entry = dict(s)
-            entry["_first_seen"] = today
-            entry["_last_updated"] = today
-            entry["_update_source"] = session_source
-            existing.append(entry)
-            index[key] = entry
-            added.append(entry.get("name") or entry.get("role") or key)
-
-    registry["updated"] = today
-    registry.setdefault("created", today)
-    registry.setdefault("history", []).append(
-        {"date": today, "source": session_source, "added": added, "updated": updated})
-
-    # Persist the JSON source of truth (don't block the BA on I/O errors).
-    try:
-        os.makedirs(os.path.dirname(json_path), exist_ok=True)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(registry, f, ensure_ascii=False, indent=2)
-    except OSError as e:
-        logger.warning(f"4.2 Could not persist stakeholder registry JSON: {e}")
+    registry = merge_result["registry"]
+    existing = registry["stakeholders"]
+    added = merge_result["added"]
+    updated = merge_result["updated"]
+    dup_warnings = merge_result["dup_warnings"]
 
     # -----------------------------------------------------------------------
     # Render the .md report from the FULL registry.
