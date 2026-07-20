@@ -702,8 +702,11 @@ def check_architecture_gaps(
                     "type": "stakeholder_no_view",
                     "stakeholder_id": sh_id,
                     "stakeholder_name": sh.get("name", ""),
+                    # Identify by name, else role: neither producer of the registry
+                    # (3.2 seeding, 4.2 elicitation) writes an `id`, so quoting it
+                    # rendered an empty pair of backticks on every one of these gaps.
                     "message": (
-                        f"Stakeholder `{sh_id}` ({sh.get('name', '')}) "
+                        f"Stakeholder `{sh.get('name') or sh.get('role') or '—'}` "
                         f"is not represented in any req. "
                         f"Their interests may be uncovered."
                     ),
