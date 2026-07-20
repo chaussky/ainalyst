@@ -1294,5 +1294,108 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
         self.assertIn("Improve NPS to 60", result)
 
 
+class TestGoalEdgesAtRegistration(BaseMCPTest):
+    """A1: the BA declares which objective a requirement serves, and the shared
+    registration point writes the `satisfies` edge (from=requirement, to=objective,
+    ADR-082). Nothing is ever inferred from text — that was finding 7.1-B.
+    """
+
+    P = "goal_edges"
+
+    def setUp(self):
+        super().setUp()
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut handling time",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "BN-001", "type": "business_need", "title": "Routing is manual",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+        ]))
+
+    def _links(self):
+        return load_spec_repo(self.P)["links"]
+
+    def test_edge_written_for_valid_objective(self):
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Auto-assign",
+                                "spec.md", "High", business_goal_ids=["BG-001"])
+        self.assertEqual(
+            [(l["from"], l["to"], l["relation"]) for l in self._links()],
+            [("FR-001", "BG-001", "satisfies")],
+        )
+
+    def test_business_need_is_a_valid_target(self):
+        """The FULL root set is accepted — linking a requirement straight to a need is
+        legitimate BABOK. Checking a partial set is the class behind 7.3-A / 7.4-B."""
+        mod71._register_in_repo(self.P, "FR-002", "functional", "Queue view",
+                                "spec.md", "Medium", business_goal_ids=["BN-001"])
+        self.assertEqual(len(self._links()), 1)
+
+    def test_unknown_id_warns_and_writes_no_edge(self):
+        note = mod71._register_in_repo(self.P, "FR-003", "functional", "X",
+                                       "spec.md", "Medium",
+                                       business_goal_ids=["BG-999"])
+        self.assertEqual(self._links(), [])
+        self.assertIn("BG-999", note)
+
+    def test_unknown_id_creates_no_phantom_node(self):
+        """A phantom objective would poison check_coverage, the 7.3 BFS, 7.4 and 5.4."""
+        mod71._register_in_repo(self.P, "FR-004", "functional", "X",
+                                "spec.md", "Medium", business_goal_ids=["BG-999"])
+        ids = {r["id"] for r in load_spec_repo(self.P)["requirements"]}
+        self.assertNotIn("BG-999", ids)
+
+    def test_unknown_id_does_not_abort_registration(self):
+        """Don't block — warn. The requirement is still created."""
+        mod71._register_in_repo(self.P, "FR-005", "functional", "X",
+                                "spec.md", "Medium", business_goal_ids=["BG-999"])
+        ids = {r["id"] for r in load_spec_repo(self.P)["requirements"]}
+        self.assertIn("FR-005", ids)
+
+    def test_non_root_target_is_refused_with_a_pointer(self):
+        mod71._register_in_repo(self.P, "FR-006", "functional", "X", "spec.md")
+        note = mod71._register_in_repo(self.P, "FR-007", "functional", "Y",
+                                       "spec.md", "Medium",
+                                       business_goal_ids=["FR-006"])
+        self.assertEqual(self._links(), [])
+        self.assertIn("add_trace_link", note)
+
+    def test_edge_is_idempotent_across_reruns(self):
+        """Node dedup without edge dedup is the bug that recurred in 6.3 and 6.4."""
+        for _ in range(3):
+            mod71._register_in_repo(self.P, "FR-008", "functional", "Auto-assign",
+                                    "spec.md", "High", business_goal_ids=["BG-001"])
+        self.assertEqual(len(self._links()), 1)
+
+    def test_existing_node_still_receives_a_new_edge(self):
+        """THE TRAP: registration returns early for a known id. Node and edge handling
+        must be independent, or a re-run meant to add the objective link does nothing."""
+        mod71._register_in_repo(self.P, "FR-009", "functional", "Auto-assign",
+                                "spec.md", "High")
+        self.assertEqual(self._links(), [])
+        mod71._register_in_repo(self.P, "FR-009", "functional", "Auto-assign",
+                                "spec.md", "High", business_goal_ids=["BG-001"])
+        self.assertEqual(len(self._links()), 1)
+
+    def test_several_objectives_at_once(self):
+        mod71._register_in_repo(self.P, "FR-010", "functional", "X", "spec.md",
+                                "High", business_goal_ids=["BG-001", "BN-001"])
+        self.assertEqual(len(self._links()), 2)
+
+    def test_no_objectives_writes_no_edges(self):
+        mod71._register_in_repo(self.P, "FR-011", "functional", "X", "spec.md")
+        self.assertEqual(self._links(), [])
+
+    def test_node_registration_is_unchanged(self):
+        """The pre-existing contract still holds: the node is registered as draft."""
+        note = mod71._register_in_repo(self.P, "FR-012", "functional", "Auto-assign",
+                                       "spec.md", "High", business_goal_ids=["BG-001"])
+        node = next(r for r in load_spec_repo(self.P)["requirements"]
+                    if r["id"] == "FR-012")
+        self.assertEqual(node["status"], "draft")
+        self.assertEqual(node["priority"], "High")
+        self.assertIn("FR-012", note)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

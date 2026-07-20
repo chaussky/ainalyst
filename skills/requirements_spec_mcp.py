@@ -29,7 +29,10 @@ import glob
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
+    parse_json_str_list, BUSINESS_NODE_TYPES,
+)
 
 mcp = FastMCP("BABOK_Requirements_Spec")
 
@@ -72,41 +75,94 @@ def _save_repo(repo: dict) -> None:
 
 
 def _register_in_repo(project_id: str, req_id: str, req_type: str,
-                      title: str, source_artifact: str, priority: str = "Medium") -> str:
+                      title: str, source_artifact: str, priority: str = "Medium",
+                      business_goal_ids: Optional[list] = None) -> str:
     """
     ADR-022: registers a requirement in repository 5.1 with status draft.
-    If a requirement with this ID already exists — skips it (without an error).
+    If a requirement with this ID already exists — skips the node (without an error).
+
+    A1: also writes the BA-declared `satisfies` edges requirement -> business objective
+    (ADR-082, from=requirement to=objective). These edges are what makes per-goal coverage
+    in `build_coverage_matrix` a real claim instead of a project-level average, and they
+    are what `check_coverage` (5.1) and CR impact analysis (5.4) read.
+
+    Node registration and edge registration are INDEPENDENT on purpose: registration
+    returns early for an already-known id, so an existing requirement must still receive
+    newly declared links — otherwise a re-run meant to add the objective silently does
+    nothing.
+
     Returns a marker string to include in the artifact.
     """
     repo = _load_repo(project_id)
     existing_ids = {r["id"] for r in repo["requirements"]}
+    notes = []
 
     if req_id in existing_ids:
-        logger.info(f"_register_in_repo: {req_id} already in repository, skipping")
-        return f"ℹ️ `{req_id}` is already registered in repository 5.1."
+        logger.info(f"_register_in_repo: {req_id} already in repository, skipping node")
+        notes.append(f"ℹ️ `{req_id}` is already registered in repository 5.1.")
+    else:
+        repo["requirements"].append({
+            "id": req_id,
+            "type": req_type,
+            "title": title,
+            "version": "1.0",
+            "status": "draft",
+            "priority": priority,
+            "owner": "",
+            "stability": "Unknown",
+            "source_artifact": source_artifact,
+            "added": str(date.today()),
+            "last_reviewed": str(date.today()),
+        })
+        repo["history"].append({
+            "action": "requirement_added",
+            "req_id": req_id,
+            "source": "7.1_spec",
+            "date": str(date.today()),
+        })
+        notes.append(f"✅ `{req_id}` registered in repository 5.1 (status: draft).")
 
-    entry = {
-        "id": req_id,
-        "type": req_type,
-        "title": title,
-        "version": "1.0",
-        "status": "draft",
-        "priority": priority,
-        "owner": "",
-        "stability": "Unknown",
-        "source_artifact": source_artifact,
-        "added": str(date.today()),
-        "last_reviewed": str(date.today()),
+    nodes_by_id = {r["id"]: r for r in repo["requirements"]}
+    # Idempotency on EDGES, not just on nodes — the bug that recurred in 6.3 and 6.4.
+    existing_edges = {
+        (lnk.get("from"), lnk.get("to"), lnk.get("relation")) for lnk in repo["links"]
     }
-    repo["requirements"].append(entry)
-    repo["history"].append({
-        "action": "requirement_added",
-        "req_id": req_id,
-        "source": "7.1_spec",
-        "date": str(date.today()),
-    })
+    added = 0
+
+    for goal_id in (business_goal_ids or []):
+        target = nodes_by_id.get(goal_id)
+        if target is None:
+            # Never invent the node: a phantom objective would poison check_coverage,
+            # the 7.3 BFS, the 7.4 matrix and 5.4 impact analysis. Warn, don't block.
+            notes.append(
+                f"⚠️ Objective `{goal_id}` is not in repository 5.1 — link skipped. "
+                f"Define objectives in 6.2 (`define_goals_and_objectives`)."
+            )
+            continue
+        if target.get("type") not in BUSINESS_NODE_TYPES:
+            notes.append(
+                f"⚠️ `{goal_id}` is a `{target.get('type')}` node, not a business objective — "
+                f"link skipped. For requirement-to-requirement relations use "
+                f"`add_trace_link` (5.1)."
+            )
+            continue
+        key = (req_id, goal_id, "satisfies")
+        if key in existing_edges:
+            continue
+        repo["links"].append({
+            "from": req_id,
+            "to": goal_id,
+            "relation": "satisfies",
+            "created": str(date.today()),
+        })
+        existing_edges.add(key)
+        added += 1
+
+    if added:
+        notes.append(f"🔗 Linked to {added} business objective(s) via `satisfies`.")
+
     _save_repo(repo)
-    return f"✅ `{req_id}` registered in repository 5.1 (status: draft)."
+    return " ".join(notes)
 
 
 # ---------------------------------------------------------------------------
