@@ -31,7 +31,10 @@ from collections import deque
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    has_passed_verification,
+)
 
 mcp = FastMCP("BABOK_Requirements_Validate")
 
@@ -1066,9 +1069,14 @@ def mark_req_validated(
 
         warnings = []
 
-        # Precondition 1: verified status
+        # Precondition 1: the req passed 7.2 verification.
+        #
+        # Read the DURABLE record, not `status`: that field is shared across chapters
+        # and 5.5 overwrites `verified` with `approved`, so a req that genuinely passed
+        # 7.2 used to produce a false warning here purely because it had been approved.
+        # `validated` remains accepted as this chapter's own "already past this point".
         current_status = req.get("status", "draft")
-        if current_status not in ("verified", "validated"):
+        if not has_passed_verification(repo, req_id) and current_status != "validated":
             warnings.append(
                 f"Status '{current_status}' (expected 'verified'). "
                 f"Verify the req via the 7.2 tools before validation."

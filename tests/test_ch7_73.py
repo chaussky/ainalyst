@@ -1115,5 +1115,39 @@ class TestBusinessNodeTypes(BaseMCPTest):
         self.assertIn("| Total active reqs | 1 |", result)
 
 
+# ---------------------------------------------------------------------------
+# B2-bis — the verification precondition reads the durable record, not `status`
+# ---------------------------------------------------------------------------
+
+class TestValidationVerificationPrecondition(BaseMCPTest):
+
+    def _setup(self, status, history=None):
+        """FR-001 traceable to BG-001, with the given status and repo history."""
+        bg = make_business_req("BG-001", "Reduce application processing time")
+        fr = make_verified_req("FR-001", "Reduce application processing time by 50%",
+                               "functional", status=status)
+        repo = make_repo("proj73",
+            requirements=[bg, fr],
+            links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}],
+        )
+        repo["history"] = history or []
+        save_repo(repo)
+        ctx = make_context("proj73", [{"id": "BG-001",
+                                       "title": "Reduce application processing time",
+                                       "kpi": "x"}])
+        save_context(ctx)
+
+    def test_verified_then_approved_does_not_warn(self):
+        """The B2 case: 5.5 overwrote the status, but the req DID pass 7.2."""
+        self._setup("approved", [{"action": "req_verified", "req_id": "FR-001"}])
+        result = mod73.mark_req_validated("proj73", '["FR-001"]')
+        self.assertNotIn("expected 'verified'", result)
+
+    def test_never_verified_still_warns(self):
+        self._setup("draft")
+        result = mod73.mark_req_validated("proj73", '["FR-001"]')
+        self.assertIn("expected 'verified'", result)
+
+
 if __name__ == "__main__":
     unittest.main()
