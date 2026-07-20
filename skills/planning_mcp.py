@@ -35,6 +35,8 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
+    parse_json_list as _parse_json_list,
+    parse_json_str_list as _parse_string_list,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -124,57 +126,6 @@ def _empty_plan(project_id: str) -> dict:
         "information_management": {},
         "performance": {},
     }
-
-
-_LIST_EXAMPLE = '["Sponsor", "Product Owner"]'
-
-
-def _parse_json_list(raw: str, field: str, required: bool = False) -> tuple:
-    """Parses a JSON array. Returns (values, error_message).
-
-    Shared by every Ch3 tool that takes a list, so the validation cannot drift apart
-    between siblings. Malformed input is REPORTED, never silently coerced or dropped:
-    swallowing it makes the tool answer about data the BA never actually supplied.
-    """
-    text = (raw or "").strip()
-    if not text:
-        if required:
-            return [], f"❌ {field} is required. Expected a JSON array, e.g. '{_LIST_EXAMPLE}'."
-        return [], ""
-
-    try:
-        value = json.loads(text)
-    except json.JSONDecodeError as e:
-        return [], (f"❌ Error parsing {field}: {e}\n"
-                    f"Expected a JSON array, e.g. '{_LIST_EXAMPLE}'.")
-
-    if not isinstance(value, list):
-        return [], (f"❌ {field} must be a JSON array, got {type(value).__name__}. "
-                    f"Example: '{_LIST_EXAMPLE}'.")
-
-    if required and not value:
-        return [], f"❌ {field} must be a non-empty JSON array."
-
-    return value, ""
-
-
-def _parse_string_list(raw: str, field: str, required: bool = False) -> tuple:
-    """Parses a JSON array of strings. Returns (values, error_message).
-
-    A list holding objects/numbers is a caller mistake (easy to make, since sibling
-    parameters like metrics_json DO take objects). Rejecting it here keeps the failure
-    a readable message instead of a TypeError escaping the tool at render time.
-    """
-    values, error = _parse_json_list(raw, field, required=required)
-    if error:
-        return [], error
-
-    bad = next((v for v in values if not isinstance(v, str)), None)
-    if bad is not None:
-        return [], (f"❌ {field} must contain only strings — got "
-                    f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
-                    f"Example: '{_LIST_EXAMPLE}'.")
-    return values, ""
 
 
 def _classify_stakeholder(influence: str, interest: str) -> tuple:

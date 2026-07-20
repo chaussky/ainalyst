@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+import json
 import os
 import re
 import sys
@@ -117,6 +118,92 @@ def specs_dir(project_id: str) -> str:
         if os.path.isdir(cand):
             return cand
     return nested
+
+
+# ---------------------------------------------------------------------------
+# Shared JSON-parameter validation
+#
+# MCP tools take structured input as JSON strings written by an LLM, so a wrong
+# SHAPE (a list of strings where objects are expected, an object where a list is)
+# is a routine failure mode. Every tool must answer with a readable "❌ ..." string:
+# an AttributeError/TypeError escaping the tool surfaces as a protocol error the BA
+# cannot act on. Keeping these here — rather than per module — stops sibling tools
+# from validating differently (the drift already seen in the 5.5 gate).
+#
+# Each returns (value, error_message); error_message is "" on success.
+# ---------------------------------------------------------------------------
+
+def _json_load_field(raw: str, field: str, example: str):
+    text = (raw or "").strip()
+    if not text:
+        return None, ""
+    try:
+        return json.loads(text), ""
+    except json.JSONDecodeError as e:
+        return None, (f"❌ Error parsing {field}: {e}\n"
+                      f"Expected JSON, e.g. '{example}'.")
+
+
+def parse_json_list(raw: str, field: str, required: bool = False,
+                    example: str = '["item1", "item2"]') -> tuple:
+    """Parses a JSON array. Elements may be of any type."""
+    value, error = _json_load_field(raw, field, example)
+    if error:
+        return [], error
+    if value is None:
+        if required:
+            return [], f"❌ {field} is required. Expected a JSON array, e.g. '{example}'."
+        return [], ""
+    if not isinstance(value, list):
+        return [], (f"❌ {field} must be a JSON array, got {type(value).__name__}. "
+                    f"Example: '{example}'.")
+    if required and not value:
+        return [], f"❌ {field} must be a non-empty JSON array."
+    return value, ""
+
+
+def parse_json_str_list(raw: str, field: str, required: bool = False,
+                        example: str = '["Sponsor", "Product Owner"]') -> tuple:
+    """Parses a JSON array of strings."""
+    values, error = parse_json_list(raw, field, required=required, example=example)
+    if error:
+        return [], error
+    bad = next((v for v in values if not isinstance(v, str)), None)
+    if bad is not None:
+        return [], (f"❌ {field} must contain only strings — got "
+                    f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
+                    f"Example: '{example}'.")
+    return values, ""
+
+
+def parse_json_dict_list(raw: str, field: str, required: bool = False,
+                         example: str = '[{"name": "...", "role": "..."}]') -> tuple:
+    """Parses a JSON array of objects (the common shape for MCP list parameters)."""
+    values, error = parse_json_list(raw, field, required=required, example=example)
+    if error:
+        return [], error
+    bad = next((v for v in values if not isinstance(v, dict)), None)
+    if bad is not None:
+        return [], (f"❌ {field} must be a JSON array of objects — got "
+                    f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
+                    f"Example: '{example}'.")
+    return values, ""
+
+
+def parse_json_dict(raw: str, field: str, required: bool = False,
+                    example: str = '{"key": "value"}') -> tuple:
+    """Parses a single JSON object."""
+    value, error = _json_load_field(raw, field, example)
+    if error:
+        return {}, error
+    if value is None:
+        if required:
+            return {}, f"❌ {field} is required. Expected a JSON object, e.g. '{example}'."
+        return {}, ""
+    if not isinstance(value, dict):
+        return {}, (f"❌ {field} must be a JSON object, got {type(value).__name__}. "
+                    f"Example: '{example}'.")
+    return value, ""
 
 
 class Stakeholder(BaseModel):

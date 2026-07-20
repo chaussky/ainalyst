@@ -15,7 +15,10 @@ import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, data_path, normalize_project_id,
+    parse_json_dict, parse_json_dict_list,
+)
 
 mcp = FastMCP("BABOK_Elicitation_Conduct")
 
@@ -107,13 +110,23 @@ def process_elicitation_results(
     """
     logger.info(f"4.2 Saving elicitation results: project='{project_name}', type='{session_type}'")
 
-    # Parse JSON
-    try:
-        profile = json.loads(stakeholder_profile_json)
-        pains = json.loads(pains_json)
-        reqs = json.loads(requirements_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    profile, error = parse_json_dict(
+        stakeholder_profile_json, "stakeholder_profile_json",
+        example='{"participation_type": "Decision maker", "influence": "High"}')
+    if error:
+        return error
+
+    pains, error = parse_json_dict_list(
+        pains_json, "pains_json",
+        example='[{"title": "...", "description": "...", "business_impact": "..."}]')
+    if error:
+        return error
+
+    reqs, error = parse_json_dict(
+        requirements_json, "requirements_json",
+        example='{"functional": ["FR-001: ..."], "non_functional": ["NFR-001: ..."]}')
+    if error:
+        return error
 
     # Build the pain points block
     pains_md = ""
@@ -247,10 +260,12 @@ def compare_elicitation_results(
     """
     logger.info(f"4.2 Cross-analysis: project='{project_name}'")
 
-    try:
-        registry = json.loads(requirements_registry_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing requirements_registry_json: {e}"
+    registry, error = parse_json_dict_list(
+        requirements_registry_json, "requirements_registry_json",
+        example='[{"id": "FR-001", "requirement": "...", "sources": ["..."], '
+                '"priority": "High", "status": "Agreed"}]')
+    if error:
+        return error
 
     # Build the registry table
     reg_rows = "\n".join([
@@ -349,10 +364,12 @@ def save_cr_elicitation_analysis(
     """
     logger.info(f"4.2 CR analysis: project='{project_name}'")
 
-    try:
-        artifacts = json.loads(affected_artifacts_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing affected_artifacts_json: {e}"
+    artifacts, error = parse_json_dict_list(
+        affected_artifacts_json, "affected_artifacts_json",
+        example='[{"artifact": "FR-001", "type": "FR", "affected": true, '
+                '"change_type": "Update"}]')
+    if error:
+        return error
 
     # Build the artifacts table
     art_rows = "\n".join([
@@ -461,15 +478,11 @@ def update_stakeholder_registry(
     """
     logger.info(f"4.2 Updating stakeholder registry: project='{project_name}', source='{session_source}'")
 
-    try:
-        incoming = json.loads(new_stakeholders_json)
-    except json.JSONDecodeError as e:
-        return (
-            f"❌ Error parsing new_stakeholders_json: {e}\n\n"
-            f"Expected format: a list of objects with fields name, role, found_through, etc."
-        )
-    if not isinstance(incoming, list):
-        return "❌ Error: new_stakeholders_json must be a list (JSON array)"
+    incoming, error = parse_json_dict_list(
+        new_stakeholders_json, "new_stakeholders_json",
+        example='[{"name": "Jane Doe", "role": "Head of Sales", "influence": "High"}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 

@@ -13,7 +13,9 @@ import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger
+from skills.common import (
+    save_artifact, logger, parse_json_dict, parse_json_dict_list,
+)
 
 mcp = FastMCP("BABOK_Communicate")
 
@@ -88,11 +90,17 @@ def prepare_communication_package(
     """
     logger.info(f"4.4 Preparing package: project='{project_name}', audience='{audience_role}'")
 
-    try:
-        profile = json.loads(audience_profile_json)
-        key_messages = json.loads(key_messages_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    profile, error = parse_json_dict(
+        audience_profile_json, "audience_profile_json",
+        example='{"stakeholder_role": "...", "influence": "High", "attitude": "Neutral"}')
+    if error:
+        return error
+
+    key_messages, error = parse_json_dict_list(
+        key_messages_json, "key_messages_json",
+        example='[{"message": "...", "why_it_matters": "..."}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 
@@ -262,11 +270,17 @@ def log_communication(
     """
     logger.info(f"4.4 Communication log: project='{project_name}', audience='{audience_role}'")
 
-    try:
-        participants = json.loads(participants_json)
-        action_items = json.loads(action_items_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    participants, error = parse_json_dict_list(
+        participants_json, "participants_json",
+        example='[{"name": "Alex Kim", "role": "Backend developer"}]')
+    if error:
+        return error
+
+    action_items, error = parse_json_dict_list(
+        action_items_json, "action_items_json",
+        example='[{"action": "...", "owner": "...", "deadline": "DD.MM.YYYY"}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 
@@ -424,12 +438,24 @@ def check_communication_schedule(
     """
     logger.info(f"4.4 Checking schedule: project='{project_name}', date='{today_date}'")
 
-    try:
-        stakeholders = json.loads(stakeholders_json)
-        comm_log = json.loads(communication_log_json)
-        events = json.loads(triggered_events_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    stakeholders, error = parse_json_dict_list(
+        stakeholders_json, "stakeholders_json",
+        example='[{"role": "Sponsor", "influence": "High", "comm_frequency": "Weekly", '
+                '"last_communication_date": "DD.MM.YYYY"}]')
+    if error:
+        return error
+
+    comm_log, error = parse_json_dict_list(
+        communication_log_json, "communication_log_json",
+        example='[{"audience_role": "...", "communication_date": "DD.MM.YYYY"}]')
+    if error:
+        return error
+
+    events, error = parse_json_dict_list(
+        triggered_events_json, "triggered_events_json",
+        example='[{"event_type": "Decision made", "description": "...", "date": "DD.MM.YYYY"}]')
+    if error:
+        return error
 
     from datetime import datetime, timedelta
 

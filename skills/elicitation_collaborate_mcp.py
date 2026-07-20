@@ -20,7 +20,7 @@ import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger
+from skills.common import save_artifact, logger, parse_json_dict_list
 
 mcp = FastMCP("BABOK_Collaborate")
 
@@ -82,12 +82,23 @@ def log_decision(
     """
     logger.info(f"4.5 Decision Log: project='{project_name}', type='{decision_type}'")
 
-    try:
-        alternatives = json.loads(alternatives_json)
-        participants = json.loads(participants_json)
-        artifacts = json.loads(affected_artifacts_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    alternatives, error = parse_json_dict_list(
+        alternatives_json, "alternatives_json",
+        example='[{"option": "...", "pros": "...", "cons": "...", "rejected_reason": "..."}]')
+    if error:
+        return error
+
+    participants, error = parse_json_dict_list(
+        participants_json, "participants_json",
+        example='[{"name": "name or role", "position": "position on the decision"}]')
+    if error:
+        return error
+
+    artifacts, error = parse_json_dict_list(
+        affected_artifacts_json, "affected_artifacts_json",
+        example='[{"artifact": "FR-001", "impact": "how it changes"}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 
@@ -227,13 +238,29 @@ def save_meeting_notes(
     """
     logger.info(f"4.5 Meeting notes: project='{project_name}', type='{meeting_type}'")
 
-    try:
-        participants = json.loads(participants_json)
-        agenda = json.loads(agenda_json)
-        decisions = json.loads(decisions_json)
-        action_items = json.loads(action_items_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    participants, error = parse_json_dict_list(
+        participants_json, "participants_json",
+        example='[{"name": "name or role", "department": "department"}]')
+    if error:
+        return error
+
+    agenda, error = parse_json_dict_list(
+        agenda_json, "agenda_json",
+        example='[{"item": "agenda item", "owner": "who led it"}]')
+    if error:
+        return error
+
+    decisions, error = parse_json_dict_list(
+        decisions_json, "decisions_json",
+        example='[{"decision": "statement", "decision_maker": "who"}]')
+    if error:
+        return error
+
+    action_items, error = parse_json_dict_list(
+        action_items_json, "action_items_json",
+        example='[{"action": "...", "owner": "...", "deadline": "DD.MM.YYYY", "priority": "High"}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 

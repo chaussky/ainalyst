@@ -13,7 +13,9 @@ import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR
+from skills.common import (
+    save_artifact, logger, DATA_DIR, parse_json_dict, parse_json_dict_list,
+)
 
 mcp = FastMCP("BABOK_Elicitation_Confirm")
 
@@ -79,12 +81,24 @@ def run_consistency_check(
     """
     logger.info(f"4.3 Quality check: project='{project_name}'")
 
-    try:
-        artifacts = json.loads(source_artifacts_json)
-        issues = json.loads(issues_json)
-        questions = json.loads(clarification_questions_json) if clarification_questions_json else []
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    artifacts, error = parse_json_dict_list(
+        source_artifacts_json, "source_artifacts_json",
+        example='[{"path": "...", "stakeholder_role": "...", "session_date": "DD.MM.YYYY"}]')
+    if error:
+        return error
+
+    issues, error = parse_json_dict_list(
+        issues_json, "issues_json",
+        example='[{"issue_id": "ISS-001", "criterion": "Completeness", '
+                '"severity": "Critical", "description": "..."}]')
+    if error:
+        return error
+
+    questions, error = parse_json_dict_list(
+        clarification_questions_json, "clarification_questions_json",
+        example='[{"stakeholder_role": "...", "issue_id": "ISS-001", "question": "..."}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
 
@@ -274,12 +288,24 @@ def save_confirmed_elicitation_result(
     """
     logger.info(f"4.3 Saving confirmed artifact: project='{project_name}'")
 
-    try:
-        reqs = json.loads(confirmed_requirements_json)
-        resolved = json.loads(resolved_issues_json)
-        open_iss = json.loads(open_issues_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing JSON: {e}"
+    reqs, error = parse_json_dict(
+        confirmed_requirements_json, "confirmed_requirements_json",
+        example='{"functional": [{"id": "FR-001", "statement": "..."}], '
+                '"non_functional": [], "constraints": [], "business_rules": []}')
+    if error:
+        return error
+
+    resolved, error = parse_json_dict_list(
+        resolved_issues_json, "resolved_issues_json",
+        example='[{"issue_id": "ISS-001", "resolution": "...", "updated_requirement_id": "FR-001"}]')
+    if error:
+        return error
+
+    open_iss, error = parse_json_dict_list(
+        open_issues_json, "open_issues_json",
+        example='[{"issue_id": "ISS-002", "description": "...", "risk": "...", "owner": "..."}]')
+    if error:
+        return error
 
     today = date.today().strftime("%d.%m.%Y")
     status_icon = {"Ready for Analysis": "✅", "Conditionally Ready": "⚠️"}.get(final_readiness, "✅")

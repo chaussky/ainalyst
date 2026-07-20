@@ -13,7 +13,7 @@ Tools:
 import json
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger
+from skills.common import save_artifact, logger, parse_json_dict_list
 
 mcp = FastMCP("BABOK_Elicitation_Prep")
 
@@ -63,22 +63,14 @@ def save_elicitation_plan(
     """
     logger.info(f"4.1 Saving elicitation plan: project='{project_name}', technique='{technique}'")
 
-    # Parse stakeholders
-    try:
-        stakeholders = json.loads(stakeholders_json)
-    except json.JSONDecodeError as e:
-        return (
-            f"❌ Error parsing stakeholders_json: {e}\n\n"
-            f"Expected format:\n"
-            f'```json\n'
-            f'[{{"name": "Jane Doe", "role": "Process Owner", '
-            f'"influence": "High", "interest": "High", '
-            f'"what_to_learn": "Pain points of the current process"}}]\n'
-            f'```'
-        )
-
-    if not isinstance(stakeholders, list):
-        return "❌ Error: stakeholders_json must be a list (JSON array), got an object of a different type"
+    # An elicitation plan without stakeholders is meaningless — keep this required
+    # (the previous json.loads("") failure had made it required by accident).
+    stakeholders, error = parse_json_dict_list(
+        stakeholders_json, "stakeholders_json", required=True,
+        example='[{"name": "Jane Doe", "role": "Process Owner", "influence": "High", '
+                '"interest": "High", "what_to_learn": "Pain points of the current process"}]')
+    if error:
+        return error
 
     # Build the stakeholder table
     stakeholder_rows = "\n".join([
@@ -170,11 +162,11 @@ def create_google_form(
     """
     logger.info(f"4.1 create_google_form called: title='{title}'")
 
-    # Validate questions
-    try:
-        questions = json.loads(questions_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing questions_json: {e}"
+    questions, error = parse_json_dict_list(
+        questions_json, "questions_json",
+        example='[{"text": "Question text", "type": "text", "required": true}]')
+    if error:
+        return error
 
     # Build the survey preview
     preview_lines = [f"## Survey preview: {title}\n", f"_{description}_\n"]
