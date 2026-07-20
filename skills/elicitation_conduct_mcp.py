@@ -4,6 +4,7 @@ MCP tools for processing elicitation results.
 
 Tools:
   - process_elicitation_results   — save the structured result of a session
+                                    (+ elicitation_results.json with risks, read by 6.3)
   - compare_elicitation_results   — compare multiple sessions, find contradictions
   - save_cr_elicitation_analysis  — elicitation analysis in the context of a Change Request
   - update_stakeholder_registry   — merge newly discovered stakeholders into the living registry
@@ -11,16 +12,120 @@ Tools:
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
+import json
+import os
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
-    save_artifact, logger,
-    parse_json_dict, parse_json_dict_list,
+    save_artifact, logger, data_path, normalize_project_id,
+    parse_json_dict, parse_json_dict_list, parse_json_list,
     update_stakeholder_registry_file,
 )
 
 mcp = FastMCP("BABOK_Elicitation_Conduct")
+
+
+# The single structured artifact 6.3 `import_risks_from_context` reads. The name must
+# match the consumer exactly: it builds the path with the same normalize_project_id and
+# data_path (finding 7.4-A and 7.6-A were both consumers reading a filename nobody wrote).
+ELICITATION_RESULTS_FILENAME = "elicitation_results.json"
+
+
+def _elicitation_results_path(project_name: str) -> str:
+    safe = normalize_project_id(project_name)
+    return data_path(project_name, f"{safe}_{ELICITATION_RESULTS_FILENAME}")
+
+
+def _parse_session_risks(risks_json: str, default_stakeholder: str):
+    """Parses `risks_json` into [{"description", "stakeholder"}]. Returns (risks, error).
+
+    Tolerant at the boundary, strict in what is stored: a bare string becomes a
+    description, and the `risk`/`source` spellings 6.3 accepts on read are accepted here
+    too. The input is written by an LLM, and CH4-A was exactly the class where a
+    wrong-but-meaningful shape crashed instead of being handled.
+    """
+    raw, error = parse_json_list(
+        risks_json, "risks_json",
+        example='[{"description": "The legacy API may not survive the load"}]')
+    if error:
+        return None, error
+
+    risks = []
+    for item in raw:
+        if isinstance(item, str):
+            description, stakeholder = item.strip(), default_stakeholder
+        elif isinstance(item, dict):
+            description = str(item.get("description") or item.get("risk") or "").strip()
+            stakeholder = (str(item.get("stakeholder") or item.get("source") or "").strip()
+                           or default_stakeholder)
+        else:
+            return None, (
+                "❌ `risks_json`: every item must be an object or a string.\n"
+                'Example: [{"description": "The legacy API may not survive the load"}]'
+            )
+        if description:
+            risks.append({"description": description, "stakeholder": stakeholder})
+    return risks, ""
+
+
+def _record_session_risks(project_name: str, session_date: str, stakeholder_role: str,
+                          session_type: str, risks: list) -> bool:
+    """Accumulates this session's risks into the one JSON per project that 6.3 reads.
+
+    Sessions are keyed by (date, role, type): re-running one REPLACES its slice in place
+    rather than appending duplicates. The flat top-level `risks_mentioned` — the exact
+    shape 6.3 consumes — is rebuilt from all sessions on every write, so it can never
+    drift from `sessions`.
+
+    No risks: the file is neither created NOR modified. An omission means the caller
+    supplied nothing this time, not that recorded risks should be deleted.
+    """
+    if not risks:
+        return False
+
+    path = _elicitation_results_path(project_name)
+    today = date.today().strftime("%d.%m.%Y")
+    data = {"project": project_name, "created": today, "updated": today, "sessions": []}
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict) and isinstance(loaded.get("sessions"), list):
+                data = loaded
+        except (json.JSONDecodeError, OSError):
+            pass  # unreadable/corrupt: start fresh rather than blocking the BA
+
+    entry = {
+        "session_date": session_date,
+        "stakeholder_role": stakeholder_role,
+        "session_type": session_type,
+        "risks_mentioned": risks,
+    }
+    key = (session_date, stakeholder_role, session_type)
+    sessions = data.setdefault("sessions", [])
+    for i, s in enumerate(sessions):
+        if (s.get("session_date"), s.get("stakeholder_role"), s.get("session_type")) == key:
+            sessions[i] = entry  # replace in place, preserving order
+            break
+    else:
+        sessions.append(entry)
+
+    data["risks_mentioned"] = [
+        {**risk, "session_date": s.get("session_date", "")}
+        for s in sessions for risk in s.get("risks_mentioned", [])
+    ]
+    data["updated"] = today
+    data.setdefault("created", today)
+
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except OSError as e:
+        logger.warning(f"4.2 Could not persist elicitation results JSON: {e}")
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -40,6 +145,7 @@ def process_elicitation_results(
     ba_recommendations: str,
     maturity_level: Literal["Low", "Medium", "Good", "High"],
     maturity_notes: str,
+    risks_json: str = "[]",
 ) -> str:
     """
     BABOK 4.2 — Saves the structured results of a single elicitation session.
@@ -84,6 +190,11 @@ def process_elicitation_results(
                                    with whom, whether a follow-up is needed.
         maturity_level:            Overall maturity level of the requirements.
         maturity_notes:            Comment on the maturity assessment.
+        risks_json:                Risks the stakeholder raised in this session. Optional.
+                                   Format: [{"description": "...", "stakeholder": "..."}]
+                                   `stakeholder` defaults to stakeholder_role. A bare
+                                   string is accepted and read as the description.
+                                   Consumed by 6.3 `import_risks_from_context`.
 
     Returns:
         Path to the saved elicitation results file.
@@ -108,6 +219,10 @@ def process_elicitation_results(
     if error:
         return error
 
+    risks, error = _parse_session_risks(risks_json, stakeholder_role)
+    if error:
+        return error
+
     # Build the pain points block
     pains_md = ""
     for i, p in enumerate(pains, 1):
@@ -124,6 +239,9 @@ def process_elicitation_results(
 
     # Build the profile block
     related = ", ".join(profile.get("related_stakeholders", [])) or "None identified"
+
+    risks_md = ("\n".join(f"- {r['description']} — *{r['stakeholder']}*" for r in risks)
+                if risks else "- None mentioned")
 
     content = f"""# Elicitation Results (Unconfirmed)
 
@@ -176,18 +294,28 @@ def process_elicitation_results(
 
 ---
 
-## 5. BA Recommendations
+## 5. Risks Mentioned by the Stakeholder
+
+{risks_md}
+
+---
+
+## 6. BA Recommendations
 
 {ba_recommendations}
 
 ---
 
-## 6. Requirements Maturity Assessment
+## 7. Requirements Maturity Assessment
 
 **Overall level:** {maturity_level}
 
 {maturity_notes}
 """
+
+    # Structured output for 6.3 import_risks_from_context. The Markdown below is for
+    # people; this file is the machine contract, and 6.3 is its only consumer today.
+    _record_session_risks(project_name, session_date, stakeholder_role, session_type, risks)
 
     # The session date stays in the name — it distinguishes sessions within a project.
     suffix = save_artifact(

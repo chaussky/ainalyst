@@ -474,3 +474,98 @@ class TestUpdateStakeholderRegistry(BaseMCPTest):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+# ---------------------------------------------------------------------------
+# A3 — 4.2 emits the structured JSON that 6.3 import_risks_from_context reads
+# ---------------------------------------------------------------------------
+
+class TestSessionRisksJson(BaseMCPTest):
+
+    PID = "crm_upgrade"
+
+    def _call(self, **overrides):
+        kwargs = {**PROCESS_BASE, **overrides}
+        with patch("skills.elicitation_conduct_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod42.process_elicitation_results(**kwargs)
+
+    def _json(self):
+        path = mod42._elicitation_results_path(self.PID)
+        if not os.path.exists(path):
+            return None
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_risks_are_written_under_the_key_63_reads(self):
+        self._call(risks_json=json.dumps(
+            [{"description": "The legacy API may not survive the load"}]))
+        data = self._json()
+        self.assertIsNotNone(data)
+        self.assertEqual(len(data["risks_mentioned"]), 1)
+        self.assertEqual(data["risks_mentioned"][0]["description"],
+                         "The legacy API may not survive the load")
+
+    def test_bare_string_is_normalised_to_an_object(self):
+        self._call(risks_json=json.dumps(["Vendor lock-in"]))
+        self.assertEqual(self._json()["risks_mentioned"][0]["description"],
+                         "Vendor lock-in")
+
+    def test_stakeholder_defaults_to_the_session_role(self):
+        self._call(risks_json=json.dumps([{"description": "Budget may be cut"}]))
+        self.assertEqual(self._json()["risks_mentioned"][0]["stakeholder"],
+                         PROCESS_BASE["stakeholder_role"])
+
+    def test_explicit_stakeholder_wins(self):
+        self._call(risks_json=json.dumps(
+            [{"description": "Budget may be cut", "stakeholder": "CFO"}]))
+        self.assertEqual(self._json()["risks_mentioned"][0]["stakeholder"], "CFO")
+
+    def test_two_sessions_accumulate(self):
+        self._call(session_date="01.03.2026", stakeholder_role="CTO",
+                   risks_json=json.dumps([{"description": "Risk one"}]))
+        self._call(session_date="02.03.2026", stakeholder_role="CFO",
+                   risks_json=json.dumps([{"description": "Risk two"}]))
+        data = self._json()
+        self.assertEqual(len(data["sessions"]), 2)
+        descriptions = {r["description"] for r in data["risks_mentioned"]}
+        self.assertEqual(descriptions, {"Risk one", "Risk two"})
+
+    def test_rerunning_a_session_replaces_its_slice(self):
+        """Idempotency — the push-duplication bug recurred in 6.3 and 6.4."""
+        self._call(session_date="01.03.2026", stakeholder_role="CTO",
+                   risks_json=json.dumps([{"description": "Risk one"}]))
+        self._call(session_date="01.03.2026", stakeholder_role="CTO",
+                   risks_json=json.dumps([{"description": "Risk one, reworded"}]))
+        data = self._json()
+        self.assertEqual(len(data["sessions"]), 1)
+        self.assertEqual(len(data["risks_mentioned"]), 1)
+        self.assertEqual(data["risks_mentioned"][0]["description"], "Risk one, reworded")
+
+    def test_no_risks_writes_no_file(self):
+        self._call()
+        self.assertIsNone(self._json())
+
+    def test_empty_risks_leaves_an_existing_file_untouched(self):
+        """Absence means 'nothing supplied this time', never 'delete what was recorded'."""
+        self._call(session_date="01.03.2026", stakeholder_role="CTO",
+                   risks_json=json.dumps([{"description": "Risk one"}]))
+        self._call(session_date="01.03.2026", stakeholder_role="CTO", risks_json="[]")
+        data = self._json()
+        self.assertEqual(len(data["risks_mentioned"]), 1)
+        self.assertEqual(data["risks_mentioned"][0]["description"], "Risk one")
+
+    def test_malformed_risks_json_returns_an_error_and_does_not_raise(self):
+        result = self._call(risks_json='[123]')
+        self.assertIn("❌", result)
+        self.assertIsNone(self._json())
+
+    def test_markdown_report_shows_the_risks(self):
+        """Otherwise the .md and the .json describe the same session differently."""
+        with patch("skills.elicitation_conduct_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            mod42.process_elicitation_results(
+                **{**PROCESS_BASE,
+                   "risks_json": json.dumps([{"description": "Vendor lock-in"}])})
+        content = mock_sa.call_args[0][0]
+        self.assertIn("Vendor lock-in", content)
