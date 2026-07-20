@@ -179,13 +179,44 @@ class TestComputeReqStatus(BaseMCPTest):
         }
         self.assertEqual(_compute_req_status("FR-001", pkg), STATUS_APPROVED)
 
-    def test_abstained_by_accountable_gives_approved(self):
+    def test_all_abstained_is_not_approval(self):
+        """Audit finding: this test previously asserted the opposite — a lone
+        accountable stakeholder abstaining produced `approved`, so a package where
+        EVERY accountable party declined to take a position reached 100% approved
+        and baselined cleanly: an official approval record with no approver.
+        Abstention is a first-class decision meaning "no position"; it must not
+        carry the requirement on its own."""
         pkg = self._make_pkg()
         pkg["stakeholder_decisions"]["Ivanov"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "abstained"}],
         }
+        self.assertEqual(_compute_req_status("FR-001", pkg), STATUS_PENDING)
+
+    def test_abstention_alongside_an_approval_still_approves(self):
+        """Abstention does not BLOCK — it just does not count as a yes."""
+        pkg = self._make_pkg()
+        pkg["stakeholder_decisions"]["Ivanov"] = {
+            "raci": "accountable",
+            "req_decisions": [{"req_id": "FR-001", "decision": "approved"}],
+        }
+        pkg["stakeholder_decisions"]["Petrov"] = {
+            "raci": "responsible",
+            "req_decisions": [{"req_id": "FR-001", "decision": "abstained"}],
+        }
         self.assertEqual(_compute_req_status("FR-001", pkg), STATUS_APPROVED)
+
+    def test_all_abstained_blocks_the_baseline_gate(self):
+        """The consequence that matters: no approver → not ready for baseline."""
+        from skills.requirements_approve_mcp import _baseline_gate
+        pkg = self._make_pkg()
+        pkg["stakeholder_decisions"]["Ivanov"] = {
+            "raci": "accountable",
+            "req_decisions": [{"req_id": "FR-001", "decision": "abstained"}],
+        }
+        gate = _baseline_gate(pkg)
+        self.assertFalse(gate["can_baseline"])
+        self.assertEqual(gate["approved_pct"], 0)
 
     def test_req_not_in_decisions_gives_pending(self):
         pkg = self._make_pkg(["FR-001", "FR-002"])

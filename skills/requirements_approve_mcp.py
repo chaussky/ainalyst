@@ -144,14 +144,28 @@ def _compute_req_status(req_id: str, package: dict) -> str:
         if d["decision"] == "conditional" and not d["condition_closed"] and d["raci"] in ("accountable", "responsible"):
             return STATUS_CONDITIONAL
 
-    # All A/R approved (or abstained/consulted-rejected) → approved
+    # Approved when no A/R objected AND at least one of them actually said yes.
+    #
+    # An abstention is a first-class decision (VALID_DECISIONS) meaning the
+    # stakeholder declined to take a position — it must not carry the requirement.
+    # Folding it into "approved" let a package where EVERY accountable party
+    # abstained reach 100% approved and baseline cleanly: an official approval
+    # record with no approver. A mixed set (someone approves, others abstain) is
+    # still approved — abstention does not block, it just does not count as a yes.
     ar_decisions = [d for d in decisions_by_stakeholder if d["raci"] in ("accountable", "responsible")]
-    if ar_decisions and all(
-        d["decision"] in ("approved", "abstained") or
-        (d["decision"] == "conditional" and d["condition_closed"])
-        for d in ar_decisions
-    ):
-        return STATUS_APPROVED
+
+    def _is_affirmative(d):
+        return d["decision"] == "approved" or (d["decision"] == "conditional" and d["condition_closed"])
+
+    def _is_acceptable(d):
+        return _is_affirmative(d) or d["decision"] == "abstained"
+
+    if ar_decisions and all(_is_acceptable(d) for d in ar_decisions):
+        if any(_is_affirmative(d) for d in ar_decisions):
+            return STATUS_APPROVED
+        # Everyone abstained — nobody approved it. Stays pending, so the baseline
+        # gate blocks it; `force=True` remains the deliberate, recorded override.
+        return STATUS_PENDING
 
     return STATUS_PENDING
 
