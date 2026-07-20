@@ -704,6 +704,7 @@ def run_risk_matrix(project_id: str) -> str:
 def generate_recommendation(
     project_id: str,
     potential_value_summary: str = "",
+    value_vs_risk: Literal["", "value_exceeds_risk", "comparable", "risk_exceeds_value"] = "",
 ) -> str:
     """
     Step 6 of the 6.3 pipeline: generate a recommendation (type + narrative).
@@ -714,6 +715,16 @@ def generate_recommendation(
     Args:
         project_id: Project identifier
         potential_value_summary: Short description of the expected value from 6.2 (if not filled in automatically)
+        value_vs_risk: The BA's judgement on whether the expected value justifies the
+            cumulative risk exposure. ADR-073 defines `seek_higher_value` for
+            "potential value < cumulative risk exposure", but that comparison has no
+            honest arithmetic here: 6.2 states value qualitatively, and the cumulative
+            exposure is a sum of 1-25 risk scores — the units are not comparable, so a
+            numeric comparison would be false precision. The trade-off is therefore a
+            judgement the BA makes explicitly (the precise numeric version lives in 7.6,
+            which scores value against a risk penalty).
+            - "risk_exceeds_value" → recommendation `seek_higher_value`
+            - "" (default) → the type is decided by the risk logic alone, as before.
     """
     assessment = _load_assessment(project_id)
     profile = assessment.get("cumulative_profile", {})
@@ -747,10 +758,15 @@ def generate_recommendation(
         if r.get("impact") == 5 and r.get("response_strategy") == "accept" and not r.get("mitigation_plan")
     ]
 
-    if not high_risks:
-        rec_type = "proceed_despite_risk"
-    elif critical_without_mitigation:
+    # ADR-073 order: an unresolvable critical risk outranks everything; otherwise, if
+    # the BA judges the exposure to outweigh the value, the answer is to revisit scope
+    # rather than to proceed. Without that judgement the type follows the risk logic alone.
+    if critical_without_mitigation:
         rec_type = "do_not_proceed"
+    elif value_vs_risk == "risk_exceeds_value":
+        rec_type = "seek_higher_value"
+    elif not high_risks:
+        rec_type = "proceed_despite_risk"
     else:
         rec_type = "proceed_with_mitigation"
 
@@ -774,6 +790,7 @@ def generate_recommendation(
     recommendation = {
         "type": rec_type,
         "description": rec_descriptions[rec_type],
+        "value_vs_risk": value_vs_risk or "not_assessed",
         "high_risks_addressed": len(mitigation_risks),
         "rationale": (
             f"Of {total_risks} identified risks, {high_count} are in the High zone "
@@ -781,6 +798,10 @@ def generate_recommendation(
             f"Key High risks: {top_risk_summary}. "
             f"Organizational tolerance: {tol_level}. "
             + (f"Expected value: {potential_value_summary}. " if potential_value_summary else "")
+            + (
+                "The BA judged the cumulative risk exposure to outweigh the expected value. "
+                if value_vs_risk == "risk_exceeds_value" else ""
+            )
             + (
                 f"Once the {len(mitigation_risks)} mitigation plans are executed, the risk profile will decrease."
                 if rec_type == "proceed_with_mitigation" else ""
@@ -815,6 +836,20 @@ def generate_recommendation(
         output.append(
             "\n  ⚠️ Recommendation 'do_not_proceed' — a critical outcome.\n"
             "  Immediate escalation to the sponsor is required.\n"
+        )
+
+    if rec_type == "seek_higher_value":
+        output.append(
+            "\n  🟠 The risks are manageable, but you judged them to outweigh the expected value.\n"
+            "  Revisit scope or approach in 6.4 (`add_strategy_option`) to raise the value,\n"
+            "  or narrow the scope so the exposure drops.\n"
+        )
+
+    if not value_vs_risk and high_risks:
+        output.append(
+            "\n  ℹ️ Value vs risk was not assessed. With High risks present, state whether the\n"
+            "  expected value still justifies the exposure: pass `value_vs_risk=` \n"
+            "  (value_exceeds_risk / comparable / risk_exceeds_value).\n"
         )
 
     output.append(

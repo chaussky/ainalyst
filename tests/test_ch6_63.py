@@ -717,6 +717,49 @@ class TestGenerateRecommendation(BaseMCPTest):
         result = generate_recommendation(PROJECT)
         self.assertIn("proceed_with_mitigation", result)
 
+    # --- seek_higher_value: the ADR-073 branch that was unreachable -----------
+
+    def test_risk_exceeds_value_emits_seek_higher_value(self):
+        """ADR-073 defines seek_higher_value for "potential value < cumulative risk
+        exposure", but no branch ever assigned it: 6.2 states value qualitatively and
+        the exposure is a sum of 1-25 scores, so there is no honest arithmetic. The
+        trade-off is now the BA's explicit judgement."""
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "plan"}])
+        result = generate_recommendation(PROJECT, value_vs_risk="risk_exceeds_value")
+        self.assertIn("seek_higher_value", result)
+
+    def test_value_exceeds_risk_keeps_the_risk_verdict(self):
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "plan"}])
+        result = generate_recommendation(PROJECT, value_vs_risk="value_exceeds_risk")
+        self.assertIn("proceed_with_mitigation", result)
+
+    def test_unassessed_value_behaves_exactly_as_before(self):
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "plan"}])
+        self.assertIn("proceed_with_mitigation", generate_recommendation(PROJECT))
+
+    def test_critical_risk_outranks_the_value_judgement(self):
+        """An unresolvable critical risk is not a "revisit scope" situation."""
+        _make_scope()
+        _make_tolerance()
+        add_risk(
+            project_id=PROJECT, category="technical", source="future_state",
+            description="If X occurs, then Y follows", likelihood=5, impact=5,
+            response_strategy="accept",
+        )
+        run_risk_matrix(PROJECT)
+        result = generate_recommendation(PROJECT, value_vs_risk="risk_exceeds_value")
+        self.assertIn("do_not_proceed", result)
+
+    def test_judgement_recorded_in_the_assessment(self):
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "plan"}])
+        generate_recommendation(PROJECT, value_vs_risk="risk_exceeds_value")
+        rec = _load_assessment(PROJECT)["recommendation"]
+        self.assertEqual(rec["value_vs_risk"], "risk_exceeds_value")
+
+    def test_prompt_when_high_risks_and_no_judgement(self):
+        self._setup_with_risks([{"likelihood": 5, "impact": 5, "strategy": "mitigate", "plan": "plan"}])
+        self.assertIn("value_vs_risk", generate_recommendation(PROJECT))
+
     def test_critical_without_mitigation_do_not_proceed(self):
         _make_scope()
         _make_tolerance()
