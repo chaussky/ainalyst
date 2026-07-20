@@ -29,7 +29,10 @@ import glob
 from datetime import date, datetime
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
+    has_passed_verification, was_verification_forced,
+)
 
 mcp = FastMCP("BABOK_Requirements_Verify")
 
@@ -1395,14 +1398,12 @@ def get_verification_report(
     # NB: approval is deliberately NOT treated as proof of verification — 5.5 never
     # checks for it, so a req can reach `approved` without ever passing 7.2.
     # The union with the current status covers legacy repos that predate the history.
-    verified_ids = {h["req_id"] for h in repo.get("history", [])
-                    if h.get("action") == "req_verified"}
-    has_passed_verification = [
-        r for r in active_reqs
-        if r.get("id") in verified_ids or r.get("status") == "verified"
-    ]
+    # The shared predicate in common.py IS this formula — 7.2 is where it was extracted
+    # from. Keeping a second inline copy is how "two gates for one decision" starts, the
+    # class that already bit 5.5 (dashboard vs. baseline gate).
+    verified_reqs = [r for r in active_reqs if has_passed_verification(repo, r.get("id"))]
 
-    verified_pct = round(len(has_passed_verification) / total * 100, 1) if total > 0 else 0.0
+    verified_pct = round(len(verified_reqs) / total * 100, 1) if total > 0 else 0.0
 
     # Statistics by issues
     all_issues = list(data["issues"].values())
@@ -1438,7 +1439,7 @@ def get_verification_report(
         "| Metric | Value |",
         "|------------|----------|",
         f"| Total active reqs | {total} |",
-        f"| ✅ Passed verification | {len(has_passed_verification)} ({verified_pct}%) |",
+        f"| ✅ Passed verification | {len(verified_reqs)} ({verified_pct}%) |",
         f"| &nbsp;&nbsp;↳ currently in `verified` status | {len(verified)} |",
         f"| ✅ Approved in 5.5 | {len(approved)} |",
         f"| 📝 Draft (not verified) | {len(draft)} |",
@@ -1532,13 +1533,13 @@ def get_verification_report(
         lines.append("")
 
     # Reqs that have passed verification (including those 5.5 has since approved)
-    if has_passed_verification:
+    if verified_reqs:
         lines += [
             "## ✅ Requirements that passed verification",
             "",
         ]
         by_type: dict = {}
-        for r in has_passed_verification:
+        for r in verified_reqs:
             t = r.get("type", "other")
             by_type.setdefault(t, []).append(r["id"])
         for req_type, ids in sorted(by_type.items()):
@@ -1558,7 +1559,7 @@ def get_verification_report(
             "### ✅ Ready for handoff to the next tasks",
             "",
             f"- **5.5 Approve Requirements:** {len(verified)} reqs currently in status `verified` are ready for baseline "
-            f"({len(has_passed_verification)} have passed verification in total).",
+            f"({len(verified_reqs)} have passed verification in total).",
             f"- **7.3 Validate Requirements:** the verified reqs are ready for validation with the business.",
             "",
             "**Hand this report to 5.5:** use `prepare_approval_package` with a reference to this report.",

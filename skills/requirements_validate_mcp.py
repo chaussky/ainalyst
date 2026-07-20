@@ -508,9 +508,16 @@ def check_business_alignment(
         reqs_to_check = [r for r in all_reqs if r["id"] in ids_to_check]
         not_found = [i for i in ids_to_check if i not in {r["id"] for r in all_reqs}]
     else:
-        # Take verified reqs (and validated — re-running is harmless)
-        target_statuses = {"verified", "validated"}
-        reqs_to_check = [r for r in all_reqs if r.get("status", "") in target_statuses]
+        # Verification is a durable FACT in history, not the current status: `status`
+        # is one field shared across chapters, and 5.5 overwrites it with `approved`
+        # on the way to a baseline. Selecting by status meant that once a project was
+        # formally approved, this tool answered "no verified requirements to check"
+        # and told the BA to go and verify them — advice they had already followed.
+        # Same defect as the one fixed in mark_req_validated in this file.
+        reqs_to_check = [
+            r for r in all_reqs
+            if has_passed_verification(repo, r["id"]) or r.get("status") == "validated"
+        ]
         not_found = []
 
     if not reqs_to_check:

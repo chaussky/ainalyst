@@ -264,23 +264,31 @@ def _verification_state(repo: dict, package: dict) -> dict:
     verification state is genuinely unknowable, which is not the same as unverified.
     """
     snapshot = package.get("verification_snapshot")
-    known = snapshot is not None
 
-    verified, unverified, forced = [], [], []
+    verified, unverified, unknown, forced = [], [], [], []
     for req_id in package.get("req_ids", []):
         live = has_passed_verification(repo, req_id)
-        stored = bool(snapshot.get(req_id)) if known else False
-        if live or stored:
+        if live:
             verified.append(req_id)
             if was_verification_forced(repo, req_id):
                 forced.append(req_id)
+        elif snapshot is not None and req_id in snapshot:
+            (verified if snapshot[req_id] else unverified).append(req_id)
         else:
-            unverified.append(req_id)
+            # No snapshot entry AND the durable history is silent — genuinely
+            # unknowable. Judged PER REQUIREMENT, not per package: collapsing the
+            # whole package on `snapshot is None` threw away live history that was
+            # sitting right there, and produced a record that said verification
+            # could not be determined and then named a specific override.
+            unknown.append(req_id)
 
     return {
-        "known": known,
+        # Kept for callers that only ask "is anything unknown here"; the per-id lists
+        # above are the authority.
+        "known": not unknown,
         "verified": verified,
         "unverified": unverified,
+        "unknown": unknown,
         "forced": forced,
     }
 
@@ -1034,7 +1042,7 @@ def check_approval_status(
         "",
     ]
 
-    if vstate["known"]:
+    if vstate["verified"] or vstate["unverified"]:
         v_count = len(vstate["verified"])
         v_icon = "✅" if v_count == total else "🟡"
         lines += [f"{v_icon} **Verified (7.2): {v_count} of {total}**", ""]
@@ -1043,6 +1051,13 @@ def check_approval_status(
             lines += [
                 f"Not verified: {ids_str} — approval is not blocked, but the fact "
                 f"is recorded in the Approval Record.",
+                "",
+            ]
+        if vstate["unknown"]:
+            unknown_str = ", ".join(f"`{rid}`" for rid in vstate["unknown"])
+            lines += [
+                f"Verification unknown: {unknown_str} — no record either way "
+                f"(the package predates the check).",
                 "",
             ]
         if vstate["forced"]:
@@ -1304,36 +1319,50 @@ def create_requirements_baseline(
             "and recorded in the next baseline.",
         ]
 
-    if not vstate["known"]:
+    # The record speaks about the BASELINE, so every statement here is scoped to what
+    # actually entered it. Reporting over the whole package named rejected and pending
+    # requirements as "approved without verification" — a false statement inside an
+    # official artifact, in the very feature whose thesis is that the record must be
+    # trustworthy. The dashboard above is different: there the package IS the subject.
+    baselined = set(approved_reqs)
+    unverified_in_baseline = [r for r in vstate["unverified"] if r in baselined]
+    unknown_in_baseline = [r for r in vstate["unknown"] if r in baselined]
+    forced_in_baseline = [r for r in vstate["forced"] if r in baselined]
+
+    if unverified_in_baseline or unknown_in_baseline or forced_in_baseline:
+        record_lines += ["", "---", "", "## 7.2 verification", ""]
+
+    if unverified_in_baseline:
+        ids_str = ", ".join(f"`{rid}`" for rid in unverified_in_baseline)
         record_lines += [
+            "### ⚠️ Baselined without 7.2 verification",
             "",
-            "---",
+            f"These requirements entered the baseline without passing verification "
+            f"(7.2): {ids_str}",
             "",
-            "## ⚪ 7.2 verification: unknown",
-            "",
-            "This package was created before the verification check existed, so whether "
-            "these requirements passed 7.2 cannot be determined from the record.",
-        ]
-    elif vstate["unverified"]:
-        ids_str = ", ".join(f"`{rid}`" for rid in vstate["unverified"])
-        record_lines += [
-            "",
-            "---",
-            "",
-            "## ⚠️ Baselined without 7.2 verification",
-            "",
-            f"These requirements were approved without passing verification (7.2): {ids_str}",
-            "",
-            "> Approval is a stakeholder decision; verification is a quality check. "
+            "> Approval is a stakeholder decision; verification is a quality check.",
             "> These requirements carry an unmeasured quality risk into the baseline.",
+            "",
         ]
 
-    if vstate["forced"]:
-        forced_str = ", ".join(f"`{rid}`" for rid in vstate["forced"])
+    if unknown_in_baseline:
+        ids_str = ", ".join(f"`{rid}`" for rid in unknown_in_baseline)
         record_lines += [
+            "### ⚪ 7.2 verification unknown",
             "",
-            f"**Verified with override** (7.2 blockers were open and deliberately "
-            f"overridden): {forced_str}",
+            f"There is no record either way for: {ids_str}. This package predates the "
+            f"verification check, so whether they passed 7.2 cannot be determined — "
+            f"which is not the same as saying they failed.",
+            "",
+        ]
+
+    if forced_in_baseline:
+        forced_str = ", ".join(f"`{rid}`" for rid in forced_in_baseline)
+        record_lines += [
+            "### Verified with override",
+            "",
+            f"7.2 blockers were open and deliberately overridden: {forced_str}",
+            "",
         ]
 
     record_lines += [

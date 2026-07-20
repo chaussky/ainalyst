@@ -1344,5 +1344,77 @@ class TestApprovalRecordVerificationSection(BaseMCPTest):
 # Entry point
 # ---------------------------------------------------------------------------
 
+
+class TestApprovalRecordAccuracy(BaseMCPTest):
+    """The feature's thesis is that the Approval Record must carry the fact rather
+    than a console warning — which only holds if what it records is TRUE."""
+
+    def _package_with_a_rejection(self):
+        _make_repo_unverified(self.tmp_dir)
+        _open_package(req_ids=["FR-001", "FR-002"])
+        _record(decision="approved", req_decisions=[
+            {"req_id": "FR-001", "decision": "approved"},
+            {"req_id": "FR-002", "decision": "rejected"},
+        ])
+
+    def test_record_does_not_name_non_baselined_reqs_as_baselined(self):
+        """The record speaks about the BASELINE. Reporting over the whole package
+        listed a REJECTED requirement under 'Baselined without 7.2 verification' and
+        said it 'was approved' — a false statement in an official artifact."""
+        self._package_with_a_rejection()
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            create_requirements_baseline(
+                project_name=PROJECT, package_id="APKG-001",
+                baseline_version="v1.0", decided_by="Ivanov", force=True)
+            record = mock_sa.call_args[0][0]
+
+        if "Baselined without 7.2 verification" in record:
+            section = record.split("Baselined without 7.2 verification", 1)[1]
+            section = section.split("###", 1)[0]
+            self.assertNotIn("FR-002", section,
+                             "a rejected requirement never entered the baseline")
+
+    def test_unknown_and_override_are_not_claimed_about_the_same_req(self):
+        """`known` was a per-PACKAGE flag while `forced` came from live history, so a
+        snapshot-less package could declare verification undeterminable and then name
+        a specific override — two contradictory claims in one artifact."""
+        _make_repo_with_verified(self.tmp_dir)
+        repo = load_test_repo(PROJECT)
+        repo.setdefault("history", []).append({
+            "action": "req_verified", "req_id": "FR-001", "forced": True,
+            "date": str(date.today()),
+        })
+        save_test_repo(repo)
+        _open_package(req_ids=["FR-001"])
+
+        history = _load_approval_history(PROJECT)
+        del history["packages"]["APKG-001"]["verification_snapshot"]
+        _save_approval_history(PROJECT, history)
+
+        dashboard = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        if "override" in dashboard.lower():
+            self.assertNotIn("created before the verification check", dashboard,
+                             "cannot be unknowable and overridden at the same time")
+
+    def test_live_history_is_not_discarded_for_a_snapshotless_package(self):
+        """Durable evidence sitting in history must not be thrown away just because
+        the package predates the snapshot."""
+        _make_repo_with_verified(self.tmp_dir)
+        repo = load_test_repo(PROJECT)
+        repo.setdefault("history", []).append({
+            "action": "req_verified", "req_id": "FR-001", "date": str(date.today()),
+        })
+        save_test_repo(repo)
+        _open_package(req_ids=["FR-001"])
+        history = _load_approval_history(PROJECT)
+        del history["packages"]["APKG-001"]["verification_snapshot"]
+        _save_approval_history(PROJECT, history)
+
+        dashboard = check_approval_status(project_name=PROJECT, package_id="APKG-001")
+        self.assertIn("1 of 1", dashboard,
+                      "FR-001 is verified in the durable history — that is knowable")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
