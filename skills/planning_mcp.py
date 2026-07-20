@@ -38,6 +38,7 @@ from skills.common import (
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
     parse_json_list as _parse_json_list,
     parse_json_str_list as _parse_string_list,
+    update_stakeholder_registry_file,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -207,6 +208,54 @@ def suggest_ba_approach(
     )
 
 
+# The 3.2 map and the 4.2 registry describe the SAME people. Seeding here is what
+# stops the BA entering them twice — and 4.2's file is the one 7.4 reads.
+_REGISTRY_SOURCE = "3.2 BA plan (Power/Interest map)"
+
+# Source data only. quadrant/strategy/comm_frequency are DERIVED from influence and
+# interest, and a derived value inside a file another chapter mutates goes stale
+# silently: an interview that updates influence via 4.2 would leave the quadrant wrong.
+_REGISTRY_SEED_FIELDS = ("name", "role", "influence", "interest", "attitude", "contact")
+
+
+def _seed_stakeholder_registry(project_id: str, stakeholders: list) -> str:
+    """Seeds the living stakeholder registry from the 3.2 map. Returns a report line.
+
+    Never raises: the plan is already saved by the time this runs, and a planning tool
+    must not become unusable because a downstream file could not be written.
+    """
+    incoming = []
+    for s in stakeholders:
+        entry = {f: s.get(f) for f in _REGISTRY_SEED_FIELDS if s.get(f)}
+        if entry:
+            incoming.append(entry)
+    if not incoming:
+        return ""
+
+    try:
+        result = update_stakeholder_registry_file(
+            project_id, incoming, source=_REGISTRY_SOURCE,
+            insert_defaults={
+                "found_through": _REGISTRY_SOURCE,
+                # A stakeholder known from planning has by definition not been
+                # elicited yet. Insert-only, so a later 'Elicited' is never reset.
+                "coverage_status": "Not covered",
+            },
+        )
+    except Exception as e:  # noqa: BLE001 — never let planning fail on this
+        logger.warning(f"3.2 could not seed the stakeholder registry: {e}")
+        return "\n⚠️ Stakeholder registry not updated — the BA plan is saved.\n"
+
+    if not result.get("saved"):
+        return "\n⚠️ Stakeholder registry could not be written — the BA plan is saved.\n"
+
+    return (
+        f"\n📇 Stakeholder registry: {len(result['added'])} added, "
+        f"{len(result['updated'])} updated "
+        f"(the same living registry 4.2 `update_stakeholder_registry` maintains).\n"
+    )
+
+
 @mcp.tool()
 def plan_stakeholder_engagement(
     project_id: str,
@@ -283,6 +332,10 @@ def plan_stakeholder_engagement(
     }
     _save_plan(plan, project_id)
 
+    # Seed the living registry 4.2 maintains and 7.4 reads, so the same people are
+    # not entered twice. Only ever reached once the plan itself is saved.
+    registry_note = _seed_stakeholder_registry(project_id, valid)
+
     # Quadrant statistics
     quadrants = {}
     for s in valid:
@@ -309,6 +362,8 @@ def plan_stakeholder_engagement(
 
     if blockers:
         lines.append(f"\n⚠️ Blockers: {', '.join(blockers)} — require special attention\n")
+
+    lines.append(registry_note)
 
     lines.append(
         f"\n→ Next step: `plan_ba_governance` — define decision-making rules."

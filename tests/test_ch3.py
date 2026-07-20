@@ -817,3 +817,88 @@ class TestPipeline(BaseMCPTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# A2 — 3.2 seeds the living stakeholder registry that 4.2 maintains
+# ---------------------------------------------------------------------------
+
+class TestStakeholderRegistrySeeding(BaseMCPTest):
+
+    def _registry(self, project_id=PROJECT):
+        from skills.common import load_stakeholder_registry
+        return load_stakeholder_registry(project_id)
+
+    def test_registry_is_created_with_the_source_fields(self):
+        _make_stakeholders()
+        entries = self._registry()["stakeholders"]
+        names = {e["name"] for e in entries}
+        self.assertEqual(names, {"Sponsor", "User"})
+        sponsor = next(e for e in entries if e["name"] == "Sponsor")
+        self.assertEqual(sponsor["role"], "CEO")
+        self.assertEqual(sponsor["influence"], "High")
+        self.assertEqual(sponsor["interest"], "High")
+        self.assertEqual(sponsor["attitude"], "Champion")
+
+    def test_derived_fields_are_not_carried_into_the_registry(self):
+        """quadrant/strategy/comm_frequency are computed from influence+interest.
+        In the registry they would go stale the moment 4.2 updates those inputs."""
+        _make_stakeholders()
+        sponsor = next(e for e in self._registry()["stakeholders"]
+                       if e["name"] == "Sponsor")
+        self.assertNotIn("quadrant", sponsor)
+        self.assertNotIn("strategy", sponsor)
+        self.assertNotIn("comm_frequency", sponsor)
+
+    def test_seeded_entries_are_marked_not_covered_and_sourced_to_the_plan(self):
+        _make_stakeholders()
+        sponsor = next(e for e in self._registry()["stakeholders"]
+                       if e["name"] == "Sponsor")
+        self.assertEqual(sponsor["coverage_status"], "Not covered")
+        self.assertIn("3.2", sponsor["found_through"])
+
+    def test_rerun_updates_in_place_instead_of_duplicating(self):
+        _make_stakeholders()
+        _make_stakeholders()
+        self.assertEqual(len(self._registry()["stakeholders"]), 2)
+
+    def test_rerun_does_not_reset_progress_recorded_by_42(self):
+        """The regression insert_defaults exists for: an interview happened between
+        the two 3.2 runs, and its result must survive."""
+        _make_stakeholders()
+        from skills.common import (load_stakeholder_registry,
+                                   save_stakeholder_registry)
+        registry = load_stakeholder_registry(PROJECT)
+        sponsor = next(e for e in registry["stakeholders"] if e["name"] == "Sponsor")
+        sponsor["coverage_status"] = "Elicited"
+        sponsor["found_through"] = "J. Smith (CFO)"
+        save_stakeholder_registry(PROJECT, registry)
+
+        _make_stakeholders()
+
+        sponsor = next(e for e in self._registry()["stakeholders"]
+                       if e["name"] == "Sponsor")
+        self.assertEqual(sponsor["coverage_status"], "Elicited")
+        self.assertEqual(sponsor["found_through"], "J. Smith (CFO)")
+
+    def test_validation_errors_seed_nothing(self):
+        bad = json.dumps([{"name": "X", "influence": "Massive", "interest": "High"}])
+        result = plan_stakeholder_engagement(project_id=PROJECT, stakeholders_json=bad)
+        self.assertIn("❌", result)
+        self.assertEqual(self._registry()["stakeholders"], [])
+
+    def test_empty_list_seeds_nothing(self):
+        result = plan_stakeholder_engagement(project_id=PROJECT, stakeholders_json="[]")
+        self.assertIn("⚠️", result)
+        self.assertEqual(self._registry()["stakeholders"], [])
+
+    def test_registry_write_failure_warns_but_the_plan_still_saves(self):
+        """Don't block — warn. A planning tool must not die on a downstream file."""
+        with patch("skills.planning_mcp.update_stakeholder_registry_file",
+                   return_value={"added": [], "updated": [], "dup_warnings": [],
+                                 "registry": {}, "saved": False}):
+            result = _make_stakeholders()
+        self.assertIn("✅", result)
+        self.assertIn("⚠️", result)
+        plan = _load()
+        self.assertEqual(len(plan["stakeholder_engagement"]["stakeholders"]), 2)
