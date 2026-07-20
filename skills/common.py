@@ -20,6 +20,18 @@ BASE_DIR = "governance_plans"
 DATA_DIR = os.path.join(BASE_DIR, "data")      # JSON: machine-readable files for MCP
 REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: documents for humans
 
+# Root node types in the 5.1 traceability graph — the things a requirement traces UP to.
+# 6.1 registers needs as `business_need`, 6.2 registers goals as `business_goal`, and
+# `business` is the legacy/manual type. A traversal or skip-filter that knows only the
+# legacy type silently ignores real 6.x goals; that single incompleteness produced audit
+# findings 7.3-A, 7.4-B and 7.4-C. One definition, imported by every consumer.
+#
+# NOTE: the root exemption inside `check_coverage` (5.1) is deliberately the SUBSET
+# ("business", "business_need") — `business_goal` must keep failing the no-source check,
+# because a goal derives from a need and therefore should have a source. Do not
+# substitute this constant there.
+BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
+
 
 def _ensure_dirs():
     """Creates all required folders if they don't exist."""

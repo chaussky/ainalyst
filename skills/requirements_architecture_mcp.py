@@ -32,7 +32,10 @@ from collections import deque
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    BUSINESS_NODE_TYPES,
+)
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
 
@@ -77,11 +80,8 @@ VIEWPOINT_MAP = {
     },
 }
 
-# Business-goal / root node types a requirement can trace UP to (audit finding 7.4-B). 6.2
-# registers goals as `business_goal`, 6.1 registers needs as `business_need`; `business` is the
-# legacy/manual type. Recognise all of them, not only the legacy one.
-BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
-
+# Business-goal / root node types a requirement can trace UP to (audit finding 7.4-B) —
+# imported from common.py, where the single definition lives.
 # Types that are NOT viewpoint artifacts (they are goal/root graph nodes, not requirements) — plus
 # test nodes. Excluded from viewpoints and from the active-requirement count (audit finding 7.4-C).
 SKIP_TYPES = BUSINESS_NODE_TYPES | {"test"}

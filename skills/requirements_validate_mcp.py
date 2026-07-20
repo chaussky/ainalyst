@@ -33,7 +33,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    has_passed_verification,
+    has_passed_verification, BUSINESS_NODE_TYPES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Validate")
@@ -43,10 +43,7 @@ CONTEXT_FILENAME = "business_context.json"
 ASSUMPTIONS_FILENAME = "assumptions.json"
 
 # Node types that represent a business goal / root a requirement can trace UP to (audit finding
-# 7.3-A). 6.2 registers goals as `business_goal`, 6.1 registers needs as `business_need`;
-# `business` is the legacy/manual type. The traversal must recognise all of them, not only the
-# legacy one, or reqs traced to a real 6.1/6.2 goal show up as false orphans.
-BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
+# 7.3-A) — imported from common.py, where the single definition lives.
 # Node types that are NOT requirements to be validated (goals/roots + test nodes). Excluded from
 # the requirement count and from the orphan check.
 NON_REQUIREMENT_TYPES = BUSINESS_NODE_TYPES | {"test"}
