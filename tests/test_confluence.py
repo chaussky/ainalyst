@@ -1217,3 +1217,109 @@ class TestResolveArtifact(BaseMCPTest):
         path, message = confluence_mod._resolve_artifact(self.PID, "anything")
         self.assertIsNone(path)
         self.assertIn("reports", message)
+
+
+# ---------------------------------------------------------------------------
+# A4 — publish_artifact_to_confluence
+# ---------------------------------------------------------------------------
+
+class TestPublishArtifactToConfluence(BaseMCPTest):
+
+    PID = "a4proj"
+
+    def _write_artifact(self, filename="7_6_recommendation_20260720_101010.md",
+                        content="# Recommendation\n\nPick option B.\n"):
+        path = os.path.join("governance_plans", "reports", self.PID, filename)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return path
+
+    def _publish(self, mock_client, **kwargs):
+        defaults = {"project_id": self.PID, "artifact": "7_6_recommendation",
+                    "space_key": "BA"}
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            return confluence_mod.publish_artifact_to_confluence(**{**defaults, **kwargs})
+
+    def test_publishes_the_file_content_verbatim(self):
+        """The point of the feature: the artifact never passes through the model."""
+        body = "# Recommendation\n\nPick option B. Cost < $2 & risk low.\n"
+        self._write_artifact(content=body)
+        mock_client = _make_mock_confluence(page_exists=False)
+        result = self._publish(mock_client)
+        self.assertIn("✅", result)
+        sent = mock_client.create_page.call_args.kwargs["body"]
+        self.assertIn("Pick option B", sent)
+
+    def test_derived_title_is_used(self):
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=False)
+        self._publish(mock_client)
+        self.assertEqual(
+            mock_client.create_page.call_args.kwargs["title"],
+            f"{self.PID} — 7.6 Recommendation",
+        )
+
+    def test_explicit_page_title_overrides_the_derived_one(self):
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=False)
+        self._publish(mock_client, page_title="My own title")
+        self.assertEqual(
+            mock_client.create_page.call_args.kwargs["title"], "My own title"
+        )
+
+    def test_reports_updated_for_an_existing_page(self):
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=True)
+        result = self._publish(mock_client)
+        self.assertIn("updated", result)
+
+    def test_reports_created_for_a_new_page(self):
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=False)
+        result = self._publish(mock_client)
+        self.assertIn("created", result)
+
+    def test_missing_artifact_returns_the_listing(self):
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=False)
+        result = self._publish(mock_client, artifact="9_9_nope")
+        self.assertIn("7_6_recommendation_20260720_101010.md", result)
+        mock_client.create_page.assert_not_called()
+
+    def test_failure_reason_is_surfaced(self):
+        """INT-D: a configured-but-failing sync must never be silent."""
+        self._write_artifact()
+        mock_client = _make_mock_confluence(page_exists=False)
+        mock_client.create_page.side_effect = Exception("permission denied in space BA")
+        result = self._publish(mock_client)
+        self.assertIn("permission denied", result)
+
+
+class TestExportHelperOperationKey(BaseMCPTest):
+
+    def test_success_dict_reports_created_or_updated(self):
+        mock_client = _make_mock_confluence(page_exists=True)
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = confluence_mod.export_artifact_to_confluence(
+                content_markdown="# X", page_title="T", space_key="BA"
+            )
+        self.assertEqual(result["status"], "synced")
+        self.assertEqual(result["operation"], "updated")
+
+    def test_extra_key_does_not_disturb_the_52_hook(self):
+        """All hook consumers read named keys via .get(), so this is inert."""
+        import skills.requirements_maintain_mcp as maintain_mod
+        mock_client = _make_mock_confluence(page_exists=False)
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            hook = maintain_mod._export_hook(
+                "health_report", "# Health", {"project_name": "a4proj"}
+            )
+        self.assertEqual(hook["status"], "synced")
+        self.assertIn("url", hook)

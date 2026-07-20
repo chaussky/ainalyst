@@ -18,6 +18,7 @@ MCP tools:
   - pull_from_confluence — import a Confluence page → JSON for init_traceability_repo (5.1)
   - sync_page            — update an existing page (synchronization)
   - list_space_pages     — list the pages of a space (to choose before import)
+  - publish_artifact_to_confluence — publish a SAVED artifact by project + selector
 
 Additionally:
   - export_artifact_to_confluence() — helper function for the _export_hook() hook in 5.2
@@ -851,6 +852,72 @@ def list_space_pages(
 
 
 # ---------------------------------------------------------------------------
+# MCP 5 — Publish a stored artifact (by project + selector)
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def publish_artifact_to_confluence(
+    project_id: str,
+    artifact: str = "",
+    space_key: str = "",
+    parent_page_title: str = "",
+    page_title: str = "",
+) -> str:
+    """
+    Publishes an ALREADY SAVED artifact to Confluence — the document is read from
+    disk, so it never has to be passed in as text.
+
+    Use this instead of `push_to_confluence` whenever the content is already an
+    artifact of some BABOK task. `push_to_confluence` remains for ad-hoc text.
+
+    Args:
+        project_id:         Project identifier (the artifact folder name).
+        artifact:           Filename prefix (e.g. "7_6_recommendation") or a path to
+                            the file. Several matches -> the newest is used.
+                            Empty -> returns the list of available artifacts.
+        space_key:          Space key. If empty — from CONFLUENCE_SPACE_KEY.
+        parent_page_title:  Parent page title (optional).
+        page_title:         Overrides the title derived from the filename.
+
+    Returns:
+        The publication result with the page URL, or the list of available artifacts.
+    """
+    logger.info(f"publish_artifact_to_confluence: project='{project_id}', artifact='{artifact}'")
+
+    path, note = _resolve_artifact(project_id, artifact)
+    if not path:
+        return note
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except OSError as e:
+        return f"❌ Could not read `{path}`: {e}"
+
+    title = page_title or _derive_page_title(project_id, path)
+
+    result = export_artifact_to_confluence(
+        content_markdown=content,
+        page_title=title,
+        space_key=space_key,
+        parent_page_title=parent_page_title,
+    )
+
+    if result.get("status") != "synced":
+        # INT-D: the reason lives in `message` — surface it, never a bare failure.
+        reason = result.get("message") or "unknown error"
+        return f"❌ Publication failed: {reason}\n\n{note}"
+
+    return (
+        f"✅ Page {result.get('operation', 'published')}: **{title}**\n\n"
+        f"{note}  \n"
+        f"**Source:** `{path}`  \n"
+        f"**URL:** {result.get('url', '—')}  \n"
+        f"**Date:** {date.today()}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Helper function for the _export_hook() hook in 5.2
 # ---------------------------------------------------------------------------
 
@@ -893,13 +960,18 @@ def export_artifact_to_confluence(
                 page_id=existing["id"], title=page_title,
                 body=html_content, parent_id=parent_id,
             )
+            operation = "updated"
         else:
             result = confluence.create_page(
                 space=space, title=page_title,
                 body=html_content, parent_id=parent_id,
             )
+            operation = "created"
 
-        return {"status": "synced", "url": _page_url(result)}
+        # `operation` tells the caller whether a living page was overwritten.
+        # Additive and inert for existing consumers: _export_hook and its four call
+        # sites in 5.2 all read named keys via .get().
+        return {"status": "synced", "url": _page_url(result), "operation": operation}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
