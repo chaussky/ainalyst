@@ -214,6 +214,27 @@ class Stakeholder(BaseModel):
     attitude: Optional[str] = Field("Neutral", description="Attitude toward the project: Neutral / Champion / Blocker")
 
 
+_FILENAME_ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
+
+
+def safe_filename_part(part: str) -> str:
+    """Makes caller-supplied text safe to embed in a FILENAME.
+
+    Several tools build the artifact prefix out of free text — the project name or a
+    session date (e.g. "Elicitation_Plan_{project_name}"). normalize_project_id already
+    guards the DIRECTORY, but nothing guarded the filename: a project named "CRM/Q3"
+    produced a path with a separator inside the file part, so the write landed in a
+    directory that does not exist (FileNotFoundError) or outside the intended folder.
+    Sanitizing here covers every current and future caller in one place.
+
+    Case is preserved so existing artifact names are unchanged.
+    """
+    cleaned = _FILENAME_ILLEGAL.sub("_", str(part))
+    cleaned = cleaned.replace("..", "_")
+    cleaned = re.sub(r"_{2,}", "_", cleaned).strip(" .")
+    return cleaned or "artifact"
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 
@@ -223,7 +244,7 @@ def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -
     _ensure_dirs()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{prefix}_{timestamp}.md"
+    filename = f"{safe_filename_part(prefix)}_{timestamp}.md"
     if project_id:
         out_dir = report_dir_for(project_id)
         os.makedirs(out_dir, exist_ok=True)

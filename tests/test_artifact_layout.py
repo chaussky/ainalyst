@@ -137,6 +137,36 @@ class TestSaveArtifact(unittest.TestCase):
         flat = [f for f in os.listdir("governance_plans/reports") if f.endswith(".md")]
         self.assertEqual(len(flat), 1)
 
+    # --- the FILENAME needed the same guard the DIRECTORY already had ---------
+
+    def test_separator_in_prefix_does_not_escape_the_project_folder(self):
+        """Several tools build the prefix from free text (project name, session date):
+        e.g. "Elicitation_Plan_{project_name}". normalize_project_id guarded the folder,
+        but a separator inside the PREFIX made the write land outside it — or fail with
+        FileNotFoundError because the implied directory does not exist."""
+        common.save_artifact("# hi", "Elicitation_Plan_CRM/Q3 upgrade", project_id="CRM/Q3 upgrade")
+        written = []
+        for root, _dirs, fs in os.walk("governance_plans/reports"):
+            for f in fs:
+                written.append(os.path.normpath(os.path.join(root, f)))
+        self.assertEqual(len(written), 1)
+        self.assertTrue(
+            written[0].startswith(os.path.normpath("governance_plans/reports/crm_q3_upgrade")),
+            written[0])
+        self.assertFalse(os.path.isdir(os.path.join("governance_plans", "reports", "CRM")))
+
+    def test_backslash_and_traversal_in_prefix_neutralized(self):
+        common.save_artifact("# hi", "..\\..\\evil", project_id="proj")
+        written = [f for f in os.listdir("governance_plans/reports/proj")]
+        self.assertEqual(len(written), 1)
+        self.assertNotIn("..", written[0])
+
+    def test_ordinary_prefixes_are_unchanged(self):
+        """The guard must not rename the artifacts the platform already produces."""
+        for prefix in ("4_3_confirmed_result", "6_1_current_state_crm", "confluence_pull",
+                       "Elicitation_Results_crm_upgrade_12-03-2026"):
+            self.assertEqual(common.safe_filename_part(prefix), prefix)
+
 
 class TestMigration(unittest.TestCase):
     def setUp(self):
