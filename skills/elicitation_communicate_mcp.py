@@ -5,6 +5,7 @@ MCP tools for preparing and logging communication packages.
 Tools:
   - prepare_communication_package  — save a package adapted for the audience
   - log_communication              — log the fact of a communication and its outcome
+  - check_communication_schedule   — who is overdue for contact, and which events triggered it
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """

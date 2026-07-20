@@ -3,9 +3,10 @@ BABOK 4.2 — Conduct Elicitation
 MCP tools for processing elicitation results.
 
 Tools:
-  - process_elicitation_results  — save the structured result of a session
-  - compare_elicitation_results  — compare multiple sessions, find contradictions
-  - save_gap_analysis            — save gap analysis and BA recommendations
+  - process_elicitation_results   — save the structured result of a session
+  - compare_elicitation_results   — compare multiple sessions, find contradictions
+  - save_cr_elicitation_analysis  — elicitation analysis in the context of a Change Request
+  - update_stakeholder_registry   — merge newly discovered stakeholders into the living registry
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """

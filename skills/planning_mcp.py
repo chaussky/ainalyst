@@ -8,6 +8,7 @@ Tools:
   - plan_ba_governance            — 3.3: governance: change control, approval, escalation
   - plan_information_management   — 3.4: artifact storage and traceability architecture
   - evaluate_ba_performance       — 3.5: BA performance metrics + improvement plan
+  - save_ba_plan                  — finalize: render the Markdown BA Plan report
 
 Storage:
   - {project}_ba_plan.json        — single JSON document with all plan sections
