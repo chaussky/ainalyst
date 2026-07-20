@@ -1393,6 +1393,19 @@ class TestGoalEdgesAtRegistration(BaseMCPTest):
         mod71._register_in_repo(self.P, "FR-011", "functional", "X", "spec.md")
         self.assertEqual(self._links(), [])
 
+    def test_repo_without_a_links_key_does_not_crash(self):
+        """Found in review: writing edges made `links` a hard dependency of registration
+        for the first time, and _load_repo returns a stored file as-is. A legacy or partial
+        repo without that key raised KeyError — a protocol-level error instead of a
+        readable answer (the CH3-A / CH4-A class)."""
+        path = data_path(self.P, f"{self.P}_traceability_repo.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": self.P, "requirements": []}, f)
+
+        note = mod71._register_in_repo(self.P, "FR-100", "functional", "X", "spec.md")
+        self.assertIn("FR-100", note)
+
     def test_node_registration_is_unchanged(self):
         """The pre-existing contract still holds: the node is registered as draft."""
         note = mod71._register_in_repo(self.P, "FR-012", "functional", "Auto-assign",

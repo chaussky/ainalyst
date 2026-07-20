@@ -104,6 +104,14 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
     Returns a marker string to include in the artifact.
     """
     repo = _load_repo(project_id)
+    # `_load_repo` returns a stored file as-is, so a legacy or partial repo may be missing
+    # keys the default skeleton has. Writing edges made `links` a hard dependency here for
+    # the first time; an absent key would raise instead of returning a readable message
+    # (the CH3-A / CH4-A class). `history` is hardened alongside it — same one-line risk.
+    repo.setdefault("requirements", [])
+    repo.setdefault("links", [])
+    repo.setdefault("history", [])
+
     existing_ids = {r["id"] for r in repo["requirements"]}
     notes = []
 
