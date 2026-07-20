@@ -26,7 +26,10 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    BUSINESS_NODE_TYPES,
+)
 
 mcp = FastMCP("BABOK_Requirements_Assess_Changes")
 
@@ -440,17 +443,26 @@ def run_cr_impact(
 
     # Check traceability to a BR
     def _has_br_path(repo, req_id, visited=None):
+        """Does this requirement trace UP to a business root?
+
+        Two axes matter and both used to be wrong:
+          - terminal node type: real roots are `business_goal` (6.2) and `business_need`
+            (6.1), not only the legacy `business` — the class behind findings 7.3-A/7.4-B;
+          - relation: 7.1 links a requirement to an objective with `satisfies` (ADR-082),
+            so a derives-only walk cannot see those links at all.
+        Both relations point from=child/implementer -> to=parent/goal, so the walk always
+        follows `to`.
+        """
         if visited is None:
             visited = set()
         if req_id in visited:
             return False
         visited.add(req_id)
         node = _find_node(repo, req_id)
-        if node and node.get("type") == "business":
+        if node and node.get("type") in BUSINESS_NODE_TYPES:
             return True
         for lnk in repo["links"]:
-            # derives: from=child, to=parent. Follow from req_id toward parent (to)
-            if lnk.get("from") == req_id and lnk.get("relation") == "derives":
+            if lnk.get("from") == req_id and lnk.get("relation") in ("derives", "satisfies"):
                 if _has_br_path(repo, lnk["to"], visited):
                     return True
         return False
@@ -502,7 +514,7 @@ def run_cr_impact(
         relation_comments = {
             "depends": "dependents → may lose meaning",
             "verifies": "tests → need to be reviewed/rewritten",
-            "satisfies": "code components → need to be redone",
+            "satisfies": "implementing components / requirements → need to be redone",
             "derives": "child requirements → may inherit the change",
         }
         for rel, items in by_relation.items():

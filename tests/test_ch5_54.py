@@ -921,5 +921,95 @@ class TestScheduleRiskDirection(BaseMCPTest):
         )
 
 
+class TestBrPathKnowsRealGoalTypes(BaseMCPTest):
+    """The upward walk answering 'does this requirement trace to business?' was wrong
+    on TWO axes: it terminated only on the legacy node type `business`, and it followed
+    only `derives`. Real roots are `business_goal` (6.2) and `business_need` (6.1), and
+    7.1 links requirements to objectives with `satisfies` (ADR-082).
+
+    Same class as findings 7.3-A and 7.4-B; missed here because that audit pass checked
+    the DIRECTION of derives (correct) and never the type set.
+    """
+
+    P = "br_path_types"
+
+    def _save(self, nodes, links):
+        repo = make_test_repo(self.P)
+        repo["requirements"] = nodes
+        repo["links"] = links
+        save_test_repo(repo)
+
+    def _fr(self):
+        return {"id": "FR-500", "type": "functional", "title": "Auto-assign",
+                "version": "1.0", "status": "draft", "added": str(date.today()),
+                "source_artifact": ""}
+
+    def _goal(self, node_type):
+        return {"id": "BG-001", "type": node_type, "title": "Cut handling time",
+                "version": "1.0", "status": "confirmed", "added": str(date.today()),
+                "source_artifact": ""}
+
+    def _run_impact(self):
+        mod54.open_cr(
+            project_name=self.P, cr_id="CR-900",
+            title="Change the assignment rule",
+            description="Operations asked for a different routing rule",
+            initiator="Ops Lead", cr_type="change_existing", formality="standard",
+            target_req_ids_json='["FR-500"]',
+        )
+        return mod54.run_cr_impact(project_name=self.P, cr_id="CR-900")
+
+    def _untraced_line(self, result):
+        """The rendered 'no traceability' line only — the id list is interpolated
+        straight into it."""
+        marker = "no traceability to a business requirement"
+        low = result.lower()
+        if marker not in low:
+            return ""
+        return low.split(marker, 1)[1].split("\n", 1)[0]
+
+    def test_satisfies_to_business_goal_counts_as_traced(self):
+        self._save(
+            [self._goal("business_goal"), self._fr()],
+            [{"from": "FR-500", "to": "BG-001", "relation": "satisfies",
+              "created": str(date.today())}],
+        )
+        self.assertNotIn("fr-500", self._untraced_line(self._run_impact()))
+
+    def test_derives_to_business_need_counts_as_traced(self):
+        self._save(
+            [self._goal("business_need"), self._fr()],
+            [{"from": "FR-500", "to": "BG-001", "relation": "derives",
+              "created": str(date.today())}],
+        )
+        self.assertNotIn("fr-500", self._untraced_line(self._run_impact()))
+
+    def test_legacy_business_type_still_works(self):
+        """The pre-existing behaviour must survive the widening."""
+        self._save(
+            [self._goal("business"), self._fr()],
+            [{"from": "FR-500", "to": "BG-001", "relation": "derives",
+              "created": str(date.today())}],
+        )
+        self.assertNotIn("fr-500", self._untraced_line(self._run_impact()))
+
+    def test_unlinked_requirement_is_still_reported(self):
+        """The walk must not degenerate into 'everything is traced'."""
+        self._save([self._fr()], [])
+        self.assertIn("fr-500", self._untraced_line(self._run_impact()))
+
+    def test_link_to_a_plain_requirement_is_not_a_business_trace(self):
+        """Reaching another requirement is not reaching business."""
+        self._save(
+            [self._fr(),
+             {"id": "FR-501", "type": "functional", "title": "Queue view",
+              "version": "1.0", "status": "draft", "added": str(date.today()),
+              "source_artifact": ""}],
+            [{"from": "FR-500", "to": "FR-501", "relation": "derives",
+              "created": str(date.today())}],
+        )
+        self.assertIn("fr-500", self._untraced_line(self._run_impact()))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
