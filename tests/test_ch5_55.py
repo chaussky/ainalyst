@@ -20,7 +20,9 @@ from unittest.mock import patch
 
 # conftest registers the mocks and provides the base class
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
+from tests.conftest import (
+    setup_mocks, BaseMCPTest, make_test_repo, save_test_repo, load_test_repo,
+)
 
 setup_mocks()
 
@@ -31,6 +33,7 @@ from skills.requirements_approve_mcp import (
     check_approval_status,
     create_requirements_baseline,
     _compute_req_status,
+    _verification_state,
     _get_cr_context,
     _load_approval_history,
     _save_approval_history,
@@ -1114,6 +1117,115 @@ class TestApprovalPipeline(BaseMCPTest):
         versions = [bl["baseline_version"] for bl in history["baselines"]]
         self.assertIn("v1.0", versions)
         self.assertIn("v1.1", versions)
+
+
+# ---------------------------------------------------------------------------
+# B2-bis — 7.2 verification is visible in 5.5
+# ---------------------------------------------------------------------------
+
+def _make_repo_unverified(tmp_dir):
+    """A repository whose requirements never passed 7.2 (status draft, no history)."""
+    repo = make_test_repo(PROJECT)
+    for req in repo["requirements"]:
+        if req["type"] != "test":
+            req["status"] = "draft"
+            req["priority"] = "Must"
+    repo["history"] = []
+    save_test_repo(repo)
+    return repo
+
+
+class TestVerificationSnapshot(BaseMCPTest):
+    """prepare_approval_package must capture verification BEFORE it overwrites status."""
+
+    def test_snapshot_records_verified_reqs(self):
+        _make_repo_with_verified(self.tmp_dir)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001"]', approach="predictive",
+        )
+        history = _load_approval_history(PROJECT)
+        snapshot = history["packages"]["APKG-001"]["verification_snapshot"]
+        self.assertEqual(snapshot, {"FR-001": True})
+
+    def test_snapshot_survives_the_status_overwrite(self):
+        """The legacy case: evidence lives only in the status, which prepare erases."""
+        _make_repo_with_verified(self.tmp_dir)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001"]', approach="predictive",
+        )
+        repo = load_test_repo(PROJECT)
+        node = next(r for r in repo["requirements"] if r["id"] == "FR-001")
+        self.assertEqual(node["status"], STATUS_PENDING)  # status is gone
+        history = _load_approval_history(PROJECT)
+        self.assertTrue(history["packages"]["APKG-001"]["verification_snapshot"]["FR-001"])
+
+    def test_snapshot_records_unverified_reqs(self):
+        _make_repo_unverified(self.tmp_dir)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001"]', approach="predictive",
+        )
+        history = _load_approval_history(PROJECT)
+        self.assertEqual(
+            history["packages"]["APKG-001"]["verification_snapshot"], {"FR-001": False}
+        )
+
+    def test_unverified_reqs_are_warned_about_with_the_phase_hint(self):
+        """7.2 lives in the `design` phase — a hint naming only the tool is unfollowable."""
+        _make_repo_unverified(self.tmp_dir)
+        out = prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001"]', approach="predictive",
+        )
+        self.assertIn("FR-001", out)
+        self.assertIn("7.2", out)
+        self.assertIn("phase.py design", out)
+
+    def test_verified_package_has_no_warning(self):
+        _make_repo_with_verified(self.tmp_dir)
+        out = prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001"]', approach="predictive",
+        )
+        self.assertNotIn("Not verified via 7.2", out)
+
+
+class TestVerificationState(BaseMCPTest):
+    """_verification_state merges the live history with the stored snapshot."""
+
+    def test_live_history_beats_a_stale_snapshot(self):
+        """The BA may go to 7.2 AFTER preparing the package."""
+        repo = _make_repo_unverified(self.tmp_dir)
+        repo["history"].append({"action": "req_verified", "req_id": "FR-001"})
+        package = {"req_ids": ["FR-001"], "verification_snapshot": {"FR-001": False}}
+        state = _verification_state(repo, package)
+        self.assertEqual(state["verified"], ["FR-001"])
+        self.assertEqual(state["unverified"], [])
+
+    def test_snapshot_fills_in_for_erased_status(self):
+        repo = _make_repo_unverified(self.tmp_dir)
+        package = {"req_ids": ["FR-001"], "verification_snapshot": {"FR-001": True}}
+        state = _verification_state(repo, package)
+        self.assertEqual(state["verified"], ["FR-001"])
+
+    def test_missing_snapshot_key_is_unknown_not_unverified(self):
+        """Packages already in flight when this shipped must not be called liars."""
+        repo = _make_repo_unverified(self.tmp_dir)
+        package = {"req_ids": ["FR-001"]}
+        state = _verification_state(repo, package)
+        self.assertFalse(state["known"])
+
+    def test_forced_verification_is_listed_separately(self):
+        repo = _make_repo_unverified(self.tmp_dir)
+        repo["history"].append(
+            {"action": "req_verified", "req_id": "FR-001", "forced": True}
+        )
+        package = {"req_ids": ["FR-001"], "verification_snapshot": {"FR-001": False}}
+        state = _verification_state(repo, package)
+        self.assertEqual(state["verified"], ["FR-001"])
+        self.assertEqual(state["forced"], ["FR-001"])
 
 
 # ---------------------------------------------------------------------------

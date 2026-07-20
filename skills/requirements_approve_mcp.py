@@ -27,7 +27,10 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    has_passed_verification, was_verification_forced,
+)
 
 mcp = FastMCP("BABOK_Requirements_Approve")
 
@@ -245,6 +248,42 @@ def _baseline_gate(package: dict) -> dict:
     }
 
 
+def _verification_state(repo: dict, package: dict) -> dict:
+    """Which requirements in the package passed 7.2 — live history ∪ stored snapshot.
+
+    5.5 does not gate on this (see `_baseline_gate`, deliberately unchanged): the BA
+    cannot fix it from here, because 7.2 lives in the `design` phase while 5.5 lives
+    in `lifecycle`. Instead the fact is reported, and lands in the Approval Record.
+
+    The snapshot is taken by `prepare_approval_package` before it overwrites `status`
+    with pending_approval. Live history wins where present — the BA may have gone to
+    7.2 after the package was prepared — so the snapshot only ever adds evidence.
+
+    `known` is False only for packages created before this check existed; their
+    verification state is genuinely unknowable, which is not the same as unverified.
+    """
+    snapshot = package.get("verification_snapshot")
+    known = snapshot is not None
+
+    verified, unverified, forced = [], [], []
+    for req_id in package.get("req_ids", []):
+        live = has_passed_verification(repo, req_id)
+        stored = bool(snapshot.get(req_id)) if known else False
+        if live or stored:
+            verified.append(req_id)
+            if was_verification_forced(repo, req_id):
+                forced.append(req_id)
+        else:
+            unverified.append(req_id)
+
+    return {
+        "known": known,
+        "verified": verified,
+        "unverified": unverified,
+        "forced": forced,
+    }
+
+
 def _get_cr_context(repo: dict, req_id: str) -> list:
     """Looks for CRs affecting the requirement (modifies links)."""
     cr_refs = []
@@ -366,12 +405,21 @@ def prepare_approval_package(
     history["packages"][package_id] = package_record
     _save_approval_history(project_name, history)
 
+    # Snapshot 7.2 verification BEFORE the status is overwritten below. This is the
+    # last moment it can be read for a legacy repository, where the only evidence is
+    # the `verified` status itself — pending_approval erases it.
+    verification_snapshot = {rid: has_passed_verification(repo, rid) for rid in req_ids}
+    package_record["verification_snapshot"] = verification_snapshot
+    _save_approval_history(project_name, history)
+
     # Update requirement statuses to pending_approval in the 5.1 repository
     for rid in req_ids:
         node = _find_node(repo, rid)
         if node:
             node["status"] = STATUS_PENDING
     _save_repo(project_name, repo)
+
+    unverified_ids = [rid for rid, ok in verification_snapshot.items() if not ok]
 
     # Build the Approval Package
     approach_label = "Predictive / Waterfall" if approach == "predictive" else "Agile"
@@ -450,6 +498,26 @@ def prepare_approval_package(
             f"For Sprint Planning{sprint_ref}. The Product Owner reviews and approves the backlog.\n"
             "Requirements accepted into the sprint will get status Approved and join the Sprint Baseline."
         )
+
+    if unverified_ids:
+        ids_str = ", ".join(f"`{rid}`" for rid in unverified_ids)
+        lines += [
+            "---",
+            "",
+            "## ⚠️ Not verified via 7.2",
+            "",
+            f"These requirements have not passed verification (7.2): {ids_str}",
+            "",
+            "This does not block approval — the decision stays with the BA — but it will be "
+            "recorded in the Approval Record when the baseline is created.",
+            "",
+            "To verify them first (7.2 tools live in another phase):",
+            "",
+            "1. `python phase.py design`, then `/restart`",
+            "2. `check_req_quality` → fix what it finds → `mark_req_verified`",
+            "3. `python phase.py lifecycle`, then `/restart`, and continue here",
+            "",
+        ]
 
     lines += [
         "---",
