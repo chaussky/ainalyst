@@ -66,6 +66,18 @@ def _parse_session_risks(risks_json: str, default_stakeholder: str):
             )
         if description:
             risks.append({"description": description, "stakeholder": stakeholder})
+
+    # The caller supplied items but none carried a description under any accepted
+    # spelling — i.e. the wrong FIELD NAME, this repo's most repeated defect class.
+    # Dropping them silently and still answering "✅ saved" is the worst outcome: the
+    # BA believes the risks were recorded and 6.3 later finds nothing.
+    if raw and not risks:
+        return None, (
+            "❌ `risks_json`: no risk had a description. Accepted keys are "
+            "`description` (or `risk`) and `stakeholder` (or `source`); a bare string "
+            'is read as the description.\n'
+            'Example: [{"description": "The legacy API may not survive the load"}]'
+        )
     return risks, ""
 
 
@@ -91,7 +103,33 @@ def _record_session_risks(project_name: str, session_date: str, stakeholder_role
         try:
             with open(path, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
-            if isinstance(loaded, dict) and isinstance(loaded.get("sessions"), list):
+            if isinstance(loaded, dict):
+                # Validate ELEMENTS, not just the container: the loop below calls
+                # `s.get(...)` and unpacks `{**risk}`, so a stored file whose sessions
+                # list holds a string raised AttributeError/TypeError — and because this
+                # runs BEFORE the Markdown is saved, the BA lost the whole session
+                # report too. Corrupt entries are dropped, never fatal.
+                sessions = [
+                    s for s in loaded.get("sessions", [])
+                    if isinstance(s, dict) and isinstance(s.get("risks_mentioned"), list)
+                ]
+                for s in sessions:
+                    s["risks_mentioned"] = [
+                        r for r in s["risks_mentioned"] if isinstance(r, dict)
+                    ]
+                loaded["sessions"] = sessions
+                # A file with a top-level `risks_mentioned` but no `sessions` is what a
+                # BA would hand-write while the producer did not exist. Overwriting it
+                # destroyed their data; the project rule is "never delete data", so the
+                # orphaned risks are migrated into a session instead.
+                if not sessions and isinstance(loaded.get("risks_mentioned"), list):
+                    orphans = [r for r in loaded["risks_mentioned"] if isinstance(r, dict)]
+                    if orphans:
+                        loaded["sessions"] = [{
+                            "session_date": "", "stakeholder_role": "",
+                            "session_type": "Imported",
+                            "risks_mentioned": orphans,
+                        }]
                 data = loaded
         except (json.JSONDecodeError, OSError):
             pass  # unreadable/corrupt: start fresh rather than blocking the BA
@@ -104,10 +142,17 @@ def _record_session_risks(project_name: str, session_date: str, stakeholder_role
     }
     key = (session_date, stakeholder_role, session_type)
     sessions = data.setdefault("sessions", [])
-    for i, s in enumerate(sessions):
-        if (s.get("session_date"), s.get("stakeholder_role"), s.get("session_type")) == key:
-            sessions[i] = entry  # replace in place, preserving order
-            break
+    # Replace-in-place only on a FULLY specified key. A blank component means
+    # "unspecified", not "the same session", and collapsing on it silently discarded
+    # the earlier slice.
+    if all(key):
+        for i, s in enumerate(sessions):
+            if (s.get("session_date"), s.get("stakeholder_role"),
+                    s.get("session_type")) == key:
+                sessions[i] = entry  # replace in place, preserving order
+                break
+        else:
+            sessions.append(entry)
     else:
         sessions.append(entry)
 
@@ -315,7 +360,8 @@ def process_elicitation_results(
 
     # Structured output for 6.3 import_risks_from_context. The Markdown below is for
     # people; this file is the machine contract, and 6.3 is its only consumer today.
-    _record_session_risks(project_name, session_date, stakeholder_role, session_type, risks)
+    risks_saved = _record_session_risks(
+        project_name, session_date, stakeholder_role, session_type, risks)
 
     # The session date stays in the name — it distinguishes sessions within a project.
     suffix = save_artifact(
@@ -323,6 +369,15 @@ def process_elicitation_results(
         f"4_2_elicitation_results_{session_date.replace('.', '-')}",
         project_id=project_name,
     )
+    # The Markdown prints the risks either way, so a silent persist failure would tell
+    # the BA the session was recorded while 6.3 later finds nothing. Same reasoning as
+    # the stakeholder registry a few lines down — the two writers must not disagree.
+    if risks and not risks_saved:
+        return (
+            f"⚠️ Elicitation results saved, but the risk file for 6.3 could NOT be "
+            f"written — the risks below are in the report only, and "
+            f"`import_risks_from_context` will not see them.{suffix}"
+        )
     return f"✅ Elicitation results saved.{suffix}"
 
 

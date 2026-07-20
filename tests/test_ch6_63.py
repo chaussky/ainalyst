@@ -1162,8 +1162,6 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(_next_risk_id(risks), "RK-004")
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
 
 
 class TestElicitationSourceWarning(BaseMCPTest):
@@ -1174,3 +1172,56 @@ class TestElicitationSourceWarning(BaseMCPTest):
         result = import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         self.assertIn("4.2", result)
         self.assertIn("not found", result.lower())
+        # Assert the actual sentence, not the bare token "4.2": that would pass on any
+        # incidental occurrence elsewhere in the report.
+        self.assertRegex(result, r"(?i)4\.2[^\n]*not found")
+
+
+class TestElicitationSeamAgainstRealProducer(BaseMCPTest):
+    """The seam 4.2 → 6.3, driven by the REAL producer instead of a hand-written fixture.
+
+    Every other test on this contract writes its own idea of the file and then reads it
+    back, which structurally cannot catch producer/consumer drift — the class that had
+    the filename, the container shape AND the field name wrong simultaneously in 7.6-A.
+    Here Chapter 4 writes and Chapter 6 reads, so a change to either side fails this.
+    """
+
+    PID = "seam_42_63"
+
+    def _session(self, date_str, role, risks):
+        import skills.elicitation_conduct_mcp as mod42
+        return mod42.process_elicitation_results(
+            project_name=self.PID, session_date=date_str, stakeholder_role=role,
+            session_type="Interview",
+            stakeholder_profile_json=json.dumps(
+                {"influence": "High", "interest": "High", "attitude": "Neutral"}),
+            pains_json=json.dumps([{"title": "Manual routing", "description": "By hand"}]),
+            requirements_json=json.dumps({"functional": ["FR-001: auto-assign"]}),
+            gaps_and_signals="-", ba_recommendations="-",
+            maturity_level="Medium", maturity_notes="-",
+            risks_json=json.dumps(risks))
+
+    def test_risks_from_two_real_sessions_reach_63(self):
+        _make_scope(self.PID)
+        self._session("2026-03-15", "CFO",
+                      [{"description": "The vendor may miss the deadline"}])
+        self._session("2026-03-20", "Head of Support",
+                      [{"description": "Support staff may resist the routing change"}])
+
+        result = import_risks_from_context(self.PID, f'["{self.PID}"]')
+
+        self.assertIn("vendor may miss", result.lower())
+        self.assertIn("resist the routing", result.lower())
+
+    def test_rerunning_a_session_does_not_duplicate_what_63_imports(self):
+        _make_scope(self.PID)
+        self._session("2026-03-15", "CFO", [{"description": "Vendor may miss the deadline"}])
+        self._session("2026-03-15", "CFO", [{"description": "Vendor may miss the deadline"}])
+
+        result = import_risks_from_context(self.PID, f'["{self.PID}"]')
+
+        self.assertEqual(result.lower().count("vendor may miss the deadline"), 1,
+                         "a re-run replaces the session slice, so 6.3 must see it once")
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

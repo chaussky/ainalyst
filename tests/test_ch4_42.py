@@ -472,8 +472,6 @@ class TestUpdateStakeholderRegistry(BaseMCPTest):
         self.assertIn("Dave Ruiz", md)
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
 
 
 # ---------------------------------------------------------------------------
@@ -569,3 +567,53 @@ class TestSessionRisksJson(BaseMCPTest):
                    "risks_json": json.dumps([{"description": "Vendor lock-in"}])})
         content = mock_sa.call_args[0][0]
         self.assertIn("Vendor lock-in", content)
+
+    def test_alternative_field_spellings_are_accepted(self):
+        """6.3 accepts `risk`/`source` on read, so 4.2 accepts them on write. The
+        tolerance is deliberate and was previously unpinned."""
+        self._call(risks_json=json.dumps([{"risk": "Alt spelling", "source": "CFO"}]))
+        risks = self._json()["risks_mentioned"]
+        self.assertEqual(risks[0]["description"], "Alt spelling")
+        self.assertEqual(risks[0]["stakeholder"], "CFO")
+
+    def test_items_without_any_description_key_are_rejected(self):
+        """The wrong-FIELD-NAME case — this repo's most repeated defect class. Dropping
+        them silently while answering '✅ saved' is the worst outcome: the BA believes
+        the risks were recorded and 6.3 later finds nothing."""
+        result = self._call(risks_json=json.dumps([{"notes": "wrong key"}]))
+        self.assertIn("❌", result)
+        self.assertIn("description", result)
+
+    def test_corrupt_stored_file_does_not_crash_the_tool(self):
+        """The loader validated the container but iterated its elements, so a stored
+        file holding a string raised — and the Markdown report was lost with it,
+        because the JSON is written first."""
+        path = mod42._elicitation_results_path(self.PID)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        for blob in ({"sessions": ["oops"]},
+                     {"sessions": [{"session_date": "x", "stakeholder_role": "y",
+                                    "session_type": "Interview",
+                                    "risks_mentioned": "oops"}]}):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(blob, f)
+            result = self._call(risks_json=json.dumps([{"description": "New risk"}]))
+            self.assertNotIn("❌", result)
+
+    def test_a_hand_written_legacy_file_is_not_destroyed(self):
+        """A file with a top-level risks_mentioned and no sessions is what a BA would
+        write while the producer did not exist. The project rule is 'never delete
+        data', so those risks are migrated, not overwritten."""
+        path = mod42._elicitation_results_path(self.PID)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"risks_mentioned": [
+                {"description": "Hand written risk", "stakeholder": "BA"}]}, f)
+
+        self._call(risks_json=json.dumps([{"description": "New risk"}]))
+
+        descriptions = [r.get("description") for r in self._json()["risks_mentioned"]]
+        self.assertIn("Hand written risk", descriptions)
+        self.assertIn("New risk", descriptions)
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
