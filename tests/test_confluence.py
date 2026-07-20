@@ -1145,3 +1145,75 @@ class TestDerivePageTitle(unittest.TestCase):
         self.assertEqual(
             confluence_mod._strip_timestamp("legacy_report.md"), "legacy_report"
         )
+
+
+# ---------------------------------------------------------------------------
+# A4 — resolving an artifact from the project's own directories
+# ---------------------------------------------------------------------------
+
+class TestResolveArtifact(BaseMCPTest):
+
+    PID = "a4proj"
+
+    def _write(self, relative_dir, filename, content="# Artifact\n"):
+        path = os.path.join("governance_plans", relative_dir, filename)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return path
+
+    def test_prefix_resolves_to_the_single_match(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, note = confluence_mod._resolve_artifact(self.PID, "7_6_recommendation")
+        self.assertIsNotNone(path)
+        self.assertIn("7_6_recommendation_20260720_101010.md", path)
+
+    def test_prefix_with_several_matches_takes_the_newest_and_says_so(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260721_090000.md")
+        path, note = confluence_mod._resolve_artifact(self.PID, "7_6_recommendation")
+        self.assertIn("20260721_090000", path)
+        self.assertIn("2", note)  # candidate count is reported
+
+    def test_prefix_matching_is_case_insensitive(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, _ = confluence_mod._resolve_artifact(self.PID, "7_6_Recommendation")
+        self.assertIsNotNone(path)
+
+    def test_specs_directory_is_searched_too(self):
+        """7.1 specs are a real deliverable and do NOT live under reports/."""
+        self._write(f"data/{self.PID}/specs", "us_001_login_20260720_101010.md")
+        path, _ = confluence_mod._resolve_artifact(self.PID, "us_001")
+        self.assertIsNotNone(path)
+        self.assertIn("specs", path)
+
+    def test_explicit_in_project_path_is_used(self):
+        p = self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, _ = confluence_mod._resolve_artifact(self.PID, p)
+        self.assertIsNotNone(path)
+
+    def test_path_outside_the_project_is_refused(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        outside = self._write("reports/other_project", "secret.md", "# Not this project\n")
+        path, message = confluence_mod._resolve_artifact(self.PID, outside)
+        self.assertIsNone(path)
+        self.assertIn("outside", message.lower())
+
+    def test_empty_selector_lists_what_is_available(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, message = confluence_mod._resolve_artifact(self.PID, "")
+        self.assertIsNone(path)
+        self.assertIn("7_6_recommendation_20260720_101010.md", message)
+
+    def test_no_match_lists_what_is_available_instead_of_a_bare_error(self):
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, message = confluence_mod._resolve_artifact(self.PID, "9_9_nonexistent")
+        self.assertIsNone(path)
+        self.assertIn("7_6_recommendation_20260720_101010.md", message)
+
+    def test_search_scope_is_always_printed(self):
+        """INT-H: 'nothing found' must never be ambiguous about where we looked."""
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        path, message = confluence_mod._resolve_artifact(self.PID, "anything")
+        self.assertIsNone(path)
+        self.assertIn("reports", message)

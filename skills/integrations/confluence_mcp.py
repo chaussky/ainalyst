@@ -368,6 +368,124 @@ def _derive_page_title(project_id: str, path: str) -> str:
     return f"{project_id} — {_humanize_stem(stem)}"
 
 
+def _artifact_roots(project_id: str) -> list:
+    """The two directories a project's publishable documents live in.
+
+    `specs/` is included because 7.1 specifications are a real deliverable for a
+    developer and do NOT live under reports/ — a consumer has tripped over exactly
+    that before (finding 7.1-A).
+    """
+    roots = []
+    for root in (report_dir_for(project_id), specs_dir(project_id)):
+        if os.path.isdir(root) and root not in roots:
+            roots.append(root)
+    return roots
+
+
+def _artifact_sort_key(path: str) -> float:
+    """Sorts by the timestamp in the NAME, so a copied or restored file keeps its
+    identity. A legacy artifact without one falls back to mtime, so it stays
+    reachable rather than becoming invisible."""
+    match = _TIMESTAMP_RE.search(os.path.basename(path))
+    if match:
+        try:
+            return datetime.strptime(match.group(0)[1:-3], "%Y%m%d_%H%M%S").timestamp()
+        except ValueError:
+            pass
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return 0.0
+
+
+def _list_artifacts(project_id: str) -> list:
+    """Every .md in the project's roots, newest first. Both roots are ONE pool."""
+    found = []
+    for root in _artifact_roots(project_id):
+        for name in os.listdir(root):
+            if name.lower().endswith(".md"):
+                found.append(os.path.join(root, name))
+    return sorted(found, key=_artifact_sort_key, reverse=True)
+
+
+def _artifact_listing(project_id: str) -> str:
+    """Human-readable inventory + the search scope.
+
+    The scope is printed in EVERY outcome: INT-H taught that a bare 'found nothing'
+    is ambiguous between 'the thing is absent' and 'we looked in the wrong place'.
+    """
+    roots = _artifact_roots(project_id)
+    scope = ", ".join(f"`{r}`" for r in roots) if roots else "(no project directories exist yet)"
+    lines = [f"**Searched in:** {scope}", ""]
+    artifacts = _list_artifacts(project_id)
+    if not artifacts:
+        lines.append(f"No .md artifacts found for project `{project_id}`.")
+        return "\n".join(lines)
+    lines += ["**Available artifacts (newest first):**", ""]
+    for path in artifacts:
+        lines.append(f"- `{os.path.basename(path)}`")
+    lines += ["", "Pass one of these, or its prefix, as `artifact`."]
+    return "\n".join(lines)
+
+
+def _resolve_artifact(project_id: str, selector: str):
+    """Finds the artifact to publish.
+
+    Returns (path, note) on success — note explains the choice — or (None, message)
+    on failure, where message is ready to be returned to the caller as-is.
+    """
+    roots = _artifact_roots(project_id)
+
+    if not selector:
+        return None, (
+            f"ℹ️ Specify which artifact to publish (`artifact`).\n\n"
+            + _artifact_listing(project_id)
+        )
+
+    # An explicit path: accept it only inside the project's own directories.
+    # Publishing is outward-facing and effectively irreversible — a mistyped path
+    # pushes an unintended local file into a shared wiki, where it may be read or
+    # indexed before anyone notices. Refusing costs a retry; publishing does not undo.
+    if os.path.isfile(selector):
+        real = os.path.realpath(selector)
+        inside = False
+        for root in roots:
+            real_root = os.path.realpath(root)
+            try:
+                if os.path.commonpath([real, real_root]) == real_root:
+                    inside = True
+                    break
+            except ValueError:
+                continue  # different drives on Windows
+        if not inside:
+            allowed = ", ".join(f"`{r}`" for r in roots) if roots else "(none exist yet)"
+            return None, (
+                f"❌ `{selector}` is outside project `{project_id}`.\n"
+                f"Publishing is irreversible, so only the project's own directories "
+                f"are allowed: {allowed}"
+            )
+        return real, f"Publishing `{os.path.basename(real)}` (explicit path)."
+
+    # Otherwise a filename prefix, case-insensitive.
+    needle = selector.lower()
+    matches = [p for p in _list_artifacts(project_id)
+               if os.path.basename(p).lower().startswith(needle)]
+
+    if not matches:
+        return None, (
+            f"❌ Nothing matches `{selector}` in project `{project_id}`.\n\n"
+            + _artifact_listing(project_id)
+        )
+
+    chosen = matches[0]
+    if len(matches) > 1:
+        note = (f"Publishing `{os.path.basename(chosen)}` — newest of "
+                f"{len(matches)} matching `{selector}`.")
+    else:
+        note = f"Publishing `{os.path.basename(chosen)}`."
+    return chosen, note
+
+
 # ---------------------------------------------------------------------------
 # MCP 1 — Export an artifact to Confluence
 # ---------------------------------------------------------------------------
