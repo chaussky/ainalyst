@@ -57,6 +57,16 @@ Create requirements one at a time or in groups, using the appropriate tool.
 **Every artifact created is automatically registered in the 5.1 repository**
 with status `draft`. You don't need to call the 5.1 tools manually.
 
+**Link each requirement to the business objective it serves.** Every creating tool takes
+`business_goal_ids_json` — the IDs of the 6.2 objectives (`["BG-001", "BG-002"]`). This
+writes a `satisfies` link into the 5.1 graph, and it is what makes the coverage matrix in
+Step 4 precise instead of a checklist. Ask the BA which objective the requirement serves;
+never guess it from the wording. If the ID is unknown the tool warns and creates the
+requirement anyway — you can link it later with `add_trace_link` (5.1).
+
+Supporting models (data dictionary, ERD) are usually left unlinked — they describe the
+solution rather than serve an objective directly.
+
 How to choose the artifact type → see `references/modeling_guide.md`.
 Templates for each artifact → see `references/templates.md`.
 
@@ -68,14 +78,26 @@ Templates for each artifact → see `references/templates.md`.
 ### Step 4 — Coverage check
 At the end, call `build_coverage_matrix`. It reads the business objectives from 6.2
 (Define Future State: the `business_goal` nodes registered in the 5.1 graph, or
-`future_state_goals.json`), lists them as a checklist next to the requirements, and shows:
-- a checklist of business objectives (from 6.2) to confirm each is addressed by a requirement
-- 🟡 possible over-engineering (many requirements per objective, worth checking for duplicates)
+`future_state_goals.json`) and reports, per objective, which requirements serve it.
 
-Note: a precise per-objective coverage link is not built here (objectives are not yet linked
-to specific requirements in the graph). For exact coverage, link the requirements to their
-objectives and run `check_coverage` (5.1). If 6.2 has not been run, the tool falls back to a
-"Business objectives" section in the 4.3 artifact (if you wrote one), then to grouping by source.
+**Precise coverage requires two things:**
+1. objectives defined in 6.2 `define_goals_and_objectives` — that is what puts them in the
+   graph as `business_goal` nodes with IDs;
+2. requirements linked to them — pass `business_goal_ids_json=["BG-001"]` when creating the
+   requirement (see Step 2), or link later with `add_trace_link` (5.1).
+
+Then the report shows:
+- 🔴 an objective no requirement serves
+- 🟢 normal coverage (1–9 requirements)
+- 🟡 10+ requirements on one objective — possible over-engineering, check for duplicates
+- requirements not linked to any objective, grouped by type
+
+**If the objectives have no IDs** (they came from `future_state_goals.json`, a legacy
+"Business objectives" section in the 4.3 artifact, or grouping by source), no per-objective
+claim is made at all: the objectives are shown as a checklist and the report says so. The
+tool never guesses which requirement serves which objective from their wording.
+
+For full per-requirement traceability (sources, implementation, tests) run `check_coverage` (5.1).
 
 ---
 
@@ -238,9 +260,9 @@ create_erd(
 
 ### `build_coverage_matrix`
 
-Lists the business objectives (from 6.2) as a checklist next to the requirements registry,
-so the BA can confirm each objective is addressed. Objectives come from the 6.2 `business_goal`
-nodes in the 5.1 graph (or `future_state_goals.json`); requirements come from the 5.1 registry.
+Reports which requirements serve which business objective. Objectives come from the 6.2
+`business_goal` nodes in the 5.1 graph (or `future_state_goals.json`); requirements come from
+the 5.1 registry.
 
 ```
 build_coverage_matrix(
@@ -248,14 +270,24 @@ build_coverage_matrix(
 )
 ```
 
-**Signals:**
-- Checklist of business objectives (from 6.2) — confirm each is addressed by a requirement
-- 🟡 many requirements per objective (avg 10+) — possible over-engineering, check for duplicates
+**Signals (when the objectives are graph nodes):**
+- 🔴 objective with no requirement serving it
+- 🟢 1–9 requirements
+- 🟡 10+ requirements on one objective — possible over-engineering, check for duplicates
+- requirements not linked to any objective, grouped by type
+- requirements traced to a business need but not to an objective — usually a need 6.2 has
+  not refined into objectives yet
 
-A precise per-objective coverage link is NOT built here (objectives are not yet linked to
-specific requirements in the graph). For exact coverage, link requirements to their objectives
-and run `check_coverage` (5.1). Without 6.2, falls back to a "Business objectives" section in
-the 4.3 artifact, then to grouping by requirement source.
+Coverage is computed by traversing the `satisfies` links the analyst declares (`derives`
+links to an objective count too). **Nothing is inferred from wording** — an objective is
+covered only when a requirement is actually linked to its node.
+
+**Without objective IDs** (objectives from `future_state_goals.json`, a legacy "Business
+objectives" section in the 4.3 artifact, or grouping by requirement source), no per-objective
+claim is made: the objectives are listed as a checklist and the report states why.
+
+Nodes other chapters keep in the same graph — `change_request` (5.4), `risk` (6.3),
+`solution` (6.4), `test` (5.1) — are not counted as requirements here.
 
 ---
 
