@@ -29,6 +29,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo
 
 import skills.requirements_spec_mcp as mod71
+from skills.common import specs_dir
 from skills.common import data_path
 
 
@@ -1395,6 +1396,87 @@ class TestGoalEdgesAtRegistration(BaseMCPTest):
         self.assertEqual(node["status"], "draft")
         self.assertEqual(node["priority"], "High")
         self.assertIn("FR-012", note)
+
+
+class TestCreateToolsAcceptGoalIds(BaseMCPTest):
+    """The parameter is uniform across all six creating tools: whether an artefact
+    serves an objective is the analyst's judgment, not the tool's."""
+
+    P = "create_goal_ids"
+
+    def setUp(self):
+        super().setUp()
+        save_spec_repo(make_spec_repo(self.P, [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut handling time",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+        ]))
+
+    def _edges(self):
+        return {(l["from"], l["to"], l["relation"])
+                for l in load_spec_repo(self.P)["links"]}
+
+    def test_user_story_links_to_objective(self):
+        mod71.create_user_story(
+            project_id=self.P, story_id="US-001", title="Fast assignment",
+            role="Manager", action="assign a request in one click",
+            benefit="handling time drops",
+            acceptance_criteria_json='["Assigned in one click", "Audit entry written"]',
+            business_goal_ids_json='["BG-001"]')
+        self.assertIn(("US-001", "BG-001", "satisfies"), self._edges())
+
+    def test_functional_requirement_links_to_objective(self):
+        mod71.create_functional_requirement(
+            project_id=self.P, req_id="FR-001", req_type="functional",
+            title="Auto-assign", description="The system SHALL assign automatically",
+            rationale="Manual routing is slow",
+            business_goal_ids_json='["BG-001"]')
+        self.assertIn(("FR-001", "BG-001", "satisfies"), self._edges())
+
+    def test_use_case_links_to_objective(self):
+        mod71.create_use_case(
+            project_id=self.P, uc_id="UC-001", title="Assign a request",
+            primary_actor="Manager", precondition="The request is in the queue",
+            postcondition="The request has an assignee", trigger="A request arrives",
+            main_scenario="1. Manager opens the queue\n2. Manager assigns the request",
+            business_goal_ids_json='["BG-001"]')
+        self.assertIn(("UC-001", "BG-001", "satisfies"), self._edges())
+
+    def test_data_dictionary_links_to_objective(self):
+        """The two tools that pass no priority must still reach the new argument."""
+        mod71.create_data_dictionary(
+            project_id=self.P, dd_id="DD-001", title="Request entity",
+            entities_json='[{"name": "Request", "description": "An incoming request", '
+                          '"attributes": [{"name": "id", "type": "UUID"}]}]',
+            business_goal_ids_json='["BG-001"]')
+        self.assertIn(("DD-001", "BG-001", "satisfies"), self._edges())
+
+    def test_bad_shape_returns_error_not_exception(self):
+        """LLM-written JSON of the wrong shape must produce a readable error
+        (class CH3-A / CH4-A), never a protocol-level exception."""
+        result = mod71.create_functional_requirement(
+            project_id=self.P, req_id="FR-002", req_type="functional",
+            title="X", description="The system SHALL x", rationale="y",
+            business_goal_ids_json='[{"id": "BG-001"}]')
+        self.assertIn("❌", result)
+        self.assertEqual(self._edges(), set())
+
+    def test_bad_shape_writes_no_spec_file(self):
+        """The parse happens before the artefact is written, so a rejected call
+        leaves no orphan .md on disk."""
+        mod71.create_functional_requirement(
+            project_id=self.P, req_id="FR-003", req_type="functional",
+            title="X", description="The system SHALL x", rationale="y",
+            business_goal_ids_json='not json at all')
+        specs = specs_dir(self.P)
+        found = os.path.exists(specs) and [f for f in os.listdir(specs) if "fr_003" in f]
+        self.assertFalse(found)
+
+    def test_default_is_no_links(self):
+        mod71.create_functional_requirement(
+            project_id=self.P, req_id="FR-004", req_type="functional",
+            title="X", description="The system SHALL x", rationale="y")
+        self.assertEqual(self._edges(), set())
 
 
 if __name__ == "__main__":

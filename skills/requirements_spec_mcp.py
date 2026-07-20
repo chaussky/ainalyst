@@ -391,6 +391,7 @@ def create_user_story(
     priority: str = "Medium",
     source_artifact: str = "",
     notes: str = "",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a User Story with Acceptance Criteria.
@@ -408,11 +409,21 @@ def create_user_story(
         priority:                  High | Medium | Low. Default Medium.
         source_artifact:           Path to the 4.3 artifact (for traceability).
         notes:                     Additional context, constraints, references.
+        business_goal_ids_json:  JSON list of 6.2 business objective IDs this item serves:
+                                 ["BG-001", "BG-002"]. Writes `satisfies` links into the
+                                 5.1 graph — that is what makes per-objective coverage in
+                                 `build_coverage_matrix` precise. Empty — no links.
 
     Returns:
         Markdown User Story artifact + confirmation of registration in 5.1.
     """
     logger.info(f"create_user_story: {story_id} in project '{project_id}'")
+
+    # Parsed BEFORE the artifact is written, so a rejected call leaves no orphan file.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     try:
         criteria = json.loads(acceptance_criteria_json)
@@ -478,7 +489,7 @@ def create_user_story(
     spec_path = _save_spec(content, project_id, filename)
 
     # ADR-022: auto-registration in 5.1
-    reg_note = _register_in_repo(project_id, story_id, "user_story", title, spec_path, priority)
+    reg_note = _register_in_repo(project_id, story_id, "user_story", title, spec_path, priority, goal_ids)
 
     return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
@@ -500,6 +511,7 @@ def create_functional_requirement(
     source_artifact: str = "",
     constraints: str = "",
     related_ids_json: str = "[]",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a formal SRS-style requirement.
@@ -520,11 +532,21 @@ def create_functional_requirement(
         source_artifact:   Path to the 4.3 artifact.
         constraints:       Constraints and assumptions.
         related_ids_json:  JSON list of related IDs: ["BR-001", "UC-001"]
+        business_goal_ids_json:  JSON list of 6.2 business objective IDs this item serves:
+                                 ["BG-001", "BG-002"]. Writes `satisfies` links into the
+                                 5.1 graph — that is what makes per-objective coverage in
+                                 `build_coverage_matrix` precise. Empty — no links.
 
     Returns:
         Markdown requirement artifact + confirmation of registration in 5.1.
     """
     logger.info(f"create_functional_requirement: {req_id} ({req_type}) in project '{project_id}'")
+
+    # Parsed BEFORE the artifact is written, so a rejected call leaves no orphan file.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     valid_types = {"functional", "non_functional", "business_rule"}
     if req_type not in valid_types:
@@ -615,7 +637,7 @@ def create_functional_requirement(
         "non_functional": "non_functional",
         "business_rule": "business_rule",
     }
-    reg_note = _register_in_repo(project_id, req_id, repo_type_map[req_type], title, spec_path, priority)
+    reg_note = _register_in_repo(project_id, req_id, repo_type_map[req_type], title, spec_path, priority, goal_ids)
 
     return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
@@ -640,6 +662,7 @@ def create_use_case(
     exc_scenarios: str = "",
     business_rules: str = "",
     source_artifact: str = "",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a textual Use Case specification.
@@ -660,11 +683,21 @@ def create_use_case(
         exc_scenarios:     Exception scenarios (numbering: Xa, Yb...).
         business_rules:    Business rules applied in the UC.
         source_artifact:   Path to the 4.3 artifact.
+        business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
+                         ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
+                         that is what makes per-objective coverage in `build_coverage_matrix`
+                         precise. Empty — no links.
 
     Returns:
         Markdown Use Case artifact + confirmation of registration in 5.1.
     """
     logger.info(f"create_use_case: {uc_id} in project '{project_id}'")
+
+    # Parsed BEFORE the artifact is written, so a rejected call leaves no orphan file.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     lines = [
         f"<!-- BABOK 7.1 — Use Case | Project: {project_id} | {date.today()} -->",
@@ -726,7 +759,7 @@ def create_use_case(
     filename = f"{safe_id}_{safe_title}.md"
     spec_path = _save_spec(content, project_id, filename)
 
-    reg_note = _register_in_repo(project_id, uc_id, "use_case", title, spec_path, priority)
+    reg_note = _register_in_repo(project_id, uc_id, "use_case", title, spec_path, priority, goal_ids)
 
     return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
@@ -914,6 +947,7 @@ def create_business_process(
     metrics: str = "",
     exceptions: str = "",
     source_artifact: str = "",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a business process description.
@@ -935,11 +969,21 @@ def create_business_process(
         metrics:         Metrics: time, conversion, cost.
         exceptions:      Exceptional situations and error handling.
         source_artifact: Path to the 4.3 artifact.
+        business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
+                         ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
+                         that is what makes per-objective coverage in `build_coverage_matrix`
+                         precise. Empty — no links.
 
     Returns:
         Markdown process artifact + PlantUML Activity Diagram + confirmation of registration in 5.1.
     """
     logger.info(f"create_business_process: {bp_id} in project '{project_id}'")
+
+    # Parsed BEFORE the artifacts are written, so a rejected call leaves no orphan files.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     # --- Textual description .md ---
     participants_list = [p.strip() for p in participants.split(",") if p.strip()]
@@ -1080,7 +1124,7 @@ def create_business_process(
     puml_path = _save_spec(puml_content, project_id, puml_filename)
 
     # ADR-022: auto-registration in 5.1
-    reg_note = _register_in_repo(project_id, bp_id, "business_process", title, md_path, priority)
+    reg_note = _register_in_repo(project_id, bp_id, "business_process", title, md_path, priority, goal_ids)
 
     result = (
         md_content
@@ -1103,6 +1147,7 @@ def create_data_dictionary(
     title: str,
     entities_json: str,
     source_artifact: str = "",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a Data Dictionary: a registry of entities with attributes, types and constraints.
@@ -1130,11 +1175,21 @@ def create_data_dictionary(
                            }
                          ]
         source_artifact: Path to the 4.3 artifact.
+        business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
+                         ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
+                         that is what makes per-objective coverage in `build_coverage_matrix`
+                         precise. Empty — no links.
 
     Returns:
         Markdown Data Dictionary + confirmation of registration in 5.1.
     """
     logger.info(f"create_data_dictionary: {dd_id} in project '{project_id}'")
+
+    # Parsed BEFORE the artifact is written, so a rejected call leaves no orphan file.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     try:
         entities = json.loads(entities_json)
@@ -1219,7 +1274,7 @@ def create_data_dictionary(
     filename = f"{safe_id}_{safe_title}.md"
     spec_path = _save_spec(content, project_id, filename)
 
-    reg_note = _register_in_repo(project_id, dd_id, "data_dictionary", title, spec_path)
+    reg_note = _register_in_repo(project_id, dd_id, "data_dictionary", title, spec_path, "Medium", goal_ids)
 
     return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 
@@ -1236,6 +1291,7 @@ def create_erd(
     entities_json: str,
     relations_json: str,
     source_artifact: str = "",
+    business_goal_ids_json: str = "[]",
 ) -> str:
     """
     BABOK 7.1 — Creates a description of entities and relationships + PlantUML ER Diagram (.puml).
@@ -1267,11 +1323,21 @@ def create_erd(
                          one-to-one | one-to-many | many-to-one | many-to-many |
                          zero-or-one-to-many | zero-or-one-to-one
         source_artifact: Path to the 4.3 artifact.
+        business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
+                         ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
+                         that is what makes per-objective coverage in `build_coverage_matrix`
+                         precise. Empty — no links.
 
     Returns:
         Markdown ERD description + PlantUML code + confirmation of registration in 5.1.
     """
     logger.info(f"create_erd: {erd_id} in project '{project_id}'")
+
+    # Parsed BEFORE the artifacts are written, so a rejected call leaves no orphan files.
+    goal_ids, goal_err = parse_json_str_list(
+        business_goal_ids_json, "business_goal_ids_json", example='["BG-001"]')
+    if goal_err:
+        return goal_err
 
     try:
         entities = json.loads(entities_json)
@@ -1412,7 +1478,7 @@ def create_erd(
     md_path = _save_spec(md_content, project_id, md_filename)
     puml_path = _save_spec(puml_content, project_id, puml_filename)
 
-    reg_note = _register_in_repo(project_id, erd_id, "erd", title, md_path)
+    reg_note = _register_in_repo(project_id, erd_id, "erd", title, md_path, "Medium", goal_ids)
 
     result = (
         md_content
