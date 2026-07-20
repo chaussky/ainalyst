@@ -1378,7 +1378,15 @@ def build_coverage_matrix(
     """
     BABOK 7.1 — Builds a "business objective → requirements" coverage matrix.
 
-    Reads business objectives from the latest 4.3 artifact and the list of requirements from repository 5.1.
+    Business objectives come from 6.2 (Define Future State), in this order: the
+    `business_goal` nodes 6.2 registers in the 5.1 graph, then `future_state_goals.json`,
+    then a legacy hand-written "Business objectives" section in the 4.3 artifact, then
+    grouping by source artifact. Requirements come from repository 5.1.
+
+    Coverage is reported per project, not per objective: the matrix does not claim which
+    requirement serves which goal, because no such link exists in the graph yet. Use
+    `check_coverage` (5.1) for per-requirement traceability.
+
     Flags:
       🔴 Business objective not covered by any requirement
       🟡 Business objective covered by 10+ requirements (possible over-engineering)
