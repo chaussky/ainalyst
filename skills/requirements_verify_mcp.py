@@ -1386,7 +1386,23 @@ def get_verification_report(
     approved = [r for r in active_reqs if r.get("status") in ("approved", "conditional_approved")]
     draft = [r for r in active_reqs if r.get("status") == "draft"]
 
-    verified_pct = round(len(verified) / total * 100, 1) if total > 0 else 0.0
+    # "Has passed verification" is a FACT, not a snapshot of the current status.
+    # `status` is a single field shared across chapters (draft → verified →
+    # pending_approval → approved), so 5.5 overwrites `verified` on approval and the
+    # evidence disappears: the percentage used to FALL as approvals succeeded, and the
+    # report then declared "Not ready for Approve (5.5)" precisely because 5.5 had
+    # worked. The durable record is the `req_verified` entry 7.2 writes to history.
+    # NB: approval is deliberately NOT treated as proof of verification — 5.5 never
+    # checks for it, so a req can reach `approved` without ever passing 7.2.
+    # The union with the current status covers legacy repos that predate the history.
+    verified_ids = {h["req_id"] for h in repo.get("history", [])
+                    if h.get("action") == "req_verified"}
+    has_passed_verification = [
+        r for r in active_reqs
+        if r.get("id") in verified_ids or r.get("status") == "verified"
+    ]
+
+    verified_pct = round(len(has_passed_verification) / total * 100, 1) if total > 0 else 0.0
 
     # Statistics by issues
     all_issues = list(data["issues"].values())
@@ -1422,8 +1438,9 @@ def get_verification_report(
         "| Metric | Value |",
         "|------------|----------|",
         f"| Total active reqs | {total} |",
-        f"| ✅ Verified | {len(verified)} ({verified_pct}%) |",
-        f"| ✅ Approved | {len(approved)} |",
+        f"| ✅ Passed verification | {len(has_passed_verification)} ({verified_pct}%) |",
+        f"| &nbsp;&nbsp;↳ currently in `verified` status | {len(verified)} |",
+        f"| ✅ Approved in 5.5 | {len(approved)} |",
         f"| 📝 Draft (not verified) | {len(draft)} |",
         "",
     ]
@@ -1514,14 +1531,14 @@ def get_verification_report(
             )
         lines.append("")
 
-    # Verified reqs
-    if verified:
+    # Reqs that have passed verification (including those 5.5 has since approved)
+    if has_passed_verification:
         lines += [
-            "## ✅ Verified requirements",
+            "## ✅ Requirements that passed verification",
             "",
         ]
         by_type: dict = {}
-        for r in verified:
+        for r in has_passed_verification:
             t = r.get("type", "other")
             by_type.setdefault(t, []).append(r["id"])
         for req_type, ids in sorted(by_type.items()):
@@ -1540,7 +1557,8 @@ def get_verification_report(
         lines += [
             "### ✅ Ready for handoff to the next tasks",
             "",
-            f"- **5.5 Approve Requirements:** {len(verified)} reqs in status `verified` are ready for baseline.",
+            f"- **5.5 Approve Requirements:** {len(verified)} reqs currently in status `verified` are ready for baseline "
+            f"({len(has_passed_verification)} have passed verification in total).",
             f"- **7.3 Validate Requirements:** the verified reqs are ready for validation with the business.",
             "",
             "**Hand this report to 5.5:** use `prepare_approval_package` with a reference to this report.",

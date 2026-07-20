@@ -774,6 +774,43 @@ class TestMarkReqVerified(BaseMCPTest):
         self.assertIn("force", report.lower())
         self.assertIn("US-001", report)
 
+    def test_verified_pct_survives_approval_in_55(self):
+        """Audit finding: `status` is one field shared across chapters, so 5.5
+        overwrites `verified` with `approved` and the evidence disappeared — the
+        percentage FELL as approvals succeeded and the report then said
+        "Not ready for Approve (5.5)" precisely because 5.5 had worked."""
+        repo = make_repo("proj_pct1", [make_us_req("US-001"), make_us_req("US-002")])
+        save_repo(repo)
+        mod72.mark_req_verified("proj_pct1", '["US-001", "US-002"]')
+        before = mod72.get_verification_report("proj_pct1")
+        self.assertIn("100.0%", before)
+
+        # 5.5 approves one of them, overwriting its status
+        updated = load_repo("proj_pct1")
+        mod72._find_req(updated, "US-001")["status"] = "approved"
+        save_repo(updated)
+
+        after = mod72.get_verification_report("proj_pct1")
+        self.assertIn("100.0%", after,
+                      "approving a verified req must not lower the verification percentage")
+
+    def test_approval_alone_is_not_counted_as_verified(self):
+        """5.5 never checks for verification, so `approved` must NOT imply verified —
+        otherwise the percentage inflates with reqs 7.2 never saw."""
+        repo = make_repo("proj_pct2", [make_us_req("US-001", status="approved"),
+                                       make_us_req("US-002")])
+        save_repo(repo)
+        report = mod72.get_verification_report("proj_pct2")
+        self.assertIn("0.0%", report)
+
+    def test_legacy_verified_status_without_history_still_counts(self):
+        """Repos created before the history existed must not read as 0%."""
+        repo = make_repo("proj_pct3", [make_us_req("US-001", status="verified")])
+        repo["history"] = []
+        save_repo(repo)
+        report = mod72.get_verification_report("proj_pct3")
+        self.assertIn("100.0%", report)
+
     def test_force_without_blockers_is_a_normal_verify(self):
         repo = make_repo("proj_force7", [make_us_req("US-001")])
         save_repo(repo)
