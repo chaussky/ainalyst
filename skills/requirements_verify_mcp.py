@@ -1204,6 +1204,7 @@ def resolve_verification_issue(
 def mark_req_verified(
     project_id: str,
     req_ids: str,
+    force: bool = False,
 ) -> str:
     """
     BABOK 7.2 — Sets the 'verified' status in repository 5.1.
@@ -1212,6 +1213,12 @@ def mark_req_verified(
     Args:
         project_id: Project identifier.
         req_ids:    JSON list of IDs: '["US-001", "FR-001", "US-002"]'.
+        force:      Verify even when a req has open blocker issues. The decision
+                    belongs to the BA, so an override exists — but it is deliberate
+                    and recorded: the repository history keeps the overridden blocker
+                    ids, and the verification report lists every forced req.
+                    Without it, the only way past a blocker would be to close an
+                    issue that is not actually resolved, corrupting the audit trail.
 
     Returns:
         A result per req: successfully verified / a warning about blockers.
@@ -1231,6 +1238,7 @@ def mark_req_verified(
     results = []
     verified_count = 0
     blocked_count = 0
+    forced_count = 0
     not_found_count = 0
 
     for req_id in ids_list:
@@ -1242,11 +1250,12 @@ def mark_req_verified(
 
         # Check blockers
         blockers = _open_blockers_for_req(data, req_id)
-        if blockers:
-            blocker_ids = ", ".join(b["issue_id"] for b in blockers)
+        blocker_ids = [b["issue_id"] for b in blockers]
+        if blockers and not force:
             results.append(
-                f"⚠️ `{req_id}` — BLOCKED. Open blockers: {blocker_ids}. "
-                f"Close them via `resolve_verification_issue` before verification."
+                f"⚠️ `{req_id}` — BLOCKED. Open blockers: {', '.join(blocker_ids)}. "
+                f"Close them via `resolve_verification_issue`, or use force=true "
+                f"to verify anyway (the override is recorded)."
             )
             blocked_count += 1
             continue
@@ -1255,17 +1264,28 @@ def mark_req_verified(
         old_status = req.get("status", "draft")
         req["status"] = "verified"
 
-        # History
-        repo["history"].append({
+        # History — a forced verification stays visible in the audit trail
+        entry = {
             "action": "req_verified",
             "req_id": req_id,
             "old_status": old_status,
             "new_status": "verified",
             "source": "7.2_verify",
             "date": str(date.today()),
-        })
+        }
+        if blockers:
+            entry["forced"] = True
+            entry["overridden_blockers"] = blocker_ids
+        repo["history"].append(entry)
 
-        results.append(f"✅ `{req_id}` — verified (was: {old_status})")
+        if blockers:
+            results.append(
+                f"⚠️ `{req_id}` — verified WITH FORCE despite open blockers: "
+                f"{', '.join(blocker_ids)} (was: {old_status})"
+            )
+            forced_count += 1
+        else:
+            results.append(f"✅ `{req_id}` — verified (was: {old_status})")
         verified_count += 1
 
     if verified_count > 0:
@@ -1277,6 +1297,7 @@ def mark_req_verified(
         f"**Date:** {date.today()}  ",
         f"**Processed:** {len(ids_list)} requirements  ",
         f"**Verified:** ✅ {verified_count}  ",
+        f"**Of which forced (open blockers overridden):** ⚠️ {forced_count}  ",
         f"**Blocked:** ⚠️ {blocked_count}  ",
         f"**Not found:** ❌ {not_found_count}",
         "",
@@ -1292,6 +1313,18 @@ def mark_req_verified(
             "",
             f"⚠️ {blocked_count} requirements are blocked by open blockers.",
             "After fixing and closing the issues — call `mark_req_verified` again.",
+            "If you judge a blocker acceptable, `force=true` verifies anyway and records "
+            "the override (the blocker itself stays open — do NOT close an unresolved issue).",
+        ]
+
+    if forced_count > 0:
+        lines += [
+            "",
+            "---",
+            "",
+            f"⚠️ {forced_count} requirements were verified WITH FORCE over open blockers.",
+            "The override is recorded in the repository history and listed in "
+            "`get_verification_report`. The blocker issues remain open.",
         ]
 
     if verified_count > 0:
@@ -1441,6 +1474,28 @@ def get_verification_report(
             blockers_for_req = [i for i in open_blockers if i["req_id"] == req_id]
             blocker_ids = ", ".join(b["issue_id"] for b in blockers_for_req)
             lines.append(f"- `{req_id}` — {title} | Blockers: {blocker_ids}")
+        lines.append("")
+
+    # Forced verifications — the BA's override must be visible to whoever approves in 5.5,
+    # otherwise "recorded in history" is the same as hidden.
+    forced_entries = {}
+    for h in repo.get("history", []):
+        if h.get("action") == "req_verified" and h.get("forced"):
+            forced_entries[h["req_id"]] = h
+    if forced_entries:
+        lines += [
+            "## ⚠️ Verified with force (blockers overridden by the BA)",
+            "",
+            "> The BA judged these blockers acceptable and verified anyway. "
+            "The blocker issues are still open — review before approving in 5.5.",
+            "",
+        ]
+        for req_id in sorted(forced_entries):
+            req = _find_req(repo, req_id)
+            title = req["title"] if req else "—"
+            overridden = ", ".join(forced_entries[req_id].get("overridden_blockers", []))
+            lines.append(f"- `{req_id}` — {title} | Overridden: {overridden} "
+                         f"| Date: {forced_entries[req_id].get('date', '—')}")
         lines.append("")
 
     # Open issues

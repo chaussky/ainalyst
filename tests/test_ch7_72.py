@@ -719,6 +719,69 @@ class TestMarkReqVerified(BaseMCPTest):
         self.assertIn("❌", result)
         self.assertIn("US-999", result)
 
+    # --- force: the BA's override (audit finding — SKILL promised the BA decides,
+    # but the code hard-skipped and offered no override, so the only way past a
+    # blocker was to close an unresolved issue) --------------------------------
+
+    def _blocked_project(self, pid):
+        repo = make_repo(pid, [make_us_req("US-001")])
+        save_repo(repo)
+        mod72.open_verification_issue(pid, "US-001", "missing_ac", "No AC", "blocker")
+        return pid
+
+    def test_force_verifies_over_open_blocker(self):
+        pid = self._blocked_project("proj_force1")
+        result = mod72.mark_req_verified(pid, '["US-001"]', force=True)
+        self.assertIn("FORCE", result.upper())
+        req = mod72._find_req(load_repo(pid), "US-001")
+        self.assertEqual(req["status"], "verified")
+
+    def test_force_records_the_override_in_history(self):
+        pid = self._blocked_project("proj_force2")
+        mod72.mark_req_verified(pid, '["US-001"]', force=True)
+        entries = [h for h in load_repo(pid)["history"]
+                   if h.get("action") == "req_verified" and h.get("forced")]
+        self.assertEqual(len(entries), 1)
+        self.assertTrue(entries[0]["overridden_blockers"],
+                        "the overridden blocker ids must be recorded")
+
+    def test_force_leaves_the_blocker_issue_open(self):
+        """The override must not silently 'resolve' the problem."""
+        pid = self._blocked_project("proj_force3")
+        mod72.mark_req_verified(pid, '["US-001"]', force=True)
+        data = mod72._load_issues(pid)
+        open_blockers = [i for i in data["issues"].values()
+                         if i["severity"] == "blocker" and i["status"] == "open"]
+        self.assertEqual(len(open_blockers), 1)
+
+    def test_default_still_blocks(self):
+        """force defaults to False — the gate is unchanged unless asked."""
+        pid = self._blocked_project("proj_force4")
+        result = mod72.mark_req_verified(pid, '["US-001"]')
+        self.assertIn("BLOCKED", result)
+        self.assertNotEqual(mod72._find_req(load_repo(pid), "US-001")["status"], "verified")
+
+    def test_blocked_message_points_to_force(self):
+        pid = self._blocked_project("proj_force5")
+        result = mod72.mark_req_verified(pid, '["US-001"]')
+        self.assertIn("force=true", result)
+
+    def test_report_lists_forced_verifications(self):
+        """'Recorded in history' is the same as hidden unless 5.5 can see it."""
+        pid = self._blocked_project("proj_force6")
+        mod72.mark_req_verified(pid, '["US-001"]', force=True)
+        report = mod72.get_verification_report(pid)
+        self.assertIn("force", report.lower())
+        self.assertIn("US-001", report)
+
+    def test_force_without_blockers_is_a_normal_verify(self):
+        repo = make_repo("proj_force7", [make_us_req("US-001")])
+        save_repo(repo)
+        result = mod72.mark_req_verified("proj_force7", '["US-001"]', force=True)
+        self.assertIn("✅", result)
+        entries = [h for h in load_repo("proj_force7")["history"] if h.get("forced")]
+        self.assertEqual(entries, [], "nothing was overridden, so nothing to record")
+
     def test_invalid_req_ids_json(self):
         result = mod72.mark_req_verified("proj_v6", "not-json")
         self.assertIn("❌", result)

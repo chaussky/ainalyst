@@ -131,16 +131,27 @@ Closes an issue after the BA has fixed the requirement.
 
 ---
 
-### mark_req_verified(project_id, req_ids)
+### mark_req_verified(project_id, req_ids, force=False)
 
 Changes the status `draft → verified` in the 5.1 repository.
 
-**Precondition:** MCP will check for any open blocker issues on each req.
-If a blocker exists — a warning is shown, but it does not block (the BA makes the call).
+**Precondition:** MCP checks for open blocker issues on each req. By default a req
+with an open blocker is NOT verified — it is reported as blocked.
+
+**The decision still belongs to the BA.** If you judge a blocker acceptable, pass
+`force=true`: the req is verified, the blocker issue **stays open**, and the override
+is recorded — in the repository history (with the overridden blocker ids) and in a
+dedicated section of `get_verification_report`, so whoever approves in 5.5 sees it.
+
+> Never close an unresolved issue via `resolve_verification_issue` just to move on —
+> that corrupts the verification record. Use `force` instead: it is honest and auditable.
 
 ```
 # Verify a list
 mark_req_verified(project_id="my_project", req_ids='["US-001", "US-002", "FR-001"]')
+
+# Verify despite a blocker the BA has accepted (recorded as an override)
+mark_req_verified(project_id="my_project", req_ids='["US-001"]', force=true)
 ```
 
 ---
