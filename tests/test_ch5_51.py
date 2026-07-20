@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import unittest
+from datetime import date
 from unittest.mock import patch, MagicMock
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -626,6 +627,85 @@ class TestUtils51(unittest.TestCase):
         }
         links = mod51._find_links(repo, "FR-999")
         self.assertEqual(links, [])
+
+
+class TestSatisfiesGrantsSource(BaseMCPTest):
+    """A node that satisfies something is justified BY that thing — the same rule
+    already applied to tests via `verifies`. Granting a source only for `derives`
+    false-flags two real populations: requirements linked to a 6.2 business goal
+    (7.1 per-goal traceability, ADR-082) and the `solution` nodes 6.4 pushes.
+    """
+
+    P = "satisfies_source"
+
+    def _save(self, extra_nodes, links):
+        repo = make_test_repo(self.P)
+        repo["requirements"] = [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut handling time",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+        ] + extra_nodes
+        repo["links"] = links
+        save_test_repo(repo)
+
+    def _run(self):
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod51.check_coverage(project_name=self.P)
+
+    def _orphan_section(self, result):
+        """Body of the '🔴 Requirements with no source' table only — the summary row
+        above it mentions the same words and would mask a real regression."""
+        marker = "requirements with no source"
+        low = result.lower()
+        if marker not in low:
+            return ""
+        return low.split(marker, 1)[1].split("\n## ", 1)[0]
+
+    def _edge(self, frm, to, relation="satisfies"):
+        return {"from": frm, "to": to, "relation": relation,
+                "created": str(date.today())}
+
+    def test_requirement_satisfying_a_goal_is_not_orphan(self):
+        self._save(
+            [{"id": "FR-100", "type": "functional", "title": "Auto-assign",
+              "version": "1.0", "status": "draft", "added": str(date.today()),
+              "source_artifact": ""}],
+            [self._edge("FR-100", "BG-001")],
+        )
+        self.assertNotIn("`fr-100`", self._orphan_section(self._run()))
+
+    def test_solution_node_from_64_is_not_orphan(self):
+        """6.4 pushes `SOL-001 satisfies BG-001` (ADR-082) and no derives edge, so
+        every solution node was a false orphan on any project that ran 6.4."""
+        self._save(
+            [{"id": "SOL-001", "type": "solution", "title": "Phased rollout",
+              "version": "1.0", "status": "draft", "added": str(date.today()),
+              "source_artifact": ""}],
+            [self._edge("SOL-001", "BG-001")],
+        )
+        self.assertNotIn("`sol-001`", self._orphan_section(self._run()))
+
+    def test_node_with_no_upward_edge_is_still_orphan(self):
+        """The rule must not degenerate into 'everything has a source'."""
+        self._save(
+            [{"id": "FR-200", "type": "functional", "title": "Unlinked",
+              "version": "1.0", "status": "draft", "added": str(date.today()),
+              "source_artifact": ""}],
+            [],
+        )
+        self.assertIn("`fr-200`", self._orphan_section(self._run()))
+
+    def test_being_the_target_of_satisfies_does_not_grant_a_source(self):
+        """Direction matters: from=implementer -> to=implemented. The GOAL is the
+        target, so it must not inherit a source from the requirement pointing at it."""
+        self._save(
+            [{"id": "FR-300", "type": "functional", "title": "Auto-assign",
+              "version": "1.0", "status": "draft", "added": str(date.today()),
+              "source_artifact": ""}],
+            [self._edge("FR-300", "BG-001")],
+        )
+        self.assertIn("`bg-001`", self._orphan_section(self._run()))
 
 
 if __name__ == "__main__":

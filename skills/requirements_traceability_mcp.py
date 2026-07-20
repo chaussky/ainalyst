@@ -541,7 +541,7 @@ def check_coverage(
     BABOK 5.1 — Traceability coverage audit. Finds orphan requirements and gaps.
 
     What it looks for:
-      🔴 Orphan with no source — no derives link upward (no business justification)
+      🔴 Orphan with no source — no derives/satisfies link upward (no business justification)
       🟡 No implementation     — no derives/satisfies link downward (not implemented)
       🟡 No test               — no verifies link (not verified)
       🟢 Full coverage         — has source + implementation + test
@@ -579,12 +579,17 @@ def check_coverage(
 
         links = _find_links(repo, req_id)
 
-        # Canonical derives direction: from=child -> to=parent (the child derives
-        # from its source). So a requirement HAS a source when it is the `from`
-        # of a derives link, and HAS an implementation when something derives from
-        # it (children point in as `to`) or a component satisfies it.
+        # A node HAS a source when it points UPWARD at something: it derives from a
+        # parent, or it satisfies a goal/requirement. Both relations share the canonical
+        # direction from=child/implementer -> to=parent/implemented, so the node is the
+        # `from` in either case. (`verifies` gets the same treatment for tests below.)
+        # Counting only `derives` false-flags two real populations: a 7.1 requirement
+        # linked to a 6.2 business goal (ADR-082) and the `solution` nodes 6.4 pushes,
+        # neither of which ever has a derives edge.
+        # HAS an implementation when something derives from it (children point in as
+        # `to`) or something satisfies it.
         has_source = any(
-            lnk["relation"] == "derives" and lnk["from"] == req_id
+            lnk["relation"] in ("derives", "satisfies") and lnk["from"] == req_id
             for lnk in links
         )
         has_impl = any(
@@ -666,7 +671,7 @@ def check_coverage(
         lines += [
             "## 🔴 Requirements with no source (orphan)",
             "",
-            "> **Diagnosis:** no `derives` link upward. Unknown which business need it came from.",
+            "> **Diagnosis:** no `derives` or `satisfies` link upward. Unknown which business need or objective it came from.",
             "> **Action:** find a business justification via `add_trace_link`, or freeze it.",
             "",
             "| ID | Type | Title | Status |",
@@ -695,7 +700,7 @@ def check_coverage(
         lines.append("")
 
         lines += [
-            "> **No implementation:** add a `satisfies` link (component) or a `derives` link (child requirement)",
+            "> **No implementation:** add a `satisfies` link (a component or requirement that implements it) or a `derives` link (child requirement)",
             "> **No test:** add a `verifies` link (test case)",
             "",
         ]
