@@ -361,12 +361,18 @@ def _derive_page_title(project_id: str, path: str) -> str:
     `endswith` rather than a substring test: a project literally named "state" would
     match "6_1_current_state_..." by accident and silently lose its prefix. Every real
     producer puts the project id last, so this covers all actual cases.
+
+    The NORMALIZED id is used in the title, not the raw one. `report_dir_for` normalizes,
+    so "CRM Upgrade" and "crm_upgrade" resolve to the SAME file — but prepending the raw
+    string produced two different titles for it, i.e. two Confluence pages for one
+    artifact. The whole point of deriving the title from the filename is a page identity
+    that stays put across sessions, and `project_id` is written by the model.
     """
     stem = _strip_timestamp(path)
     norm = normalize_project_id(project_id)
     if norm and stem.lower().endswith("_" + norm):
         stem = stem[: -(len(norm) + 1)]
-    return f"{project_id} — {_humanize_stem(stem)}"
+    return f"{norm or project_id} — {_humanize_stem(stem)}"
 
 
 def _artifact_roots(project_id: str) -> list:
@@ -891,8 +897,24 @@ def publish_artifact_to_confluence(
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
+    except UnicodeDecodeError as e:
+        # UnicodeDecodeError is a ValueError, NOT an OSError, so it escaped the guard
+        # below and left the tool as a protocol error. Reachable: a file a person
+        # dropped into reports/, or the RU fork where the console default is cp1251.
+        return (
+            f"❌ `{path}` is not valid UTF-8 ({e.reason} at byte {e.start}). "
+            f"Re-save the file as UTF-8 and publish again."
+        )
     except OSError as e:
         return f"❌ Could not read `{path}`: {e}"
+
+    if not content.strip():
+        # Publication is irreversible and this would blank an existing wiki page while
+        # reporting success — the same reasoning that justifies the containment check.
+        return (
+            f"❌ `{path}` is empty — nothing to publish. Publishing it would replace "
+            f"the existing page with a blank one."
+        )
 
     title = page_title or _derive_page_title(project_id, path)
 
@@ -950,14 +972,26 @@ def export_artifact_to_confluence(
 
         parent_id = None
         if parent_page_title:
-            parent = confluence.get_page_by_title(space=space, title=parent_page_title)
-            if parent:
-                parent_id = parent.get("id")
+            parent = _normalize_search_hit(
+                confluence.get_page_by_title(space=space, title=parent_page_title))
+            parent_id = (parent or {}).get("id")
+            if not parent_id:
+                # Silently creating at the space root while answering "success" tells
+                # the BA the page is filed where they asked. `push_to_confluence`
+                # refuses the same input; the two publish paths must agree.
+                return {"status": "error", "message":
+                        f"Parent page '{parent_page_title}' not found in space "
+                        f"'{space}'. Check the title, or publish without a parent."}
 
-        existing = confluence.get_page_by_title(space=space, title=page_title)
-        if existing:
+        # The response shape is not uniform — a search hit wraps the page under
+        # `content` on one endpoint and returns it flat on another. Indexing ["id"]
+        # bare surfaced as an unactionable "Publication failed: 'id'".
+        existing = _normalize_search_hit(
+            confluence.get_page_by_title(space=space, title=page_title))
+        existing_id = (existing or {}).get("id")
+        if existing_id:
             result = confluence.update_page(
-                page_id=existing["id"], title=page_title,
+                page_id=existing_id, title=page_title,
                 body=html_content, parent_id=parent_id,
             )
             operation = "updated"
@@ -967,6 +1001,14 @@ def export_artifact_to_confluence(
                 body=html_content, parent_id=parent_id,
             )
             operation = "created"
+
+        if not result:
+            # An empty response means nothing was written; reporting success would
+            # send the BA to a page that does not exist. Same guard push_to_confluence
+            # already applies.
+            return {"status": "error", "message":
+                    "Confluence returned an empty response. Check permissions on space "
+                    f"'{space}' and that the account may create or edit pages."}
 
         # `operation` tells the caller whether a living page was overwritten.
         # Additive and inert for existing consumers: _export_hook and its four call

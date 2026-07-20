@@ -1244,14 +1244,31 @@ class TestPublishArtifactToConfluence(BaseMCPTest):
             return confluence_mod.publish_artifact_to_confluence(**{**defaults, **kwargs})
 
     def test_publishes_the_file_content_verbatim(self):
-        """The point of the feature: the artifact never passes through the model."""
+        """The point of the feature: the artifact never passes through the model.
+
+        Asserted BYTE FOR BYTE, by spying on the converter's input. Checking that a
+        substring survived HTML conversion would still pass if a generative step were
+        reintroduced and rewrote everything around it — the test name would then be
+        claiming more than the test checks.
+        """
         body = "# Recommendation\n\nPick option B. Cost < $2 & risk low.\n"
-        self._write_artifact(content=body)
+        path = self._write_artifact(content=body)
         mock_client = _make_mock_confluence(page_exists=False)
-        result = self._publish(mock_client)
+
+        captured = {}
+        real_converter = confluence_mod._markdown_to_confluence_storage
+
+        def spy(md):
+            captured["markdown"] = md
+            return real_converter(md)
+
+        with patch.object(confluence_mod, "_markdown_to_confluence_storage", spy):
+            result = self._publish(mock_client)
+
         self.assertIn("✅", result)
-        sent = mock_client.create_page.call_args.kwargs["body"]
-        self.assertIn("Pick option B", sent)
+        with open(path, encoding="utf-8") as f:
+            on_disk = f.read()
+        self.assertEqual(captured["markdown"], on_disk)
 
     def test_derived_title_is_used(self):
         self._write_artifact()
@@ -1323,3 +1340,87 @@ class TestExportHelperOperationKey(BaseMCPTest):
             )
         self.assertEqual(hook["status"], "synced")
         self.assertIn("url", hook)
+
+
+class TestPublishFailureEdges(BaseMCPTest):
+    """Every case here used to end in `✅` for something that had not happened, or in
+    an exception escaping the tool as a protocol error."""
+
+    PID = "a4proj"
+
+    def _write(self, filename, content, encoding="utf-8"):
+        path = os.path.join("governance_plans", "reports", self.PID, filename)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding=encoding) as f:
+            f.write(content)
+        return path
+
+    def _publish(self, mock_client, **kwargs):
+        defaults = {"project_id": self.PID, "artifact": "7_6_recommendation",
+                    "space_key": "BA"}
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            return confluence_mod.publish_artifact_to_confluence(**{**defaults, **kwargs})
+
+    def test_non_utf8_artifact_returns_an_error_not_an_exception(self):
+        """UnicodeDecodeError is a ValueError, not an OSError, so it escaped the read
+        guard. Reachable: a file a person dropped in, or a cp1251 console default."""
+        self._write("7_6_recommendation_20260720_101010.md",
+                    "# Отчёт\n\nРекомендация.\n", encoding="cp1251")
+        mock_client = _make_mock_confluence(page_exists=False)
+        result = self._publish(mock_client)
+        self.assertIn("❌", result)
+        self.assertIn("UTF-8", result)
+        mock_client.create_page.assert_not_called()
+
+    def test_empty_artifact_is_refused(self):
+        """Publishing it would blank an existing wiki page while reporting success,
+        and publication is irreversible."""
+        self._write("7_6_recommendation_20260720_101010.md", "   \n")
+        mock_client = _make_mock_confluence(page_exists=True)
+        result = self._publish(mock_client)
+        self.assertIn("❌", result)
+        mock_client.update_page.assert_not_called()
+
+    def test_title_uses_the_normalized_project_id(self):
+        """report_dir_for normalizes, so two casings resolve to ONE file — but the raw
+        id in the title made them two Confluence pages for one artifact."""
+        self._write("7_6_recommendation_20260720_101010.md", "# R\n\nBody.\n")
+        titles = set()
+        for pid in ("a4proj", "A4Proj"):
+            mock_client = _make_mock_confluence(page_exists=False)
+            self._publish(mock_client, project_id=pid)
+            titles.add(mock_client.create_page.call_args.kwargs["title"])
+        self.assertEqual(len(titles), 1, f"one artifact must map to one page: {titles}")
+
+    def test_missing_parent_page_is_refused_not_ignored(self):
+        """It used to create the page at the space root and answer ✅ — telling the BA
+        the page was filed where they asked. push_to_confluence refuses the same input."""
+        self._write("7_6_recommendation_20260720_101010.md", "# R\n\nBody.\n")
+        mock_client = _make_mock_confluence(page_exists=False)
+        mock_client.get_page_by_title.return_value = None
+        result = self._publish(mock_client, parent_page_title="No Such Parent")
+        self.assertIn("❌", result)
+        mock_client.create_page.assert_not_called()
+
+    def test_empty_api_response_is_not_reported_as_success(self):
+        self._write("7_6_recommendation_20260720_101010.md", "# R\n\nBody.\n")
+        mock_client = _make_mock_confluence(page_exists=False)
+        mock_client.create_page.return_value = None
+        result = self._publish(mock_client)
+        self.assertIn("❌", result)
+
+    def test_search_hit_shape_is_normalized(self):
+        """`rest/api/search` wraps the page under `content`; indexing ["id"] bare
+        surfaced as an unactionable "Publication failed: 'id'"."""
+        self._write("7_6_recommendation_20260720_101010.md", "# R\n\nBody.\n")
+        mock_client = _make_mock_confluence(page_exists=True)
+        mock_client.get_page_by_title.return_value = {
+            "content": {"id": "999", "title": "Test",
+                        "_links": {"webui": "/pages/999"}},
+            "lastModified": "2026-03-30T10:00:00Z",
+        }
+        result = self._publish(mock_client)
+        self.assertNotIn("❌", result)
+        self.assertEqual(mock_client.update_page.call_args.kwargs["page_id"], "999")
