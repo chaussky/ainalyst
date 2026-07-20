@@ -15,7 +15,10 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 ## When to use this skill
 
 Use this skill when:
-- Requirements have been verified (passed 4.3) and are ready for formal sign-off
+- Requirements have been verified (passed 7.2 `mark_req_verified`) and are ready for formal
+  sign-off. This is reported, not enforced: `prepare_approval_package` warns about unverified
+  requirements and `create_requirements_baseline` records them in the Approval Record, but
+  neither blocks — the decision stays with the BA
 - Stakeholder approval is needed before handoff to development
 - An official Requirements Baseline needs to be created
 - A stakeholder issued a conditional approval and the condition needs to be closed
@@ -27,7 +30,8 @@ Use this skill when:
 
 | Source | What we take |
 |----------|-----------|
-| 4.3 (Confirm Elicitation) | Verified requirements |
+| 7.2 (Verify Requirements) | Verification evidence (`req_verified` in the repository history) |
+| 4.3 (Confirm Elicitation) | Confirmed elicitation results (context) |
 | 5.1 (Trace Requirements) | Traceability matrix, requirement statuses |
 | 5.2 (Maintain Requirements) | Versions, change history, stability |
 | 5.3 (Prioritize Requirements) | Priorities: Must/Should/Could/Won't, WSJF |
@@ -143,7 +147,7 @@ Called once per stakeholder (analogous to add_stakeholder_scores in 5.3).
 
 ### Scenario 1: Predictive — baseline at the end of the phase
 
-1. Get the list of verified requirements from 4.3
+1. Get the list of requirements verified in 7.2 (`get_verification_report`)
 2. **`prepare_approval_package`** — assemble the package, `approach=predictive`, `audience=all`
 3. Send the package to stakeholders (via 4.4 `prepare_communication_package`)
 4. After each response: **`record_approval_decision`**
@@ -175,7 +179,7 @@ Called once per stakeholder (analogous to add_stakeholder_scores in 5.3).
 
 | Status | Meaning |
 |--------|----------|
-| `verified` | Passed quality checks (4.3), ready for approval |
+| `verified` | Passed quality checks (7.2), ready for approval |
 | `pending_approval` | Sent for approval, awaiting response |
 | `approved` | Officially approved, ready for development |
 | `conditional_approved` | Approved with a condition (condition open) |
@@ -187,7 +191,8 @@ Called once per stakeholder (analogous to add_stakeholder_scores in 5.3).
 ## Relationship to other tasks
 
 **Depends on:**
-- 4.3 → verified requirements (mandatory input)
+- 7.2 → verification evidence (`req_verified` in the repository history) — reported, not mandatory
+- 4.3 → confirmed elicitation results (context)
 - 5.1 → traceability repository
 - 5.2 → requirement statuses and versions
 - 5.3 → priorities (context for conflict analysis)

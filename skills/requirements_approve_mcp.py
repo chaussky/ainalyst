@@ -15,7 +15,8 @@ Storage:
   - Approval Record: saved via save_artifact
 
 Integration:
-  In:  5.1 repository (graph+statuses), 5.3 priorities, 5.4 CR Records, 4.2 stakeholders
+  In:  5.1 repository (graph+statuses), 5.3 priorities, 5.4 CR Records, 4.2 stakeholders,
+       7.2 verification evidence (req_verified in the repository history — reported, not gated)
   Out: Approval Record → 4.4 (communication), Chapter 6 (development)
        approved statuses in the 5.1 repository
 
