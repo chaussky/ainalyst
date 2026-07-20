@@ -1154,6 +1154,9 @@ def create_requirements_baseline(
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
 
+    # 7.2 verification — reported in the record, never gated (see `_verification_state`).
+    vstate = _verification_state(repo, package)
+
     # Readiness gate — the SAME predicate check_approval_status renders, so the
     # dashboard's "Ready / Not ready" verdict is the real contract. force=True is
     # the deliberate override.
@@ -1298,6 +1301,38 @@ def create_requirements_baseline(
             "",
             "> Conditions must be closed via `close_approval_condition` "
             "and recorded in the next baseline.",
+        ]
+
+    if not vstate["known"]:
+        record_lines += [
+            "",
+            "---",
+            "",
+            "## ⚪ 7.2 verification: unknown",
+            "",
+            "This package was created before the verification check existed, so whether "
+            "these requirements passed 7.2 cannot be determined from the record.",
+        ]
+    elif vstate["unverified"]:
+        ids_str = ", ".join(f"`{rid}`" for rid in vstate["unverified"])
+        record_lines += [
+            "",
+            "---",
+            "",
+            "## ⚠️ Baselined without 7.2 verification",
+            "",
+            f"These requirements were approved without passing verification (7.2): {ids_str}",
+            "",
+            "> Approval is a stakeholder decision; verification is a quality check. "
+            "> These requirements carry an unmeasured quality risk into the baseline.",
+        ]
+
+    if vstate["forced"]:
+        forced_str = ", ".join(f"`{rid}`" for rid in vstate["forced"])
+        record_lines += [
+            "",
+            f"**Verified with override** (7.2 blockers were open and deliberately "
+            f"overridden): {forced_str}",
         ]
 
     record_lines += [

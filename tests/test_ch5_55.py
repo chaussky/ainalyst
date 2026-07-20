@@ -1274,6 +1274,72 @@ class TestDashboardVerificationLine(BaseMCPTest):
         self.assertIn("Ready for baseline", out)
 
 
+class TestApprovalRecordVerificationSection(BaseMCPTest):
+
+    def _approve_and_baseline(self, repo_factory, force=False):
+        repo_factory(self.tmp_dir)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001", "FR-002"]', approach="predictive",
+        )
+        record_approval_decision(
+            project_name=PROJECT, package_id="APKG-001", stakeholder_name="Sponsor",
+            stakeholder_raci="accountable", decision="approved",
+        )
+        return create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Sponsor", force=force,
+        )
+
+    def _record_content(self):
+        """conftest mocks save_artifact — the artifact text is in call_args, not on disk."""
+        from skills.requirements_approve_mcp import save_artifact
+        return save_artifact.call_args[0][0]
+
+    def test_unverified_reqs_land_in_the_approval_record(self):
+        self._approve_and_baseline(_make_repo_unverified)
+        content = self._record_content()
+        self.assertIn("Baselined without 7.2 verification", content)
+        self.assertIn("FR-001", content)
+        self.assertIn("FR-002", content)
+
+    def test_fully_verified_record_has_no_such_section(self):
+        self._approve_and_baseline(_make_repo_with_verified)
+        content = self._record_content()
+        self.assertNotIn("Baselined without 7.2 verification", content)
+
+    def test_baseline_is_not_blocked_by_missing_verification(self):
+        """GLOBAL CONSTRAINT: report-only. force must NOT be needed."""
+        out = self._approve_and_baseline(_make_repo_unverified, force=False)
+        self.assertIn("Requirements Baseline created", out)
+        self.assertNotIn("Baseline blocked", out)
+
+    def test_forced_verification_is_recorded_distinctly(self):
+        repo = _make_repo_unverified(self.tmp_dir)
+        repo["history"] = [
+            {"action": "req_verified", "req_id": "FR-001", "forced": True,
+             "overridden_blockers": ["VI-001"]},
+            {"action": "req_verified", "req_id": "FR-002"},
+        ]
+        save_test_repo(repo)
+        prepare_approval_package(
+            project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
+            req_ids_json='["FR-001", "FR-002"]', approach="predictive",
+        )
+        record_approval_decision(
+            project_name=PROJECT, package_id="APKG-001", stakeholder_name="Sponsor",
+            stakeholder_raci="accountable", decision="approved",
+        )
+        create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Sponsor",
+        )
+        content = self._record_content()
+        self.assertIn("verified with override", content.lower())
+        self.assertIn("FR-001", content)
+        self.assertNotIn("Baselined without 7.2 verification", content)
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
