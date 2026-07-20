@@ -235,6 +235,47 @@ def safe_filename_part(part: str) -> str:
     return cleaned or "artifact"
 
 
+# ---------------------------------------------------------------------------
+# Verification evidence (7.2) — shared by 5.5 and 7.3
+# ---------------------------------------------------------------------------
+
+def has_passed_verification(repo: dict, req_id: str) -> bool:
+    """True if the requirement has passed 7.2 verification.
+
+    Reads the DURABLE record, not the snapshot. `status` is a single field shared
+    across chapters (draft -> verified -> pending_approval -> approved), so both 5.5
+    and 7.2 overwrite `verified` and the evidence disappears from the node. The
+    lasting proof is the `req_verified` entry 7.2 appends to repo["history"].
+
+    The union with the current status covers legacy repositories written before 7.2
+    started recording history.
+
+    A forced verification (B1) still counts: force=true is a recorded BA decision,
+    not the absence of one. Use `was_verification_forced` to report it separately.
+    """
+    for entry in repo.get("history", []):
+        if entry.get("action") == "req_verified" and entry.get("req_id") == req_id:
+            return True
+    for req in repo.get("requirements", []):
+        if req.get("id") == req_id and req.get("status") == "verified":
+            return True
+    return False
+
+
+def was_verification_forced(repo: dict, req_id: str) -> bool:
+    """True if the requirement was verified with force=true over open blockers.
+
+    Only the history record can tell — a legacy status-only repository has no
+    override information, and reports False.
+    """
+    for entry in repo.get("history", []):
+        if (entry.get("action") == "req_verified"
+                and entry.get("req_id") == req_id
+                and entry.get("forced")):
+            return True
+    return False
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 
