@@ -611,6 +611,54 @@ class TestCh3AuditRegressions(BaseMCPTest):
         result = save_ba_plan("nothing_here")
         self.assertIn("⚠️", result)
 
+    # --- the report dropped data the tools had collected -------------------
+
+    def _full_plan(self, project_id="report_content"):
+        suggest_ba_approach(project_id, "High", "High", ba_notes="APPROACH NOTE")
+        plan_stakeholder_engagement(project_id, json.dumps([
+            {"name": "Jane Doe", "role": "Sponsor", "influence": "High", "interest": "High"}]))
+        plan_ba_governance(project_id, "High", '["Sponsor", "PO"]',
+                           ba_notes="GOVERNANCE NOTE")
+        plan_information_management(project_id, '["Confluence"]',
+                                    artifact_types_json='["BRD", "User Story"]',
+                                    ba_notes="INFO NOTE")
+        evaluate_ba_performance(project_id, current_issues_json='["scope creep"]',
+                                ba_notes="PERF NOTE")
+        return project_id
+
+    def _report_text(self, project_id):
+        """save_artifact is mocked by conftest, so read the content it was handed."""
+        with patch("skills.planning_mcp.save_artifact") as mock_save:
+            save_ba_plan(project_id)
+        return mock_save.call_args[0][0]
+
+    def test_report_keeps_ba_notes_from_every_section(self):
+        """Was: all four ba_notes were stored in JSON and never rendered, so the
+        BA's own agreements vanished from the deliverable."""
+        report = self._report_text(self._full_plan())
+        for note in ("APPROACH NOTE", "GOVERNANCE NOTE", "INFO NOTE", "PERF NOTE"):
+            self.assertIn(note, report, f"{note} missing from the BA Plan report")
+
+    def test_report_keeps_artifact_types(self):
+        """Was: 3.4 stored artifact_types and echoed them in its own output, but the
+        report's 3.4 section omitted them entirely."""
+        report = self._report_text(self._full_plan())
+        self.assertIn("BRD", report)
+        self.assertIn("User Story", report)
+
+    def test_report_omits_notes_block_when_empty(self):
+        """No empty '> **BA notes:**' lines when the BA left them blank."""
+        plan_ba_governance("no_notes", "Low", '["Lead BA"]')
+        report = self._report_text("no_notes")
+        self.assertNotIn("BA notes", report)
+
+    def test_finalize_does_not_promise_automatic_handoff(self):
+        """The tool used to tell the BA governance was 'passed automatically' to 5.5,
+        but no module outside planning_mcp reads ba_plan.json."""
+        result = save_ba_plan(self._full_plan("promise_check"))
+        self.assertNotIn("automatically\n", result)
+        self.assertIn("update_stakeholder_registry", result)
+
 
 class TestSaveBaPlan(BaseMCPTest):
 

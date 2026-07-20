@@ -14,8 +14,15 @@ Storage:
   - {project}_ba_plan_*.md        — Markdown report (via save_artifact)
 
 Integration:
-  Output: ba_plan.json → used in 4.x (stakeholder_registry),
-         7.3 (business_context), 5.5 (governance for approval)
+  Output: ba_plan.json — the record of the plan, read back by this module only.
+  ⚠️ NOT yet consumed programmatically by any other chapter. In particular:
+    - 4.2 builds its own {project}_stakeholder_registry.json (the file 7.4 reads);
+      the 3.2 Power/Interest map does NOT seed it — stakeholders are entered again.
+    - 5.5 does not read the 3.3 governance section; approval authority and deadlines
+      are applied by the BA, not automatically.
+    - 7.3 takes its business context from 6.1/6.2, not from this plan.
+  Wiring these seams is a planned feature, not current behavior — do not promise
+  it to the BA in tool output.
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -607,6 +614,16 @@ def save_ba_plan(
             "Complete steps 3.1-3.5 before saving the report."
         )
 
+    def _notes_block(section: dict) -> list:
+        """Renders the BA's own notes for a section.
+
+        Every 3.x tool collects `ba_notes` ("additional agreements", "additional
+        context"). Dropping them from the report loses context the BA deliberately
+        recorded — the report is the deliverable, the JSON is not.
+        """
+        note = str(section.get("ba_notes", "") or "").strip()
+        return [f"> **BA notes:** {note}", ""] if note else []
+
     md_lines = [
         f"# BA Plan — {project_id}",
         f"**Date:** {date.today()}",
@@ -628,6 +645,7 @@ def save_ba_plan(
             f"| BABOK techniques | {', '.join(approach.get('techniques', []))} |",
             "",
         ]
+        md_lines += _notes_block(approach)
 
     if engagement:
         stakeholders = engagement.get("stakeholders", [])
@@ -657,6 +675,7 @@ def save_ba_plan(
             f"| Escalation | {governance.get('escalation_path', '')} |",
             "",
         ]
+        md_lines += _notes_block(governance)
 
     if info_mgmt:
         md_lines += [
@@ -665,8 +684,12 @@ def save_ba_plan(
             f"- **Tools:** {', '.join(info_mgmt.get('storage_tools', []))}",
             f"- **Traceability:** {info_mgmt.get('traceability_level', '')} — {info_mgmt.get('traceability_description', '')}",
             f"- **Access:** {info_mgmt.get('access_rules', '')}",
-            "",
         ]
+        artifact_types = info_mgmt.get("artifact_types", [])
+        if artifact_types:
+            md_lines.append(f"- **Artifact types:** {', '.join(artifact_types)}")
+        md_lines.append("")
+        md_lines += _notes_block(info_mgmt)
 
     if performance:
         recs = performance.get("recommendations", [])
@@ -683,6 +706,7 @@ def save_ba_plan(
                 else:
                     md_lines.append(f"- {m}")
             md_lines.append("")
+        md_lines += _notes_block(performance)
 
     md_content = "\n".join(md_lines)
     artifact_result = save_artifact(md_content, f"3_ba_plan_{_safe(project_id)}", project_id=project_id)
@@ -696,11 +720,15 @@ def save_ba_plan(
     return (
         f"✅ BA plan finalized\n\n"
         f"  Project: {project_id}\n"
-        f"  📄 JSON (for 4.x, 5.5): `{json_path}`\n"
+        f"  📄 JSON (plan record): `{json_path}`\n"
         f"  {artifact_result}\n\n"
         f"**Next step:**\n"
-        f"• Chapter 4.1 — prepare for elicitation (stakeholder registry ready)\n"
-        f"• Chapter 5.5 — governance context is passed automatically\n"
+        f"• Chapter 4.1 — prepare for elicitation\n\n"
+        f"ℹ️ The plan is a reference document: later chapters do not read it "
+        f"automatically.\n"
+        f"  • Stakeholders from 3.2 need to be entered into the working registry via "
+        f"`update_stakeholder_registry` (4.2)\n"
+        f"  • The governance rules from 3.3 are applied by you when approving in 5.5\n"
     )
 
 
