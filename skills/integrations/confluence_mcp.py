@@ -97,6 +97,40 @@ def _get_confluence_client():
         return None, f"❌ Failed to initialize the Confluence client: {e}"
 
 
+def _markdown_tables_to_html(text: str) -> str:
+    """Converts pipe tables to XHTML for the no-markdown2 fallback.
+
+    Every BABOK artifact this integration publishes is table-heavy, so leaving raw
+    pipes would ship an unreadable page. Runs on already-escaped text.
+    """
+    out = []
+    rows = []
+
+    def flush():
+        if not rows:
+            return
+        body = []
+        for i, cells in enumerate(rows):
+            tag = "th" if i == 0 else "td"
+            body.append("<tr>" + "".join(f"<{tag}>{c}</{tag}>" for c in cells) + "</tr>")
+        out.append("<table><tbody>" + "".join(body) + "</tbody></table>")
+        rows.clear()
+
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("|") and stripped.endswith("|") and len(stripped) > 1:
+            cells = [c.strip() for c in stripped[1:-1].split("|")]
+            # the |---|---| separator row carries no data
+            if all(re.fullmatch(r':?-{2,}:?', c or "") for c in cells):
+                continue
+            rows.append(cells)
+        else:
+            flush()
+            out.append(line)
+    flush()
+    return "\n".join(out)
+
+
 def _markdown_to_confluence_storage(markdown_text: str) -> str:
     """
     Converts Markdown → Confluence Storage Format (XHTML-like).
@@ -112,13 +146,18 @@ def _markdown_to_confluence_storage(markdown_text: str) -> str:
             extras=["tables", "fenced-code-blocks", "header-ids"]
         )
     except ImportError:
-        html = text
+        # Fallback when markdown2 is missing. Confluence storage format is strict
+        # XHTML, so '&' and '<' MUST be escaped first — an NFR like "response < 2s"
+        # or any '&' in the text otherwise makes the body invalid XML and Confluence
+        # rejects the whole request with a 400. markdown2 does this itself.
+        html = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
         html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
         html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
         html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
         html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
         html = re.sub(r'`([^`]+)`', r'<code>\1</code>', html)
+        html = _markdown_tables_to_html(html)
         paragraphs = html.split('\n\n')
         html = ''.join(
             f'<p>{p.strip()}</p>' if not p.strip().startswith('<') else p

@@ -708,6 +708,13 @@ def compare_strategy_options(
             Format: {"OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 3, "cost": 3,
                                  "time_to_value": 4, "org_readiness_fit": 3, "feasibility": 4}}
             OPT-000 (do_nothing) should be included for a correct comparison.
+            ⚠️ SCORING DIRECTION — 5 is ALWAYS the best outcome, on EVERY criterion.
+            All weights are positive and the score is a weighted average, so a
+            "bad is high" reading would silently invert the winner. For the criteria
+            where that is counter-intuitive, score the OUTCOME, not the magnitude:
+              • cost            — 5 = cheapest        (NOT "costs the most")
+              • risk_mitigation — 5 = risk best handled (NOT "riskiest")
+              • time_to_value   — 5 = fastest payback (NOT "takes longest")
         opportunity_cost: What we give up by choosing the winner over the rest (required text)
         weights_json: Optional — override the default criteria weights.
             The sum of all weights (including custom ones) must be 100.

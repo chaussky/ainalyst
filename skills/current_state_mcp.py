@@ -905,6 +905,16 @@ def check_current_state_completeness(
         f"**Readiness:** {readiness_pct}%  ",
         f"**Date:** {date.today()}",
         "",
+        # The percentage counts coverage (elements filled + RCA + needs present); the
+        # verdict additionally requires those pieces to be LINKED. Both can therefore be
+        # true at once — 100% with "not ready" — and that used to read like a bug.
+        ("> ℹ️ **Readiness % measures coverage, the verdict measures coherence.** "
+         "The percentage counts what has been filled in; the verdict also requires the "
+         "pieces to connect (e.g. a business need traced to a root cause). "
+         "100% with a 🔴 verdict means everything is written down but something is not "
+         "linked yet — see the warnings below."
+         if readiness_pct == 100 and not ready else ""),
+        "",
         "## Current-state elements",
         "",
         f"| Status | Count |",

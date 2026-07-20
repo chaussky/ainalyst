@@ -124,7 +124,10 @@ def save_elicitation_plan(
 {expected_outcomes}
 """
 
-    suffix = save_artifact(content, f"Elicitation_Plan_{project_name.replace(' ', '_')}", project_id=project_name)
+    # Numbered prefix like every other chapter; project_id is the FOLDER, so repeating
+    # the project name in the filename is redundant (and was the shape that misled the
+    # 7.1 consumer into globbing for a pid that the filename never carries).
+    suffix = save_artifact(content, "4_1_elicitation_plan", project_id=project_name)
     return f"✅ Elicitation plan saved.{suffix}"
 
 

@@ -156,6 +156,81 @@ def _compute_req_status(req_id: str, package: dict) -> str:
     return STATUS_PENDING
 
 
+MIN_APPROVED_PCT = 70
+
+
+def _baseline_gate(package: dict) -> dict:
+    """THE readiness predicate for a baseline — the single source of truth.
+
+    Used by BOTH `check_approval_status` (which renders the "Ready / Not ready"
+    verdict) and `create_requirements_baseline` (which enforces it). These two used
+    to compute readiness separately and had already drifted: the dashboard applied
+    four gates, creation only two, so a package the dashboard called "🔴 Not ready"
+    could still be baselined — in the worst case producing an EMPTY baseline with no
+    warning. Any change to what "ready" means belongs here, once.
+
+    Returns the raw facts; callers do their own formatting.
+    """
+    req_ids = package.get("req_ids", [])
+    statuses = {rid: _compute_req_status(rid, package) for rid in req_ids}
+
+    counts = {STATUS_APPROVED: 0, STATUS_CONDITIONAL: 0, STATUS_REJECTED: 0, STATUS_PENDING: 0}
+    for status in statuses.values():
+        counts[status] = counts.get(status, 0) + 1
+
+    total = len(req_ids)
+    approved_pct = round(counts[STATUS_APPROVED] / total * 100) if total else 0
+
+    ar_rejections = []
+    open_conditions = []
+    overdue_conditions = []
+    today = date.today()
+
+    for sh_name, sh_data in package.get("stakeholder_decisions", {}).items():
+        raci = sh_data.get("raci", "consulted")
+        for rd in sh_data.get("req_decisions", []):
+            if rd["decision"] == "rejected" and raci in ("accountable", "responsible"):
+                ar_rejections.append({
+                    "req_id": rd["req_id"],
+                    "stakeholder": sh_name,
+                    "raci": raci,
+                    "reason": rd.get("rejection_reason", "—"),
+                })
+            if rd["decision"] == "conditional" and not rd.get("condition_closed"):
+                entry = {
+                    "req_id": rd["req_id"],
+                    "stakeholder": sh_name,
+                    "condition_text": rd.get("condition_text", "—"),
+                    "condition_deadline": rd.get("condition_deadline", ""),
+                    "condition_owner": rd.get("condition_owner", "—"),
+                }
+                open_conditions.append(entry)
+                if rd.get("condition_deadline"):
+                    try:
+                        if date.fromisoformat(rd["condition_deadline"]) < today:
+                            entry["overdue"] = True
+                            overdue_conditions.append(entry)
+                    except ValueError:
+                        pass
+
+    pending_reqs = [rid for rid in req_ids if statuses[rid] == STATUS_PENDING]
+    # An empty approved set is 0% and is therefore blocked by this same rule.
+    low_approval = approved_pct < MIN_APPROVED_PCT
+
+    return {
+        "statuses": statuses,
+        "counts": counts,
+        "total": total,
+        "approved_pct": approved_pct,
+        "ar_rejections": ar_rejections,
+        "pending_reqs": pending_reqs,
+        "open_conditions": open_conditions,
+        "overdue_conditions": overdue_conditions,
+        "low_approval": low_approval,
+        "can_baseline": not (ar_rejections or pending_reqs or overdue_conditions or low_approval),
+    }
+
+
 def _get_cr_context(repo: dict, req_id: str) -> list:
     """Looks for CRs affecting the requirement (modifies links)."""
     cr_refs = []
@@ -797,82 +872,34 @@ def check_approval_status(
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
 
-    # Gather the statuses of all requirements
-    req_statuses = {}
-    for rid in req_ids:
-        node = _find_node(repo, rid)
-        current_status = node.get("status", STATUS_PENDING) if node else STATUS_PENDING
-        computed_status = _compute_req_status(rid, package)
-        req_statuses[rid] = computed_status
+    gate = _baseline_gate(package)
+    req_statuses = gate["statuses"]
+    counts = gate["counts"]
+    total = gate["total"]
+    approved_pct = gate["approved_pct"]
 
-    # Statistics
-    counts = {
-        STATUS_APPROVED: 0,
-        STATUS_CONDITIONAL: 0,
-        STATUS_REJECTED: 0,
-        STATUS_PENDING: 0,
-    }
-    for status in req_statuses.values():
-        counts[status] = counts.get(status, 0) + 1
-
-    total = len(req_ids)
-    approved_pct = round(counts[STATUS_APPROVED] / total * 100) if total else 0
-
-    # Blockers: rejected from accountable/responsible
+    # Blockers: rejected by accountable/responsible (enriched with the title for display)
     blockers = []
-    for sh_name, sh_data in package["stakeholder_decisions"].items():
-        if sh_data["raci"] in ("accountable", "responsible"):
-            for rd in sh_data["req_decisions"]:
-                if rd["decision"] == "rejected":
-                    node = _find_node(repo, rd["req_id"])
-                    title = node.get("title", "—") if node else "—"
-                    blockers.append({
-                        "req_id": rd["req_id"],
-                        "title": title,
-                        "stakeholder": sh_name,
-                        "raci": sh_data["raci"],
-                        "reason": rd.get("rejection_reason", "—"),
-                    })
+    for b in gate["ar_rejections"]:
+        node = _find_node(repo, b["req_id"])
+        blockers.append({**b, "title": node.get("title", "—") if node else "—"})
 
-    # Open conditional items
-    open_conditions = []
-    overdue_conditions = []
-    today = date.today()
-    for sh_name, sh_data in package["stakeholder_decisions"].items():
-        for rd in sh_data["req_decisions"]:
-            if rd["decision"] == "conditional" and not rd.get("condition_closed"):
-                condition_entry = {
-                    "req_id": rd["req_id"],
-                    "stakeholder": sh_name,
-                    "condition_text": rd.get("condition_text", "—"),
-                    "condition_deadline": rd.get("condition_deadline", ""),
-                    "condition_owner": rd.get("condition_owner", "—"),
-                }
-                open_conditions.append(condition_entry)
-                # Check for overdue items
-                if rd.get("condition_deadline"):
-                    try:
-                        deadline = date.fromisoformat(rd["condition_deadline"])
-                        if deadline < today:
-                            condition_entry["overdue"] = True
-                            overdue_conditions.append(condition_entry)
-                    except ValueError:
-                        pass
+    open_conditions = gate["open_conditions"]
+    overdue_conditions = gate["overdue_conditions"]
 
     # Stakeholders without a decision (if the package was sent but there's no response)
     # We don't store an "expected list" — we show those who did respond
     responding_stakeholders = list(package["stakeholder_decisions"].keys())
 
-    # Verdict
-    can_baseline = True
+    # Verdict — from the shared gate, so the dashboard and create_requirements_baseline
+    # can never disagree about readiness.
+    can_baseline = gate["can_baseline"]
     verdict_reasons = []
 
     if blockers:
-        can_baseline = False
         verdict_reasons.append(f"🔴 {len(blockers)} rejection(s) from Accountable/Responsible stakeholders")
 
     if overdue_conditions:
-        can_baseline = False
         verdict_reasons.append(f"🔴 {len(overdue_conditions)} overdue condition(s)")
 
     if open_conditions and not overdue_conditions:
@@ -880,11 +907,9 @@ def check_approval_status(
         verdict_reasons.append(f"🟡 {len(open_conditions)} open condition(s) (not overdue)")
 
     if counts[STATUS_PENDING] > 0:
-        can_baseline = False
         verdict_reasons.append(f"🔴 {counts[STATUS_PENDING]} requirement(s) still in pending_approval status")
 
-    if approved_pct < 70:
-        can_baseline = False
+    if gate["low_approval"]:
         verdict_reasons.append(f"🔴 Only {approved_pct}% of requirements approved (minimum 70%)")
 
     # Consulted-rejected (does not block, but we flag it)
@@ -1023,51 +1048,29 @@ def create_requirements_baseline(
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
 
-    # Readiness gate — must match check_approval_status so the dashboard's
-    # "Ready / Not ready" verdict is the real contract. Everything below blocks
-    # the baseline unless force=True (the deliberate override).
-    statuses = {rid: _compute_req_status(rid, package) for rid in req_ids}
+    # Readiness gate — the SAME predicate check_approval_status renders, so the
+    # dashboard's "Ready / Not ready" verdict is the real contract. force=True is
+    # the deliberate override.
+    gate = _baseline_gate(package)
+    statuses = gate["statuses"]
+    pending_reqs = gate["pending_reqs"]
+    approved_pct = gate["approved_pct"]
 
-    blockers = []
-    for sh_name, sh_data in package["stakeholder_decisions"].items():
-        if sh_data["raci"] in ("accountable", "responsible"):
-            for rd in sh_data["req_decisions"]:
-                if rd["decision"] == "rejected":
-                    blockers.append(f"`{rd['req_id']}` rejected by {sh_name} ({sh_data['raci']})")
-
-    pending_reqs = [rid for rid in req_ids if statuses[rid] == STATUS_PENDING]
-
-    # Overdue open conditions (same check as the dashboard).
-    overdue_conditions = []
-    _today = date.today()
-    for sh_name, sh_data in package["stakeholder_decisions"].items():
-        for rd in sh_data["req_decisions"]:
-            if rd["decision"] == "conditional" and not rd.get("condition_closed") and rd.get("condition_deadline"):
-                try:
-                    if date.fromisoformat(rd["condition_deadline"]) < _today:
-                        overdue_conditions.append(f"`{rd['req_id']}` ({sh_name})")
-                except ValueError:
-                    pass
-
-    # Approved percentage (same 70% minimum as the dashboard). An empty approved
-    # set is 0% and is therefore blocked here too.
-    total = len(req_ids)
-    approved_count = sum(1 for s in statuses.values() if s == STATUS_APPROVED)
-    approved_pct = round(approved_count / total * 100) if total else 0
-    low_approval = approved_pct < 70
-
-    if (blockers or pending_reqs or overdue_conditions or low_approval) and not force:
+    if not gate["can_baseline"] and not force:
         lines = ["❌ Baseline blocked:", ""]
-        if blockers:
+        if gate["ar_rejections"]:
             lines.append("**Rejections from Accountable/Responsible:**")
-            for b in blockers:
-                lines.append(f"  - {b}")
+            for b in gate["ar_rejections"]:
+                lines.append(f"  - `{b['req_id']}` rejected by {b['stakeholder']} ({b['raci']})")
         if pending_reqs:
             lines.append(f"**Requirements in pending_approval status:** {pending_reqs}")
-        if overdue_conditions:
-            lines.append(f"**Overdue conditions:** {', '.join(overdue_conditions)}")
-        if low_approval:
-            lines.append(f"**Only {approved_pct}% of requirements approved** (minimum 70%).")
+        if gate["overdue_conditions"]:
+            overdue = ", ".join(f"`{c['req_id']}` ({c['stakeholder']})"
+                                for c in gate["overdue_conditions"])
+            lines.append(f"**Overdue conditions:** {overdue}")
+        if gate["low_approval"]:
+            lines.append(f"**Only {approved_pct}% of requirements approved** "
+                         f"(minimum {MIN_APPROVED_PCT}%).")
         lines += [
             "",
             "Resolve the issues above, or use `force=true` to force the baseline creation.",
@@ -1122,7 +1125,7 @@ def create_requirements_baseline(
         "decided_by": decided_by,
         "approved_req_ids": approved_reqs,
         "open_conditions": open_conditions,
-        "force_created": force and bool(blockers or open_conditions),
+        "force_created": force and bool(gate["ar_rejections"] or open_conditions),
         "stakeholder_summary": {
             sh_name: {
                 "raci": sh_data["raci"],

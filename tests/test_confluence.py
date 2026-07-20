@@ -770,6 +770,45 @@ class TestConfluenceAuditRegressions(BaseMCPTest):
             self.assertIn(r["type"], allowed, f"{r['id']} has a type 5.1 would reject")
             self.assertIn(r["status"], {"draft", "confirmed", "approved", "deprecated"})
 
+    # --- fallback converter must emit valid XHTML --------------------------
+
+    def test_fallback_escapes_xml_special_characters(self):
+        """Without markdown2 the fallback shipped raw '&' and '<' — Confluence storage
+        format is strict XHTML, so an NFR like "response < 2s" made the body invalid
+        and the API rejected the whole page with a 400."""
+        import builtins
+        real_import = builtins.__import__
+
+        def no_markdown2(name, *args, **kwargs):
+            if name == "markdown2":
+                raise ImportError("markdown2 not installed")
+            return real_import(name, *args, **kwargs)
+
+        with patch.object(builtins, "__import__", no_markdown2):
+            html = confluence_mod._markdown_to_confluence_storage(
+                "Response time < 2s & uptime > 99%")
+        self.assertIn("&amp;", html)
+        self.assertIn("&lt;", html)
+        self.assertNotIn("< 2s", html)
+
+    def test_fallback_converts_tables(self):
+        """BABOK artifacts are table-heavy; raw pipes would ship an unreadable page."""
+        import builtins
+        real_import = builtins.__import__
+
+        def no_markdown2(name, *args, **kwargs):
+            if name == "markdown2":
+                raise ImportError("markdown2 not installed")
+            return real_import(name, *args, **kwargs)
+
+        md = "| ID | Title |\n|----|-------|\n| FR-001 | Login |"
+        with patch.object(builtins, "__import__", no_markdown2):
+            html = confluence_mod._markdown_to_confluence_storage(md)
+        self.assertIn("<table>", html)
+        self.assertIn("<th>ID</th>", html)
+        self.assertIn("<td>FR-001</td>", html)
+        self.assertNotIn("|----", html)
+
     # --- C3: the pull artifact must land in the project's report folder -----
 
     def test_pull_saves_artifact_under_project_folder(self):

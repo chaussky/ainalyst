@@ -210,9 +210,10 @@ def process_elicitation_results(
 {maturity_notes}
 """
 
+    # The session date stays in the name — it distinguishes sessions within a project.
     suffix = save_artifact(
         content,
-        f"Elicitation_Results_{project_name.replace(' ', '_')}_{session_date.replace('.', '-')}",
+        f"4_2_elicitation_results_{session_date.replace('.', '-')}",
         project_id=project_name,
     )
     return f"✅ Elicitation results saved.{suffix}"
@@ -319,7 +320,7 @@ def compare_elicitation_results(
 {follow_up_plan}
 """
 
-    suffix = save_artifact(content, f"Cross_Analysis_{project_name.replace(' ', '_')}", project_id=project_name)
+    suffix = save_artifact(content, "4_2_cross_analysis", project_id=project_name)
     return f"✅ Cross-analysis saved.{suffix}"
 
 
@@ -429,7 +430,7 @@ def save_cr_elicitation_analysis(
 {workshop_block}
 """
 
-    suffix = save_artifact(content, f"CR_Elicitation_{project_name.replace(' ', '_')}", project_id=project_name)
+    suffix = save_artifact(content, "4_2_cr_elicitation", project_id=project_name)
     return f"✅ CR analysis saved.{suffix}"
 
 
@@ -658,7 +659,7 @@ def update_stakeholder_registry(
 > The full registry accumulates cumulatively from all updates.
 """
 
-    suffix = save_artifact(content, f"Stakeholder_Registry_{project_name.replace(' ', '_')}", project_id=project_name)
+    suffix = save_artifact(content, "4_2_stakeholder_registry", project_id=project_name)
     return (
         f"✅ Stakeholder registry updated. Added: {len(added)}, updated: {len(updated)}. "
         f"Total in registry: {len(existing)}.{suffix}"
