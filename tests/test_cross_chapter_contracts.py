@@ -125,3 +125,37 @@ class TestRiskZoneIsPersisted(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestConstraintCategoryReachesTheRightRiskCategory(unittest.TestCase):
+    """6.2 `capture_constraints` offers compliance/policy/budget/...; `regulatory` is
+    not in its vocabulary at all, so 6.3 comparing against that literal meant a
+    compliance constraint could never become a regulatory risk — the one category an
+    analyst is most likely to put in `mandatory_avoid_categories`."""
+
+    def _import(self, category):
+        assessment = {"project_id": "p", "risks": [], "scope": {},
+                      "risk_tolerance": {}, "risk_matrix": {}}
+        orig_load, orig_save = c63._load_assessment, c63._save_assessment
+        orig_json = c63._safe_load_json
+        c63._load_assessment = lambda project_id: assessment
+        c63._save_assessment = lambda data, project_id: None
+        c63._safe_load_json = lambda path: (
+            {"constraints": [{"description": "The regulator requires model validation",
+                              "category": category}]}
+            if "future_state" in str(path) else {})
+        try:
+            c63.import_risks_from_context("p", json.dumps(["p"]))
+            return assessment["risks"]
+        finally:
+            c63._load_assessment, c63._save_assessment = orig_load, orig_save
+            c63._safe_load_json = orig_json
+
+    def test_a_compliance_constraint_becomes_a_regulatory_risk(self):
+        risks = self._import("compliance")
+        self.assertTrue(risks, "the constraint was not imported at all")
+        self.assertEqual(risks[0]["category"], "regulatory")
+
+    def test_an_unmapped_category_still_falls_back_to_operational(self):
+        risks = self._import("other")
+        self.assertEqual(risks[0]["category"], "operational")

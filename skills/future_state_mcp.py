@@ -39,7 +39,9 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+                           normalize_project_id, pick_field,
+                           unrecognized_records_error)
 
 mcp = FastMCP("BABOK_FutureState")
 
@@ -623,6 +625,27 @@ def define_goals_and_objectives(
             return "❌ linked_business_needs must be a JSON list of strings."
     except json.JSONDecodeError as e:
         return f"❌ Error parsing linked_business_needs: {e}"
+
+    # Normalise the objective spellings BEFORE the SMART validation reads them.
+    # `objective` and `name` are the near-misses an LLM writes for `title`. Reading only
+    # `title` rendered "### 1. —" into the goal card AND made the SMART validator emit
+    # "metric '?' has no baseline" — a quality finding manufactured out of a field the
+    # tool had failed to read, which is worse than the missing heading.
+    OBJECTIVE_NAME_KEYS = ("title", "objective", "name")
+    objectives = [
+        {
+            **o,
+            "title": pick_field(o, *OBJECTIVE_NAME_KEYS),
+            "metric": pick_field(o, "metric", "kpi", "measure"),
+        }
+        for o in objectives if isinstance(o, dict)
+    ] + [o for o in objectives if not isinstance(o, dict)]
+    if objectives and not any(
+            isinstance(o, dict) and o.get("title") for o in objectives):
+        return unrecognized_records_error(
+            "objectives_json", OBJECTIVE_NAME_KEYS,
+            '[{"title": "Processing time", "metric": "hours", "baseline": "8", '
+            '"target": "2", "deadline": "2026-12-31"}]')
 
     # SMART validation
     smart_issues = _validate_smart(goal_title, description, objectives)

@@ -221,6 +221,36 @@ def parse_json_str_list(raw: str, field: str, required: bool = False,
     return values, ""
 
 
+def pick_field(record: dict, *names: str):
+    """First non-empty value among several spellings of the same field.
+
+    The JSON for these parameters is written by an LLM, so a plausible-but-wrong key
+    (`metric` where the tool documents `name`, `objective` where it documents `title`)
+    is an ordinary case, not an exotic one. Reading a single spelling and falling back
+    to a dash rendered em-dashes into DELIVERED documents while the tool answered
+    success — the analyst then believes the content was recorded.
+
+    Pair with `unrecognized_records_error` for the case where nothing is recognised:
+    accepting synonyms is only half the policy, the other half is refusing to claim
+    success over records whose content was dropped. 4.2 `_parse_session_risks` settled
+    this shape first.
+    """
+    for name in names:
+        value = record.get(name)
+        if value not in (None, ""):
+            return value
+    return ""
+
+
+def unrecognized_records_error(field: str, accepted: tuple, example: str) -> str:
+    """The message for "you supplied records, none of them carried the key field"."""
+    spellings = " or ".join(f"`{a}`" for a in accepted)
+    return (
+        f"❌ `{field}`: no entry had a recognisable name. Accepted spellings are "
+        f"{spellings}.\nExample: {example}"
+    )
+
+
 def parse_json_dict_list(raw: str, field: str, required: bool = False,
                          example: str = '[{"name": "...", "role": "..."}]') -> tuple:
     """Parses a JSON array of objects (the common shape for MCP list parameters)."""

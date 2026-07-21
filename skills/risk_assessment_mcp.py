@@ -292,7 +292,24 @@ def import_risks_from_context(
                 desc = c.get("description", "")
                 category = c.get("category", "")
                 if desc:
-                    risk_cat = "regulatory" if category == "regulatory" else "operational"
+                    # 6.2 and 6.3 name the same idea differently. `capture_constraints`
+                    # offers budget/time/technology/policy/resources/compliance/other —
+                    # `regulatory` is not in that vocabulary at all, so comparing
+                    # against it meant a compliance constraint always became an
+                    # `operational` risk. That is the one category an analyst is most
+                    # likely to put in `mandatory_avoid_categories`, so the
+                    # misclassification quietly cost the constraint its override.
+                    _CONSTRAINT_TO_RISK_CATEGORY = {
+                        "compliance": "regulatory",
+                        "regulatory": "regulatory",
+                        "policy": "regulatory",
+                        "budget": "financial",
+                        "time": "operational",
+                        "technology": "technical",
+                        "resources": "operational",
+                    }
+                    risk_cat = _CONSTRAINT_TO_RISK_CATEGORY.get(
+                        str(category).strip().lower(), "operational")
                     drafts.append({
                         "status": "draft",
                         "import_source": f"6.2 constraint ({src_id})",

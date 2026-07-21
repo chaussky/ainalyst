@@ -41,6 +41,7 @@ from skills.common import (
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
     parse_json_list as _parse_json_list,
     parse_json_str_list as _parse_string_list,
+    pick_field, unrecognized_records_error,
     parse_json_dict_list as _parse_json_dict_list,
     update_stakeholder_registry_file, load_stakeholder_registry, stakeholder_identity,
 )
@@ -600,6 +601,29 @@ def evaluate_ba_performance(
     metrics, error = _parse_json_list(metrics_json, "metrics_json")
     if error:
         return error
+
+    # Normalise the object entries. `metric` and `title` are the near-misses an LLM
+    # writes for `name`; reading only `name` rendered "• :  → < 10% per sprint" into the
+    # delivered BA Plan — a bullet with no subject — while this tool answered "recorded".
+    METRIC_NAME_KEYS = ("name", "metric", "title")
+    normalized_metrics = []
+    named = 0
+    for m in metrics:
+        if isinstance(m, dict):
+            name = pick_field(m, *METRIC_NAME_KEYS)
+            if name:
+                named += 1
+            entry = dict(m)
+            entry["name"] = name
+            normalized_metrics.append(entry)
+        else:
+            normalized_metrics.append(m)
+            named += 1
+    if metrics and named == 0:
+        return unrecognized_records_error(
+            "metrics_json", METRIC_NAME_KEYS,
+            '[{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]')
+    metrics = normalized_metrics
 
     # Match issues to recommendations
     recommendations = []

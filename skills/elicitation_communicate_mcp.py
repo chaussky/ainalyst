@@ -16,6 +16,7 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, parse_json_dict, parse_json_dict_list,
+    pick_field, unrecognized_records_error,
 )
 
 mcp = FastMCP("BABOK_Communicate")
@@ -458,6 +459,26 @@ def check_communication_schedule(
     if error:
         return error
 
+    # Normalise the spellings before anything reads these records. Reading only
+    # `event_type` / `description` / `date` rendered "- [—] **—**: —" into the delivered
+    # schedule — a row about nothing — while the header counted "Triggered: 0" and the
+    # tool reported success.
+    EVENT_TYPE_KEYS = ("event_type", "type", "event")
+    events = [
+        {
+            **e,
+            "event_type": pick_field(e, *EVENT_TYPE_KEYS),
+            "description": pick_field(e, "description", "summary", "details",
+                                      *EVENT_TYPE_KEYS),
+            "date": pick_field(e, "date", "on", "occurred"),
+        }
+        for e in events
+    ]
+    if events and not any(e["event_type"] for e in events):
+        return unrecognized_records_error(
+            "triggered_events_json", EVENT_TYPE_KEYS,
+            '[{"event_type": "Decision made", "description": "...", "date": "DD.MM.YYYY"}]')
+
     from datetime import datetime, timedelta
 
     def parse_date(s: str):
@@ -471,20 +492,59 @@ def check_communication_schedule(
     today = parse_date(today_date) or datetime.today()
 
     # Most recent communications from the log (supplement the registry data)
+    # Key the log by every identifier it carries, lower-cased.
+    #
+    # `log_communication` records `audience_role` from the 4.4 audience vocabulary
+    # ("Business Sponsor", "Developer", …), while the stakeholder map carries job titles
+    # from 3.2/4.2 ("Head of Retail Lending"). Matching those two by exact string could
+    # not succeed by construction, so a communication logged days earlier never
+    # suppressed the urgency and the schedule stated "No communication on record yet"
+    # about someone who had just been briefed. Accept a match on either identifier.
     log_by_role = {}
-    for entry in comm_log:
-        role = entry.get("audience_role", "")
-        d = parse_date(entry.get("communication_date", ""))
-        if d and (role not in log_by_role or d > log_by_role[role]["date"]):
-            log_by_role[role] = {"date": d, "status": entry.get("understanding_status", ""), "followup": entry.get("needs_followup", False)}
 
-    # Frequency → number of days
+    def _remember(key, payload):
+        key = str(key).strip().lower()
+        if not key:
+            return
+        if key not in log_by_role or payload["date"] > log_by_role[key]["date"]:
+            log_by_role[key] = payload
+
+    for entry in comm_log:
+        d = parse_date(entry.get("communication_date", ""))
+        if not d:
+            continue
+        payload = {
+            "date": d,
+            "status": entry.get("understanding_status", ""),
+            "followup": entry.get("needs_followup", False),
+        }
+        for key in (entry.get("audience_role"), entry.get("role"),
+                    entry.get("stakeholder_name"), entry.get("name")):
+            _remember(key, payload)
+
+    # Frequency → number of days.
+    #
+    # The producer of this field is 3.2 `plan_stakeholder_engagement`, which assigns it
+    # from QUADRANT_STRATEGIES: Weekly / At milestones / Bi-weekly / Monthly /
+    # Quarterly. The set below originally shared exactly ONE value with that list, so a
+    # stakeholder on a Bi-weekly or Monthly cadence yielded `days_limit = None`, fell
+    # through both overdue branches, and vanished from the queue — after which the tool
+    # printed "✅ All communications are on track". Silent degradation is tolerable only
+    # when the tool then says LESS, never when it makes a confident positive claim.
+    # Matching is case-insensitive because "At milestones" and "At Milestone" are the
+    # same cadence written by two authors.
     freq_days = {
-        "After Each Session": 3,      # 3-day grace period
-        "Weekly": 7,
-        "At Milestone": None,         # trigger-only
-        "On Request": None,
+        "after each session": 3,      # 3-day grace period
+        "weekly": 7,
+        "bi-weekly": 14,
+        "biweekly": 14,
+        "monthly": 30,
+        "quarterly": 90,
+        "at milestone": None,         # trigger-only
+        "at milestones": None,
+        "on request": None,
     }
+    unknown_frequencies = set()
 
     # Build the communication queue
     urgent = []       # needed today
@@ -497,13 +557,23 @@ def check_communication_schedule(
         freq = sh.get("comm_frequency", "On Request")
         triggers = sh.get("comm_triggers", [])
 
-        # Determine the date of the last communication
+        # Determine the date of the last communication. Look the stakeholder up by
+        # every identifier they carry, since the log may be keyed by either.
+        logged = None
+        for key in (sh.get("role"), sh.get("name")):
+            candidate = log_by_role.get(str(key).strip().lower()) if key else None
+            if candidate and (logged is None or candidate["date"] > logged["date"]):
+                logged = candidate
+
         last_date = parse_date(sh.get("last_communication_date", ""))
-        if role in log_by_role and (not last_date or log_by_role[role]["date"] > last_date):
-            last_date = log_by_role[role]["date"]
+        if logged and (not last_date or logged["date"] > last_date):
+            last_date = logged["date"]
 
         # Check overdue status by frequency
-        days_limit = freq_days.get(freq)
+        freq_key = str(freq).strip().lower()
+        days_limit = freq_days.get(freq_key)
+        if freq_key and freq_key not in freq_days:
+            unknown_frequencies.add(str(freq))
         if days_limit and last_date:
             days_since = (today - last_date).days
             overdue = days_since - days_limit
@@ -542,11 +612,11 @@ def check_communication_schedule(
                     })
 
         # Unresolved follow-ups
-        if role in log_by_role and log_by_role[role].get("followup"):
+        if logged and logged.get("followup"):
             followup_due.append({
                 "role": role,
-                "status": log_by_role[role].get("status", "—"),
-                "date": log_by_role[role]["date"].strftime("%d.%m.%Y"),
+                "status": logged.get("status", "—"),
+                "date": logged["date"].strftime("%d.%m.%Y"),
             })
 
     # -----------------------------------------------------------------------
@@ -561,10 +631,25 @@ def check_communication_schedule(
     # Summary
     total_actions = len(urgent) + len(triggered) + len(followup_due)
     if total_actions == 0:
-        lines.append("## ✅ All Communications Are on Track\n")
-        lines.append("No overdue or triggered communications.\n")
+        if unknown_frequencies:
+            # Degrading is fine; making a confident positive claim on top of it is not.
+            lines.append("## ⚠️ Schedule Could Not Be Fully Checked\n")
+            lines.append(
+                f"No overdue communications among the cadences this tool recognises, "
+                f"but {len(unknown_frequencies)} unrecognised value(s) were skipped: "
+                f"{', '.join(sorted(unknown_frequencies))}. Those stakeholders were "
+                f"NOT evaluated — this is not a clean bill of health.\n"
+            )
+        else:
+            lines.append("## ✅ All Communications Are on Track\n")
+            lines.append("No overdue or triggered communications.\n")
     else:
         lines.append(f"## Need Attention Today: {total_actions} stakeholder(s)\n")
+        if unknown_frequencies:
+            lines.append(
+                f"> ⚠️ Skipped {len(unknown_frequencies)} unrecognised cadence(s): "
+                f"{', '.join(sorted(unknown_frequencies))}.\n"
+            )
 
     # Urgent (overdue) — ranked by influence (High first). Sorting the raw
     # "High"/"Medium"/"Low" label alphabetically is wrong: alphabetical order
