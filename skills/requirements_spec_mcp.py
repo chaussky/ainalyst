@@ -42,11 +42,19 @@ CONFIRMED_GLOB = "4_3_*_confirmed*.md"
 # Nodes in the 5.1 graph that are NOT specification requirements, so they must not be
 # counted in the coverage matrix nor reported as "unlinked to an objective". Beyond the
 # business roots these are the nodes other chapters push into the SAME graph: `test`
-# (5.1), `change_request` (5.4), `risk` (6.3, ADR-074) and `solution` (6.4, ADR-082).
+# (5.1), `change_request` (5.4) and `risk` (6.3, ADR-074).
 # Found by E2E: a CR opened in 5.4 was being counted as an uncovered requirement here.
 # Same class as findings 7.3-A / 7.4-C — a skip-filter that knows only part of the set.
+#
+# `solution` is DELIBERATELY ABSENT despite 6.4 using it for its scope node (ADR-082):
+# the same literal is also the BABOK requirement CLASS in the 5.1 vocabulary
+# (business | stakeholder | solution | transition), which is how `init_traceability_repo`
+# and the Confluence import label ordinary FR/NFR. Skipping it dropped REAL requirements
+# out of the coverage matrix — a silent under-report, far worse than a 6.4 scope node
+# appearing as an unattached item. The name collision itself needs a decision (rename
+# the 6.4 node type); until then, err towards counting a requirement.
 NON_SPEC_NODE_TYPES = BUSINESS_NODE_TYPES | {
-    "test", "change_request", "risk", "solution",
+    "test", "change_request", "risk",
 }
 
 

@@ -1643,9 +1643,8 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
             {"id": "RK-001", "type": "risk", "title": "Vendor delay",
              "version": "1.0", "status": "open", "added": str(date.today()),
              "source_artifact": ""},
-            {"id": "SOL-001", "type": "solution", "title": "Phased rollout",
-             "version": "1.0", "status": "draft", "added": str(date.today()),
-             "source_artifact": ""},
+            # NOTE: `solution` is deliberately NOT in this list — see the dedicated
+            # test below. The literal is shared with the BABOK requirement class.
             {"id": "TC-001", "type": "test", "title": "Assignment test",
              "version": "1.0", "status": "draft", "added": str(date.today()),
              "source_artifact": ""},
@@ -1654,8 +1653,30 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         result = mod71.build_coverage_matrix(self.P)
         # unchanged count: FR-001, FR-002, DD-001 only
         self.assertIn("| Requirements in the registry | 3 |", result)
-        for foreign in ("CR-001", "RK-001", "SOL-001", "TC-001"):
+        for foreign in ("CR-001", "RK-001", "TC-001"):
             self.assertNotIn(foreign, result)
+
+    def test_a_solution_class_requirement_is_still_counted(self):
+        """`solution` is TWO things: 6.4's scope node (ADR-082) AND the BABOK
+        requirement class in the 5.1 vocabulary — which is how init_traceability_repo
+        and the Confluence import label ordinary FR/NFR.
+
+        Skipping the literal to exclude 6.4's node silently dropped real requirements
+        from the matrix. Between over-counting a scope node and under-counting a
+        requirement, only the second is a lie about coverage.
+        """
+        nodes = [
+            {"id": "BG-001", "type": "business_goal", "title": "Cut handling time",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
+            {"id": "FR-900", "type": "solution", "title": "Auto-assign requests",
+             "version": "1.0", "status": "draft", "added": str(date.today()),
+             "source_artifact": ""},
+        ]
+        self._save([], nodes=nodes)
+        result = mod71.build_coverage_matrix(self.P)
+        self.assertIn("| Requirements in the registry | 1 |", result)
+        self.assertIn("FR-900", result)
 
 
 if __name__ == "__main__":
