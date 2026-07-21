@@ -27,7 +27,8 @@ from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
-                           normalize_project_id, ANALYSIS_NODE_TYPES)
+                           normalize_project_id, ANALYSIS_NODE_TYPES,
+                           BUSINESS_NODE_TYPES)
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
@@ -456,7 +457,21 @@ def run_impact_analysis(
                 "via": current_id,
                 "status": neighbor_req.get("status", "—") if neighbor_req else "—",
             })
-            if depth == "full" and neighbor_id not in visited:
+            # Report the business node as affected, but do NOT continue THROUGH it.
+            #
+            # Objectives are hubs: since 7.1 began writing `satisfies` from every
+            # requirement to the objectives it serves (ADR-082), expanding past one
+            # walked back down to every other requirement serving the same objective.
+            # Changing a single requirement was reported as affecting 14 of 16 nodes,
+            # and the better the analyst's traceability, the more inflated the estimate
+            # — which also drove 5.4's Impact and Schedule Risk scores. Siblings sharing
+            # an objective are not impacted by each other; the objective itself is worth
+            # flagging, so it stays in the list.
+            neighbor_is_business = (
+                neighbor_req is not None
+                and neighbor_req.get("type") in BUSINESS_NODE_TYPES
+            )
+            if depth == "full" and neighbor_id not in visited and not neighbor_is_business:
                 queue.append(neighbor_id)
 
     # Deduplicate by id (keep the first occurrence)

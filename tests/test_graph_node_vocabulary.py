@@ -180,3 +180,30 @@ class TestImpactAnalysisCountMatchesItsTables(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestImpactDoesNotExpandThroughObjectives(unittest.TestCase):
+    """Objectives are hubs: 7.1 links every requirement to the ones it serves, so
+    expanding past one walks back down to every sibling."""
+
+    def setUp(self):
+        self.repo = full_graph()
+        self.repo["requirements"].append(
+            {"id": "FR-777", "type": "functional", "title": "An unrelated sibling",
+             "version": "1.0", "status": "draft"})
+        self.repo["links"].append(
+            {"from": "FR-777", "to": "BG-001", "relation": "satisfies"})
+        self._orig = t51._load_repo
+        t51._load_repo = lambda project_name: self.repo
+
+    def tearDown(self):
+        t51._load_repo = self._orig
+
+    def test_a_sibling_sharing_an_objective_is_not_reported_as_impacted(self):
+        out = t51.run_impact_analysis("vocab", "FR-001", "Change the CRM mapping")
+        self.assertIn("BG-001", out, "the objective itself is worth flagging")
+        self.assertNotIn(
+            "FR-777", out,
+            "FR-777 only shares an objective with the changed requirement — that is "
+            "not an impact, and counting it inflates the 5.4 score",
+        )

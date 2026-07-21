@@ -39,6 +39,11 @@ mcp = FastMCP("BABOK_Requirements_Verify")
 REPO_FILENAME = "traceability_repo.json"
 ISSUES_FILENAME = "verification_issues.json"
 
+# Statuses that record an OUTCOME of the 5.5 approval process. A 7.2 re-check must not
+# roll one of these back: verification keeps its own durable history record, approval
+# does not, so the downgrade would destroy the only trace of the decision.
+APPROVAL_OUTCOME_STATUSES = {"approved", "conditional_approved", "rejected"}
+
 
 # ---------------------------------------------------------------------------
 # Dictionaries and patterns (ADR-027: rule-based)
@@ -1273,19 +1278,35 @@ def mark_req_verified(
             blocked_count += 1
             continue
 
-        # Change the status
+        # Change the status — unless it already records a STRONGER outcome.
+        #
+        # `status` is one field shared by four chapters, so whoever writes last wins.
+        # Overwriting an approval 5.5 had recorded printed "verified (was: approved)"
+        # and destroyed the fact: verification survives such a clobber because it has a
+        # durable `req_verified` history record, but approval has no symmetric
+        # predicate, so it was simply gone and the matrix filtered by `approved` lost
+        # the requirement. Since verification is read from history and not from this
+        # field, there is nothing to gain by downgrading a stronger status.
+        #
+        # `pending_approval` is deliberately NOT in this set: 5.5 stamps it on every
+        # requirement the moment a package opens, so it is process state, not an outcome.
         old_status = req.get("status", "draft")
-        req["status"] = "verified"
+        status_preserved = old_status in APPROVAL_OUTCOME_STATUSES
+        if not status_preserved:
+            req["status"] = "verified"
 
-        # History — a forced verification stays visible in the audit trail
+        # History — the durable record. A forced verification and a preserved approval
+        # both stay visible in the audit trail.
         entry = {
             "action": "req_verified",
             "req_id": req_id,
             "old_status": old_status,
-            "new_status": "verified",
+            "new_status": old_status if status_preserved else "verified",
             "source": "7.2_verify",
             "date": str(date.today()),
         }
+        if status_preserved:
+            entry["status_preserved"] = True
         if blockers:
             entry["forced"] = True
             entry["overridden_blockers"] = blocker_ids
@@ -1297,6 +1318,11 @@ def mark_req_verified(
                 f"{', '.join(blocker_ids)} (was: {old_status})"
             )
             forced_count += 1
+        elif status_preserved:
+            results.append(
+                f"✅ `{req_id}` — verified; status left as `{old_status}` "
+                f"(a 5.5 decision is not overwritten by a 7.2 re-check)"
+            )
         else:
             results.append(f"✅ `{req_id}` — verified (was: {old_status})")
         verified_count += 1
