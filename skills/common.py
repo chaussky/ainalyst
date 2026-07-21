@@ -355,6 +355,152 @@ def was_verification_forced(repo: dict, req_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Approval evidence (5.5) — shared by 5.1, 5.2 and 7.2
+# ---------------------------------------------------------------------------
+#
+# The mirror of has_passed_verification above, and it exists for the same reason:
+# `status` is ONE field written by four chapters (7.1 draft -> 7.2 verified ->
+# 5.5 pending_approval/approved -> 7.3 validated), so the last writer wins and any
+# consumer asking "was this approved?" by reading the status gets an answer with a
+# shelf life. 7.2's report credited 5.5 with approvals; 5.2 scored reuse on
+# "proven in practice" — both lose the fact the moment another chapter moves on.
+#
+# Where the two predicates DIFFER is the source, and that is not an inconsistency.
+# 7.2 has no artifact of its own, so verification had to be recorded into the
+# repository history. 5.5 has written `{project}_approval_history.json` all along:
+# every package, every stakeholder, every per-requirement decision with the RACI it
+# was cast under. The evidence was never missing — it was simply never read. So the
+# outcome is RECOMPUTED from the decisions, which means no migration and a correct
+# answer for every project that has ever run 5.5.
+#
+# Not node["history"]: 5.5 appends there only when the status actually CHANGES, so a
+# requirement approved while already in `approved` records nothing. Lossy by
+# construction, and therefore no basis for a predicate.
+
+APPROVAL_HISTORY_FILENAME = "approval_history.json"
+
+APPROVAL_OUTCOME_APPROVED = "approved"
+APPROVAL_OUTCOME_CONDITIONAL = "conditional_approved"
+APPROVAL_OUTCOME_REJECTED = "rejected"
+APPROVAL_OUTCOME_PENDING = "pending_approval"
+# The records exist and simply do not cover this requirement — it was never put in
+# front of anyone.
+APPROVAL_OUTCOME_NOT_SUBMITTED = "not_submitted"
+# There are no records at all. Distinct from NOT_SUBMITTED on purpose (the B2-bis
+# precedent): telling a BA "this was not approved" about a project whose history
+# predates the file is an assertion the records cannot support.
+APPROVAL_OUTCOME_UNKNOWN = "unknown"
+
+
+def compute_approval_outcome(package: dict, req_id: str) -> str:
+    """Folds one package's stakeholder decisions into a per-requirement outcome.
+
+    THE single implementation of the rule — 5.5 calls this one too. Two copies of a
+    decision rule is exactly how 5.5's dashboard verdict and baseline gate drifted
+    apart, letting a package the dashboard called "Not ready" baseline cleanly.
+
+    RACI semantics: only Accountable and Responsible carry a requirement. An
+    abstention is a first-class decision meaning "I decline to take a position" — it
+    does not block, but it cannot carry the requirement either, or a package where
+    everyone abstained reaches "approved" with nobody having approved anything.
+    """
+    decisions = []
+    for sh_data in package.get("stakeholder_decisions", {}).values():
+        raci = sh_data.get("raci", "consulted")
+        for rd in sh_data.get("req_decisions", []):
+            if rd.get("req_id") == req_id:
+                decisions.append({
+                    "raci": raci,
+                    "decision": rd.get("decision"),
+                    "condition_closed": rd.get("condition_closed", False),
+                })
+
+    if not decisions:
+        return APPROVAL_OUTCOME_PENDING
+
+    for d in decisions:
+        if d["decision"] == "rejected" and d["raci"] in ("accountable", "responsible"):
+            return APPROVAL_OUTCOME_REJECTED
+
+    for d in decisions:
+        if (d["decision"] == "conditional" and not d["condition_closed"]
+                and d["raci"] in ("accountable", "responsible")):
+            return APPROVAL_OUTCOME_CONDITIONAL
+
+    ar = [d for d in decisions if d["raci"] in ("accountable", "responsible")]
+
+    def _affirmative(d):
+        return (d["decision"] == "approved"
+                or (d["decision"] == "conditional" and d["condition_closed"]))
+
+    def _acceptable(d):
+        return _affirmative(d) or d["decision"] == "abstained"
+
+    if ar and all(_acceptable(d) for d in ar):
+        if any(_affirmative(d) for d in ar):
+            return APPROVAL_OUTCOME_APPROVED
+        return APPROVAL_OUTCOME_PENDING
+
+    return APPROVAL_OUTCOME_PENDING
+
+
+def load_approval_history(project_id: str) -> Optional[dict]:
+    """Reads 5.5's approval history. Returns None when there is nothing to read.
+
+    None means UNKNOWN, not empty: a missing or damaged file must not be reported as
+    "nothing was approved". Same graceful-degradation contract as
+    load_stakeholder_registry — a damaged file must never turn a report into a
+    protocol error.
+    """
+    safe = normalize_project_id(project_id)
+    path = data_path(project_id, f"{safe}_{APPROVAL_HISTORY_FILENAME}")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            history = json.load(f)
+    except (OSError, ValueError) as exc:
+        logger.warning(f"load_approval_history: unreadable {path}: {exc}")
+        return None
+    if not isinstance(history, dict) or not isinstance(history.get("packages"), dict):
+        logger.warning(f"load_approval_history: unexpected shape in {path}")
+        return None
+    return history
+
+
+def approval_outcome(project_id: str, req_id: str) -> str:
+    """The 5.5 outcome for one requirement, recomputed from the durable decisions.
+
+    Where a requirement appears in several packages the LATEST one governs: a
+    requirement re-submitted after a rejection is decided by the newer round, not by
+    whichever package happens to sit first in the file. Packages carry
+    `created_date`; ties fall back to insertion order, which is chronological
+    because packages are only ever appended.
+    """
+    history = load_approval_history(project_id)
+    if history is None:
+        return APPROVAL_OUTCOME_UNKNOWN
+
+    candidates = [pkg for pkg in history["packages"].values()
+                  if isinstance(pkg, dict) and req_id in (pkg.get("req_ids") or [])]
+    if not candidates:
+        return APPROVAL_OUTCOME_NOT_SUBMITTED
+
+    latest = max(enumerate(candidates),
+                 key=lambda pair: (str(pair[1].get("created_date", "")), pair[0]))[1]
+    return compute_approval_outcome(latest, req_id)
+
+
+def has_been_approved(project_id: str, req_id: str) -> bool:
+    """True only for a full approval.
+
+    A conditional approval is deliberately NOT folded in: an open condition is not a
+    signature. Callers that want to count it must ask for the outcome and say so.
+    """
+    return approval_outcome(project_id, req_id) == APPROVAL_OUTCOME_APPROVED
+
+
+# ---------------------------------------------------------------------------
 # Living stakeholder registry (ADR-003) — shared by 3.2 and 4.2
 # ---------------------------------------------------------------------------
 #

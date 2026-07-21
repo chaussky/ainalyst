@@ -28,7 +28,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, ANALYSIS_NODE_TYPES,
-                           BUSINESS_NODE_TYPES)
+                           BUSINESS_NODE_TYPES, has_been_approved)
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
@@ -827,7 +827,20 @@ def export_traceability_matrix(
     requirements = repo["requirements"]
     if filter_type:
         requirements = [r for r in requirements if r.get("type") == filter_type]
-    if filter_status:
+    if filter_status == "approved":
+        # `approved` is the one status value that is a durable FACT rather than a
+        # position in the workflow, and it is not owned by this field: 7.3 overwrites
+        # it with `validated` on the very requirements 5.5 approved. Filtering on the
+        # literal silently dropped them from a matrix that goes into the 5.5 signing
+        # package — the reader sees a shorter list and no indication anything is
+        # missing. The durable answer is 5.5's own stored decisions; the literal is
+        # kept as a fallback for projects with no approval records.
+        requirements = [
+            r for r in requirements
+            if has_been_approved(project_name, r.get("id", ""))
+            or r.get("status") == "approved"
+        ]
+    elif filter_status:
         requirements = [r for r in requirements if r.get("status") == filter_status]
 
     req_ids = {r["id"] for r in requirements}

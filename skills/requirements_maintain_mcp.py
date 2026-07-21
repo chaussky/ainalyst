@@ -27,7 +27,8 @@ from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
-                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES)
+                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
+                           has_been_approved)
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
 
@@ -816,9 +817,21 @@ def find_reusable_requirements(
             score_notes.append("✅ Marked as a reuse candidate")
 
         status = req.get("status", "")
-        if status in ("approved", "implemented"):
+        # "Proven in practice" is a fact about the requirement's history, not about
+        # whichever chapter wrote `status` last. A requirement approved in 5.5 and
+        # then validated in 7.3 reads `validated` and used to silently lose the two
+        # points — the reuse ranking degraded as the project matured.
+        if has_been_approved(project_name, req.get("id", "")):
             score += 2
-            score_notes.append(f"✅ Status {status} — proven in practice")
+            score_notes.append("✅ Approved in 5.5 — proven in practice")
+        elif status == "implemented":
+            score += 2
+            score_notes.append("✅ Status implemented — proven in practice")
+        elif status == "approved":
+            # No approval records (a legacy project, or an approval recorded outside
+            # 5.5). The status is the only evidence there is, so it still counts.
+            score += 2
+            score_notes.append("✅ Status approved — proven in practice")
         elif status == "confirmed":
             score += 1
             score_notes.append("🟡 Status confirmed — not yet approved")

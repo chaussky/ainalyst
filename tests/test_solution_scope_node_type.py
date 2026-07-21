@@ -139,9 +139,13 @@ class TestVerificationReportStopsMisreadingTheScopeStatus(unittest.TestCase):
         t72._load_repo = self._orig
 
     def test_scope_node_is_not_counted_as_approved_in_55(self):
+        """This fixture has no approval records at all, so the honest answer is
+        "5.5 has not run" (see tests/test_common_approval.py) — what matters here is
+        that the scope node is not counted as an approval."""
         out = t72.get_verification_report("collide")
-        self.assertIn(
-            "| ✅ Approved in 5.5 | 0 |", out,
+        approved_line = [l for l in out.splitlines() if "Approved in 5.5" in l][0]
+        self.assertNotIn(
+            "| 1 |", approved_line,
             "the report credited 5.5 with approving the 6.4 scope node",
         )
 

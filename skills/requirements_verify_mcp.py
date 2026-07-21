@@ -32,6 +32,8 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     has_passed_verification, was_verification_forced, NON_REQUIREMENT_NODE_TYPES,
+    approval_outcome, APPROVAL_OUTCOME_APPROVED, APPROVAL_OUTCOME_CONDITIONAL,
+    APPROVAL_OUTCOME_UNKNOWN,
 )
 
 mcp = FastMCP("BABOK_Requirements_Verify")
@@ -1431,8 +1433,23 @@ def get_verification_report(
         )
 
     verified = [r for r in active_reqs if r.get("status") == "verified"]
-    approved = [r for r in active_reqs if r.get("status") in ("approved", "conditional_approved")]
     draft = [r for r in active_reqs if r.get("status") == "draft"]
+
+    # Approval, like verification above, is a FACT and not a snapshot of the current
+    # status. Reading `status` here meant the count fell as soon as 7.3 validated an
+    # approved requirement, and it counted anything a producer happened to label
+    # `approved` in its own sense — 6.4's scope node used to do exactly that, so this
+    # line credited 5.5 with an approval on a project where 5.5 had never run. The
+    # durable answer is recomputed from the stakeholder decisions 5.5 stored.
+    approved = [r for r in active_reqs
+                if approval_outcome(project_id, r.get("id")) in
+                (APPROVAL_OUTCOME_APPROVED, APPROVAL_OUTCOME_CONDITIONAL)]
+    # `unknown` means there are no approval records at all — a legacy project, or one
+    # that has not reached 5.5. Reported separately rather than folded into "not
+    # approved", so the report never asserts more than the records support.
+    approval_unknown = all(
+        approval_outcome(project_id, r.get("id")) == APPROVAL_OUTCOME_UNKNOWN
+        for r in active_reqs)
 
     # "Has passed verification" is a FACT, not a snapshot of the current status.
     # `status` is a single field shared across chapters (draft → verified →
@@ -1486,7 +1503,7 @@ def get_verification_report(
         f"| Total active reqs | {total} |",
         f"| ✅ Passed verification | {len(verified_reqs)} ({verified_pct}%) |",
         f"| &nbsp;&nbsp;↳ currently in `verified` status | {len(verified)} |",
-        f"| ✅ Approved in 5.5 | {len(approved)} |",
+        f"| ✅ Approved in 5.5 | {'— (5.5 has not run)' if approval_unknown else len(approved)} |",
         f"| 📝 Draft (not verified) | {len(draft)} |",
         "",
     ]

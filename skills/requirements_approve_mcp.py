@@ -30,13 +30,16 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    has_passed_verification, was_verification_forced,
+    has_passed_verification, was_verification_forced, compute_approval_outcome,
+    APPROVAL_HISTORY_FILENAME,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
 
 REPO_FILENAME = "traceability_repo.json"
-APPROVAL_HISTORY_FILENAME = "approval_history.json"
+# APPROVAL_HISTORY_FILENAME is imported from common: 5.1, 5.2 and 7.2 now read this
+# file too, and the name has to be agreed in one place. A consumer guessing a
+# producer's filename is the single most repeated defect in this codebase.
 
 # Valid decision statuses
 VALID_DECISIONS = {"approved", "conditional", "rejected", "abstained"}
@@ -123,55 +126,15 @@ def _get_req_approval_summary(package: dict, req_id: str) -> dict:
 
 
 def _compute_req_status(req_id: str, package: dict) -> str:
-    """Computes the final status of a requirement based on all stakeholder decisions."""
-    decisions_by_stakeholder = []
-    for sh_name, sh_data in package.get("stakeholder_decisions", {}).items():
-        raci = sh_data.get("raci", "consulted")
-        for rd in sh_data.get("req_decisions", []):
-            if rd["req_id"] == req_id:
-                decisions_by_stakeholder.append({
-                    "raci": raci,
-                    "decision": rd["decision"],
-                    "condition_closed": rd.get("condition_closed", False),
-                })
+    """Computes the final status of a requirement based on all stakeholder decisions.
 
-    if not decisions_by_stakeholder:
-        return STATUS_PENDING
-
-    # Rejected from Accountable/Responsible → rejected
-    for d in decisions_by_stakeholder:
-        if d["decision"] == "rejected" and d["raci"] in ("accountable", "responsible"):
-            return STATUS_REJECTED
-
-    # An open conditional from any A/R → conditional_approved
-    for d in decisions_by_stakeholder:
-        if d["decision"] == "conditional" and not d["condition_closed"] and d["raci"] in ("accountable", "responsible"):
-            return STATUS_CONDITIONAL
-
-    # Approved when no A/R objected AND at least one of them actually said yes.
-    #
-    # An abstention is a first-class decision (VALID_DECISIONS) meaning the
-    # stakeholder declined to take a position — it must not carry the requirement.
-    # Folding it into "approved" let a package where EVERY accountable party
-    # abstained reach 100% approved and baseline cleanly: an official approval
-    # record with no approver. A mixed set (someone approves, others abstain) is
-    # still approved — abstention does not block, it just does not count as a yes.
-    ar_decisions = [d for d in decisions_by_stakeholder if d["raci"] in ("accountable", "responsible")]
-
-    def _is_affirmative(d):
-        return d["decision"] == "approved" or (d["decision"] == "conditional" and d["condition_closed"])
-
-    def _is_acceptable(d):
-        return _is_affirmative(d) or d["decision"] == "abstained"
-
-    if ar_decisions and all(_is_acceptable(d) for d in ar_decisions):
-        if any(_is_affirmative(d) for d in ar_decisions):
-            return STATUS_APPROVED
-        # Everyone abstained — nobody approved it. Stays pending, so the baseline
-        # gate blocks it; `force=True` remains the deliberate, recorded override.
-        return STATUS_PENDING
-
-    return STATUS_PENDING
+    The rule itself lives in `common.compute_approval_outcome`, because 5.1, 5.2 and
+    7.2 need the same verdict from the durable record and cannot import this module
+    (5.5 loads in the `lifecycle` phase, 7.2 in `design` — the phases never overlap).
+    Keeping a second copy here is precisely how this module's dashboard verdict and
+    baseline gate drifted apart once already.
+    """
+    return compute_approval_outcome(package, req_id)
 
 
 MIN_APPROVED_PCT = 70
