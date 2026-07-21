@@ -146,10 +146,29 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 # BFS search of traceability to business objectives (ADR-030)
 # ---------------------------------------------------------------------------
 
+# Relations that mean "the source serves the target". Reaching an objective over
+# anything else is not evidence that the requirement serves it.
+_SERVES_RELATIONS = ("derives", "satisfies")
+
+
 def _bfs_to_business(repo: dict, start_id: str) -> list:
     """
-    BFS traversal of the 5.1 traceability graph. Returns the list of 'business'-type nodes
-    reachable from start_id. Used by check_business_alignment.
+    Walks the 5.1 traceability graph UPWARD from start_id and returns the business
+    nodes it serves. Used by check_business_alignment.
+
+    Direction and relation both matter. The canonical edge is `from` = child/realizer,
+    `to` = parent/objective, and only `derives` / `satisfies` express "serves".
+
+    Traversing every edge in both directions turns the question "does this requirement
+    trace to objective BG-001?" into "is it in the same connected component as BG-001?",
+    which on a connected project is true of everything. It also produced positively
+    wrong answers: a requirement whose only link was `depends` on a RISK that
+    `threatens` an objective was reported as serving that objective — and, by
+    continuing through it, every other objective the component touched.
+
+    The walk stops at the first business node on each path: an objective's other
+    children are siblings of the start node, not objectives of it. 5.4 `_has_br_path`
+    applies the same rule.
     """
     links = repo.get("links", [])
     reqs_by_id = {r["id"]: r for r in repo.get("requirements", [])}
@@ -165,19 +184,20 @@ def _bfs_to_business(repo: dict, start_id: str) -> list:
         visited.add(current)
 
         node = reqs_by_id.get(current)
-        if node and current != start_id:
-            if node.get("type") in BUSINESS_NODE_TYPES:
-                business_nodes.append(node)
+        if node and current != start_id and node.get("type") in BUSINESS_NODE_TYPES:
+            business_nodes.append(node)
+            # Do NOT stop here: business nodes chain upward too (6.2 writes
+            # `business_goal derives -> business_need`, and a business requirement can
+            # derive from an objective), so a requirement legitimately serves several
+            # nodes up one line of descent. Walking only upward already makes it
+            # impossible to reach an objective's other children.
 
-        # Traverse all edges (in either direction)
         for link in links:
-            neighbor = None
-            if link.get("from") == current:
+            if (link.get("from") == current
+                    and link.get("relation") in _SERVES_RELATIONS):
                 neighbor = link.get("to")
-            elif link.get("to") == current:
-                neighbor = link.get("from")
-            if neighbor and neighbor not in visited:
-                queue.append(neighbor)
+                if neighbor and neighbor not in visited:
+                    queue.append(neighbor)
 
     return business_nodes
 
