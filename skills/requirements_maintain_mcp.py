@@ -30,6 +30,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
                            has_been_approved,
     read_json_artifact, guard_artifact_errors,
+    VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -277,6 +278,17 @@ def update_requirement(
         return (
             f"❌ Requirement `{req_id}` not found in the `{project_name}` project repository.\n"
             f"Check the ID, or add the requirement via `init_traceability_repo` (5.1)."
+        )
+
+    # `priority` is the one attribute here with a closed vocabulary, and it was the one
+    # attribute not validated. An unrecognised value stored cleanly and then matched no
+    # consumer: 5.3's aggregation, 5.5's critical-requirement warning and 7.5's Must
+    # coverage all simply skipped it, so the requirement lost its priority silently.
+    if new_priority and new_priority not in VALID_PRIORITIES:
+        return (
+            f"❌ Unknown priority `{new_priority}`.\n"
+            f"   MoSCoW (5.3): {', '.join(sorted(MOSCOW_PRIORITIES))}\n"
+            f"   Levels (7.1): {', '.join(sorted(LEVEL_PRIORITIES))}"
         )
 
     changes = []

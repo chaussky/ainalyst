@@ -33,6 +33,7 @@ from skills.common import (
     has_passed_verification, was_verification_forced, compute_approval_outcome,
     APPROVAL_HISTORY_FILENAME,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
+    MUST_PRIORITIES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -670,12 +671,15 @@ def record_approval_decision(
             if node:
                 # Check the priority from 5.3
                 priority = node.get("priority", "")
-                if priority == "Must":
+                # Both scales: 5.3 writes MoSCoW, 7.1 writes High/Medium/Low. Testing
+                # for `Must` alone meant this warning never fired on a project that
+                # specified requirements and never ran a prioritisation session.
+                if priority in MUST_PRIORITIES:
                     conflicts.append(
-                        f"🔴 Must priority (5.3) — rejecting a critically important requirement"
+                        f"🔴 {priority} priority — rejecting a critically important requirement"
                     )
-                elif priority in ("Should", "Could"):
-                    conflicts.append(f"🟡 {priority} priority (5.3) — recommend reviewing the necessity")
+                elif priority in ("Should", "Could", "Medium"):
+                    conflicts.append(f"🟡 {priority} priority — recommend reviewing the necessity")
 
                 # WSJF score if present
                 wsjf = node.get("wsjf_score")

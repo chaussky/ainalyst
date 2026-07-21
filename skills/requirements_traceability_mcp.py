@@ -30,6 +30,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, ANALYSIS_NODE_TYPES,
                            BUSINESS_NODE_TYPES, has_been_approved,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
+    link_date,
 )
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
@@ -298,7 +299,12 @@ def add_trace_link(
     project_name: str,
     from_id: str,
     to_id: str,
-    relation: Literal["derives", "depends", "satisfies", "verifies"],
+    # `threatens` (6.3) and `modifies` (5.4) are here so a wrong edge written by those
+    # chapters can be REMOVED through the tool. Without them the only way to delete one
+    # was hand-editing the repository JSON — which is exactly what this tool exists to
+    # prevent the analyst from doing.
+    relation: Literal["derives", "depends", "satisfies", "verifies",
+                      "threatens", "modifies"],
     rationale: str,
     remove: bool = False,
 ) -> str:
@@ -956,7 +962,7 @@ def export_traceability_matrix(
     for lnk in sorted(links, key=lambda x: (x.get("relation", ""), x.get("from", ""))):
         rel = rel_icons.get(lnk["relation"], lnk["relation"])
         rationale = lnk.get("rationale", "—")
-        added = lnk.get("added", "—")
+        added = link_date(lnk)
         lines.append(
             f"| `{lnk['from']}` | {rel} | `{lnk['to']}` | {rationale} | {added} |"
         )

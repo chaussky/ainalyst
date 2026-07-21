@@ -69,6 +69,41 @@ NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NO
 # reporting them as orphans sends the analyst hunting for a justification they have.
 SOURCE_RELATIONS = {"derives", "satisfies", "threatens", "modifies"}
 
+# Every relation any chapter writes. 5.1's own tool accepted only the four it defined,
+# so an edge written by 6.3 (`threatens`) or 5.4 (`modifies`) could not be removed
+# through the tool at all — the analyst's only route to deleting a wrong edge was
+# hand-editing the JSON.
+ALL_RELATIONS = {"derives", "depends", "satisfies", "verifies", "threatens", "modifies"}
+
+# The date on a LINK, written under three different spellings: `added` (5.1, 6.2, 6.3,
+# 6.4), `added_date` (5.4) and `created` (7.1). Readers knowing only one rendered a
+# dash for every edge the other producers wrote — in the traceability matrix, which
+# goes into the approval package a stakeholder signs. New writers should use `added`;
+# the readers accept all three so stored graphs keep working.
+LINK_DATE_KEYS = ("added", "added_date", "created")
+
+
+def link_date(link: dict, default: str = "—") -> str:
+    """The date a link was created, whichever spelling its producer used."""
+    for key in LINK_DATE_KEYS:
+        value = link.get(key)
+        if value:
+            return str(value)
+    return default
+
+
+# `priority` carries TWO scales: 5.3 writes MoSCoW, 7.1 writes High/Medium/Low, and a
+# project that specifies without ever running a prioritisation session only ever has
+# the second. A consumer that knows one scale silently does nothing on the other —
+# 5.5's "you are rejecting a critically important requirement" warning tested for
+# `Must` alone, so it never fired on exactly those projects.
+MOSCOW_PRIORITIES = {"Must", "Should", "Could", "Won't"}
+LEVEL_PRIORITIES = {"High", "Medium", "Low"}
+VALID_PRIORITIES = MOSCOW_PRIORITIES | LEVEL_PRIORITIES
+
+# "Critically important" in either scale.
+MUST_PRIORITIES = {"Must", "High"}
+
 
 def _ensure_dirs():
     """Creates all required folders if they don't exist."""

@@ -1052,9 +1052,13 @@ def save_change_strategy(
 
             # satisfies links to business_goals
             added_links = 0
+            missing_goals = []
             bg_list = strategy.get("imported_context", {}).get("business_goals", [])
             for bg in bg_list:
                 bg_id = bg.get("id", "")
+                if bg_id and bg_id not in existing_ids:
+                    missing_goals.append(bg_id)
+                    continue
                 if bg_id and bg_id in existing_ids and (sol_id, bg_id) not in existing_satisfies:
                     repo.setdefault("links", []).append({
                         "from": sol_id,
@@ -1068,6 +1072,23 @@ def save_change_strategy(
 
             if added_links:
                 traceability_notes.append(f"✅ Added {added_links} satisfies links → BG")
+            elif bg_list:
+                # Previously this branch said NOTHING: the analyst explicitly asked for
+                # a push, got a node and no links, and no explanation of either.
+                traceability_notes.append(
+                    "ℹ️ No new satisfies links — every objective was already linked."
+                    if not missing_goals else ""
+                )
+            if missing_goals:
+                shown = ", ".join(f"`{g}`" for g in missing_goals[:5])
+                more = f" (+{len(missing_goals) - 5} more)" if len(missing_goals) > 5 else ""
+                traceability_notes.append(
+                    f"⚠️ {len(missing_goals)} objective(s) NOT linked — not a node in the "
+                    f"5.1 repository: {shown}{more}.\n"
+                    f"   Register them via 6.2 `define_goals_and_objectives`"
+                    f" (register_in_traceability=True), then re-run this push."
+                )
+            traceability_notes = [n for n in traceability_notes if n]
 
             repo["updated"] = str(date.today())
             with open(repo_path, "w", encoding="utf-8") as f:

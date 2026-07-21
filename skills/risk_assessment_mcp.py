@@ -951,6 +951,7 @@ def save_risk_assessment(
             }
             added_nodes = 0
             added_links = 0
+            missing_targets = []
 
             for risk in risks:
                 rid = risk["risk_id"]
@@ -969,6 +970,12 @@ def save_risk_assessment(
                 # threatens links (deduplicated by from/to so re-runs don't pile up)
                 for linked_field in ["linked_bn", "linked_bg", "linked_req"]:
                     linked_id = risk.get(linked_field, "")
+                    if linked_id and linked_id not in existing_ids:
+                        # The existence check is right, but reporting only the count
+                        # made its effect invisible: "+0 threatens links" beside a ✅
+                        # reads as success, when in fact every target was missing.
+                        missing_targets.append((rid, linked_id))
+                        continue
                     if linked_id and linked_id in existing_ids and (rid, linked_id) not in existing_threatens:
                         repo.setdefault("links", []).append({
                             "from": rid,
@@ -987,6 +994,15 @@ def save_risk_assessment(
             traceability_notes.append(
                 f"✅ 5.1 traceability updated: +{added_nodes} risk nodes, +{added_links} threatens links"
             )
+            if missing_targets:
+                # Without this the analyst reads "+0 links" as "nothing needed doing".
+                pairs = ", ".join(f"`{r}` → `{t}`" for r, t in missing_targets[:5])
+                more = f" (+{len(missing_targets) - 5} more)" if len(missing_targets) > 5 else ""
+                traceability_notes.append(
+                    f"⚠️ {len(missing_targets)} link(s) NOT written — the target is not a "
+                    f"node in the 5.1 repository: {pairs}{more}.\n"
+                    f"   Register the objective or requirement first, then re-run the push."
+                )
         else:
             traceability_notes.append(
                 f"⚠️ 5.1 traceability repository not found for '{repo_pid}' "

@@ -518,7 +518,15 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
     def test_goal_creates_bn_bg_link(self):
         repo = make_test_repo(PROJECT)
         repo["project"] = PROJECT
-        repo["requirements"] = []
+        # BN-001 must EXIST for the link to be written. The fixture used to leave the
+        # repository empty and still assert the edge, encoding the dangling-edge
+        # behaviour 6.2 has since stopped producing: an edge to a node that is not in
+        # the graph made the coverage audit report the objective as justified.
+        # The missing-target case is covered by tests/test_graph_contracts.py.
+        repo["requirements"] = [
+            {"id": "BN-001", "type": "business_need", "title": "Cut the cycle",
+             "version": "1.0", "status": "confirmed"},
+        ]
         repo["links"] = []
         save_test_repo(repo, "governance_plans/data")
 

@@ -687,8 +687,18 @@ def define_goals_and_objectives(
                     "source_artifact": f"6.2/{_safe(project_id)}_future_state_goals.json",
                     "added": str(date.today()),
                 })
-                # Add BN → BG links
+                # Add BN → BG links, but only to needs that actually exist.
+                #
+                # 6.3 and 6.4 already check this; 6.2 did not, so a mistyped id wrote a
+                # DANGLING edge — and the coverage audit then reported the objective as
+                # justified, because what it checks is that an outgoing edge exists, not
+                # that it lands anywhere. A fictitious justification is worse than a
+                # missing one: it silences the very check meant to catch it.
+                skipped_bns = []
                 for bn_id in bn_list:
+                    if bn_id not in existing_ids:
+                        skipped_bns.append(bn_id)
+                        continue
                     repo["links"].append({
                         "from": goal_id,
                         "to": bn_id,
@@ -704,11 +714,22 @@ def define_goals_and_objectives(
                     "date": str(date.today()),
                 })
                 _save_repo(repo)
-                trace_chain = " → ".join([f"{bn}" for bn in bn_list]) + f" → {goal_id}" if bn_list else goal_id
+                linked_bns = [bn for bn in bn_list if bn not in skipped_bns]
+                trace_chain = (" → ".join(linked_bns) + f" → {goal_id}") if linked_bns else goal_id
                 traceability_status = (
                     f"\n\n✅ Node `{goal_id}` (business_goal) registered in the 5.1 repository."
-                    + (f"\n   Traceability: {trace_chain}" if bn_list else "")
+                    + (f"\n   Traceability: {trace_chain}" if linked_bns else "")
                 )
+                # Naming the skipped ids is the point. Silently dropping the link would
+                # trade a dangling edge for an invisible gap, and the analyst would go
+                # on believing the objective is traced to its need.
+                if skipped_bns:
+                    traceability_status += (
+                        f"\n   ⚠️ No link written to {', '.join(f'`{b}`' for b in skipped_bns)}"
+                        f" — not present in the 5.1 repository."
+                        f"\n   Register the business need first (6.1 `define_business_needs`),"
+                        f" then re-run this tool, or check the id for a typo."
+                    )
             else:
                 traceability_status = f"\n\nℹ️ Node `{goal_id}` already exists in the 5.1 repository."
 

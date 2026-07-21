@@ -181,7 +181,12 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
             "from": req_id,
             "to": goal_id,
             "relation": "satisfies",
-            "created": str(date.today()),
+            # `rationale` is REQUIRED at Full formality and the matrix renders it, so
+            # omitting it put a dash in the column a regulated project exists to fill.
+            # `added` is the spelling every other producer uses; `created` was read by
+            # nobody.
+            "rationale": f"Requirement {req_id} serves objective {goal_id}",
+            "added": str(date.today()),
         })
         existing_edges.add(key)
         added += 1
