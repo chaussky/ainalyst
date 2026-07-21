@@ -144,16 +144,33 @@ def init_traceability_repo(
         req_id = req.get("id", "")
         if not req_id:
             continue
+        # What the CALLER actually stated, before defaults are filled in. A default is
+        # an assumption, and an assumption must never overwrite a value another chapter
+        # established — the same rule the 3.2 registry seeding follows.
+        stated = {k: v for k, v in req.items() if v not in (None, "")}
+
         req.setdefault("version", "1.0")
         req.setdefault("status", "draft")
         req.setdefault("source_artifact", "")
         req["added"] = str(date.today())
 
         if req_id in existing_ids:
-            # Update the existing entry
+            # MERGE into the existing entry, never replace it.
+            #
+            # Wholesale replacement destroyed every field the caller did not restate —
+            # above all `type`, which 6.1 and 6.2 set when they register their nodes and
+            # which every other chapter's traversal and skip-filter depends on. An
+            # analyst re-running this tool with BN-001 in the list turned a
+            # `business_need/confirmed` node into `type: None, status: draft`, after
+            # which it silently dropped out of the coverage roots, the 7.1 objective
+            # source and the 7.3/7.4 filters. Explicit values still win; omitted ones
+            # are inherited.
             for i, r in enumerate(repo["requirements"]):
                 if r["id"] == req_id:
-                    repo["requirements"][i] = req
+                    merged = dict(r)
+                    merged.update(stated)
+                    merged["added"] = r.get("added", req["added"])
+                    repo["requirements"][i] = merged
                     updated.append(req_id)
                     break
         else:

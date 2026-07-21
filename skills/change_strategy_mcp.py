@@ -103,12 +103,37 @@ def _safe_load_json(path: str) -> Optional[dict]:
         return None
 
 
+def _normalize_strategy(data: dict, project_id: str) -> dict:
+    """Guarantees the skeleton every 6.4 tool indexes into, whoever wrote the file.
+
+    7.5 `set_change_strategy` is a flat surrogate for this chapter and writes the SAME
+    filename. 7.5 already knows how to detect the rich 6.4 contract and refuse to
+    overwrite it — but the protection was one-directional, so an analyst who used the
+    surrogate in the `design` phase and then came to do the real 6.4 in `analysis` hit
+    `KeyError: 'change_strategy'` in three of the five tools, leaving the chapter
+    unusable for that project until someone hand-edited the JSON.
+
+    Fill in what is missing and keep what is there: the surrogate's own fields
+    (change_type, scope, timeline, constraints) are real analyst input.
+    """
+    if not isinstance(data, dict):
+        return _empty_strategy(project_id)
+    skeleton = _empty_strategy(project_id)
+    for key, value in skeleton.items():
+        data.setdefault(key, value)
+    return data
+
+
 def _load_strategy(project_id: str) -> dict:
     path = _strategy_path(project_id)
     if not os.path.exists(path):
         return _empty_strategy(project_id)
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            return _empty_strategy(project_id)
+    return _normalize_strategy(data, project_id)
 
 
 def _save_strategy(data: dict, project_id: str):

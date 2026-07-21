@@ -646,6 +646,17 @@ def run_risk_matrix(project_id: str) -> str:
             note = ""
             zone = _zone_for_score(score, max_acc)
 
+        # Write the zone back onto the STORED risk, not only into this copy.
+        #
+        # The zone is a decision, not a restatement of the score: it honours the
+        # analyst's `max_acceptable_score` and forces any category in
+        # `mandatory_avoid_categories` to high regardless of the number. Keeping it
+        # only in `risk_matrix.classified_risks` meant every consumer —
+        # generate_recommendation, the 6.3 report itself, and 6.4 scope_change_strategy
+        # — fell back to `_zone_for_score(raw)` and silently lost the override, so the
+        # summary table and the sections below it could disagree about the same risk.
+        r["zone"] = zone
+        r["zone_note"] = note
         classified.append({**r, "zone": zone, "zone_note": note})
 
     high_risks = [r for r in classified if r["zone"] == "high"]
@@ -755,9 +766,17 @@ def generate_recommendation(
         for src_id in scope.get("source_project_ids", [project_id]):
             fs_data = _safe_load_json(_fs_state_path(src_id))
             if fs_data:
-                pv = fs_data.get("potential_value", {})
-                if pv:
-                    potential_value_summary = pv.get("summary", pv.get("description", ""))
+                pv = fs_data.get("potential_value") or {}
+                # 6.2 `assess_potential_value` stores the analyst's text under
+                # `value_summary`. Reading `summary`/`description` — neither of which
+                # that producer ever writes — meant the sponsor recommendation never
+                # once mentioned the value the analyst had assessed, while the
+                # truthy-dict check made the miss silent and stopped the search.
+                # Legacy spellings stay accepted.
+                summary = (pv.get("value_summary") or pv.get("summary")
+                           or pv.get("description") or "")
+                if summary:
+                    potential_value_summary = summary
                     break
 
     # --- Deterministic type-selection logic ---
