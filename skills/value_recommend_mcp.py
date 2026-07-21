@@ -227,9 +227,34 @@ def _risk_level_of(risk: dict) -> str:
     lvl = risk.get("risk_level")
     if lvl in RISK_LEVEL_MAP:
         return lvl
+
+    # The ZONE 6.3 computed, when it is there. 6.3 classifies against
+    # `max_acceptable_score`, which the analyst sets through set_risk_tolerance;
+    # re-deriving the level here from fixed thresholds silently overrode that. On a
+    # risk-averse project (threshold 10) a score of 12 is High to 6.3 and was Medium
+    # here — in the recommendation that goes to the sponsor, which is the last place
+    # the analyst's stated risk appetite should be quietly discarded. 6.3 now persists
+    # the zone on each risk record, so the honest answer is simply to read it.
+    zone = str(risk.get("zone", "")).lower()
+    if zone == "high":
+        # 6.3's scale tops out at "high"; Critical stays reserved for the top of the
+        # 5x5 matrix, so a high-zone risk scoring >= 20 is still Critical.
+        return "Critical" if _score_or_zero(risk) >= 20 else "High"
+    if zone == "medium":
+        return "Medium"
+    if zone == "low":
+        return "Low"
+
     if "risk_score" in risk:
         return _risk_level_from_score(risk.get("risk_score"))
     return "Low"
+
+
+def _score_or_zero(risk: dict) -> float:
+    try:
+        return float(risk.get("risk_score", 0))
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _calc_risk_penalty(risks: list) -> float:
@@ -546,6 +571,22 @@ def add_value_assessment(
             "> It's recommended to add risks via the `risks_json` parameter or create a risks file in task 6.3.",
             "",
         ]
+    elif risks_source == "6.3_file":
+        # The penalty is correct for this option's ABSOLUTE score — the project really
+        # does carry that risk. It is useless for COMPARING options, because every
+        # option is scored against the same project-wide register, so the term is a
+        # constant that cancels out. Saying so is the whole fix: the number appears in
+        # a comparison table, where it reads as though it discriminated.
+        lines += [
+            "> ⚠️ **Risk Penalty is project-wide**, taken from the 6.3 register because no "
+            "option-specific risks were supplied.",
+            "> Every option therefore receives the SAME penalty: it is correct for this "
+            "option's absolute score, but it **does not differentiate** the options in "
+            "`compare_value`.",
+            "> To make risk discriminate between options, pass option-specific risks via "
+            "`risks_json`.",
+            "",
+        ]
 
     # Count how many options have been assessed
     total_assessed = len(rec_data.get("value_assessments", {}))
@@ -688,6 +729,31 @@ def compare_value(
         "",
         "> **Formula:** Score = Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk×1.0",
         "",
+    ]
+
+    # If every option's risks came from the project-wide 6.3 register, the Risk column
+    # holds the same number in every row: it is a constant, it cancels out of the
+    # ranking, and it is the one column here that looks like it discriminated. The
+    # score itself stays correct in absolute terms — only the comparative reading of
+    # this column is wrong, so the fix is to say so rather than to change the number.
+    penalties = {oid: breakdowns[oid].get("risk_penalty", 0) for oid in ranking}
+    sources = {
+        oid: (rec_data.get("value_assessments", {}).get(oid, {}) or {}).get("risks_source")
+        for oid in ranking
+    }
+    if (len(ranking) > 1 and len(set(penalties.values())) == 1
+            and any(v == "6.3_file" for v in sources.values())):
+        lines += [
+            f"> ⚠️ **The Risk column does not differentiate these options.** Every option "
+            f"was scored against the same project-wide 6.3 register (penalty "
+            f"{next(iter(penalties.values()))} for all), because no option-specific risks "
+            f"were supplied — so the risk term cancels out of the ranking.",
+            "> Pass option-specific risks via `risks_json` in `add_value_assessment` to "
+            "make risk affect the comparison.",
+            "",
+        ]
+
+    lines += [
         "---",
         "",
         "## Detailed breakdown",

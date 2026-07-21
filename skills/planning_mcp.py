@@ -831,8 +831,8 @@ def save_ba_plan(
         f"• Chapter 4.1 — prepare for elicitation\n\n"
         f"ℹ️ The plan is a reference document: later chapters do not read it "
         f"automatically.\n"
-        f"  • Stakeholders from 3.2 need to be entered into the working registry via "
-        f"`update_stakeholder_registry` (4.2)\n"
+        f"  • Stakeholders from 3.2 are ALREADY seeded into the living registry that "
+        f"4.2 maintains and 7.4 reads — 4.2 adds to it as interviews reveal more\n"
         f"  • The governance rules from 3.3 are applied by you when approving in 5.5\n"
     )
 

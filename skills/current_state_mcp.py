@@ -17,13 +17,14 @@ Storage:
   - {project}_current_state_analysis.md  — readable report (via save_artifact)
 
 Integration:
-  In: results from 4.3 (session_ids to import a draft)
+  In: 4.3 session labels (LABELS ONLY — 4.3 emits no machine-readable artifact,
+      so nothing is read back; the labels record provenance and seed empty drafts)
   Out: BN nodes in the 5.1 repository, data for 7.3 set_business_context
 
 ADR-054: business_need as a node type in the 5.1 repository
 ADR-055: backward compatibility with set_business_context (7.3)
 ADR-056: normalized RCA output regardless of technique
-ADR-057: import from 4.3 via session_ids
+ADR-057: 4.3 provenance via session_ids (see the note above — no automated import)
 ADR-058: scope_current_state as an explicit contract
 ADR-059: capture_current_state_element — iterative pattern
 
@@ -233,7 +234,12 @@ def scope_current_state(
                            '["business_needs","capabilities","technology"]'
                            Valid keys: business_needs | org_structure | capabilities |
                            technology | policies | architecture | assets | external
-        session_ids:       Optional — list of session_id values from 4.3 to import a draft.
+        session_ids:       Optional — 4.3 session labels, recorded as PROVENANCE.
+                           Nothing is imported: 4.3 saves Markdown only, so there is no
+                           machine-readable artifact to read, and no other tool reads
+                           these ids back. Supplying them seeds an EMPTY draft entry per
+                           in-scope element for you to fill in via
+                           `capture_current_state_element`, and stamps the labels on it.
                            JSON list of strings: '["session_001","session_002"]'
                            The system marks the elements as a draft for later refinement.
 
@@ -351,10 +357,13 @@ def scope_current_state(
     if imported_sessions:
         lines += [
             "",
-            f"## Import from 4.3",
+            f"## Elicitation provenance (4.3)",
             "",
-            f"Sessions to import: {imported_sessions}",
-            f"A draft was created for each element. Refine the data via `capture_current_state_element`.",
+            f"Sessions recorded: {imported_sessions}",
+            f"⚠️ Nothing was imported — 4.3 produces a Markdown report, not a"
+            f" machine-readable artifact. An EMPTY draft was created for each in-scope"
+            f" element and stamped with these labels;"
+            f" fill each one in via `capture_current_state_element`.",
         ]
 
     lines += [
@@ -994,9 +1003,13 @@ def save_current_state(
     Args:
         project_id:              Project identifier.
         project_title:           Readable project name for the report heading.
-        push_to_business_context: If True — automatically calls set_business_context (7.3)
-                                 with data pre-filled from 6.1 (ADR-055).
-                                 Default: False — the BA calls 7.3 themselves when needed.
+        push_to_business_context: If True — appends the exact 7.3 call to make, with the
+                                 6.1 data already identified (ADR-055). It does NOT call
+                                 7.3 itself: 7.3 lives in a different phase and is not
+                                 loaded in this session. The 6.1 data is readable by
+                                 `set_business_context(from_current_state_project_id=...)`
+                                 whether or not this flag is set.
+                                 Default: False.
         analyst_notes:           Concluding analyst comments for the report.
 
     Returns:

@@ -1168,14 +1168,17 @@ class TestConfirmedArtifactRealLayout(BaseMCPTest):
 
     def test_find_confirmed_artifact_in_reports_layout(self):
         path = make_confirmed_artifact_reports(self.P)
-        found = mod71._find_confirmed_artifact(self.P)
+        # Returns (path, project_scoped): the caller has to know whether the match
+        # came from a pattern that could filter by project.
+        found, project_scoped = mod71._find_confirmed_artifact(self.P)
         self.assertIsNotNone(found, "consumer must find the artifact in the real reports/<pid>/ layout")
+        self.assertTrue(project_scoped, "the per-project folder DOES filter by project")
         self.assertEqual(os.path.abspath(found), os.path.abspath(path))
 
     def test_find_confirmed_artifact_still_finds_legacy_data_layout(self):
         # backward compat: the old flat data/ fixture must still be found
         path = make_confirmed_artifact(self.P)
-        found = mod71._find_confirmed_artifact(self.P)
+        found, _project_scoped = mod71._find_confirmed_artifact(self.P)
         self.assertIsNotNone(found)
         self.assertEqual(os.path.abspath(found), os.path.abspath(path))
 

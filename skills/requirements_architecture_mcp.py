@@ -689,11 +689,22 @@ def check_architecture_gaps(
             req_stakeholder_mentions.update(title.split())
 
         for sh in all_stakeholders:
-            sh_name = sh.get("name", "").lower()
+            # `.get("name", "")` returns None when the key exists and holds null —
+            # a registry a human edited, or any producer that writes an explicit null —
+            # and `None.lower()` took the whole tool down with an AttributeError.
+            sh_name = str(sh.get("name") or "").strip().lower()
+            sh_role = str(sh.get("role") or "").strip().lower()
             sh_id = sh.get("id", "")
-            # Simple check: the stakeholder's name appears in a req
-            mentioned = any(
-                sh_name in mention or mention in sh_name
+
+            # Match on the name, falling back to the ROLE when the name is empty.
+            # Registry entries with no name are ordinary — this module's own gap
+            # message falls back to the role for exactly that reason. Matching the
+            # empty string made `"" in mention` true for every mention, so those
+            # stakeholders were reported as covered by everything and the gap this
+            # check exists to find could never be raised for them.
+            needle = sh_name or sh_role
+            mentioned = bool(needle) and any(
+                needle in mention or mention in needle
                 for mention in req_stakeholder_mentions
                 if len(mention) >= 4
             )
@@ -729,7 +740,9 @@ def check_architecture_gaps(
                     "message": (
                         f"Business goal `{g['id']}` ('{g['title'][:50]}') "
                         f"is not represented as a node in the 5.1 graph. "
-                        f"Add a BG node via 5.1 (`add_req`) for traceability."
+                        f"Register it via 6.2 `define_goals_and_objectives` "
+                        f"(register_in_traceability=True), or add the node directly "
+                        f"with 5.1 `init_traceability_repo`."
                     ),
                 })
 

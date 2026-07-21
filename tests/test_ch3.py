@@ -657,7 +657,16 @@ class TestCh3AuditRegressions(BaseMCPTest):
         but no module outside planning_mcp reads ba_plan.json."""
         result = save_ba_plan(self._full_plan("promise_check"))
         self.assertNotIn("automatically\n", result)
-        self.assertIn("update_stakeholder_registry", result)
+
+    def test_finalize_does_not_contradict_the_seeding_it_just_did(self):
+        """This message still told the BA to enter the stakeholders into the registry
+        via 4.2 — after 3.2 had already seeded that same registry and reported doing
+        so. Two statements about one fact in one output, and the wrong one was the
+        instruction. The advice was correct when written, and nothing updated it when
+        the seam was built."""
+        result = save_ba_plan(self._full_plan("promise_check"))
+        self.assertNotIn("need to be entered", result)
+        self.assertIn("ALREADY seeded", result)
 
 
 class TestSaveBaPlan(BaseMCPTest):

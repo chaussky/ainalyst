@@ -1442,8 +1442,11 @@ def save_future_state(
     Args:
         project_id:              Project identifier.
         project_title:           Human-readable project name for the report title.
-        push_to_business_context: If True — 6.2 data will be available for
-                                 `set_business_context(from_strategy_project_id=...)` in 7.3.
+        push_to_business_context: If True — appends the exact 7.3 call to make. The 6.2
+                                 data is readable by
+                                 `set_business_context(from_strategy_project_id=...)`
+                                 REGARDLESS of this flag; the flag only prints the
+                                 hand-off note, it does not push anything.
                                  Default: False.
         analyst_notes:           Closing comments from the analyst.
 

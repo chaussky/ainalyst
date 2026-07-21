@@ -15,7 +15,9 @@ ADR-040: single file {project}_design_options.json with an options[] array
 ADR-041: allocation — semi-automatic, versions v1/v2/out_of_scope, depends-conflict check
 
 Reads:  {project}_traceability_repo.json (5.1) — dependency graph and priorities
-        {project}_prioritization.json (5.3) — priorities (optional)
+        (5.3 priorities are NOT read from its file. They reach 7.5 through the 5.1
+         repository, where save_prioritization_result writes each requirement's
+         `priority` — see MUST_PRIORITIES.)
         {project}_business_context.json (7.3) — business goals (optional)
         {project}_architecture.json (7.4) — viewpoints and gaps (optional)
         {project}_change_strategy.json (6.4 surrogate) — constraints (optional)

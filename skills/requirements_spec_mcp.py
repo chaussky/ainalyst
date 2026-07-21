@@ -219,7 +219,9 @@ def _save_spec(content: str, project_id: str, filename: str) -> str:
     return filepath
 
 
-def _find_confirmed_artifact(project_id: str) -> Optional[str]:
+def _find_confirmed_artifact(project_id: str) -> tuple:
+    # Returns (path_or_None, project_scoped). `project_scoped` is False when the match
+    # came from a pattern that cannot filter by project — the caller must say so.
     """
     ADR-023: finds the latest confirmed 4.3 artifact for project_id.
 
@@ -233,24 +235,31 @@ def _find_confirmed_artifact(project_id: str) -> Optional[str]:
     """
     from skills.common import report_dir_for, REPORTS_DIR
     legacy_safe = project_id.lower().replace(" ", "_")
+    # (pattern, is_project_scoped). The last pattern in each layout matches ANY
+    # project's artifact: a legacy flat file carries the project id neither in its
+    # name nor in a folder, so there is nothing to filter on and the pattern cannot be
+    # removed without making those projects unable to find their own artifact. It can
+    # stop being SILENT, which is what `_find_confirmed_artifact` now reports back —
+    # reading another project's elicitation results into this project's requirements
+    # is not an error the analyst should have to notice on their own.
     patterns = [
         # canonical: per-project reports folder (folder filters by project; filename has no pid)
-        os.path.join(report_dir_for(project_id), "4_3_*confirmed*.md"),
+        (os.path.join(report_dir_for(project_id), "4_3_*confirmed*.md"), True),
         # legacy flat reports/ (pre per-project layout, issue #1)
-        os.path.join(REPORTS_DIR, f"4_3_*{legacy_safe}*confirmed*.md"),
-        os.path.join(REPORTS_DIR, "4_3_*confirmed*.md"),
+        (os.path.join(REPORTS_DIR, f"4_3_*{legacy_safe}*confirmed*.md"), True),
+        (os.path.join(REPORTS_DIR, "4_3_*confirmed*.md"), False),
         # very-legacy / test fixtures: flat data/ with project_id in the filename
-        os.path.join(DATA_DIR, f"4_3_{legacy_safe}_confirmed*.md"),
-        os.path.join(DATA_DIR, f"4_3_*{legacy_safe}*confirmed*.md"),
-        os.path.join(DATA_DIR, "4_3_*confirmed*.md"),
+        (os.path.join(DATA_DIR, f"4_3_{legacy_safe}_confirmed*.md"), True),
+        (os.path.join(DATA_DIR, f"4_3_*{legacy_safe}*confirmed*.md"), True),
+        (os.path.join(DATA_DIR, "4_3_*confirmed*.md"), False),
     ]
-    for pattern in patterns:
+    for pattern, project_scoped in patterns:
         matches = glob.glob(pattern)
         if matches:
             # take the latest by modification time (filenames carry a timestamp, but mtime is
             # robust when legacy and current naming are mixed)
-            return max(matches, key=os.path.getmtime)
-    return None
+            return max(matches, key=os.path.getmtime), project_scoped
+    return None, True
 
 
 def _read_confirmed_artifact(path: str) -> str:
@@ -315,11 +324,24 @@ def analyze_elicitation_context(
     source_used = ""
     content_to_analyze = ""
 
-    artifact_path = _find_confirmed_artifact(project_id)
+    artifact_path, project_scoped = _find_confirmed_artifact(project_id)
     if artifact_path:
         content_to_analyze = _read_confirmed_artifact(artifact_path)
         source_used = f"📂 File found automatically: `{artifact_path}`"
-        logger.info(f"4.3 artifact found: {artifact_path}")
+        if not project_scoped:
+            # A legacy flat artifact carries the project id neither in its name nor in
+            # a folder, so this match was NOT filtered by project. On a mixed layout it
+            # can belong to a different project entirely — and requirements derived
+            # from another project's interviews would look perfectly ordinary.
+            source_used += (
+                f"\n\n⚠️ This match was **not filtered by project**: the file sits in the "
+                f"legacy flat layout, which carries no project id in either its name or "
+                f"its folder. Confirm `{os.path.basename(artifact_path)}` belongs to "
+                f"`{project_id}` before relying on the analysis. To remove the ambiguity, "
+                f"move it to `governance_plans/reports/{normalize_project_id(project_id)}/` "
+                f"(or run `python migrate_artifacts.py`)."
+            )
+        logger.info(f"4.3 artifact found: {artifact_path} (project_scoped={project_scoped})")
     elif context_text.strip():
         content_to_analyze = context_text.strip()
         source_used = "📋 Used text supplied manually."
@@ -1621,11 +1643,15 @@ def build_coverage_matrix(
             source_info = "📂 Business objectives from 6.2 `future_state_goals.json`."
 
     if not business_goals:
-        artifact_path = _find_confirmed_artifact(project_id)
+        artifact_path, project_scoped = _find_confirmed_artifact(project_id)
         if artifact_path:
             try:
                 content = _read_confirmed_artifact(artifact_path)
                 source_info = f"📂 Business objectives extracted from the 4.3 artifact: `{artifact_path}`"
+                if not project_scoped:
+                    source_info += (
+                        " ⚠️ not filtered by project (legacy flat layout) — confirm it "
+                        "belongs to this project.")
                 # Simple parsing: look for the section with business objectives
                 in_goals_section = False
                 for line in content.split("\n"):
