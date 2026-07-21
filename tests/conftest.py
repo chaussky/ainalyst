@@ -71,7 +71,23 @@ setup_mocks()
 
 
 def make_test_repo(project_name: str = "test_project") -> dict:
-    """Creates a minimal test traceability repository."""
+    """A MINIMAL repository in the LEGACY 5.1 vocabulary — not a representative graph.
+
+    It holds only `business` / `solution` / `test` nodes and `derives` / `verifies`
+    edges: the vocabulary 5.1 shipped with. The real pipeline produces far more —
+    `business_need` (6.1), `business_goal` (6.2), `risk` (6.3), `change_request` (5.4),
+    `solution_scope` (6.4) and the eight 7.1 specification types, plus `threatens`,
+    `modifies` and `satisfies`.
+
+    That is deliberate: these are minimal fixtures for per-tool behaviour, and many
+    tests depend on the small fixed node set. But a defect that only appears where two
+    PRODUCERS meet cannot be caught with this graph — a per-chapter suite tests each
+    chapter against the graph that chapter itself writes, which is exactly how six
+    consumers shipped with a vocabulary that had moved on.
+
+    For anything that must hold across the whole vocabulary, use the full-vocabulary
+    fixture in tests/test_graph_node_vocabulary.py instead.
+    """
     return {
         "project": project_name,
         "formality_level": "Standard",

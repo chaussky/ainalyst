@@ -13,7 +13,8 @@ Tools:
 import json
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, parse_json_dict_list
+from skills.common import (save_artifact, logger, parse_json_dict_list,
+                           update_stakeholder_registry_file)
 
 mcp = FastMCP("BABOK_Elicitation_Prep")
 
@@ -21,6 +22,59 @@ mcp = FastMCP("BABOK_Elicitation_Prep")
 # ---------------------------------------------------------------------------
 # 4.1.1 — Save the elicitation plan
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Living stakeholder registry (ADR-003) — 4.1 seeds, 4.2 maintains, 7.4 reads
+# ---------------------------------------------------------------------------
+
+_REGISTRY_SOURCE_41 = "4.1 elicitation plan"
+
+# Only fields the BA actually STATES about a person. `what_to_learn` is about the
+# session, not the stakeholder, so it stays out of the registry.
+_REGISTRY_SEED_FIELDS_41 = ("name", "role", "influence", "interest", "contact")
+
+
+def _seed_registry_from_plan(project_name: str, stakeholders: list) -> str:
+    """Seeds the living registry from the people this session will talk to.
+
+    Never raises: the plan is the deliverable and is already built by the time this
+    runs — a registry write that fails must not cost the BA their plan.
+
+    Everything here is INSERT-ONLY beyond the stated fields. 4.1 PLANS an interview,
+    it does not observe one, so it must never overwrite what an interview established;
+    that is exactly the defect A2 found when planning re-seeded a post-default record
+    and reverted an elicited attitude. 4.5 is the tool that observes change, and its
+    update is deliberately not insert-only.
+    """
+    incoming = []
+    for s in stakeholders:
+        entry = {f: s.get(f) for f in _REGISTRY_SEED_FIELDS_41 if s.get(f)}
+        if entry:
+            incoming.append(entry)
+    if not incoming:
+        return ""
+
+    try:
+        result = update_stakeholder_registry_file(
+            project_name, incoming, source=_REGISTRY_SOURCE_41,
+            insert_defaults={
+                "found_through": _REGISTRY_SOURCE_41,
+                # Planned, not yet elicited. Insert-only, so a later 'Elicited' from
+                # 4.2 is never reset by re-running the planning step.
+                "coverage_status": "Not covered",
+            },
+        )
+    except Exception as e:  # noqa: BLE001 — never let the plan fail on this
+        logger.warning(f"4.1 could not update the stakeholder registry: {e}")
+        return ("\n⚠️ Stakeholder registry not updated — "
+                "the elicitation plan is saved.")
+
+    added, updated = len(result.get("added", [])), len(result.get("updated", []))
+    if not (added or updated):
+        return ""
+    return (f"\n📇 Stakeholder registry: +{added} new, {updated} updated "
+            f"(the same registry 4.2 maintains and 7.4 reads).")
+
 
 @mcp.tool()
 def save_elicitation_plan(
@@ -128,7 +182,8 @@ def save_elicitation_plan(
     # the project name in the filename is redundant (and was the shape that misled the
     # 7.1 consumer into globbing for a pid that the filename never carries).
     suffix = save_artifact(content, "4_1_elicitation_plan", project_id=project_name)
-    return f"✅ Elicitation plan saved.{suffix}"
+    registry_note = _seed_registry_from_plan(project_name, stakeholders)
+    return f"✅ Elicitation plan saved.{suffix}{registry_note}"
 
 
 # ---------------------------------------------------------------------------

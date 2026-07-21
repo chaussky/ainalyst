@@ -13,6 +13,11 @@ Architecture note:
   4.5 records an engagement change with history: before/after, cause, BA action.
   The split is intentional — they could be merged later if practice shows it's redundant.
 
+  BOTH write to the living registry (ADR-003). They used not to: 4.5 wrote only a
+  Markdown report, so "became a Blocker" never reached the registry that 7.4 reads and
+  3.2's conflict detector compares against. Separating the REPORT from the FACT is not
+  the same as separating the tools — the report is 4.5's alone, the fact is shared.
+
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
@@ -20,7 +25,9 @@ import json
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, parse_json_dict_list
+from skills.common import (save_artifact, logger, parse_json_dict_list,
+                           update_stakeholder_registry_file,
+                           load_stakeholder_registry, reg_norm)
 
 mcp = FastMCP("BABOK_Collaborate")
 
@@ -28,6 +35,92 @@ mcp = FastMCP("BABOK_Collaborate")
 # ---------------------------------------------------------------------------
 # 4.5.1 — Decision Log
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Living stakeholder registry (ADR-003) — 4.5 records observed CHANGE
+# ---------------------------------------------------------------------------
+
+_REGISTRY_SOURCE_45 = "4.5 engagement status"
+
+
+def _record_engagement_in_registry(project_name: str, stakeholder_role: str,
+                                   attitude_after: str,
+                                   engagement_level_after: str) -> str:
+    """Writes the observed attitude/engagement into the living registry.
+
+    This tool exists to record that a stakeholder's stance CHANGED, and until now the
+    fact lived only in a Markdown report — so the registry 7.4 reads, and 3.2's
+    conflict detector compares against, still held the stale value. An analyst could
+    read "became a Blocker" in one artifact and "Neutral" in another on the same day.
+
+    Deliberately NOT insert-only, unlike 3.2's and 4.1's seeding. Those tools PLAN and
+    must never overwrite what an interview established; this one OBSERVES, so its
+    value is the newer evidence and has to win. That asymmetry is the difference
+    between the two tools, not an inconsistency.
+
+    The tool takes a ROLE and no name, but registry identity is the NAME — so the role
+    is resolved to the person already holding it before writing, and only falls back to
+    a role-keyed entry when nobody in the registry holds that role. An ambiguous role
+    (two people) is reported rather than guessed: attaching one person's observed
+    change to another's record is worse than not recording it automatically.
+
+    Never raises: the engagement record is the deliverable and is already on disk.
+    """
+    if not stakeholder_role.strip():
+        return ""
+
+    # Resolve the ROLE to the NAMED person already holding it.
+    #
+    # Registry identity is the name, falling back to the role only when there is no
+    # name. This tool takes a role and no name, so writing role-keyed created a SECOND
+    # record for someone already registered under their name — the duplicate said
+    # "Blocker" while the record 7.4 actually reads still said nothing. Found by a live
+    # run through 4.1 -> 4.2 -> 4.5; the per-tool tests could not see it, because each
+    # wrote the registry from empty.
+    try:
+        registry = load_stakeholder_registry(project_name)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"4.5 could not read the stakeholder registry: {e}")
+        registry = {"stakeholders": []}
+
+    role_key = reg_norm(stakeholder_role)
+    matches = [s for s in registry.get("stakeholders", [])
+               if reg_norm(s.get("role")) == role_key and reg_norm(s.get("name"))]
+
+    if len(matches) > 1:
+        # Guessing would attach an observation about one person to another's record.
+        names = ", ".join(f"`{s.get('name')}`" for s in matches)
+        return (f"\n⚠️ Stakeholder registry NOT updated — more than one person holds "
+                f"the role `{stakeholder_role}`: {names}.\n"
+                f"   Record the change against the individual via "
+                f"`update_stakeholder_registry` (4.2) so it lands on the right person. "
+                f"The engagement record itself is saved.")
+
+    incoming = {"role": stakeholder_role,
+                "attitude": attitude_after,
+                "engagement_level": engagement_level_after}
+    if matches:
+        # Carry the stored name so the merge resolves to the SAME record.
+        incoming["name"] = matches[0]["name"]
+
+    try:
+        result = update_stakeholder_registry_file(
+            project_name, [incoming],
+            source=_REGISTRY_SOURCE_45,
+            insert_defaults={"found_through": _REGISTRY_SOURCE_45},
+        )
+    except Exception as e:  # noqa: BLE001 — never let the engagement record fail on this
+        logger.warning(f"4.5 could not update the stakeholder registry: {e}")
+        return ("\n⚠️ Stakeholder registry not updated — "
+                "the engagement record is saved.")
+
+    added = len(result.get("added", []))
+    verb = "added to" if added else "updated in"
+    return (f"\n📇 `{stakeholder_role}` {verb} the stakeholder registry: "
+            f"attitude → {attitude_after}, engagement → {engagement_level_after} "
+            f"(the registry 7.4 reads).")
+
+
 
 @mcp.tool()
 def log_decision(
@@ -470,7 +563,10 @@ def update_engagement_status(
         f"  Recorded: {today}\n"
         f"-->\n\n"
     )
-    return save_artifact(meta + content, prefix="4_5_engagement_status", project_id=project_name)
+    artifact = save_artifact(meta + content, prefix="4_5_engagement_status",
+                             project_id=project_name)
+    return artifact + _record_engagement_in_registry(
+        project_name, stakeholder_role, attitude_after, engagement_level_after)
 
 
 # ---------------------------------------------------------------------------
