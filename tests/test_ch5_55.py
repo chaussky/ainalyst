@@ -1349,19 +1349,24 @@ class TestApprovalRecordAccuracy(BaseMCPTest):
     """The feature's thesis is that the Approval Record must carry the fact rather
     than a console warning — which only holds if what it records is TRUE."""
 
-    def _package_with_a_rejection(self):
+    def _package_nothing_was_approved_in(self):
+        """Only a CONSULTED stakeholder responded, so no Accountable/Responsible ever
+        said yes and every requirement stays pending — the baseline ends up empty.
+
+        Two earlier attempts at this scenario do not work, and both are worth knowing:
+        an A/R rejection is now a hard block `force` does not lift, and a PARTIAL
+        req_decisions list does not leave the rest pending — `decision` is a blanket
+        position that the list only refines.
+        """
         _make_repo_unverified(self.tmp_dir)
         _open_package(req_ids=["FR-001", "FR-002"])
-        _record(decision="approved", req_decisions=[
-            {"req_id": "FR-001", "decision": "approved"},
-            {"req_id": "FR-002", "decision": "rejected"},
-        ])
+        _record(stakeholder="Consulted Carl", raci="consulted", decision="approved")
 
     def test_record_does_not_name_non_baselined_reqs_as_baselined(self):
         """The record speaks about the BASELINE. Reporting over the whole package
         listed a REJECTED requirement under 'Baselined without 7.2 verification' and
         said it 'was approved' — a false statement in an official artifact."""
-        self._package_with_a_rejection()
+        self._package_nothing_was_approved_in()
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             create_requirements_baseline(
@@ -1372,8 +1377,10 @@ class TestApprovalRecordAccuracy(BaseMCPTest):
         if "Baselined without 7.2 verification" in record:
             section = record.split("Baselined without 7.2 verification", 1)[1]
             section = section.split("###", 1)[0]
-            self.assertNotIn("FR-002", section,
-                             "a rejected requirement never entered the baseline")
+            for rid in ("FR-001", "FR-002"):
+                self.assertNotIn(rid, section,
+                                 "nothing entered the baseline, so nothing may be "
+                                 "reported as baselined")
 
     def test_unknown_and_override_are_not_claimed_about_the_same_req(self):
         """`known` was a per-PACKAGE flag while `forced` came from live history, so a
@@ -1414,6 +1421,90 @@ class TestApprovalRecordAccuracy(BaseMCPTest):
         dashboard = check_approval_status(project_name=PROJECT, package_id="APKG-001")
         self.assertIn("1 of 1", dashboard,
                       "FR-001 is verified in the durable history — that is knowable")
+
+
+class TestForceIsNotOneFlagForEverything(BaseMCPTest):
+    """`force` used to lift four independent gates at once, so an analyst forcing past
+    a lapsed deadline also baselined over a live objection — without being told.
+
+    Overriding a PERSON who said no is a different decision from overriding process
+    state, so it needs a different act; and every override that IS allowed is named.
+    """
+
+    def _reject_from_accountable(self):
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(req_ids=["FR-001", "FR-002"])
+        _record(decision="rejected", rejection_reason="Conflicts with the SLA",
+                req_decisions=[
+                    {"req_id": "FR-001", "decision": "rejected",
+                     "rejection_reason": "Conflicts with the SLA"},
+                ])
+
+    def test_force_does_not_lift_an_accountable_rejection(self):
+        self._reject_from_accountable()
+        result = create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Ivanov", force=True)
+        self.assertIn("❌", result)
+        self.assertIn("NOT lifted by `force`", result)
+
+    def test_the_rejection_block_names_who_objected_and_why(self):
+        self._reject_from_accountable()
+        result = create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Ivanov", force=True)
+        self.assertIn("Ivanov", result)
+        self.assertIn("Conflicts with the SLA", result)
+
+    def test_no_baseline_is_written_when_the_hard_gate_blocks(self):
+        self._reject_from_accountable()
+        create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Ivanov", force=True)
+        history = _load_approval_history(PROJECT)
+        self.assertEqual(history.get("baselines", []), [],
+                         "a blocked baseline must leave no record behind")
+
+    def test_process_gates_are_still_forceable_and_named(self):
+        """The other three remain overridable — the point is that they are recorded
+        by name, not that they are blocked."""
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(req_ids=["FR-001", "FR-002"])
+        _record(stakeholder="Consulted Carl", raci="consulted", decision="approved")
+
+        blocked = create_requirements_baseline(
+            project_name=PROJECT, package_id="APKG-001",
+            baseline_version="v1.0", decided_by="Ivanov")
+        self.assertIn("❌", blocked)
+        self.assertIn("pending approvals", blocked)
+
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            forced = create_requirements_baseline(
+                project_name=PROJECT, package_id="APKG-001",
+                baseline_version="v1.0", decided_by="Ivanov", force=True)
+            record = mock_sa.call_args[0][0]
+
+        self.assertNotIn("❌", forced)
+        self.assertIn("pending approvals", record)
+        self.assertIn("force", record.lower())
+
+    def test_the_record_stores_which_gates_were_overridden(self):
+        """"force_created: true" alone tells a later reader that a rule was bypassed
+        but not which one — the first question an auditor asks."""
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(req_ids=["FR-001", "FR-002"])
+        _record(stakeholder="Consulted Carl", raci="consulted", decision="approved")
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            create_requirements_baseline(
+                project_name=PROJECT, package_id="APKG-001",
+                baseline_version="v1.0", decided_by="Ivanov", force=True)
+
+        history = _load_approval_history(PROJECT)
+        snapshot = history["baselines"][-1]
+        self.assertTrue(snapshot["force_created"])
+        self.assertIn("pending approvals", snapshot["forced_gates"])
 
 
 if __name__ == "__main__":

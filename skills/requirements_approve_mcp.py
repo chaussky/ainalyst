@@ -246,6 +246,22 @@ def _baseline_gate(package: dict) -> dict:
         "overdue_conditions": overdue_conditions,
         "low_approval": low_approval,
         "can_baseline": not (ar_rejections or pending_reqs or overdue_conditions or low_approval),
+        # An A/R rejection is the ONE gate `force` must not lift: it is a named person
+        # with decision authority saying no, whereas the other three are process state
+        # (a missed date, an unanswered request, a percentage). A single boolean flag
+        # let an analyst forcing past a lapsed deadline also baseline over a live
+        # objection without ever being told. Overriding a person is a different
+        # decision from overriding a schedule, so it needs a different act.
+        "hard_block": bool(ar_rejections),
+        # What `force` WOULD lift here — named, so the Approval Record can list them
+        # instead of recording an undifferentiated "forced".
+        "forceable": [
+            name for name, present in (
+                ("pending approvals", bool(pending_reqs)),
+                ("overdue conditions", bool(overdue_conditions)),
+                (f"approval below {MIN_APPROVED_PCT}%", low_approval),
+            ) if present
+        ],
     }
 
 
@@ -595,6 +611,13 @@ def record_approval_decision(
                                "rejection_reason": "Out of scope"}
                             ]
                             If empty ([]) — decision applies to all requirements in the package.
+                            IMPORTANT: a PARTIAL list works the same way. `decision` is
+                            the stakeholder's blanket position and the list refines it,
+                            so any requirement you do not mention still receives
+                            `decision`. Listing only FR-001 as approved does NOT leave
+                            the rest pending — they are recorded as approved by this
+                            stakeholder too. To leave a requirement undecided, keep it
+                            out of the package.
         rejection_reason:   Reason for rejection (required if decision=rejected
                             and req_decisions_json is empty).
         comment:            Additional comment from the stakeholder.
@@ -1146,7 +1169,13 @@ def create_requirements_baseline(
         package_id:        Package ID (must have gone through check_approval_status).
         baseline_version:  Baseline version: v1.0, v1.1, sprint-5, etc.
         decided_by:        Who is confirming the baseline creation (sponsor / PO).
-        force:             True — create the baseline even if there are warnings
+        force:             True — baseline despite PROCESS obstacles: pending
+                           approvals, overdue conditions, approval below the minimum.
+                           Each override is named in the Approval Record.
+                           It does NOT lift a rejection from an Accountable or
+                           Responsible stakeholder — overriding a person who said no
+                           is a different decision from overriding a lapsed date, and
+                           one flag for both hid the former behind the latter.
                            (open conditions, consulted-rejected).
                            False (default) — block if blockers exist.
 
@@ -1181,12 +1210,36 @@ def create_requirements_baseline(
     pending_reqs = gate["pending_reqs"]
     approved_pct = gate["approved_pct"]
 
+    # An A/R rejection is not forceable. `force` covers process state — a lapsed
+    # deadline, an unanswered request, a percentage — but a named person with decision
+    # authority saying no is a different kind of obstacle, and one flag for both meant
+    # an analyst forcing past the former silently baselined over the latter.
+    if gate["hard_block"]:
+        lines = [
+            "❌ Baseline blocked by a rejection from an Accountable/Responsible "
+            "stakeholder — this is NOT lifted by `force`:",
+            "",
+        ]
+        for b in gate["ar_rejections"]:
+            lines.append(
+                f"  - `{b['req_id']}` rejected by {b['stakeholder']} ({b['raci']}) "
+                f"— {b.get('reason') or '—'}"
+            )
+        lines += [
+            "",
+            "A person with decision authority said no. Resolve it with them, then "
+            "record the new decision via `record_approval_decision`; or drop the "
+            "requirement from the package and prepare a new one.",
+        ]
+        if gate["forceable"]:
+            lines.append(
+                f"\n(For reference, `force` would have covered: "
+                f"{', '.join(gate['forceable'])}.)"
+            )
+        return "\n".join(lines)
+
     if not gate["can_baseline"] and not force:
         lines = ["❌ Baseline blocked:", ""]
-        if gate["ar_rejections"]:
-            lines.append("**Rejections from Accountable/Responsible:**")
-            for b in gate["ar_rejections"]:
-                lines.append(f"  - `{b['req_id']}` rejected by {b['stakeholder']} ({b['raci']})")
         if pending_reqs:
             lines.append(f"**Requirements in pending_approval status:** {pending_reqs}")
         if gate["overdue_conditions"]:
@@ -1198,7 +1251,10 @@ def create_requirements_baseline(
                          f"(minimum {MIN_APPROVED_PCT}%).")
         lines += [
             "",
-            "Resolve the issues above, or use `force=true` to force the baseline creation.",
+            "Resolve the issues above, or use `force=true` to force the baseline "
+            "creation. `force` will lift exactly: "
+            f"{', '.join(gate['forceable'])} — and each one is named in the "
+            "Approval Record.",
         ]
         return "\n".join(lines)
 
@@ -1250,7 +1306,11 @@ def create_requirements_baseline(
         "decided_by": decided_by,
         "approved_req_ids": approved_reqs,
         "open_conditions": open_conditions,
-        "force_created": force and bool(gate["ar_rejections"] or open_conditions),
+        "force_created": force and bool(gate["forceable"] or open_conditions),
+        # WHICH gates the override actually lifted. "force_created: true" alone told a
+        # later reader that a rule was bypassed but not which one, so the record could
+        # not answer the question an auditor asks first.
+        "forced_gates": gate["forceable"] if force else [],
         "stakeholder_summary": {
             sh_name: {
                 "raci": sh_data["raci"],
@@ -1268,7 +1328,22 @@ def create_requirements_baseline(
 
     # Generate the Approval Record
     approach_label = "Predictive / Waterfall" if package.get("approach") == "predictive" else "Agile"
-    force_warning = "\n\n> ⚠️ The baseline was created forcibly (force=true). Open conditions remain." if force and open_conditions else ""
+    # Name what was overridden. "Created forcibly" alone is the same failure as
+    # recording nothing: the reader learns a rule was bypassed but not which one.
+    forced_gates = gate["forceable"] if force else []
+    if forced_gates:
+        force_warning = (
+            "\n\n> ⚠️ **Baselined with `force`.** These gates were overridden: "
+            + ", ".join(forced_gates)
+            + (". Open conditions remain." if open_conditions else ".")
+        )
+    elif force and open_conditions:
+        force_warning = (
+            "\n\n> ⚠️ The baseline was created with `force=true`. "
+            "Open conditions remain."
+        )
+    else:
+        force_warning = ""
 
     record_lines = [
         f"<!-- BABOK 5.5 — Approval Record, Project: {project_name}, "
