@@ -1193,11 +1193,34 @@ class TestResolveArtifact(BaseMCPTest):
         self.assertIsNotNone(path)
 
     def test_path_outside_the_project_is_refused(self):
+        """Refused AND the message names the allowed roots — an analyst who mistyped a
+        path needs to know where the tool will look, not just that it said no."""
         self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
         outside = self._write("reports/other_project", "secret.md", "# Not this project\n")
         path, message = confluence_mod._resolve_artifact(self.PID, outside)
         self.assertIsNone(path)
-        self.assertIn("outside", message.lower())
+        self.assertIn("❌", message)
+        self.assertIn(self.PID, message)
+        self.assertIn("irreversible", message.lower())
+
+    def test_legacy_flat_report_gets_an_accurate_refusal(self):
+        """A pre-layout artifact in the flat reports/ folder really IS this project's
+        file, so "outside project X" was a false statement. The flat directory stays
+        out of the roots on purpose — it is not scoped to a project."""
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        legacy = self._write("reports", "Old_Report.md", "# Legacy\n")
+        path, message = confluence_mod._resolve_artifact(self.PID, legacy)
+        self.assertIsNone(path)
+        self.assertIn("migrate_artifacts", message)
+
+    def test_a_non_markdown_artifact_is_refused(self):
+        """A .puml is diagram source: it renders as noise, and the extension leaks
+        into the derived page title."""
+        self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")
+        puml = self._write(f"reports/{self.PID}", "uc_diagram.puml", "@startuml\n@enduml\n")
+        path, message = confluence_mod._resolve_artifact(self.PID, puml)
+        self.assertIsNone(path)
+        self.assertIn("Markdown", message)
 
     def test_empty_selector_lists_what_is_available(self):
         self._write(f"reports/{self.PID}", "7_6_recommendation_20260720_101010.md")

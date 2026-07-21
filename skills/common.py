@@ -339,6 +339,16 @@ def load_stakeholder_registry(project_id: str) -> dict:
             with open(path, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
             if isinstance(loaded, dict) and isinstance(loaded.get("stakeholders"), list):
+                # `history` is appended to with `.setdefault("history", []).append(...)`,
+                # which raises if the stored value is a dict rather than a list. 3.2
+                # swallows that in its blanket guard, 4.2 does not — so normalise here,
+                # where both readers pass through.
+                if not isinstance(loaded.get("history"), list):
+                    loaded["history"] = []
+                # Drop entries that are not objects: the merge indexes into each one.
+                loaded["stakeholders"] = [
+                    s for s in loaded["stakeholders"] if isinstance(s, dict)
+                ]
                 registry = loaded
         except (json.JSONDecodeError, OSError):
             pass

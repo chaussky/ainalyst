@@ -175,9 +175,13 @@ def _safe_load_json(path: str) -> Optional[dict]:
         return None
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
     except (json.JSONDecodeError, IOError):
         return None
+    # The return type says dict and every caller immediately does `.get(...)`, but a
+    # JSON file may legally hold a list or a scalar at the top level. A file corrupted
+    # into a list would raise AttributeError in all five import branches at once.
+    return data if isinstance(data, dict) else None
 
 
 # ---------------------------------------------------------------------------

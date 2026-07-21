@@ -596,6 +596,41 @@ class TestPlanSeedsRegistryEndToEnd(BaseMCPTest):
             names = [s.get("name") for s in json.load(f).get("stakeholders", [])]
         self.assertIn("Jane", names, "container key and field name must match 7.4's reader")
 
+    def test_overriding_an_elicited_attitude_is_surfaced(self):
+        """A STATED attitude legitimately wins over the registry — it is the analyst's
+        judgment, not an assumption. But doing it silently is how a Blocker flagged in
+        elicitation disappears, so the override is reported."""
+        self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
+                     "interest": "High"}])
+        mod42.update_stakeholder_registry(
+            project_name=self.P, session_source="Interview with Jane",
+            new_stakeholders_json=json.dumps([
+                {"name": "Jane", "role": "CFO", "attitude": "Blocker"}]))
+
+        result = self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
+                              "interest": "High", "attitude": "Champion"}])
+
+        self.assertIn("Blocker", result)
+        self.assertIn("Champion", result)
+        self.assertEqual(self._person("Jane")["attitude"], "Champion",
+                         "a stated attitude wins — the point is that it is announced")
+
+    def test_no_conflict_line_when_the_plan_states_nothing(self):
+        """An unstated attitude carries an assumed default and is not evidence of
+        anything, so it must not be reported as a disagreement."""
+        self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
+                     "interest": "High"}])
+        mod42.update_stakeholder_registry(
+            project_name=self.P, session_source="Interview with Jane",
+            new_stakeholders_json=json.dumps([
+                {"name": "Jane", "role": "CFO", "attitude": "Blocker"}]))
+
+        result = self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
+                              "interest": "High"}])
+
+        self.assertNotIn("overrides an attitude", result)
+        self.assertEqual(self._person("Jane")["attitude"], "Blocker")
+
     def test_wrong_shaped_stakeholders_json_is_rejected_not_crashed(self):
         """This JSON is written by an LLM: a list of strings is an ordinary case, and an
         unhandled exception from an MCP tool is a protocol error (class CH3-A / CH4-A)."""

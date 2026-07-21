@@ -39,6 +39,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, normalize_project_id, report_dir_for, specs_dir,
+    REPORTS_DIR,
 )
 
 mcp = FastMCP("BABOK_Confluence_Integration")
@@ -409,7 +410,13 @@ def _list_artifacts(project_id: str) -> list:
     """Every .md in the project's roots, newest first. Both roots are ONE pool."""
     found = []
     for root in _artifact_roots(project_id):
-        for name in os.listdir(root):
+        try:
+            names = os.listdir(root)
+        except OSError:
+            # A missing root is normal (a project may have no specs yet); an
+            # unreadable one must not escape as a protocol error either.
+            continue
+        for name in names:
             if name.lower().endswith(".md"):
                 found.append(os.path.join(root, name))
     return sorted(found, key=_artifact_sort_key, reverse=True)
@@ -466,10 +473,29 @@ def _resolve_artifact(project_id: str, selector: str):
                 continue  # different drives on Windows
         if not inside:
             allowed = ", ".join(f"`{r}`" for r in roots) if roots else "(none exist yet)"
+            # A pre-layout artifact sits in a FLAT reports/ with no project folder. It
+            # really is this project's file, so "outside project X" was a false
+            # statement; the flat directory is deliberately NOT a root, because it is
+            # not scoped to a project and would expose every other project's documents.
+            legacy_hint = ""
+            if os.path.dirname(real) == os.path.realpath(REPORTS_DIR):
+                legacy_hint = (
+                    "\n\nThis looks like a pre-layout artifact in the flat `reports/` "
+                    "folder. Run `python migrate_artifacts.py` to move it into "
+                    "`reports/<project_id>/`, then publish it."
+                )
             return None, (
-                f"❌ `{selector}` is outside project `{project_id}`.\n"
-                f"Publishing is irreversible, so only the project's own directories "
-                f"are allowed: {allowed}"
+                f"❌ `{selector}` is not in this project's directories.\n"
+                f"Publishing is irreversible, so only these are allowed: {allowed}"
+                f"{legacy_hint}"
+            )
+        if not real.lower().endswith(".md"):
+            # Diagram sources and data files are not documents: they would render as
+            # noise, and the extension leaks into the derived page title.
+            return None, (
+                f"❌ `{os.path.basename(real)}` is not a Markdown document. "
+                f"Only `.md` artifacts are publishable — a `.puml` is diagram source, "
+                f"and its rendered diagram belongs in the document that references it."
             )
         return real, f"Publishing `{os.path.basename(real)}` (explicit path)."
 
@@ -927,8 +953,13 @@ def publish_artifact_to_confluence(
 
     if result.get("status") != "synced":
         # INT-D: the reason lives in `message` — surface it, never a bare failure.
+        # The note reads "Publishing <file>." — appending it after a failure suggested
+        # the publication had gone ahead. State what was attempted, in the past tense.
         reason = result.get("message") or "unknown error"
-        return f"❌ Publication failed: {reason}\n\n{note}"
+        return (
+            f"❌ Publication failed: {reason}\n\n"
+            f"**Nothing was published.** Attempted: `{path}` → page **{title}**."
+        )
 
     return (
         f"✅ Page {result.get('operation', 'published')}: **{title}**\n\n"

@@ -42,7 +42,7 @@ from skills.common import (
     parse_json_list as _parse_json_list,
     parse_json_str_list as _parse_string_list,
     parse_json_dict_list as _parse_json_dict_list,
-    update_stakeholder_registry_file,
+    update_stakeholder_registry_file, load_stakeholder_registry, stakeholder_identity,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -222,6 +222,35 @@ _REGISTRY_SOURCE = "3.2 BA plan (Power/Interest map)"
 _REGISTRY_SEED_FIELDS = ("name", "role", "influence", "interest", "attitude", "contact")
 
 
+def _attitude_conflicts(project_id: str, planned: list) -> list:
+    """Where the plan and the living registry disagree about a stakeholder's attitude.
+
+    Returns [(name, planned_attitude, recorded_attitude)]. Only reports a genuine
+    disagreement: an entry the plan left unstated carries an assumed default and is
+    not evidence of anything, so it is skipped.
+
+    Never raises — this is advisory, and planning must not fail on a registry read.
+    """
+    try:
+        registry = load_stakeholder_registry(project_id)
+    except Exception:  # noqa: BLE001 — advisory only
+        return []
+
+    recorded = {stakeholder_identity(s): s for s in registry.get("stakeholders", [])}
+    conflicts = []
+    for s in planned:
+        stated = str(s.get("attitude") or "").strip()
+        if not stated:
+            continue
+        entry = recorded.get(stakeholder_identity(s))
+        if not entry:
+            continue
+        known = str(entry.get("attitude") or "").strip()
+        if known and known.lower() != stated.lower():
+            conflicts.append((s.get("name") or s.get("role") or "—", stated, known))
+    return conflicts
+
+
 def _seed_stakeholder_registry(project_id: str, stakeholders: list) -> str:
     """Seeds the living stakeholder registry from the 3.2 map. Returns a report line.
 
@@ -352,6 +381,10 @@ def plan_stakeholder_engagement(
     }
     _save_plan(plan, project_id)
 
+    # Read BEFORE seeding: an explicitly stated attitude wins as an ordinary field, so
+    # after the seed the registry already agrees and there would be nothing to report.
+    conflicts = _attitude_conflicts(project_id, seed_source)
+
     # Seed the living registry 4.2 maintains and 7.4 reads, so the same people are
     # not entered twice. Only ever reached once the plan itself is saved.
     registry_note = _seed_stakeholder_registry(project_id, seed_source)
@@ -384,6 +417,25 @@ def plan_stakeholder_engagement(
 
     if blockers:
         lines.append(f"\n⚠️ Blockers: {', '.join(blockers)} — require special attention\n")
+
+    # The blocker line above describes the PLAN just submitted, which is right — that
+    # is what this tool reports on. But an attitude STATED here overwrites what an
+    # interview recorded, and doing that silently is how a Blocker flagged in
+    # elicitation disappears. The overwrite is intended (a stated value is the BA's
+    # judgment, not an assumption); it just must not be invisible.
+    if conflicts:
+        lines.append(
+            "\n⚠️ This plan overrides an attitude that elicitation had recorded:\n"
+        )
+        for name, planned, recorded in conflicts:
+            lines.append(
+                f"  {name}: elicitation recorded {recorded}, this plan states "
+                f"{planned} — the registry now holds {planned}\n"
+            )
+        lines.append(
+            "  If the interview is the more recent evidence, restate it here or "
+            "correct it via `update_stakeholder_registry` (4.2).\n"
+        )
 
     lines.append(registry_note)
 
