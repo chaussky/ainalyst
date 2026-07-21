@@ -30,7 +30,40 @@ REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: documents for humans
 # ("business", "business_need") — `business_goal` must keep failing the no-source check,
 # because a goal derives from a need and therefore should have a source. Do not
 # substitute this constant there.
+# ---------------------------------------------------------------------------
+# The 5.1 graph vocabulary, grouped by the ROLE a node plays
+# ---------------------------------------------------------------------------
+# Nine producers write into <project>_traceability_repo.json and each new chapter
+# added its own node type. A consumer that hard-codes the subset it knew about does
+# not fail loudly, it misclassifies: goals get asked for owners, risks are reported
+# as unjustified orphans, and requirements vanish from a signed traceability matrix.
+# Group by role here, once, so a type added later is classified rather than ignored.
+
+# Roots — the WHY. They have no upstream source by definition.
 BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
+
+# Other chapters' analysis artifacts. They live in the graph for traceability but
+# are not requirements: they are never specified, prioritised, verified or approved.
+ANALYSIS_NODE_TYPES = {"risk", "change_request"}
+
+# NOTE — `solution` is deliberately absent from ANALYSIS_NODE_TYPES. The literal
+# carries two meanings in the same field: 6.4's solution-scope node AND the BABOK
+# requirement CLASS that init_traceability_repo and the Confluence import assign to
+# ordinary requirements. Excluding it would drop real requirements from every count.
+# Between over-counting one scope node and under-counting requirements, only the
+# second is a lie about coverage. Resolving this properly means renaming 6.4's node
+# type, which is an ADR change plus a migration for graphs already written.
+
+TEST_NODE_TYPES = {"test"}
+
+# Everything that must not be counted, scored, verified or approved as a requirement.
+NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NODE_TYPES
+
+# Relations that justify a node's existence upward — "something explains why I am here".
+# `threatens` (6.3) and `modifies` (5.4) belong here: a risk that threatens an
+# objective and a change request that modifies a requirement are both anchored, and
+# reporting them as orphans sends the analyst hunting for a justification they have.
+SOURCE_RELATIONS = {"derives", "satisfies", "threatens", "modifies"}
 
 
 def _ensure_dirs():

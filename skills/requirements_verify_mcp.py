@@ -31,7 +31,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
-    has_passed_verification, was_verification_forced,
+    has_passed_verification, was_verification_forced, NON_REQUIREMENT_NODE_TYPES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Verify")
@@ -578,9 +578,19 @@ def check_req_quality(
         reqs_to_check = [r for r in all_reqs if r["id"] in ids_to_check]
         not_found = [i for i in ids_to_check if i not in {r["id"] for r in all_reqs}]
     else:
-        # Take all draft reqs (not verified, not rejected)
+        # Take all draft reqs (not verified, not rejected).
+        #
+        # Selecting by status alone swept in every node another chapter registers:
+        # 6.1's needs, 6.2's objectives, 6.3's risks and 5.4's change requests all
+        # carry statuses this set does not mention, so the quality checklist was
+        # applied to them — telling the analyst a business need lacks an owner and an
+        # objective lacks a priority. Select by ROLE first, then by status.
         skip_statuses = {"verified", "approved", "deprecated", "superseded", "retired", "rejected"}
-        reqs_to_check = [r for r in all_reqs if r.get("status", "draft") not in skip_statuses]
+        reqs_to_check = [
+            r for r in all_reqs
+            if r.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
+            and r.get("status", "draft") not in skip_statuses
+        ]
         not_found = []
 
     # Filter by type
@@ -1376,7 +1386,16 @@ def get_verification_report(
 
     # Statistics by requirements
     skip_statuses = {"deprecated", "superseded", "retired"}
-    active_reqs = [r for r in all_reqs if r.get("status") not in skip_statuses]
+    # Same rule as check_req_quality: only requirements are verified. Counting other
+    # chapters' nodes in the denominator drove the verified percentage down and made
+    # the report answer "not ready for 5.5" because of objectives and risks, which are
+    # not verifiable artifacts. It also reported 6.4's scope node — stored with
+    # `status: approved` in the sense "scope settled" — as approved in the 5.5 sense.
+    active_reqs = [
+        r for r in all_reqs
+        if r.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
+        and r.get("status") not in skip_statuses
+    ]
     total = len(active_reqs)
 
     if total == 0:

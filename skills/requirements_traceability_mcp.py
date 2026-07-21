@@ -26,7 +26,8 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+                           normalize_project_id, ANALYSIS_NODE_TYPES)
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
@@ -449,24 +450,29 @@ def run_impact_analysis(
             seen_ids.add(item["id"])
             unique_affected.append(item)
 
-    # Group by link type
-    by_relation: dict = {
-        "derives": [],
-        "depends": [],
-        "satisfies": [],
-        "verifies": [],
-    }
-    for item in unique_affected:
-        rel = item["relation"]
-        if rel in by_relation:
-            by_relation[rel].append(item)
-
+    # Group by link type.
+    #
+    # The headline count comes from `unique_affected`, so every relation reachable in
+    # the graph MUST have a bucket here. Grouping into a fixed four while counting all
+    # of them printed "13 artifacts affected" above tables holding nine rows, and the
+    # artifacts it dropped were the ones reached over `threatens` — the risks
+    # endangering the objective, which is precisely what impact analysis exists to
+    # surface. Build the buckets from what is actually present.
     rel_labels = {
         "derives": ("⬇️ Derived requirements", "Review — they derive from the changed item"),
         "depends": ("↔️ Dependent requirements", "Check — they may lose meaning without the changed item"),
         "satisfies": ("✔️ Implementation components", "Estimate the scope of code/design rework"),
         "verifies": ("🧪 Tests", "Rerun or update the test cases"),
+        "threatens": ("⚠️ Risks (6.3)", "Re-assess — they threaten the changed item"),
+        "modifies": ("📝 Change requests (5.4)", "Check whether the pending change still applies"),
     }
+
+    by_relation: dict = {rel: [] for rel in rel_labels}
+    for item in unique_affected:
+        rel = item["relation"]
+        by_relation.setdefault(rel, []).append(item)
+        rel_labels.setdefault(
+            rel, (f"🔗 Linked via `{rel}`", "Review the relationship"))
 
     lines = [
         f"<!-- BABOK 5.1 — Impact Analysis | Project: {project_name} | {date.today()} -->",
@@ -612,6 +618,17 @@ def check_coverage(
         elif req_type == "test":
             has_source = has_source or any(
                 lnk["relation"] == "verifies" and lnk["from"] == req_id
+                for lnk in links
+            )
+        # Analysis artifacts from other chapters anchor themselves with their OWN
+        # relation: 6.3 writes `threatens` (from=risk -> to=objective) and 5.4 writes
+        # `modifies` (from=CR -> to=requirement). Judging them by `derives`/`satisfies`
+        # alone made every risk and every change request an orphan, and the audit told
+        # the analyst to "find a business justification or freeze it" for nodes that
+        # were already anchored.
+        elif req_type in ANALYSIS_NODE_TYPES:
+            has_source = has_source or any(
+                lnk["relation"] in ("threatens", "modifies") and lnk["from"] == req_id
                 for lnk in links
             )
 
@@ -788,6 +805,12 @@ def export_traceability_matrix(
         "verifies": "🧪 verifies",
     }
 
+    # Rendering order for the types 5.1 itself defines. It is an ORDER, not a filter:
+    # any type not listed here still gets a section (see below). Driving the render
+    # off a positive list meant every type added by a later chapter — 6.1's needs,
+    # 6.2's goals, 6.3's risks, 5.4's change requests and all eight of 7.1's
+    # specification types — was counted in the header and then never rendered. This
+    # document goes into the 5.5 approval package, so the omission is silent and signed.
     type_order = ["business", "stakeholder", "solution", "transition", "test", "component"]
     type_labels = {
         "business": "Business requirements",
@@ -796,7 +819,24 @@ def export_traceability_matrix(
         "transition": "Transition requirements",
         "test": "Tests",
         "component": "Components",
+        "business_need": "Business needs (6.1)",
+        "business_goal": "Business objectives (6.2)",
+        "risk": "Risks (6.3)",
+        "change_request": "Change requests (5.4)",
+        "functional": "Functional requirements",
+        "non_functional": "Non-functional requirements",
+        "business_rule": "Business rules",
+        "user_story": "User stories",
+        "use_case": "Use cases",
+        "business_process": "Business processes",
+        "data_dictionary": "Data dictionaries",
+        "erd": "Entity-relationship models",
     }
+    # Known types first, in the order above; then anything else, so a node type
+    # introduced later is rendered under its own name instead of disappearing.
+    present_types = {r.get("type") or "untyped" for r in requirements}
+    render_order = [t for t in type_order if t in present_types]
+    render_order += sorted(present_types - set(type_order))
 
     lines = [
         f"<!-- BABOK 5.1 — Traceability Matrix | Project: {project_name} | {date.today()} -->",
@@ -816,8 +856,9 @@ def export_traceability_matrix(
     lines.append("## Requirements")
     lines.append("")
 
-    for req_type in type_order:
-        type_reqs = [r for r in requirements if r.get("type") == req_type]
+    for req_type in render_order:
+        type_reqs = [r for r in requirements
+                     if (r.get("type") or "untyped") == req_type]
         if not type_reqs:
             continue
         label = type_labels.get(req_type, req_type)

@@ -26,7 +26,8 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES)
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
 
@@ -576,7 +577,15 @@ def check_requirements_health(
     logger.info(f"check_requirements_health: '{project_name}'")
 
     repo = _load_repo(project_name)
+    # Only requirements are maintained here. The health criteria — volatility, owner,
+    # staleness, reuse — describe a requirement's lifecycle, so applying them to other
+    # chapters' nodes produced a report demanding an owner for every business objective
+    # and every risk in the register. An explicit filter_type still wins, so a BA who
+    # deliberately asks for `risk` gets it.
     requirements = repo["requirements"]
+    if not filter_type:
+        requirements = [r for r in requirements
+                        if r.get("type", "") not in NON_REQUIREMENT_NODE_TYPES]
 
     # By default — active only (not archived)
     archive_statuses = {"deprecated", "superseded", "retired"}

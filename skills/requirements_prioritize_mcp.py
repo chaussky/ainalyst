@@ -25,7 +25,8 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES)
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
 
@@ -413,7 +414,14 @@ def start_prioritization_session(
             return "❌ Error parsing quadrant_mapping_json. Check the JSON format."
 
     # Get requirements from the repository
-    nodes = [n for n in repo.get("requirements", []) if n.get("status") != "deprecated"]
+    # Only requirements go to a prioritisation vote. Selecting by status alone offered
+    # stakeholders a Must/Should/Could/Won't choice on business objectives, risks and
+    # change requests — none of which are scoped items a stakeholder can rank.
+    nodes = [
+        n for n in repo.get("requirements", [])
+        if n.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
+        and n.get("status") != "deprecated"
+    ]
     if not nodes:
         return (f"⚠️ Repository '{project_name}' has no requirements, or doesn't exist.\n"
                 f"First create the repository via 5.1 (init_traceability_repo).")
