@@ -32,6 +32,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Requirements_Spec")
@@ -69,8 +70,10 @@ def _repo_path(project_id: str) -> str:
 def _load_repo(project_id: str) -> dict:
     path = _repo_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {
         "project": project_id,
         "formality_level": "Standard",
@@ -279,6 +282,7 @@ def _load_future_state_goals(project_id: str) -> list:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def analyze_elicitation_context(
     project_id: str,
     context_text: str = "",
@@ -405,6 +409,7 @@ def analyze_elicitation_context(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_user_story(
     project_id: str,
     story_id: str,
@@ -524,6 +529,7 @@ def create_user_story(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_functional_requirement(
     project_id: str,
     req_id: str,
@@ -672,6 +678,7 @@ def create_functional_requirement(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_use_case(
     project_id: str,
     uc_id: str,
@@ -794,6 +801,7 @@ def create_use_case(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def generate_use_case_diagram(
     project_id: str,
     system_boundary: str,
@@ -958,6 +966,7 @@ def generate_use_case_diagram(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_business_process(
     project_id: str,
     bp_id: str,
@@ -1166,6 +1175,7 @@ def create_business_process(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_data_dictionary(
     project_id: str,
     dd_id: str,
@@ -1309,6 +1319,7 @@ def create_data_dictionary(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_erd(
     project_id: str,
     erd_id: str,
@@ -1519,6 +1530,7 @@ def create_erd(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def build_coverage_matrix(
     project_id: str,
 ) -> str:

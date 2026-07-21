@@ -368,10 +368,10 @@ class TestAddStakeholderScores(BaseMCPTest):
     def test_wsjf_scores(self):
         """WSJF scores are validated and saved."""
         _start_session(session="WSJF session", method="WSJF")
-        result = mod53.add_stakeholder_scores.__wrapped__(*[], **{}) if hasattr(
-            mod53.add_stakeholder_scores, "__wrapped__"
-        ) else None
-
+        # (A dead `__wrapped__` probe used to sit here. It was never taken — the tool
+        # carried no wrapper at the time — and its result was overwritten by the real
+        # call below before anything was asserted. Adding a real decorator to the tool
+        # boundary made the dead branch live and it failed immediately.)
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             result = mod53.add_stakeholder_scores(
                 project_name=PROJECT,

@@ -28,7 +28,9 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
-                           has_been_approved)
+                           has_been_approved,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
 
@@ -55,8 +57,10 @@ def _repo_path(project_name: str) -> str:
 def _load_repo(project_name: str) -> dict:
     path = _repo_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {
         "project": project_name,
         "formality_level": "Standard",
@@ -218,6 +222,7 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def update_requirement(
     project_name: str,
     req_id: str,
@@ -395,6 +400,7 @@ def update_requirement(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def deprecate_requirements(
     project_name: str,
     req_ids_json: str,
@@ -549,6 +555,7 @@ def deprecate_requirements(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_requirements_health(
     project_name: str,
     filter_type: str = "",
@@ -759,6 +766,7 @@ def check_requirements_health(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def find_reusable_requirements(
     project_name: str,
     search_query: str = "",

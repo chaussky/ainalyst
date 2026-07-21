@@ -34,6 +34,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     has_passed_verification, BUSINESS_NODE_TYPES,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Requirements_Validate")
@@ -72,8 +73,10 @@ def _assumptions_path(project_id: str) -> str:
 def _load_repo(project_id: str) -> dict:
     path = _repo_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {"project": project_id, "requirements": [], "links": [], "history": []}
 
 
@@ -90,8 +93,10 @@ def _save_repo(repo: dict) -> None:
 def _load_context(project_id: str) -> Optional[dict]:
     path = _context_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "7.3 business context file")
     return None
 
 
@@ -107,8 +112,10 @@ def _save_context(data: dict) -> None:
 def _load_assumptions(project_id: str) -> dict:
     path = _assumptions_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "7.3 assumptions file")
     return {
         "project": project_id,
         "assumptions": {},
@@ -217,6 +224,7 @@ def _title_matches_goal(req_title: str, goal_title: str) -> bool:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def set_business_context(
     project_id: str,
     business_goals_json: str,
@@ -479,6 +487,7 @@ def set_business_context(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_business_alignment(
     project_id: str,
     req_ids: str = "",
@@ -709,6 +718,7 @@ def check_business_alignment(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def set_success_criteria(
     project_id: str,
     req_id: str,
@@ -823,6 +833,7 @@ def set_success_criteria(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def log_assumption(
     project_id: str,
     description: str,
@@ -936,6 +947,7 @@ def _update_assumption_stats(data: dict) -> None:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def resolve_assumption(
     project_id: str,
     assumption_id: str,
@@ -1037,6 +1049,7 @@ def resolve_assumption(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def mark_req_validated(
     project_id: str,
     req_ids: str,
@@ -1216,6 +1229,7 @@ def mark_req_validated(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def get_validation_report(
     project_id: str,
 ) -> str:

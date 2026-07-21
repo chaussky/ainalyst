@@ -34,6 +34,7 @@ from skills.common import (
     has_passed_verification, was_verification_forced, NON_REQUIREMENT_NODE_TYPES,
     approval_outcome, APPROVAL_OUTCOME_APPROVED, APPROVAL_OUTCOME_CONDITIONAL,
     APPROVAL_OUTCOME_UNKNOWN,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Requirements_Verify")
@@ -112,8 +113,10 @@ def _repo_path(project_id: str) -> str:
 def _load_repo(project_id: str) -> dict:
     path = _repo_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {"project": project_id, "requirements": [], "links": [], "history": []}
 
 
@@ -146,8 +149,10 @@ def _issues_path(project_id: str) -> str:
 def _load_issues(project_id: str) -> dict:
     path = _issues_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "7.2 verification issues file")
     return {
         "project": project_id,
         "issues": {},
@@ -538,6 +543,7 @@ def _check_single_req(req: dict, repo: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_req_quality(
     project_id: str,
     req_ids: str = "",
@@ -768,6 +774,7 @@ def check_req_quality(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_model_consistency(
     project_id: str,
 ) -> str:
@@ -1020,6 +1027,7 @@ def check_model_consistency(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def open_verification_issue(
     project_id: str,
     req_id: str,
@@ -1133,6 +1141,7 @@ def open_verification_issue(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def resolve_verification_issue(
     project_id: str,
     issue_id: str,
@@ -1221,6 +1230,7 @@ def resolve_verification_issue(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def mark_req_verified(
     project_id: str,
     req_ids: str,
@@ -1385,6 +1395,7 @@ def mark_req_verified(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def get_verification_report(
     project_id: str,
 ) -> str:

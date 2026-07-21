@@ -29,6 +29,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Requirements_Assess_Changes")
@@ -73,8 +74,10 @@ def _repo_path(project_name: str) -> str:
 def _load_repo(project_name: str) -> dict:
     path = _repo_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {"project": project_name, "requirements": [], "links": [], "history": []}
 
 
@@ -175,6 +178,7 @@ def _get_version_minor(version_str: str) -> int:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def open_cr(
     project_name: str,
     cr_id: str,
@@ -333,6 +337,7 @@ def open_cr(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def run_cr_impact(
     project_name: str,
     cr_id: str,
@@ -574,6 +579,7 @@ def run_cr_impact(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def score_cr(
     project_name: str,
     cr_id: str,
@@ -775,6 +781,7 @@ def score_cr(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def resolve_cr(
     project_name: str,
     cr_id: str,

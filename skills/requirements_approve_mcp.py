@@ -32,6 +32,7 @@ from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     has_passed_verification, was_verification_forced, compute_approval_outcome,
     APPROVAL_HISTORY_FILENAME,
+    read_json_artifact, guard_artifact_errors, parse_json_dict_list,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -68,8 +69,10 @@ def _approval_history_path(project_name: str) -> str:
 def _load_repo(project_name: str) -> dict:
     path = _repo_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {"project": project_name, "requirements": [], "links": [], "history": []}
 
 
@@ -84,8 +87,10 @@ def _save_repo(project_name: str, repo: dict) -> None:
 def _load_approval_history(project_name: str) -> dict:
     path = _approval_history_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.5 approval history")
     return {"project": project_name, "packages": {}, "baselines": []}
 
 
@@ -293,6 +298,7 @@ def _get_cr_context(repo: dict, req_id: str) -> list:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def prepare_approval_package(
     project_name: str,
     package_id: str,
@@ -536,6 +542,7 @@ def prepare_approval_package(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def record_approval_decision(
     project_name: str,
     package_id: str,
@@ -591,10 +598,15 @@ def record_approval_decision(
     """
     logger.info(f"record_approval_decision: {package_id} / {stakeholder_name} / {project_name}")
 
-    try:
-        req_decisions = json.loads(req_decisions_json)
-    except json.JSONDecodeError:
-        return "❌ Error: `req_decisions_json` must be a valid JSON list."
+    # `rd["req_id"]` is indexed a few lines down, so a list of bare ids raised
+    # `TypeError: string indices must be integers` out of the tool. This one records
+    # an official approval decision — failing it with a stack trace leaves the analyst
+    # unsure whether the decision was stored.
+    req_decisions, shape_error = parse_json_dict_list(
+        req_decisions_json, "req_decisions_json",
+        example='[{"req_id": "FR-001", "decision": "approved"}]')
+    if shape_error:
+        return shape_error
 
     history = _load_approval_history(project_name)
     package = _get_package(history, package_id)
@@ -820,6 +832,7 @@ def record_approval_decision(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def close_approval_condition(
     project_name: str,
     package_id: str,
@@ -921,6 +934,7 @@ def close_approval_condition(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_approval_status(
     project_name: str,
     package_id: str,
@@ -1113,6 +1127,7 @@ def check_approval_status(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_requirements_baseline(
     project_name: str,
     package_id: str,

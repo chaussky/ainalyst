@@ -26,7 +26,9 @@ from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
-                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES)
+                           normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
+    read_json_artifact, guard_artifact_errors, parse_json_dict_list,
+)
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
 
@@ -65,8 +67,10 @@ def _prio_path(project_name: str) -> str:
 def _load_repo(project_name: str) -> dict:
     path = _repo_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {"project": project_name, "requirements": [], "links": [], "history": []}
 
 
@@ -81,8 +85,10 @@ def _save_repo(project_name: str, repo: dict) -> None:
 def _load_prio(project_name: str) -> dict:
     path = _prio_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.3 prioritization file")
     return {"project": project_name, "sessions": []}
 
 
@@ -366,6 +372,7 @@ def _check_must_inflation(priorities: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def start_prioritization_session(
     project_name: str,
     session_label: str,
@@ -542,6 +549,7 @@ def start_prioritization_session(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def add_stakeholder_scores(
     project_name: str,
     session_label: str,
@@ -580,10 +588,13 @@ def add_stakeholder_scores(
     if session["status"] == "closed":
         return f"❌ Session '{session_label}' is already closed."
 
-    try:
-        raw_scores = json.loads(scores_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing scores_json: {e}"
+    # Elements are read as objects (`item.get("req_id")`) immediately below, so the
+    # shape has to be checked here rather than discovered by an AttributeError.
+    raw_scores, shape_error = parse_json_dict_list(
+        scores_json, "scores_json", required=True,
+        example='[{"req_id": "FR-001", "score": "Must"}]')
+    if shape_error:
+        return shape_error
 
     # Validate and normalize scores by method
     method = session["method"]
@@ -652,6 +663,7 @@ def add_stakeholder_scores(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def run_aggregation(
     project_name: str,
     session_label: str,
@@ -858,6 +870,7 @@ def run_aggregation(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def resolve_conflict(
     project_name: str,
     session_label: str,
@@ -956,6 +969,7 @@ def resolve_conflict(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def save_prioritization_result(
     project_name: str,
     session_label: str,

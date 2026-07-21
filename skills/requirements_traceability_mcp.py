@@ -28,7 +28,9 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, ANALYSIS_NODE_TYPES,
-                           BUSINESS_NODE_TYPES, has_been_approved)
+                           BUSINESS_NODE_TYPES, has_been_approved,
+    read_json_artifact, guard_artifact_errors, parse_json_dict_list,
+)
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
@@ -49,8 +51,10 @@ def _load_repo(project_name: str) -> dict:
     """Loads the repository from JSON. Returns an empty structure if it doesn't exist."""
     path = _repo_path(project_name)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
+        # at the tool boundary. A bare json.load here made a damaged file a protocol
+        # error in every downstream tool.
+        return read_json_artifact(path, "5.1 traceability repository")
     return {
         "project": project_name,
         "formality_level": "Standard",
@@ -93,6 +97,7 @@ def _find_links(repo: dict, req_id: str) -> list:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def init_traceability_repo(
     project_name: str,
     formality_level: Literal["Lite", "Standard", "Full"],
@@ -127,10 +132,14 @@ def init_traceability_repo(
     """
     logger.info(f"init_traceability_repo: {project_name}, level: {formality_level}")
 
-    try:
-        requirements = json.loads(requirements_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing requirements_json: {e}"
+    # Shape, not just syntax. The elements are used as objects a few lines down, so a
+    # list of bare ids — the most likely mistake, since neighbouring parameters
+    # legitimately take strings — used to raise AttributeError out of the tool.
+    requirements, shape_error = parse_json_dict_list(
+        requirements_json, "requirements_json", required=True,
+        example='[{"id": "FR-001", "type": "functional", "title": "..."}]')
+    if shape_error:
+        return shape_error
 
     # Load the existing repository (if any) — don't wipe out links
     repo = _load_repo(project_name)
@@ -284,6 +293,7 @@ def init_traceability_repo(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def add_trace_link(
     project_name: str,
     from_id: str,
@@ -398,6 +408,7 @@ def add_trace_link(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def run_impact_analysis(
     project_name: str,
     changed_req_id: str,
@@ -572,6 +583,7 @@ def run_impact_analysis(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_coverage(
     project_name: str,
     filter_type: str = "",
@@ -798,6 +810,7 @@ def check_coverage(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def export_traceability_matrix(
     project_name: str,
     filter_relation: str = "",

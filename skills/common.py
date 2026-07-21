@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+import functools
 import json
 import os
 import re
@@ -352,6 +353,65 @@ def was_verification_forced(repo: dict, req_id: str) -> bool:
                 and entry.get("forced")):
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Stored-artifact corruption — shared by every chapter that loads a repository
+# ---------------------------------------------------------------------------
+#
+# Every `_load_repo` in chapters 5 and 7 called `json.load` bare, so a damaged file
+# turned every downstream tool into a PROTOCOL error: the analyst got a stack trace
+# where every neighbouring tool returns a readable ❌ line, with no idea which file was
+# at fault or whether anything had been written. The correct behaviour already existed
+# one module away in `load_stakeholder_registry`.
+#
+# The loaders raise, and the tool boundary converts. Raising keeps the alternative —
+# "return an empty repository" — off the table: that is silent data loss, and it makes
+# a tool state confidently that a project has no requirements when in fact its file
+# could not be read. Degradation may say LESS; it may not conclude more (CH3-D).
+
+
+class CorruptArtifactError(Exception):
+    """A stored artifact exists but cannot be parsed. `str(exc)` is BA-facing."""
+
+
+def read_json_artifact(path: str, what: str = "artifact") -> dict:
+    """Reads a stored JSON artifact, raising CorruptArtifactError with the path.
+
+    The path is part of the message on purpose: "something went wrong" is not
+    actionable, whereas a filename tells the analyst exactly what to inspect or
+    restore.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (ValueError, OSError) as exc:
+        # UnicodeDecodeError is a ValueError, not an OSError — a distinction that
+        # already let a non-UTF-8 file escape one guard in this codebase (A4).
+        raise CorruptArtifactError(
+            f"❌ The {what} could not be read: `{path}`\n"
+            f"   {type(exc).__name__}: {exc}\n"
+            f"   The file exists but is not valid JSON. Restore it from version "
+            f"control or a backup — no data has been changed by this call."
+        ) from exc
+
+
+def guard_artifact_errors(fn):
+    """Converts CorruptArtifactError into the ❌ string an MCP tool must return.
+
+    Applied at the tool boundary rather than at each of the ~32 load sites, so a new
+    tool cannot forget it. Only this one exception is caught — everything else
+    propagates unchanged, because swallowing unknown errors is how a tool starts
+    reporting success it did not achieve.
+    """
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except CorruptArtifactError as exc:
+            logger.warning(f"{fn.__name__}: {exc}")
+            return str(exc)
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
