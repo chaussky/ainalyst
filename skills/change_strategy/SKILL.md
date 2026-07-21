@@ -222,7 +222,7 @@ referencing concrete data (risks, goals, readiness).
 **What it does:**
 - Saves `{project}_change_strategy.json` to DATA_DIR (contract for 7.x, 8.x)
 - Generates a Markdown report via `save_artifact()`
-- Optionally: registers the solution in the 5.1 repository as a `solution`-type node
+- Optionally: registers the solution in the 5.1 repository as a `solution_scope`-type node
 
 **Parameters:**
 - `project_id`
@@ -230,7 +230,9 @@ referencing concrete data (risks, goals, readiness).
 - `traceability_project_id` — if the 5.1 repository is under a different project_id
 
 **When push_to_traceability=True:**
-- Creates node SOL-001 of type `solution`
+- Creates node SOL-001 of type `solution_scope` with status `defined`
+  (NOT `solution`, which is the BABOK requirement class in the 5.1 vocabulary,
+  and NOT status `approved`, which is 5.5's stakeholder-approval outcome)
 - Links: SOL-001 satisfies BG-xxx (for each business goal from 6.2)
 
 **After saving — tell the BA:**
@@ -271,5 +273,5 @@ or add a preparatory phase 0 (organizational readiness).
 | → 7.4 | transition_states → requirements architecture by phase |
 | → 7.5 | selected_option + rejected → design constraints |
 | → 7.6 | value_realizable by phase → analysis of potential value |
-| → 5.1 | push_to_traceability → solution node + satisfies links |
+| → 5.1 | push_to_traceability → solution_scope node + satisfies links |
 | → 8.x | transition_states + risks_remaining → baseline for Solution Evaluation |

@@ -17,10 +17,11 @@ and 7.2 / 5.3 / 5.2 asked business goals for owners, priorities and MoSCoW votes
 These tests pin the behaviour on a graph containing EVERY node type and EVERY relation
 a producer really writes — the fixture other suites do not build.
 
-Note on `solution`: it is deliberately NOT a non-requirement type. The literal is both
-6.4's solution-scope node type and the BABOK requirement CLASS the 5.1 vocabulary and
-the Confluence import assign to ordinary requirements. Between over-counting one scope
-node and dropping real requirements, only the second is a lie about coverage.
+Note on `solution`: it is NOT a non-requirement type. It is the BABOK requirement CLASS
+the 5.1 vocabulary and the Confluence import assign to ordinary requirements. 6.4's
+scope node used to share the literal, which is why it could not be excluded from any
+requirement filter; it now types itself `solution_scope` (ADR-082, revised). See
+tests/test_solution_scope_node_type.py.
 """
 
 import json
@@ -62,8 +63,12 @@ def full_graph():
              "version": "1.0", "status": "identified"},
             {"id": "CR-001", "type": "change_request", "title": "Support self-employed",
              "version": "1.0", "status": "open"},
-            {"id": "SOL-001", "type": "solution", "title": "Solution Scope — vocab",
-             "version": "1.0", "status": "approved"},
+            {"id": "SOL-001", "type": "solution_scope", "title": "Solution Scope — vocab",
+             "version": "1.0", "status": "defined"},
+            # The BABOK requirement CLASS, which shares nothing but a prefix with the
+            # scope node above — the population the rename had to keep intact.
+            {"id": "FR-900", "type": "solution", "title": "Export the decision log",
+             "version": "1.0", "status": "draft"},
         ],
         "links": [
             {"from": "BG-001", "to": "BN-001", "relation": "derives"},
@@ -81,11 +86,14 @@ def full_graph():
 class TestSharedVocabulary(unittest.TestCase):
 
     def test_analysis_types_cover_the_producers_that_are_not_requirements(self):
-        self.assertEqual(ANALYSIS_NODE_TYPES, {"risk", "change_request"})
+        self.assertEqual(ANALYSIS_NODE_TYPES,
+                         {"risk", "change_request", "solution_scope"})
 
     def test_solution_is_not_treated_as_a_non_requirement(self):
-        """One literal, two meanings — excluding it would drop real requirements."""
+        """`solution` is the BABOK requirement class — excluding it drops real
+        requirements. Only 6.4's `solution_scope` node is a non-requirement."""
         self.assertNotIn("solution", NON_REQUIREMENT_NODE_TYPES)
+        self.assertIn("solution_scope", NON_REQUIREMENT_NODE_TYPES)
 
     def test_non_requirement_set_is_the_union(self):
         self.assertEqual(
@@ -145,6 +153,28 @@ class TestCoverageAuditClassifiesForeignNodes(unittest.TestCase):
         orphan_section = out.split("## 🔴")[1].split("##")[0] if "## 🔴" in out else ""
         self.assertNotIn("CR-001", orphan_section)
 
+    def _row(self, out, req_id):
+        for line in out.splitlines():
+            if f"`{req_id}`" in line and line.startswith("|"):
+                return line
+        return ""
+
+    def test_analysis_artifacts_are_not_asked_for_an_implementation(self):
+        """The orphan verdict was fixed for these nodes; the gap column was not.
+        The audit still told the analyst to 'add implementation' for every risk and
+        every change request — nothing is supposed to implement either."""
+        out = t51.check_coverage("vocab")
+        for node_id in ("RK-001", "CR-001"):
+            self.assertNotIn(
+                "no implementation", self._row(out, node_id),
+                f"{node_id} was reported as missing an implementation",
+            )
+
+    def test_a_real_requirement_is_still_asked_for_an_implementation(self):
+        """The guard against over-correcting: the rule must survive for requirements."""
+        out = t51.check_coverage("vocab")
+        self.assertIn("no implementation", self._row(out, "NFR-001"))
+
 
 class TestImpactAnalysisCountMatchesItsTables(unittest.TestCase):
 
@@ -178,10 +208,6 @@ class TestImpactAnalysisCountMatchesItsTables(unittest.TestCase):
         )
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestImpactDoesNotExpandThroughObjectives(unittest.TestCase):
     """Objectives are hubs: 7.1 links every requirement to the ones it serves, so
     expanding past one walks back down to every sibling."""
@@ -207,3 +233,7 @@ class TestImpactDoesNotExpandThroughObjectives(unittest.TestCase):
             "FR-777 only shares an objective with the changed requirement — that is "
             "not an impact, and counting it inflates the 5.4 score",
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

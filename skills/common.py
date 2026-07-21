@@ -42,17 +42,20 @@ REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: documents for humans
 # Roots — the WHY. They have no upstream source by definition.
 BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
 
+# 6.4's solution-scope node (ADR-082, revised). It used to be typed `solution`, which
+# is ALSO the BABOK requirement CLASS in the 5.1 vocabulary
+# (business | stakeholder | solution | transition) — the class init_traceability_repo
+# and the Confluence import assign to ordinary FR/NFR. One literal, two populations:
+# the scope node could not be excluded without dropping real requirements, so it was
+# counted as a requirement everywhere — asked for a test case by 5.1, for an owner by
+# 5.2, for a MoSCoW vote by 5.3. Renaming the SCOPE node (the smaller, single-writer
+# population) separates them; `solution` again means only the requirement class.
+# Graphs written before the rename are migrated by migrate_solution_scope.py.
+SOLUTION_SCOPE_NODE_TYPE = "solution_scope"
+
 # Other chapters' analysis artifacts. They live in the graph for traceability but
 # are not requirements: they are never specified, prioritised, verified or approved.
-ANALYSIS_NODE_TYPES = {"risk", "change_request"}
-
-# NOTE — `solution` is deliberately absent from ANALYSIS_NODE_TYPES. The literal
-# carries two meanings in the same field: 6.4's solution-scope node AND the BABOK
-# requirement CLASS that init_traceability_repo and the Confluence import assign to
-# ordinary requirements. Excluding it would drop real requirements from every count.
-# Between over-counting one scope node and under-counting requirements, only the
-# second is a lie about coverage. Resolving this properly means renaming 6.4's node
-# type, which is an ADR change plus a migration for graphs already written.
+ANALYSIS_NODE_TYPES = {"risk", "change_request", SOLUTION_SCOPE_NODE_TYPE}
 
 TEST_NODE_TYPES = {"test"}
 

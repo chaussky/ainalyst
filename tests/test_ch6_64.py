@@ -1033,7 +1033,10 @@ class TestSaveChangeStrategy(BaseMCPTest):
         # Verify the node was added to the repository
         with open(repo_path, encoding="utf-8") as f:
             updated_repo = json.load(f)
-        sol_nodes = [r for r in updated_repo["requirements"] if r.get("type") == "solution"]
+        # `solution_scope`, not `solution`: the latter is the BABOK requirement class
+        # (ADR-082, revised — see tests/test_solution_scope_node_type.py).
+        sol_nodes = [r for r in updated_repo["requirements"]
+                     if r.get("type") == "solution_scope"]
         self.assertEqual(len(sol_nodes), 1)
         self.assertEqual(sol_nodes[0]["id"], "SOL-001")
 
@@ -1084,7 +1087,8 @@ class TestSaveChangeStrategy(BaseMCPTest):
 
         with open(repo_path, encoding="utf-8") as f:
             updated = json.load(f)
-        sol_nodes = [r for r in updated["requirements"] if r.get("type") == "solution"]
+        sol_nodes = [r for r in updated["requirements"]
+                     if r.get("type") == "solution_scope"]
         self.assertEqual(len(sol_nodes), 1)
 
 

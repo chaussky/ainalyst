@@ -31,7 +31,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
-    parse_json_str_list, BUSINESS_NODE_TYPES,
+    parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
 )
 
 mcp = FastMCP("BABOK_Requirements_Spec")
@@ -46,15 +46,14 @@ CONFIRMED_GLOB = "4_3_*_confirmed*.md"
 # Found by E2E: a CR opened in 5.4 was being counted as an uncovered requirement here.
 # Same class as findings 7.3-A / 7.4-C — a skip-filter that knows only part of the set.
 #
-# `solution` is DELIBERATELY ABSENT despite 6.4 using it for its scope node (ADR-082):
-# the same literal is also the BABOK requirement CLASS in the 5.1 vocabulary
-# (business | stakeholder | solution | transition), which is how `init_traceability_repo`
-# and the Confluence import label ordinary FR/NFR. Skipping it dropped REAL requirements
-# out of the coverage matrix — a silent under-report, far worse than a 6.4 scope node
-# appearing as an unattached item. The name collision itself needs a decision (rename
-# the 6.4 node type); until then, err towards counting a requirement.
+# `solution` stays a REQUIREMENT here: it is the BABOK requirement CLASS in the 5.1
+# vocabulary (business | stakeholder | solution | transition), which is how
+# `init_traceability_repo` and the Confluence import label ordinary FR/NFR. 6.4's scope
+# node used to share that literal, which is why it could not be skipped; it now types
+# itself `solution_scope` (ADR-082, revised), so the scope node is excluded and real
+# requirements are not.
 NON_SPEC_NODE_TYPES = BUSINESS_NODE_TYPES | {
-    "test", "change_request", "risk",
+    "test", "change_request", "risk", SOLUTION_SCOPE_NODE_TYPE,
 }
 
 

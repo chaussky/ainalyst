@@ -215,6 +215,7 @@ def init_traceability_repo(
         "transition": "Transition requirements (TR)",
         "test": "Tests (TC)",
         "component": "Components (COMP)",
+        "solution_scope": "Solution scope (6.4)",
     }
     for t, count in type_counts.items():
         label = type_labels.get(t, t)
@@ -663,6 +664,14 @@ def check_coverage(
                 lnk["relation"] in ("threatens", "modifies") and lnk["from"] == req_id
                 for lnk in links
             )
+            # Nor is anything supposed to IMPLEMENT them. An analysis artifact points
+            # upward at what it concerns and that is its whole shape: nothing derives
+            # from a risk, nothing satisfies a change request, and 6.4's scope node is
+            # itself the implementer of the objectives it satisfies. Judging them by
+            # the requirement rule told the analyst to "fill the gaps: add
+            # implementation" for every risk in the project — the same misclassification
+            # as the orphan verdict, one column over.
+            has_impl = True
 
         issues = []
         if not has_source:
@@ -855,6 +864,7 @@ def export_traceability_matrix(
         "business_goal": "Business objectives (6.2)",
         "risk": "Risks (6.3)",
         "change_request": "Change requests (5.4)",
+        "solution_scope": "Solution scope (6.4)",
         "functional": "Functional requirements",
         "non_functional": "Non-functional requirements",
         "business_rule": "Business rules",

@@ -36,7 +36,8 @@ import os
 from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+                           normalize_project_id, SOLUTION_SCOPE_NODE_TYPE)
 
 mcp = FastMCP("BABOK_ChangeStrategy")
 
@@ -983,7 +984,7 @@ def save_change_strategy(
 
     Saves {project}_change_strategy.json (a contract for 7.x, 8.x) and generates
     a Markdown report via save_artifact. Optionally registers the solution in
-    the 5.1 repository as a 'solution'-type node with 'satisfies' links.
+    the 5.1 repository as a 'solution_scope'-type node with 'satisfies' links.
 
     Args:
         project_id: Project identifier
@@ -1035,14 +1036,19 @@ def save_change_strategy(
             if sol_id not in existing_ids:
                 repo.setdefault("requirements", []).append({
                     "id": sol_id,
-                    "type": "solution",
+                    "type": SOLUTION_SCOPE_NODE_TYPE,
                     "title": f"Solution Scope — {project_id}",
                     "version": "1.0",
-                    "status": "approved",
+                    # NOT `approved`: that literal is 5.5's approval OUTCOME, and 7.2
+                    # counted this node as a requirement the stakeholders had signed
+                    # off on a project where 5.5 had never run. `defined` says what
+                    # 6.4 actually established — the scope is settled.
+                    "status": "defined",
                     "added": str(date.today()),
                 })
                 existing_ids.add(sol_id)
-                traceability_notes.append(f"✅ Node {sol_id} (solution) added to 5.1")
+                traceability_notes.append(
+                    f"✅ Node {sol_id} ({SOLUTION_SCOPE_NODE_TYPE}) added to 5.1")
 
             # satisfies links to business_goals
             added_links = 0
