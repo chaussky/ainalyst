@@ -1,8 +1,15 @@
-# Pinned versions (tested, ADR-REVIEW item 7)
-# To update: check compatibility by hand, then bump the versions below
-mcp[cli]==1.6.0
-# fastmcp (standalone) removed: the code uses FastMCP from the mcp package (mcp.server.fastmcp),
-# and standalone fastmcp 2.x requires mcp>=1.8.0 and conflicted with mcp==1.6.0 (issue #3)
-pydantic==2.11.1
-atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC integration
-markdown2==2.5.3               # Markdown → HTML for Confluence storage format
+# Pinned versions — verified by a real install into a clean venv (Python 3.14,
+# 2026-07-22): wheels exist for CPython 3.10-3.14, all 22 servers import and
+# boot with the real (unmocked) mcp package.
+# To update: bump below, then repeat the clean-venv check
+# (fresh clone -> venv -> pip install -> import every skills/*_mcp.py -> boot one server).
+#
+# History: mcp was pinned to 1.6.0 while standalone fastmcp conflicted with it
+# (issue #3); the code uses FastMCP from the mcp package (mcp.server.fastmcp),
+# and mcp >= 1.28 ships it with pydantic 2.13 support, so the old pin is gone.
+# pydantic 2.11.x had no pydantic-core wheels for Python 3.14 and failed to
+# build from source on a clean machine - do not pin below 2.13.
+mcp[cli]==1.28.1
+pydantic==2.13.4
+atlassian-python-api==4.0.7    # Confluence Cloud + Server/DC integration
+markdown2==2.5.5               # Markdown -> HTML for Confluence storage format

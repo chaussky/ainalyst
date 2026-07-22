@@ -4,6 +4,6 @@
 # Core platform dependencies
 -r requirements.txt
 
-# Testing
-pytest==8.3.5
-pytest-cov==6.1.0        # test coverage report
+# Testing (pins verified in a clean venv on Python 3.14, 2026-07-22)
+pytest==9.0.3
+pytest-cov==7.1.0        # test coverage report
