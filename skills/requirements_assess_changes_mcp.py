@@ -14,7 +14,7 @@ Storage:
   - The CR Decision Record is saved via save_artifact
 
 Integration:
-  In:  5.1 repository (graph), 5.2 attributes (stability), 5.3 priorities, governance 3.3
+  In:  5.1 repository (graph), 5.2 attributes (stability), 5.3 priorities
   Out: CR Decision Record → 4.4 (communication), 5.5 (audit)
        under_change status on affected requirements → 5.2 (content update)
 
@@ -28,7 +28,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    BUSINESS_NODE_TYPES,
+    BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors,
 )
 
@@ -136,7 +136,17 @@ def _bfs_impact(repo: dict, start_ids: list) -> list:
                         "stability": neighbor.get("stability", "Unknown"),
                         "priority": neighbor.get("priority", "—"),
                     })
-                    queue.append(neighbor_id)
+                    # Report the business node as affected, but do NOT expand
+                    # through it. Once every requirement links to the objectives it
+                    # serves (7.1), an objective is a hub: continuing the walk
+                    # returns down to every sibling serving the same objective, so
+                    # a CR targeting ONE requirement reported the whole graph as
+                    # affected and its Impact/Schedule Risk axes maxed out — the
+                    # better the traceability, the worse the CR score. 5.1's
+                    # run_impact_analysis applies the same stop; its fix note
+                    # already named 5.4 as a consumer of the inflated count.
+                    if neighbor.get("type", "") not in BUSINESS_NODE_TYPES:
+                        queue.append(neighbor_id)
 
     return affected
 
@@ -384,6 +394,9 @@ def run_cr_impact(
                 "from": cr_id,
                 "to": req_id,
                 "relation": "modifies",
+                # The matrix renders every link's rationale; an empty one printed
+                # an em-dash in a document that goes into the signing package.
+                "rationale": f"CR {cr_id} modifies {req_id}",
                 "added_date": str(date.today()),
             })
 
@@ -861,19 +874,33 @@ def resolve_cr(
         affected_ids = impact_data.get("affected_ids", []) + cr.get("target_req_ids", [])
         affected_ids = list(set(affected_ids))  # deduplicate
 
+        target_ids = set(cr.get("target_req_ids", []))
         for req_id in affected_ids:
             req = _find_node(repo, req_id)
-            if req and req.get("type") != "change_request":
-                old_status = req.get("status", "unknown")
-                req["status"] = "under_change"
-                req.setdefault("history", []).append({
-                    "date": str(date.today()),
-                    "action": "status_changed",
-                    "from": old_status,
-                    "to": "under_change",
-                    "reason": f"CR {cr_id} approved by {decided_by}",
-                })
-                updated_reqs.append(req_id)
+            if not req:
+                continue
+            node_type = req.get("type", "")
+            # `under_change` is a requirements-lifecycle status. Writing it on
+            # every affected node erased statuses OTHER chapters own: 6.2's
+            # `confirmed` on goals, 6.3's `identified` on risks, 6.4's `defined`
+            # on the scope node (`status` is one field, last writer wins).
+            # Exception: a legacy business-CLASS requirement the analyst NAMED as
+            # the CR target is their explicit intent — `business` is both the
+            # legacy root type and the BABOK requirement class, and silencing a
+            # named target would drop a real requirement (the `solution` lesson).
+            explicit_business_target = req_id in target_ids and node_type == "business"
+            if node_type in NON_REQUIREMENT_NODE_TYPES and not explicit_business_target:
+                continue
+            old_status = req.get("status", "unknown")
+            req["status"] = "under_change"
+            req.setdefault("history", []).append({
+                "date": str(date.today()),
+                "action": "status_changed",
+                "from": old_status,
+                "to": "under_change",
+                "reason": f"CR {cr_id} approved by {decided_by}",
+            })
+            updated_reqs.append(req_id)
 
     # History in the repository
     repo.setdefault("history", []).append({

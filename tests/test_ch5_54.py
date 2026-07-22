@@ -1011,5 +1011,133 @@ class TestBrPathKnowsRealGoalTypes(BaseMCPTest):
         self.assertIn("fr-500", self._untraced_line(self._run_impact()))
 
 
+# ---------------------------------------------------------------------------
+# The objective-hub inflation and the status clobber (full-pipeline audit,
+# claimflow run: a CR targeting ONE requirement reported "20 affected" and
+# Approved flattened every node in the graph to `under_change`)
+# ---------------------------------------------------------------------------
+
+def _hub_repo(project: str) -> dict:
+    """BG-001 is a hub: three requirements satisfy it, a risk threatens it, and it
+    derives from BN-001 — the shape 7.1 + 6.x produce on every real project."""
+    today = str(date.today())
+    return {
+        "project": project,
+        "formality_level": "Standard",
+        "created": today,
+        "updated": today,
+        "requirements": [
+            {"id": "FR-A", "type": "functional", "title": "Auto-triage",
+             "version": "1.0", "status": "draft", "added": today},
+            {"id": "FR-B", "type": "functional", "title": "Fraud scoring",
+             "version": "1.0", "status": "draft", "added": today},
+            {"id": "FR-C", "type": "functional", "title": "Doc extraction",
+             "version": "1.0", "status": "draft", "added": today},
+            {"id": "BG-001", "type": "business_goal", "title": "Settle in 10 days",
+             "version": "1.0", "status": "confirmed", "added": today},
+            {"id": "BN-001", "type": "business_need", "title": "Meet the deadline",
+             "version": "1.0", "status": "confirmed", "added": today},
+            {"id": "RK-001", "type": "risk", "title": "Model bias",
+             "version": "1.0", "status": "identified", "added": today},
+        ],
+        "links": [
+            {"from": "FR-A", "to": "BG-001", "relation": "satisfies", "added": today},
+            {"from": "FR-B", "to": "BG-001", "relation": "satisfies", "added": today},
+            {"from": "FR-C", "to": "BG-001", "relation": "satisfies", "added": today},
+            {"from": "BG-001", "to": "BN-001", "relation": "derives", "added": today},
+            {"from": "RK-001", "to": "BG-001", "relation": "threatens", "added": today},
+        ],
+        "history": [],
+    }
+
+
+class TestBfsImpactStopsAtBusinessNodes(unittest.TestCase):
+    """5.1's hub fix (Part 2d) explicitly says the inflation 'fed 5.4's Impact and
+    Schedule Risk scores' — but 5.4 has its own `_bfs_impact`, which kept expanding
+    THROUGH the objective back down to every sibling. The better the analyst's
+    traceability, the higher the artificial CR impact."""
+
+    def test_siblings_via_objective_hub_are_not_affected(self):
+        affected = mod54._bfs_impact(_hub_repo("hub"), ["FR-A"])
+        ids = {a["id"] for a in affected}
+        self.assertIn("BG-001", ids, "the objective itself IS affected")
+        self.assertNotIn("FR-B", ids, "a sibling sharing the objective is not")
+        self.assertNotIn("FR-C", ids)
+        self.assertNotIn("RK-001", ids, "a risk hanging off the objective is not")
+        self.assertNotIn("BN-001", ids, "nothing beyond the first business node")
+
+
+class TestResolveCrLeavesOtherChaptersStatuses(BaseMCPTest):
+    """`resolve_cr` (Approved) stamped `under_change` on every affected node —
+    `status` is one field written by four chapters, so 5.4 erased 6.2's `confirmed`
+    on goals, 6.3's `identified` on risks and 6.4's `defined` on the scope node.
+    Only requirement-role nodes take the requirements-lifecycle status."""
+
+    P = "cr_roles"
+
+    def _setup(self, extra_links=None):
+        repo = make_test_repo(self.P)
+        today = str(date.today())
+        repo["requirements"] += [
+            {"id": "BG-001", "type": "business_goal", "title": "Settle in 10 days",
+             "version": "1.0", "status": "confirmed", "added": today},
+            {"id": "BN-001", "type": "business_need", "title": "Meet the deadline",
+             "version": "1.0", "status": "confirmed", "added": today},
+            {"id": "RK-001", "type": "risk", "title": "Model bias",
+             "version": "1.0", "status": "identified", "added": today},
+            {"id": "SOL-001", "type": "solution_scope", "title": "Solution Scope — cr_roles",
+             "version": "1.0", "status": "defined", "added": today},
+        ]
+        repo["links"] += [
+            {"from": "FR-001", "to": "BG-001", "relation": "satisfies", "added": today},
+            {"from": "BG-001", "to": "BN-001", "relation": "derives", "added": today},
+            {"from": "RK-001", "to": "BG-001", "relation": "threatens", "added": today},
+            # a mitigation dependency pulls the risk into the BFS directly
+            {"from": "FR-001", "to": "RK-001", "relation": "depends", "added": today},
+        ] + (extra_links or [])
+        save_test_repo(repo)
+
+    def _open_impact_score(self, cr_id="CR-900", targets='["FR-001"]'):
+        mod54.open_cr(
+            self.P, cr_id=cr_id, title="Probe CR",
+            description="Probe", initiator="BA",
+            cr_type="change_existing", formality="standard",
+            target_req_ids_json=targets,
+        )
+        mod54.run_cr_impact(self.P, cr_id=cr_id)
+        mod54.score_cr(self.P, cr_id=cr_id, benefit="High", cost="Low")
+
+    def test_approved_cr_does_not_clobber_other_chapters_statuses(self):
+        self._setup()
+        self._open_impact_score()
+        mod54.resolve_cr(self.P, cr_id="CR-900", decision="Approved",
+                         decided_by="Sponsor", rationale="probe")
+        by_id = {r["id"]: r for r in load_test_repo(self.P)["requirements"]}
+        self.assertEqual(by_id["FR-001"]["status"], "under_change",
+                         "the target requirement itself IS under change")
+        self.assertEqual(by_id["BG-001"]["status"], "confirmed",
+                         "6.2 owns the goal's status")
+        self.assertEqual(by_id["BN-001"]["status"], "confirmed")
+        self.assertEqual(by_id["RK-001"]["status"], "identified",
+                         "6.3 owns the risk's status")
+        self.assertEqual(by_id["SOL-001"]["status"], "defined",
+                         "6.4 owns the scope node's status")
+        self.assertEqual(by_id["TC-001"]["status"], "draft",
+                         "a test node does not enter the requirements lifecycle")
+        self.assertEqual(by_id["BR-001"]["status"], "confirmed",
+                         "a business node reached as BFS collateral is not clobbered")
+
+    def test_explicit_business_class_target_still_marked(self):
+        """A legacy business-CLASS requirement the analyst NAMED as the CR target is
+        their intent — the role filter must not silence it (the `business` literal
+        is both the legacy root type and the BABOK requirement class)."""
+        self._setup()
+        self._open_impact_score(cr_id="CR-901", targets='["BR-001"]')
+        mod54.resolve_cr(self.P, cr_id="CR-901", decision="Approved",
+                         decided_by="Sponsor", rationale="probe")
+        by_id = {r["id"]: r for r in load_test_repo(self.P)["requirements"]}
+        self.assertEqual(by_id["BR-001"]["status"], "under_change")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
