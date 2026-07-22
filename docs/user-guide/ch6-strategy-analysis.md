@@ -246,7 +246,7 @@ This is the culmination of strategy analysis and the starting point for Chapter 
 
 ### What We Built
 
-**Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads all the artifacts from the previous tasks: business needs BN-xxx, business goals BG-xxx, the gap analysis, risks RK-xxx. The BA starts work with the context already filled in; there is no need to "remember what we did earlier."
+**Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads the artifacts of the previous tasks: business needs BN-xxx, business goals BG-xxx, risks RK-xxx. The BA starts work with the context already filled in; there is no need to "remember what we did earlier." The 6.2 gap analysis is not auto-imported — record each capability's gap_severity in `define_solution_scope` (auto-import is on the backlog).
 
 **An explicit solution scope with capability categorization.** Every capability (process, technology, data, people, org structure) that changes in the project is explicitly registered with a critical gap level (high / medium / low / none) and a link to the gap analysis from 6.2. What is **out** of scope is also explicitly documented: this is the first line of defense against scope creep.
 

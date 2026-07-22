@@ -16,7 +16,9 @@ Storage:
   - {project}_change_strategy.json        — final artifact (contract for 7.x, 8.x)
 
 Integration:
-  In: 6.1 (business_needs), 6.2 (future_state, gap_analysis), 6.3 (risk_assessment)
+  In: 6.1 (business_needs), 6.2 (future_state_goals), 6.3 (risk_assessment)
+      (future_state / gap_analysis are NOT auto-imported — enter gap_severity in
+       define_solution_scope by hand; auto-import is a backlogged feature)
   Out: change_strategy.json -> 7.1, 7.4, 7.5, 7.6, 8.x;
        solution + satisfies node -> 5.1 (optional)
 
@@ -37,7 +39,9 @@ from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
-                           normalize_project_id, SOLUTION_SCOPE_NODE_TYPE)
+                           normalize_project_id, SOLUTION_SCOPE_NODE_TYPE,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_ChangeStrategy")
 
@@ -47,9 +51,7 @@ REPO_FILENAME = "traceability_repo.json"
 
 # Files from previous tasks (optional sources)
 BUSINESS_NEEDS_FILENAME = "business_needs.json"
-FUTURE_STATE_FILENAME = "future_state.json"
 FUTURE_STATE_GOALS_FILENAME = "future_state_goals.json"  # 6.2 stores goals separately
-GAP_FILENAME = "gap_analysis.json"
 RISK_ASSESSMENT_FILENAME = "risk_assessment.json"
 
 VALID_CHANGE_TYPES = ["transformation", "process_improvement", "technology_implementation", "regulatory_compliance", "other"]
@@ -95,13 +97,13 @@ def _repo_path(project_id: str, repo_project_id: Optional[str] = None) -> str:
 
 
 def _safe_load_json(path: str) -> Optional[dict]:
+    """Loads an OPTIONAL import source. Missing -> None (the caller prints its
+    "not found — skipping" warning). Corrupt -> CorruptArtifactError: an existing
+    but unreadable file reported as "not found" sends the analyst hunting for a
+    missing file instead of repairing a damaged one."""
     if not os.path.exists(path):
         return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return None
+    return read_json_artifact(path, "6.4 import source")
 
 
 def _normalize_strategy(data: dict, project_id: str) -> dict:
@@ -129,11 +131,13 @@ def _load_strategy(project_id: str) -> dict:
     path = _strategy_path(project_id)
     if not os.path.exists(path):
         return _empty_strategy(project_id)
-    with open(path, encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            return _empty_strategy(project_id)
+    # A corrupt file must RAISE (converted to a ❌ line at the tool boundary), not
+    # silently become an empty skeleton: every writing tool in this module calls
+    # `_save_strategy` next, so the skeleton would OVERWRITE the analyst's whole
+    # strategy while the tool answered "✅" — reproduced live on the audit run:
+    # a 10 560-byte strategy file replaced by a 933-byte skeleton. Degradation may
+    # say LESS; it may never destroy what it could not read ("Never delete data").
+    data = read_json_artifact(path, "6.4 change strategy")
     return _normalize_strategy(data, project_id)
 
 
@@ -199,6 +203,7 @@ def _readiness_verdict(score: float) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def scope_change_strategy(
     project_id: str,
     change_type: Literal["transformation", "process_improvement", "technology_implementation", "regulatory_compliance", "other"],
@@ -211,8 +216,9 @@ def scope_change_strategy(
     Step 1 of the 6.4 pipeline: initialize the change strategy.
 
     Locks in the change type, horizon, and methodology.
-    Automatically imports context from 6.1 (business_needs), 6.2 (future_state, gap_analysis),
-    6.3 (risk_assessment). Adds do_nothing as OPT-000.
+    Automatically imports context from 6.1 (business_needs), 6.2 (future_state_goals)
+    and 6.3 (risk_assessment). The 6.2 gap analysis is NOT auto-imported — record
+    gap_severity per capability in define_solution_scope. Adds do_nothing as OPT-000.
     Graceful degradation: missing artifacts are skipped with a warning.
 
     Args:
@@ -289,12 +295,30 @@ def scope_change_strategy(
         risk_path = data_path(src_id, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
         risk_data = _safe_load_json(risk_path)
         if risk_data:
+            # `zone` appears on a risk only after 6.3's run_risk_matrix; the file
+            # itself exists from the first add_risk. Defaulting a missing zone to
+            # "medium" imported a score-20 risk as medium and dropped it from the
+            # High count — a confident statement over degraded data. Derive the
+            # zone from the stored score against the assessment's own tolerance
+            # instead (the same fallback 7.6 applies to this producer).
+            max_acc = (risk_data.get("risk_tolerance", {}) or {}).get(
+                "max_acceptable_score", 15)
+
+            def _zone_of(rk_record):
+                zone = rk_record.get("zone")
+                if zone:
+                    return zone
+                score = rk_record.get("risk_score", 0) or 0
+                if score >= max_acc:
+                    return "high"
+                return "medium" if score >= 6 else "low"
+
             for rk in risk_data.get("risks", []):
                 if rk.get("status") == "identified":
                     imported_risks.append({
                         "id": rk.get("risk_id", ""),
                         "description": rk.get("description", "")[:80],
-                        "zone": rk.get("zone", "medium"),
+                        "zone": _zone_of(rk),
                         "risk_score": rk.get("risk_score", 0),
                         "response_strategy": rk.get("response_strategy", ""),
                         "source_project": src_id,
@@ -369,6 +393,7 @@ def scope_change_strategy(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def define_solution_scope(
     project_id: str,
     capabilities_json: str,
@@ -489,6 +514,7 @@ def define_solution_scope(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def assess_enterprise_readiness(
     project_id: str,
     leadership_commitment: int,
@@ -626,6 +652,7 @@ def assess_enterprise_readiness(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def add_strategy_option(
     project_id: str,
     name: str,
@@ -715,6 +742,7 @@ def add_strategy_option(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def compare_strategy_options(
     project_id: str,
     scores_json: str,
@@ -881,6 +909,7 @@ def compare_strategy_options(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def define_transition_states(
     project_id: str,
     phase_number: int,
@@ -974,6 +1003,7 @@ def define_transition_states(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def save_change_strategy(
     project_id: str,
     push_to_traceability: bool = False,
@@ -1020,8 +1050,10 @@ def save_change_strategy(
         repo_pid = traceability_project_id or project_id
         repo_path = _repo_path(project_id, repo_pid)
         if os.path.exists(repo_path):
-            with open(repo_path, encoding="utf-8") as f:
-                repo = json.load(f)
+            # The push reads the SHARED 5.1 graph before writing into it — a
+            # corrupt repository must stop the push with a named file (via
+            # guard_artifact_errors), not crash or write into a broken graph.
+            repo = read_json_artifact(repo_path, "5.1 traceability repository")
 
             existing_ids = {r["id"] for r in repo.get("requirements", [])}
             # Existing satisfies edges — so a re-run (re-finalize) does not duplicate them.
@@ -1047,8 +1079,11 @@ def save_change_strategy(
                     "added": str(date.today()),
                 })
                 existing_ids.add(sol_id)
+                # chr(10): the two ✅ notes are joined by the caller without a
+                # separator, so this note must end its own line.
                 traceability_notes.append(
-                    f"✅ Node {sol_id} ({SOLUTION_SCOPE_NODE_TYPE}) added to 5.1")
+                    f"✅ Node {sol_id} ({SOLUTION_SCOPE_NODE_TYPE}) added to 5.1"
+                    + chr(10))
 
             # satisfies links to business_goals
             added_links = 0

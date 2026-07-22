@@ -1215,5 +1215,43 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(len(satisfies), 1, "satisfies links must not be duplicated on re-push")
 
 
+class TestImportedRiskZoneDerivedFromScore(BaseMCPTest):
+    """6.3's `zone` appears on a risk only after run_risk_matrix, but the register
+    file exists from the first add_risk. The import defaulted a missing zone to
+    "medium", so a score-20 risk arrived as medium and vanished from the High
+    count — a confident claim over degraded data (reproduced live: an L5×I4 risk
+    imported as `zone: medium`). The fallback now derives the zone from the score
+    against the assessment's own tolerance, as 7.6 already does."""
+
+    def test_high_score_risk_without_zone_imports_as_high(self):
+        import json as _json
+        from skills.common import data_path as _dp
+        import os as _os
+        pid = "zonefall"
+        path = _dp(pid, f"{pid}_risk_assessment.json")
+        _os.makedirs(_os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            _json.dump({
+                "project_id": pid,
+                "risk_tolerance": {"max_acceptable_score": 15},
+                "risks": [
+                    {"risk_id": "RK-001", "status": "identified",
+                     "description": "Score 20, matrix never run",
+                     "risk_score": 20, "response_strategy": "mitigate"},
+                    {"risk_id": "RK-002", "status": "identified",
+                     "description": "Score 4 stays low",
+                     "risk_score": 4, "response_strategy": "accept"},
+                ],
+            }, f)
+        scope_change_strategy(
+            pid, change_type="other", time_horizon_months=6,
+            methodology="agile", source_project_ids=f'["{pid}"]')
+        with open(_dp(pid, f"{pid}_change_strategy.json"), encoding="utf-8") as f:
+            strategy = _json.load(f)
+        zones = {r["id"]: r["zone"] for r in strategy["imported_context"]["risks"]}
+        self.assertEqual(zones["RK-001"], "high")
+        self.assertEqual(zones["RK-002"], "low")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -36,7 +36,10 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_CurrentState")
 
@@ -98,8 +101,9 @@ def _repo_path(project_id: str) -> str:
 def _load_scope(project_id: str) -> Optional[dict]:
     path = _scope_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "6.1 stored artifact")
     return None
 
 
@@ -115,8 +119,9 @@ def _save_scope(data: dict) -> str:
 def _load_state(project_id: str) -> dict:
     path = _state_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "6.1 stored artifact")
     return {
         "project_id": project_id,
         "scope_ref": f"{_safe(project_id)}_{SCOPE_FILENAME}",
@@ -140,8 +145,9 @@ def _save_state(data: dict) -> str:
 def _load_needs(project_id: str) -> dict:
     path = _needs_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "6.1 stored artifact")
     return {
         "project_id": project_id,
         "needs": [],
@@ -163,8 +169,9 @@ def _save_needs(data: dict) -> str:
 def _load_repo(project_id: str) -> Optional[dict]:
     path = _repo_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "6.1 stored artifact")
     return None
 
 
@@ -199,6 +206,7 @@ def _next_rca_id(state: dict) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def scope_current_state(
     project_id: str,
     initiative_type: Literal[
@@ -387,6 +395,7 @@ def scope_current_state(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def capture_current_state_element(
     project_id: str,
     element: Literal[
@@ -527,6 +536,7 @@ def capture_current_state_element(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def run_root_cause_analysis(
     project_id: str,
     problem_statement: str,
@@ -660,6 +670,7 @@ def run_root_cause_analysis(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def define_business_needs(
     project_id: str,
     need_title: str,
@@ -828,6 +839,7 @@ def define_business_needs(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_current_state_completeness(
     project_id: str,
 ) -> str:
@@ -990,6 +1002,7 @@ def check_current_state_completeness(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_current_state(
     project_id: str,
     project_title: str,

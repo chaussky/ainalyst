@@ -44,6 +44,7 @@ from skills.common import (
     pick_field, unrecognized_records_error,
     parse_json_dict_list as _parse_json_dict_list,
     update_stakeholder_registry_file, load_stakeholder_registry, stakeholder_identity,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -110,8 +111,11 @@ def _load_plan(project_id: str) -> dict:
     path = _plan_path(project_id)
     if not os.path.exists(path):
         return _empty_plan(project_id)
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool boundary
+    # by guard_artifact_errors. This module loads in EVERY phase, so a bare
+    # json.load here turned one damaged plan file into a protocol error across
+    # every session (the chapters-5 / 7.1-7.3 pattern).
+    return read_json_artifact(path, "3.x BA plan")
 
 
 def _save_plan(data: dict, project_id: str):
@@ -146,6 +150,7 @@ def _classify_stakeholder(influence: str, interest: str) -> tuple:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def suggest_ba_approach(
     project_id: str,
     change_frequency: Literal["Low", "Medium", "High"],
@@ -295,6 +300,7 @@ def _seed_stakeholder_registry(project_id: str, stakeholders: list) -> str:
 
 
 @mcp.tool()
+@guard_artifact_errors
 def plan_stakeholder_engagement(
     project_id: str,
     stakeholders_json: str,
@@ -447,6 +453,7 @@ def plan_stakeholder_engagement(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def plan_ba_governance(
     project_id: str,
     project_criticality: Literal["Low", "Medium", "High"],
@@ -511,6 +518,7 @@ def plan_ba_governance(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def plan_information_management(
     project_id: str,
     storage_tools_json: str,
@@ -574,6 +582,7 @@ def plan_information_management(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def evaluate_ba_performance(
     project_id: str,
     current_issues_json: str = "[]",
@@ -691,6 +700,7 @@ def evaluate_ba_performance(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def save_ba_plan(
     project_id: str,
 ) -> str:

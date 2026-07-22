@@ -41,7 +41,9 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, pick_field,
-                           unrecognized_records_error)
+                           unrecognized_records_error,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_FutureState")
 
@@ -124,8 +126,9 @@ def _cs_needs_path(project_id: str) -> str:
 
 def _load_json(path: str) -> Optional[dict]:
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "6.2 stored artifact")
     return None
 
 
@@ -243,6 +246,7 @@ def _validate_smart(goal_title: str, description: str, objectives: list) -> list
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def scope_future_state(
     project_id: str,
     initiative_type: Literal[
@@ -416,6 +420,7 @@ def scope_future_state(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def capture_future_state_element(
     project_id: str,
     element: Literal[
@@ -571,6 +576,7 @@ def capture_future_state_element(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def define_goals_and_objectives(
     project_id: str,
     goal_title: str,
@@ -791,6 +797,7 @@ def define_goals_and_objectives(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def capture_constraints(
     project_id: str,
     constraint_title: str,
@@ -923,6 +930,7 @@ def capture_constraints(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def run_gap_analysis(
     project_id: str,
 ) -> str:
@@ -1089,6 +1097,7 @@ def run_gap_analysis(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def assess_potential_value(
     project_id: str,
     benefits_json: str,
@@ -1240,7 +1249,7 @@ def assess_potential_value(
         "",
         "**Next step:** `check_future_state_completeness` → `save_future_state`",
         "",
-        "ℹ️ This data will be available in **7.6** as context for a detailed value assessment.",
+        "ℹ️ 6.3 `generate_recommendation` reads this value automatically; 7.6 makes its own numeric assessment from the design options.",
     ]
 
     return "\n".join(lines)
@@ -1251,6 +1260,7 @@ def assess_potential_value(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_future_state_completeness(
     project_id: str,
 ) -> str:
@@ -1429,6 +1439,7 @@ def check_future_state_completeness(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_future_state(
     project_id: str,
     project_title: str,
@@ -1715,7 +1726,7 @@ def save_future_state(
         "- Use `{project}_gap_analysis.json` in task **6.4** (Define Change Strategy)",
         "- Call `set_business_context` in task **7.3** with `from_strategy_project_id`",
         "- Business goals (BG-xxx) are available in the 5.1 repository for requirements traceability",
-        "- Potential-value data is available in **7.6** as context for value assessment",
+        "- Potential value feeds 6.3 `generate_recommendation` (read automatically)",
     ]
 
     return "\n".join(result_lines)

@@ -36,7 +36,10 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_RiskAssessment")
 
@@ -115,8 +118,10 @@ def _load_assessment(project_id: str) -> dict:
     path = _assessment_path(project_id)
     if not os.path.exists(path):
         return _empty_assessment(project_id)
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool boundary
+    # by guard_artifact_errors. Returning an empty assessment instead would let the
+    # next `_save_assessment` overwrite the analyst's whole register with it.
+    return read_json_artifact(path, "6.3 risk assessment")
 
 
 def _save_assessment(data: dict, project_id: str):
@@ -170,14 +175,14 @@ def _zone_for_score(score: int, max_acceptable: int) -> str:
 
 
 def _safe_load_json(path: str) -> Optional[dict]:
-    """Loads JSON, returns None if the file is not found or corrupted."""
+    """Loads an OPTIONAL import source. Missing -> None (the import branch prints
+    its "not found — skipping" warning). Corrupt -> CorruptArtifactError: a file
+    that EXISTS but cannot be read must not be reported as "not found" — that is a
+    confident false diagnosis, and the analyst would go looking for a missing file
+    instead of repairing a damaged one."""
     if not os.path.exists(path):
         return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return None
+    data = read_json_artifact(path, "6.3 import source")
     # The return type says dict and every caller immediately does `.get(...)`, but a
     # JSON file may legally hold a list or a scalar at the top level. A file corrupted
     # into a list would raise AttributeError in all five import branches at once.
@@ -189,6 +194,7 @@ def _safe_load_json(path: str) -> Optional[dict]:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def scope_risk_assessment(
     project_id: str,
     initiative_type: Literal["process_improvement", "new_system", "regulatory", "cost_reduction", "market_opportunity", "other"],
@@ -257,6 +263,7 @@ def scope_risk_assessment(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def import_risks_from_context(
     project_id: str,
     source_project_ids: str = "[]",
@@ -453,6 +460,7 @@ def import_risks_from_context(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def add_risk(
     project_id: str,
     category: Literal["strategic", "operational", "financial", "technical", "regulatory", "people", "external"],
@@ -561,6 +569,7 @@ def add_risk(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def set_risk_tolerance(
     project_id: str,
     tolerance_level: Literal["risk_averse", "neutral", "risk_seeking"],
@@ -630,6 +639,7 @@ def set_risk_tolerance(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def run_risk_matrix(project_id: str) -> str:
     """
     Step 5 of the 6.3 pipeline: build the risk matrix and cumulative profile.
@@ -738,6 +748,7 @@ def run_risk_matrix(project_id: str) -> str:
 
 
 @mcp.tool()
+@guard_artifact_errors
 def generate_recommendation(
     project_id: str,
     potential_value_summary: str = "",
@@ -905,6 +916,7 @@ def generate_recommendation(
 
 
 @mcp.tool()
+@guard_artifact_errors
 def save_risk_assessment(
     project_id: str,
     push_to_traceability: bool = False,
@@ -939,8 +951,10 @@ def save_risk_assessment(
         repo_pid = traceability_project_id or project_id
         repo_path = _repo_path(project_id, repo_pid)
         if os.path.exists(repo_path):
-            with open(repo_path, encoding="utf-8") as f:
-                repo = json.load(f)
+            # The push reads the SHARED 5.1 graph before writing into it — a
+            # corrupt repository must stop the push with a named file (via
+            # guard_artifact_errors), not crash or write into a broken graph.
+            repo = read_json_artifact(repo_path, "5.1 traceability repository")
 
             existing_ids = {r["id"] for r in repo.get("requirements", [])}
             # Existing threatens edges — so a re-run (re-finalize) does not duplicate them.
