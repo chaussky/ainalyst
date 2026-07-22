@@ -795,5 +795,49 @@ class TestIntegration53(BaseMCPTest):
         self.assertNotIn("❌", result)
 
 
+class TestSaveWritesWsjfScoreAndNamesPhantomIds(BaseMCPTest):
+    """Two seams of the same save step, both found on the full-pipeline audit:
+
+    (1) 5.5's rejection analysis reads `wsjf_score` off the graph node to warn
+    "you are rejecting a high-value requirement" — but nothing ever WROTE that
+    field (grep: one reader, zero writers), so the warning was dead by
+    construction. A WSJF session now persists the score alongside the priority.
+
+    (2) A score for a typo'd req_id ("FR-01") rendered in the aggregation report
+    and then silently vanished at save — "Requirements updated: N" under a table
+    with N+1 rows, a count with no explanation. Unmatched ids are now NAMED."""
+
+    P = "prio_seams"
+
+    def _wsjf_session(self):
+        save_test_repo(make_test_repo(self.P))
+        with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            mod53.start_prioritization_session(self.P, "wsjf run", "WSJF")
+            mod53.add_stakeholder_scores(
+                self.P, "wsjf run", "Anna", "High",
+                json.dumps([
+                    {"req_id": "FR-001", "bv": 8, "tc": 5, "rr": 3, "js": 3},
+                    {"req_id": "FR-01", "bv": 5, "tc": 2, "rr": 2, "js": 2},  # typo
+                ]))
+            mod53.run_aggregation(self.P, "wsjf run")
+            return mod53.save_prioritization_result(self.P, "wsjf run")
+
+    def test_wsjf_score_lands_on_the_node(self):
+        self._wsjf_session()
+        with open(data_path(self.P, f"{self.P}_traceability_repo.json"),
+                  encoding="utf-8") as f:
+            repo = json.load(f)
+        node = next(r for r in repo["requirements"] if r["id"] == "FR-001")
+        self.assertIn("wsjf_score", node,
+                      "5.5 reads wsjf_score off the node — someone must write it")
+        self.assertGreater(node["wsjf_score"], 0)
+
+    def test_phantom_id_is_named_not_silently_dropped(self):
+        out = self._wsjf_session()
+        self.assertIn("FR-01", out)
+        self.assertIn("NOT saved", out)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

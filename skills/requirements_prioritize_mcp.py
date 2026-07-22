@@ -999,31 +999,43 @@ def save_prioritization_result(
     repo = _load_repo(project_name)
     updated_count = 0
     priority_summary = {}
+    # Scores whose req_id matches NO repository node — a stakeholder scored a typo
+    # ("FR-01" for FR-001"). They rendered in the aggregation report and then
+    # vanished here without a word: "Requirements updated: 4" under a table
+    # showing 5 priorities, a count with no explanation of the difference.
+    not_found_ids = []
 
     for req_id, agg_data in session["aggregated"].items():
         priority = agg_data.get("priority") if isinstance(agg_data, dict) else agg_data
         if not priority:
             continue
-        for node in repo.get("requirements", []):
-            if node["id"] == req_id:
-                old_priority = node.get("priority", "—")
-                node["priority"] = priority
-                updated_count += 1
-                priority_summary.setdefault(priority, []).append(req_id)
+        node = next((n for n in repo.get("requirements", []) if n["id"] == req_id), None)
+        if node is None:
+            not_found_ids.append(req_id)
+            continue
+        old_priority = node.get("priority", "—")
+        node["priority"] = priority
+        # WSJF sessions also persist the score: 5.5's rejection analysis reads
+        # `wsjf_score` off the node to warn "you are rejecting a high-value
+        # requirement" — a reader that existed with no writer, so the warning
+        # could never fire.
+        if isinstance(agg_data, dict) and agg_data.get("wsjf") is not None:
+            node["wsjf_score"] = agg_data["wsjf"]
+        updated_count += 1
+        priority_summary.setdefault(priority, []).append(req_id)
 
-                # Change history
-                if "history" not in repo:
-                    repo["history"] = []
-                repo["history"].append({
-                    "date": str(date.today()),
-                    "action": "priority_updated",
-                    "req_id": req_id,
-                    "old_priority": old_priority,
-                    "new_priority": priority,
-                    "session": session_label,
-                    "method": session["method"],
-                })
-                break
+        # Change history
+        if "history" not in repo:
+            repo["history"] = []
+        repo["history"].append({
+            "date": str(date.today()),
+            "action": "priority_updated",
+            "req_id": req_id,
+            "old_priority": old_priority,
+            "new_priority": priority,
+            "session": session_label,
+            "method": session["method"],
+        })
 
     _save_repo(project_name, repo)
 
@@ -1048,6 +1060,15 @@ def save_prioritization_result(
         "## Final priorities",
         "",
     ]
+    if not_found_ids:
+        listed = ", ".join(f"`{r}`" for r in sorted(not_found_ids))
+        lines.insert(7, "")
+        lines.insert(
+            7,
+            f"⚠️ **{len(not_found_ids)} scored id(s) match no repository node and "
+            f"were NOT saved:** {listed}. Check for typos (e.g. `FR-01` for "
+            f"`FR-001`) and re-score, or the priority is lost.",
+        )
 
     for prio_label in ["Must", "Should", "Could", "Won't"]:
         reqs = priority_summary.get(prio_label, [])
