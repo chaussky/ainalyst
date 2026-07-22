@@ -545,6 +545,14 @@ def check_communication_schedule(
         "on request": None,
     }
     unknown_frequencies = set()
+    # An empty or absent comm_frequency is NOT "On Request": On Request is the
+    # analyst's explicit choice of a trigger-only cadence, while empty means no
+    # cadence was ever planned. Defaulting the absent key to "On Request"
+    # fabricated that choice, and the empty string slipped past the
+    # unknown-frequency guard (`if freq_key and ...`) — so a caller building this
+    # input from the 4.2 registry (which deliberately carries no comm_frequency)
+    # had every stakeholder silently excluded under a clean "on track" verdict.
+    no_cadence_roles = []
 
     # Build the communication queue
     urgent = []       # needed today
@@ -553,8 +561,8 @@ def check_communication_schedule(
     followup_due = [] # unresolved follow-up from the log
 
     for sh in stakeholders:
-        role = sh.get("role", "—")
-        freq = sh.get("comm_frequency", "On Request")
+        role = sh.get("role") or sh.get("name") or "—"
+        freq = sh.get("comm_frequency", "")
         triggers = sh.get("comm_triggers", [])
 
         # Determine the date of the last communication. Look the stakeholder up by
@@ -572,7 +580,9 @@ def check_communication_schedule(
         # Check overdue status by frequency
         freq_key = str(freq).strip().lower()
         days_limit = freq_days.get(freq_key)
-        if freq_key and freq_key not in freq_days:
+        if not freq_key:
+            no_cadence_roles.append(role)
+        elif freq_key not in freq_days:
             unknown_frequencies.add(str(freq))
         if days_limit and last_date:
             days_since = (today - last_date).days
@@ -631,15 +641,23 @@ def check_communication_schedule(
     # Summary
     total_actions = len(urgent) + len(triggered) + len(followup_due)
     if total_actions == 0:
-        if unknown_frequencies:
+        if unknown_frequencies or no_cadence_roles:
             # Degrading is fine; making a confident positive claim on top of it is not.
             lines.append("## ⚠️ Schedule Could Not Be Fully Checked\n")
-            lines.append(
-                f"No overdue communications among the cadences this tool recognises, "
-                f"but {len(unknown_frequencies)} unrecognised value(s) were skipped: "
-                f"{', '.join(sorted(unknown_frequencies))}. Those stakeholders were "
-                f"NOT evaluated — this is not a clean bill of health.\n"
-            )
+            if unknown_frequencies:
+                lines.append(
+                    f"No overdue communications among the cadences this tool recognises, "
+                    f"but {len(unknown_frequencies)} unrecognised value(s) were skipped: "
+                    f"{', '.join(sorted(unknown_frequencies))}. Those stakeholders were "
+                    f"NOT evaluated — this is not a clean bill of health.\n"
+                )
+            if no_cadence_roles:
+                lines.append(
+                    f"{len(no_cadence_roles)} stakeholder(s) have no communication cadence "
+                    f"on record and were NOT evaluated: {', '.join(no_cadence_roles)}. "
+                    f"Set `comm_frequency` (the 3.2 plan assigns one per quadrant) to "
+                    f"include them in this check.\n"
+                )
         else:
             lines.append("## ✅ All Communications Are on Track\n")
             lines.append("No overdue or triggered communications.\n")
@@ -649,6 +667,11 @@ def check_communication_schedule(
             lines.append(
                 f"> ⚠️ Skipped {len(unknown_frequencies)} unrecognised cadence(s): "
                 f"{', '.join(sorted(unknown_frequencies))}.\n"
+            )
+        if no_cadence_roles:
+            lines.append(
+                f"> ⚠️ {len(no_cadence_roles)} stakeholder(s) have no communication cadence "
+                f"on record and were NOT evaluated: {', '.join(no_cadence_roles)}.\n"
             )
 
     # Urgent (overdue) — ranked by influence (High first). Sorting the raw

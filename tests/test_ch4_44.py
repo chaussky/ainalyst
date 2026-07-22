@@ -520,6 +520,53 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
         self.assertLess(pos_high, pos_medium, "High influence must appear before Medium")
         self.assertLess(pos_medium, pos_low, "Medium influence must appear before Low")
 
+    def test_empty_or_missing_cadence_is_reported_not_silently_on_track(self):
+        """A stakeholder whose comm_frequency is empty or absent has no cadence
+        on record — nobody chose "On Request" for them. Excluding them silently
+        and then printing the unqualified "All Communications Are on Track" is a
+        confident claim about people the check never evaluated: the same class
+        as the unknown-cadence fix, one sub-case over (empty vs unrecognised).
+        The registry 4.2 maintains deliberately carries no comm_frequency, so a
+        caller building this input from the registry hits this on every card."""
+        stakeholders = [
+            {"role": "Claims Adjuster", "influence": "Medium", "comm_frequency": ""},
+            {"role": "Actuary", "influence": "Low"},  # key absent entirely
+        ]
+        with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            mod44.check_communication_schedule(
+                project_name="crm_upgrade",
+                today_date="20.03.2025",
+                stakeholders_json=json.dumps(stakeholders),
+                communication_log_json=json.dumps([]),
+                triggered_events_json=json.dumps([]),
+            )
+            content = mock_sa.call_args.args[0]
+        self.assertNotIn("All Communications Are on Track", content)
+        self.assertIn("no communication cadence", content)
+        self.assertIn("Claims Adjuster", content)
+        self.assertIn("Actuary", content)
+
+    def test_explicit_on_request_cadence_still_clean(self):
+        """An EXPLICIT "On Request" is the analyst's choice of a trigger-only
+        cadence — excluding it from the overdue check is correct semantics, not
+        degradation, so the clean verdict must survive."""
+        stakeholders = [
+            {"role": "Sponsor", "influence": "High", "comm_frequency": "On Request"},
+        ]
+        with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            mod44.check_communication_schedule(
+                project_name="crm_upgrade",
+                today_date="20.03.2025",
+                stakeholders_json=json.dumps(stakeholders),
+                communication_log_json=json.dumps([]),
+                triggered_events_json=json.dumps([]),
+            )
+            content = mock_sa.call_args.args[0]
+        self.assertIn("All Communications Are on Track", content)
+        self.assertNotIn("no communication cadence", content)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
