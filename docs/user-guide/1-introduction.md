@@ -45,7 +45,7 @@ AInalyst solves this problem through three layers:
 
 **Skills**, 21 specialized modules, each of which deeply "knows" a specific BABOK task: how to carry it out correctly, what to pay attention to, which artifacts to create. This is built-in methodology expertise.
 
-**MCP tools**, 22 servers with 111 tools that perform specific analytical operations: building stakeholder registries, analyzing interview transcripts, creating traceability matrices, assessing risks, drafting requirements specifications.
+**MCP tools**, 22 servers with 112 tools that perform specific analytical operations: building stakeholder registries, analyzing interview transcripts, creating traceability matrices, assessing risks, drafting requirements specifications.
 
 Together, these three layers create something a regular chat can't offer: a clear working framework that carries you from the start of the project to the final artifact. The platform knows the methodology; you just need to know your project.
 

@@ -16,7 +16,7 @@
 
 ## How it works
 
-At the core of the platform is Anthropic's Claude large language model. One level up is Claude Code, an AI agent that doesn't just answer but acts: it reads files, runs tools, and guides you through the process. One level higher still is a set of 21 skills and 22 MCP servers with 111 tools that cover every task in BABOK chapters 3, 4, 5, 6, and 7.
+At the core of the platform is Anthropic's Claude large language model. One level up is Claude Code, an AI agent that doesn't just answer but acts: it reads files, runs tools, and guides you through the process. One level higher still is a set of 21 skills and 22 MCP servers with 112 tools that cover every task in BABOK chapters 3, 4, 5, 6, and 7.
 
 Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when that skill should fire. When a business analyst types something into the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know exactly what happened under the hood. And they don't need to: they see the result.
 

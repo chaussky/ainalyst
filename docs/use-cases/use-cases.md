@@ -885,7 +885,7 @@ For a junior BA this isn't just a fix to one document. Walking through each case
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 7.2 MCP server (`requirements_analysis_mcp`), when `check_req_quality` is called, checks each requirement against two groups of BABOK characteristics: Group A (atomic, unambiguous, verifiable, feasible, necessary) and Group B (prioritized, complete, consistent, traceable). Each problem gets a VI-xxx identifier in the verification tracker. After a fix, the BA marks the requirement via `mark_req_verified`, the status changes from `draft` to `verified`. Once all requirements are checked, `save_artifact` generates a Verification Report in `governance_plans/reports/`.
+The Task 7.2 MCP server (`requirements_verify_mcp`), when `check_req_quality` is called, checks each requirement against two groups of BABOK characteristics: Group A (atomic, unambiguous, verifiable, feasible, necessary) and Group B (prioritized, complete, consistent, traceable). Each problem gets a VI-xxx identifier in the verification tracker. After a fix, the BA marks the requirement via `mark_req_verified`, the status changes from `draft` to `verified`. Once all requirements are checked, `save_artifact` generates a Verification Report in `governance_plans/reports/`.
 
 ---
 
@@ -1171,7 +1171,7 @@ If the assumption hadn't been logged, it might have been discovered mid-developm
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 7.3 MCP server (`requirements_analysis_mcp`), when `check_business_alignment` is called, does a BFS traversal of the graph in `traceability_repo.json`, for each requirement looking for a path to a business-need root node. Requirements with no such path get the `orphan` status. When an assumption is logged via `log_assumption`, the tool automatically computes an impact_score, the number of requirements that depend on that assumption. If the score exceeds a threshold, or the risk level is `high_risk`, all dependent requirements are flagged `blocked_by_assumption`, and their status in the approval cycle is frozen until the assumption is verified.
+The Task 7.3 MCP server (`requirements_validate_mcp`), when `check_business_alignment` is called, does a BFS traversal of the graph in `traceability_repo.json`, for each requirement looking for a path to a business-need root node. Requirements with no such path get the `orphan` status. When an assumption is logged via `log_assumption`, the tool automatically computes an impact_score, the number of requirements that depend on that assumption. If the score exceeds a threshold, or the risk level is `high_risk`, all dependent requirements are flagged `blocked_by_assumption`, and their status in the approval cycle is frozen until the assumption is verified.
 
 ---
 
@@ -1245,7 +1245,7 @@ And importantly: success metrics are locked in before development starts. In a y
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 7.6 MCP server (`requirements_analysis_design_mcp`), when `add_value_assessment` is called, records each option's parameters, then `compare_value` applies the weighted formula: Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0. Adjusting SAP ME's real parameters for SCADA is a change to the Cost and Risk inputs before running the formula, not an exclusion from consideration. The `save_recommendation` tool generates the final Recommendation Document: an options table, the rationale for the choice, success metrics with baseline and target values, and a risk section. The document is saved to `governance_plans/reports/` and is ready to hand to stakeholders.
+The Task 7.6 MCP server (`value_recommend_mcp`), when `add_value_assessment` is called, records each option's parameters, then `compare_value` applies the weighted formula: Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0. Adjusting SAP ME's real parameters for SCADA is a change to the Cost and Risk inputs before running the formula, not an exclusion from consideration. The `save_recommendation` tool generates the final Recommendation Document: an options table, the rationale for the choice, success metrics with baseline and target values, and a risk section. The document is saved to `governance_plans/reports/` and is ready to hand to stakeholders.
 
 ---
 
@@ -1257,7 +1257,7 @@ That's not an accident and not a marketing trick. It's an architectural decision
 
 ### How it works under the hood
 
-Under the hood, AInalyst runs 21 specialized skills and 22 MCP servers with 111 tools, each of which "knows" a specific BABOK task: how to do it correctly, what to watch for, what artifact to produce.
+Under the hood, AInalyst runs 21 specialized skills and 22 MCP servers with 112 tools, each of which "knows" a specific BABOK task: how to do it correctly, what to watch for, what artifact to produce.
 
 Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when this skill should fire. When the business analyst writes something in the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know what happened under the hood. And doesn't need to: they see the result.
 
