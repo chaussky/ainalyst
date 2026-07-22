@@ -118,6 +118,23 @@ requirements, tech specs, and any other sources of requirements.
 When the BA names a path to a file (for example `inputs/ivanov_21mar.txt`) — **read it
 directly**, don't ask to paste the text into the chat. Formats: `.txt`, `.md`, `.pdf`, `.docx`.
 
+**`.docx` files:** the Read tool cannot open them (binary). Do not tell the BA the file
+is unsupported — extract the text yourself with this stdlib-only script (a `.docx` is a
+zip archive with the text in `word/document.xml`). Save it to a temp file and run
+`python <script> <path-to-docx>`; then work with the printed text as usual:
+
+```python
+import html, re, sys, zipfile
+
+xml = zipfile.ZipFile(sys.argv[1]).read("word/document.xml").decode("utf-8")
+xml = re.sub(r"</w:p>", "\n", xml)          # paragraph boundaries -> newlines
+text = html.unescape(re.sub(r"<[^>]+>", "", xml))
+print(re.sub(r"\n{3,}", "\n\n", text).strip())
+```
+
+This recipe is covered by `tests/test_docx_snippet.py`, which executes the snippet
+exactly as published here — keep the two in sync when editing.
+
 ---
 
 ## Platform documentation — use it to answer the BA's questions
