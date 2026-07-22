@@ -58,6 +58,8 @@ prepare_approval_package → record_approval_decision (×N stakeholders)
 
 **What it does:**
 - Pulls requirements from the 5.1 repository by req_ids or package
+- Reads each requirement's statement and acceptance criteria from its 7.1 spec
+  file (the graph node holds only metadata) — the stakeholder signs readable text
 - Adds the traceability matrix, priorities (5.3), CR Decision Records (5.4)
 - Generates a Markdown document tailored to the audience
 

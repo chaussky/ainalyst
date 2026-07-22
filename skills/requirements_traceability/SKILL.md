@@ -91,7 +91,10 @@ Algorithm:
 2. Interpret the results:
    - 🔴 **Orphan with no source** → clarify the business justification or freeze it
    - 🟡 **No implementation** → check with the developer or add to the backlog
-   - 🟡 **No test** → check with QA or create a test
+   - 🟡 **No test** → check with QA or create a test. Applies to BEHAVIORAL
+     requirement types (functional / non_functional / user_story / use_case /
+     solution / transition); model artifacts (erd, data_dictionary,
+     business_process, business_rule) are reviewed, not tested
    - 🟢 **Full coverage** → ready for the next step
 3. Make a decision for each problematic requirement
 4. If needed → `export_traceability_matrix` for a report

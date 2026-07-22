@@ -23,7 +23,9 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 6.4 is the **culmination of Chapter 6**. It synthesizes everything done in 6.1–6.3:
 - From 6.1: we know the current state and business needs (BN-xxx)
-- From 6.2: we know the future state, business goals (BG-xxx), and the gap analysis
+- From 6.2: we know the future state and business goals (BG-xxx); the gap analysis
+  is NOT auto-imported — read the 6.2 artifact yourself and carry gap_severity into
+  `define_solution_scope` (set gap_source = "6.2:gap_analysis")
 - From 6.3: we know the risks (RK-xxx) and the recommendation
 
 The task: build a **substantiated transition strategy** — what we're doing, how, and in what order.
@@ -267,7 +269,7 @@ or add a preparatory phase 0 (organizational readiness).
 | Task | Relationship |
 |--------|-------|
 | ← 6.1 | Business needs BN-xxx → context for capabilities |
-| ← 6.2 | BG-xxx + gap_analysis → capabilities and phases |
+| ← 6.2 | BG-xxx auto-imported; gap_analysis carried by the analyst into capabilities |
 | ← 6.3 | RK-xxx → linked_risks in the options + risks_remaining in the phases |
 | → 7.1 | solution_scope.capabilities → what to specify |
 | → 7.4 | transition_states → requirements architecture by phase |

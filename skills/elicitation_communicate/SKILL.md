@@ -115,7 +115,9 @@ received information in a while, who has a triggered event.
 
 **Algorithm:**
 
-1. For each stakeholder, compare: date of last communication vs. the frequency
+1. For each stakeholder, compare: date of last communication vs. the frequency.
+   Stakeholders with an empty or unrecognised `comm_frequency` are NOT evaluated
+   and the report names them — "on track" is only claimed for people it checked
    from the schedule (set in 3.2).
 2. Check triggers: has an event occurred that requires notification?
    (a new decision, a requirements change, completion of an elicitation session)

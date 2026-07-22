@@ -153,6 +153,8 @@ Algorithm:
 2. Call `save_prioritization_result`
 3. The tool:
    - Writes the `priority` field into the 5.1 repository
+   - WSJF sessions also write `wsjf_score` onto the node — 5.5 reads it to warn
+     when a stakeholder rejects a high-value requirement
    - Saves a snapshot to `{project}_prioritization.json`
    - Generates a Markdown report for stakeholders
 
