@@ -96,7 +96,8 @@ def _save_repo(repo: dict) -> None:
 
 def _register_in_repo(project_id: str, req_id: str, req_type: str,
                       title: str, source_artifact: str, priority: str = "Medium",
-                      business_goal_ids: Optional[list] = None) -> str:
+                      business_goal_ids: Optional[list] = None,
+                      owner: str = "") -> str:
     """
     ADR-022: registers a requirement in repository 5.1 with status draft.
     If a requirement with this ID already exists — skips the node (without an error).
@@ -136,7 +137,10 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
             "version": "1.0",
             "status": "draft",
             "priority": priority,
-            "owner": "",
+            # The creating call's owner used to be dropped here (hard-coded ""),
+            # so the approval package and every owner-reading consumer showed a
+            # blank owner for requirements whose author had named one.
+            "owner": owner,
             "stability": "Unknown",
             "source_artifact": source_artifact,
             "added": str(date.today()),
@@ -695,7 +699,7 @@ def create_functional_requirement(
         "non_functional": "non_functional",
         "business_rule": "business_rule",
     }
-    reg_note = _register_in_repo(project_id, req_id, repo_type_map[req_type], title, spec_path, priority, goal_ids)
+    reg_note = _register_in_repo(project_id, req_id, repo_type_map[req_type], title, spec_path, priority, goal_ids, owner=owner)
 
     return content + f"\n\n---\n\n**Registration in 5.1:** {reg_note}\n**File:** `{spec_path}`"
 

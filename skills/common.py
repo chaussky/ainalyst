@@ -1,5 +1,6 @@
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 import functools
+import glob
 import json
 import os
 import re
@@ -388,6 +389,52 @@ def was_verification_forced(repo: dict, req_id: str) -> bool:
                 and entry.get("forced")):
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# 7.1 spec files — shared by every consumer that needs the requirement's TEXT
+# ---------------------------------------------------------------------------
+#
+# The 5.1 graph node carries only metadata (id/type/title/priority/...); the real
+# statement and acceptance criteria live in the 7.1 spec .md. Two consumers need
+# that text — 7.2's quality checks (which read repo metadata alone and false-
+# flagged every requirement, finding 7.2-A) and 5.5's approval package (which
+# showed a stakeholder bare titles to sign). One resolver and one section parser
+# here, so the two readers cannot drift apart.
+
+def find_spec_file(req: dict, project_id: str):
+    """Path of the requirement's 7.1 spec .md, or None.
+
+    The node's `source_artifact` is preferred (7.1 registers the spec path
+    there); otherwise a glob `<id>_*.md` in the project's specs directory.
+    """
+    sa = req.get("source_artifact", "") or ""
+    if sa.lower().endswith(".md") and os.path.exists(sa):
+        return sa
+    safe_id = req.get("id", "").lower().replace("-", "_")
+    if safe_id:
+        matches = glob.glob(os.path.join(specs_dir(project_id), f"{safe_id}_*.md"))
+        if matches:
+            return sorted(matches)[0]
+    return None
+
+
+def spec_section_body(content: str, header: str) -> str:
+    """Text of a '## <header>' section up to the next '##' or '---' or EOF.
+    Header match is a case-insensitive prefix, so "Main scenario" finds
+    "## Main scenario (Happy Path)"."""
+    lines = content.split("\n")
+    body, in_section = [], False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## ") and stripped[3:].strip().lower().startswith(header.lower()):
+            in_section = True
+            continue
+        if in_section:
+            if stripped.startswith("## ") or stripped == "---":
+                break
+            body.append(line)
+    return "\n".join(body).strip()
 
 
 # ---------------------------------------------------------------------------

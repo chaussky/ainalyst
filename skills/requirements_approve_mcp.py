@@ -34,6 +34,7 @@ from skills.common import (
     APPROVAL_HISTORY_FILENAME,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     MUST_PRIORITIES,
+    find_spec_file, spec_section_body,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -368,19 +369,50 @@ def prepare_approval_package(
         node = _find_node(repo, rid)
         cr_refs = _get_cr_context(repo, rid)
         if cr_refs:
-            open_crs = [c for c in cr_refs if c["status"] in ("open", "under_change")]
+            # 5.4 CR statuses are open/approved/approved_modified/deferred/rejected;
+            # "under_change" belongs to the REQUIREMENT status vocabulary and was a
+            # dead branch here (one literal, two vocabularies).
+            open_crs = [c for c in cr_refs if c["status"] == "open"]
             if open_crs:
                 cr_warnings.append((rid, open_crs))
+        # The graph node carries only metadata — 7.1 writes the statement and the
+        # acceptance criteria into the spec .md, never onto the node. Reading the
+        # node fields alone produced a signing package of bare titles: the
+        # stakeholder was asked to approve requirements they could not read.
+        # Fall back to the spec file the way 7.2's quality checks already do.
+        description = node.get("description", "")
+        acceptance = node.get("acceptance_criteria", "")
+        if not (description and acceptance):
+            spec_path = find_spec_file({**node, "id": rid}, project_name)
+            if spec_path:
+                try:
+                    with open(spec_path, "r", encoding="utf-8") as f:
+                        spec_text = f.read()
+                except OSError:
+                    spec_text = ""
+                if spec_text:
+                    if not description:
+                        for header in ("Statement", "Story", "Main scenario"):
+                            body = spec_section_body(spec_text, header)
+                            # drop the italic hint line the 7.1 template prepends
+                            body = "\n".join(
+                                l for l in body.split("\n")
+                                if not l.strip().startswith(">")).strip()
+                            if body:
+                                description = body
+                                break
+                    if not acceptance:
+                        acceptance = spec_section_body(spec_text, "Acceptance Criteria")
         req_details.append({
             "id": rid,
             "title": node.get("title", "—"),
             "type": node.get("type", "functional"),
-            "description": node.get("description", ""),
+            "description": description,
             "status": node.get("status", "unknown"),
             "priority": node.get("priority", "—"),
             "version": node.get("version", "1.0"),
             "owner": node.get("owner", "—"),
-            "acceptance_criteria": node.get("acceptance_criteria", ""),
+            "acceptance_criteria": acceptance,
             "cr_refs": cr_refs,
         })
 
@@ -688,7 +720,10 @@ def record_approval_decision(
 
             # Check the CR from 5.4
             cr_refs = _get_cr_context(repo, req_id)
-            open_crs = [c for c in cr_refs if c["status"] in ("open", "under_change")]
+            # 5.4 CR statuses are open/approved/approved_modified/deferred/rejected;
+            # "under_change" belongs to the REQUIREMENT status vocabulary and was a
+            # dead branch here (one literal, two vocabularies).
+            open_crs = [c for c in cr_refs if c["status"] == "open"]
             if open_crs:
                 cr_list = ", ".join(f"`{c['cr_id']}` ({c['status']})" for c in open_crs)
                 conflicts.append(f"🟡 Open CRs from 5.4: {cr_list} — the requirement is under change")

@@ -1507,5 +1507,48 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
         self.assertIn("pending approvals", snapshot["forced_gates"])
 
 
+class TestApprovalPackageShowsRequirementText(BaseMCPTest):
+    """The package card read `description` / `acceptance_criteria` off the graph
+    NODE — fields 7.1 never writes there (the text lives in the spec .md). The
+    signing package therefore contained only titles: a stakeholder was asked to
+    approve requirements they could not read, and the tool flagged nothing
+    (reproduced live). The card now falls back to the spec file, the way 7.2's
+    quality checks already do. Owner had the same shape one field over:
+    `_register_in_repo` hard-coded `"owner": ""` and dropped the creating call's
+    owner argument on the floor."""
+
+    def _spec_project(self):
+        import skills.requirements_spec_mcp as mod71
+        mod71.create_functional_requirement(
+            "pkgtext", req_id="FR-001", req_type="functional",
+            title="Automated claim triage",
+            description="The system SHALL auto-triage incoming claims within 30 seconds of submission.",
+            rationale="Removes the manual full-review pipeline.",
+            priority="High", owner="Elena Vasquez",
+            business_goal_ids_json="[]")
+        mod71.create_user_story(
+            "pkgtext", story_id="US-001", title="Adjuster sees extracted data",
+            role="Claims Adjuster",
+            action="review auto-extracted claim fields",
+            benefit="save 40 minutes per claim",
+            acceptance_criteria_json=json.dumps([
+                "Every extracted field shows its source location on hover",
+                "Corrections are logged for retraining",
+            ]),
+            priority="Medium", business_goal_ids_json="[]")
+
+    def test_package_contains_statement_ac_and_owner(self):
+        self._spec_project()
+        out = prepare_approval_package(
+            "pkgtext", package_id="APKG-100", package_title="Readable package",
+            req_ids_json='["FR-001", "US-001"]', approach="predictive")
+        self.assertIn("SHALL auto-triage incoming claims", out,
+                      "the statement must be readable in the signing package")
+        self.assertIn("source location on hover", out,
+                      "acceptance criteria must be readable in the signing package")
+        self.assertIn("Elena Vasquez", out,
+                      "the owner the creating call named must reach the package")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

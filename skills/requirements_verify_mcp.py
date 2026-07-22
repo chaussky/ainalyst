@@ -35,6 +35,7 @@ from skills.common import (
     approval_outcome, APPROVAL_OUTCOME_APPROVED, APPROVAL_OUTCOME_CONDITIONAL,
     APPROVAL_OUTCOME_UNKNOWN,
     read_json_artifact, guard_artifact_errors,
+    find_spec_file, spec_section_body,
 )
 
 mcp = FastMCP("BABOK_Requirements_Verify")
@@ -207,20 +208,9 @@ def _specs_dir(project_id: str) -> str:
     return specs_dir(project_id)
 
 
-def _spec_section_body(content: str, header: str) -> str:
-    """Returns the text of a '## <header>' section up to the next '##' or '---' or EOF."""
-    lines = content.split("\n")
-    body, in_section = [], False
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("## ") and stripped[3:].strip().lower().startswith(header.lower()):
-            in_section = True
-            continue
-        if in_section:
-            if stripped.startswith("## ") or stripped == "---":
-                break
-            body.append(line)
-    return "\n".join(body).strip()
+# Single implementation in common.py — 5.5's approval package reads the same spec
+# files to show the stakeholder the text they sign; two parsers would drift.
+_spec_section_body = spec_section_body
 
 
 def _read_spec_fields(req: dict, project_id: str) -> Optional[dict]:
@@ -232,16 +222,8 @@ def _read_spec_fields(req: dict, project_id: str) -> Optional[dict]:
     File location: the node's source_artifact (7.1 registers the spec path there), else a glob
     <id>_*.md in the specs directory.
     """
-    path = None
-    sa = req.get("source_artifact", "") or ""
-    if sa.lower().endswith(".md") and os.path.exists(sa):
-        path = sa
-    else:
-        safe_id = req.get("id", "").lower().replace("-", "_")
-        if safe_id:
-            matches = glob.glob(os.path.join(_specs_dir(project_id), f"{safe_id}_*.md"))
-            if matches:
-                path = sorted(matches)[0]
+    # Resolution lives in common.find_spec_file — shared with the 5.5 package.
+    path = find_spec_file(req, project_id)
     if not path:
         return None
     try:
