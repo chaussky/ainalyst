@@ -38,7 +38,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 def _server(script: str) -> dict:
     """Returns the MCP server configuration with an absolute path to the script."""
-    return {"command": "python", "args": [str(PROJECT_ROOT / script)]}
+    # Script mode puts the SCRIPT's directory (skills/) on sys.path — not the
+    # project root — so without PYTHONPATH every `from skills.common import ...`
+    # dies with ModuleNotFoundError: No module named 'skills', on any machine.
+    return {
+        "command": "python",
+        "args": [str(PROJECT_ROOT / script)],
+        "env": {"PYTHONPATH": str(PROJECT_ROOT)},
+    }
 
 
 # ---------------------------------------------------------------------------
