@@ -817,6 +817,22 @@ def find_reusable_requirements(
         if req.get("status") in {"deprecated", "superseded", "retired"}:
             continue
 
+        # Only requirement-role nodes can be reused as requirements. The neighbour
+        # check_requirements_health already filters by role; this loop did not, so
+        # the reuse report offered a change request as a confirmed candidate (its
+        # 5.4 status literal is `approved`, which scores like a 5.5 approval) and
+        # every risk and goal as potential candidates.
+        #
+        # `business` is deliberately NOT excluded here, although it sits in
+        # NON_REQUIREMENT_NODE_TYPES as the legacy root type: the same literal is
+        # ALSO the BABOK requirement CLASS (business requirement — the most
+        # reusable kind, which this very loop scores "+2 high level of
+        # abstraction"). Dropping it would silently discard BRs an analyst flagged
+        # `reuse_candidate` — the `solution` lesson (one literal, two populations;
+        # under-counting a requirement is the worse failure) applied to its twin.
+        if req.get("type", "") in (NON_REQUIREMENT_NODE_TYPES - {"business"}):
+            continue
+
         # Filter by type
         if filter_type and req.get("type") != filter_type:
             continue

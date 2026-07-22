@@ -651,12 +651,19 @@ class TestCheckValueReadiness(BaseMCPTest):
         self.assertIn("benefits", result)
 
     def test_critical_arch_gaps_warning(self):
+        """7.4 `check_architecture_gaps` stores `gaps.critical` as a list of
+        MESSAGE STRINGS (`[g["message"] for g in gaps_critical]`). The old fixture
+        here used `[{"description": ...}]` — a shape the real producer never
+        writes — so the test stayed green while the live seam crashed with
+        `AttributeError: 'str' object has no attribute 'get'` exactly when the
+        architecture had critical gaps, i.e. when the pre-flight mattered most."""
         do_data = make_design_options("arch_proj", options=[make_option("OPT-001")])
         save_design_options(do_data, self.tmp_dir)
         arch = {
             "viewpoints": {},
             "gaps": {
-                "critical": [{"description": "Integration layer is missing"}],
+                # the REAL 7.4 shape: strings
+                "critical": ["Stakeholder `CFO` is not represented in any req"],
                 "warning": [],
             }
         }
@@ -668,6 +675,28 @@ class TestCheckValueReadiness(BaseMCPTest):
         result = mod76.check_value_readiness("arch_proj")
         self.assertIn("⚠️", result)
         self.assertIn("gap", result.lower())
+        self.assertIn("CFO", result)
+
+    def test_critical_arch_gaps_legacy_dict_shape_still_read(self):
+        """Hand-written or older architecture files may hold gap OBJECTS — the
+        reader keeps accepting both spellings of the same record."""
+        do_data = make_design_options("arch_proj2", options=[make_option("OPT-001")])
+        save_design_options(do_data, self.tmp_dir)
+        arch = {
+            "viewpoints": {},
+            "gaps": {
+                "critical": [{"description": "Integration layer is missing"}],
+                "warning": [],
+            }
+        }
+        save_architecture(arch, "arch_proj2", self.tmp_dir)
+        benefits = json.dumps([make_benefit()])
+        costs = json.dumps(make_costs())
+        mod76.add_value_assessment("arch_proj2", "OPT-001", benefits, costs)
+        mod76.compare_value("arch_proj2")
+        result = mod76.check_value_readiness("arch_proj2")
+        self.assertIn("⚠️", result)
+        self.assertIn("Integration layer", result)
 
     def test_empty_allocation_info(self):
         do_data = make_design_options("alloc_proj", options=[make_option("OPT-001")], )

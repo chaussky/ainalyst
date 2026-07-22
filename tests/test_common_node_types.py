@@ -35,12 +35,24 @@ class TestBusinessNodeTypes(unittest.TestCase):
         self.assertIs(mod73.BUSINESS_NODE_TYPES, BUSINESS_NODE_TYPES)
         self.assertIs(mod74.BUSINESS_NODE_TYPES, BUSINESS_NODE_TYPES)
 
-    def test_derived_aliases_still_exclude_test_nodes(self):
+    def test_derived_aliases_bind_the_full_shared_set(self):
+        """These aliases used to pin the local snapshot BUSINESS_NODE_TYPES |
+        {"test"} — written before `risk` / `change_request` / `solution_scope`
+        existed, which is exactly how 7.3 reported risks as "requirements without
+        traceability" and 7.4 diluted its coverage percentage. The aliases must BE
+        the shared, growing set (identity, not an equal copy)."""
         import skills.requirements_validate_mcp as mod73
         import skills.requirements_architecture_mcp as mod74
+        from skills.common import NON_REQUIREMENT_NODE_TYPES
 
-        self.assertEqual(mod73.NON_REQUIREMENT_TYPES, BUSINESS_NODE_TYPES | {"test"})
-        self.assertEqual(mod74.SKIP_TYPES, BUSINESS_NODE_TYPES | {"test"})
+        # Identity between the two consumers (their binding survives even the
+        # importlib.reload(common) another test performs), plus content equality
+        # with the current shared definition.
+        self.assertIs(mod73.NON_REQUIREMENT_TYPES, mod74.SKIP_TYPES)
+        self.assertEqual(mod73.NON_REQUIREMENT_TYPES, NON_REQUIREMENT_NODE_TYPES)
+        self.assertIn("risk", mod73.NON_REQUIREMENT_TYPES)
+        self.assertIn("change_request", mod73.NON_REQUIREMENT_TYPES)
+        self.assertIn("solution_scope", mod73.NON_REQUIREMENT_TYPES)
 
 
 if __name__ == "__main__":

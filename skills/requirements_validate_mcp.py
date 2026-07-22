@@ -33,7 +33,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    has_passed_verification, BUSINESS_NODE_TYPES,
+    has_passed_verification, BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors,
 )
 
@@ -43,11 +43,14 @@ REPO_FILENAME = "traceability_repo.json"
 CONTEXT_FILENAME = "business_context.json"
 ASSUMPTIONS_FILENAME = "assumptions.json"
 
-# Node types that represent a business goal / root a requirement can trace UP to (audit finding
-# 7.3-A) — imported from common.py, where the single definition lives.
-# Node types that are NOT requirements to be validated (goals/roots + test nodes). Excluded from
-# the requirement count and from the orphan check.
-NON_REQUIREMENT_TYPES = BUSINESS_NODE_TYPES | {"test"}
+# Node types that are NOT requirements to be validated. The local set used to be
+# BUSINESS_NODE_TYPES | {"test"} — written before `risk` (6.3), `change_request`
+# (5.4) and `solution_scope` (6.4) existed, so those nodes inflated the validated_pct
+# denominator, were reported as "reqs without traceability to business objectives"
+# and failed the Ready-for-7.5 gate, while check_business_alignment one screen up
+# answered correctly. The vocabulary GROWS as chapters are added; consumers must ask
+# the shared definition, not a snapshot of it (the Part-2d class, one more consumer).
+NON_REQUIREMENT_TYPES = NON_REQUIREMENT_NODE_TYPES
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +264,11 @@ def set_business_context(
     # ADR-065: the new parameter from_strategy_project_id reads 6.1 + 6.2
     prefill_status = ""
     if from_strategy_project_id.strip():
-        safe_sp = from_strategy_project_id.lower().replace(" ", "_")
+        # normalize_project_id, NOT the legacy lower/replace: the 6.1/6.2
+        # producers write their files through normalize_project_id, so a pid
+        # with characters outside [a-z0-9_-] built a DIFFERENT filename here
+        # and the prefill silently reported "data not found".
+        safe_sp = normalize_project_id(from_strategy_project_id)
         fs_goals_path = data_path(safe_sp, f"{safe_sp}_future_state_goals.json")
         fs_state_path = data_path(safe_sp, f"{safe_sp}_future_state.json")
         fs_scope_path = data_path(safe_sp, f"{safe_sp}_future_state_scope.json")
@@ -344,7 +351,7 @@ def set_business_context(
     # ADR-055: prefill from 6.1 if from_current_state_project_id is passed (deprecated)
     elif from_current_state_project_id.strip():
         prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id` (ADR-065)."
-        safe_cs = from_current_state_project_id.lower().replace(" ", "_")
+        safe_cs = normalize_project_id(from_current_state_project_id)
         needs_path = data_path(safe_cs, f"{safe_cs}_business_needs.json")
         scope_path = data_path(safe_cs, f"{safe_cs}_current_state_scope.json")
 

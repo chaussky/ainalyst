@@ -909,5 +909,35 @@ class TestArchAuditRegressions(BaseMCPTest):
         self.assertNotIn("not represented as a node", result)
 
 
+class TestStakeholderRepresentationCountsOwner(BaseMCPTest):
+    """The representation check matched only title WORDS (the node `stakeholders`
+    field is written by no producer), so the OWNER of a requirement — the person
+    most concretely tied to it — was reported as a critical "not represented" gap
+    (reproduced live: the owner of FR-102 was flagged). The owner field now counts,
+    and the gap message names its heuristic method instead of implying a real
+    stakeholder↔requirement model."""
+
+    def test_requirement_owner_is_represented(self):
+        repo = make_repo("own74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        save_stakeholder_registry(
+            "own74",
+            [{"name": "David Kim", "role": "SIU Fraud Investigator"}])
+        result = mod74.check_architecture_gaps("own74")
+        self.assertNotIn("David Kim", result.split("## ")[0] if "## " in result else result)
+        self.assertNotIn("`David Kim` is not named", result)
+
+    def test_uncovered_stakeholder_gap_names_its_method(self):
+        save_repo(make_repo("own74b", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(
+            "own74b",
+            [{"name": "Priya Nair", "role": "Compliance Officer"}])
+        result = mod74.check_architecture_gaps("own74b")
+        self.assertIn("Priya Nair", result)
+        self.assertIn("heuristic", result,
+                      "the verdict must say HOW it looked (owner + title words)")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

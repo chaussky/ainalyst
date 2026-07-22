@@ -18,7 +18,8 @@ from unittest.mock import patch, MagicMock
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
+from tests.conftest import (setup_mocks, BaseMCPTest, make_test_repo,
+                            save_test_repo, load_test_repo)
 setup_mocks()
 
 import skills.requirements_traceability_mcp as mod51
@@ -706,6 +707,97 @@ class TestSatisfiesGrantsSource(BaseMCPTest):
             [self._edge("FR-300", "BG-001")],
         )
         self.assertIn("`bg-001`", self._orphan_section(self._run()))
+
+
+class TestNoTestAxisCoversBehavioralTypes(BaseMCPTest):
+    """The "no test" rule fired only for the classes `solution` / `transition` — the
+    vocabulary 5.1 shipped with. The eight 7.1 node types postdate it, so a project
+    specified entirely through 7.1 answered "✅ Coverage is complete" without a
+    single verifies edge: the axis was dead for the platform's main path. Product
+    decision (2026-07-22): a test is expected from BEHAVIORAL requirement types
+    (functional / non_functional / user_story / use_case + the original two); model
+    artifacts (erd, data_dictionary, business_process, business_rule) are not
+    verified by test cases and stay exempt."""
+
+    P = "notest_types"
+
+    def _run_with(self, nodes, links):
+        repo = make_test_repo(self.P)
+        repo["requirements"] = nodes
+        repo["links"] = links
+        save_test_repo(repo)
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod51.check_coverage(project_name=self.P)
+
+    @staticmethod
+    def _node(node_id, node_type):
+        return {"id": node_id, "type": node_type, "title": f"{node_id} probe",
+                "version": "1.0", "status": "draft", "added": str(date.today()),
+                "source_artifact": ""}
+
+    @staticmethod
+    def _row_for(out, node_id):
+        """The requirement's own table row — the legend below the table always
+        mentions 'No test', so a whole-output assertion would be vacuous."""
+        for line in out.splitlines():
+            if node_id.lower() in line.lower() and line.strip().startswith("|"):
+                return line.lower()
+        return ""
+
+    def test_functional_without_verifies_is_flagged(self):
+        out = self._run_with(
+            [self._node("BG-001", "business_goal"),
+             self._node("FR-700", "functional")],
+            [{"from": "FR-700", "to": "BG-001", "relation": "satisfies",
+              "added": str(date.today())}],
+        )
+        self.assertIn("no test", self._row_for(out, "FR-700"))
+
+    def test_model_artifact_without_verifies_is_not_flagged(self):
+        out = self._run_with(
+            [self._node("BG-001", "business_goal"),
+             self._node("ERD-001", "erd")],
+            [{"from": "ERD-001", "to": "BG-001", "relation": "satisfies",
+              "added": str(date.today())}],
+        )
+        row = self._row_for(out, "ERD-001")
+        self.assertNotIn("no test", row)
+
+
+class TestAddTraceLinkWarnsOnMissingTarget(BaseMCPTest):
+    """add_trace_link is the one edge writer without an existence check (6.2 / 6.3 /
+    6.4 / 7.1 all validate). External ids (COMP-Auth) are legitimate, so the edge is
+    still WRITTEN — but silently accepting a typo creates an edge to nowhere that
+    check_coverage then counts as a source, silencing exactly the orphan check meant
+    to catch it. Product decision (2026-07-22): warn, but write."""
+
+    P = "dangling_edge"
+
+    def _prepare(self):
+        save_test_repo(make_test_repo(self.P))
+
+    def _add(self, to_id):
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod51.add_trace_link(
+                self.P, from_id="FR-001", to_id=to_id, relation="depends",
+                rationale="probe")
+
+    def test_missing_target_warns_but_writes(self):
+        self._prepare()
+        out = self._add("BG-01")   # typo — node does not exist
+        self.assertIn("BG-01", out)
+        self.assertIn("not in the repository", out)
+        repo = load_test_repo(self.P)
+        self.assertTrue(
+            any(l["from"] == "FR-001" and l["to"] == "BG-01" for l in repo["links"]),
+            "the edge must still be written — external artifact ids are legitimate")
+
+    def test_existing_target_gets_no_warning(self):
+        self._prepare()
+        out = self._add("BR-001")
+        self.assertNotIn("not in the repository", out)
 
 
 if __name__ == "__main__":

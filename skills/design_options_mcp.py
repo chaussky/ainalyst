@@ -34,7 +34,11 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    NON_REQUIREMENT_NODE_TYPES, MUST_PRIORITIES,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_Design_Options")
 
@@ -64,7 +68,8 @@ PRIORITY_TO_VERSION = {
 # "Critical" priorities for req_coverage (audit finding 7.5-A). 7.1 sets High/Medium/Low; 5.3 sets
 # MoSCoW. Both Must and High map to v1 in PRIORITY_TO_VERSION, so req_coverage must count both —
 # otherwise a project that skipped 5.3 (repo priority = High) always shows req_coverage = N/A.
-MUST_PRIORITIES = {"Must", "High"}
+# MUST_PRIORITIES itself is imported from common.py: this module used to keep an identical local
+# copy, which is exactly the two-copies-drift-apart shape the shared constants exist to prevent.
 
 # Default comparison criteria
 DEFAULT_CRITERIA = [
@@ -106,8 +111,9 @@ def _architecture_path(project_id: str) -> str:
 
 def _load_json(path: str, default: dict) -> dict:
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.5 stored artifact")
     return default
 
 
@@ -144,8 +150,9 @@ def _save_design_options(data: dict) -> None:
 def _load_change_strategy(project_id: str) -> Optional[dict]:
     path = _change_strategy_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.5 stored artifact")
     return None
 
 
@@ -222,6 +229,7 @@ def _get_depends_links(repo: dict) -> list:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def set_change_strategy(
     project_id: str,
     change_type: str,
@@ -346,6 +354,7 @@ def set_change_strategy(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def create_design_option(
     project_id: str,
     option_id: str,
@@ -550,6 +559,7 @@ def create_design_option(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def allocate_requirements(
     project_id: str,
     option_id: str,
@@ -629,9 +639,13 @@ def allocate_requirements(
 
     # Load the 5.1 repository
     repo = _load_repo(project_id)
+    # Role filter from common.py: the hand-written set {business, test,
+    # change_request} predated the 6.1/6.2/6.3/6.4 node types, so goals, needs,
+    # risks and the 6.4 scope node landed in "Requirements without priority" and the
+    # BA was asked to assign a business goal to v1/v2/out_of_scope.
     all_reqs = [
         r for r in repo.get("requirements", [])
-        if r.get("type", "") not in {"business", "test", "change_request"}
+        if r.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
     ]
 
     if not all_reqs:
@@ -874,6 +888,7 @@ def allocate_requirements(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def compare_design_options(
     project_id: str,
     criteria_json: str = "[]",
@@ -1108,6 +1123,7 @@ def compare_design_options(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_design_options_report(
     project_id: str,
     recommended_option_id: str = "",
@@ -1158,7 +1174,8 @@ def save_design_options_report(
     repo = _load_repo(project_id)
     allocation = do_data.get("allocation", {})
 
-    all_reqs = [r for r in repo.get("requirements", []) if r.get("type", "") not in {"business", "test", "change_request"}]
+    all_reqs = [r for r in repo.get("requirements", [])
+                if r.get("type", "") not in NON_REQUIREMENT_NODE_TYPES]
     must_reqs = [r for r in all_reqs if r.get("priority") in MUST_PRIORITIES]
     must_ids = {r["id"] for r in must_reqs}
 

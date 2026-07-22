@@ -37,6 +37,16 @@ mcp = FastMCP("BABOK_Requirements_Traceability")
 
 REPO_FILENAME = "traceability_repo.json"
 
+# Requirement types whose behaviour a test case can verify — the "no test" coverage
+# axis applies to these and only these. The two BABOK classes are the original rule;
+# the four 7.1 types joined by product decision (2026-07-22). Model artifacts
+# (erd, data_dictionary, business_process, business_rule) are deliberately absent:
+# they are reviewed, not executed against a test.
+BEHAVIORAL_REQ_TYPES = {
+    "solution", "transition",
+    "functional", "non_functional", "user_story", "use_case",
+}
+
 
 # ---------------------------------------------------------------------------
 # Repository utilities
@@ -359,6 +369,24 @@ def add_trace_link(
         if lnk["from"] == from_id and lnk["to"] == to_id and lnk["relation"] == relation:
             return f"ℹ️ Link `{from_id} --[{relation}]--> {to_id}` already exists."
 
+    # Warn about ends that are not repository nodes — but still write the edge.
+    # External artifact ids (COMP-Auth, a Jira ticket) are legitimate targets, so a
+    # hard check would break real usage; accepting a typo SILENTLY, however, creates
+    # an edge to nowhere that check_coverage counts as a source — silencing exactly
+    # the orphan check meant to catch it. Product decision (2026-07-22): warn + write.
+    missing_ends = [
+        node_id for node_id in (from_id, to_id) if _find_req(repo, node_id) is None
+    ]
+    dangling_note = ""
+    if missing_ends:
+        listed = ", ".join(f"`{node_id}`" for node_id in missing_ends)
+        dangling_note = (
+            f"\n⚠️ {listed}: not in the repository. If this is an external artifact "
+            f"(component, ticket), that is fine; if it is a typo, remove the link "
+            f"with `remove=True` — coverage checks will treat this edge as a real "
+            f"justification.\n"
+        )
+
     # Add the link
     new_link = {
         "from": from_id,
@@ -393,7 +421,7 @@ def add_trace_link(
 
     lines = [
         f"✅ Link added: `{from_id}` --[**{relation}**]--> `{to_id}`",
-        "",
+        dangling_note,
         f"**Rationale:** {rationale or '—'}",
         "",
         f"### Current links for `{from_id}`:",
@@ -511,7 +539,8 @@ def run_impact_analysis(
     rel_labels = {
         "derives": ("⬇️ Derived requirements", "Review — they derive from the changed item"),
         "depends": ("↔️ Dependent requirements", "Check — they may lose meaning without the changed item"),
-        "satisfies": ("✔️ Implementation components", "Estimate the scope of code/design rework"),
+        "satisfies": ("✔️ Satisfies-linked (components / objectives served)",
+                      "Components: estimate rework. Objectives: check the target is still met"),
         "verifies": ("🧪 Tests", "Rerun or update the test cases"),
         "threatens": ("⚠️ Risks (6.3)", "Re-assess — they threaten the changed item"),
         "modifies": ("📝 Change requests (5.4)", "Check whether the pending change still applies"),
@@ -698,8 +727,15 @@ def check_coverage(
             issues.append("no_impl")
         # Test is checked only for Standard and Full
         if formality in ("Standard", "Full") and not has_test:
-            # A test isn't required directly for business/stakeholder requirements
-            if req_type in ("solution", "transition"):
+            # A test is expected from BEHAVIORAL requirement types. The original
+            # rule knew only the classes `solution` / `transition` — the vocabulary
+            # 5.1 shipped with — so the eight 7.1 node types were never checked and
+            # a project specified entirely through 7.1 answered "✅ Coverage is
+            # complete" without a single verifies edge (the axis was dead for the
+            # platform's main path). Model artifacts (erd, data_dictionary,
+            # business_process, business_rule) are not verified by test cases and
+            # business/stakeholder requirements stay exempt as before.
+            if req_type in BEHAVIORAL_REQ_TYPES:
                 issues.append("no_test")
 
         req_info = {
@@ -854,10 +890,17 @@ def export_traceability_matrix(
         # package — the reader sees a shorter list and no indication anything is
         # missing. The durable answer is 5.5's own stored decisions; the literal is
         # kept as a fallback for projects with no approval records.
+        # Role guard on the fallback: 5.4 writes status="approved" on the CR node
+        # meaning "the change request was accepted", and a pre-migration 6.4 scope
+        # node carried the same literal meaning "the scope is settled". Without the
+        # guard both passed this filter and appeared in the approved-requirements
+        # matrix — a document that goes into the 5.5 signing package. Same
+        # one-literal-two-meanings class ADR-082 resolved for the type field.
         requirements = [
             r for r in requirements
-            if has_been_approved(project_name, r.get("id", ""))
-            or r.get("status") == "approved"
+            if r.get("type", "") not in ANALYSIS_NODE_TYPES
+            and (has_been_approved(project_name, r.get("id", ""))
+                 or r.get("status") == "approved")
         ]
     elif filter_status:
         requirements = [r for r in requirements if r.get("status") == filter_status]

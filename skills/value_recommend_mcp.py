@@ -32,7 +32,10 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import save_artifact, logger, DATA_DIR, data_path, normalize_project_id
+from skills.common import (
+    save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
+    read_json_artifact, guard_artifact_errors,
+)
 
 mcp = FastMCP("BABOK_Value_Recommend")
 
@@ -110,8 +113,9 @@ def _repo_path(project_id: str) -> str:
 
 def _load_json(path: str, default) -> dict:
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.6 stored artifact")
     return default
 
 
@@ -313,6 +317,7 @@ def _score_label(score: float) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def add_value_assessment(
     project_id: str,
     option_id: str,
@@ -624,6 +629,7 @@ def add_value_assessment(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def compare_value(
     project_id: str,
 ) -> str:
@@ -834,6 +840,7 @@ def compare_value(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_value_readiness(
     project_id: str,
 ) -> str:
@@ -918,13 +925,18 @@ def check_value_readiness(
                 "It's recommended to run `allocate_requirements` in task 7.5."
             )
 
-    # Check 6: critical gaps from architecture 7.4
+    # Check 6: critical gaps from architecture 7.4.
+    # 7.4 stores gaps as MESSAGE STRINGS (`[g["message"] for g in gaps_critical]`);
+    # older / hand-written files may hold objects. Calling `.get()` on the string
+    # shape crashed this tool with AttributeError exactly when the architecture HAD
+    # critical gaps — the moment the pre-flight mattered. Accept both spellings.
     if arch:
         critical_gaps = arch.get("gaps", {}).get("critical", [])
         if critical_gaps:
             for gap in critical_gaps:
+                text = gap.get("description", "") if isinstance(gap, dict) else str(gap)
                 warnings.append(
-                    f"⚠️ **Critical architecture gap**: {gap.get('description', gap)[:100]}. "
+                    f"⚠️ **Critical architecture gap**: {text[:100]}. "
                     f"Make sure this gap is accounted for in the value assessment."
                 )
 
@@ -994,6 +1006,7 @@ def check_value_readiness(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_recommendation(
     project_id: str,
     recommendation_type: str,

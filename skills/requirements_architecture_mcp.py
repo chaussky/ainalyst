@@ -34,7 +34,8 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    BUSINESS_NODE_TYPES, stakeholder_registry_path,
+    BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
+    read_json_artifact, guard_artifact_errors,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -80,11 +81,14 @@ VIEWPOINT_MAP = {
     },
 }
 
-# Business-goal / root node types a requirement can trace UP to (audit finding 7.4-B) —
-# imported from common.py, where the single definition lives.
-# Types that are NOT viewpoint artifacts (they are goal/root graph nodes, not requirements) — plus
-# test nodes. Excluded from viewpoints and from the active-requirement count (audit finding 7.4-C).
-SKIP_TYPES = BUSINESS_NODE_TYPES | {"test"}
+# Types that are NOT viewpoint artifacts. The local set used to be
+# BUSINESS_NODE_TYPES | {"test"} (audit finding 7.4-C) — a snapshot taken before
+# `risk` (6.3), `change_request` (5.4) and `solution_scope` (6.4) existed. Those
+# nodes then counted as "active requirements", could never appear in any viewpoint
+# (their types are not in VIEWPOINT_MAP), and diluted "Covered by viewpoints %" —
+# the number that lands in the signed architecture snapshot. Ask the shared,
+# growing definition instead of freezing it locally (the Part-2d class).
+SKIP_TYPES = NON_REQUIREMENT_NODE_TYPES
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +127,9 @@ def _architecture_path(project_id: str) -> str:
 def _load_repo(project_id: str) -> dict:
     path = _repo_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.4 stored artifact")
     return {"project": project_id, "requirements": [], "links": [], "history": []}
 
 
@@ -132,24 +137,27 @@ def _load_stakeholders(project_id: str) -> Optional[dict]:
     """ADR-035: read the stakeholder registry from 4.2 directly. Returns None if the file is missing."""
     path = _stakeholders_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.4 stored artifact")
     return None
 
 
 def _load_context(project_id: str) -> Optional[dict]:
     path = _context_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.4 stored artifact")
     return None
 
 
 def _load_architecture(project_id: str) -> dict:
     path = _architecture_path(project_id)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
+        # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
+        return read_json_artifact(path, "7.4 stored artifact")
     return {
         "project_id": project_id,
         "viewpoints": {},
@@ -224,6 +232,7 @@ def _build_views_from_repo(repo: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def analyze_requirements_architecture(
     project_id: str,
 ) -> str:
@@ -462,6 +471,7 @@ def analyze_requirements_architecture(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def add_custom_viewpoint(
     project_id: str,
     viewpoint_id: str,
@@ -598,6 +608,7 @@ def add_custom_viewpoint(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_architecture_gaps(
     project_id: str,
 ) -> str:
@@ -680,11 +691,19 @@ def check_architecture_gaps(
         all_stakeholders = stakeholders_data.get("stakeholders", [])
 
     if all_stakeholders:
-        # Collect stakeholder mentions in req (from the stakeholders field or title)
+        # Collect stakeholder mentions in req (from the stakeholders field, the
+        # OWNER field, or title words). `owner` is the field 7.1 actually writes —
+        # matching only title words declared the owner of a requirement "not
+        # represented in any req" (a critical gap about the one person most
+        # concretely tied to it), while a job title sharing a 4-letter word with
+        # any requirement title counted as covered.
         req_stakeholder_mentions: set = set()
         for req in all_reqs:
             for sh in req.get("stakeholders", []):
                 req_stakeholder_mentions.add(str(sh).lower())
+            owner = str(req.get("owner") or "").strip().lower()
+            if owner:
+                req_stakeholder_mentions.add(owner)
             title = req.get("title", "").lower()
             req_stakeholder_mentions.update(title.split())
 
@@ -716,9 +735,14 @@ def check_architecture_gaps(
                     # Identify by name, else role: neither producer of the registry
                     # (3.2 seeding, 4.2 elicitation) writes an `id`, so quoting it
                     # rendered an empty pair of backticks on every one of these gaps.
+                    # Say HOW the check looked: it is a heuristic over owner
+                    # fields and title words, not a real stakeholder↔requirement
+                    # model — a "critical" verdict that hides its method invites
+                    # more confidence than the evidence carries.
                     "message": (
                         f"Stakeholder `{sh.get('name') or sh.get('role') or '—'}` "
-                        f"is not represented in any req. "
+                        f"is not named as any requirement's owner and no requirement "
+                        f"title mentions them (heuristic check). "
                         f"Their interests may be uncovered."
                     ),
                 })
@@ -917,6 +941,7 @@ def check_architecture_gaps(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_architecture_snapshot(
     project_id: str,
     version: str,
