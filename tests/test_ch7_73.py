@@ -337,11 +337,15 @@ class TestSetBusinessContext(BaseMCPTest):
         ctx = mod73._load_context("proj73")
         self.assertEqual(ctx["potential_value"], "")
 
-    def test_surrogate_warning_in_output(self):
+    def test_manual_context_note_in_output(self):
         result = mod73.set_business_context(
             "proj73", self._valid_goals(), "Future", "Scope"
         )
-        self.assertIn("Chapter 6 surrogate", result)
+        # 7.3 can set the business context by hand; Chapter 6 (6.1/6.2) populates the
+        # same file automatically when run. The note must say so — not claim Chapter 6
+        # is unimplemented (it is implemented; the old "surrogate/temporary" wording lied).
+        self.assertIn("Chapter 6", result)
+        self.assertIn("automatically", result)
 
 
 # ---------------------------------------------------------------------------

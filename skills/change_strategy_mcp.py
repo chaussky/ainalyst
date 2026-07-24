@@ -20,14 +20,14 @@ Integration:
       (future_state / gap_analysis are NOT auto-imported — enter gap_severity in
        define_solution_scope by hand; auto-import is a backlogged feature)
   Out: change_strategy.json -> 7.1, 7.4, 7.5, 7.6, 8.x;
-       solution + satisfies node -> 5.1 (optional)
+       solution_scope + satisfies node -> 5.1 (optional)
 
 ADR-077: scope_change_strategy — auto-import from 6.1+6.2+6.3, graceful degradation
 ADR-078: GAP embedded in define_solution_scope (gap_severity + gap_source)
 ADR-079: 6 readiness dimensions (change_history added to the base 5)
 ADR-080: do_nothing is added automatically as OPT-000
 ADR-081: default 6 criteria + optional custom ones
-ADR-082: new node type `solution` in the 5.1 repository
+ADR-082: node type `solution_scope` in the 5.1 repository (revised 2026-07-21 from `solution`)
 ADR-083: JSON contract — a single file with solution_scope + change_strategy sections
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com

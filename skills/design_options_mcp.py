@@ -4,13 +4,13 @@ MCP tools for defining solution design options, allocating requirements across
 versions, and comparing options.
 
 Tools:
-  - set_change_strategy      — surrogate for task 6.4 (ADR-039), temporary until Chapter 6 is implemented
+  - set_change_strategy      — manual/flat entry point for 6.4 data when 6.4 was not run (ADR-039); 6.4 writes the same file
   - create_design_option     — create/update a design option (build/buy/hybrid)
   - allocate_requirements    — semi-automatic allocation of req across versions (ADR-041)
   - compare_design_options   — comparison matrix of options against criteria
   - save_design_options_report — final report → 7.6 (Analyze Value and Recommend Solution)
 
-ADR-039: set_change_strategy — surrogate for 6.4, will be replaced when Chapter 6 is implemented
+ADR-039: set_change_strategy — flat stand-in for 6.4; 6.4 (implemented) writes the SAME file, so the two coexist (6.4's rich contract wins, see the guard in set_change_strategy)
 ADR-040: single file {project}_design_options.json with an options[] array
 ADR-041: allocation — semi-automatic, versions v1/v2/out_of_scope, depends-conflict check
 
@@ -239,9 +239,10 @@ def set_change_strategy(
     notes: str = "",
 ) -> str:
     """
-    BABOK 7.5 / surrogate for 6.4 — Records the change strategy for the project.
-    ADR-039: temporary tool until Chapter 6 of BABOK (Strategy Analysis) is implemented.
-    ⚠️ Will be replaced by the full task 6.4 when Chapter 6 is implemented.
+    BABOK 7.5 / flat stand-in for 6.4 — Records the change strategy for the project.
+    ADR-039: lets 7.5 run standalone by entering the change strategy by hand. Chapter 6
+    (Strategy Analysis) is implemented; task 6.4 writes the SAME file with a richer
+    contract, and a real 6.4 contract is never clobbered (see the guard below).
 
     The Change Strategy defines the strategic context for Design Options:
     what kind of change is happening, what is in scope, which constraints apply.
@@ -337,8 +338,8 @@ def set_change_strategy(
 
     lines += [
         "",
-        "> ⚠️ **6.4 surrogate:** this tool is a temporary solution until Chapter 6",
-        "> of BABOK (Strategy Analysis) is implemented. It will be replaced then.",
+        "> ℹ️ **Entered manually in 7.5.** Task 6.4 (Define Change Strategy) writes this",
+        "> same strategy automatically when you run Chapter 6 — and its richer contract wins.",
         "",
         "---",
         "",

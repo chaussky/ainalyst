@@ -4,7 +4,7 @@ MCP tools for validating requirements: checking alignment with business objectiv
 managing assumptions, success criteria, the validated status.
 
 Tools:
-  - set_business_context       — create/update the project's business context (Ch.6 surrogate)
+  - set_business_context       — create/update the business context by hand (6.1/6.2 populate the same file when run)
   - check_business_alignment   — check traceability of reqs to business objectives (BFS + matching)
   - set_success_criteria       — attach a measurable success criterion to a req
   - log_assumption             — record an assumption (AS-001, ...)
@@ -12,7 +12,7 @@ Tools:
   - mark_req_validated         — status verified -> validated (warnings, not blocks)
   - get_validation_report      — summary report: coverage matrix, orphans, assumptions, verdict
 
-ADR-030: {project}_business_context.json — a Chapter 6 surrogate
+ADR-030: {project}_business_context.json — set here by hand or populated by Chapter 6 (6.1/6.2)
 ADR-031: {project}_assumptions.json — the assumptions registry
 ADR-032: set_success_criteria — an optional pipeline step
 ADR-033: mark_req_validated — warnings, not hard blocks
@@ -239,7 +239,8 @@ def set_business_context(
 ) -> str:
     """
     BABOK 7.3 — Creates or updates the project's business context.
-    ADR-030: a Chapter 6 surrogate (Strategy Analysis). Migrate when 6.1/6.2 is implemented.
+    ADR-030: sets the business context by hand so 7.3 can run standalone. Chapter 6
+    (Strategy Analysis) is implemented; 6.1/6.2 populate the same file automatically when run.
 
     ⚠️ Call once at the start of validation work. On update — a warning.
 
@@ -443,7 +444,7 @@ def set_business_context(
     lines = [
         f"{'⚠️ Business context UPDATED' if is_update else '✅ Business context created'} — **{project_id}**",
         "",
-        f"> ⚠️ **Temporary Chapter 6 surrogate** — migrate when tasks 6.1/6.2 are implemented (ADR-030)",
+        f"> ℹ️ **Business context set by hand in 7.3** — Chapter 6 (6.1/6.2) populates this file automatically when run (ADR-030)",
         "",
         f"**Date:** {date.today()}",
         "",
