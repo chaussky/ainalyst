@@ -1706,7 +1706,12 @@ def save_prioritization_result(
             "## ⚠️ Unresolved conflicts",
             "",
             f"Still unresolved: {len(open_conflicts)} conflict(s), {len(open_violations)} violation(s).",
-            "The result has been saved, but recommend recording decisions via `resolve_conflict`.",
+            # This used to send the BA to `resolve_conflict`, which refuses on a
+            # closed session — the document instructed a step the platform rejects.
+            "The result has been saved with these left open, and the session is now "
+            "closed. To settle them, open a new prioritization session: a decision "
+            "recorded against a closed one would appear in a regenerated report but "
+            "never reach the requirements graph.",
             "",
         ]
 

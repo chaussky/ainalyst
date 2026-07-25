@@ -1117,6 +1117,23 @@ class TestFinalReviewFindings(BaseMCPTest):
         excluded_section = report.split("Excluded by decision")[1]
         self.assertIn("FR-004", excluded_section.split("Not estimated")[0])
 
+    def test_the_artefact_does_not_send_the_ba_to_a_refusal(self):
+        """Finalising with open conflicts printed "record them via resolve_conflict".
+
+        That call now refuses on a closed session, so the document was instructing
+        the BA to do something the platform would reject — the same "declared but
+        dead" class this feature was built to close.
+        """
+        add_timebox_scores(sh_id="SH-2", influence="High", scores=[
+            {"req_id": "FR-001", "cost": 5, "value": "Won't"}])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            out = mod53.save_prioritization_result(PROJECT, SESSION)
+        self.assertIn("Unresolved conflicts", out)
+        self.assertNotIn("via `resolve_conflict`", out)
+        self.assertIn("open a new prioritization session", out)
+
     def test_finalising_without_aggregating_says_so(self):
         other = "Never aggregated"
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
