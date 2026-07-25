@@ -50,6 +50,10 @@ VOLATILITY_WARNING = 3   # 1.3+
 VOLATILITY_CRITICAL = 4  # 1.4+
 
 # Time Boxing / Budgeting (BABOK 10.33.3 .3) — value ranking that fills a fixed box.
+# Numerically identical to MOSCOW_WEIGHTS today, and deliberately NOT the same
+# constant: MOSCOW_WEIGHTS is a scoring weight that only makes sense paired with
+# MOSCOW_THRESHOLDS, while this is a rank order. Recalibrating the aggregation
+# weights must not silently re-order the fill.
 VALUE_ORDER = {"Must": 4, "Should": 3, "Could": 2, "Won't": 1}
 
 # 7.1's create_* tools write High/Medium/Low into the SAME `priority` field 5.3
@@ -398,8 +402,14 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
     cumulative = 0.0
     for req_id in order:
         cost = result[req_id]["cost"]
-        if cumulative + cost <= capacity:
-            cumulative = round(cumulative + cost, 2)
+        # Round BEFORE comparing, not only when storing: costs are ordinary floats
+        # (person-days, half-point stories), and 0.1 + 0.2 == 0.30000000000000004
+        # in binary floating point — an unrounded comparison cuts a requirement
+        # that fits the capacity exactly. Costs are already rounded to 2 places,
+        # so rounding their running total to 2 places is exact, not a fudge.
+        running_total = round(cumulative + cost, 2)
+        if running_total <= capacity:
+            cumulative = running_total
             result[req_id]["in_box"] = True
             result[req_id]["cumulative"] = cumulative
             result[req_id]["priority"] = result[req_id]["value_label"]

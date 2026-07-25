@@ -265,7 +265,19 @@ class TestAggregateTimebox(unittest.TestCase):
              "SH-LOW": {"FR-004": {"cost": 1, "value": "Won't"}}},
             influence={"SH-HIGH": "High", "SH-LOW": "Low"})
         self.assertEqual(out["FR-004"]["value_source"], "session")
-        self.assertIn(out["FR-004"]["value_label"], ("Must", "Should"))
+        # (4*3 + 1*1) / 4 = 3.25 → Should. An unweighted mean would give 2.5,
+        # which is ALSO Should — so the swapped case below is what proves the
+        # weighting is applied at all.
+        self.assertEqual(out["FR-004"]["value_label"], "Should")
+
+    def test_influence_weighting_follows_the_influential_voice(self):
+        """Swap who holds the influence and the label must move with them."""
+        out = self.agg(
+            {"SH-HIGH": {"FR-004": {"cost": 1, "value": "Won't"}},
+             "SH-LOW": {"FR-004": {"cost": 1, "value": "Must"}}},
+            influence={"SH-HIGH": "High", "SH-LOW": "Low"})
+        # (1*3 + 4*1) / 4 = 1.75 → Could; unweighted would still be 2.5/Should.
+        self.assertEqual(out["FR-004"]["value_label"], "Could")
 
     def test_stakeholder_without_value_does_not_dilute_the_vote(self):
         out = self.agg(
@@ -370,16 +382,36 @@ class TestAggregateTimebox(unittest.TestCase):
                        capacity=20)
         self.assertNotIn("RISK-001", out)
 
-    def test_determinism_across_runs(self):
-        scores = {"SH-1": {
+    def test_ties_are_broken_by_id_not_by_set_order(self):
+        """Pins the THIRD sort key.
+
+        Comparing two runs in one process cannot do it: identical string sets
+        iterate identically and `sorted` is stable, so dropping the id tiebreak
+        would leave such a test green. Asserting WHICH two of three tied
+        requirements got in is what actually fails when the key is removed.
+        """
+        out = self.agg({"SH-1": {
             "FR-001": {"cost": 5, "value": "Must"},
             "FR-002": {"cost": 5, "value": "Must"},
             "FR-003": {"cost": 5, "value": "Must"},
-        }}
-        first = self.agg(scores, capacity=10)
-        second = self.agg(scores, capacity=10)
-        self.assertEqual({r: d["in_box"] for r, d in first.items()},
-                         {r: d["in_box"] for r, d in second.items()})
+        }}, capacity=10)
+        self.assertTrue(out["FR-001"]["in_box"])
+        self.assertTrue(out["FR-002"]["in_box"])
+        self.assertFalse(out["FR-003"]["in_box"])
+
+    def test_fractional_costs_that_fit_exactly_are_admitted(self):
+        """0.1 + 0.2 == 0.30000000000000004 in binary floating point.
+
+        Costs are ordinary floats (person-days, half-point stories), so comparing
+        the UNROUNDED running total against the capacity cuts a requirement that
+        fits exactly.
+        """
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 0.1, "value": "Must"},
+            "FR-002": {"cost": 0.2, "value": "Must"},
+        }}, capacity=0.3)
+        self.assertTrue(out["FR-002"]["in_box"])
+        self.assertEqual(out["FR-002"]["priority"], "Must")
 
 
 class TestMustInflationDenominator(unittest.TestCase):
