@@ -430,15 +430,19 @@ class TestCheckBusinessAlignment(BaseMCPTest):
         self.assertIn("Coverage Matrix", result)
         self.assertIn("BG-001", result)
 
-    def test_title_match_fallback(self):
+    def test_title_match_is_advisory_not_alignment(self):
         self._setup()
-        # req without a direct link in the graph, but the title overlaps with BG
+        # req without a direct link in the graph, but the title overlaps with a BG.
+        # Graph-truth (F-A): a title word-overlap is ADVISORY only — it is surfaced for
+        # the analyst to confirm and link, but never counted as aligned/covered.
         fr = make_verified_req("FR-001", "Reduce application processing time through automation", "functional")
         repo = make_repo("proj73", requirements=[fr], links=[])
         save_repo(repo)
         result = mod73.check_business_alignment("proj73")
         self.assertIn("FR-001", result)
-        self.assertIn("title-match", result)
+        self.assertIn("Title match only", result)      # advisory summary row
+        self.assertIn("advisory", result.lower())      # advisory section present
+        self.assertNotIn("_(traced in graph)_", result)  # NOT counted as aligned
 
     def test_business_type_excluded(self):
         # business-type req is not included in the check (skipped in the loop)
@@ -1101,7 +1105,7 @@ class TestBusinessNodeTypes(BaseMCPTest):
                           make_verified_req("FR-001", "Automatic routing engine", "functional")],
             links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod73.check_business_alignment(P)
-        self.assertIn("_(BFS)_", result)
+        self.assertIn("_(traced in graph)_", result)
         aligned_section = result.split("Aligned requirements")[-1].split("##")[0]
         self.assertIn("FR-001", aligned_section)
 

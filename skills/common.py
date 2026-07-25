@@ -391,6 +391,27 @@ def was_verification_forced(repo: dict, req_id: str) -> bool:
     return False
 
 
+def has_been_validated(repo: dict, req_id: str) -> bool:
+    """True if the requirement has passed 7.3 validation.
+
+    The mirror of `has_passed_verification`. `status` is a single field shared across
+    chapters, so 5.5 (approved), 5.4 resolve_cr (under_change) and even a re-run of
+    7.2 mark_req_verified overwrite `validated` and the evidence disappears from the
+    node — after which get_validation_report counted fewer validated requirements and
+    reported "Not ready for 7.5" about work that was in fact validated. The lasting
+    proof is the `req_validated` entry mark_req_validated appends to repo["history"].
+    The union with the current status covers repositories written before the history
+    record existed. A forced validation counts: force=true is a recorded BA decision.
+    """
+    for entry in repo.get("history", []):
+        if entry.get("action") == "req_validated" and entry.get("req_id") == req_id:
+            return True
+    for req in repo.get("requirements", []):
+        if req.get("id") == req_id and req.get("status") == "validated":
+            return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # 7.1 spec files — shared by every consumer that needs the requirement's TEXT
 # ---------------------------------------------------------------------------

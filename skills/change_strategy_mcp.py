@@ -121,6 +121,14 @@ def _normalize_strategy(data: dict, project_id: str) -> dict:
     """
     if not isinstance(data, dict):
         return _empty_strategy(project_id)
+    # The 7.5 surrogate writes `scope` as a flat STRING, while every 6.4 reader indexes
+    # it as a dict (scope.get('change_type')...). If a BA used the surrogate and then
+    # ran a 6.4 tool WITHOUT scope_change_strategy (the only tool that rewrites scope to
+    # a dict), save_change_strategy hit `AttributeError: 'str' object has no attribute
+    # 'get'` instead of returning a readable result. Coerce a non-dict scope to a dict,
+    # keeping the surrogate's text so nothing the analyst wrote is lost.
+    if "scope" in data and not isinstance(data["scope"], dict):
+        data["scope"] = {"scope_summary": data["scope"]}
     skeleton = _empty_strategy(project_id)
     for key, value in skeleton.items():
         data.setdefault(key, value)
@@ -415,13 +423,13 @@ def define_solution_scope(
         explicitly_excluded: JSON list of strings — what is explicitly NOT in scope
         scope_summary: 2-3 sentences: what we are doing and what we are not doing
     """
-    try:
-        capabilities = json.loads(capabilities_json)
-    except json.JSONDecodeError:
-        return "❌ Error parsing capabilities_json. Check the JSON syntax."
-
-    if not isinstance(capabilities, list):
-        return "❌ capabilities_json must be a JSON array."
+    # Shape, not just syntax: a list of strings (names) where objects are expected —
+    # a plausible LLM mistake — must return a readable "❌", not an AttributeError
+    # escaping the tool when the render loop calls cap.get(...).
+    from skills.common import parse_json_dict_list
+    capabilities, shape_error = parse_json_dict_list(capabilities_json, "capabilities_json")
+    if shape_error:
+        return shape_error
 
     try:
         excluded = json.loads(explicitly_excluded) if explicitly_excluded.strip() else []

@@ -27,8 +27,14 @@ DATA_SUFFIXES = [
     "assumptions.json", "architecture.json", "change_strategy.json",
     "business_needs.json", "current_state_scope.json", "current_state.json",
     "future_state_scope.json", "future_state_goals.json", "future_state.json",
-    "gap_analysis.json", "risk_assessment.json", "risk_scope.json",
-    "verification_issues.json", "change_scope.json",
+    "gap_analysis.json", "risk_assessment.json", "risk_assessment_scope.json",
+    "verification_issues.json", "change_strategy_scope.json",
+    # 6.3/6.4 scope files carry the producer's real SCOPE_FILENAME suffix
+    # (risk_assessment_scope / change_strategy_scope); the earlier "risk_scope" /
+    # "change_scope" spellings matched no producer, so those scope files were left
+    # flat with a "skip (project unknown)". The living stakeholder registry (4.2/3.2)
+    # was absent from the list entirely.
+    "stakeholder_registry.json",
 ]
 
 # Markdown-report prefixes where the project_id is embedded AFTER the task code.

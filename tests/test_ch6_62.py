@@ -1104,7 +1104,9 @@ class TestIntegration73(BaseMCPTest):
             solution_scope="Scope",
             from_strategy_project_id=PROJECT,
         )
-        self.assertIn("BG-001", r)
+        # R1-1: prefilled objectives keep the REAL business-need id (BN-001), not a
+        # synthesised BG-{n}, so graph traceability from a requirement matches.
+        self.assertIn("BN-001", r)
 
     def test_from_strategy_no_data_warning(self):
         r = set_business_context(
@@ -1137,8 +1139,8 @@ class TestIntegration73(BaseMCPTest):
             solution_scope="Scope",
             from_current_state_project_id=PROJECT,
         )
-        # Should pre-fill and warn
-        self.assertIn("BG-001", r)
+        # Should pre-fill (with the real BN id, R1-1) and warn
+        self.assertIn("BN-001", r)
         self.assertIn("deprecated", r.lower())
 
     def test_from_strategy_does_not_override_explicit_goals(self):

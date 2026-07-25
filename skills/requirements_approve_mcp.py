@@ -336,10 +336,12 @@ def prepare_approval_package(
     """
     logger.info(f"prepare_approval_package: {package_id} / {project_name}")
 
-    try:
-        req_ids = json.loads(req_ids_json)
-    except json.JSONDecodeError:
-        return "❌ Error: `req_ids_json` must be a valid JSON list. Example: '[\"FR-001\"]'"
+    # Shape, not just syntax: a scalar/object where a list of ids is expected must
+    # return a readable "❌", not a TypeError escaping the tool.
+    from skills.common import parse_json_str_list
+    req_ids, shape_error = parse_json_str_list(req_ids_json, "req_ids_json")
+    if shape_error:
+        return shape_error
 
     if not req_ids:
         return "❌ Error: the requirement list cannot be empty."

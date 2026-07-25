@@ -214,8 +214,9 @@ def _bfs_to_business(repo: dict, start_id: str) -> list:
 
 def _title_matches_goal(req_title: str, goal_title: str) -> bool:
     """
-    Simple title matching: checks the overlap of keywords (≥3 characters).
-    Used as a second alignment-detection method.
+    Advisory title overlap: True if the requirement and objective titles share a word
+    of >= 5 characters. This is a HINT surfaced to the analyst, never a substitute for
+    a graph link — alignment and coverage are read from the 5.1 edges only.
     """
     req_words = set(w.lower() for w in req_title.split() if len(w) >= 5)
     goal_words = set(w.lower() for w in goal_title.split() if len(w) >= 5)
@@ -330,7 +331,13 @@ def set_business_context(
                 if needs_list:
                     auto_goals = [
                         {
-                            "id": f"BG-{idx_n:03d}",
+                            # Keep the REAL business-need id. The graph traversal in
+                            # check_business_alignment / get_validation_report finds
+                            # `business_need` nodes (BN-xxx); a synthesised `BG-{n}` id
+                            # here would never match them, so a requirement correctly
+                            # linked to its need was reported orphan on the 6.1-only
+                            # path. Objectives ARE the 6.1 needs at this stage.
+                            "id": need.get("id") or f"BG-{idx_n:03d}",
                             "title": need.get("need_title", f"Need {idx_n}"),
                             "description": need.get("description", ""),
                             "kpi": need.get("cost_of_inaction", ""),
@@ -366,22 +373,23 @@ def set_business_context(
                     auto_goals = []
                     for idx_n, need in enumerate(needs_list, 1):
                         auto_goals.append({
-                            "id": f"BG-{idx_n:03d}",
+                            # Keep the REAL business-need id so the graph traversal
+                            # (which finds BN-xxx nodes) matches — see the note in the
+                            # from_strategy branch above.
+                            "id": need.get("id") or f"BG-{idx_n:03d}",
                             "title": need.get("need_title", f"Need {idx_n}"),
                             "description": need.get("description", ""),
                             "kpi": need.get("cost_of_inaction", ""),
                             "source_bn": need.get("id", ""),
                         })
                     business_goals_json = json.dumps(auto_goals, ensure_ascii=False)
-                    mapping_parts = []
-                    for i, n in enumerate(needs_list, 1):
-                        mapping_parts.append(n.get("id", "?") + "→BG-" + str(i).zfill(3))
-                    mapping = ", ".join(mapping_parts)
+                    ids_used = ", ".join(g["id"] for g in auto_goals)
                     prefill_status += (
                         f"\n\n## Auto-fill from 6.1 (ADR-055)\n\n"
                         f"✅ Business objectives prefilled from {len(auto_goals)} "
                         f"business needs of `{from_current_state_project_id}`.\n"
-                        f"Mapping: {mapping}"
+                        f"Objectives keep the 6.1 business-need ids so graph "
+                        f"traceability matches: {ids_used}"
                     )
 
                 if not solution_scope.strip() and os.path.exists(scope_path):
@@ -585,25 +593,33 @@ def check_business_alignment(
         if req_type in NON_REQUIREMENT_TYPES:
             continue
 
-        # Method 1: BFS to 'business'-type nodes
+        # Alignment is a claim about TRACEABILITY, so it is read from the graph edges
+        # ONLY — the same rule 7.1 build_coverage_matrix follows ("nothing is inferred
+        # from text"). A title word-overlap between a requirement and an objective is a
+        # HINT for the analyst, never a substitute for a link: it is surfaced as advisory
+        # and does NOT count toward alignment or objective coverage.
         bfs_nodes = _bfs_to_business(repo, req_id)
         bfs_goal_ids = {n["id"] for n in bfs_nodes if n["id"] in goal_ids}
 
-        # Method 2: title matching against BG-xxx
-        title_matched_goals = set()
-        for g in goals:
-            if _title_matches_goal(req.get("title", ""), g["title"]):
-                title_matched_goals.add(g["id"])
+        title_hint_goals = {
+            g["id"] for g in goals
+            if g["id"] not in bfs_goal_ids
+            and _title_matches_goal(req.get("title", ""), g["title"])
+        }
 
-        found_goals = bfs_goal_ids | title_matched_goals
-
-        if found_goals:
-            covered_goals |= found_goals
+        if bfs_goal_ids:
+            covered_goals |= bfs_goal_ids
             aligned_reqs.append({
                 "req_id": req_id,
                 "title": req.get("title", ""),
-                "aligned_goals": sorted(found_goals),
-                "method": "bfs" if bfs_goal_ids else "title_match",
+                "aligned_goals": sorted(bfs_goal_ids),
+                "method": "bfs",
+            })
+        elif title_hint_goals:
+            needs_review_reqs.append({
+                "req_id": req_id,
+                "title": req.get("title", ""),
+                "hint_goals": sorted(title_hint_goals),
             })
         else:
             orphan_reqs.append({
@@ -632,7 +648,8 @@ def check_business_alignment(
         "",
         "| Status | Count |",
         "|--------|-----------|",
-        f"| ✅ Aligned (has traceability to BG) | {len(aligned_reqs)} ({aligned_pct}%) |",
+        f"| ✅ Aligned (traced to BG in the graph) | {len(aligned_reqs)} ({aligned_pct}%) |",
+        f"| ⚠️ Title match only (verify & link) | {len(needs_review_reqs)} |",
         f"| ❌ Orphan (no traceability to BG) | {len(orphan_reqs)} |",
         "",
     ]
@@ -667,9 +684,23 @@ def check_business_alignment(
             "",
         ]
         for r in aligned_reqs:
-            method_note = " _(BFS)_" if r["method"] == "bfs" else " _(title-match)_"
             goals_str = ", ".join(f"`{g}`" for g in r["aligned_goals"])
-            lines.append(f"- `{r['req_id']}` — {r['title']} → {goals_str}{method_note}")
+            lines.append(f"- `{r['req_id']}` — {r['title']} → {goals_str} _(traced in graph)_")
+        lines.append("")
+
+    # Title-match hints — advisory, NOT counted as coverage (graph is the source of truth)
+    if needs_review_reqs:
+        lines += [
+            "## ⚠️ Possible matches by title (advisory — not counted as coverage)",
+            "",
+            "> A requirement's title shares words with an objective, but there is NO link "
+            "in the 5.1 graph. Confirm the relationship and record it with `add_trace_link` "
+            "(5.1) so it counts as real traceability.",
+            "",
+        ]
+        for r in needs_review_reqs:
+            hints = ", ".join(f"`{g}`" for g in r["hint_goals"])
+            lines.append(f"- `{r['req_id']}` — {r['title']} → {hints}")
         lines.append("")
 
     # Orphan req
@@ -1145,11 +1176,10 @@ def mark_req_validated(
         if goals:
             bfs_nodes = _bfs_to_business(repo, req_id)
             bfs_goal_ids = {n["id"] for n in bfs_nodes if n["id"] in goal_ids}
-            title_matched = {
-                g["id"] for g in goals
-                if _title_matches_goal(req.get("title", ""), g["title"])
-            }
-            if not (bfs_goal_ids | title_matched):
+            # Graph edges only (consistent with check_business_alignment): a title
+            # word-overlap is a hint, not traceability, so it must not silence the
+            # "no traceability" warning.
+            if not bfs_goal_ids:
                 warnings.append(
                     f"No traceability to business objectives. "
                     f"Check `check_business_alignment` or add links in 5.1."
@@ -1289,7 +1319,11 @@ def get_validation_report(
             f"Check that requirements were created via the 7.1 tools."
         )
 
-    validated = [r for r in active_reqs if r.get("status") == "validated"]
+    # Validation is a durable fact in history, not the mutable status: 5.5 (approved),
+    # 5.4 (under_change) and a re-run 7.2 overwrite `validated` in the shared field, so
+    # a status-only count reported "Not ready for 7.5" about work that WAS validated.
+    from skills.common import has_been_validated
+    validated = [r for r in active_reqs if has_been_validated(repo, r["id"])]
     verified_only = [r for r in active_reqs if r.get("status") == "verified"]
     with_criteria = [r for r in active_reqs if r.get("success_criteria")]
 
@@ -1313,12 +1347,11 @@ def get_validation_report(
         req_id = req["id"]
         if not goals:
             break
+        # Graph edges only (see check_business_alignment): a title overlap is not a link.
         bfs_nodes = _bfs_to_business(repo, req_id)
         bfs_goal_ids = {n["id"] for n in bfs_nodes if n["id"] in goal_ids}
-        title_matched = {g["id"] for g in goals if _title_matches_goal(req.get("title", ""), g["title"])}
-        found = bfs_goal_ids | title_matched
-        if found:
-            covered_goals |= found
+        if bfs_goal_ids:
+            covered_goals |= bfs_goal_ids
         else:
             orphan_reqs.append(req)
 

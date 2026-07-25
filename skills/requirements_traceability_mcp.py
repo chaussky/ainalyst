@@ -29,6 +29,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, ANALYSIS_NODE_TYPES,
                            BUSINESS_NODE_TYPES, has_been_approved,
+    has_passed_verification, has_been_validated,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     link_date,
 )
@@ -902,6 +903,15 @@ def export_traceability_matrix(
             and (has_been_approved(project_name, r.get("id", ""))
                  or r.get("status") == "approved")
         ]
+    elif filter_status == "verified":
+        # Same durable-fact reasoning as `approved`: 7.3/5.5 overwrite `verified` in the
+        # shared status field, so the literal drops verified requirements from the matrix.
+        requirements = [r for r in requirements
+                        if has_passed_verification(repo, r.get("id", ""))]
+    elif filter_status == "validated":
+        # 5.5 (approved) / 5.4 (under_change) / a re-run 7.2 overwrite `validated`.
+        requirements = [r for r in requirements
+                        if has_been_validated(repo, r.get("id", ""))]
     elif filter_status:
         requirements = [r for r in requirements if r.get("status") == filter_status]
 

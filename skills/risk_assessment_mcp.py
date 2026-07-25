@@ -791,7 +791,13 @@ def generate_recommendation(
     # Attempt to auto-load potential_value from 6.2
     if not potential_value_summary:
         scope = assessment.get("scope", {})
-        for src_id in scope.get("source_project_ids", [project_id]):
+        # scope_risk_assessment stores source_project_ids as [] for the ordinary
+        # single-project case (the BA named no external sources). `.get(key, default)`
+        # returns that stored [], NOT the default, so the loop never ran and the
+        # sponsor recommendation dropped the 6.2 value. Fall back to the project
+        # itself, exactly as import_risks_from_context does.
+        source_ids = scope.get("source_project_ids") or [project_id]
+        for src_id in source_ids:
             fs_data = _safe_load_json(_fs_state_path(src_id))
             if fs_data:
                 pv = fs_data.get("potential_value") or {}

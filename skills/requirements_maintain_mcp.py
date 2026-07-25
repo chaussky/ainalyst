@@ -440,10 +440,12 @@ def deprecate_requirements(
     """
     logger.info(f"deprecate_requirements: status={final_status}, project='{project_name}'")
 
-    try:
-        req_ids = json.loads(req_ids_json)
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing req_ids_json: {e}"
+    # Shape, not just syntax: an LLM writing a scalar or an object where a list of
+    # ids is expected must get a readable "❌", not a TypeError escaping the tool.
+    from skills.common import parse_json_str_list
+    req_ids, shape_error = parse_json_str_list(req_ids_json, "req_ids_json")
+    if shape_error:
+        return shape_error
 
     repo = _load_repo(project_name)
 

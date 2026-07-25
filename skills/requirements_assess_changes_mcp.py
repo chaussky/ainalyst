@@ -237,16 +237,18 @@ def open_cr(
     """
     logger.info(f"open_cr: {cr_id} / {project_name}")
 
-    # Parse JSON parameters
-    try:
-        target_req_ids = json.loads(target_req_ids_json)
-    except json.JSONDecodeError:
-        return "❌ Error: `target_req_ids_json` must be a valid JSON list. Example: '[\"FR-001\"]'"
+    # Parse JSON parameters. Shape, not just syntax: a scalar/object where a list of
+    # ids is expected must return a readable "❌", not a TypeError escaping the tool.
+    from skills.common import parse_json_str_list
+    target_req_ids, shape_error = parse_json_str_list(
+        target_req_ids_json, "target_req_ids_json")
+    if shape_error:
+        return shape_error
 
-    try:
-        related_cr_ids = json.loads(related_cr_ids_json)
-    except json.JSONDecodeError:
-        related_cr_ids = []
+    related_cr_ids, rel_error = parse_json_str_list(
+        related_cr_ids_json, "related_cr_ids_json")
+    if rel_error:
+        return rel_error
 
     # Regulatory CR → always Critical urgency
     if regulatory:
