@@ -49,6 +49,17 @@ MUST_INFLATION_THRESHOLD = 0.6
 VOLATILITY_WARNING = 3   # 1.3+
 VOLATILITY_CRITICAL = 4  # 1.4+
 
+# Time Boxing / Budgeting (BABOK 10.33.3 .3) — value ranking that fills a fixed box.
+VALUE_ORDER = {"Must": 4, "Should": 3, "Could": 2, "Won't": 1}
+
+# 7.1's create_* tools write High/Medium/Low into the SAME `priority` field 5.3
+# writes MoSCoW labels into. The graph fallback has to read both; 7.5 already makes
+# the same accommodation with MUST_PRIORITIES = {"Must", "High"}.
+GRAPH_PRIORITY_TO_VALUE = {"High": "Must", "Medium": "Should", "Low": "Could"}
+
+# Used when neither this session nor the graph says anything about value.
+DEFAULT_VALUE_LABEL = "Could"
+
 
 # ---------------------------------------------------------------------------
 # Utilities — file layer
@@ -109,6 +120,15 @@ def _find_session(sessions: list, label: str) -> Optional[dict]:
 # ---------------------------------------------------------------------------
 # Utilities — method logic
 # ---------------------------------------------------------------------------
+
+def _fmt_num(value) -> str:
+    """40.0 → '40', 2.5 → '2.5'. Capacities and costs read as numbers, not floats."""
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return str(int(f)) if f == int(f) else str(round(f, 2))
+
 
 def _minor_version(version_str: str) -> int:
     """Extracts the minor part of the version: '1.3' → 3"""
@@ -376,9 +396,11 @@ def _check_must_inflation(priorities: dict) -> dict:
 def start_prioritization_session(
     project_name: str,
     session_label: str,
-    method: Literal["MoSCoW", "WSJF", "ImpactEffort"],
+    method: Literal["MoSCoW", "WSJF", "ImpactEffort", "TimeBoxing"],
     wsjf_scale: Literal["Fibonacci", "Linear"] = "Fibonacci",
     quadrant_mapping_json: str = "",
+    capacity: float = 0,
+    capacity_unit: str = "",
 ) -> str:
     """
     Open a new prioritization session.
@@ -389,11 +411,15 @@ def start_prioritization_session(
     Parameters:
     - project_name: project name (must match the name used in 5.1)
     - session_label: session label, e.g. "MVP scope" or "Sprint 3 planning"
-    - method: prioritization method — MoSCoW / WSJF / ImpactEffort
+    - method: prioritization method — MoSCoW / WSJF / ImpactEffort / TimeBoxing
     - wsjf_scale: scale for WSJF — Fibonacci (1,2,3,5,8,13) or Linear (1-10)
     - quadrant_mapping_json: JSON quadrant mapping for ImpactEffort.
       Format: {"QuickWins": "Must", "BigBets": "Should", "FillIns": "Could", "ThanklessTasks": "Won't"}
       If empty — the default mapping is used.
+    - capacity: box size for TimeBoxing — what the team can deliver in the period,
+      or the fixed budget. Required (> 0) for method="TimeBoxing", ignored otherwise.
+    - capacity_unit: unit for capacity and for the per-requirement costs
+      ("story points", "person-days", "USD"). Blank → "units".
     """
     logger.info(f"5.3 start_prioritization_session: {project_name} / {session_label}")
 
@@ -419,6 +445,29 @@ def start_prioritization_session(
             quadrant_mapping = {**default_qmap, **json.loads(quadrant_mapping_json)}
         except json.JSONDecodeError:
             return "❌ Error parsing quadrant_mapping_json. Check the JSON format."
+
+    # Time Boxing/Budgeting prioritises by the allocation of a fixed resource
+    # (BABOK 10.33.3 .3). Without a box there is nothing to fill.
+    capacity_note = ""
+    if method == "TimeBoxing":
+        try:
+            capacity_value = float(capacity)
+        except (TypeError, ValueError):
+            capacity_value = 0.0
+        if capacity_value <= 0:
+            return ("❌ Method TimeBoxing requires `capacity` > 0 — the size of the box: "
+                    "what the team can deliver in the period, or the fixed budget.\n"
+                    "Example: capacity=40, capacity_unit=\"story points\".")
+        capacity_unit_value = capacity_unit.strip() or "units"
+    else:
+        capacity_value = None
+        capacity_unit_value = None
+        if capacity:
+            # wsjf_scale and quadrant_mapping are dropped silently because they only
+            # shape a report. A capacity is a promise about scope: dropped silently,
+            # it leaves the BA believing a budget was applied when it never was.
+            capacity_note = (f"⚠️ `capacity` ignored: method is {method}. "
+                             f"A capacity limit only applies to TimeBoxing sessions.")
 
     # Get requirements from the repository
     # Only requirements go to a prioritisation vote. Selecting by status alone offered
@@ -449,6 +498,8 @@ def start_prioritization_session(
         "method": method,
         "wsjf_scale": wsjf_scale if method == "WSJF" else None,
         "quadrant_mapping": quadrant_mapping if method == "ImpactEffort" else None,
+        "capacity": capacity_value,
+        "capacity_unit": capacity_unit_value,
         "date": str(date.today()),
         "status": "open",
         "stakeholder_scores": {},
@@ -468,7 +519,13 @@ def start_prioritization_session(
         f"# Prioritization session: {session_label}",
         f"**Project:** {project_name}  ",
         f"**Method:** {method}  ",
-        f"**Opened on:** {date.today()}",
+    ]
+    if method == "TimeBoxing":
+        lines.append(f"**Capacity:** {_fmt_num(capacity_value)} {capacity_unit_value}  ")
+    lines.append(f"**Opened on:** {date.today()}")
+    if capacity_note:
+        lines += ["", capacity_note]
+    lines += [
         "",
         "---",
         "",
@@ -496,6 +553,18 @@ def start_prioritization_session(
         lines.append("|-----|----------|---------------------------------------|")
         for n in nodes:
             lines.append(f"| {n['id']} | {n.get('title','—')} | BV=?, TC=?, RR=?, JS=? |")
+    elif method == "TimeBoxing":
+        lines.append("**Value ranking:** the `value` you supply in this session; "
+                     "where you supply none, the requirement's current priority below.")
+        lines.append("")
+        lines.append(f"| ID | Title | Current priority | Cost, {capacity_unit_value} | Stability |")
+        lines.append("|-----|----------|-------------------|------|-----------|")
+        for n in nodes:
+            flag = _stability_flag(n)
+            stab_icon = {"critical": "🔴 Critical", "warning": "🟡 Caution",
+                         "unknown": "🟡 Unknown"}.get(flag, "🟢 Stable")
+            lines.append(f"| {n['id']} | {n.get('title','—')} | {n.get('priority','—')} "
+                         f"| ? | {stab_icon} |")
     else:  # ImpactEffort
         lines.append("**Quadrant mapping:**")
         for q, p in quadrant_mapping.items():
