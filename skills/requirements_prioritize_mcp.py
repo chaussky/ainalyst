@@ -1453,6 +1453,17 @@ def save_prioritization_result(
             lines.append("*(no requirements)*")
         lines.append("")
 
+    # The box belongs in the signed artefact too, not only in the working
+    # aggregation output: this is the document that states what the team committed
+    # to, what was cut, and what nobody estimated. Same renderer, so the two
+    # documents cannot drift.
+    if session["method"] == "TimeBoxing":
+        lines += ["---", ""]
+        lines += _timebox_report_block(session["aggregated"],
+                                       session.get("capacity") or 0,
+                                       session.get("capacity_unit") or "units")
+        lines.append("")
+
     # Session metadata
     total_conflicts = len(session["conflicts"])
     resolved_conflicts = sum(1 for c in session["conflicts"] if c.get("resolved"))

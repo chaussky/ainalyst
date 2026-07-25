@@ -688,5 +688,65 @@ class TestTimeboxReportDetails(BaseMCPTest):
         self.assertNotIn("1 story points were left", out)
 
 
+class TestTimeboxFinalisation(BaseMCPTest):
+    """Task 5 — what reaches the 5.1 graph, and what deliberately does not."""
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox(capacity=10, capacity_unit="story points")
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-003", "cost": 8, "value": "Could"},
+        ])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+
+    def finalise(self):
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            return mod53.save_prioritization_result(project_name=PROJECT,
+                                                    session_label=SESSION)
+
+    def node(self, req_id):
+        repo = mod53._load_repo(PROJECT)
+        return next(n for n in repo["requirements"] if n["id"] == req_id)
+
+    def test_in_box_requirement_keeps_its_value_label_in_the_graph(self):
+        self.finalise()
+        self.assertEqual(self.node("FR-001")["priority"], "Must")
+
+    def test_cut_requirement_is_written_as_wont(self):
+        self.finalise()
+        self.assertEqual(self.node("FR-003")["priority"], "Won't")
+
+    def test_cost_is_not_written_onto_the_node(self):
+        """A field with no reader is exactly the 'declared but dead' class."""
+        self.finalise()
+        node = self.node("FR-001")
+        self.assertNotIn("cost", node)
+        self.assertNotIn("timebox_cost", node)
+
+    def test_unestimated_requirement_keeps_its_previous_priority(self):
+        # FR-002 was never scored; its stored priority must survive untouched,
+        # and it must not be counted as an updated requirement either.
+        self.finalise()
+        self.assertEqual(self.node("FR-002")["priority"], "Should")
+
+    def test_unestimated_requirement_is_not_reported_as_a_missing_node(self):
+        """It exists in the graph — it just has no estimate. Do not name it a typo."""
+        out = self.finalise()
+        self.assertNotIn("match no repository node", out)
+
+    def test_final_report_contains_the_box_block(self):
+        out = self.finalise()
+        self.assertIn("**Box:**", out)
+        self.assertIn("story points", out)
+        self.assertIn("Not estimated", out)
+
+    def test_final_report_counts_only_what_was_written(self):
+        out = self.finalise()
+        self.assertIn("**Requirements updated:** 2", out)
+
+
 if __name__ == "__main__":
     unittest.main()
