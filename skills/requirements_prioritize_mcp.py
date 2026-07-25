@@ -427,6 +427,9 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
             data["off_backlog"] = True
         elif data["value_label"] == "Won't" and data["value_source"] in ("session",
                                                                         "resolved"):
+            # A decision, so it holds whether or not anyone estimated the item —
+            # but then it must be reported ONCE, as excluded, and not also listed
+            # under "not estimated — no priority written" while carrying Won't.
             data["excluded_by_decision"] = True
             data["priority"] = "Won't"
 
@@ -610,7 +613,8 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
     in_box = [r for r, d in placed.items() if d.get("in_box")]
     cut = [r for r, d in placed.items() if not d.get("in_box")]
     unestimated = sorted(r for r, d in aggregated.items()
-                         if d.get("cost") is None and not d.get("off_backlog"))
+                         if d.get("cost") is None and not d.get("off_backlog")
+                         and not d.get("excluded_by_decision"))
     used = max((placed[r]["cumulative"] for r in in_box), default=0.0)
     pct = int(round(used / capacity * 100)) if capacity else 0
 
@@ -685,6 +689,20 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
                      "(`FR-01` for `FR-001`), or a risk / objective / scope node that "
                      "was scored by mistake. They spend none of the capacity. Fix the "
                      "id and re-score, or the estimate is lost.")
+
+    if cut:
+        # The label this method writes for a capacity cut is read by other chapters
+        # as a scope decision (7.5 maps Won't to out_of_scope; 5.4 flags a change
+        # request that touches one). 5.3 itself deliberately refuses to read a
+        # stored Won't back as a decision, so the BA has to know the asymmetry.
+        lines += [
+            "",
+            "Requirements cut here are written to the requirements graph as `Won't` "
+            "— the same label an explicit \"not this time\" carries. Chapter 7.5 "
+            "reads it as out of scope and 5.4 flags change requests that touch it. "
+            "If a cut was only about this period's capacity, re-run the box when the "
+            "capacity changes rather than leaving the label to speak for itself.",
+        ]
 
     if unestimated:
         lines += ["", "**⚠️ Not estimated — not placed (no priority written):**", ""]
@@ -1058,10 +1076,10 @@ def add_stakeholder_scores(
 
     _save_prio(project_name, prio_data)
 
-    is_update = "(updated)" if is_repeat else ""
+    is_update = " (updated)" if is_repeat else ""
     lines = [
         f"✅ Scores for stakeholder **{stakeholder_id}** ({stakeholder_influence} influence) "
-        f"saved {is_update}",
+        f"saved{is_update}",
         "",
         f"**Project:** {project_name}  ",
         f"**Session:** {session_label}  ",
@@ -1102,6 +1120,16 @@ def run_aggregation(
     if not session:
         return f"❌ Session '{session_label}' not found."
 
+    # A finalised session is a signed record. Re-aggregating it changed the numbers
+    # the report renders while the 5.1 graph kept the priorities written at closing
+    # time — the artefact and the graph told stakeholders different stories.
+    # add_stakeholder_scores already refuses on a closed session; this is the same
+    # rule for the other two mutating tools.
+    if session.get("status") == "closed":
+        return (f"❌ Session '{session_label}' is already closed and its result has "
+                f"been written to the 5.1 repository. Open a new session to "
+                f"re-prioritise.")
+
     if not session["stakeholder_scores"]:
         return "⚠️ No stakeholder scores yet. Call add_stakeholder_scores first."
 
@@ -1137,17 +1165,21 @@ def run_aggregation(
     # self-consistent; TimeBoxing keeps its half (`value_overrides`), so dropping
     # the record alone would make the final artefact warn about a conflict the BA
     # settled.
-    prior_resolutions = {c["req_id"]: c.get("resolution")
+    # Keyed by (req_id, conflict_type): a value override is per REQUIREMENT, but a
+    # resolution is per CONFLICT. Matching on req_id alone let a resolved dependency
+    # violation silently close a separate stakeholder disagreement on the same
+    # requirement, and the artefact then counted it resolved with no rationale.
+    prior_resolutions = {(c["req_id"], c.get("conflict_type")): c.get("resolution")
                          for c in session.get("conflicts", [])
                          if c.get("resolved")}
     threshold_spread = {"Strict": 1, "Normal": 2, "Loose": 3}[conflict_threshold]
     conflicts = _detect_stakeholder_conflicts(scores_by_sh, method)
     conflicts = [c for c in conflicts if c["spread"] >= threshold_spread]
-    value_overrides = session.get("value_overrides") or {}
     for c in conflicts:
-        if c["req_id"] in value_overrides:
+        key = (c["req_id"], c.get("conflict_type"))
+        if key in prior_resolutions:
             c["resolved"] = True
-            c["resolution"] = prior_resolutions.get(c["req_id"])
+            c["resolution"] = prior_resolutions[key]
     session["conflicts"] = conflicts
 
     # Dependency violations. Only TimeBoxing can leave a requirement with no
@@ -1350,6 +1382,12 @@ def resolve_conflict(
     # recorded as the requirement's value and the box is filled again — otherwise a
     # resolved requirement could read "✂️ cut" and "Must" on the same row, and a
     # priority that the capacity does not support would reach the 5.1 graph.
+    if session.get("status") == "closed":
+        return (f"❌ Session '{session_label}' is already closed and its result has "
+                f"been written to the 5.1 repository. A decision recorded now would "
+                f"appear in a regenerated report but never reach the graph. Open a "
+                f"new session to revise priorities.")
+
     timebox_note = ""
     if session.get("method") == "TimeBoxing":
         session.setdefault("value_overrides", {})[req_id] = final_priority
@@ -1362,16 +1400,30 @@ def resolve_conflict(
             session["value_overrides"],
         )
         entry = session["aggregated"].get(req_id)
-        if entry is not None:
-            entry["resolved"] = True
         # The refill can flip many priorities at once — a requirement pulled into the
         # box displaces another — so violations computed against the old fill are
         # stale, and a stale violation points the BA at the wrong pair.
+        # The rebuild returns fresh rows with no `resolved` flags, and the loop
+        # further down marks only the requirement being resolved right now. Without
+        # carrying earlier decisions across, resolving a second violation reopened
+        # the first, and "All conflicts resolved" became unreachable.
+        settled = {(v["req_id"], v["depends_on"]): v.get("resolution")
+                   for v in session.get("dependency_violations", [])
+                   if v.get("resolved")}
         session["dependency_violations"] = _find_dependency_violations(
             repo_for_refill, session["aggregated"],
             _timebox_unplaced(session["aggregated"]))
-        if entry is None or entry.get("cost") is None:
-            # No value can place a requirement nobody costed. Saying "✅ resolved"
+        for v in session["dependency_violations"]:
+            key = (v["req_id"], v["depends_on"])
+            if key in settled:
+                v["resolved"] = True
+                v["resolution"] = settled[key]
+        # A `Won't` decision takes effect immediately — it excludes the requirement
+        # whether or not anyone estimated it — so the "needs an estimate first" note
+        # would be false for that case.
+        if final_priority != "Won't" and (entry is None
+                                          or entry.get("cost") is None):
+            # No value can PLACE a requirement nobody costed. Saying "✅ resolved"
             # while the box is unchanged would be a confident answer about data the
             # BA never supplied.
             timebox_note = (
@@ -1613,9 +1665,21 @@ def save_prioritization_result(
     # documents cannot drift.
     if session["method"] == "TimeBoxing":
         lines += ["---", ""]
-        lines += _timebox_report_block(session["aggregated"],
-                                       session.get("capacity") or 0,
-                                       session.get("capacity_unit") or "units")
+        if not session.get("aggregated"):
+            # "in: 0 · cut: 0 · not estimated: 0" over an empty aggregate is a
+            # signed statement that nothing was cut and nothing is missing an
+            # estimate, when in fact the backlog was never considered at all.
+            lines += [
+                "## Box", "",
+                "⚠️ No box was built: `run_aggregation` was never called for this "
+                "session, so no requirement was weighed against the capacity. The "
+                "counts below are not a statement about the backlog.",
+                "",
+            ]
+        else:
+            lines += _timebox_report_block(session["aggregated"],
+                                           session.get("capacity") or 0,
+                                           session.get("capacity_unit") or "units")
         lines.append("")
 
     # Session metadata

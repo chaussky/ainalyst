@@ -472,8 +472,19 @@ class TestTimeboxAggregationReport(BaseMCPTest):
             {"req_id": "FR-003", "cost": 1, "value": "Could"},
         ])
         out = self.run_agg()
-        self.assertIn("FR-002", out)
-        self.assertIn("cheaper", out.lower())
+        # `assertIn("FR-002", out)` alone is vacuous — it is a table row regardless.
+        # The section has to name it and no one else, so read its bullet lines.
+        after_header = out.split("Skipped over")[1].split("\n", 1)[1]
+        bullets = []
+        for line in after_header.splitlines():
+            if line.startswith("**"):
+                break
+            if line.startswith("- `"):
+                bullets.append(line)
+        section = "\n".join(bullets)
+        self.assertIn("FR-002", section)
+        self.assertNotIn("FR-001", section)
+        self.assertNotIn("FR-003", section)
 
     def test_report_names_unestimated_requirements(self):
         """FR-002..FR-005 are in the repo and were never scored — they must be named."""
@@ -488,8 +499,12 @@ class TestTimeboxAggregationReport(BaseMCPTest):
         add_timebox_scores(sh_id="DEV-A", scores=[{"req_id": "FR-001", "cost": 3}])
         add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
         out = self.run_agg()
-        self.assertIn("spread", out.lower())
-        self.assertIn("FR-001", out)
+        section = out.split("Estimates disagree")[1]
+        self.assertIn("FR-001", section)
+        # The averaged cost must be the mean, and the spread the actual range —
+        # asserting only that the section exists would survive either being wrong.
+        self.assertIn("spread 10", section)
+        self.assertIn("around 8", section)
 
     def test_value_disagreement_is_a_conflict(self):
         add_timebox_scores(sh_id="SH-1", scores=[
@@ -766,8 +781,11 @@ class TestTimeboxReportDetails(BaseMCPTest):
             {"req_id": "FR-003", "cost": 1, "value": "Could"},
         ])
         out = self.run_agg()
-        self.assertIn("Skipped over", out)
-        self.assertNotIn("1 story points were left", out)
+        note = next(ln for ln in out.splitlines()
+                    if ln.startswith("- `FR-002`") and "remaining capacity" in ln)
+        # Phrased as a labelled value, so a remainder of 1 reads correctly for any
+        # unit — a free-form unit string cannot be pluralised.
+        self.assertIn("remaining capacity at that point: 1 story points", note)
 
 
 class TestTimeboxFinalisation(BaseMCPTest):
@@ -949,7 +967,13 @@ class TestTimeboxUnplacedDependencies(BaseMCPTest):
         self.assertNotIn("No conflicts remain", out)
 
     def test_moscow_is_not_given_new_violations(self):
-        """The other three methods must keep their existing behaviour."""
+        """Integration guard only — it cannot fail on its own.
+
+        A MoSCoW aggregate never holds a null priority, so `_timebox_unplaced`
+        would return an empty set even if the argument were passed for every
+        method. What actually pins the opt-in is TestUnplacedArgumentIsOptIn,
+        which calls `_find_dependency_violations` with and without the set.
+        """
         repo = make_timebox_repo()
         repo["links"] = [{"from": "FR-001", "to": "FR-004", "relation": "depends",
                           "rationale": "needs it", "added": str(date.today())}]
@@ -996,6 +1020,134 @@ class TestPreExistingDefects(BaseMCPTest):
                          if h.get("action") == "priority_updated"]
         self.assertEqual(len(priority_rows), 1)
         self.assertIn("already finalised", out)
+
+
+class TestFinalReviewFindings(BaseMCPTest):
+    """Final whole-branch review — two fixes of mine collided with each other."""
+
+    def setUp(self):
+        super().setUp()
+        repo = make_timebox_repo()
+        repo["links"] = [
+            {"from": "FR-001", "to": "FR-004", "relation": "depends",
+             "rationale": "needs the audit log", "added": str(date.today())},
+            {"from": "FR-002", "to": "FR-005", "relation": "depends",
+             "rationale": "needs roles", "added": str(date.today())},
+        ]
+        save_test_repo(repo)
+        start_timebox(capacity=20, capacity_unit="story points")
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 5, "value": "Must"},
+            {"req_id": "FR-002", "cost": 5, "value": "Must"},
+        ])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+
+    def resolve(self, req_id, final_priority="Must",
+                conflict_type="dependency_violation"):
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            return mod53.resolve_conflict(
+                project_name=PROJECT, session_label=SESSION, req_id=req_id,
+                conflict_type=conflict_type, final_priority=final_priority,
+                rationale="Sponsor call", decided_by="Sponsor")
+
+    def session(self):
+        return mod53._load_prio(PROJECT)["sessions"][0]
+
+    def test_resolving_a_second_violation_keeps_the_first_resolved(self):
+        """The refill rebuilds the violations list, dropping earlier resolutions.
+
+        Both FR-001 and FR-002 depend on requirements nobody estimated. Resolving
+        one and then the other left the first open again, so "All conflicts
+        resolved" was unreachable and the artefact printed a permanent warning.
+        """
+        self.resolve("FR-001")
+        out = self.resolve("FR-002")
+        violations = self.session()["dependency_violations"]
+        self.assertEqual(len(violations), 2)
+        self.assertTrue(all(v.get("resolved") for v in violations), violations)
+        self.assertIn("All conflicts resolved", out)
+
+    def test_a_closed_session_cannot_be_re_aggregated(self):
+        """Otherwise the artefact and the 5.1 graph tell different stories.
+
+        Finalising with an open conflict is allowed and the tool even suggests
+        resolving afterwards. Since a re-finalisation no longer writes to the
+        graph, anything that changes the aggregate after closing makes the signed
+        report disagree with what chapters 5.5 and 7.5 read.
+        """
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            mod53.save_prioritization_result(PROJECT, SESSION)
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            out = mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        self.assertIn("❌", out)
+        self.assertIn("closed", out.lower())
+
+    def test_a_closed_session_cannot_have_conflicts_resolved(self):
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            mod53.save_prioritization_result(PROJECT, SESSION)
+        out = self.resolve("FR-001")
+        self.assertIn("❌", out)
+        self.assertIn("closed", out.lower())
+
+    def test_resolving_one_conflict_type_does_not_close_another(self):
+        """A value override is per requirement; a resolution is per conflict."""
+        add_timebox_scores(sh_id="SH-2", influence="High", scores=[
+            {"req_id": "FR-001", "cost": 5, "value": "Won't"},
+        ])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        self.resolve("FR-001", conflict_type="dependency_violation")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        stakeholder_conflicts = [c for c in self.session()["conflicts"]
+                                 if c["conflict_type"] == "stakeholder_conflict"
+                                 and c["req_id"] == "FR-001"]
+        self.assertTrue(stakeholder_conflicts)
+        self.assertFalse(any(c.get("resolved") for c in stakeholder_conflicts))
+
+    def test_wont_decision_on_an_uncosted_requirement_is_stated_once(self):
+        """It was counted as excluded AND as unestimated, and the note contradicted both."""
+        out = self.resolve("FR-004", final_priority="Won't")
+        self.assertNotIn("no cost estimate", out.lower())
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            report = mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        self.assertIn("excluded: 1", report)
+        self.assertNotIn("not estimated: 3", report)   # FR-004 must not be counted twice
+        excluded_section = report.split("Excluded by decision")[1]
+        self.assertIn("FR-004", excluded_section.split("Not estimated")[0])
+
+    def test_finalising_without_aggregating_says_so(self):
+        other = "Never aggregated"
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.start_prioritization_session(
+                project_name=PROJECT, session_label=other, method="TimeBoxing",
+                capacity=40, capacity_unit="story points")
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            out = mod53.save_prioritization_result(PROJECT, other)
+        self.assertNotIn("cut: 0", out)
+        self.assertIn("run_aggregation", out)
+
+
+class TestUnplacedArgumentIsOptIn(unittest.TestCase):
+    """The MoSCoW guard could not fail: its aggregate never holds a null priority."""
+
+    def setUp(self):
+        self.repo = make_timebox_repo()
+        self.repo["links"] = [{"from": "FR-001", "to": "FR-004", "relation": "depends",
+                               "rationale": "needs it", "added": str(date.today())}]
+
+    def test_without_the_unplaced_set_a_null_dependency_is_not_flagged(self):
+        priorities = {"FR-001": {"priority": "Must"}, "FR-004": {"priority": None}}
+        self.assertEqual(
+            mod53._find_dependency_violations(self.repo, priorities), [])
+
+    def test_with_the_unplaced_set_it_is_flagged(self):
+        priorities = {"FR-001": {"priority": "Must"}, "FR-004": {"priority": None}}
+        violations = mod53._find_dependency_violations(
+            self.repo, priorities, {"FR-004"})
+        self.assertEqual(len(violations), 1)
+        self.assertEqual(violations[0]["dep_priority"], "not placed")
 
 
 if __name__ == "__main__":
