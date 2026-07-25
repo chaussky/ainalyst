@@ -435,5 +435,88 @@ class TestMustInflationDenominator(unittest.TestCase):
         self.assertEqual(result["must_ratio"], 0.5)
 
 
+class TestTimeboxAggregationReport(BaseMCPTest):
+    """Task 4 — seams: dispatch, conflicts on the value axis, the report block."""
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox(capacity=10, capacity_unit="story points")
+
+    def run_agg(self, threshold="Normal"):
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            return mod53.run_aggregation(project_name=PROJECT, session_label=SESSION,
+                                         conflict_threshold=threshold)
+
+    def test_report_shows_box_summary(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+            {"req_id": "FR-003", "cost": 1, "value": "Could"},
+        ])
+        out = self.run_agg()
+        self.assertIn("**Box:**", out)
+        self.assertIn("10 / 10 story points", out)
+        self.assertIn("in: 2", out)
+        self.assertIn("cut: 1", out)
+
+    def test_report_names_the_skipped_over_requirement(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+            {"req_id": "FR-003", "cost": 1, "value": "Could"},
+        ])
+        out = self.run_agg()
+        self.assertIn("FR-002", out)
+        self.assertIn("cheaper", out.lower())
+
+    def test_report_names_unestimated_requirements(self):
+        """FR-002..FR-005 are in the repo and were never scored — they must be named."""
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        out = self.run_agg()
+        self.assertIn("Not estimated", out)
+        self.assertIn("not estimated: 4", out)
+        for req_id in ("FR-002", "FR-003", "FR-004", "FR-005"):
+            self.assertIn(req_id, out)
+
+    def test_report_reports_cost_spread(self):
+        add_timebox_scores(sh_id="DEV-A", scores=[{"req_id": "FR-001", "cost": 3}])
+        add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
+        out = self.run_agg()
+        self.assertIn("spread", out.lower())
+        self.assertIn("FR-001", out)
+
+    def test_value_disagreement_is_a_conflict(self):
+        add_timebox_scores(sh_id="SH-1", scores=[
+            {"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        add_timebox_scores(sh_id="SH-2", scores=[
+            {"req_id": "FR-001", "cost": 5, "value": "Won't"}])
+        self.run_agg()
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        self.assertTrue(any(c["req_id"] == "FR-001" for c in session["conflicts"]))
+
+    def test_cost_disagreement_is_not_a_conflict(self):
+        """A size estimate is not an opinion — it is reported as a spread, not a clash."""
+        add_timebox_scores(sh_id="DEV-A", scores=[{"req_id": "FR-001", "cost": 3}])
+        add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
+        self.run_agg()
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        self.assertEqual(session["conflicts"], [])
+
+    def test_in_box_requirement_depending_on_a_cut_one_is_flagged(self):
+        repo = make_timebox_repo()
+        repo["links"] = [{"from": "FR-001", "to": "FR-002", "relation": "depends",
+                          "rationale": "needs it", "added": str(date.today())}]
+        save_test_repo(repo)
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+        ])
+        self.run_agg()
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        self.assertTrue(any(v["req_id"] == "FR-001" and v["depends_on"] == "FR-002"
+                            for v in session["dependency_violations"]))
+
+
 if __name__ == "__main__":
     unittest.main()

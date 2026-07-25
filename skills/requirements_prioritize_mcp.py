@@ -466,7 +466,7 @@ def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
     MoSCoW: a spread of ≥ 2 categories.
     Returns a list of {"req_id", "conflict_type", "scores", "severity"}
     """
-    if method != "MoSCoW":
+    if method not in ("MoSCoW", "TimeBoxing"):
         return []  # for WSJF and IE, conflicts surface through aggregation
 
     order = VALUE_ORDER
@@ -477,9 +477,17 @@ def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
         all_reqs.update(sh_scores.keys())
 
     for req_id in all_reqs:
-        req_scores = {sh_id: sh_scores[req_id]
-                      for sh_id, sh_scores in scores_by_sh.items()
-                      if req_id in sh_scores}
+        # TimeBoxing carries two axes per requirement, and only value is an opinion:
+        # disagreement about cost is an estimate spread, reported by the aggregator,
+        # not a stakeholder conflict.
+        req_scores = {}
+        for sh_id, sh_scores in scores_by_sh.items():
+            if req_id not in sh_scores:
+                continue
+            raw = sh_scores[req_id]
+            label = raw.get("value") if isinstance(raw, dict) else raw
+            if label:
+                req_scores[sh_id] = label
         if len(req_scores) < 2:
             continue
 
@@ -516,6 +524,65 @@ def _check_must_inflation(priorities: dict) -> dict:
                      if (v.get("priority") if isinstance(v, dict) else v) == "Must")
     ratio = must_count / len(scored)
     return {"inflated": ratio > MUST_INFLATION_THRESHOLD, "must_ratio": round(ratio, 2)}
+
+
+def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
+    """Renders the box: summary line, in/out table and the three note sections.
+
+    Shared by run_aggregation and save_prioritization_result on purpose — two copies
+    of a rendering rule is how the 5.5 dashboard and its baseline gate drifted apart.
+    """
+    placed = {r: d for r, d in aggregated.items() if d.get("cost") is not None}
+    in_box = [r for r, d in placed.items() if d.get("in_box")]
+    cut = [r for r, d in placed.items() if not d.get("in_box")]
+    unestimated = sorted(r for r, d in aggregated.items() if d.get("cost") is None)
+    used = max((placed[r]["cumulative"] for r in in_box), default=0.0)
+    pct = int(round(used / capacity * 100)) if capacity else 0
+
+    lines = [
+        f"**Box:** {_fmt_num(used)} / {_fmt_num(capacity)} {unit} ({pct}%) · "
+        f"in: {len(in_box)} · cut: {len(cut)} · not estimated: {len(unestimated)}",
+        "",
+        f"| ID | In box | Priority | Value source | Cost, {unit} | Cumulative |",
+        "|-----|--------|----------|--------------|------|------------|",
+    ]
+    for req_id in sorted(placed,
+                         key=lambda r: (not placed[r]["in_box"],
+                                        -VALUE_ORDER.get(placed[r]["value_label"], 0),
+                                        placed[r]["cost"], r)):
+        d = placed[req_id]
+        mark = "✅" if d["in_box"] else "✂️"
+        icon = {"Must": "🔴", "Should": "🟠", "Could": "🟡",
+                "Won't": "🟢"}.get(d["priority"], "")
+        cumulative = _fmt_num(d["cumulative"]) if d["in_box"] else "—"
+        lines.append(f"| {req_id} | {mark} | {icon} {d['priority']} | {d['value_source']} "
+                     f"| {_fmt_num(d['cost'])} | {cumulative} |")
+
+    skipped = sorted(r for r, d in placed.items() if d.get("skipped_over"))
+    if skipped:
+        lines += ["", "**Skipped over (cheaper requirements below them were taken):**", ""]
+        for req_id in skipped:
+            d = placed[req_id]
+            lines.append(f"- `{req_id}` ({d['value_label']}, {_fmt_num(d['cost'])} {unit}) "
+                         f"— {_fmt_num(d['remaining_at_skip'])} {unit} were left.")
+
+    spread = sorted((r for r, d in placed.items() if d.get("cost_spread")),
+                    key=lambda r: -placed[r]["cost_spread"])
+    if spread:
+        lines += ["", "**Estimates disagree (spread averaged into the cost above):**", ""]
+        for req_id in spread:
+            lines.append(f"- `{req_id}` — spread {_fmt_num(placed[req_id]['cost_spread'])} "
+                         f"{unit} around {_fmt_num(placed[req_id]['cost'])}.")
+
+    if unestimated:
+        lines += ["", "**⚠️ Not estimated — not placed (no priority written):**", ""]
+        for req_id in unestimated:
+            lines.append(f"- `{req_id}`")
+        lines.append("")
+        lines.append("A requirement with no cost cannot be placed in a capacity box. "
+                     "Marking it Won't would be a conclusion drawn from missing data — "
+                     "add an estimate and re-run the aggregation.")
+    return lines
 
 
 # ---------------------------------------------------------------------------
@@ -931,6 +998,9 @@ def run_aggregation(
         aggregated = _aggregate_moscow(scores_by_sh, influence_by_sh)
     elif method == "WSJF":
         aggregated = _aggregate_wsjf(scores_by_sh, influence_by_sh)
+    elif method == "TimeBoxing":
+        aggregated = _aggregate_timebox(scores_by_sh, influence_by_sh, repo,
+                                        session.get("capacity") or 0)
     else:
         qmap = session.get("quadrant_mapping") or {
             "QuickWins": "Must", "BigBets": "Should",
@@ -1004,6 +1074,11 @@ def run_aggregation(
             icon = {"Must": "🔴", "Should": "🟠", "Could": "🟡", "Won't": "🟢"}.get(prio, "")
             lines.append(f"| {req_id} | {icon} {prio} | {data.get('wsjf','—')} "
                          f"| {data.get('cod','—')} | {data.get('js','—')} |")
+
+    elif method == "TimeBoxing":
+        lines += _timebox_report_block(aggregated,
+                                       session.get("capacity") or 0,
+                                       session.get("capacity_unit") or "units")
 
     else:
         lines.append("| ID | Priority | Quadrant | Avg Impact | Avg Effort |")
