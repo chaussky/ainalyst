@@ -2,10 +2,11 @@
 name: requirements_prioritize
 description: >
   BABOK 5.3 skill — Prioritize Requirements. Use this skill when the BA wants to
-  rank requirements using MoSCoW, WSJF, or the Impact/Effort method, resolve
-  conflicts between stakeholders, or justify the implementation order.
+  rank requirements using MoSCoW, WSJF, Impact/Effort or Time Boxing/Budgeting,
+  resolve conflicts between stakeholders, or justify the implementation order.
   Triggers: "prioritization", "prioritize requirements", "MoSCoW", "WSJF",
-  "what to do first", "priority conflict", "requirement importance", "backlog".
+  "what to do first", "priority conflict", "requirement importance", "backlog",
+  "time boxing", "fixed budget", "what fits in the sprint".
 project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
@@ -60,7 +61,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 ---
 
-## Three methods — quick cheat sheet
+## Four methods — quick cheat sheet
 
 ### MoSCoW
 `Must` / `Should` / `Could` / `Won't` — categorical ranking.
@@ -77,6 +78,14 @@ Two criteria: value vs. effort → 4 quadrants → configurable mapping to prior
 Visual, good for workshops. The BA configures the mapping for the project.
 Details: `references/methods_guide.md` → "Method 3"
 
+### Time Boxing / Budgeting
+A fixed resource — team throughput for the period, or a fixed budget — decides the
+scope. Requirements are filled into the box by value until the capacity runs out;
+what does not fit becomes `Won't` (MoSCoW's "won't have **this time**").
+Needs a capacity and a cost estimate per requirement. Value is taken from this
+session if stakeholders score it, otherwise from the requirement's current priority.
+Details: `references/methods_guide.md` → "Method 4"
+
 ---
 
 ## Five operating modes
@@ -90,8 +99,12 @@ Algorithm:
 2. Choose a method (if not already chosen):
    - No cost estimates → MoSCoW or Impact/Effort
    - Estimates available + Agile project → WSJF
+   - Fixed deadline or fixed budget, scope must be cut to fit → TimeBoxing
+   - Already prioritized and hit Must Inflation → TimeBoxing as a second pass
 3. For WSJF: choose a scale (Fibonacci or 1–10) and set a reference requirement
 4. For Impact/Effort: configure the quadrant mapping
+5. For TimeBoxing: set `capacity` (what the team delivers in the period, or the budget)
+   and `capacity_unit` ("story points" / "person-days" / "USD")
 5. Call `start_prioritization_session`
 
 Result: list of requirements ready for scoring.
@@ -107,7 +120,9 @@ Algorithm:
 2. For MoSCoW: each requirement → Must/Should/Could/Won't
 3. For WSJF: score BV, TC, RR for each requirement (JS — from developers)
 4. For Impact/Effort: score Impact and Effort for each requirement
-5. Call `add_stakeholder_scores` for each stakeholder
+5. For TimeBoxing: `cost` for each requirement (from the team, in the capacity unit);
+   `value` is optional — omit it and the requirement's current priority is used
+6. Call `add_stakeholder_scores` for each stakeholder
 
 > 📌 Important: the BA calls `add_stakeholder_scores` exactly once per stakeholder.
 > Scores accumulate in the session snapshot; aggregation happens only in Mode C.

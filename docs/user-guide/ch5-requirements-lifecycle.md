@@ -159,7 +159,7 @@ The BA determines the relative importance of requirements for stakeholders, choo
 
 ### What we built
 
-**Three prioritization methods matched to context.** The skill supports MoSCoW (fast, easy for stakeholders to understand), WSJF (numeric ranking that accounts for cost and time-criticality, better for Agile), and the Impact/Effort Matrix (visual, convenient for workshops). Choosing a method isn't a gut call: the skill asks about the context and recommends one.
+**Four prioritization methods matched to context.** The skill supports MoSCoW (fast, easy for stakeholders to understand), WSJF (numeric ranking that accounts for cost and time-criticality, better for Agile), the Impact/Effort Matrix (visual, convenient for workshops), and Time Boxing/Budgeting (a fixed capacity or budget decides the scope — the answer to "everything is a Must"). Choosing a method isn't a gut call: the skill asks about the context and recommends one.
 
 **Session-based score collection.** `start_prioritization_session` opens a session and builds the list of requirements to score. `add_stakeholder_scores` collects scores one stakeholder at a time. This lets scoring happen asynchronously: each stakeholder submits scores whenever it's convenient, and the BA aggregates everything with a single command.
 
