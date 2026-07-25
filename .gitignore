@@ -46,3 +46,7 @@ desktop.ini
 docs/superpowers/
 .superpowers/
 Dev/
+
+# Local machine-specific / test scratch files (not for the public repo).
+/test_input.docx
+.claude/statusline-command.sh
