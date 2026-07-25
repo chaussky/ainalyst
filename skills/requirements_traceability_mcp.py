@@ -327,6 +327,8 @@ def add_trace_link(
       - depends:   from doesn't make sense without to (horizontal dependency)
       - satisfies: from (component) implements to (requirement) — direction: COMP satisfies FR
       - verifies:  from (test) verifies to (requirement) — direction: TC verifies FR
+                   (corresponds to BABOK's "Validate" trace relation — same definition;
+                    the name follows the SysML/DOORS convention)
 
     Args:
         project_name:  Project name.

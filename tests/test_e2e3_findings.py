@@ -225,5 +225,51 @@ class TestFB_DurableValidated(BaseMCPTest):
         self.assertNotIn("Validated | 0", out)
 
 
+# ---------------------------------------------------------------------------
+# Phase-2 backlog (A + B) closed alongside the E2E-3 fixes.
+#   B4-1  session_type (4.2) must cover the technique vocabulary (4.1) + Experiments
+#   B4-2  audience_role (4.4) must include End User / Customer / Domain SME
+#   B4-3  the 4.1 plan title uses BABOK v3's term "Elicitation Activity Plan"
+#   B5-1  the `verifies` relation is documented as BABOK's "Validate"
+# ---------------------------------------------------------------------------
+
+class TestBacklogDictionaries(unittest.TestCase):
+
+    def test_b41_session_type_covers_techniques(self):
+        import inspect
+        import skills.elicitation_conduct_mcp as m
+        ann = str(inspect.signature(m.process_elicitation_results)
+                  .parameters["session_type"].annotation)
+        for v in ["Brainstorming", "Prototyping", "Focus Group", "Benchmarking", "Experiments"]:
+            self.assertIn(v, ann)
+
+    def test_b42_audience_role_has_end_user_customer_sme(self):
+        import inspect
+        import skills.elicitation_communicate_mcp as m
+        ann = str(inspect.signature(m.prepare_communication_package)
+                  .parameters["audience_role"].annotation)
+        for v in ["End User", "Customer", "Domain SME"]:
+            self.assertIn(v, ann)
+
+    def test_b51_verifies_documented_as_validate(self):
+        import skills.requirements_traceability_mcp as m
+        self.assertIn("Validate", m.add_trace_link.__doc__)
+
+
+class TestBacklogPlanTitle(BaseMCPTest):
+
+    def test_b43_plan_uses_babok_activity_plan_term(self):
+        import skills.elicitation_mcp as m
+        m.save_artifact.reset_mock()
+        m.save_elicitation_plan(
+            project_name="p", goals="Learn the current process",
+            stakeholders_json='[{"name":"A","role":"R","influence":"High","interest":"High"}]',
+            technique="Interview", technique_rationale="fits a 1-1",
+            questions_or_agenda="1. ...", expected_outcomes="pains captured")
+        content = m.save_artifact.call_args.args[0]   # the plan markdown handed to save_artifact
+        self.assertIn("Elicitation Activity Plan", content)
+        self.assertNotIn("# Requirements Elicitation Plan", content)
+
+
 if __name__ == "__main__":
     unittest.main()

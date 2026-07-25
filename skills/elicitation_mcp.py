@@ -141,7 +141,7 @@ def save_elicitation_plan(
     )
 
     from datetime import date
-    content = f"""# Requirements Elicitation Plan
+    content = f"""# Elicitation Activity Plan
 
 **Project:** {project_name}
 **Prepared on:** {date.today().strftime("%d.%m.%Y")}
