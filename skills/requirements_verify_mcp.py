@@ -1284,8 +1284,12 @@ def mark_req_verified(
         #
         # `pending_approval` is deliberately NOT in this set: 5.5 stamps it on every
         # requirement the moment a package opens, so it is process state, not an outcome.
+        # `validated` (7.3) is a LATER pipeline stage than `verified`, so a re-run of 7.2
+        # must not silently downgrade the visible status of an already-validated
+        # requirement — the same reasoning as the approval statuses above (the durable
+        # fact lives in history; there is nothing to gain by clobbering a stronger status).
         old_status = req.get("status", "draft")
-        status_preserved = old_status in APPROVAL_OUTCOME_STATUSES
+        status_preserved = old_status in APPROVAL_OUTCOME_STATUSES or old_status == "validated"
         if not status_preserved:
             req["status"] = "verified"
 

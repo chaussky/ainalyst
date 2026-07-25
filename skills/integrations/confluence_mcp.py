@@ -560,7 +560,11 @@ def push_to_confluence(
     parent_id = None
     if parent_page_title:
         try:
-            parent_page = confluence.get_page_by_title(space=space, title=parent_page_title)
+            # Normalize like export_artifact_to_confluence: some endpoints wrap the page
+            # under a `content` key, so raw `.get("id")` would return None and the page
+            # would be created at the space root instead of under the requested parent.
+            parent_page = _normalize_search_hit(
+                confluence.get_page_by_title(space=space, title=parent_page_title))
             if parent_page:
                 parent_id = parent_page.get("id")
             else:
@@ -569,7 +573,10 @@ def push_to_confluence(
             return f"❌ Error while searching for the parent page: {e}"
 
     try:
-        existing = confluence.get_page_by_title(space=space, title=page_title)
+        # Normalize the search hit (a `content`-wrapped response would make existing["id"]
+        # a KeyError surfacing as an opaque "Error … 'id'"); export_artifact does the same.
+        existing = _normalize_search_hit(
+            confluence.get_page_by_title(space=space, title=page_title))
 
         if existing:
             if not update_if_exists:
@@ -755,7 +762,10 @@ def sync_page(
         return "❌ space_key not provided."
 
     try:
-        existing = confluence.get_page_by_title(space=space, title=page_title, expand="version")
+        # Normalize like export_artifact_to_confluence — a `content`-wrapped hit would make
+        # existing["id"] / existing.get("version") read the wrong level.
+        existing = _normalize_search_hit(
+            confluence.get_page_by_title(space=space, title=page_title, expand="version"))
     except Exception as e:
         return f"❌ Error while searching for the page: {e}"
 

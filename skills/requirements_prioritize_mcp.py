@@ -1004,6 +1004,8 @@ def save_prioritization_result(
     # vanished here without a word: "Requirements updated: 4" under a table
     # showing 5 priorities, a count with no explanation of the difference.
     not_found_ids = []
+    # Scores whose id matches a node that is NOT a requirement (goal/risk/CR/scope).
+    not_req_ids = []
 
     for req_id, agg_data in session["aggregated"].items():
         priority = agg_data.get("priority") if isinstance(agg_data, dict) else agg_data
@@ -1012,6 +1014,13 @@ def save_prioritization_result(
         node = next((n for n in repo.get("requirements", []) if n["id"] == req_id), None)
         if node is None:
             not_found_ids.append(req_id)
+            continue
+        # Priority is a REQUIREMENT attribute. start_prioritization_session already hides
+        # non-requirement nodes; guard the write too, so a stakeholder scoring a
+        # business_goal / risk / change_request / solution_scope id does not stamp a
+        # MoSCoW/wsjf value onto a node that other chapters read.
+        if node.get("type", "") in NON_REQUIREMENT_NODE_TYPES:
+            not_req_ids.append(req_id)
             continue
         old_priority = node.get("priority", "—")
         node["priority"] = priority
@@ -1068,6 +1077,15 @@ def save_prioritization_result(
             f"⚠️ **{len(not_found_ids)} scored id(s) match no repository node and "
             f"were NOT saved:** {listed}. Check for typos (e.g. `FR-01` for "
             f"`FR-001`) and re-score, or the priority is lost.",
+        )
+
+    if not_req_ids:
+        listed_nr = ", ".join(f"`{r}`" for r in sorted(not_req_ids))
+        lines.insert(7, "")
+        lines.insert(
+            7,
+            f"⚠️ **{len(not_req_ids)} scored id(s) are NOT requirements** (business goal / "
+            f"risk / change request / solution scope) and were NOT prioritised: {listed_nr}.",
         )
 
     for prio_label in ["Must", "Should", "Could", "Won't"]:

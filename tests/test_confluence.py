@@ -335,6 +335,23 @@ class TestPushToConfluence(BaseMCPTest):
         self.assertIn("updated", result)
         mock_client.update_page.assert_called_once()
 
+    def test_search_hit_shape_is_normalized(self):
+        """`rest/api/search` wraps the page under `content`; push_to_confluence must
+        normalize the hit (like export_artifact) so `existing["id"]` is not a KeyError
+        surfacing as an unactionable "Error … 'id'" (R2-3)."""
+        mock_client = _make_mock_confluence(page_exists=True)
+        mock_client.get_page_by_title.return_value = {
+            "content": {"id": "999", "title": "Test page",
+                        "_links": {"webui": "/pages/999"}},
+            "lastModified": "2026-03-30T10:00:00Z",
+        }
+        with patch.dict(os.environ, VALID_ENV), \
+             patch("skills.integrations.confluence_mcp._get_confluence_client",
+                   return_value=(mock_client, None)):
+            result = self._call(update_if_exists=True)
+        self.assertNotIn("❌", result)
+        self.assertEqual(mock_client.update_page.call_args.kwargs["page_id"], "999")
+
     def test_no_update_if_exists_false(self):
         """Returns a warning if update_if_exists=False and the page exists."""
         mock_client = _make_mock_confluence(page_exists=True)

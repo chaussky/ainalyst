@@ -79,6 +79,15 @@ VIEWPOINT_MAP = {
         "label": "Business rules",
         "audience": "Business analyst, legal, compliance",
     },
+    # On-demand fallback for the requirement CLASSES 5.1 can hold (solution / transition /
+    # stakeholder / component) that have no dedicated 7.1 viewpoint. Without it they were
+    # counted in the denominator but appeared in NO viewpoint and NOWHERE in the signed
+    # architecture document — the 7.4 mirror of the coverage-vocabulary class. Populated
+    # only when such requirements exist (never flagged as a "missing" viewpoint).
+    "other": {
+        "label": "Other requirements",
+        "audience": "Architect, business analyst",
+    },
 }
 
 # Types that are NOT viewpoint artifacts. The local set used to be
@@ -219,11 +228,13 @@ def _build_views_from_repo(repo: dict) -> dict:
         req_type = req.get("type", "")
         if req_type in SKIP_TYPES:
             continue
-        vp_key = req_type  # viewpoint key matches the artifact type
-        if vp_key in VIEWPOINT_MAP:
-            views.setdefault(vp_key, [])
-            if req["id"] not in views[vp_key]:
-                views[vp_key].append(req["id"])
+        # Requirement classes without a dedicated viewpoint (solution / transition /
+        # stakeholder / component) fall into the "other" viewpoint so they still appear
+        # in the architecture document and count toward coverage — instead of vanishing.
+        vp_key = req_type if req_type in VIEWPOINT_MAP else "other"
+        views.setdefault(vp_key, [])
+        if req["id"] not in views[vp_key]:
+            views[vp_key].append(req["id"])
     return views
 
 
@@ -298,7 +309,9 @@ def analyze_requirements_architecture(
     # Types missing from the repository
     all_auto_types = set(VIEWPOINT_MAP.keys())
     present_types = set(auto_views.keys())
-    missing_types = all_auto_types - present_types
+    # `other` is an on-demand fallback bucket, not an expected viewpoint — never report it
+    # as "missing" when there are no unmapped requirement types.
+    missing_types = all_auto_types - present_types - {"other"}
 
     # Business context for the coverage matrix
     ctx = _load_context(project_id)

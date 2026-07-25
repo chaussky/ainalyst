@@ -215,11 +215,18 @@ class TestFB_DurableValidated(BaseMCPTest):
         trace.init_traceability_repo(pid, "Standard", json.dumps([
             {"id": "FR-001", "type": "functional", "title": "R", "status": "verified"}]))
         val.mark_req_validated(pid, req_ids='["FR-001"]', force=True)
-        ver.mark_req_verified(pid, req_ids='["FR-001"]', force=True)  # overwrites status
-        repo = json.load(open(os.path.join(
-            "governance_plans", "data", pid, f"{pid}_traceability_repo.json"), encoding="utf-8"))
+        # A later 5.5 approval / 5.4 CR overwrites the shared `status` field. The durable
+        # validation fact (history) must survive it. (7.2 re-verify no longer downgrades —
+        # see R2-4 — so overwrite via the approval status, the real lossy path.)
+        repo_path = os.path.join("governance_plans", "data", pid, f"{pid}_traceability_repo.json")
+        repo = json.load(open(repo_path, encoding="utf-8"))
+        for r in repo["requirements"]:
+            if r["id"] == "FR-001":
+                r["status"] = "approved"
+        json.dump(repo, open(repo_path, "w", encoding="utf-8"))
+        repo = json.load(open(repo_path, encoding="utf-8"))
         self.assertEqual(next(r["status"] for r in repo["requirements"] if r["id"] == "FR-001"),
-                         "verified")
+                         "approved")
         self.assertTrue(has_been_validated(repo, "FR-001"))
         out = val.get_validation_report(pid)
         self.assertNotIn("Validated | 0", out)
@@ -269,6 +276,106 @@ class TestBacklogPlanTitle(BaseMCPTest):
         content = m.save_artifact.call_args.args[0]   # the plan markdown handed to save_artifact
         self.assertIn("Elicitation Activity Plan", content)
         self.assertNotIn("# Requirements Elicitation Plan", content)
+
+
+# ---------------------------------------------------------------------------
+# Confirmation-run findings (fixed alongside): honesty/consistency at the seams.
+#   R1-1  7.3 report must not claim "ready / all trace" with NO business context
+#   R2-4  a re-run of 7.2 verify must not downgrade a `validated` status
+#   R2-1  check_coverage must separate requirements from analysis artifacts
+#   R1-2  7.4 must place 5.1 requirement classes (solution/transition/...) in a viewpoint
+#   R2-2  a `component` (a realizer) must not be flagged "no implementation"
+# ---------------------------------------------------------------------------
+
+class TestConfirmationFindings(BaseMCPTest):
+
+    def _repo(self, pid):
+        return json.load(open(os.path.join(
+            "governance_plans", "data", pid, f"{pid}_traceability_repo.json"), encoding="utf-8"))
+
+    def test_r1_1_no_context_not_ready_no_false_trace(self):
+        import skills.requirements_traceability_mcp as tr
+        import skills.requirements_verify_mcp as ver
+        import skills.requirements_validate_mcp as val
+        pid = "noctx"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "FR-001", "type": "functional", "title": "X", "status": "draft"}]))
+        ver.mark_req_verified(pid, req_ids='["FR-001"]', force=True)
+        val.mark_req_validated(pid, req_ids='["FR-001"]', force=True)
+        out = val.get_validation_report(pid)
+        self.assertIn("Not ready for 7.5", out)
+        self.assertNotIn("All reqs trace to business objectives", out)
+        self.assertIn("Business context not set", out)
+
+    def test_r2_4_reverify_keeps_validated_status(self):
+        import skills.requirements_traceability_mcp as tr
+        import skills.requirements_validate_mcp as val
+        import skills.requirements_verify_mcp as ver
+        pid = "keepval"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "FR-001", "type": "functional", "title": "X", "status": "verified"}]))
+        val.mark_req_validated(pid, req_ids='["FR-001"]', force=True)
+        ver.mark_req_verified(pid, req_ids='["FR-001"]', force=True)   # re-verify must not downgrade
+        self.assertEqual(
+            next(r["status"] for r in self._repo(pid)["requirements"] if r["id"] == "FR-001"),
+            "validated")
+
+    def test_r2_1_check_coverage_separates_analysis_artifacts(self):
+        import skills.requirements_traceability_mcp as tr
+        pid = "cov"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "FR-001", "type": "functional", "title": "R", "status": "confirmed"},
+            {"id": "RK-001", "type": "risk", "title": "Risk", "status": "identified"},
+            {"id": "SOL-001", "type": "solution_scope", "title": "Scope", "status": "defined"}]))
+        tr.add_trace_link(pid, "RK-001", "FR-001", "threatens", "x")
+        tr.add_trace_link(pid, "SOL-001", "FR-001", "satisfies", "x")
+        out = tr.check_coverage(pid)
+        self.assertIn("Total items", out)
+        self.assertIn("analysis artifact", out)
+        self.assertIn("Fully covered items", out)
+
+    def test_r1_2_arch_places_51_classes_in_other_viewpoint(self):
+        import skills.requirements_traceability_mcp as tr
+        import skills.requirements_architecture_mcp as arch
+        pid = "arch"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "SR-001", "type": "solution", "title": "Sol req", "status": "confirmed"},
+            {"id": "TR-001", "type": "transition", "title": "Trans req", "status": "confirmed"}]))
+        out = arch.analyze_requirements_architecture(pid)
+        self.assertIn("Other requirements", out)
+        self.assertIn("(100.0%)", out)     # both counted -> full viewpoint coverage
+        self.assertIn("SR-001", out)
+
+    def test_r2_2_component_not_flagged_no_implementation(self):
+        import skills.requirements_traceability_mcp as tr
+        pid = "comp"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "FR-001", "type": "functional", "title": "R", "status": "confirmed"},
+            {"id": "COMP-1", "type": "component", "title": "Auth component", "status": "confirmed"}]))
+        tr.add_trace_link(pid, "COMP-1", "FR-001", "satisfies", "implements")
+        out = tr.check_coverage(pid)
+        self.assertIn("Fully covered items", out)
+        # the component is a realizer -> fully covered, NOT flagged for missing implementation
+        self.assertIn("COMP-1", out.split("Fully covered items")[1])
+
+    def test_r1_4_priority_not_written_to_non_requirement_node(self):
+        import skills.requirements_traceability_mcp as tr
+        import skills.requirements_prioritize_mcp as p53
+        pid = "prio"
+        tr.init_traceability_repo(pid, "Standard", json.dumps([
+            {"id": "FR-001", "type": "functional", "title": "R", "status": "confirmed"},
+            {"id": "BG-001", "type": "business_goal", "title": "Goal", "status": "confirmed"}]))
+        p53.start_prioritization_session(pid, "s1", "MoSCoW")
+        p53.add_stakeholder_scores(pid, "s1", "SH-1", "High",
+            '[{"req_id":"FR-001","score":"Must"},{"req_id":"BG-001","score":"Must"}]')
+        p53.run_aggregation(pid, "s1")
+        out = p53.save_prioritization_result(pid, "s1")
+        repo = self._repo(pid)
+        fr = next(r for r in repo["requirements"] if r["id"] == "FR-001")
+        bg = next(r for r in repo["requirements"] if r["id"] == "BG-001")
+        self.assertIn("priority", fr)          # a real requirement is prioritised
+        self.assertNotIn("priority", bg)       # the business_goal node is NOT
+        self.assertIn("NOT requirements", out)  # and the report explains the skip
 
 
 if __name__ == "__main__":

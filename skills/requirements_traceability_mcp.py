@@ -28,6 +28,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, ANALYSIS_NODE_TYPES,
+                           NON_REQUIREMENT_NODE_TYPES,
                            BUSINESS_NODE_TYPES, has_been_approved,
     has_passed_verification, has_been_validated,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
@@ -722,6 +723,10 @@ def check_coverage(
             # implementation" for every risk in the project — the same misclassification
             # as the orphan verdict, one column over.
             has_impl = True
+        # A component IS an implementer (it satisfies requirements); nothing implements a
+        # component further, so a manually-added COMP node is not "missing implementation".
+        elif req_type == "component":
+            has_impl = True
 
         issues = []
         if not has_source:
@@ -760,6 +765,12 @@ def check_coverage(
 
     total = len(requirements)
     covered_pct = round(len(fully_covered) / total * 100) if total else 0
+    # The audit spans the whole traceability graph. Analysis artifacts (risk /
+    # change_request / solution_scope) are traced for connectivity but are NOT
+    # requirements to prioritise (5.3) or approve (5.5) — call that out so the counts
+    # and the "ready for 5.3/5.5" verdict are not read as a requirement tally.
+    analysis_count = len([r for r in requirements
+                          if r.get("type", "") in NON_REQUIREMENT_NODE_TYPES])
 
     lines = [
         f"<!-- BABOK 5.1 — Coverage Audit | Project: {project_name} | {date.today()} -->",
@@ -778,9 +789,16 @@ def check_coverage(
         f"| 🟢 Full coverage | {len(fully_covered)} | {covered_pct}% |",
         f"| 🔴 No source (orphan) | {len(orphans_no_source)} | {round(len(orphans_no_source)/total*100) if total else 0}% |",
         f"| 🟡 Coverage gaps | {len(orphans_no_impl)} | {round(len(orphans_no_impl)/total*100) if total else 0}% |",
-        f"| **Total** | **{total}** | 100% |",
+        f"| **Total items** | **{total}** | 100% |",
         "",
     ]
+    if analysis_count:
+        lines += [
+            f"> ℹ️ **{total - analysis_count} requirement(s)** + **{analysis_count} analysis "
+            f"artifact(s)** (risks / change requests / solution scope). Analysis artifacts are "
+            f"audited for graph connectivity only — they are not prioritised (5.3) or approved (5.5).",
+            "",
+        ]
 
     if orphans_no_source:
         lines += [
@@ -822,7 +840,7 @@ def check_coverage(
 
     if fully_covered:
         lines += [
-            "## 🟢 Fully covered requirements",
+            "## 🟢 Fully covered items",
             "",
             "| ID | Type | Title | Links |",
             "|----|-----|----------|--------|",

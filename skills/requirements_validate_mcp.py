@@ -1357,9 +1357,14 @@ def get_validation_report(
 
     uncovered_goals = [g for g in goals if g["id"] not in covered_goals]
 
-    # Readiness verdict for 7.5
+    # Readiness verdict for 7.5. Without a business context there are no objectives to
+    # trace to, so `orphan_reqs` is vacuously empty — the report must NOT read that as
+    # "all requirements trace to objectives" and wave the project through. No context =>
+    # alignment is unchecked => not ready (same honesty rule as check_business_alignment).
+    has_context = bool(goals)
     ready = (
-        validated_pct >= 80
+        has_context
+        and validated_pct >= 80
         and len(open_high) == 0
         and len(orphan_reqs) == 0
     )
@@ -1516,6 +1521,9 @@ def get_validation_report(
         ]
     else:
         reasons = []
+        if not has_context:
+            reasons.append("⚠️ Business context not set — alignment to objectives is unchecked. "
+                           "Call `set_business_context` (or run 6.1/6.2), then re-run.")
         if validated_pct < 80:
             reasons.append(f"📊 Only {validated_pct}% of reqs validated (recommended ≥ 80%)")
         if open_high:

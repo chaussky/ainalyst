@@ -206,9 +206,10 @@ Call `add_stakeholder_scores` again for the same stakeholder.
 The new scores replace the previous ones in the current session.
 
 **"Do I need to run prioritization for designs too (not just requirements)?"**
-Yes — BABOK explicitly includes Designs as input information for 5.3.
-Designs are added to the 5.1 repository as separate nodes of type `design`.
-They are prioritized using the same scheme.
+Yes — BABOK includes Designs as input information for 5.3. In this platform the design and
+model artifacts from 7.1 (use cases, business processes, data dictionaries, ERDs) are already
+registered in the 5.1 repository under their own types and are prioritized with the same
+scheme. There is no separate `design` node type.
 
 **"How often should prioritization be repeated?"**
 Rule: whenever any of the triggers above occurs (estimates received, CR accepted, context changed).
