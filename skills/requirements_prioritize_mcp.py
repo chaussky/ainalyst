@@ -310,7 +310,7 @@ def _aggregate_impact_effort(scores_by_sh: dict, influence_by_sh: dict,
 
 
 def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
-                       repo: dict, capacity: float) -> dict:
+                       repo: dict, capacity: float, overrides: dict = None) -> dict:
     """
     Fills a box of fixed capacity — BABOK 10.33.3 .3 Time Boxing/Budgeting.
 
@@ -369,9 +369,17 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
 
     nodes_by_id = {n["id"]: n for n in repo.get("requirements", [])}
 
+    overrides = overrides or {}
+
     result = {}
     for req_id in all_reqs:
-        if req_id in session_values:
+        if req_id in overrides:
+            # A conflict the BA resolved. In this method `priority` is an OUTPUT of
+            # the fill, so a resolution has to re-enter as the requirement's VALUE
+            # and let the box be filled again — writing it straight into `priority`
+            # produced rows reading "cut" and "Must" at once.
+            label, source = overrides[req_id], "resolved"
+        elif req_id in session_values:
             label, source = session_values[req_id]["priority"], "session"
         else:
             stored = str(nodes_by_id.get(req_id, {}).get("priority") or "").strip()
@@ -539,12 +547,27 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
     used = max((placed[r]["cumulative"] for r in in_box), default=0.0)
     pct = int(round(used / capacity * 100)) if capacity else 0
 
-    lines = [
+    lines = []
+    if not capacity or capacity <= 0:
+        # start_prioritization_session rejects capacity <= 0, so this is only
+        # reachable through a session file edited or truncated on disk. Say so
+        # rather than render a 0/0 box in which every requirement reads Won't.
+        lines += [
+            "⚠️ This session has no usable capacity on record, so nothing could be "
+            "placed in the box. Open a new TimeBoxing session with a capacity > 0.",
+            "",
+        ]
+
+    lines += [
         f"**Box:** {_fmt_num(used)} / {_fmt_num(capacity)} {unit} ({pct}%) · "
         f"in: {len(in_box)} · cut: {len(cut)} · not estimated: {len(unestimated)}",
         "",
-        f"| ID | In box | Priority | Value source | Cost, {unit} | Cumulative |",
-        "|-----|--------|----------|--------------|------|------------|",
+        # `Value` and `Priority` are different things here and both belong on the
+        # row: a cut requirement keeps its value (Should) while its outcome is
+        # Won't. Printing only the outcome, with the value appearing in a note
+        # further down, put two labels for one requirement in one document.
+        f"| ID | In box | Value | Priority | Value source | Cost, {unit} | Cumulative |",
+        "|-----|--------|-------|----------|--------------|------|------------|",
     ]
     for req_id in sorted(placed,
                          key=lambda r: (not placed[r]["in_box"],
@@ -555,16 +578,20 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
         icon = {"Must": "🔴", "Should": "🟠", "Could": "🟡",
                 "Won't": "🟢"}.get(d["priority"], "")
         cumulative = _fmt_num(d["cumulative"]) if d["in_box"] else "—"
-        lines.append(f"| {req_id} | {mark} | {icon} {d['priority']} | {d['value_source']} "
-                     f"| {_fmt_num(d['cost'])} | {cumulative} |")
+        lines.append(f"| {req_id} | {mark} | {d['value_label']} | {icon} {d['priority']} "
+                     f"| {d['value_source']} | {_fmt_num(d['cost'])} | {cumulative} |")
 
     skipped = sorted(r for r, d in placed.items() if d.get("skipped_over"))
     if skipped:
         lines += ["", "**Skipped over (cheaper requirements below them were taken):**", ""]
         for req_id in skipped:
             d = placed[req_id]
+            # Phrased so it reads correctly for any unit and any remainder: a
+            # free-form unit string ("story points", "USD") cannot be pluralised
+            # reliably, and "1 story points were left" is in a stakeholder document.
             lines.append(f"- `{req_id}` ({d['value_label']}, {_fmt_num(d['cost'])} {unit}) "
-                         f"— {_fmt_num(d['remaining_at_skip'])} {unit} were left.")
+                         f"— remaining capacity at that point: "
+                         f"{_fmt_num(d['remaining_at_skip'])} {unit}.")
 
     spread = sorted((r for r, d in placed.items() if d.get("cost_spread")),
                     key=lambda r: -placed[r]["cost_spread"])
@@ -993,6 +1020,9 @@ def run_aggregation(
     scores_by_sh = session["stakeholder_scores"]
     influence_by_sh = session.get("stakeholder_influence", {})
 
+    capacity = session.get("capacity") or 0
+    capacity_unit = session.get("capacity_unit") or "units"
+
     # Aggregation by method
     if method == "MoSCoW":
         aggregated = _aggregate_moscow(scores_by_sh, influence_by_sh)
@@ -1000,7 +1030,7 @@ def run_aggregation(
         aggregated = _aggregate_wsjf(scores_by_sh, influence_by_sh)
     elif method == "TimeBoxing":
         aggregated = _aggregate_timebox(scores_by_sh, influence_by_sh, repo,
-                                        session.get("capacity") or 0)
+                                        capacity, session.get("value_overrides"))
     else:
         qmap = session.get("quadrant_mapping") or {
             "QuickWins": "Must", "BigBets": "Should",
@@ -1076,9 +1106,10 @@ def run_aggregation(
                          f"| {data.get('cod','—')} | {data.get('js','—')} |")
 
     elif method == "TimeBoxing":
-        lines += _timebox_report_block(aggregated,
-                                       session.get("capacity") or 0,
-                                       session.get("capacity_unit") or "units")
+        # Read once: the dispatcher above fills the box with this same value, and
+        # two independent lookups could drift into a box and a rendering that
+        # disagree about its size.
+        lines += _timebox_report_block(aggregated, capacity, capacity_unit)
 
     else:
         lines.append("| ID | Priority | Quadrant | Avg Impact | Avg Effort |")
@@ -1089,8 +1120,11 @@ def run_aggregation(
             lines.append(f"| {req_id} | {icon} {prio} | {data.get('quadrant','—')} "
                          f"| {data.get('avg_impact','—')} | {data.get('avg_effort','—')} |")
 
-    # Must Inflation
-    if inflation["inflated"]:
+    # Must Inflation. Not offered to a TimeBoxing session: the advice is "re-run
+    # using a fixed-budget technique", and this IS one. The ratio is also a property
+    # of the capacity there rather than of stakeholder discipline — a smaller box
+    # changes it mechanically.
+    if inflation["inflated"] and method != "TimeBoxing":
         lines += [
             "",
             "---",
@@ -1201,8 +1235,24 @@ def resolve_conflict(
     if not session:
         return f"❌ Session '{session_label}' not found."
 
-    # Update the aggregated value
-    if req_id in session["aggregated"]:
+    # Update the aggregated value.
+    # TimeBoxing is different in kind: for the other three methods `priority` IS the
+    # decision, but here it is the OUTCOME of filling the box. So the decision is
+    # recorded as the requirement's value and the box is filled again — otherwise a
+    # resolved requirement could read "✂️ cut" and "Must" on the same row, and a
+    # priority that the capacity does not support would reach the 5.1 graph.
+    if session.get("method") == "TimeBoxing":
+        session.setdefault("value_overrides", {})[req_id] = final_priority
+        session["aggregated"] = _aggregate_timebox(
+            session.get("stakeholder_scores", {}),
+            session.get("stakeholder_influence", {}),
+            _load_repo(project_name),
+            session.get("capacity") or 0,
+            session["value_overrides"],
+        )
+        if req_id in session["aggregated"]:
+            session["aggregated"][req_id]["resolved"] = True
+    elif req_id in session["aggregated"]:
         if isinstance(session["aggregated"][req_id], dict):
             session["aggregated"][req_id]["priority"] = final_priority
             session["aggregated"][req_id]["resolved"] = True

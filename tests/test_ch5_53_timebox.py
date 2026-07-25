@@ -518,5 +518,175 @@ class TestTimeboxAggregationReport(BaseMCPTest):
                             for v in session["dependency_violations"]))
 
 
+class TestTimeboxConflictResolution(BaseMCPTest):
+    """Task 4 review — in this method `priority` is an OUTPUT of the fill.
+
+    For MoSCoW/WSJF/ImpactEffort a resolved conflict IS the final priority. Writing
+    a resolution straight into `priority` here produced a signed artefact that said
+    both "✂️ cut" and "Must" on one row, and stamped Must into the 5.1 graph for a
+    requirement that does not fit the capacity.
+    """
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox(capacity=10, capacity_unit="story points")
+        add_timebox_scores(sh_id="SH-1", influence="High", scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Must"},
+        ])
+        add_timebox_scores(sh_id="SH-2", influence="High", scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Won't"},
+        ])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+
+    def resolve(self, req_id="FR-002", final_priority="Must"):
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            return mod53.resolve_conflict(
+                project_name=PROJECT, session_label=SESSION, req_id=req_id,
+                conflict_type="stakeholder_conflict", final_priority=final_priority,
+                rationale="Sponsor call", decided_by="Sponsor")
+
+    def agg(self):
+        return mod53._load_prio(PROJECT)["sessions"][0]["aggregated"]
+
+    def test_resolution_is_recorded_as_the_decided_value(self):
+        self.resolve(final_priority="Must")
+        self.assertEqual(self.agg()["FR-002"]["value_label"], "Must")
+        self.assertEqual(self.agg()["FR-002"]["value_source"], "resolved")
+
+    def test_box_is_refilled_so_priority_never_contradicts_in_box(self):
+        self.resolve(final_priority="Must")
+        for req_id, data in self.agg().items():
+            if data.get("cost") is None:
+                continue
+            if data["in_box"]:
+                self.assertNotEqual(data["priority"], "Won't", req_id)
+            else:
+                self.assertEqual(data["priority"], "Won't", req_id)
+
+    def test_raising_a_value_can_displace_another_requirement(self):
+        """FR-001 (9) and FR-002 (8) cannot both fit a capacity of 10."""
+        self.resolve(final_priority="Must")
+        agg = self.agg()
+        self.assertNotEqual(agg["FR-001"]["in_box"], agg["FR-002"]["in_box"])
+
+    def test_override_survives_a_later_reaggregation(self):
+        self.resolve(final_priority="Won't")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        self.assertEqual(self.agg()["FR-002"]["value_source"], "resolved")
+        self.assertEqual(self.agg()["FR-002"]["value_label"], "Won't")
+
+    def test_other_methods_still_write_priority_directly(self):
+        """The three existing methods must be untouched by this change."""
+        other = "MoSCoW box-free"
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.start_prioritization_session(
+                project_name=PROJECT, session_label=other, method="MoSCoW")
+            mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label=other, stakeholder_id="SH-1",
+                stakeholder_influence="High",
+                scores_json=json.dumps([{"req_id": "FR-001", "score": "Could"}]))
+            mod53.run_aggregation(project_name=PROJECT, session_label=other)
+            mod53.resolve_conflict(
+                project_name=PROJECT, session_label=other, req_id="FR-001",
+                conflict_type="stakeholder_conflict", final_priority="Must",
+                rationale="r", decided_by="Sponsor")
+        sessions = mod53._load_prio(PROJECT)["sessions"]
+        moscow = next(s for s in sessions if s["label"] == other)
+        self.assertEqual(moscow["aggregated"]["FR-001"]["priority"], "Must")
+
+
+class TestTimeboxReportDetails(BaseMCPTest):
+    """Task 4 review — the report must not print two labels for one requirement."""
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox(capacity=10, capacity_unit="story points")
+
+    def run_agg(self):
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            return mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+
+    def test_table_shows_the_value_alongside_the_outcome(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+        ])
+        out = self.run_agg()
+        self.assertIn("| Value |", out)
+        # FR-002 is cut, so its outcome is Won't while its value stays Should —
+        # both must appear on the row, not one on the row and one in a footnote.
+        row = next(ln for ln in out.splitlines() if ln.startswith("| FR-002 |"))
+        self.assertIn("Should", row)
+        self.assertIn("Won't", row)
+
+    def test_skipped_over_note_names_the_requirement_and_the_remainder(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+            {"req_id": "FR-003", "cost": 1, "value": "Could"},
+        ])
+        out = self.run_agg()
+        note = next(ln for ln in out.splitlines()
+                    if ln.startswith("- `FR-002`") and "remaining capacity" in ln)
+        self.assertIn("1", note)          # remaining capacity at the skip
+        self.assertNotIn("FR-003", note)
+
+    def test_spread_note_states_both_the_spread_and_the_average(self):
+        add_timebox_scores(sh_id="DEV-A", scores=[{"req_id": "FR-001", "cost": 3}])
+        add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
+        out = self.run_agg()
+        note = next(ln for ln in out.splitlines()
+                    if ln.startswith("- `FR-001`") and "spread" in ln)
+        self.assertIn("10", note)         # 13 - 3
+        self.assertIn("8", note)          # (13 + 3) / 2
+
+    def test_must_inflation_advice_is_not_offered_to_a_timebox_session(self):
+        """The advice was 'switch to a fixed-budget technique' — this IS one.
+
+        The Must ratio here is a property of the capacity, not of stakeholder
+        discipline: a smaller box mechanically changes it.
+        """
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 1, "value": "Must"},
+            {"req_id": "FR-002", "cost": 1, "value": "Must"},
+            {"req_id": "FR-003", "cost": 1, "value": "Could"},
+        ])
+        out = self.run_agg()
+        self.assertNotIn("Must Inflation", out)
+
+    def test_moscow_still_gets_the_must_inflation_section(self):
+        other = "MoSCoW inflated"
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.start_prioritization_session(
+                project_name=PROJECT, session_label=other, method="MoSCoW")
+            mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label=other, stakeholder_id="SH-1",
+                stakeholder_influence="High",
+                scores_json=json.dumps([
+                    {"req_id": "FR-001", "score": "Must"},
+                    {"req_id": "FR-002", "score": "Must"},
+                    {"req_id": "FR-003", "score": "Could"}]))
+            out = mod53.run_aggregation(project_name=PROJECT, session_label=other)
+        self.assertIn("Must Inflation", out)
+
+    def test_units_read_correctly_when_the_remainder_is_one(self):
+        # FR-003 must be taken BELOW the cut FR-002, otherwise there is no
+        # "skipped over" section at all and this test would assert nothing.
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 9, "value": "Must"},
+            {"req_id": "FR-002", "cost": 8, "value": "Should"},
+            {"req_id": "FR-003", "cost": 1, "value": "Could"},
+        ])
+        out = self.run_agg()
+        self.assertIn("Skipped over", out)
+        self.assertNotIn("1 story points were left", out)
+
+
 if __name__ == "__main__":
     unittest.main()
