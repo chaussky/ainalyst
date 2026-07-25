@@ -646,6 +646,13 @@ def add_stakeholder_scores(
 
       ImpactEffort:
         [{"req_id": "FR-001", "impact": "High", "effort": "Low"}, ...]
+
+      TimeBoxing:
+        [{"req_id": "FR-001", "cost": 5, "value": "Must"}, ...]
+        (cost — size/budget estimate in the session's capacity unit, required;
+         value — optional: omit it and the requirement's current priority is used.
+         cost is a team estimate and is averaged WITHOUT influence weighting,
+         the same treatment WSJF gives Job Size.)
     """
     logger.info(f"5.3 add_stakeholder_scores: {project_name}/{session_label} ← {stakeholder_id}")
 
@@ -705,6 +712,28 @@ def add_stakeholder_scores(
                 return (f"❌ Invalid impact/effort value for {rid}. "
                         f"Allowed: Low / Medium / High")
             normalized[rid] = {"impact": impact, "effort": effort}
+
+    elif method == "TimeBoxing":
+        valid_vals = set(MOSCOW_WEIGHTS.keys())
+        for item in raw_scores:
+            rid = item.get("req_id")
+            if not rid:
+                return f"❌ Missing req_id in: {item}"
+            if "cost" not in item:
+                return (f"❌ Missing `cost` for {rid}. TimeBoxing needs a size/cost "
+                        f"estimate for every requirement, in the session's capacity unit.")
+            try:
+                cost = float(item["cost"])
+            except (TypeError, ValueError):
+                return (f"❌ Invalid `cost` for {rid}: {item['cost']!r} is not a number.")
+            if cost < 0:
+                return f"❌ Invalid `cost` for {rid}: {_fmt_num(cost)} — must be ≥ 0."
+            value = item.get("value")
+            if value is not None and value not in valid_vals:
+                return (f"❌ Invalid `value` '{value}' for {rid}. "
+                        f"Allowed: Must / Should / Could / Won't — or omit it, and the "
+                        f"requirement's current priority is used instead.")
+            normalized[rid] = {"cost": cost, "value": value}
 
     # Save the scores and influence
     session["stakeholder_scores"][stakeholder_id] = normalized

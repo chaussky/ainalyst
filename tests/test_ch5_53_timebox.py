@@ -137,6 +137,88 @@ class TestTimeboxSessionConfig(BaseMCPTest):
         self.assertIn("Current priority", out)
 
 
+def add_timebox_scores(project=PROJECT, session=SESSION, sh_id="DEV-TEAM",
+                       influence="Medium", scores=None):
+    if scores is None:
+        scores = [{"req_id": "FR-001", "cost": 5}]
+    with patch("skills.requirements_prioritize_mcp.save_artifact"):
+        return mod53.add_stakeholder_scores(
+            project_name=project,
+            session_label=session,
+            stakeholder_id=sh_id,
+            stakeholder_influence=influence,
+            scores_json=json.dumps(scores),
+        )
+
+
+class TestTimeboxScoreInput(BaseMCPTest):
+    """Task 2 — 'the input parses' is not 'the input fits' (class CH4-A / F-C)."""
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox()
+
+    def test_missing_cost_is_rejected_by_name(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "value": "Must"}])
+        self.assertIn("❌", out)
+        self.assertIn("FR-001", out)
+        self.assertIn("cost", out)
+
+    def test_non_numeric_cost_is_rejected(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": "large"}])
+        self.assertIn("❌", out)
+        self.assertIn("FR-001", out)
+
+    def test_negative_cost_is_rejected(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": -3}])
+        self.assertIn("❌", out)
+
+    def test_zero_cost_is_accepted(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 0}])
+        self.assertIn("✅", out)
+
+    def test_numeric_string_cost_is_accepted(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": "5"}])
+        self.assertIn("✅", out)
+        stored = mod53._load_prio(PROJECT)["sessions"][0]["stakeholder_scores"]
+        self.assertEqual(stored["DEV-TEAM"]["FR-001"]["cost"], 5.0)
+
+    def test_bad_value_label_is_rejected(self):
+        out = add_timebox_scores(
+            scores=[{"req_id": "FR-001", "cost": 5, "value": "Critical"}])
+        self.assertIn("❌", out)
+        self.assertIn("Critical", out)
+
+    def test_value_is_optional_and_stored_as_none(self):
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5}])
+        stored = mod53._load_prio(PROJECT)["sessions"][0]["stakeholder_scores"]
+        self.assertEqual(stored["DEV-TEAM"]["FR-001"], {"cost": 5.0, "value": None})
+
+    def test_value_is_stored_when_given(self):
+        add_timebox_scores(
+            scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        stored = mod53._load_prio(PROJECT)["sessions"][0]["stakeholder_scores"]
+        self.assertEqual(stored["DEV-TEAM"]["FR-001"]["value"], "Must")
+
+    def test_scalar_json_returns_error_not_exception(self):
+        """Class F-C: a wrong SHAPE must be a ❌ line, never a protocol error."""
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            out = mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label=SESSION,
+                stakeholder_id="DEV-TEAM", stakeholder_influence="Medium",
+                scores_json='"42"')
+        self.assertIn("❌", out)
+
+    def test_list_of_strings_returns_error_not_exception(self):
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            out = mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label=SESSION,
+                stakeholder_id="DEV-TEAM", stakeholder_influence="Medium",
+                scores_json='["FR-001", "FR-002"]')
+        self.assertIn("❌", out)
+
+
 class TestFmtNum(unittest.TestCase):
     def test_whole_floats_render_without_decimal(self):
         self.assertEqual(mod53._fmt_num(40.0), "40")
