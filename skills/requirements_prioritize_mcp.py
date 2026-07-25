@@ -384,7 +384,16 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
             label, source = session_values[req_id]["priority"], "session"
         else:
             stored = str(nodes_by_id.get(req_id, {}).get("priority") or "").strip()
-            if stored in VALUE_ORDER:
+            if stored == "Won't":
+                # NOT authoritative. `Won't` in the graph may simply be the outcome
+                # of an earlier box — this method writes its own cuts there — and
+                # reading it back as a decision demoted a requirement permanently:
+                # cut once by a small capacity, never allowed to compete again, and
+                # a mistyped capacity rewrote a whole backlog in one call. An
+                # explicit "not this time" is expressed by scoring it in THIS
+                # session, where it is unambiguous.
+                label, source = DEFAULT_VALUE_LABEL, "default"
+            elif stored in VALUE_ORDER:
                 label, source = stored, "graph"
             elif stored in GRAPH_PRIORITY_TO_VALUE:
                 label, source = GRAPH_PRIORITY_TO_VALUE[stored], "graph"
@@ -400,10 +409,34 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
             "value_source": source,
         }
 
+    # Two populations never reach the fill, and neither may consume capacity:
+    #
+    #  - value `Won't` declared in THIS session (or by a resolved conflict) is a
+    #    decision not to take the requirement. Letting it into the box produced a
+    #    page that filed a requirement under "Won't" and marked it committed at the
+    #    same time, and spent the team's capacity on it.
+    #  - a scored id that is not a requirement of this project's backlog — a typo
+    #    (`FR-01`), or a risk/goal node someone scored. It was eating capacity and
+    #    cutting real requirements; the existing "not saved" warning fires only at
+    #    finalisation and never mentioned the capacity it took.
+    backlog_ids = {n["id"] for n in repo.get("requirements", [])
+                   if n.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
+                   and n.get("status") != "deprecated"}
+    for req_id, data in result.items():
+        if req_id not in backlog_ids:
+            data["off_backlog"] = True
+        elif data["value_label"] == "Won't" and data["value_source"] in ("session",
+                                                                        "resolved"):
+            data["excluded_by_decision"] = True
+            data["priority"] = "Won't"
+
     # Fill order: value desc, then cheapest first, then id. The third key is not
     # cosmetic — without it a re-run on identical data can produce a different box.
     order = sorted(
-        (r for r in all_reqs if result[r]["cost"] is not None),
+        (r for r in all_reqs
+         if result[r]["cost"] is not None
+         and not result[r].get("off_backlog")
+         and not result[r].get("excluded_by_decision")),
         key=lambda r: (-VALUE_ORDER.get(result[r]["value_label"], 0),
                        result[r]["cost"], r),
     )
@@ -440,13 +473,23 @@ def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
     return result
 
 
-def _find_dependency_violations(repo: dict, priorities: dict) -> list:
+def _find_dependency_violations(repo: dict, priorities: dict,
+                                unplaced: set = None) -> list:
     """
     Looks for dependency violations: a requirement with Must/Should depends on a lower-priority requirement.
     Returns a list of {"req_id", "depends_on", "req_priority", "dep_priority"}
+
+    `unplaced` (TimeBoxing only) names requirements that carry no priority at all
+    because they were never placed in the box — nobody estimated them, or they are
+    not part of this backlog. A committed requirement depending on one of those
+    makes the box just as infeasible as depending on a cut one, but the priority
+    comparison alone cannot see it: `None` fails the `if from_prio and to_prio`
+    guard, so the edge was skipped and the tool reported no violations at all.
+    Silence in a section that prints a count reads as "checked and clean".
     """
     violations = []
     order = VALUE_ORDER
+    unplaced = unplaced or set()
 
     for edge in repo.get("links", []):
         if edge.get("relation") != "depends":
@@ -458,7 +501,14 @@ def _find_dependency_violations(repo: dict, priorities: dict) -> list:
         to_prio = priorities.get(to_id, {}).get("priority") if isinstance(
             priorities.get(to_id), dict) else priorities.get(to_id)
 
-        if from_prio and to_prio:
+        if from_prio and to_id in unplaced:
+            violations.append({
+                "req_id": from_id,
+                "depends_on": to_id,
+                "req_priority": from_prio,
+                "dep_priority": "not placed",
+            })
+        elif from_prio and to_prio:
             if order.get(from_prio, 0) > order.get(to_prio, 0):
                 violations.append({
                     "req_id": from_id,
@@ -467,6 +517,12 @@ def _find_dependency_violations(repo: dict, priorities: dict) -> list:
                     "dep_priority": to_prio,
                 })
     return violations
+
+
+def _timebox_unplaced(aggregated: dict) -> set:
+    """Requirements a TimeBoxing run left without any priority at all."""
+    return {r for r, d in aggregated.items()
+            if isinstance(d, dict) and not d.get("priority")}
 
 
 def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
@@ -541,10 +597,20 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
     Shared by run_aggregation and save_prioritization_result on purpose — two copies
     of a rendering rule is how the 5.5 dashboard and its baseline gate drifted apart.
     """
-    placed = {r: d for r, d in aggregated.items() if d.get("cost") is not None}
+    # Four populations, and they must not be conflated: a requirement the BA decided
+    # against is not "cut by capacity", and a mistyped id is not a requirement at all.
+    # Counting either as a cut misstates how much of the backlog the box actually
+    # rejected.
+    off_backlog = sorted(r for r, d in aggregated.items() if d.get("off_backlog"))
+    excluded = sorted(r for r, d in aggregated.items()
+                      if d.get("excluded_by_decision"))
+    placed = {r: d for r, d in aggregated.items()
+              if d.get("cost") is not None and not d.get("off_backlog")
+              and not d.get("excluded_by_decision")}
     in_box = [r for r, d in placed.items() if d.get("in_box")]
     cut = [r for r, d in placed.items() if not d.get("in_box")]
-    unestimated = sorted(r for r, d in aggregated.items() if d.get("cost") is None)
+    unestimated = sorted(r for r, d in aggregated.items()
+                         if d.get("cost") is None and not d.get("off_backlog"))
     used = max((placed[r]["cumulative"] for r in in_box), default=0.0)
     pct = int(round(used / capacity * 100)) if capacity else 0
 
@@ -561,7 +627,8 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
 
     lines += [
         f"**Box:** {_fmt_num(used)} / {_fmt_num(capacity)} {unit} ({pct}%) · "
-        f"in: {len(in_box)} · cut: {len(cut)} · not estimated: {len(unestimated)}",
+        f"in: {len(in_box)} · cut: {len(cut)} · excluded: {len(excluded)} · "
+        f"not estimated: {len(unestimated)}",
         "",
         # `Value` and `Priority` are different things here and both belong on the
         # row: a cut requirement keeps its value (Should) while its outcome is
@@ -601,6 +668,23 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
         for req_id in spread:
             lines.append(f"- `{req_id}` — spread {_fmt_num(placed[req_id]['cost_spread'])} "
                          f"{unit} around {_fmt_num(placed[req_id]['cost'])}.")
+
+    if excluded:
+        lines += ["", "**Excluded by decision (Won't — no capacity spent on them):**", ""]
+        for req_id in excluded:
+            lines.append(f"- `{req_id}` — scored Won't in this session, so it never "
+                         f"competed for a place.")
+
+    if off_backlog:
+        lines += ["", "**⚠️ Scored, but not a requirement in this project "
+                  "(excluded from the box):**", ""]
+        for req_id in off_backlog:
+            lines.append(f"- `{req_id}`")
+        lines.append("")
+        lines.append("These ids match no requirement in the 5.1 repository — a typo "
+                     "(`FR-01` for `FR-001`), or a risk / objective / scope node that "
+                     "was scored by mistake. They spend none of the capacity. Fix the "
+                     "id and re-score, or the estimate is lost.")
 
     if unestimated:
         lines += ["", "**⚠️ Not estimated — not placed (no priority written):**", ""]
@@ -961,6 +1045,11 @@ def add_stakeholder_scores(
                         f"requirement's current priority is used instead.")
             normalized[rid] = {"cost": cost, "value": value}
 
+    # Whether this is a repeat has to be decided BEFORE the key is inserted: the
+    # check used to run afterwards, so every first entry announced itself as an
+    # update. Affects all four methods.
+    is_repeat = stakeholder_id in session["stakeholder_scores"]
+
     # Save the scores and influence
     session["stakeholder_scores"][stakeholder_id] = normalized
     if "stakeholder_influence" not in session:
@@ -969,7 +1058,7 @@ def add_stakeholder_scores(
 
     _save_prio(project_name, prio_data)
 
-    is_update = "(updated)" if stakeholder_id in session.get("stakeholder_influence", {}) else ""
+    is_update = "(updated)" if is_repeat else ""
     lines = [
         f"✅ Scores for stakeholder **{stakeholder_id}** ({stakeholder_influence} influence) "
         f"saved {is_update}",
@@ -1061,8 +1150,12 @@ def run_aggregation(
             c["resolution"] = prior_resolutions.get(c["req_id"])
     session["conflicts"] = conflicts
 
-    # Dependency violations
-    violations = _find_dependency_violations(repo, aggregated)
+    # Dependency violations. Only TimeBoxing can leave a requirement with no
+    # priority, so only it passes the `unplaced` set — the other three methods keep
+    # exactly the behaviour they had.
+    violations = _find_dependency_violations(
+        repo, aggregated,
+        _timebox_unplaced(aggregated) if method == "TimeBoxing" else None)
     session["dependency_violations"] = violations
 
     # Must Inflation
@@ -1275,7 +1368,8 @@ def resolve_conflict(
         # box displaces another — so violations computed against the old fill are
         # stale, and a stale violation points the BA at the wrong pair.
         session["dependency_violations"] = _find_dependency_violations(
-            repo_for_refill, session["aggregated"])
+            repo_for_refill, session["aggregated"],
+            _timebox_unplaced(session["aggregated"]))
         if entry is None or entry.get("cost") is None:
             # No value can place a requirement nobody costed. Saying "✅ resolved"
             # while the box is unchanged would be a confident answer about data the
@@ -1384,6 +1478,20 @@ def save_prioritization_result(
     open_conflicts = [c for c in session["conflicts"] if not c.get("resolved")]
     open_violations = [v for v in session["dependency_violations"] if not v.get("resolved")]
 
+    # A session already finalised is re-rendered, not re-applied. Calling this twice
+    # used to write a second set of priority_updated rows into the graph history for
+    # the same decisions — the history stops being a record of what happened and
+    # starts being a record of how often the BA pressed the button. Regenerating the
+    # report is a legitimate reason to call again, so this warns instead of refusing.
+    already_closed = session.get("status") == "closed"
+    refinalise_note = ""
+    if already_closed:
+        refinalise_note = (
+            f"⚠️ This session was already finalised on "
+            f"{session.get('closed_at', 'an earlier date')}. The report below was "
+            f"regenerated from the stored result; the 5.1 repository was NOT written "
+            f"to again. To change priorities, open a new session.")
+
     # Update the 5.1 repository
     repo = _load_repo(project_name)
     updated_count = 0
@@ -1412,6 +1520,14 @@ def save_prioritization_result(
             not_req_ids.append(req_id)
             continue
         old_priority = node.get("priority", "—")
+        updated_count += 1
+        priority_summary.setdefault(priority, []).append(req_id)
+
+        # The summary above is rebuilt on every call so a re-render still shows the
+        # stored result; only the WRITES are skipped for an already-finalised session.
+        if already_closed:
+            continue
+
         node["priority"] = priority
         # WSJF sessions also persist the score: 5.5's rejection analysis reads
         # `wsjf_score` off the node to warn "you are rejecting a high-value
@@ -1419,8 +1535,6 @@ def save_prioritization_result(
         # could never fire.
         if isinstance(agg_data, dict) and agg_data.get("wsjf") is not None:
             node["wsjf_score"] = agg_data["wsjf"]
-        updated_count += 1
-        priority_summary.setdefault(priority, []).append(req_id)
 
         # Change history
         if "history" not in repo:
@@ -1435,7 +1549,8 @@ def save_prioritization_result(
             "method": session["method"],
         })
 
-    _save_repo(project_name, repo)
+    if not already_closed:
+        _save_repo(project_name, repo)
 
     # Close the session
     session["status"] = "closed"
@@ -1453,6 +1568,10 @@ def save_prioritization_result(
         f"**Date:** {date.today()}  ",
         f"**Requirements updated:** {updated_count}",
         "",
+    ]
+    if refinalise_note:
+        lines += [refinalise_note, ""]
+    lines += [
         "---",
         "",
         "## Final priorities",

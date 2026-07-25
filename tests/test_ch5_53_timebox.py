@@ -363,10 +363,15 @@ class TestAggregateTimebox(unittest.TestCase):
         self.assertIsNone(out["FR-004"]["cost"])
 
     def test_scored_id_absent_from_the_graph_still_surfaces(self):
-        """save_prioritization_result names typo'd ids; the union keeps that alive."""
+        """save_prioritization_result names typo'd ids; the union keeps that alive.
+
+        It surfaces but is NOT placed: it is not a requirement of this backlog, so
+        it must not consume the team's capacity.
+        """
         out = self.agg({"SH-1": {"FR-01": {"cost": 2, "value": "Must"}}}, capacity=20)
         self.assertIn("FR-01", out)
-        self.assertTrue(out["FR-01"]["in_box"])
+        self.assertFalse(out["FR-01"]["in_box"])
+        self.assertTrue(out["FR-01"]["off_backlog"])
 
     def test_deprecated_requirements_are_left_out(self):
         self.repo["requirements"][3]["status"] = "deprecated"   # FR-004
@@ -721,6 +726,27 @@ class TestTimeboxReportDetails(BaseMCPTest):
             out = mod53.run_aggregation(project_name=PROJECT, session_label=other)
         self.assertIn("Must Inflation", out)
 
+    def test_excluded_by_decision_is_not_reported_as_a_capacity_cut(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 2, "value": "Must"},
+            {"req_id": "FR-002", "cost": 2, "value": "Won't"},
+        ])
+        out = self.run_agg()
+        self.assertIn("Excluded by decision", out)
+        self.assertIn("cut: 0", out)      # nothing was cut BY CAPACITY
+        self.assertIn("excluded: 1", out)
+
+    def test_off_backlog_score_is_named_and_kept_out_of_the_table(self):
+        add_timebox_scores(scores=[
+            {"req_id": "FR-001", "cost": 2, "value": "Must"},
+            {"req_id": "FR-01", "cost": 2, "value": "Must"},   # typo
+        ])
+        out = self.run_agg()
+        self.assertIn("not a requirement in this project", out.lower())
+        self.assertIn("FR-01", out)
+        # It must not appear as a table row with an empty priority.
+        self.assertFalse(any(ln.startswith("| FR-01 |") for ln in out.splitlines()))
+
     def test_unusable_capacity_is_announced(self):
         """Only reachable through a session file edited or truncated on disk."""
         add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
@@ -802,6 +828,174 @@ class TestTimeboxFinalisation(BaseMCPTest):
     def test_final_report_counts_only_what_was_written(self):
         out = self.finalise()
         self.assertIn("**Requirements updated:** 2", out)
+
+
+class TestTimeboxWontSemantics(unittest.TestCase):
+    """Live-run findings 1 and 2 — `Won't` means two different things.
+
+    Declared in THIS session it is a decision not to take the requirement.
+    Read back from the graph it may simply be the outcome of an earlier box,
+    and treating that as a decision demoted requirements permanently.
+    """
+
+    def setUp(self):
+        self.repo = make_timebox_repo()
+
+    def agg(self, scores_by_sh, capacity=20, overrides=None):
+        influence = {sh: "Medium" for sh in scores_by_sh}
+        return mod53._aggregate_timebox(scores_by_sh, influence, self.repo,
+                                        capacity, overrides)
+
+    def test_session_wont_never_enters_the_box(self):
+        out = self.agg({"SH-1": {"FR-001": {"cost": 2, "value": "Won't"}}}, capacity=100)
+        self.assertFalse(out["FR-001"]["in_box"])
+        self.assertEqual(out["FR-001"]["priority"], "Won't")
+
+    def test_session_wont_does_not_consume_capacity(self):
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 8, "value": "Won't"},
+            "FR-002": {"cost": 8, "value": "Must"},
+            "FR-003": {"cost": 2, "value": "Must"},
+        }}, capacity=10)
+        # Equal value, so the cheaper one goes first: FR-003 (2) then FR-002 (8).
+        # Both fit only because the Won't-valued FR-001 took nothing.
+        self.assertTrue(out["FR-002"]["in_box"])
+        self.assertTrue(out["FR-003"]["in_box"])
+        self.assertEqual(out["FR-003"]["cumulative"], 2.0)
+        self.assertEqual(out["FR-002"]["cumulative"], 10.0)
+
+    def test_session_wont_is_marked_as_a_decision_not_a_capacity_cut(self):
+        out = self.agg({"SH-1": {"FR-001": {"cost": 2, "value": "Won't"}}}, capacity=100)
+        self.assertTrue(out["FR-001"].get("excluded_by_decision"))
+        self.assertNotIn("remaining_at_skip", out["FR-001"])
+
+    def test_resolved_wont_also_stays_out(self):
+        out = self.agg({"SH-1": {"FR-001": {"cost": 2, "value": "Must"}}},
+                       capacity=100, overrides={"FR-001": "Won't"})
+        self.assertFalse(out["FR-001"]["in_box"])
+        self.assertTrue(out["FR-001"].get("excluded_by_decision"))
+
+    def test_graph_wont_is_not_treated_as_a_decision(self):
+        """It may be last sprint's capacity outcome, not anybody's decision."""
+        self.repo["requirements"][0]["priority"] = "Won't"      # FR-001
+        out = self.agg({"SH-1": {"FR-001": {"cost": 2, "value": None}}}, capacity=100)
+        self.assertEqual(out["FR-001"]["value_label"], "Could")
+        self.assertEqual(out["FR-001"]["value_source"], "default")
+        self.assertTrue(out["FR-001"]["in_box"])
+
+    def test_a_requirement_cut_by_capacity_competes_again_next_session(self):
+        """The feedback loop: outcome written to `priority`, read back as value."""
+        first = self.agg({"SH-1": {
+            "FR-001": {"cost": 9, "value": "Must"},
+            "FR-002": {"cost": 9, "value": "Should"},
+        }}, capacity=10)
+        self.assertEqual(first["FR-002"]["priority"], "Won't")
+        # Simulate save_prioritization_result writing that outcome to the graph.
+        for node in self.repo["requirements"]:
+            if node["id"] == "FR-002":
+                node["priority"] = "Won't"
+        second = self.agg({"SH-1": {"FR-002": {"cost": 9, "value": None}}}, capacity=100)
+        self.assertTrue(second["FR-002"]["in_box"])
+
+
+class TestTimeboxOffBacklogScores(unittest.TestCase):
+    """Live-run finding 4 — a scored id that is not a requirement of this project."""
+
+    def setUp(self):
+        self.repo = make_timebox_repo()
+        self.repo["requirements"].append(
+            {"id": "RISK-001", "type": "risk", "title": "Vendor delay",
+             "version": "1.0", "status": "confirmed"})
+
+    def agg(self, scores_by_sh, capacity=10):
+        influence = {sh: "Medium" for sh in scores_by_sh}
+        return mod53._aggregate_timebox(scores_by_sh, influence, self.repo, capacity)
+
+    def test_typo_id_does_not_consume_capacity(self):
+        out = self.agg({"SH-1": {
+            "FR-01": {"cost": 2, "value": "Must"},          # typo for FR-001
+            "FR-001": {"cost": 9, "value": "Must"},
+        }})
+        self.assertTrue(out["FR-001"]["in_box"])            # 9 of 10 still free
+        self.assertFalse(out["FR-01"]["in_box"])
+        self.assertTrue(out["FR-01"].get("off_backlog"))
+        self.assertIsNone(out["FR-01"]["priority"])
+
+    def test_non_requirement_node_does_not_consume_capacity(self):
+        out = self.agg({"SH-1": {
+            "RISK-001": {"cost": 2, "value": "Must"},
+            "FR-001": {"cost": 9, "value": "Must"},
+        }})
+        self.assertTrue(out["FR-001"]["in_box"])
+        self.assertTrue(out["RISK-001"].get("off_backlog"))
+
+
+class TestTimeboxUnplacedDependencies(BaseMCPTest):
+    """Live-run finding 3 — silence read as 'checked and clean'."""
+
+    def test_dependency_on_an_unestimated_requirement_is_flagged(self):
+        repo = make_timebox_repo()
+        repo["links"] = [{"from": "FR-001", "to": "FR-004", "relation": "depends",
+                          "rationale": "needs the audit log",
+                          "added": str(date.today())}]
+        save_test_repo(repo)
+        start_timebox(capacity=20, capacity_unit="story points")
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            out = mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        self.assertTrue(any(v["req_id"] == "FR-001" and v["depends_on"] == "FR-004"
+                            for v in session["dependency_violations"]))
+        self.assertNotIn("No conflicts remain", out)
+
+    def test_moscow_is_not_given_new_violations(self):
+        """The other three methods must keep their existing behaviour."""
+        repo = make_timebox_repo()
+        repo["links"] = [{"from": "FR-001", "to": "FR-004", "relation": "depends",
+                          "rationale": "needs it", "added": str(date.today())}]
+        save_test_repo(repo)
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.start_prioritization_session(
+                project_name=PROJECT, session_label="M", method="MoSCoW")
+            mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label="M", stakeholder_id="SH-1",
+                stakeholder_influence="High",
+                scores_json=json.dumps([{"req_id": "FR-001", "score": "Must"}]))
+            mod53.run_aggregation(project_name=PROJECT, session_label="M")
+        session = next(s for s in mod53._load_prio(PROJECT)["sessions"]
+                       if s["label"] == "M")
+        self.assertEqual(session["dependency_violations"], [])
+
+
+class TestPreExistingDefects(BaseMCPTest):
+    """Found by the live run; not introduced by this feature, all four methods."""
+
+    def setUp(self):
+        super().setUp()
+        setup_timebox_repo()
+        start_timebox(capacity=10, capacity_unit="story points")
+
+    def test_first_scores_are_not_announced_as_an_update(self):
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5}])
+        self.assertNotIn("(updated)", out)
+
+    def test_second_scores_from_the_same_stakeholder_are_an_update(self):
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5}])
+        out = add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 6}])
+        self.assertIn("(updated)", out)
+
+    def test_refinalising_a_closed_session_does_not_rewrite_the_graph(self):
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
+            mod53.save_prioritization_result(PROJECT, SESSION)
+            out = mod53.save_prioritization_result(PROJECT, SESSION)
+        repo = mod53._load_repo(PROJECT)
+        priority_rows = [h for h in repo.get("history", [])
+                         if h.get("action") == "priority_updated"]
+        self.assertEqual(len(priority_rows), 1)
+        self.assertIn("already finalised", out)
 
 
 if __name__ == "__main__":
