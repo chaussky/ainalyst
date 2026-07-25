@@ -568,10 +568,56 @@ class TestTimeboxConflictResolution(BaseMCPTest):
                 self.assertEqual(data["priority"], "Won't", req_id)
 
     def test_raising_a_value_can_displace_another_requirement(self):
-        """FR-001 (9) and FR-002 (8) cannot both fit a capacity of 10."""
+        """FR-001 (9) and FR-002 (8) cannot both fit a capacity of 10.
+
+        Asserting only that the two differ is vacuous — that is already true before
+        the resolution. The direction has to flip: FR-002 in, FR-001 out.
+        """
+        before = self.agg()
+        self.assertTrue(before["FR-001"]["in_box"])
+        self.assertFalse(before["FR-002"]["in_box"])
         self.resolve(final_priority="Must")
-        agg = self.agg()
-        self.assertNotEqual(agg["FR-001"]["in_box"], agg["FR-002"]["in_box"])
+        after = self.agg()
+        self.assertTrue(after["FR-002"]["in_box"])
+        self.assertFalse(after["FR-001"]["in_box"])
+
+    def test_resolved_conflict_stays_resolved_after_reaggregation(self):
+        """The override survives a re-run; the resolution record must too.
+
+        The raw stakeholder scores still disagree, so the detector re-raises the
+        conflict. Left alone, the final artefact warns about a conflict the BA
+        settled — the value half and the record half drift apart.
+        """
+        self.resolve(final_priority="Must")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        fr2 = [c for c in session["conflicts"] if c["req_id"] == "FR-002"]
+        self.assertTrue(fr2)
+        self.assertTrue(all(c.get("resolved") for c in fr2))
+        self.assertTrue(any(c.get("resolution") for c in fr2))
+
+    def test_refill_recomputes_dependency_violations(self):
+        """The refill flips priorities in bulk, so stale violations mislead."""
+        repo = make_timebox_repo()
+        repo["links"] = [{"from": "FR-002", "to": "FR-001", "relation": "depends",
+                          "rationale": "needs it", "added": str(date.today())}]
+        save_test_repo(repo)
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
+        self.resolve(final_priority="Must")
+        session = mod53._load_prio(PROJECT)["sessions"][0]
+        # After the refill FR-002 is in the box (Must) and FR-001 is cut (Won't),
+        # so FR-002 now depends on something that was cut.
+        self.assertTrue(any(v["req_id"] == "FR-002" and v["depends_on"] == "FR-001"
+                            for v in session["dependency_violations"]))
+
+    def test_override_on_an_unestimated_requirement_says_it_cannot_take_effect(self):
+        """FR-004 has no cost, so no value can put it in the box. Say so."""
+        out = self.resolve(req_id="FR-004", final_priority="Must")
+        self.assertIn("FR-004", out)
+        self.assertIn("no cost estimate", out.lower())
+        self.assertIsNone(self.agg()["FR-004"]["priority"])
 
     def test_override_survives_a_later_reaggregation(self):
         self.resolve(final_priority="Won't")
@@ -674,6 +720,16 @@ class TestTimeboxReportDetails(BaseMCPTest):
                     {"req_id": "FR-003", "score": "Could"}]))
             out = mod53.run_aggregation(project_name=PROJECT, session_label=other)
         self.assertIn("Must Inflation", out)
+
+    def test_unusable_capacity_is_announced(self):
+        """Only reachable through a session file edited or truncated on disk."""
+        add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
+        prio = mod53._load_prio(PROJECT)
+        prio["sessions"][0]["capacity"] = 0
+        mod53._save_prio(PROJECT, prio)
+        out = self.run_agg()
+        self.assertIn("no usable capacity", out)
+        self.assertIn("Box:", out)   # the box is still shown, so the 0/0 is explained
 
     def test_units_read_correctly_when_the_remainder_is_one(self):
         # FR-003 must be taken BELOW the cut FR-002, otherwise there is no

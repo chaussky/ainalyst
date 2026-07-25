@@ -144,7 +144,10 @@ Algorithm:
 Tactics reference: `references/conflict_resolution.md`
 
 > 📌 If >60% of requirements are Must, that's a sign of Must Inflation.
-> Recommendation: run a follow-up session using the "fixed budget" technique.
+> Recommendation: run a follow-up session with `method="TimeBoxing"` — set the capacity
+> the team can actually deliver, and let the box decide what fits.
+> (A TimeBoxing session does not raise this warning itself: there the Must share
+> follows the capacity, not stakeholder discipline.)
 
 ### Mode D — Resolve a conflict
 

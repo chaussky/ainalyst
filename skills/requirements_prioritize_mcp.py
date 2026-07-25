@@ -3,7 +3,8 @@ BABOK 5.3 — Prioritize Requirements
 MCP tools for prioritizing requirements and designs.
 
 Tools:
-  - start_prioritization_session  — open a session, choose a method, get the requirement list
+  - start_prioritization_session  — open a session, choose a method (MoSCoW / WSJF /
+                                    ImpactEffort / TimeBoxing), get the requirement list
   - add_stakeholder_scores        — add one stakeholder's scores
   - run_aggregation               — aggregate scores, surface conflicts and dependency violations
   - resolve_conflict              — record a conflict resolution decision
@@ -1040,10 +1041,24 @@ def run_aggregation(
 
     session["aggregated"] = aggregated
 
-    # Stakeholder conflicts (for MoSCoW)
+    # Stakeholder conflicts (for MoSCoW and TimeBoxing)
+    # A resolution recorded earlier has to be carried across, because the list is
+    # rebuilt from the raw scores and those still disagree. For the other methods
+    # both halves of a resolution are discarded together and the session stays
+    # self-consistent; TimeBoxing keeps its half (`value_overrides`), so dropping
+    # the record alone would make the final artefact warn about a conflict the BA
+    # settled.
+    prior_resolutions = {c["req_id"]: c.get("resolution")
+                         for c in session.get("conflicts", [])
+                         if c.get("resolved")}
     threshold_spread = {"Strict": 1, "Normal": 2, "Loose": 3}[conflict_threshold]
     conflicts = _detect_stakeholder_conflicts(scores_by_sh, method)
     conflicts = [c for c in conflicts if c["spread"] >= threshold_spread]
+    value_overrides = session.get("value_overrides") or {}
+    for c in conflicts:
+        if c["req_id"] in value_overrides:
+            c["resolved"] = True
+            c["resolution"] = prior_resolutions.get(c["req_id"])
     session["conflicts"] = conflicts
 
     # Dependency violations
@@ -1131,7 +1146,8 @@ def run_aggregation(
             "",
             f"## 🟠 Must Inflation — {int(inflation['must_ratio']*100)}% of requirements at Must",
             "",
-            "Recommendation: re-run the session using a \"fixed budget\" technique.",
+            "Recommendation: re-run the session with method=\"TimeBoxing\" — set the "
+            "capacity the team can actually deliver, and the box decides what fits.",
             "Ask the stakeholders: \"If we could only ship 40% — what would you pick?\"",
         ]
 
@@ -1241,17 +1257,34 @@ def resolve_conflict(
     # recorded as the requirement's value and the box is filled again — otherwise a
     # resolved requirement could read "✂️ cut" and "Must" on the same row, and a
     # priority that the capacity does not support would reach the 5.1 graph.
+    timebox_note = ""
     if session.get("method") == "TimeBoxing":
         session.setdefault("value_overrides", {})[req_id] = final_priority
+        repo_for_refill = _load_repo(project_name)
         session["aggregated"] = _aggregate_timebox(
             session.get("stakeholder_scores", {}),
             session.get("stakeholder_influence", {}),
-            _load_repo(project_name),
+            repo_for_refill,
             session.get("capacity") or 0,
             session["value_overrides"],
         )
-        if req_id in session["aggregated"]:
-            session["aggregated"][req_id]["resolved"] = True
+        entry = session["aggregated"].get(req_id)
+        if entry is not None:
+            entry["resolved"] = True
+        # The refill can flip many priorities at once — a requirement pulled into the
+        # box displaces another — so violations computed against the old fill are
+        # stale, and a stale violation points the BA at the wrong pair.
+        session["dependency_violations"] = _find_dependency_violations(
+            repo_for_refill, session["aggregated"])
+        if entry is None or entry.get("cost") is None:
+            # No value can place a requirement nobody costed. Saying "✅ resolved"
+            # while the box is unchanged would be a confident answer about data the
+            # BA never supplied.
+            timebox_note = (
+                f"\n⚠️ `{req_id}` has no cost estimate in this session, so the box "
+                f"could not be refilled for it — the decision is recorded, but it "
+                f"takes effect only once an estimate is added and `run_aggregation` "
+                f"is called again.")
     elif req_id in session["aggregated"]:
         if isinstance(session["aggregated"][req_id], dict):
             session["aggregated"][req_id]["priority"] = final_priority
@@ -1311,6 +1344,8 @@ def resolve_conflict(
         f"**Rationale:** {rationale}",
         "",
     ]
+    if timebox_note:
+        lines += [timebox_note, ""]
 
     if open_conflicts or open_violations:
         total_open = len(open_conflicts) + len(open_violations)

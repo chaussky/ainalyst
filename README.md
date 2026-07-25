@@ -59,16 +59,17 @@ The BA shows up not with a refusal, but with data and an alternative. The CR is 
 
 ---
 
-### Three prioritization methods for different contexts
+### Four prioritization methods for different contexts
 
 > **For:** Business analysts on projects with competing requirements
 > **Pain:** Prioritization is done "by gut feeling," with no defensible result
 
-A BA is running three projects at once, each with a different context. AInalyst picks the right method for each:
+A BA is running four projects at once, each with a different context. AInalyst picks the right method for each:
 
 - **HR tool, deadline in two weeks** → MoSCoW in 20 minutes. Fast, clear to stakeholders.
 - **Agile team, 60 requirements in the backlog** → WSJF with a numeric score for each requirement, ready to load into Jira.
 - **Workshop with three non-technical directors** → Impact/Effort Matrix. Visual, no formulas, engages everyone in the room.
+- **Everything came back "Must", and the sprint holds 40 points** → Time Boxing/Budgeting. The capacity does the cutting, and the report names what was left out and what it would have cost.
 
 In the third case, AInalyst spots a dependency violation right there in the workshop, while the directors are still in the room, rather than at sprint planning, when changing anything is already painful.
 
