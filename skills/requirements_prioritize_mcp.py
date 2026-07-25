@@ -305,13 +305,129 @@ def _aggregate_impact_effort(scores_by_sh: dict, influence_by_sh: dict,
     return result
 
 
+def _aggregate_timebox(scores_by_sh: dict, influence_by_sh: dict,
+                       repo: dict, capacity: float) -> dict:
+    """
+    Fills a box of fixed capacity — BABOK 10.33.3 .3 Time Boxing/Budgeting.
+
+    scores_by_sh[sh_id][req_id] = {"cost": float|None, "value": "Must"|None}
+
+    Value ranking follows a three-step precedence, recorded per requirement in
+    `value_source`: scores given in THIS session (influence-weighted, through the
+    shared MoSCoW aggregator) → the priority already stored in the 5.1 graph
+    (High/Medium/Low normalised) → an explicit default.
+
+    Requirements nobody costed come back with priority=None. They cannot be placed
+    in a capacity box, and calling them "Won't" would be a conclusion drawn from
+    missing data — the tool says LESS instead (class CH3-D).
+    """
+    # The box is drawn over the WHOLE backlog, not just what was scored: the
+    # deliverable of this technique is "what of the scope fits", and a requirement
+    # the BA forgot to estimate must be named, not silently absent from a document
+    # that goes to stakeholders. The other three methods report only on what was
+    # scored — a deliberate difference, recorded in ADR-093.
+    # Same filter start_prioritization_session applies when listing what to score.
+    all_reqs = {n["id"] for n in repo.get("requirements", [])
+                if n.get("type", "") not in NON_REQUIREMENT_NODE_TYPES
+                and n.get("status") != "deprecated"}
+    # Union with the scored ids, never a replacement: save_prioritization_result
+    # names ids that match no node (a stakeholder scoring the typo "FR-01"), and
+    # dropping them here would silently disable that warning for TimeBoxing.
+    for sh_scores in scores_by_sh.values():
+        all_reqs.update(sh_scores.keys())
+
+    # Cost: a team estimate, averaged WITHOUT influence weighting — the same
+    # treatment WSJF gives Job Size. A size estimate is not an opinion.
+    cost_by_req = {}
+    spread_by_req = {}
+    for req_id in all_reqs:
+        costs = [sh_scores[req_id].get("cost")
+                 for sh_scores in scores_by_sh.values()
+                 if req_id in sh_scores and sh_scores[req_id].get("cost") is not None]
+        if costs:
+            cost_by_req[req_id] = round(sum(costs) / len(costs), 2)
+            spread_by_req[req_id] = round(max(costs) - min(costs), 2)
+        else:
+            cost_by_req[req_id] = None
+            spread_by_req[req_id] = 0.0
+
+    # Value, step 1 — whatever stakeholders scored in THIS session, aggregated by
+    # the SAME MoSCoW code rather than a second copy of the rule (two copies of a
+    # decision rule is how 5.5's dashboard and baseline gate drifted apart).
+    # Projected to the shape _aggregate_moscow expects; stakeholders who gave no
+    # value simply do not appear for that requirement and so cannot dilute the vote.
+    projection = {}
+    for sh_id, sh_scores in scores_by_sh.items():
+        voted = {rid: v["value"] for rid, v in sh_scores.items() if v.get("value")}
+        if voted:
+            projection[sh_id] = voted
+    session_values = _aggregate_moscow(projection, influence_by_sh) if projection else {}
+
+    nodes_by_id = {n["id"]: n for n in repo.get("requirements", [])}
+
+    result = {}
+    for req_id in all_reqs:
+        if req_id in session_values:
+            label, source = session_values[req_id]["priority"], "session"
+        else:
+            stored = str(nodes_by_id.get(req_id, {}).get("priority") or "").strip()
+            if stored in VALUE_ORDER:
+                label, source = stored, "graph"
+            elif stored in GRAPH_PRIORITY_TO_VALUE:
+                label, source = GRAPH_PRIORITY_TO_VALUE[stored], "graph"
+            else:
+                label, source = DEFAULT_VALUE_LABEL, "default"
+        result[req_id] = {
+            "priority": None,
+            "in_box": False,
+            "cost": cost_by_req[req_id],
+            "cost_spread": spread_by_req[req_id],
+            "cumulative": None,
+            "value_label": label,
+            "value_source": source,
+        }
+
+    # Fill order: value desc, then cheapest first, then id. The third key is not
+    # cosmetic — without it a re-run on identical data can produce a different box.
+    order = sorted(
+        (r for r in all_reqs if result[r]["cost"] is not None),
+        key=lambda r: (-VALUE_ORDER.get(result[r]["value_label"], 0),
+                       result[r]["cost"], r),
+    )
+
+    cumulative = 0.0
+    for req_id in order:
+        cost = result[req_id]["cost"]
+        if cumulative + cost <= capacity:
+            cumulative = round(cumulative + cost, 2)
+            result[req_id]["in_box"] = True
+            result[req_id]["cumulative"] = cumulative
+            result[req_id]["priority"] = result[req_id]["value_label"]
+        else:
+            # continue-fill: a requirement that does not fit is skipped and cheaper
+            # ones below it are still considered. Every skip is named in the report.
+            result[req_id]["priority"] = "Won't"
+            result[req_id]["remaining_at_skip"] = round(capacity - cumulative, 2)
+
+    # Mark the cut requirements that cheaper ones jumped over, so the report can
+    # say what the fill order actually cost.
+    taken_below = False
+    for req_id in reversed(order):
+        if result[req_id]["in_box"]:
+            taken_below = True
+        elif taken_below:
+            result[req_id]["skipped_over"] = True
+
+    return result
+
+
 def _find_dependency_violations(repo: dict, priorities: dict) -> list:
     """
     Looks for dependency violations: a requirement with Must/Should depends on a lower-priority requirement.
     Returns a list of {"req_id", "depends_on", "req_priority", "dep_priority"}
     """
     violations = []
-    order = {"Must": 4, "Should": 3, "Could": 2, "Won't": 1}
+    order = VALUE_ORDER
 
     for edge in repo.get("links", []):
         if edge.get("relation") != "depends":
@@ -343,7 +459,7 @@ def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
     if method != "MoSCoW":
         return []  # for WSJF and IE, conflicts surface through aggregation
 
-    order = {"Must": 4, "Should": 3, "Could": 2, "Won't": 1}
+    order = VALUE_ORDER
     conflicts = []
 
     all_reqs = set()
@@ -379,11 +495,16 @@ def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
 
 def _check_must_inflation(priorities: dict) -> dict:
     """Checks for Must Inflation. Returns {"inflated": bool, "must_ratio": float}"""
-    if not priorities:
+    # Entries with no priority (TimeBoxing: nobody costed them, so they were never
+    # placed) must not dilute the denominator — the ratio is about scored items.
+    # No-op for MoSCoW / WSJF / ImpactEffort, where every entry carries a priority.
+    scored = {k: v for k, v in priorities.items()
+              if (v.get("priority") if isinstance(v, dict) else v)}
+    if not scored:
         return {"inflated": False, "must_ratio": 0.0}
-    must_count = sum(1 for v in priorities.values()
+    must_count = sum(1 for v in scored.values()
                      if (v.get("priority") if isinstance(v, dict) else v) == "Must")
-    ratio = must_count / len(priorities)
+    ratio = must_count / len(scored)
     return {"inflated": ratio > MUST_INFLATION_THRESHOLD, "must_ratio": round(ratio, 2)}
 
 

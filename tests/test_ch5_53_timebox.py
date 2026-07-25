@@ -226,5 +226,182 @@ class TestFmtNum(unittest.TestCase):
         self.assertEqual(mod53._fmt_num(None), "None")
 
 
+class TestAggregateTimebox(unittest.TestCase):
+    """Task 3 — the box itself. Pure function, no filesystem."""
+
+    def setUp(self):
+        self.repo = make_timebox_repo()
+
+    def agg(self, scores_by_sh, influence=None, capacity=20):
+        influence = influence or {sh: "Medium" for sh in scores_by_sh}
+        return mod53._aggregate_timebox(scores_by_sh, influence, self.repo, capacity)
+
+    # --- value precedence -------------------------------------------------
+    def test_session_value_wins_over_graph(self):
+        out = self.agg({"SH-1": {"FR-003": {"cost": 1, "value": "Must"}}})
+        self.assertEqual(out["FR-003"]["value_label"], "Must")   # graph says Could
+        self.assertEqual(out["FR-003"]["value_source"], "session")
+
+    def test_graph_priority_used_when_no_session_value(self):
+        out = self.agg({"SH-1": {"FR-002": {"cost": 1, "value": None}}})
+        self.assertEqual(out["FR-002"]["value_label"], "Should")
+        self.assertEqual(out["FR-002"]["value_source"], "graph")
+
+    def test_graph_high_medium_low_are_normalised(self):
+        """7.1 writes High/Medium/Low into the same field 5.3 writes MoSCoW into."""
+        out = self.agg({"SH-1": {"FR-005": {"cost": 1, "value": None}}})
+        self.assertEqual(out["FR-005"]["value_label"], "Must")   # graph says High
+        self.assertEqual(out["FR-005"]["value_source"], "graph")
+
+    def test_default_when_neither_session_nor_graph(self):
+        out = self.agg({"SH-1": {"FR-004": {"cost": 1, "value": None}}})
+        self.assertEqual(out["FR-004"]["value_label"], "Could")
+        self.assertEqual(out["FR-004"]["value_source"], "default")
+
+    def test_session_values_are_influence_weighted(self):
+        """Reuses _aggregate_moscow, so a High-influence voice outweighs a Low one."""
+        out = self.agg(
+            {"SH-HIGH": {"FR-004": {"cost": 1, "value": "Must"}},
+             "SH-LOW": {"FR-004": {"cost": 1, "value": "Won't"}}},
+            influence={"SH-HIGH": "High", "SH-LOW": "Low"})
+        self.assertEqual(out["FR-004"]["value_source"], "session")
+        self.assertIn(out["FR-004"]["value_label"], ("Must", "Should"))
+
+    def test_stakeholder_without_value_does_not_dilute_the_vote(self):
+        out = self.agg(
+            {"SH-1": {"FR-004": {"cost": 1, "value": "Must"}},
+             "DEV-TEAM": {"FR-004": {"cost": 8, "value": None}}},
+            influence={"SH-1": "Medium", "DEV-TEAM": "High"})
+        self.assertEqual(out["FR-004"]["value_label"], "Must")
+
+    # --- cost -------------------------------------------------------------
+    def test_cost_is_averaged_without_influence_weighting(self):
+        out = self.agg(
+            {"SH-HIGH": {"FR-001": {"cost": 10, "value": None}},
+             "SH-LOW": {"FR-001": {"cost": 2, "value": None}}},
+            influence={"SH-HIGH": "High", "SH-LOW": "Low"})
+        self.assertEqual(out["FR-001"]["cost"], 6.0)       # plain mean, not 8.0
+        self.assertEqual(out["FR-001"]["cost_spread"], 8.0)
+
+    # --- fill -------------------------------------------------------------
+    def test_fill_order_is_value_then_cheapest_then_id(self):
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 5, "value": "Must"},
+            "FR-002": {"cost": 3, "value": "Must"},
+            "FR-003": {"cost": 1, "value": "Could"},
+        }}, capacity=100)
+        placed = sorted((d["cumulative"], r) for r, d in out.items()
+                        if d["cumulative"] is not None)
+        self.assertEqual([r for _, r in placed], ["FR-002", "FR-001", "FR-003"])
+
+    def test_cost_exactly_equal_to_remaining_capacity_fits(self):
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 6, "value": "Must"},
+            "FR-002": {"cost": 4, "value": "Should"},
+        }}, capacity=10)
+        self.assertTrue(out["FR-001"]["in_box"])
+        self.assertTrue(out["FR-002"]["in_box"])
+
+    def test_continue_fill_takes_a_cheaper_item_below_a_skipped_one(self):
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 9, "value": "Must"},
+            "FR-002": {"cost": 8, "value": "Should"},
+            "FR-003": {"cost": 1, "value": "Could"},
+        }}, capacity=10)
+        self.assertTrue(out["FR-001"]["in_box"])
+        self.assertFalse(out["FR-002"]["in_box"])   # 9 + 8 > 10
+        self.assertTrue(out["FR-003"]["in_box"])    # 9 + 1 == 10
+        self.assertTrue(out["FR-002"].get("skipped_over"))
+        self.assertEqual(out["FR-002"]["remaining_at_skip"], 1.0)
+
+    def test_cut_requirement_becomes_wont(self):
+        out = self.agg({"SH-1": {
+            "FR-001": {"cost": 20, "value": "Must"},
+            "FR-002": {"cost": 20, "value": "Should"},
+        }}, capacity=20)
+        self.assertEqual(out["FR-002"]["priority"], "Won't")
+
+    def test_requirement_in_box_keeps_its_own_value_label(self):
+        """D2: the box line is the Won't boundary; it does not promote everything."""
+        out = self.agg({"SH-1": {
+            "FR-003": {"cost": 1, "value": "Could"},
+        }}, capacity=20)
+        self.assertTrue(out["FR-003"]["in_box"])
+        self.assertEqual(out["FR-003"]["priority"], "Could")
+
+    # --- population and unestimated ---------------------------------------
+    def test_box_covers_the_whole_backlog_not_just_scored_items(self):
+        """The deliverable is 'what of the scope fits', so unscored items appear."""
+        out = self.agg({"SH-1": {"FR-001": {"cost": 5, "value": "Must"}}},
+                       capacity=20)
+        self.assertEqual(set(out), {"FR-001", "FR-002", "FR-003", "FR-004", "FR-005"})
+
+    def test_unestimated_requirement_gets_no_priority(self):
+        """Marking it Won't would be a conclusion drawn from missing data (CH3-D).
+
+        FR-004 is reachable ONLY through the repo population: add_stakeholder_scores
+        requires a cost, so no scored entry can ever carry cost=None. Feeding the
+        aggregator {"cost": None} directly would test a shape the producer never
+        writes.
+        """
+        out = self.agg({"SH-1": {"FR-001": {"cost": 5, "value": "Must"}}},
+                       capacity=20)
+        self.assertIsNone(out["FR-004"]["priority"])
+        self.assertFalse(out["FR-004"]["in_box"])
+        self.assertIsNone(out["FR-004"]["cost"])
+
+    def test_scored_id_absent_from_the_graph_still_surfaces(self):
+        """save_prioritization_result names typo'd ids; the union keeps that alive."""
+        out = self.agg({"SH-1": {"FR-01": {"cost": 2, "value": "Must"}}}, capacity=20)
+        self.assertIn("FR-01", out)
+        self.assertTrue(out["FR-01"]["in_box"])
+
+    def test_deprecated_requirements_are_left_out(self):
+        self.repo["requirements"][3]["status"] = "deprecated"   # FR-004
+        out = self.agg({"SH-1": {"FR-001": {"cost": 5, "value": "Must"}}},
+                       capacity=20)
+        self.assertNotIn("FR-004", out)
+
+    def test_non_requirement_nodes_are_left_out(self):
+        self.repo["requirements"].append(
+            {"id": "RISK-001", "type": "risk", "title": "Vendor delay",
+             "version": "1.0", "status": "confirmed"})
+        out = self.agg({"SH-1": {"FR-001": {"cost": 5, "value": "Must"}}},
+                       capacity=20)
+        self.assertNotIn("RISK-001", out)
+
+    def test_determinism_across_runs(self):
+        scores = {"SH-1": {
+            "FR-001": {"cost": 5, "value": "Must"},
+            "FR-002": {"cost": 5, "value": "Must"},
+            "FR-003": {"cost": 5, "value": "Must"},
+        }}
+        first = self.agg(scores, capacity=10)
+        second = self.agg(scores, capacity=10)
+        self.assertEqual({r: d["in_box"] for r, d in first.items()},
+                         {r: d["in_box"] for r, d in second.items()})
+
+
+class TestMustInflationDenominator(unittest.TestCase):
+    """Task 3 — unplaced requirements must not dilute the Must ratio."""
+
+    def test_entries_without_priority_are_excluded(self):
+        result = mod53._check_must_inflation({
+            "FR-001": {"priority": "Must"},
+            "FR-002": {"priority": "Must"},
+            "FR-003": {"priority": "Could"},
+            "FR-004": {"priority": None},
+        })
+        self.assertEqual(result["must_ratio"], 0.67)
+        self.assertTrue(result["inflated"])
+
+    def test_existing_methods_unaffected(self):
+        result = mod53._check_must_inflation({
+            "FR-001": {"priority": "Must"},
+            "FR-002": {"priority": "Could"},
+        })
+        self.assertEqual(result["must_ratio"], 0.5)
+
+
 if __name__ == "__main__":
     unittest.main()
