@@ -61,11 +61,32 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         self.assertIn("preset Minimum", result)
 
     def test_full_preset_flags_attributes_nobody_checked_before(self):
+        """Asserted on the ISSUE LINE, not on the whole report: `complexity` and
+        `reuse_scope` also appear in the "Audited attributes" header whenever a Full
+        preset is selected, so asserting their mere presence stayed green even with
+        gap detection disabled entirely."""
         _write_repo(PROJECT, [dict(BARE_REQ, owner="PO", source="Interview")])
         _write_plan(PROJECT, {"attributes": {"preset": "Full", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertIn("complexity", result)
-        self.assertIn("reuse_scope", result)
+        self.assertIn(
+            "Attributes not filled in: priority, stability, reuse_candidate, "
+            "reuse_scope, complexity", result)
+
+    def test_healthy_block_does_not_claim_an_owner_it_never_checked(self):
+        """Was: "N requirement(s) in good shape — current, have an owner, stable."
+        printed unconditionally. Under a Minimum preset the owner is never examined,
+        so a requirement with no owner landed in 🟢 and the document asserted it had
+        one. A confident false claim inside the same page that chose not to look."""
+        _write_repo(PROJECT, [dict(BARE_REQ, source="Interview 21.03")])
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
+        result = check_requirements_health(PROJECT)
+        self.assertIn("🟢 Healthy requirements", result)
+        self.assertNotIn("have an owner", result)
+
+    def test_healthy_block_wording_is_untouched_without_a_plan(self):
+        _write_repo(PROJECT, [dict(BARE_REQ, owner="PO")])
+        result = check_requirements_health(PROJECT)
+        self.assertIn("current, have an owner, stable", result)
 
     def test_missing_attributes_are_one_line_not_one_line_each(self):
         """A Full preset on a bare requirement must not push the real 🔴 rows out of
@@ -165,6 +186,21 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         result = find_reusable_requirements(PROJECT)
         self.assertIn("regulatory", result)
         self.assertIn("business rules", result)
+
+    def test_no_advice_to_lower_a_scope_that_is_already_the_lowest(self):
+        """Telling the BA to lower the scope to `initiative` when `initiative` is
+        already in effect is advice that cannot be followed."""
+        _write_repo(PROJECT, [])
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("No suitable candidates", result)
+        self.assertNotIn("Lowering min_reuse_scope", result)
+
+    def test_advice_to_lower_the_scope_appears_when_it_is_actionable(self):
+        _write_repo(PROJECT, [])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "enterprise",
+                                        "repository": "", "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("Lowering min_reuse_scope", result)
 
     def test_empty_result_advice_names_the_planned_repository(self):
         _write_repo(PROJECT, [])

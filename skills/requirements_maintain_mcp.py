@@ -43,6 +43,10 @@ VOLATILITY_WARNING_THRESHOLD = 3   # version 1.3+
 VOLATILITY_CRITICAL_THRESHOLD = 4  # version 1.4+
 
 
+# Written once, matched nowhere else: the missing names travel as data on req_info.
+_ATTR_GAP_PREFIX = "🟡 Attributes not filled in:"
+
+
 def _attribute_missing(req: dict, attr: str) -> bool:
     """Is a planned attribute (BABOK 3.4 element .6) unfilled on this requirement?
 
@@ -595,7 +599,8 @@ def check_requirements_health(
       🟡 Medium volatility (version 1.2-1.3) — worth checking
       🟡 Stale (not updated for >60 days) — possibly outdated
       🟡 Long in draft (>30 days) — confirm or freeze
-      🟡 No owner — nobody accountable for keeping it current
+      🟡 Unfilled attributes — the set planned in 3.4 (`attributes_preset`).
+         Without a 3.4 plan this is the single check "No owner", as before.
       🟢 Healthy requirements — all good
 
     Args:
@@ -680,7 +685,7 @@ def check_requirements_health(
         missing = [a for a in audited if _attribute_missing(req, a)]
         if missing:
             if resolved:
-                issues.append(f"🟡 Attributes not filled in: {', '.join(missing)}")
+                issues.append(f"{_ATTR_GAP_PREFIX} {', '.join(missing)}")
             else:
                 # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
                 issues.append("🟡 No owner")
@@ -693,6 +698,11 @@ def check_requirements_health(
             "version": req.get("version", "1.0"),
             "owner": req.get("owner", "—"),
             "issues": issues,
+            # Carried as data, not recovered by re-parsing the rendered issue line.
+            # A re-parse is safe only while no attribute name contains the separators,
+            # and a reworded issue string would silently empty the advice block —
+            # reinstating the very self-contradiction this audit was fixed to avoid.
+            "missing_attributes": missing,
         }
 
         if any("🔴" in i for i in issues):
@@ -765,10 +775,20 @@ def check_requirements_health(
         lines.append("")
 
     if healthy:
+        # The legacy sentence names `owner` outright. Under a plan that does not audit
+        # it, nothing here ever looked at the owner, so claiming every healthy
+        # requirement has one is a confident false claim on the same page that chose
+        # not to check. Without a plan the wording is untouched.
+        healthy_summary = (
+            f"**{len(healthy)} requirement(s)** in good shape — current, stable, and "
+            f"complete on every audited attribute."
+            if resolved else
+            f"**{len(healthy)} requirement(s)** in good shape — current, have an owner, stable."
+        )
         lines += [
             "## 🟢 Healthy requirements",
             "",
-            f"**{len(healthy)} requirement(s)** in good shape — current, have an owner, stable.",
+            healthy_summary,
             "",
         ]
 
@@ -785,21 +805,15 @@ def check_requirements_health(
             f"update via `update_requirement` or `deprecate_requirements`."
         )
     if warnings:
-        attr_gaps = [r for r in warnings
-                     if any(i.startswith("🟡 Attributes not filled in:") or i == "🟡 No owner"
-                            for i in r["issues"])]
+        attr_gaps = [r for r in warnings if r["missing_attributes"]]
         stale = sum(1 for r in warnings if "days" in " ".join(r["issues"]))
         if attr_gaps:
             if resolved:
                 # The counter used to look for the substring "owner", so a project on a
                 # preset without it saw 🟡 rows and no advice about them at all — a
                 # document contradicting itself inside one page.
-                missing_names = sorted({
-                    name.strip()
-                    for r in attr_gaps for issue in r["issues"]
-                    if issue.startswith("🟡 Attributes not filled in:")
-                    for name in issue.split(":", 1)[1].split(",")
-                })
+                missing_names = sorted({name for r in attr_gaps
+                                        for name in r["missing_attributes"]})
                 lines.append(
                     f"2. 🟡 **{len(attr_gaps)} with unfilled attributes** "
                     f"({', '.join(missing_names)}) — fill them in via `update_requirement`.")
@@ -1060,7 +1074,10 @@ def find_reusable_requirements(
             "",
             "Try:",
             "- Removing the type filter",
-            "- Lowering min_reuse_scope to 'initiative'",
+            # Only when it can actually be followed: `initiative` IS the lowest level,
+            # so advising a BA already at it to lower to it is an unfollowable step.
+            *(["- Lowering min_reuse_scope to 'initiative'"]
+              if effective_scope != "initiative" else []),
             "- Flagging requirements via `update_requirement(reuse_candidate='true')`",
         ]
         if repository:
