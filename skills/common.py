@@ -828,6 +828,164 @@ def update_stakeholder_registry_file(project_id: str, incoming: list, source: st
     return result
 
 
+# ---------------------------------------------------------------------------
+# 3.4 Information Management plan — shared reader (B3-3)
+# ---------------------------------------------------------------------------
+#
+# Chapter 3 writes {pid}_ba_plan.json and sits in phase.py BASE_SERVER; chapters 4
+# and 5 load in other phases and must NOT import the chapter-3 MCP module to read
+# it. Same reason the living stakeholder registry lives here.
+#
+# BABOK 3.4.1 (printed p. 43) names the consumers of the Information Management
+# Approach itself: 4.4, 5.1, 5.2, 7.4. Wired here: 4.4, and 5.2 (twice).
+
+BA_PLAN_SUFFIX = "ba_plan.json"
+
+# Element .2 — how much breadth/depth an audience gets (printed p. 44).
+ABSTRACTION_LEVELS = ("Summary", "Standard", "Detailed")
+
+# Element .6 — attributes the PLATFORM can actually store on a requirement node.
+# Verified against update_requirement (5.2) and the node creators (5.1 / 7.1).
+# BABOK also lists author, risks and urgency (p. 45-46); this model has no field
+# for them, so planning them is refused rather than accepted and never checked.
+PLANNABLE_ATTRIBUTES = (
+    "status", "version", "source", "priority", "owner",
+    "stability", "complexity", "reuse_candidate", "reuse_scope", "last_reviewed",
+)
+
+# Mirrors the table in skills/requirements_maintain/SKILL.md ("Always" / "Standard+"
+# / "Full") — that prose existed with nothing selecting it. `last_reviewed` is in no
+# preset on purpose: the platform stamps it on every update, so it would flag every
+# requirement that has simply not been edited yet.
+ATTRIBUTE_PRESETS = {
+    "Minimum":  ("status", "version", "source"),
+    "Standard": ("status", "version", "source", "priority", "owner",
+                 "stability", "reuse_candidate"),
+    "Full":     ("status", "version", "source", "priority", "owner",
+                 "stability", "reuse_candidate", "reuse_scope", "complexity"),
+}
+
+# Element .4 — categories BABOK calls long-term reuse candidates (printed p. 44).
+# The list is open ("may also be reused when describing common features"), so an
+# unlisted category is warned about, never refused.
+REUSE_CATEGORIES = (
+    "regulatory", "contractual", "quality standards", "service level agreements",
+    "business rules", "business processes", "products",
+)
+
+REUSE_SCOPES = ("initiative", "program", "division", "enterprise")
+
+
+def ba_plan_path(project_id: str) -> str:
+    """Path of the chapter-3 BA plan. Mirrors planning_mcp._plan_path exactly.
+
+    A consumer that guesses this wrong reads nothing and says nothing — the failure
+    mode that hit 6.3, 6.4, 7.1 and 7.6, each time on a different axis (file name,
+    container folder, field name). A test pins it against the producer.
+    """
+    safe = normalize_project_id(project_id)
+    return data_path(project_id, f"{safe}_{BA_PLAN_SUFFIX}")
+
+
+def load_ba_plan(project_id: str):
+    """Reads the BA plan for a consumer in another chapter.
+
+    Returns `(plan, note)`:
+      - no file            -> (None, "")        the project simply never planned
+      - unreadable file    -> (None, warning)   the caller must SHOW the warning
+      - readable JSON dict -> (plan, "")
+
+    Two values rather than one because "never planned" and "planned but the file is
+    damaged" are different answers to the BA, and a consumer that conflates them
+    would silently drop a plan the BA did write. NOTE: the tuple is always truthy —
+    unpack it, never test it directly.
+    """
+    path = ba_plan_path(project_id)
+    if not os.path.exists(path):
+        return None, ""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+        loaded = None
+    if not isinstance(loaded, dict):
+        return None, (f"⚠️ The 3.4 information management plan exists but could not be "
+                      f"read (`{path}`) — continuing without it.")
+    return loaded, ""
+
+
+def info_management_section(plan) -> dict:
+    """The `information_management` section, or {} for any shape that is not a dict."""
+    if not isinstance(plan, dict):
+        return {}
+    section = plan.get("information_management")
+    return section if isinstance(section, dict) else {}
+
+
+def planned_abstraction_level(plan, *audiences):
+    """Element .2 — the planned detail level for an audience, or None.
+
+    Accepts several identifiers and returns the first hit. 4.4 knows the archetype
+    ("Business Sponsor"); the stakeholder map knows the job title ("Head of Retail
+    Lending"). Matching on one of the two alone could not succeed by construction —
+    the same defect that made check_communication_schedule claim "no communication
+    on record" about someone briefed days earlier.
+    """
+    rows = info_management_section(plan).get("abstraction_levels")
+    if not isinstance(rows, list):
+        return None
+    for audience in audiences:
+        key = reg_norm(audience)
+        if not key:
+            continue
+        for row in rows:
+            if isinstance(row, dict) and reg_norm(row.get("audience")) == key:
+                return row
+    return None
+
+
+def planned_reuse(plan):
+    """Element .4 — {target_scope, repository, categories}, or None if nothing planned."""
+    reuse = info_management_section(plan).get("reuse")
+    if not isinstance(reuse, dict):
+        return None
+    categories = [c for c in (reuse.get("categories") or []) if isinstance(c, str)]
+    scope = reuse.get("target_scope")
+    result = {
+        "target_scope": scope if scope in REUSE_SCOPES else "",
+        "repository": str(reuse.get("repository") or ""),
+        "categories": categories,
+    }
+    return result if any(result.values()) else None
+
+
+def planned_attribute_set(plan):
+    """Element .6 — (attributes, source_label), or None if nothing planned.
+
+    The single place where a preset is expanded. The expansion is deliberately NOT
+    stored in the plan file: two copies of one rule is exactly how the 5.5 dashboard
+    and the baseline gate drifted apart, and a stored expansion would also go stale
+    the moment the preset table changes.
+    """
+    attrs_plan = info_management_section(plan).get("attributes")
+    if not isinstance(attrs_plan, dict):
+        return None
+    preset = attrs_plan.get("preset") or ""
+    additional = [a for a in (attrs_plan.get("additional") or [])
+                  if isinstance(a, str) and a in PLANNABLE_ATTRIBUTES]
+    base = ATTRIBUTE_PRESETS.get(preset, ())
+    merged = tuple(dict.fromkeys(list(base) + additional))
+    if not merged:
+        return None
+    if preset and additional:
+        label = f"3.4 plan, preset {preset} + {len(additional)} added"
+    elif preset:
+        label = f"3.4 plan, preset {preset}"
+    else:
+        label = "3.4 plan, explicit list"
+    return merged, label
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 
