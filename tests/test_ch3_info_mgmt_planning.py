@@ -237,6 +237,35 @@ class TestMergeOnRerun(BaseMCPTest):
         self.assertIn("✅", result)
         self.assertEqual(_section("b33_wrongshape")["storage_tools"], ["Confluence"])
 
+    def test_wrong_shape_NESTED_values_do_not_kill_the_tool_either(self):
+        """The first guard stopped at the section itself. One level down every merge
+        branch still called .get()/[] on whatever was stored, so the dead end survived:
+        3.4 is the only tool that can overwrite a damaged section, and it was the tool
+        that died. `storage_tools` as a bare string was worse than a crash — it was
+        ACCEPTED and echoed one entry per character."""
+        broken_sections = (
+            {"storage_tools": ["Jira"], "reuse": "oops"},
+            {"storage_tools": ["Jira"], "reuse": ["oops"]},
+            {"storage_tools": ["Jira"], "attributes": "oops"},
+            {"storage_tools": ["Jira"], "abstraction_levels": ["oops"]},
+            {"storage_tools": ["Jira"], "traceability_level": ["High"]},
+            {"storage_tools": "Confluence"},
+        )
+        for i, section in enumerate(broken_sections):
+            pid = f"b33_nested{i}"
+            with self.subTest(section=section):
+                path = _plan_path(pid)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump({"project": pid, "information_management": section}, f)
+                result = plan_information_management(pid, '["Confluence"]')
+                self.assertIn("✅", result)
+                self.assertNotIn("C, o, n", result)
+                self.assertEqual(_section(pid)["storage_tools"], ["Confluence"])
+                with patch("skills.planning_mcp.save_artifact") as mock_sa:
+                    mock_sa.return_value = "ok"
+                    self.assertNotIn("❌", save_ba_plan(pid))
+
     def test_report_survives_a_section_of_the_wrong_shape(self):
         """Pre-existing sibling of the above, in the renderer."""
         path = _plan_path("b33_wrongshape2")

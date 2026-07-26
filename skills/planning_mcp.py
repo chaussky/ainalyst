@@ -541,6 +541,41 @@ def plan_ba_governance(
 _ARCHETYPE_KEYS = {reg_norm(a) for a in _AUDIENCE_ARCHETYPES}
 
 
+def _sane_info_section(section) -> dict:
+    """Coerce a stored 3.4 section into the shapes the merge code and renderer assume.
+
+    Guarding only the section itself was not enough: one level down, every branch
+    called `.get()` / `.values()` / `[...]` on whatever was on disk, so a file that is
+    valid JSON with `"reuse": "oops"` still killed this tool — the only tool that can
+    overwrite a damaged section. A bare string where a list belongs is worse than a
+    crash: `"storage_tools": "Confluence"` was accepted and echoed one entry per
+    CHARACTER. Unusable values are dropped, so the merge falls back to "not planned"
+    and the BA can simply plan it again.
+    """
+    if not isinstance(section, dict):
+        return {}
+    out = dict(section)
+    for key in ("storage_tools", "artifact_types"):
+        value = out.get(key)
+        if isinstance(value, list):
+            out[key] = [s for s in value if isinstance(s, str)]
+        else:
+            out.pop(key, None)
+    rows = out.get("abstraction_levels")
+    if isinstance(rows, list):
+        out["abstraction_levels"] = [r for r in rows if isinstance(r, dict)]
+    else:
+        out.pop("abstraction_levels", None)
+    for key in ("reuse", "attributes"):
+        if not isinstance(out.get(key), dict):
+            out.pop(key, None)
+    for key in ("access_rules", "ba_notes", "traceability_level",
+                "traceability_description"):
+        if key in out and not isinstance(out[key], str):
+            out.pop(key, None)
+    return out
+
+
 def _merge_text(new: str, previous, default: str = "") -> str:
     """Merge rule for a free-text field: "" keeps, "-" clears, anything else sets."""
     if new == "":
@@ -608,12 +643,11 @@ def plan_information_management(
         additional_attributes_json: JSON list of attributes added on top of the preset.
     """
     plan = _load_plan(project_id)
-    # isinstance, not `or {}`: a file that is valid JSON with a list or a string where
-    # the section belongs passes read_json_artifact, and every merge branch below then
-    # calls .get() on it. This tool is the only one that can overwrite a damaged
-    # section, so it must not be the tool that dies on it.
-    previous = plan.get("information_management")
-    previous = previous if isinstance(previous, dict) else {}
+    # Coerced, not just type-checked at the top: a file that is valid JSON with the
+    # wrong shape anywhere inside the section passes read_json_artifact, and every
+    # merge branch below reads it. This tool is the only one that can overwrite a
+    # damaged section, so it must not be the tool that dies on it.
+    previous = _sane_info_section(plan.get("information_management"))
     warnings = []
     kept = []
 
@@ -1039,8 +1073,10 @@ def save_ba_plan(
         md_lines += _notes_block(governance)
 
     # Pre-existing sibling of the writer's guard: a section of the wrong shape reached
-    # .get() here too. The renderer skips it rather than failing the whole report.
-    if info_mgmt and isinstance(info_mgmt, dict):
+    # .get() here too, at every nesting level. Same coercion as the writer, so the
+    # renderer skips unusable values rather than failing the whole report.
+    info_mgmt = _sane_info_section(info_mgmt)
+    if info_mgmt:
         md_lines += [
             "## 3.4 Information Management",
             "",
@@ -1130,11 +1166,14 @@ def save_ba_plan(
         f"  {artifact_result}\n\n"
         f"**Next step:**\n"
         f"• Chapter 4.1 — prepare for elicitation\n\n"
-        f"ℹ️ The plan is a reference document: later chapters do not read it "
-        f"automatically.\n"
+        f"ℹ️ What is read automatically, and what is not:\n"
         f"  • Stakeholders from 3.2 are ALREADY seeded into the living registry that "
         f"4.2 maintains and 7.4 reads — 4.2 adds to it as interviews reveal more\n"
-        f"  • The governance rules from 3.3 are applied by you when approving in 5.5\n"
+        f"  • Section 3.4 IS read: 4.4 states the planned level of detail in every "
+        f"communication package, 5.2 ranks reuse candidates by the planned scope and "
+        f"audits exactly the planned attribute set\n"
+        f"  • The rest is a reference document — the governance rules from 3.3 are "
+        f"applied by you when approving in 5.5\n"
     )
 
 

@@ -184,7 +184,7 @@ The BA determines where and how project requirements and artifacts are stored, w
 
 **Confluence integration.** Set up once via environment variables. After that, every requirement update in Task 5.2 automatically syncs to Confluence. The BA doesn't have to think about it anymore.
 
-**Three more decisions that other chapters act on, not just record.** The BA can also plan the level of detail each audience gets, the scope and repository for reuse, and which requirement attributes this project maintains (Minimum / Standard / Full). These aren't filed away: Task 4.4 states the planned level of detail in every communication package it builds, and Task 5.2 ranks reuse candidates by the planned scope and audits exactly the planned attribute set. A project that skips this planning has nothing read from it — 4.4 and 5.2 fall back to the behaviour they always had.
+**Three more decisions that other chapters act on, not just record.** The BA can also plan the level of detail each audience gets, the scope and repository for reuse, and which requirement attributes this project maintains (Minimum / Standard / Full). These aren't filed away: Task 4.4 states the planned level of detail in every communication package it builds, and Task 5.2 ranks reuse candidates by the planned scope and audits exactly the planned attribute set. A project that skips this planning has nothing read from it: 4.4 stays silent about detail levels, and 5.2 starts its reuse search at `initiative` and audits `owner` only. (Two repairs that shipped with the feature do reach every project, plan or no plan: the health report's action list is numbered from 1 instead of opening at 2, and the reuse report no longer calls its ranking bonus a minimum.)
 
 ### Value for the BA
 

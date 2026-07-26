@@ -18,6 +18,7 @@ from skills.common import (
     save_artifact, logger, parse_json_dict, parse_json_dict_list,
     pick_field, unrecognized_records_error,
     info_management_section, load_ba_plan, planned_abstraction_level,
+    ABSTRACTION_LEVELS, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Communicate")
@@ -130,10 +131,23 @@ def prepare_communication_package(
     level_row = planned_abstraction_level(
         plan, audience_role, profile.get("stakeholder_role", ""))
     planned_rows = info_management_section(plan).get("abstraction_levels")
+    planned_rows = planned_rows if isinstance(planned_rows, list) else []
     # str() because the value is whatever was stored: a numeric audience used to break
     # the join that renders this list.
     planned_audiences = [str(r.get("audience") or "") for r in planned_rows
-                         if isinstance(r, dict)] if isinstance(planned_rows, list) else []
+                         if isinstance(r, dict)]
+    # A row for THIS audience whose level the platform cannot act on: the reader drops
+    # it, so without this distinction the note said the audience was both unplanned and
+    # planned in one sentence, and the BA could not tell which field to repair.
+    unusable_level = None
+    if not level_row:
+        for row in planned_rows:
+            if not isinstance(row, dict):
+                continue
+            if reg_norm(row.get("audience")) in {
+                    reg_norm(audience_role), reg_norm(profile.get("stakeholder_role", ""))} - {""}:
+                unusable_level = row.get("level")
+                break
 
     # Icons for attitude
     attitude = profile.get("attitude", "Neutral")
@@ -256,6 +270,11 @@ def prepare_communication_package(
     notes = []
     if plan_note:
         notes.append(plan_note)
+    elif unusable_level is not None:
+        notes.append(
+            f"⚠️ 3.4 does plan a detail level for `{audience_role}`, but its value "
+            f"`{unusable_level}` is not one of {', '.join(ABSTRACTION_LEVELS)} — fix it "
+            f"in `plan_information_management(abstraction_levels_json=...)`.")
     elif planned_audiences and not level_row:
         # Only when the project actually planned detail levels for SOMEONE. A project
         # that planned storage but no levels has made no decision to be reminded of.

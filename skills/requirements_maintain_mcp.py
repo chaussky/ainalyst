@@ -995,6 +995,12 @@ def find_reusable_requirements(
         scope_idx = scope_order.index(req_scope) if req_scope in scope_order else 0
         scope_bonus = 1 if scope_idx >= min_scope_idx else 0
         score += scope_bonus
+        if not scope_bonus:
+            # Named, because the bonus moves the printed score but deliberately not the
+            # section: without this line a confirmed and a potential candidate could
+            # show the same score with nothing in the document explaining why.
+            score_notes.append(
+                f"🟡 Below the planned reuse scope ({effective_scope}) — one point less")
 
         req_info = {
             "id": req.get("id"),

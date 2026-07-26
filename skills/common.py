@@ -873,6 +873,9 @@ REUSE_CATEGORIES = (
     "business rules", "business processes", "products",
 )
 
+# ORDER IS LOAD-BEARING: narrow -> wide. 5.2 calls .index() on this tuple and compares
+# the positions, so reordering it would silently invert the reuse ranking. Pinned by
+# tests/test_ch5_52_info_mgmt_plan.py::test_the_scope_bonus_still_shows_up_in_the_score.
 REUSE_SCOPES = ("initiative", "program", "division", "enterprise")
 
 

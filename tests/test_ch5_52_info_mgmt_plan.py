@@ -83,8 +83,11 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
             "",
             "1. 🟡 **1 without an owner** — assign an owner via `update_requirement`.",
         ])
-        self.assertTrue(result.startswith(expected),
-                        f"plan-less report drifted:\n{result[:len(expected) + 200]}")
+        # Compared over the WHOLE report, not as a prefix: a prefix check let a line
+        # appended after the action list escape. The Confluence hook note is the one
+        # environment-dependent tail, so it is stripped rather than pinned.
+        body = result.split("\n\n💾 Saved locally.")[0]
+        self.assertEqual(body, expected)
 
     def test_minimum_preset_stops_demanding_an_owner(self):
         """Asserted on the DEMAND, not on the word: the 🟡 table header and the
@@ -286,15 +289,27 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
     def test_the_scope_bonus_still_shows_up_in_the_score(self):
         """"Raises the ranking" must remain TRUE, not become vacuous: a requirement at
         or above the target scores one point more than the same requirement below it."""
-        _write_repo(PROJECT, [dict(self.UNTAGGED, id="SR-002", reuse_scope="enterprise")])
+        # `approved` so the requirement lands in the confirmed section, which is the
+        # only one that prints the numeric score this test compares.
+        scored = dict(self.UNTAGGED, id="SR-002", status="approved")
+        _write_repo(PROJECT, [dict(scored, reuse_scope="enterprise")])
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         at_target = find_reusable_requirements(PROJECT)
-        _write_repo(PROJECT, [dict(self.UNTAGGED, id="SR-002", reuse_scope="initiative")])
+        _write_repo(PROJECT, [dict(scored, reuse_scope="initiative")])
         below_target = find_reusable_requirements(PROJECT)
-        self.assertNotEqual(
-            [ln for ln in at_target.splitlines() if "SR-002" in ln],
-            [ln for ln in below_target.splitlines() if "SR-002" in ln])
+
+        def _score(report):
+            import re
+            m = re.search(r"\((\d+)/10\)", report)
+            return int(m.group(1)) if m else None
+
+        # assertNotEqual was not enough: it stayed green when the comparison was
+        # inverted to reward requirements BELOW the target, so it could not pin the
+        # DIRECTION — nor the narrow-to-wide order of REUSE_SCOPES that it rests on.
+        self.assertGreater(_score(at_target), _score(below_target))
+        self.assertIn("Below the planned reuse scope", below_target)
+        self.assertNotIn("Below the planned reuse scope", at_target)
 
     def test_empty_result_advice_does_not_offer_a_scope_that_filters_nothing(self):
         """"Lowering min_reuse_scope" cannot change an empty result once the scope no
