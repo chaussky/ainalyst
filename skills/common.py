@@ -949,7 +949,13 @@ def planned_reuse(plan):
     reuse = info_management_section(plan).get("reuse")
     if not isinstance(reuse, dict):
         return None
-    categories = [c for c in (reuse.get("categories") or []) if isinstance(c, str)]
+    # `isinstance(..., list)` before the comprehension, not `or []`: a bare string
+    # where a list was meant is an ordinary LLM mistake, and iterating it yields one
+    # entry per CHARACTER — invented data the reuse report would then present as
+    # planned categories. A non-iterable value raised outright.
+    raw_categories = reuse.get("categories")
+    categories = ([c for c in raw_categories if isinstance(c, str)]
+                  if isinstance(raw_categories, list) else [])
     scope = reuse.get("target_scope")
     result = {
         "target_scope": scope if scope in REUSE_SCOPES else "",
@@ -970,9 +976,14 @@ def planned_attribute_set(plan):
     attrs_plan = info_management_section(plan).get("attributes")
     if not isinstance(attrs_plan, dict):
         return None
-    preset = attrs_plan.get("preset") or ""
-    additional = [a for a in (attrs_plan.get("additional") or [])
-                  if isinstance(a, str) and a in PLANNABLE_ATTRIBUTES]
+    # A non-string preset is not just wrong, it is fatal: ATTRIBUTE_PRESETS.get() with
+    # a list raises "unhashable type". Same guard reasoning as `categories` above.
+    raw_preset = attrs_plan.get("preset")
+    preset = raw_preset if isinstance(raw_preset, str) else ""
+    raw_additional = attrs_plan.get("additional")
+    additional = ([a for a in raw_additional
+                   if isinstance(a, str) and a in PLANNABLE_ATTRIBUTES]
+                  if isinstance(raw_additional, list) else [])
     base = ATTRIBUTE_PRESETS.get(preset, ())
     merged = tuple(dict.fromkeys(list(base) + additional))
     if not merged:

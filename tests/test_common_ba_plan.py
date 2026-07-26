@@ -142,6 +142,42 @@ class TestBaPlanReader(BaseMCPTest):
         attrs, _ = planned_attribute_set(plan)
         self.assertEqual(attrs, ATTRIBUTE_PRESETS["Minimum"])
 
+    def test_string_categories_are_not_iterated_as_characters(self):
+        """A string where a list was meant is an ORDINARY LLM mistake. Iterating it
+        yielded ['r','e','g','u','l','a','t','o','r','y'] — invented data a consumer
+        would then render as real planned categories. Silent degradation is tolerable
+        only when the tool says LESS, never when it makes something up."""
+        _write_plan(PROJECT, {"reuse": {"target_scope": "program",
+                                        "repository": "REQ-LIB",
+                                        "categories": "regulatory"}})
+        plan, _ = load_ba_plan(PROJECT)
+        self.assertEqual(planned_reuse(plan)["categories"], [])
+
+    def test_non_list_categories_do_not_crash(self):
+        _write_plan(PROJECT, {"reuse": {"target_scope": "program", "categories": 1}})
+        plan, _ = load_ba_plan(PROJECT)
+        self.assertEqual(planned_reuse(plan)["categories"], [])
+
+    def test_non_string_preset_does_not_crash(self):
+        """`ATTRIBUTE_PRESETS.get(preset)` with a list raises 'unhashable type'."""
+        _write_plan(PROJECT, {"attributes": {"preset": ["Standard"], "additional": []}})
+        plan, _ = load_ba_plan(PROJECT)
+        self.assertIsNone(planned_attribute_set(plan))
+
+    def test_non_list_additional_does_not_crash(self):
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": "owner"}})
+        plan, _ = load_ba_plan(PROJECT)
+        attrs, _ = planned_attribute_set(plan)
+        self.assertEqual(attrs, ATTRIBUTE_PRESETS["Minimum"])
+
+    def test_non_dict_information_management_section(self):
+        path = ba_plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": PROJECT, "information_management": ["oops"]}, f)
+        plan, _ = load_ba_plan(PROJECT)
+        self.assertEqual(info_management_section(plan), {})
+
     def test_helpers_accept_none_plan(self):
         self.assertEqual(info_management_section(None), {})
         self.assertIsNone(planned_abstraction_level(None, "Manager"))
