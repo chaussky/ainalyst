@@ -799,9 +799,13 @@ def check_requirements_health(
         "",
     ]
 
+    # Numbered as they are emitted. The numbers used to be hardcoded 1/2/3, so a
+    # report with no critical findings opened its action list at "2." — a delivered
+    # document with a missing first step.
+    actions = []
     if critical:
-        lines.append(
-            f"1. 🔴 **{len(critical)} critical** — discuss the volatility, "
+        actions.append(
+            f"🔴 **{len(critical)} critical** — discuss the volatility, "
             f"update via `update_requirement` or `deprecate_requirements`."
         )
     if warnings:
@@ -814,16 +818,20 @@ def check_requirements_health(
                 # document contradicting itself inside one page.
                 missing_names = sorted({name for r in attr_gaps
                                         for name in r["missing_attributes"]})
-                lines.append(
-                    f"2. 🟡 **{len(attr_gaps)} with unfilled attributes** "
+                actions.append(
+                    f"🟡 **{len(attr_gaps)} with unfilled attributes** "
                     f"({', '.join(missing_names)}) — fill them in via `update_requirement`.")
             else:
                 # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
-                lines.append(
-                    f"2. 🟡 **{len(attr_gaps)} without an owner** — "
+                actions.append(
+                    f"🟡 **{len(attr_gaps)} without an owner** — "
                     f"assign an owner via `update_requirement`.")
         if stale:
-            lines.append(f"3. 🟡 **{stale} not updated in a while** — confirm relevance with the stakeholder.")
+            actions.append(
+                f"🟡 **{stale} not updated in a while** — confirm relevance with the stakeholder.")
+
+    lines += [f"{i}. {action}" for i, action in enumerate(actions, 1)]
+
     if not critical and not warnings:
         lines.append("✅ The registry is in good shape. Ready for prioritization (5.3) and approval (5.5).")
 

@@ -120,6 +120,16 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         self.assertIn("unfilled attributes", result)
         self.assertIn("complexity", result.split("Recommended actions")[1])
 
+    def test_action_list_is_numbered_from_one(self):
+        """Was: the numbers were hardcoded 1/2/3, so a report with no critical
+        findings opened its action list at "2." — a delivered document missing its
+        own first step."""
+        _write_repo(PROJECT, [dict(BARE_REQ)])
+        result = check_requirements_health(PROJECT)
+        actions = result.split("Recommended actions")[1]
+        self.assertIn("1. 🟡", actions)
+        self.assertNotIn("2. 🟡", actions)
+
     def test_report_names_the_audited_set_and_its_source(self):
         _write_repo(PROJECT, [dict(BARE_REQ)])
         _write_plan(PROJECT, {"attributes": {"preset": "Standard", "additional": []}})
