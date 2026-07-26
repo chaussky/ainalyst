@@ -837,7 +837,7 @@ def find_reusable_requirements(
     project_name: str,
     search_query: str = "",
     filter_type: str = "",
-    min_reuse_scope: Literal["initiative", "program", "division", "enterprise"] = "initiative",
+    min_reuse_scope: Literal["", "initiative", "program", "division", "enterprise"] = "",
 ) -> str:
     """
     BABOK 5.2 — Finds requirements that are candidates for reuse.
@@ -852,7 +852,9 @@ def find_reusable_requirements(
         project_name:     Project name.
         search_query:     Search query against the requirement text (optional).
         filter_type:      Filter by type: business | stakeholder | solution | transition
-        min_reuse_scope:  Minimum scope level: initiative | program | division | enterprise
+        min_reuse_scope:  Minimum scope level: initiative | program | division |
+                          enterprise. Left empty, the level planned in 3.4 is used;
+                          without a plan, `initiative`. An explicit value always wins.
 
     Returns:
         List of candidates with a reuse-suitability score.
@@ -860,8 +862,22 @@ def find_reusable_requirements(
     logger.info(f"find_reusable_requirements: '{project_name}', query='{search_query}'")
 
     repo = _load_repo(project_name)
+
+    # BABOK 3.4 element .4. The default used to live in the signature, which made "the
+    # BA chose initiative" and "the BA chose nothing" indistinguishable — and a plan
+    # that silently overrode an explicit input is exactly why the governance wiring was
+    # refused in an earlier pass.
+    plan, plan_note = load_ba_plan(project_name)
+    reuse_plan = planned_reuse(plan) or {}
+    if min_reuse_scope:
+        effective_scope, scope_source = min_reuse_scope, ""
+    elif reuse_plan.get("target_scope"):
+        effective_scope, scope_source = reuse_plan["target_scope"], " *(from the 3.4 plan)*"
+    else:
+        effective_scope, scope_source = "initiative", ""
+
     scope_order = ["initiative", "program", "division", "enterprise"]
-    min_scope_idx = scope_order.index(min_reuse_scope)
+    min_scope_idx = scope_order.index(effective_scope)
 
     candidates = []
     others = []  # requirements without the reuse flag, but potentially suitable
@@ -979,13 +995,21 @@ def find_reusable_requirements(
         f"**Project:** {project_name}  ",
         f"**Query:** {search_query or 'all'}  ",
         f"**Type:** {filter_type or 'all'}  ",
-        f"**Minimum scope:** {min_reuse_scope}  ",
+        f"**Minimum scope:** {effective_scope}{scope_source}  ",
         f"**Date:** {date.today()}",
         "",
+        *([plan_note, ""] if plan_note else []),
         f"Found **{len(candidates)}** confirmed candidate(s), "
         f"**{len(others)}** potential.",
         "",
     ]
+
+    if reuse_plan.get("categories"):
+        lines += [
+            "**Planned candidate categories (3.4):** "
+            + ", ".join(reuse_plan["categories"]),
+            "",
+        ]
 
     if candidates:
         lines += [
@@ -1028,6 +1052,8 @@ def find_reusable_requirements(
             "> Flag as a reuse candidate: `update_requirement(reuse_candidate='true')`",
         ]
 
+    repository = reuse_plan.get("repository")
+
     if not candidates and not others:
         lines += [
             "ℹ️ No suitable candidates found matching the given criteria.",
@@ -1037,6 +1063,8 @@ def find_reusable_requirements(
             "- Lowering min_reuse_scope to 'initiative'",
             "- Flagging requirements via `update_requirement(reuse_candidate='true')`",
         ]
+        if repository:
+            lines.append(f"- Looking in the reuse repository planned in 3.4: {repository}")
 
     lines += [
         "",
@@ -1048,6 +1076,11 @@ def find_reusable_requirements(
         "requirements are still current. A requirement being reused is added to the new",
         "repository with a `source` pointing back to the original.",
     ]
+    if repository:
+        # BABOK p. 45: reusable requirements must live "in a repository that is
+        # available to other business analysts". Naming the planned one turns generic
+        # advice into an address.
+        lines += ["", f"Reuse repository planned in 3.4: **{repository}**"]
 
     content = "\n".join(lines)
 

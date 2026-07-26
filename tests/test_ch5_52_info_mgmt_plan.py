@@ -118,5 +118,71 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         self.assertIn("🟡 No owner", result)
 
 
+from skills.requirements_maintain_mcp import find_reusable_requirements
+
+REUSABLE = {"id": "BR-001", "type": "business", "title": "KYC check",
+            "status": "approved", "version": "1.0", "added": "2026-07-20",
+            "reuse_candidate": True, "reuse_scope": "enterprise", "owner": "PO"}
+
+
+class TestReuseUsesThePlannedScope(BaseMCPTest):
+
+    def test_planned_scope_becomes_the_default(self):
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "division",
+                                        "repository": "", "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("**Minimum scope:** division", result)
+        self.assertIn("3.4 plan", result)
+
+    def test_explicit_scope_always_wins_over_the_plan(self):
+        """Silently overriding an explicit BA input is worse than having no feature —
+        the reason the governance wiring was refused in an earlier pass."""
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "division",
+                                        "repository": "", "categories": []}})
+        result = find_reusable_requirements(PROJECT, min_reuse_scope="initiative")
+        self.assertIn("**Minimum scope:** initiative", result)
+        self.assertNotIn("3.4 plan", result)
+
+    def test_without_a_plan_the_default_is_still_initiative(self):
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("**Minimum scope:** initiative", result)
+        self.assertNotIn("3.4 plan", result)
+
+    def test_planned_repository_is_named_instead_of_generic_advice(self):
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "", "repository": "REQ-LIB space",
+                                        "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("REQ-LIB space", result)
+
+    def test_planned_categories_are_rendered_as_a_checklist(self):
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "", "repository": "",
+                                        "categories": ["regulatory", "business rules"]}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("regulatory", result)
+        self.assertIn("business rules", result)
+
+    def test_empty_result_advice_names_the_planned_repository(self):
+        _write_repo(PROJECT, [])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "", "repository": "REQ-LIB space",
+                                        "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("REQ-LIB space", result)
+
+    def test_corrupt_plan_does_not_kill_the_reuse_search(self):
+        _write_repo(PROJECT, [dict(REUSABLE)])
+        path = ba_plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{broken")
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("⚠️", result)
+        self.assertIn("**Minimum scope:** initiative", result)
+
+
 if __name__ == "__main__":
     unittest.main()
