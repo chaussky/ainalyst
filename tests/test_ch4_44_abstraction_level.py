@@ -107,6 +107,24 @@ class TestPlannedDetailLevel(BaseMCPTest):
         result, _ = _package()
         self.assertNotIn("⚠️", result)
 
+    def test_malformed_rows_never_reach_the_package(self):
+        """The shape guards added to the reader stopped at the two chapter-5 consumers,
+        which coerce everything they touch. 4.4 indexes the row directly, so a row
+        with no `level`, a list `level` or a numeric `audience` raised an uncaught
+        exception — a protocol error, not a ❌ line — and a null `level` shipped a
+        package claiming a detail level of "None" with an empty checklist under it."""
+        for row in ({"audience": "Business Sponsor"},
+                    {"audience": "Business Sponsor", "level": ["Summary"]},
+                    {"audience": "Business Sponsor", "level": None},
+                    {"audience": "Business Sponsor", "level": "Verbose"},
+                    {"audience": 5, "level": "Summary"}):
+            with self.subTest(row=row):
+                _write_plan(PROJECT, [row])
+                result, artefact = _package()
+                self.assertIn("✅", result)
+                self.assertNotIn("None", artefact.split("## Audience Profile")[0])
+                self.assertNotIn("Level of detail (planned in 3.4)", artefact)
+
     def test_corrupt_plan_does_not_kill_the_tool(self):
         path = ba_plan_path(PROJECT)
         os.makedirs(os.path.dirname(path), exist_ok=True)

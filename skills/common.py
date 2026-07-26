@@ -939,8 +939,18 @@ def planned_abstraction_level(plan, *audiences):
         if not key:
             continue
         for row in rows:
-            if isinstance(row, dict) and reg_norm(row.get("audience")) == key:
-                return row
+            if not isinstance(row, dict) or reg_norm(row.get("audience")) != key:
+                continue
+            # A row is returned only when its level is one this platform can act on.
+            # The consumer indexes `row["level"]` and looks it up in a guidance table,
+            # so a missing, non-string or unknown level was an uncaught exception (a
+            # protocol error, not a ❌ line) or — for a null level — a delivered
+            # package claiming a detail level of "None" with an empty checklist. The
+            # guard lives here so it covers every consumer, present and future.
+            if row.get("level") in ABSTRACTION_LEVELS:
+                return {"audience": str(row.get("audience") or ""),
+                        "level": row["level"],
+                        "note": str(row.get("note") or "")}
     return None
 
 

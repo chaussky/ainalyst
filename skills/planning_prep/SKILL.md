@@ -152,8 +152,19 @@ Use the MCP tool `plan_information_management`.
 | Attribute set (Minimum / Standard / Full) | .6 | 5.2 `check_requirements_health` |
 
 Re-running 3.4 MERGES: an omitted parameter keeps its previous value. Clear a list
-with `"[]"`, a text field with `"-"`, an enum with `"None"`. Without a 3.4 plan, every
-consumer above behaves exactly as it did before this feature — none of it is required.
+with `"[]"`, a text field with `"-"`, an enum with `"None"` — with two exceptions:
+`storage_tools_json` can never be cleared (a plan with nowhere to store anything is an
+unfinished task, not an empty field), and clearing `access_rules` restores its standing
+default instead of emptying it. Clearing `attributes_preset` leaves any
+`additional_attributes_json` in force, so clear both if the project should fall back to
+the platform default.
+
+Nothing here is required: with no 3.4 plan, 4.4 reads nothing new and 5.2 falls back to
+`initiative` for reuse and to the single `owner` check for health.
+
+The reuse scope **ranks** — a requirement at or above the target scores one point more.
+It does not hide anything below the target; most requirements are never tagged with a
+scope, and filtering would empty the report.
 
 ---
 

@@ -132,9 +132,14 @@ class TestAttributeVocabulary(BaseMCPTest):
         self.assertIn("owner", result)
 
     def test_expansion_is_not_stored(self):
-        """Only preset + additional are stored; one resolver expands them."""
+        """Only preset + additional are stored; one resolver expands them.
+
+        Asserted on the stored KEYS, not on the absence of a name no code writes —
+        that version of the test could not have failed.
+        """
         plan_information_management(PROJECT, '["Confluence"]', attributes_preset="Full")
-        self.assertNotIn("effective", _section()["attributes"])
+        self.assertEqual(set(_section()["attributes"]), {"preset", "additional"})
+        self.assertEqual(_section()["attributes"]["additional"], [])
 
     def test_attribute_outside_the_platform_model_is_refused_by_name(self):
         result = plan_information_management(
@@ -217,6 +222,32 @@ class TestMergeOnRerun(BaseMCPTest):
         plan_information_management(PROJECT, '["Confluence"]', access_rules="PO edits")
         plan_information_management(PROJECT, access_rules="-")
         self.assertEqual(_section()["access_rules"], "BA edits, others read")
+
+    def test_a_section_of_the_wrong_shape_does_not_kill_the_tool(self):
+        """Introduced by merge semantics: the writer never read the previous section
+        before, and the reader's guard did not extend to it. A file that is valid JSON
+        with a list where the section should be raised AttributeError — and chapter 3
+        is the only place that could overwrite the bad section, so the BA had no way
+        out of it in the product."""
+        path = _plan_path("b33_wrongshape")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": "b33_wrongshape", "information_management": ["oops"]}, f)
+        result = plan_information_management("b33_wrongshape", '["Confluence"]')
+        self.assertIn("✅", result)
+        self.assertEqual(_section("b33_wrongshape")["storage_tools"], ["Confluence"])
+
+    def test_report_survives_a_section_of_the_wrong_shape(self):
+        """Pre-existing sibling of the above, in the renderer."""
+        path = _plan_path("b33_wrongshape2")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": "b33_wrongshape2", "ba_approach": {"techniques": []},
+                       "information_management": "oops"}, f)
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ Artifact saved: `x.md`"
+            result = save_ba_plan("b33_wrongshape2")
+        self.assertNotIn("Traceback", result)
 
     def test_storage_tools_cannot_be_cleared(self):
         """A 3.4 plan with no place to store anything is not an empty field — it is

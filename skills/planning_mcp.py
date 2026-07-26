@@ -608,7 +608,12 @@ def plan_information_management(
         additional_attributes_json: JSON list of attributes added on top of the preset.
     """
     plan = _load_plan(project_id)
-    previous = plan.get("information_management") or {}
+    # isinstance, not `or {}`: a file that is valid JSON with a list or a string where
+    # the section belongs passes read_json_artifact, and every merge branch below then
+    # calls .get() on it. This tool is the only one that can overwrite a damaged
+    # section, so it must not be the tool that dies on it.
+    previous = plan.get("information_management")
+    previous = previous if isinstance(previous, dict) else {}
     warnings = []
     kept = []
 
@@ -1033,7 +1038,9 @@ def save_ba_plan(
         ]
         md_lines += _notes_block(governance)
 
-    if info_mgmt:
+    # Pre-existing sibling of the writer's guard: a section of the wrong shape reached
+    # .get() here too. The renderer skips it rather than failing the whole report.
+    if info_mgmt and isinstance(info_mgmt, dict):
         md_lines += [
             "## 3.4 Information Management",
             "",

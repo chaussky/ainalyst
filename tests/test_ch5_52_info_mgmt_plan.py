@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import unittest
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -31,21 +32,59 @@ def _write_repo(project_id: str, requirements: list):
         json.dump({"project": project_id, "requirements": requirements, "links": []}, f)
 
 
+# `added` is relative to today on purpose: a literal date made the staleness check fire
+# once the fixture aged past 30 days, so an unrelated 🟡 row appeared and the tests that
+# count action-list entries would have gone red on a calendar date, not on a code change.
+_FRESH = str(date.today())
+
 BARE_REQ = {"id": "FR-001", "type": "functional", "title": "Login",
-            "status": "confirmed", "version": "1.0", "added": "2026-07-20"}
+            "status": "confirmed", "version": "1.0", "added": _FRESH}
 
 
 class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
 
     def test_without_a_plan_the_report_is_unchanged(self):
         """The single strongest guarantee of this feature: no plan, no drift.
-        Not one new line either — the header names the audited set only when a
-        plan actually selected one."""
+
+        Compared as a SNAPSHOT, not by a handful of substrings: the previous version
+        asserted three strings and would have passed with arbitrary new lines added,
+        which is exactly what it exists to forbid. The expected text is written out in
+        full, so any addition to a plan-less report fails here first.
+        """
         _write_repo(PROJECT, [dict(BARE_REQ)])
         result = check_requirements_health(PROJECT)
-        self.assertIn("🟡 No owner", result)
-        self.assertIn("without an owner", result)      # legacy advice wording
-        self.assertNotIn("Audited attributes", result)
+        expected = "\n".join([
+            f"<!-- BABOK 5.2 — Health Audit | Project: {PROJECT} | {date.today()} -->",
+            "",
+            "# 🏥 Requirements registry health audit",
+            "",
+            f"**Project:** {PROJECT}  ",
+            "**Filter:** type=all, status=active  ",
+            f"**Date:** {date.today()}",
+            "",
+            "## Summary",
+            "",
+            "| Status | Count | % |",
+            "|--------|--------|---|",
+            "| 🟢 Healthy | 0 | 0% |",
+            "| 🟡 Need attention | 1 | 100% |",
+            "| 🔴 Critical | 0 | 0% |",
+            "| **Total active** | **1** | 100% |",
+            "",
+            "## 🟡 Need attention",
+            "",
+            "| ID | Type | Title | v | Owner | Issue |",
+            "|----|-----|----------|---|----------|----------|",
+            "| `FR-001` | functional | Login | 1.0 | — | 🟡 No owner |",
+            "",
+            "---",
+            "",
+            "## Recommended actions",
+            "",
+            "1. 🟡 **1 without an owner** — assign an owner via `update_requirement`.",
+        ])
+        self.assertTrue(result.startswith(expected),
+                        f"plan-less report drifted:\n{result[:len(expected) + 200]}")
 
     def test_minimum_preset_stops_demanding_an_owner(self):
         """Asserted on the DEMAND, not on the word: the 🟡 table header and the
@@ -197,23 +236,69 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         self.assertIn("regulatory", result)
         self.assertIn("business rules", result)
 
+    # An UNTAGGED requirement — the commonest shape in a live project, and the one the
+    # scope bonus silently punished. Deliberately NOT flagged `reuse_candidate`: a
+    # flagged one enters the confirmed list unconditionally, so it could never fail
+    # for the reason these tests name.
+    UNTAGGED = {"id": "SR-001", "type": "solution", "title": "Nightly settlement job",
+                "status": "draft", "version": "1.0", "added": _FRESH}
+
+    def test_a_wider_planned_scope_does_not_drop_a_requirement(self):
+        """The seam between two of this branch's own fixes. Planning a WIDER reuse
+        ambition made the report show FEWER candidates: the scope point is added to
+        the same score that decides whether a requirement is listed at all, and an
+        untagged requirement counts as `initiative`, so it lost the point and fell
+        under the threshold. Reproduced: with no plan the requirement was listed, and
+        with `target_scope: program` the report said "No suitable candidates" — while
+        its own header claimed the scope "does not exclude"."""
+        _write_repo(PROJECT, [dict(self.UNTAGGED)])
+        without_plan = find_reusable_requirements(PROJECT)
+        self.assertIn("SR-001", without_plan)
+
+        _write_plan(PROJECT, {"reuse": {"target_scope": "program",
+                                        "repository": "", "categories": []}})
+        with_plan = find_reusable_requirements(PROJECT)
+        self.assertIn("SR-001", with_plan)
+        self.assertNotIn("No suitable candidates", with_plan)
+
+    def test_a_wider_planned_scope_does_not_demote_between_sections(self):
+        """Same defect one threshold up: a confirmed candidate must not slide into the
+        potential list because the project raised its reuse ambition."""
+        _write_repo(PROJECT, [dict(self.UNTAGGED, status="approved")])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "division",
+                                        "repository": "", "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertIn("## ✅ Confirmed candidates", result)
+        confirmed = result.split("## ✅ Confirmed candidates")[1].split("\n## ")[0]
+        self.assertIn("SR-001", confirmed)
+
     def test_the_report_does_not_present_the_scope_as_a_filter(self):
-        """Found by reading a rendered report, not by an assertion: the header said
-        "Minimum scope: division" while a candidate with scope `initiative` sat in
-        the confirmed list two lines below. The scope has never excluded anything —
-        it adds one point to the suitability score. The words now say that."""
+        """The header said "Minimum scope: division" while a candidate with scope
+        `initiative` sat in the confirmed list two lines below."""
         _write_repo(PROJECT, [dict(REUSABLE, reuse_scope="initiative")])
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT)
         self.assertNotIn("Minimum scope", result)
         self.assertIn("raises the ranking", result)
-        # the below-target candidate is still listed — that is the actual behaviour
         self.assertIn("BR-001", result)
 
+    def test_the_scope_bonus_still_shows_up_in_the_score(self):
+        """"Raises the ranking" must remain TRUE, not become vacuous: a requirement at
+        or above the target scores one point more than the same requirement below it."""
+        _write_repo(PROJECT, [dict(self.UNTAGGED, id="SR-002", reuse_scope="enterprise")])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "division",
+                                        "repository": "", "categories": []}})
+        at_target = find_reusable_requirements(PROJECT)
+        _write_repo(PROJECT, [dict(self.UNTAGGED, id="SR-002", reuse_scope="initiative")])
+        below_target = find_reusable_requirements(PROJECT)
+        self.assertNotEqual(
+            [ln for ln in at_target.splitlines() if "SR-002" in ln],
+            [ln for ln in below_target.splitlines() if "SR-002" in ln])
+
     def test_empty_result_advice_does_not_offer_a_scope_that_filters_nothing(self):
-        """"Lowering min_reuse_scope" could never change an empty result, because the
-        scope excludes nothing. Advice that cannot work is worse than no advice."""
+        """"Lowering min_reuse_scope" cannot change an empty result once the scope no
+        longer decides membership. Advice that cannot work is worse than no advice."""
         _write_repo(PROJECT, [])
         result = find_reusable_requirements(PROJECT)
         self.assertIn("No suitable candidates", result)

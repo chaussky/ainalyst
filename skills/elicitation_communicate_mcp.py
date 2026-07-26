@@ -130,7 +130,9 @@ def prepare_communication_package(
     level_row = planned_abstraction_level(
         plan, audience_role, profile.get("stakeholder_role", ""))
     planned_rows = info_management_section(plan).get("abstraction_levels")
-    planned_audiences = [r.get("audience", "") for r in planned_rows
+    # str() because the value is whatever was stored: a numeric audience used to break
+    # the join that renders this list.
+    planned_audiences = [str(r.get("audience") or "") for r in planned_rows
                          if isinstance(r, dict)] if isinstance(planned_rows, list) else []
 
     # Icons for attitude

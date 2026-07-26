@@ -31,7 +31,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            has_been_approved,
     read_json_artifact, guard_artifact_errors,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
-    load_ba_plan, planned_attribute_set, planned_reuse,
+    load_ba_plan, planned_attribute_set, planned_reuse, REUSE_SCOPES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -722,9 +722,12 @@ def check_requirements_health(
         "",
         f"**Project:** {project_name}  ",
         f"**Filter:** type={filter_type or 'all'}, status={filter_status or 'active'}  ",
-        # Named only when a plan actually selected the set. Without a plan this report
-        # stays byte-for-byte what it was — the guarantee that makes this feature safe
-        # for every project that never opened chapter 3.
+        # Named only when a plan actually selected the set: a project that never opened
+        # chapter 3 gains no line here and keeps the legacy owner check and its wording.
+        # (Two deliberate repairs in the same feature DO reach plan-less projects — the
+        # action list is now numbered from 1, and the reuse report stopped calling a
+        # ranking bonus a minimum. Neither is plan-dependent; "no plan, nothing new"
+        # describes this feature's ADDITIONS, not those two fixes.)
         *([f"**Audited attributes:** {', '.join(audited)} *({audited_label})*  "]
           if resolved else []),
         f"**Date:** {date.today()}",
@@ -901,7 +904,10 @@ def find_reusable_requirements(
     else:
         effective_scope, scope_source = "initiative", ""
 
-    scope_order = ["initiative", "program", "division", "enterprise"]
+    # The shared constant, not a local copy: `planned_reuse` validates the stored value
+    # against REUSE_SCOPES, so a fifth level added there would have been accepted by the
+    # reader and then raised ValueError on this .index() call.
+    scope_order = list(REUSE_SCOPES)
     min_scope_idx = scope_order.index(effective_scope)
 
     candidates = []
@@ -987,8 +993,8 @@ def find_reusable_requirements(
 
         req_scope = req.get("reuse_scope", "initiative")
         scope_idx = scope_order.index(req_scope) if req_scope in scope_order else 0
-        if scope_idx >= min_scope_idx:
-            score += 1
+        scope_bonus = 1 if scope_idx >= min_scope_idx else 0
+        score += scope_bonus
 
         req_info = {
             "id": req.get("id"),
@@ -1003,9 +1009,17 @@ def find_reusable_requirements(
             "is_reuse": is_reuse,
         }
 
-        if is_reuse or score >= 5:
+        # Membership must NOT depend on the scope bonus, or planning a WIDER reuse
+        # ambition in 3.4 shows FEWER candidates — the opposite of the point. An
+        # untagged requirement counts as `initiative`, so above that target it loses
+        # the point and used to fall under the threshold entirely; with no plan every
+        # requirement earns it, so counting it as earned here keeps plan-less projects
+        # byte-identical to before. The bonus still moves the printed score, which is
+        # what "raises the ranking" means.
+        membership_score = score + (1 - scope_bonus)
+        if is_reuse or membership_score >= 5:
             candidates.append(req_info)
-        elif score >= 3:
+        elif membership_score >= 3:
             others.append(req_info)
 
     # Sort by score
