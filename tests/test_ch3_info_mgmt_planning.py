@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -11,7 +12,7 @@ from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
 
-from skills.planning_mcp import plan_information_management, _plan_path
+from skills.planning_mcp import plan_information_management, save_ba_plan, _plan_path
 
 PROJECT = "b33_writer"
 
@@ -224,6 +225,55 @@ class TestMergeOnRerun(BaseMCPTest):
         result = plan_information_management(PROJECT, storage_tools_json="[]")
         self.assertIn("❌", result)
         self.assertEqual(_section()["storage_tools"], ["Confluence"])
+
+
+def _report_text(project_id=PROJECT) -> str:
+    """The BA Plan markdown, captured from the writer.
+
+    save_artifact is mocked suite-wide (ADR-068), so the report never reaches disk in
+    unit tests — it is read from the call instead. Task 8 exercises the real writer.
+    """
+    with patch("skills.planning_mcp.save_artifact") as mock_sa:
+        mock_sa.return_value = "\n\n✅ Artifact saved: `x.md`"
+        save_ba_plan(project_id)
+        return mock_sa.call_args[0][0] if mock_sa.call_args else ""
+
+
+class TestReportRendersThePlannedElements(BaseMCPTest):
+
+    def test_report_shows_all_three_new_blocks(self):
+        plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json=json.dumps([
+                {"audience": "Manager", "level": "Summary", "note": "traffic lights"}]),
+            reuse_target_scope="program", reuse_repository="REQ-LIB",
+            reuse_categories_json='["regulatory"]',
+            attributes_preset="Standard")
+        text = _report_text()
+        self.assertIn("Manager", text)
+        self.assertIn("Summary", text)
+        self.assertIn("traffic lights", text)
+        self.assertIn("REQ-LIB", text)
+        self.assertIn("regulatory", text)
+        self.assertIn("Standard", text)
+        self.assertIn("owner", text)          # the preset is expanded for the reader
+
+    def test_report_omits_blocks_that_were_never_planned(self):
+        """No empty tables in a delivered document."""
+        plan_information_management("b33_bare", '["Jira"]')
+        text = _report_text("b33_bare")
+        self.assertIn("3.4 Information Management", text)
+        self.assertNotIn("Level of detail per audience", text)
+        self.assertNotIn("Requirements reuse", text)
+        self.assertNotIn("Requirements attributes", text)
+
+    def test_module_header_no_longer_claims_the_plan_has_no_readers(self):
+        """The header said "read back by this module only". After B3-3 that is a lie
+        in the opposite direction — the class this programme keeps fixing."""
+        import skills.planning_mcp as pm
+        self.assertNotIn("read back by this module only", pm.__doc__)
+        self.assertIn("4.4", pm.__doc__)
+        self.assertIn("5.2", pm.__doc__)
 
 
 class TestVocabulariesStayInSync(BaseMCPTest):

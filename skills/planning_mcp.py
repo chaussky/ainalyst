@@ -15,7 +15,12 @@ Storage:
   - {project}_ba_plan_*.md        — Markdown report (via save_artifact)
 
 Integration:
-  Output: ba_plan.json — the record of the plan, read back by this module only.
+  Output: ba_plan.json. Section 3.4 (information_management) IS read by other
+  chapters — through the shared helpers in skills/common.py, so no chapter imports
+  this module:
+    - 4.4 prepare_communication_package — the planned level of detail per audience
+    - 5.2 find_reusable_requirements    — the planned reuse scope and repository
+    - 5.2 check_requirements_health     — the planned attribute set
   3.2 additionally SEEDS the living stakeholder registry
   ({project}_stakeholder_registry.json) that 4.2 maintains and 7.4 reads, so the same
   people are not entered twice. Source fields only, and only on creation for the
@@ -1039,6 +1044,49 @@ def save_ba_plan(
         if artifact_types:
             md_lines.append(f"- **Artifact types:** {', '.join(artifact_types)}")
         md_lines.append("")
+
+        # Each block appears only when it holds data: an empty table in a document
+        # that goes to people reads as a gap in the analysis, not as an unused option.
+        rows = info_mgmt.get("abstraction_levels") or []
+        if rows:
+            md_lines += [
+                "### Level of detail per audience",
+                "",
+                "_Read by 4.4 when a communication package is prepared._",
+                "",
+                "| Audience | Level | Note |",
+                "|---|---|---|",
+            ]
+            for row in rows:
+                md_lines.append(
+                    f"| {row.get('audience', '—')} | {row.get('level', '—')} | "
+                    f"{row.get('note') or '—'} |")
+            md_lines.append("")
+
+        reuse = info_mgmt.get("reuse") or {}
+        if any(reuse.values()):
+            md_lines += ["### Requirements reuse", ""]
+            if reuse.get("target_scope"):
+                md_lines.append(f"- **Target scope:** {reuse['target_scope']} "
+                                f"(the default 5.2 applies)")
+            if reuse.get("repository"):
+                md_lines.append(f"- **Repository:** {reuse['repository']}")
+            if reuse.get("categories"):
+                md_lines.append(
+                    f"- **Candidate categories:** {', '.join(reuse['categories'])}")
+            md_lines.append("")
+
+        resolved = planned_attribute_set({"information_management": info_mgmt})
+        if resolved:
+            attrs, label = resolved
+            md_lines += [
+                "### Requirements attributes",
+                "",
+                f"- **Maintained set** ({label}): {', '.join(attrs)}",
+                "- _5.2's health audit checks exactly this set._",
+                "",
+            ]
+
         md_lines += _notes_block(info_mgmt)
 
     if performance:
