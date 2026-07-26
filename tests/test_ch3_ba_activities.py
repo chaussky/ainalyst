@@ -195,14 +195,24 @@ class TestStatusLine(_TempCwd):
 
     def test_the_message_names_both_readers(self):
         suggest_ba_approach(PROJECT, "High", "High")
-        out = plan_ba_activities(PROJECT)
+        out = plan_ba_activities(PROJECT)   # skeleton covers chapter 4 and has a form
         self.assertIn("5.5", out)
         self.assertIn("4.1", out)
+
+    def test_the_footer_does_not_promise_a_reader_that_will_stay_silent(self):
+        """Printed unconditionally, the block contradicted the warning three lines
+        above it: no timing form means 5.5 will NOT take the methodology, and a plan
+        covering no chapter-4 task means 4.1 prints nothing."""
+        suggest_ba_approach(PROJECT, "Medium", "Medium")       # -> Hybrid, no form
+        out = plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Wave 1", "tasks": ["7.1"]}]))
+        self.assertNotIn("takes the methodology from the timing form", out)
+        self.assertNotIn("names the period that covers elicitation", out)
 
 
 class TestRerun(_TempCwd):
 
-    def test_a_rerun_replaces_the_section_like_the_other_31_35_tools(self):
+    def test_declared_periods_replace_the_previous_ones(self):
         suggest_ba_approach(PROJECT, "High", "High")
         plan_ba_activities(PROJECT, periods_json=json.dumps([
             {"name": "It 1", "tasks": ["4.1"]}]))
@@ -210,6 +220,55 @@ class TestRerun(_TempCwd):
             {"name": "It 2", "tasks": ["5.3"]}]))
         names = [p["name"] for p in _read_plan()["ba_activities"]["periods"]]
         self.assertEqual(names, ["It 2"])
+
+    def test_a_bare_rerun_keeps_everything_the_ba_typed(self):
+        """Every parameter here is optional, so "empty" must mean KEEP, not WIPE —
+        the tool's own message invites a re-run ("edit and re-run to make them
+        yours"), and its sibling plan_information_management already merges. A wipe
+        would also break the project rule that data is never deleted."""
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(
+            PROJECT,
+            periods_json=json.dumps([{"name": "Sprint 1", "tasks": ["4.1"],
+                                      "effort": "High"}]),
+            timing_constraints_json=json.dumps(["regulatory deadline 2026-12-31"]),
+            ba_notes="agreed with the sponsor")
+        out = plan_ba_activities(PROJECT)
+        section = _read_plan()["ba_activities"]
+        self.assertEqual([p["name"] for p in section["periods"]], ["Sprint 1"])
+        self.assertEqual(section["timing_constraints"], ["regulatory deadline 2026-12-31"])
+        self.assertEqual(section["ba_notes"], "agreed with the sponsor")
+        # The status line must name EVERYTHING that survived, or it is worse than
+        # absent — it exists to spare the BA from opening the JSON.
+        self.assertIn("Kept from the previous plan", out)
+        for kept in ("timing form (iterations)", "1 period(s)",
+                     "1 timing constraint(s)", "BA notes"):
+            self.assertIn(kept, out, kept)
+
+    def test_a_bare_rerun_does_not_revert_a_declared_form_to_the_derived_one(self):
+        """That value is printed on the package that goes out for signature."""
+        suggest_ba_approach(PROJECT, "High", "High")          # -> Adaptive (Agile)
+        plan_ba_activities(PROJECT, timing_form="phases")
+        plan_ba_activities(PROJECT)
+        section = _read_plan()["ba_activities"]
+        self.assertEqual(section["timing_form"], "phases")
+        self.assertIn("declared by the BA", section["form_source"])
+
+    def test_a_bare_rerun_does_not_regenerate_over_a_stored_skeleton(self):
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT)                            # skeleton
+        plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Mine", "tasks": ["4.1"]}]))              # the BA takes it over
+        plan_ba_activities(PROJECT)                            # a bare re-run
+        section = _read_plan()["ba_activities"]
+        self.assertEqual([p["name"] for p in section["periods"]], ["Mine"])
+        self.assertFalse(section["generated"])
+
+    def test_a_dash_clears_the_notes_the_way_the_rest_of_the_module_does(self):
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, ba_notes="agreed with the sponsor")
+        plan_ba_activities(PROJECT, ba_notes="-")
+        self.assertEqual(_read_plan()["ba_activities"]["ba_notes"], "")
 
     def test_a_rerun_does_not_touch_the_other_sections(self):
         suggest_ba_approach(PROJECT, "High", "High")
@@ -299,6 +358,25 @@ class TestReport(_TempCwd):
         self.assertNotIn("❌", out)
         self.assertIn("3.1 Business Analysis Approach", self._report_text())
 
+    def test_a_non_dict_ba_approach_does_not_crash_the_report(self):
+        """The drift note reads `approach` from INSIDE the `if activities:` branch, so
+        the container guard that covers every other approach.get() does not reach it.
+        planning_mcp loads in every phase — an AttributeError here is a protocol error
+        in every session, not a ❌ line."""
+        from skills.planning_mcp import save_ba_plan
+        path = ba_plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        for broken in (None, "", []):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump({"project_id": PROJECT, "ba_approach": broken,
+                           "ba_activities": {"timing_form": "phases",
+                                             "form_source": "derived from Adaptive (Agile)",
+                                             "periods": [{"name": "Stage 1",
+                                                          "tasks": ["4"]}]}}, f)
+            out = save_ba_plan(PROJECT)
+            self.assertNotIn("❌", out, repr(broken))
+            self.assertIn("Stage 1", self._report_text())
+
     def test_a_damaged_section_renders_no_stub_heading_at_all(self):
         """`_sane_activities_section` always supplies `periods` / `timing_constraints`,
         so the coerced dict stays truthy even when nothing usable survived. Rendering
@@ -334,8 +412,11 @@ class TestReport(_TempCwd):
         save_ba_plan(PROJECT)
         text = self._report_text()
         self.assertIn("Adaptive (Agile)", text)               # where it came from
-        self.assertIn("plan_ba_activities", text)             # what to do about it
         self.assertIn("no longer", text)
+        # The advice must stay executable. A bare re-run KEEPS the recorded form (that
+        # is the anti-wipe rule), so pointing at a bare `plan_ba_activities` would be
+        # an orphaned signpost — the class a previous feature shipped for one commit.
+        self.assertIn("with an explicit `timing_form`", text)
 
     def test_a_declared_form_is_not_flagged_when_the_approach_changes(self):
         """The BA said it; the approach is not evidence about it either way."""

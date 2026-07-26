@@ -16,7 +16,9 @@ Storage:
 
 Integration:
   In:  5.1 repository (graph+statuses), 5.3 priorities, 5.4 CR Records, 4.2 stakeholders,
-       7.2 verification evidence (req_verified in the repository history — reported, not gated)
+       7.2 verification evidence (req_verified in the repository history — reported, not gated),
+       3.1 BA plan (the approval ceremony, when `approach` is left empty — read through
+       the shared helpers in skills/common.py, no chapter imports another)
   Out: Approval Record → 4.4 (communication), Chapter 6 (development)
        approved statuses in the 5.1 repository
 
@@ -307,6 +309,26 @@ def _get_cr_context(repo: dict, req_id: str) -> list:
 # than the approach label.
 _FORM_TO_APPROACH = {"phases": "predictive", "iterations": "agile"}
 
+# `approach` selects the approval CEREMONY here — the four-option decision menu with a
+# response deadline, or "For Sprint Planning, the Product Owner approves the backlog".
+# The timing form answers a different question (cadence), and for one label the two
+# answers genuinely differ: `Hybrid (Agile + compliance gates)` exists only because
+# regulatory_need=True, and its whole point is formal sign-off for audit. Resolving it
+# through the cadence handed exactly the regulated projects the informal package, so
+# the label pins the ceremony and outranks the form.
+_CEREMONY_BY_APPROACH = {"Hybrid (Agile + compliance gates)": "predictive"}
+
+
+def _plan_approach_label(plan) -> str:
+    """`ba_approach.recommended_approach` from a plan of any shape, or ""."""
+    if not isinstance(plan, dict):
+        return ""
+    section = plan.get("ba_approach")
+    if not isinstance(section, dict):
+        return ""
+    raw = section.get("recommended_approach")
+    return raw if isinstance(raw, str) else ""
+
 
 def _resolve_approach(project_name: str, approach: str) -> tuple:
     """Returns (value, source_label, error). Only "" triggers resolution.
@@ -318,16 +340,15 @@ def _resolve_approach(project_name: str, approach: str) -> tuple:
     if approach:
         return approach, "stated in this call", ""
     plan, note = load_ba_plan(project_name)
+    label = _plan_approach_label(plan)
+    ceremony = _CEREMONY_BY_APPROACH.get(label.strip())
+    if ceremony:
+        return (ceremony,
+                f"from the 3.1 BA plan — approach: {label} (formal sign-off)", "")
     form = planned_timing_form(plan)
     if form:
         return (_FORM_TO_APPROACH[form],
                 f"from the 3.1 BA plan — timing form: {form}", "")
-    label = ""
-    if isinstance(plan, dict):
-        section = plan.get("ba_approach")
-        if isinstance(section, dict):
-            raw = section.get("recommended_approach")
-            label = raw if isinstance(raw, str) else ""
     derived = approach_to_timing_form(label)
     if derived:
         return (_FORM_TO_APPROACH[derived],
@@ -479,8 +500,8 @@ def prepare_approval_package(
         "package_id": package_id,
         "package_title": package_title,
         "approach": approach,
-        # Where the methodology came from, carried on the record: the status dashboard
-        # and the Approval Record read it back, and re-deriving it later would give a
+        # Where the methodology came from, carried on the record: the Approval Record
+        # prints it back for the auditor, and re-deriving it later would give a
         # different answer once the plan changes — or none once it is gone.
         "approach_source": approach_source,
         "audience": audience,
@@ -1432,7 +1453,9 @@ def create_requirements_baseline(
         f"# Requirements Baseline: {baseline_version}",
         f"**Project:** {project_name}  ",
         f"**Package:** {package_id} — {package.get('package_title', '—')}  ",
-        f"**Methodology:** {approach_label}  ",
+        f"**Methodology:** {approach_label}"
+        + (f" ({package.get('approach_source')})" if package.get("approach_source")
+           else "") + "  ",
         f"**Created on:** {date.today()}  ",
         f"**Confirmed by:** {decided_by}  ",
         f"**Requirements in the baseline:** {len(approved_reqs)}  ",

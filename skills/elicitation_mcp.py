@@ -15,7 +15,7 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, parse_json_dict_list,
                            update_stakeholder_registry_file,
-                           load_ba_plan, planned_work_period)
+                           activities_section, load_ba_plan, planned_work_period)
 
 mcp = FastMCP("BABOK_Elicitation_Prep")
 
@@ -110,6 +110,13 @@ def _planned_context(project_name: str, technique: str) -> tuple:
             detail.append(period["when"])
         lines.append(f"- **Planned work period (BABOK 3.1, element .3/.4):** "
                      f"{' — '.join(detail)}")
+        # 3.1b marks a machine-made skeleton, and the BA plan report says so. Repeating
+        # the period here without that mark would state an invented name and effort as
+        # something someone planned.
+        if activities_section(plan).get("generated"):
+            lines.append(
+                "  ℹ️ That period was generated from the chosen approach, not planned "
+                "by hand — edit it via `plan_ba_activities` if it does not fit.")
 
     approach = plan.get("ba_approach")
     raw_techniques = approach.get("techniques") if isinstance(approach, dict) else None

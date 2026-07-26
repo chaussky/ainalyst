@@ -67,11 +67,14 @@ prepare_approval_package → record_approval_decision (×N stakeholders)
 - `project_name` — project name
 - `package_id` — unique package ID (APKG-001)
 - `req_ids_json` — JSON list of requirement IDs for the package
-- `approach` — `predictive` or `agile`. **May be omitted**: it then resolves from the
-  3.1 BA plan — first from the planned timing form (`plan_ba_activities`), then from the
-  recommended approach label. A project whose 3.1 approach is a plain `Hybrid` (not
-  `Hybrid (Agile + compliance gates)`) resolves to neither value, so `approach` must be
-  stated explicitly there, or `plan_ba_activities` must declare a `timing_form`.
+- `approach` — `predictive` or `agile`. Here it selects the approval **ceremony**: the
+  formal per-requirement decision menu with a response deadline, or the Sprint Planning
+  wording. **May be omitted**: it then resolves from the 3.1 BA plan — first
+  `Hybrid (Agile + compliance gates)`, which means formal sign-off for audit and so
+  resolves to `predictive` whatever its cadence; then the planned timing form
+  (`plan_ba_activities`); then the recommended approach label. Neither `Hybrid` nor
+  `Hybrid (with strengthened governance)` resolves, so on those two `approach` must be
+  stated explicitly, or `plan_ba_activities` must declare a `timing_form`.
 - `audience` — `business` / `developer` / `regulator` / `all`
 - `package_title` — package title (e.g., "Feature: User Onboarding")
 - `sprint_number` — sprint number (agile only)

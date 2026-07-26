@@ -72,8 +72,30 @@ class TestPlannedPeriod(unittest.TestCase):
         self._save()
         text = self._artefact_text()
         self.assertIn("Iteration 1", text)
-        self.assertIn("High", text)
+        # "High" alone is printed by the stakeholder table (influence / interest), so
+        # it cannot tell the effort column from that.
+        self.assertIn("planned effort: High", text)
         self.assertIn("Aug 2026", text)
+
+    def test_a_generated_skeleton_is_not_presented_as_the_bas_own_plan(self):
+        """The 3.1b section marks a machine-made skeleton `generated`, and the BA plan
+        report says so. A consumer that cannot see the flag states invented periods and
+        efforts as planned facts — silent degradation that concludes instead of saying
+        less."""
+        _seed_plan({"timing_form": "iterations", "generated": True, "periods": [
+            {"name": "Iteration 1", "tasks": ["4"], "effort": "High", "when": "",
+             "deliverables": []}]})
+        self._save()
+        text = self._artefact_text()
+        self.assertIn("Iteration 1", text)
+        self.assertIn("generated", text.lower())
+
+    def test_a_period_the_ba_typed_carries_no_generated_notice(self):
+        _seed_plan({"timing_form": "iterations", "generated": False, "periods": [
+            {"name": "Iteration 1", "tasks": ["4"], "effort": "High", "when": "",
+             "deliverables": []}]})
+        self._save()
+        self.assertNotIn("generated", self._artefact_text().lower())
 
     def test_a_chapter_wide_period_covers_41(self):
         _seed_plan({"timing_form": "phases", "periods": [

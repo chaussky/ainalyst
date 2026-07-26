@@ -980,6 +980,16 @@ def plan_ba_activities(
         approach_label = raw_label if isinstance(raw_label, str) else ""
     derived = approach_to_timing_form(approach_label)
 
+    # EVERY parameter here is optional, so "empty" has to mean KEEP, not WIPE — the
+    # way `plan_information_management` already treats its own. A replace would let
+    # the re-run this tool itself invites ("edit and re-run to make them yours")
+    # silently discard the periods, the constraints and the notes the BA typed, and
+    # revert a DECLARED timing form to the derived one — a value 5.5 prints on the
+    # package that goes out for signature. It would also break the project rule that
+    # recorded data is never deleted.
+    previous = _sane_activities_section(plan.get("ba_activities"))
+    kept = []
+
     warnings = []
     if timing_form:
         form, form_source = timing_form, "declared by the BA"
@@ -988,6 +998,15 @@ def plan_ba_activities(
                 f"⚠️ You declared `{timing_form}`, but the 3.1 approach "
                 f"({approach_label}) implies `{derived}`. Stored what you declared — "
                 f"the decision is yours.")
+    elif previous.get("timing_form"):
+        form = previous["timing_form"]
+        form_source = previous.get("form_source", "")
+        kept.append(f"timing form ({form})")
+        if derived and derived != form and form_source.startswith("derived from "):
+            warnings.append(
+                f"⚠️ The stored form was derived from a different approach than the "
+                f"plan now recommends ({approach_label}). Re-run with "
+                f"`timing_form=\"{derived}\"` to move it, or leave it as it is.")
     elif derived:
         form, form_source = derived, f"derived from {approach_label}"
     else:
@@ -996,7 +1015,7 @@ def plan_ba_activities(
     # Nothing to derive AND nothing typed: there is nothing to store. An empty
     # section would claim the planning happened and would pass the "empty plan"
     # gate in save_ba_plan.
-    if not form and not periods_in:
+    if not form and not periods_in and not previous.get("periods"):
         reason = (f"the approach `{approach_label}` sits between predictive and "
                   f"adaptive, so the form does not follow from it"
                   if approach_label else
@@ -1010,9 +1029,16 @@ def plan_ba_activities(
             f"up on the approval package that goes out for signature.)"
         )
 
-    generated = not periods_in
-    source_periods = periods_in
-    if generated:
+    if periods_in:
+        generated, source_periods = False, periods_in
+    elif previous.get("periods"):
+        # Keep what is already recorded — including a skeleton the BA has since taken
+        # over. Regenerating here is what discarded their work.
+        generated = bool(previous.get("generated"))
+        source_periods = previous["periods"]
+        kept.append(f"{len(source_periods)} period(s)")
+    else:
+        generated = True
         source_periods = [dict(p) for p in
                           (_SKELETON_ITERATIONS if form == "iterations"
                            else _SKELETON_PHASES)]
@@ -1064,13 +1090,21 @@ def plan_ba_activities(
             f"⚠️ Effort outside the Low/Medium/High scale, stored as given: "
             f"{', '.join(off_scale_efforts)}.")
 
+    if not constraints and previous.get("timing_constraints"):
+        constraints = previous["timing_constraints"]
+        kept.append(f"{len(constraints)} timing constraint(s)")
+    # `-` clears, "" keeps — the convention the rest of this module already uses.
+    merged_notes = _merge_text(ba_notes, previous.get("ba_notes"))
+    if ba_notes == "" and merged_notes:
+        kept.append("BA notes")
+
     plan["ba_activities"] = {
         "timing_form": form,
         "form_source": form_source,
         "generated": generated,
         "periods": periods,
         "timing_constraints": constraints,
-        "ba_notes": ba_notes,
+        "ba_notes": merged_notes,
         "planned_on": str(date.today()),
     }
     _save_plan(plan, project_id)
@@ -1095,17 +1129,27 @@ def plan_ba_activities(
     if constraints:
         lines += ["", f"  Timing constraints ({len(constraints)}):"]
         lines += [f"    – {c}" for c in constraints]
-    if ba_notes:
-        lines += ["", f"  BA notes: {ba_notes}"]
+    if merged_notes:
+        lines += ["", f"  BA notes: {merged_notes}"]
+    if kept:
+        lines += ["", f"  ↩️ Kept from the previous plan: {', '.join(kept)}"]
     if warnings:
         lines += [""] + [f"  {w}" for w in warnings]
+    # Printed unconditionally, this block contradicted the warnings above it: with no
+    # timing form 5.5 takes nothing from here, and with no chapter-4 task in any period
+    # 4.1 prints nothing. Claim only what this particular plan actually feeds.
+    readers = []
+    if form:
+        readers.append(
+            "  • 5.5 `prepare_approval_package` — takes the methodology from the "
+            "timing form, so you do not state it twice")
+    if any(ref == "4" or ref.startswith("4.") for p in periods for ref in p["tasks"]):
+        readers.append(
+            "  • 4.1 `save_elicitation_plan` — names the period that covers "
+            "elicitation work and its planned effort")
+    if readers:
+        lines += ["", "ℹ️ What now reads this:"] + readers
     lines += [
-        "",
-        "ℹ️ What now reads this:",
-        "  • 5.5 `prepare_approval_package` — takes the methodology from the timing "
-        "form, so you do not state it twice",
-        "  • 4.1 `save_elicitation_plan` — names the period that covers elicitation "
-        "work and its planned effort",
         "",
         "→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.",
     ]
@@ -1323,12 +1367,18 @@ def save_ba_plan(
         # is never flagged.
         derived_from = (source[len("derived from "):]
                         if source.startswith("derived from ") else "")
-        current_approach = str(approach.get("recommended_approach", "") or "")
+        # `approach` is only guaranteed to be a dict inside `if approach:` above; this
+        # branch runs under `if activities:`, so a plan whose `ba_approach` is null,
+        # "" or [] reached .get() here. planning_mcp loads in EVERY phase, so that
+        # AttributeError is a protocol error in every session, not a ❌ line.
+        current_approach = (str(approach.get("recommended_approach", "") or "")
+                            if isinstance(approach, dict) else "")
         if derived_from and current_approach and derived_from != current_approach:
             md_lines.append(
                 f"- ⚠️ This form was derived from **{derived_from}**, which the plan "
-                f"no longer recommends (now **{current_approach}**). Re-run "
-                f"`plan_ba_activities` to confirm or change it.")
+                f"no longer recommends (now **{current_approach}**). To move it, re-run "
+                f"`plan_ba_activities` with an explicit `timing_form` — a bare re-run "
+                f"keeps what is recorded here.")
         periods = activities.get("periods", [])
         if periods:
             md_lines += [

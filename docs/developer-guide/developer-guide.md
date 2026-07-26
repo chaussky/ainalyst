@@ -126,7 +126,7 @@ BASE_SERVER = {
 }
 ```
 
-- `planning_mcp.py`: lightweight (6 tools), always needed for `project_id` and the stakeholder registry
+- `planning_mcp.py`: lightweight (7 tools), always needed for `project_id` and the stakeholder registry
 - `confluence_mcp.py`: 4 tools, starts up without `.env`. An error occurs only when a tool is called, if the keys are not filled in
 
 ### How `phase.py` Generates Paths
@@ -318,13 +318,13 @@ Key principles:
 
 ### Why `planning_mcp.py` Is a Monolith
 
-Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 6 tools make a lightweight monolith, which is architecturally justified (ADR-090).
+Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 7 tools make a lightweight monolith, which is architecturally justified (ADR-090).
 
 ### All 22 MCP Servers
 
 | Server (key in `.mcp.json`) | File | BABOK ch. | Tools |
 |---|---|---|---|
-| `babok-ch3` | `planning_mcp.py` | 3 | 6 |
+| `babok-ch3` | `planning_mcp.py` | 3 | 7 |
 | `babok-confluence` | `integrations/confluence_mcp.py` | - | 4 |
 | `babok-ch4-41` | `elicitation_mcp.py` | 4.1 | 3 |
 | `babok-ch4-42` | `elicitation_conduct_mcp.py` | 4.2 | 4 |
@@ -983,7 +983,7 @@ The full registry is in `DECISIONS.md`. Below are the decisions most important f
 
 **ADR-088: `planning_mcp.py` Stays a Monolith** (Session 46)
 
-The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1-3.5, even though Chapters 4-7 are built that way. The reasoning: `planning_mcp.py` is part of `BASE_SERVER` and present in every phase, so splitting it would not save any context window. 6 tools make a lightweight server, so a monolith is justified here. Symmetry for its own sake would be excessive.
+The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1-3.5, even though Chapters 4-7 are built that way. The reasoning: `planning_mcp.py` is part of `BASE_SERVER` and present in every phase, so splitting it would not save any context window. 7 tools make a lightweight server, so a monolith is justified here. Symmetry for its own sake would be excessive.
 
 ---
 

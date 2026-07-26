@@ -101,6 +101,21 @@ class TestResolution(BaseMCPTest):
         self._prepare()
         self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
 
+    def test_a_regulated_hybrid_gets_the_FORMAL_package_not_the_sprint_one(self):
+        """`approach` selects the approval CEREMONY here — the four-option decision
+        menu with a deadline, or "For Sprint Planning, the PO approves the backlog".
+        `Hybrid (Agile + compliance gates)` exists because regulatory_need=True, and
+        its whole point is formal sign-off for audit. Resolving it through the timing
+        form mapped a CADENCE onto a CEREMONY and handed exactly those projects the
+        informal package."""
+        _seed_plan({"timing_form": "iterations"},
+                   approach_label="Hybrid (Agile + compliance gates)")
+        out = self._prepare()
+        self.assertIn("**Conditional**", out)
+        self.assertIn("Response deadline", out)
+        self.assertNotIn("For Sprint Planning", out)
+        self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
+
     def test_plain_hybrid_refuses_and_names_both_ways_out(self):
         _seed_plan(approach_label="Hybrid")
         out = self._prepare()
@@ -136,7 +151,11 @@ class TestResolution(BaseMCPTest):
         Asserted on the Approval Record DOCUMENT, not on the tool's return: the tool
         returns a short summary and the record itself goes through save_artifact.
         """
-        _seed_plan({"timing_form": "iterations"})
+        # `phases`, not `iterations`: the rendered label is
+        # `"Predictive / Waterfall" if approach == "predictive" else "Agile"`, so an
+        # assertion on "Agile" is the DEFAULT branch and would hold with the stored
+        # value deleted — the test would pass for the wrong reason.
+        _seed_plan({"timing_form": "phases"})
         self._prepare(package_id="PKG-2")
         record_approval_decision(
             project_name=PROJECT, package_id="PKG-2", stakeholder_name="Ivanov",
@@ -149,7 +168,11 @@ class TestResolution(BaseMCPTest):
                 project_name=PROJECT, package_id="PKG-2", baseline_version="v1.0",
                 decided_by="Ivanov")
         self.assertTrue(saver.call_args, "the Approval Record was not written")
-        self.assertIn("**Methodology:** Agile", saver.call_args[0][0])
+        record = saver.call_args[0][0]
+        self.assertIn("**Methodology:** Predictive / Waterfall", record)
+        # The Approval Record is the document an auditor reads; where the methodology
+        # came from belongs in it, and storing the source is pointless otherwise.
+        self.assertIn("timing form: phases", record)
 
 
 if __name__ == "__main__":
