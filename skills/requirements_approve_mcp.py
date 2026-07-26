@@ -311,12 +311,17 @@ _FORM_TO_APPROACH = {"phases": "predictive", "iterations": "agile"}
 
 # `approach` selects the approval CEREMONY here — the four-option decision menu with a
 # response deadline, or "For Sprint Planning, the Product Owner approves the backlog".
-# The timing form answers a different question (cadence), and for one label the two
-# answers genuinely differ: `Hybrid (Agile + compliance gates)` exists only because
-# regulatory_need=True, and its whole point is formal sign-off for audit. Resolving it
-# through the cadence handed exactly the regulated projects the informal package, so
-# the label pins the ceremony and outranks the form.
-_CEREMONY_BY_APPROACH = {"Hybrid (Agile + compliance gates)": "predictive"}
+# The timing form answers a different question (cadence), and for these labels the two
+# answers genuinely differ: BOTH are produced only by REGULATORY_OVERRIDE, i.e. only
+# when regulatory_need=True, and their whole point is formal sign-off for audit.
+# Resolving them through the cadence handed exactly the regulated projects the informal
+# package, so the label pins the ceremony and outranks the form. Fixing one of the two
+# and leaving the other is the same defect: the second is reachable through the very
+# advice the docs give ("declare a timing form in 3.1b").
+_CEREMONY_BY_APPROACH = {
+    "Hybrid (Agile + compliance gates)": "predictive",
+    "Hybrid (with strengthened governance)": "predictive",
+}
 
 
 def _plan_approach_label(plan) -> str:
@@ -594,6 +599,13 @@ def prepare_approval_package(
 
     # Instructions for stakeholders
     if approach == "predictive":
+        # A regulated hybrid signs off formally AND runs in sprints, so the header
+        # would otherwise read "Predictive / Waterfall | Sprint: 5" above an
+        # instruction block that never mentions the sprint.
+        cadence_note = (
+            f"\n\nThe work runs in sprints (Sprint {sprint_number}); the sign-off "
+            f"itself is formal because of the project's compliance gates."
+            if sprint_number else "")
         instruction = (
             "Please review the requirements and provide a decision for each:\n"
             "- **Approved** — agreed without reservations\n"
@@ -601,6 +613,7 @@ def prepare_approval_package(
             "- **Rejected** — not agreed (state the reason)\n"
             "- **Abstained** — abstaining\n\n"
             "Response deadline: per the project's governance plan."
+            + cadence_note
         )
     else:
         sprint_ref = f" sprint {sprint_number}" if sprint_number else ""

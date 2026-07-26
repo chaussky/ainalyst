@@ -912,8 +912,12 @@ def load_ba_plan(project_id: str):
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         loaded = None
     if not isinstance(loaded, dict):
-        return None, (f"⚠️ The 3.4 information management plan exists but could not be "
-                      f"read (`{path}`) — continuing without it.")
+        # Not "the 3.4 information management plan": this reader serves 4.4 and 5.2
+        # (section 3.4), 5.5 (the 3.1 timing form) and 4.1 (the 3.1 work period). The
+        # 3.4 wording was accurate when 3.4 was the only consumer, and it now
+        # contradicts the sentence the caller prints above it.
+        return None, (f"⚠️ The chapter-3 BA plan exists but could not be read "
+                      f"(`{path}`) — continuing without it.")
     return loaded, ""
 
 

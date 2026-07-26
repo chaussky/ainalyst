@@ -127,7 +127,7 @@ BASE_SERVER = {
 ```
 
 - `planning_mcp.py`: lightweight (7 tools), always needed for `project_id` and the stakeholder registry
-- `confluence_mcp.py`: 4 tools, starts up without `.env`. An error occurs only when a tool is called, if the keys are not filled in
+- `confluence_mcp.py`: 5 tools, starts up without `.env`. An error occurs only when a tool is called, if the keys are not filled in
 
 ### How `phase.py` Generates Paths
 
@@ -325,7 +325,7 @@ Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4
 | Server (key in `.mcp.json`) | File | BABOK ch. | Tools |
 |---|---|---|---|
 | `babok-ch3` | `planning_mcp.py` | 3 | 7 |
-| `babok-confluence` | `integrations/confluence_mcp.py` | - | 4 |
+| `babok-confluence` | `integrations/confluence_mcp.py` | - | 5 |
 | `babok-ch4-41` | `elicitation_mcp.py` | 4.1 | 3 |
 | `babok-ch4-42` | `elicitation_conduct_mcp.py` | 4.2 | 4 |
 | `babok-ch4-43` | `elicitation_confirm_mcp.py` | 4.3 | 2 |

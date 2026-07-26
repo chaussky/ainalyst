@@ -69,12 +69,13 @@ prepare_approval_package → record_approval_decision (×N stakeholders)
 - `req_ids_json` — JSON list of requirement IDs for the package
 - `approach` — `predictive` or `agile`. Here it selects the approval **ceremony**: the
   formal per-requirement decision menu with a response deadline, or the Sprint Planning
-  wording. **May be omitted**: it then resolves from the 3.1 BA plan — first
-  `Hybrid (Agile + compliance gates)`, which means formal sign-off for audit and so
-  resolves to `predictive` whatever its cadence; then the planned timing form
-  (`plan_ba_activities`); then the recommended approach label. Neither `Hybrid` nor
-  `Hybrid (with strengthened governance)` resolves, so on those two `approach` must be
-  stated explicitly, or `plan_ba_activities` must declare a `timing_form`.
+  wording. **May be omitted**: it then resolves from the 3.1 BA plan in this order —
+  (1) a regulated hybrid (`Hybrid (Agile + compliance gates)` or `Hybrid (with
+  strengthened governance)`, both produced only when `regulatory_need=True`) means
+  formal sign-off for audit, so it resolves to `predictive` whatever its cadence;
+  (2) the planned timing form from `plan_ba_activities`; (3) the recommended approach
+  label. A plain `Hybrid` resolves to neither value, so there `approach` must be stated
+  explicitly, or `plan_ba_activities` must declare a `timing_form`.
 - `audience` — `business` / `developer` / `regulator` / `all`
 - `package_title` — package title (e.g., "Feature: User Onboarding")
 - `sprint_number` — sprint number (agile only)

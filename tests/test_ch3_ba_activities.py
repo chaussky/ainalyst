@@ -199,6 +199,15 @@ class TestStatusLine(_TempCwd):
         self.assertIn("5.5", out)
         self.assertIn("4.1", out)
 
+    def test_the_footer_uses_the_consumers_own_matching_rule(self):
+        """4.1 asks for the task `4.1`, so a period tagged only 4.2/4.3 answers
+        nothing — the footer must not promise output the consumer will not produce.
+        Two sides of one join have to normalise and match identically."""
+        suggest_ba_approach(PROJECT, "High", "High")
+        out = plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Wave 1", "tasks": ["4.2", "4.3"]}]))
+        self.assertNotIn("names the period that covers elicitation", out)
+
     def test_the_footer_does_not_promise_a_reader_that_will_stay_silent(self):
         """Printed unconditionally, the block contradicted the warning three lines
         above it: no timing form means 5.5 will NOT take the methodology, and a plan
@@ -263,6 +272,64 @@ class TestRerun(_TempCwd):
         section = _read_plan()["ba_activities"]
         self.assertEqual([p["name"] for p in section["periods"]], ["Mine"])
         self.assertFalse(section["generated"])
+
+    def test_a_kept_skeleton_is_regenerated_when_the_form_changes(self):
+        """Keeping periods protects the BA's work — but a skeleton is 100% machine
+        output built FOR a form. Carrying it across a form change delivered a `phases`
+        plan tabulating `Iteration 1/2`, under a "Kept from the previous plan" line
+        claiming preserved BA work."""
+        suggest_ba_approach(PROJECT, "High", "High")           # -> Adaptive
+        plan_ba_activities(PROJECT)                            # iterations skeleton
+        out = plan_ba_activities(PROJECT, timing_form="phases")
+        section = _read_plan()["ba_activities"]
+        self.assertEqual(section["timing_form"], "phases")
+        self.assertTrue(all(p["name"].startswith("Stage") for p in section["periods"]),
+                        [p["name"] for p in section["periods"]])
+        self.assertNotIn("period(s)", out.split("Kept from the previous plan")[-1]
+                         if "Kept from the previous plan" in out else "")
+        self.assertIn("regenerated", out.lower())
+
+    def test_periods_the_ba_typed_survive_a_form_change(self):
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Mine", "tasks": ["4.1"]}]))
+        plan_ba_activities(PROJECT, timing_form="phases")
+        section = _read_plan()["ba_activities"]
+        self.assertEqual([p["name"] for p in section["periods"]], ["Mine"])
+
+    def test_an_explicit_empty_list_clears_the_way_the_sibling_tool_documents(self):
+        """3.4 teaches `"[]"` to clear a list and `"-"` to clear a text field. With
+        `"[]"` as the DEFAULT here, "not passed" and "clear it" were the same string,
+        so the constraints could never be cleared by any input at all."""
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, timing_constraints_json=json.dumps(["freeze"]))
+        plan_ba_activities(PROJECT)                            # not passed -> keeps
+        self.assertEqual(_read_plan()["ba_activities"]["timing_constraints"], ["freeze"])
+        plan_ba_activities(PROJECT, timing_constraints_json="[]")   # explicit clear
+        self.assertEqual(_read_plan()["ba_activities"]["timing_constraints"], [])
+
+    def test_an_explicit_empty_period_list_returns_to_the_skeleton(self):
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Mine", "tasks": ["4.1"]}]))
+        plan_ba_activities(PROJECT, periods_json="[]")
+        section = _read_plan()["ba_activities"]
+        self.assertTrue(section["generated"])
+        self.assertTrue(all(p["name"].startswith("Iteration") for p in section["periods"]))
+
+    def test_a_stored_form_outside_the_vocabulary_is_dropped_not_carried_forward(self):
+        """The merge is the first path that takes a form from stored JSON instead of
+        the validated Literal. `sprints` survived, silenced the "form is not set"
+        warning, and made the footer promise a reader that then refuses."""
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT)
+        plan = _read_plan()
+        plan["ba_activities"]["timing_form"] = "sprints"
+        with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
+            json.dump(plan, f)
+        out = plan_ba_activities(PROJECT)
+        self.assertEqual(_read_plan()["ba_activities"]["timing_form"], "iterations")
+        self.assertNotIn("sprints", out)
 
     def test_a_dash_clears_the_notes_the_way_the_rest_of_the_module_does(self):
         suggest_ba_approach(PROJECT, "High", "High")

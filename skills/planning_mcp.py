@@ -55,7 +55,8 @@ from skills.common import (
     read_json_artifact, guard_artifact_errors,
     ABSTRACTION_LEVELS, PLANNABLE_ATTRIBUTES, REUSE_CATEGORIES,
     planned_attribute_set, reg_norm,
-    EFFORT_LEVELS, normalize_task_ref, approach_to_timing_form, activities_section,
+    EFFORT_LEVELS, TIMING_FORMS, normalize_task_ref, approach_to_timing_form,
+    activities_section, planned_work_period,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -597,6 +598,12 @@ def _sane_activities_section(section) -> dict:
     for key in ("timing_form", "form_source", "ba_notes", "planned_on"):
         if key in out and not isinstance(out[key], str):
             out.pop(key, None)
+    # Value, not just type: the merge path is the first that takes a form from stored
+    # JSON rather than from the validated Literal, so a hand-edited "sprints" would be
+    # written back, silence the "form is not set" warning and make the tool promise a
+    # reader that then refuses.
+    if out.get("timing_form") not in TIMING_FORMS:
+        out.pop("timing_form", None)
     constraints = out.get("timing_constraints")
     out["timing_constraints"] = ([c for c in constraints if isinstance(c, str)]
                                  if isinstance(constraints, list) else [])
@@ -930,8 +937,8 @@ _SKELETON_PHASES = (
 def plan_ba_activities(
     project_id: str,
     timing_form: Literal["", "phases", "iterations"] = "",
-    periods_json: str = "[]",
-    timing_constraints_json: str = "[]",
+    periods_json: str = "",
+    timing_constraints_json: str = "",
     ba_notes: str = "",
 ) -> str:
     """
@@ -1029,15 +1036,24 @@ def plan_ba_activities(
             f"up on the approval package that goes out for signature.)"
         )
 
+    kept_skeleton_regenerated = False
     if periods_in:
         generated, source_periods = False, periods_in
-    elif previous.get("periods"):
+    elif (previous.get("periods") and periods_json.strip() != "[]"
+            and not (previous.get("generated")
+                     and previous.get("timing_form") != form)):
         # Keep what is already recorded — including a skeleton the BA has since taken
         # over. Regenerating here is what discarded their work.
         generated = bool(previous.get("generated"))
         source_periods = previous["periods"]
         kept.append(f"{len(source_periods)} period(s)")
     else:
+        # A stored SKELETON is 100% machine output built FOR a particular form, so
+        # carrying it across a form change delivered a `phases` plan tabulating
+        # `Iteration 1/2` — under a line claiming the BA's work had been preserved.
+        # Nothing of theirs is at risk here: periods they typed are never `generated`.
+        kept_skeleton_regenerated = bool(previous.get("periods")
+                                         and previous.get("generated"))
         generated = True
         source_periods = [dict(p) for p in
                           (_SKELETON_ITERATIONS if form == "iterations"
@@ -1090,7 +1106,11 @@ def plan_ba_activities(
             f"⚠️ Effort outside the Low/Medium/High scale, stored as given: "
             f"{', '.join(off_scale_efforts)}.")
 
-    if not constraints and previous.get("timing_constraints"):
+    # "" means "not passed" -> keep; "[]" is the explicit clear, the same idiom
+    # plan_information_management documents. With "[]" as the DEFAULT the two were
+    # indistinguishable and the constraints could not be cleared by any input at all.
+    if (not constraints and previous.get("timing_constraints")
+            and timing_constraints_json.strip() != "[]"):
         constraints = previous["timing_constraints"]
         kept.append(f"{len(constraints)} timing constraint(s)")
     # `-` clears, "" keeps — the convention the rest of this module already uses.
@@ -1115,7 +1135,10 @@ def plan_ba_activities(
         f"  Timing form:  {form or '(not set)'}"
         + (f" ({form_source})" if form_source else ""),
         f"  Periods:      {len(periods)}"
-        + ("  ℹ️ generated from the approach — edit and re-run to make them yours"
+        + ("  ℹ️ regenerated from the approach — the previous ones were a skeleton "
+           "for a different form"
+           if kept_skeleton_regenerated else
+           "  ℹ️ generated from the approach — edit and re-run to make them yours"
            if generated else ""),
         "",
     ]
@@ -1143,7 +1166,10 @@ def plan_ba_activities(
         readers.append(
             "  • 5.5 `prepare_approval_package` — takes the methodology from the "
             "timing form, so you do not state it twice")
-    if any(ref == "4" or ref.startswith("4.") for p in periods for ref in p["tasks"]):
+    # Ask the CONSUMER's own reader, not a lookalike condition: 4.1 queries for the
+    # task `4.1`, so a period tagged only 4.2/4.3 answers nothing, and a footer built
+    # on `startswith("4.")` promised output that never appears.
+    if planned_work_period({"ba_activities": {"periods": periods}}, "4.1"):
         readers.append(
             "  • 4.1 `save_elicitation_plan` — names the period that covers "
             "elicitation work and its planned effort")

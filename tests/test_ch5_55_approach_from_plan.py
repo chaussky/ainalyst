@@ -116,6 +116,30 @@ class TestResolution(BaseMCPTest):
         self.assertNotIn("For Sprint Planning", out)
         self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
 
+    def test_the_OTHER_regulatory_label_is_formal_too(self):
+        """`REGULATORY_OVERRIDE` produces TWO labels and both exist only because
+        regulatory_need=True. Fixing one and leaving the other is the same defect,
+        and the docs steer the BA of that project into declaring a timing form —
+        which is precisely the path that handed it the informal package."""
+        _seed_plan({"timing_form": "iterations"},
+                   approach_label="Hybrid (with strengthened governance)")
+        out = self._prepare()
+        self.assertIn("**Conditional**", out)
+        self.assertNotIn("For Sprint Planning", out)
+        self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
+
+    def test_a_sprint_number_on_a_formal_package_is_explained_not_contradicted(self):
+        """A compliance-gates project runs sprints AND signs off formally, so the
+        header would otherwise read "Predictive / Waterfall | Sprint: 5" with an
+        instruction block that never mentions the sprint."""
+        _seed_plan({"timing_form": "iterations"},
+                   approach_label="Hybrid (Agile + compliance gates)")
+        out = self._prepare(sprint_number="5")
+        self.assertIn("Sprint: 5", out)
+        # NOT assertIn("compliance gates"): the resolution source line already
+        # contains the label, so that would hold with no explanation printed at all.
+        self.assertIn("The work runs in sprints", out)
+
     def test_plain_hybrid_refuses_and_names_both_ways_out(self):
         _seed_plan(approach_label="Hybrid")
         out = self._prepare()
