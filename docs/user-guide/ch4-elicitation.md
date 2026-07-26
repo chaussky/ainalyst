@@ -52,6 +52,8 @@ The BA prepares for a specific elicitation session: defines the goals of the mee
 
 **Creating a Google Form.** `create_google_form` builds a form automatically from a given question structure. The BA doesn't touch Google Forms by hand.
 
+**Reading the 3.1 plan, when there is one.** If the BA already ran the optional `plan_ba_activities` step in Chapter 3, `save_elicitation_plan` automatically states the work period planned for this session (with its effort and timing) and honestly cross-checks the chosen elicitation technique against what 3.1 recommended. On an agile project, where 3.1's recommended techniques are things like Backlog Management and Retrospectives rather than an elicitation technique, it says plainly that there's nothing to cross-check, instead of flagging every session as a mismatch.
+
 ### Value for the BA
 
 **Every meeting now has an outcome.** When the goal is formulated before the meeting, there's a clear answer afterward: achieved or not. If not, another session is needed. If achieved, work can move forward. This removes the feeling of "wasted time."

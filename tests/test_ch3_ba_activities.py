@@ -322,6 +322,37 @@ class TestReport(_TempCwd):
         out = save_ba_plan(PROJECT)
         self.assertIn("plan is empty", out)
 
+    def test_a_derived_form_left_behind_by_a_31_rerun_is_flagged(self):
+        """Found by reading the rendered report, not by an assertion: the stored
+        source stays true forever, so after a 3.1 re-run two ADJACENT sections of one
+        delivered document disagree — 3.1 recommends Hybrid while 3.1b says the form
+        was derived from Adaptive (Agile), and nothing tells the BA to re-run."""
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")          # -> Adaptive (Agile)
+        plan_ba_activities(PROJECT)
+        suggest_ba_approach(PROJECT, "Low", "Low")            # -> Predictive (Waterfall)
+        save_ba_plan(PROJECT)
+        text = self._report_text()
+        self.assertIn("Adaptive (Agile)", text)               # where it came from
+        self.assertIn("plan_ba_activities", text)             # what to do about it
+        self.assertIn("no longer", text)
+
+    def test_a_declared_form_is_not_flagged_when_the_approach_changes(self):
+        """The BA said it; the approach is not evidence about it either way."""
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, timing_form="phases")
+        suggest_ba_approach(PROJECT, "Low", "Low")
+        save_ba_plan(PROJECT)
+        self.assertNotIn("no longer", self._report_text())
+
+    def test_an_unchanged_approach_is_not_flagged(self):
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT)
+        save_ba_plan(PROJECT)
+        self.assertNotIn("no longer", self._report_text())
+
     def test_31_points_at_the_new_optional_step(self):
         out = suggest_ba_approach(PROJECT, "High", "High")
         self.assertIn("plan_ba_activities", out)

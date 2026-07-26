@@ -63,6 +63,33 @@ AInalyst asks two clarifying questions about change frequency and uncertainty. T
 
 > The BA didn't pick parameters by hand, didn't open a spreadsheet, didn't have to memorize commands. They just described the context and got a well-reasoned decision.
 
+### Optional step 3.1b: Plan BA Activities and Timing
+
+BABOK 3.1 has two more elements beyond choosing an approach: which business analysis
+activities will be performed (element .3), and when — in specific phases or iteratively
+(element .4). This step is optional, and it's worth taking once the approach is settled:
+call `plan_ba_activities` with the project ID. Leave the timing form unspecified and the
+platform derives it from the chosen approach (Predictive → phases, Adaptive → iterations);
+a plain Hybrid sits between the two on purpose, so the platform asks the BA to state the
+form rather than guess it. Without any periods, the platform generates a starting skeleton
+(two iterations or three stages, depending on the form) that the BA edits and re-runs.
+
+Example call:
+
+> *"Plan the BA activities for the HR portal project: two iterations, the first covers
+> elicitation and current-state analysis with high effort, the second covers prioritization
+> and specification with medium effort, planned for August and September."*
+
+The result is saved into `ba_plan.json` and rendered in the report as a new
+`## 3.1b BA Activities and Timing` section: the timing form and its source, a table of
+periods (BABOK tasks, deliverables, effort, timing), and any timing constraints the BA
+named (a regulatory deadline, vendor availability).
+
+This isn't filed away either: Task 5.5 `prepare_approval_package` takes the methodology
+straight from the planned timing form, so the BA no longer states Predictive/Agile a
+second time when preparing an approval package. Task 4.1 `save_elicitation_plan` names the
+work period that covers elicitation, with its planned effort, right in the session plan.
+
 ---
 
 ## Task 3.2: Plan Stakeholder Engagement (Stakeholder Map)

@@ -4,6 +4,7 @@ MCP tools for business analysis planning.
 
 Tools:
   - suggest_ba_approach           — 3.1: choose a methodology (Predictive/Agile/Hybrid)
+  - plan_ba_activities            — 3.1: elements .3/.4 — BA activities and timing
   - plan_stakeholder_engagement   — 3.2: Power/Interest stakeholder matrix + communication plan
   - plan_ba_governance            — 3.3: governance: change control, approval, escalation
   - plan_information_management   — 3.4: artifact storage and traceability architecture
@@ -15,20 +16,22 @@ Storage:
   - {project}_ba_plan_*.md        — Markdown report (via save_artifact)
 
 Integration:
-  Output: ba_plan.json. Section 3.4 (information_management) IS read by other
-  chapters — through the shared helpers in skills/common.py, so no chapter imports
-  this module:
+  Output: ba_plan.json. Sections 3.1b (ba_activities) and 3.4 (information_management)
+  ARE read by other chapters — through the shared helpers in skills/common.py, so no
+  chapter imports this module:
     - 4.4 prepare_communication_package — the planned level of detail per audience
     - 5.2 find_reusable_requirements    — the planned reuse scope and repository
     - 5.2 check_requirements_health     — the planned attribute set
+    - 5.5 prepare_approval_package      — the methodology, from the planned timing form
+    - 4.1 save_elicitation_plan         — the work period that covers elicitation
   3.2 additionally SEEDS the living stakeholder registry
   ({project}_stakeholder_registry.json) that 4.2 maintains and 7.4 reads, so the same
   people are not entered twice. Source fields only, and only on creation for the
   assumed ones — a re-run must never overwrite what elicitation established.
 
-  ⚠️ The remaining seams are NOT consumed programmatically by any other chapter:
-    - 5.5 does not read the 3.3 governance section; approval authority and deadlines
-      are applied by the BA, not automatically.
+  ⚠️ Still NOT consumed programmatically:
+    - the 3.3 governance section — approval authority and deadlines are applied by
+      the BA, not automatically (5.5 reads the 3.1 timing form, not this section).
     - 7.3 takes its business context from 6.1/6.2, not from this plan.
   Wiring those two is a planned feature, not current behavior — do not promise
   them to the BA in tool output.
@@ -1312,6 +1315,20 @@ def save_ba_plan(
         if activities.get("generated"):
             md_lines.append(
                 "- ℹ️ Generated from the approach — edit via `plan_ba_activities`.")
+        # A DERIVED form records the approach it came from, and that record stays true
+        # forever — so a later 3.1 re-run leaves two ADJACENT sections of this one
+        # delivered document disagreeing: 3.1 recommends X while 3.1b cites a
+        # derivation from Y. Found by reading the rendered report, not by an assertion.
+        # A form the BA DECLARED is not evidence about the approach either way, so it
+        # is never flagged.
+        derived_from = (source[len("derived from "):]
+                        if source.startswith("derived from ") else "")
+        current_approach = str(approach.get("recommended_approach", "") or "")
+        if derived_from and current_approach and derived_from != current_approach:
+            md_lines.append(
+                f"- ⚠️ This form was derived from **{derived_from}**, which the plan "
+                f"no longer recommends (now **{current_approach}**). Re-run "
+                f"`plan_ba_activities` to confirm or change it.")
         periods = activities.get("periods", [])
         if periods:
             md_lines += [
@@ -1464,9 +1481,11 @@ def save_ba_plan(
         f"ℹ️ What is read automatically, and what is not:\n"
         f"  • Stakeholders from 3.2 are ALREADY seeded into the living registry that "
         f"4.2 maintains and 7.4 reads — 4.2 adds to it as interviews reveal more\n"
-        f"  • Section 3.4 IS read: 4.4 states the planned level of detail in every "
-        f"communication package, 5.2 ranks reuse candidates by the planned scope and "
-        f"audits exactly the planned attribute set\n"
+        f"  • Sections 3.1b and 3.4 ARE read: 5.5 takes the approval package's "
+        f"methodology from the planned timing form, 4.1 names the work period that "
+        f"covers elicitation, 4.4 states the planned level of detail in every "
+        f"communication package, and 5.2 ranks reuse candidates by the planned scope "
+        f"and audits exactly the planned attribute set\n"
         f"  • The rest is a reference document — the governance rules from 3.3 are "
         f"applied by you when approving in 5.5\n"
     )

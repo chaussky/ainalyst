@@ -1257,7 +1257,7 @@ That's not an accident and not a marketing trick. It's an architectural decision
 
 ### How it works under the hood
 
-Under the hood, AInalyst runs 21 specialized skills and 22 MCP servers with 112 tools, each of which "knows" a specific BABOK task: how to do it correctly, what to watch for, what artifact to produce.
+Under the hood, AInalyst runs 21 specialized skills and 22 MCP servers with 113 tools, each of which "knows" a specific BABOK task: how to do it correctly, what to watch for, what artifact to produce.
 
 Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when this skill should fire. When the business analyst writes something in the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know what happened under the hood. And doesn't need to: they see the result.
 

@@ -279,6 +279,8 @@ The BA organizes formal sign-off of requirements with stakeholders and creates t
 
 **Support for Predictive and Agile.** In a Predictive project, the baseline is created at the end of a phase and includes every requirement from that stage. In Agile, before each sprint, the Product Owner signs off on a Sprint Backlog Baseline tied to a specific sprint number.
 
+**The methodology no longer has to be typed twice.** If the BA planned the timing of BA work in Task 3.1b (`plan_ba_activities`), `prepare_approval_package` reads the methodology straight from there — the BA can simply leave `approach` unspecified. The package states where the value came from ("from the 3.1 BA plan — timing form: iterations"), so the approval package can never quietly drift from what 3.1 decided. A project whose approach is a plain, unqualified Hybrid doesn't resolve automatically; the BA states `approach` explicitly for that one.
+
 ### Value for the BA
 
 **"Approved" now has a precise meaning.** There's an Approval Record with a date, a baseline version, and a list of participants and their decisions. The "well, we discussed it in the meeting" situation is gone. There's a documented trail that protects the BA and gives developers confidence in the material.

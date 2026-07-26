@@ -46,6 +46,16 @@ Ask clarifying questions if the context isn't specified:
 
 After choosing the approach — offer to save the decision via the MCP tool `suggest_ba_approach`.
 
+**Optional step 3.1b — plan the BA activities and their timing.** BABOK 3.1 has two more
+elements: which BA activities are performed (.3) and when — in specific phases or
+iteratively (.4). Offer `plan_ba_activities` after the approach is chosen; leave the
+timing form empty to derive it from the approach (Predictive → phases, Adaptive → iterations,
+a plain Hybrid does not resolve and the tool asks instead of guessing). It records work
+periods (BABOK tasks, deliverables, effort, timing) in the same `ba_plan.json`. Two chapters
+then read it automatically: 5.5 `prepare_approval_package` takes the methodology from the
+planned timing form instead of asking the BA a second time, and 4.1 `save_elicitation_plan`
+names the period that covers elicitation work.
+
 ---
 
 ### Task 3.2 — Plan Stakeholder Engagement
@@ -191,6 +201,7 @@ when you need to save an artifact or get a structured output:
 | Task | MCP tool |
 | :--- | :--- |
 | 3.1 Plan approach | `suggest_ba_approach` |
+| 3.1b Plan BA activities and timing (optional) | `plan_ba_activities` |
 | 3.2 Stakeholders | `plan_stakeholder_engagement` |
 | 3.3 Governance | `plan_ba_governance` |
 | 3.4 Information management | `plan_information_management` |

@@ -52,7 +52,7 @@ The platform consists of three layers that work together on every BA request:
                        │ instructs to call
 ┌──────────────────────▼──────────────────────────────┐
 │  MCP servers (22 x *_mcp.py)                         │
-│  112 tools. Perform the analytical                   │
+│  113 tools. Perform the analytical                   │
 │  operations: build requirement graphs, analyze       │
 │  transcripts, save artifacts.                        │
 └──────────────────────┬──────────────────────────────┘
@@ -347,7 +347,7 @@ Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4
 | `babok-ch7-75` | `design_options_mcp.py` | 7.5 | 5 |
 | `babok-ch7-76` | `value_recommend_mcp.py` | 7.6 | 4 |
 
-**Total: 22 servers, 112 tools.**
+**Total: 22 servers, 113 tools.**
 
 ### FastMCP Technical Constraints
 

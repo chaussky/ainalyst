@@ -119,3 +119,9 @@ Plan structure:
 
 To save the plan, use the MCP tool `save_elicitation_plan`.
 For surveys, also available: `create_google_form` and `get_form_responses`.
+
+If a 3.1 BA plan exists for the project, `save_elicitation_plan` automatically states the
+planned work period covering this session (BABOK 3.1, elements .3/.4) and honestly
+cross-checks the chosen technique against what 3.1 recommended — including saying plainly
+when the plan recommends no elicitation technique at all (a common, expected case on agile
+projects).

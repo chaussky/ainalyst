@@ -67,7 +67,11 @@ prepare_approval_package → record_approval_decision (×N stakeholders)
 - `project_name` — project name
 - `package_id` — unique package ID (APKG-001)
 - `req_ids_json` — JSON list of requirement IDs for the package
-- `approach` — `predictive` or `agile`
+- `approach` — `predictive` or `agile`. **May be omitted**: it then resolves from the
+  3.1 BA plan — first from the planned timing form (`plan_ba_activities`), then from the
+  recommended approach label. A project whose 3.1 approach is a plain `Hybrid` (not
+  `Hybrid (Agile + compliance gates)`) resolves to neither value, so `approach` must be
+  stated explicitly there, or `plan_ba_activities` must declare a `timing_form`.
 - `audience` — `business` / `developer` / `regulator` / `all`
 - `package_title` — package title (e.g., "Feature: User Onboarding")
 - `sprint_number` — sprint number (agile only)
@@ -193,6 +197,8 @@ Called once per stakeholder (analogous to add_stakeholder_scores in 5.3).
 ## Relationship to other tasks
 
 **Depends on:**
+- 3.1 → the methodology, read automatically from `plan_ba_activities`' timing form (or the
+  recommended approach) when `approach` is left empty
 - 7.2 → verification evidence (`req_verified` in the repository history) — reported, not mandatory
 - 4.3 → confirmed elicitation results (context)
 - 5.1 → traceability repository
