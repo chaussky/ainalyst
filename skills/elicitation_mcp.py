@@ -14,7 +14,8 @@ import json
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, parse_json_dict_list,
-                           update_stakeholder_registry_file)
+                           update_stakeholder_registry_file,
+                           load_ba_plan, planned_work_period)
 
 mcp = FastMCP("BABOK_Elicitation_Prep")
 
@@ -74,6 +75,73 @@ def _seed_registry_from_plan(project_name: str, stakeholders: list) -> str:
         return ""
     return (f"\n📇 Stakeholder registry: +{added} new, {updated} updated "
             f"(the same registry 4.2 maintains and 7.4 reads).")
+
+
+# 3.1 records techniques for the WHOLE practice (BABOK ch. 10), and only four of them
+# are elicitation techniques this tool can run. Every adaptive cell of APPROACH_MATRIX
+# is Backlog Management / User Stories / Retrospectives — comparing outside this
+# intersection would flag EVERY agile project, the way the 4.4 schedule check claimed
+# "no communication on record" because its two vocabularies could not meet.
+_PLANNED_ELICITATION_TECHNIQUES = {
+    "document analysis": "Document Analysis",
+    "interview": "Interview", "interviews": "Interview",
+    "prototyping": "Prototyping",
+    "workshop": "Workshop", "workshops": "Workshop",
+}
+
+
+def _planned_context(project_name: str, technique: str) -> tuple:
+    """(markdown_block, warning) for the 3.1 plan behind this session.
+
+    Advisory only: a session plan must never fail because the BA plan is missing or
+    damaged.
+    """
+    plan, note = load_ba_plan(project_name)
+    if not isinstance(plan, dict):
+        return "", note
+
+    lines = []
+    period = planned_work_period(plan, "4.1")
+    if period:
+        detail = [f"**{period['name']}**"]
+        if period["effort"]:
+            detail.append(f"planned effort: {period['effort']}")
+        if period["when"]:
+            detail.append(period["when"])
+        lines.append(f"- **Planned work period (BABOK 3.1, element .3/.4):** "
+                     f"{' — '.join(detail)}")
+
+    approach = plan.get("ba_approach")
+    raw_techniques = approach.get("techniques") if isinstance(approach, dict) else None
+    techniques = ([t for t in raw_techniques if isinstance(t, str)]
+                  if isinstance(raw_techniques, list) else [])
+    if techniques:
+        planned = []
+        for name in techniques:
+            mapped = _PLANNED_ELICITATION_TECHNIQUES.get(name.strip().lower())
+            if mapped and mapped not in planned:
+                planned.append(mapped)
+        if not planned:
+            lines.append(
+                f"- ℹ️ The 3.1 plan recommends no elicitation techniques "
+                f"({', '.join(techniques)}), so there is nothing to cross-check "
+                f"against `{technique}`.")
+        elif technique in planned:
+            lines.append(
+                f"- ✅ `{technique}` is among the techniques 3.1 recommended "
+                f"({', '.join(planned)}).")
+        else:
+            lines.append(
+                f"- ⚠️ 3.1 recommended {', '.join(planned)}; this session uses "
+                f"`{technique}`. Not a blocker — the rationale below is what matters.")
+
+    if not lines:
+        return "", note
+    # The trailing blank line is load-bearing for the document, not for Markdown: every
+    # other separator in this artefact is followed by one, and the block is spliced in
+    # directly before a heading.
+    block = "\n".join(["## From the BA plan (3.1)", ""] + lines + ["", "---", "", ""])
+    return block, note
 
 
 @mcp.tool()
@@ -140,6 +208,8 @@ def save_elicitation_plan(
         + stakeholder_rows
     )
 
+    planned_block, plan_note = _planned_context(project_name, technique)
+
     from datetime import date
     content = f"""# Elicitation Activity Plan
 
@@ -149,7 +219,7 @@ def save_elicitation_plan(
 
 ---
 
-## Elicitation Goals
+{planned_block}## Elicitation Goals
 
 {goals}
 
@@ -183,7 +253,8 @@ def save_elicitation_plan(
     # 7.1 consumer into globbing for a pid that the filename never carries).
     suffix = save_artifact(content, "4_1_elicitation_plan", project_id=project_name)
     registry_note = _seed_registry_from_plan(project_name, stakeholders)
-    return f"✅ Elicitation plan saved.{suffix}{registry_note}"
+    return f"✅ Elicitation plan saved.{suffix}{registry_note}" + (
+        f"\n{plan_note}" if plan_note else "")
 
 
 # ---------------------------------------------------------------------------
