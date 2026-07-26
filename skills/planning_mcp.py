@@ -87,9 +87,10 @@ _TRACEABILITY_LEVELS = {
 
 # The eight 4.4 audience archetypes. Kept in sync with the `audience_role` Literal in
 # elicitation_communicate_mcp.prepare_communication_package — Chapter 3 cannot import
-# Chapter 4 (different phases), so this is a copy, and a test pins the two together.
-# A plan row naming something else is still accepted (it may be a job title), just
-# flagged: the consumer matches on either identifier.
+# Chapter 4 (different phases), so this is a copy, and
+# tests/test_ch3_info_mgmt_planning.py::TestVocabulariesStayInSync pins the two
+# together. A plan row naming something else is still accepted (it may be a job
+# title), just flagged: the consumer matches on either identifier.
 _AUDIENCE_ARCHETYPES = (
     "Business Sponsor", "Manager", "Developer", "Architect / Tech Lead",
     "Tester", "End User", "Customer", "Domain SME",
@@ -532,6 +533,9 @@ def plan_ba_governance(
     )
 
 
+_ARCHETYPE_KEYS = {reg_norm(a) for a in _AUDIENCE_ARCHETYPES}
+
+
 def _merge_text(new: str, previous, default: str = "") -> str:
     """Merge rule for a free-text field: "" keeps, "-" clears, anything else sets."""
     if new == "":
@@ -565,8 +569,10 @@ def plan_information_management(
     Saves to {project}_ba_plan.json, section 'information_management'.
 
     Re-running MERGES: a parameter left empty keeps its previous value. Clear a list
-    with "[]", a text field with "-", an enum with "None". `storage_tools` cannot be
-    cleared — a plan with nowhere to store anything is an unfinished task.
+    with "[]", a text field with "-", an enum with "None". Two exceptions:
+    `storage_tools` cannot be cleared at all (a plan with nowhere to store anything is
+    an unfinished task), and clearing `access_rules` restores its standing default
+    rather than emptying it.
 
     What reads this plan:
       - 4.4 prepare_communication_package  — the planned level of detail per audience
@@ -657,11 +663,16 @@ def plan_information_management(
                 return (f"❌ `abstraction_levels_json`: row {i} has level "
                         f"`{row_level or '(empty)'}`.\n"
                         f"   Allowed: {', '.join(ABSTRACTION_LEVELS)}")
-            if audience not in _AUDIENCE_ARCHETYPES:
+            key = reg_norm(audience)
+            # Compared through reg_norm, because that is how the CONSUMER matches:
+            # a raw-casing check told the BA that "business sponsor" would "match only
+            # by job title" while 4.4 resolved it as the archetype perfectly well — a
+            # confident false claim, and one that also fired on the second row of any
+            # case-differing duplicate.
+            if key not in _ARCHETYPE_KEYS:
                 warnings.append(
                     f"⚠️ `{audience}` is not one of the 4.4 audience archetypes — it will "
                     f"match only by job title.")
-            key = reg_norm(audience)
             entry = {"audience": audience, "level": row_level,
                      "note": str(row.get("note") or "")}
             if key in seen:
@@ -711,6 +722,8 @@ def plan_information_management(
 
     if additional_attributes_json == "":
         additional = prev_attrs.get("additional", [])
+        if additional:
+            kept.append("additional attributes")
     else:
         additional, error = _parse_string_list(
             additional_attributes_json, "additional_attributes_json")
@@ -726,11 +739,20 @@ def plan_information_management(
                     f"requirement model has no field for them, so 5.2 could never "
                     f"check them.")
 
+    # Tracked like every other merged field: a "Kept" line the BA is meant to trust
+    # instead of opening the JSON must not under-report what actually survived.
+    if access_rules == "" and previous.get("access_rules"):
+        kept.append("access rules")
+    if ba_notes == "" and previous.get("ba_notes"):
+        kept.append("BA notes")
+
     info_mgmt = {
         "storage_tools": storage_tools,
         "traceability_level": level,
         "traceability_description": trace_desc,
         "artifact_types": artifact_types,
+        # `-` restores the standing default rather than emptying the field: an empty
+        # Access line in the delivered BA Plan is worse than the default it replaced.
         "access_rules": _merge_text(access_rules, previous.get("access_rules"),
                                     "BA edits, others read") or "BA edits, others read",
         "ba_notes": _merge_text(ba_notes, previous.get("ba_notes")),

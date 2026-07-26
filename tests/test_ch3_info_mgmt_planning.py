@@ -40,11 +40,37 @@ class TestAbstractionLevels(BaseMCPTest):
         self.assertIn("Summary", result)
 
     def test_row_without_audience_is_refused_by_index(self):
+        """Two rows, the SECOND one broken: with a single row the assertion could not
+        tell real index tracking from a hardcoded "row 1"."""
         result = plan_information_management(
             PROJECT, '["Confluence"]',
-            abstraction_levels_json='[{"level": "Summary"}]')
+            abstraction_levels_json=json.dumps([
+                {"audience": "Manager", "level": "Summary"},
+                {"level": "Summary"}]))
         self.assertIn("❌", result)
-        self.assertIn("1", result)
+        self.assertIn("row 2", result)
+
+    def test_archetype_recognition_is_case_insensitive(self):
+        """The consumer matches through `reg_norm`, so "business sponsor" DOES resolve
+        as the archetype. Warning the BA that it "will match only by job title" is a
+        confident false claim."""
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json='[{"audience": "business sponsor", "level": "Summary"}]')
+        self.assertIn("✅", result)
+        self.assertNotIn("job title", result)
+
+    def test_duplicate_warning_is_the_only_warning_for_two_archetype_rows(self):
+        """Was: the lowercase second row ALSO tripped the "not an archetype" warning,
+        so asserting merely that some ⚠️ appeared could not tell which fired — the
+        test would have passed with duplicate detection deleted."""
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json=json.dumps([
+                {"audience": "Manager", "level": "Summary"},
+                {"audience": "manager", "level": "Detailed"}]))
+        self.assertIn("appears twice", result)
+        self.assertNotIn("job title", result)
 
     def test_job_title_audience_is_accepted_with_a_warning(self):
         """A row may name a job title instead of one of the 4.4 archetypes — that is
@@ -170,6 +196,27 @@ class TestMergeOnRerun(BaseMCPTest):
         self.assertIn("❌", result)
         self.assertFalse(os.path.exists(_plan_path("b33_fresh")))
 
+    def test_kept_line_names_every_field_it_actually_kept(self):
+        """A status line the BA is meant to trust instead of opening the JSON must not
+        under-report: access_rules, ba_notes and the additional attributes were all
+        silently preserved without ever being named."""
+        plan_information_management(
+            PROJECT, '["Confluence"]', access_rules="BA edits, PO reads",
+            ba_notes="agreed at the kickoff",
+            attributes_preset="Minimum", additional_attributes_json='["complexity"]')
+        result = plan_information_management(PROJECT, '["Confluence", "Jira"]')
+        self.assertIn("access rules", result)
+        self.assertIn("BA notes", result)
+        self.assertIn("additional attributes", result)
+
+    def test_clearing_access_rules_restores_the_documented_default(self):
+        """`-` clears every other text field to empty, but this one has a standing
+        default, and an empty Access line in a delivered document is worse than the
+        default. Documented rather than left as an inconsistency."""
+        plan_information_management(PROJECT, '["Confluence"]', access_rules="PO edits")
+        plan_information_management(PROJECT, access_rules="-")
+        self.assertEqual(_section()["access_rules"], "BA edits, others read")
+
     def test_storage_tools_cannot_be_cleared(self):
         """A 3.4 plan with no place to store anything is not an empty field — it is
         an unfinished task."""
@@ -177,6 +224,29 @@ class TestMergeOnRerun(BaseMCPTest):
         result = plan_information_management(PROJECT, storage_tools_json="[]")
         self.assertIn("❌", result)
         self.assertEqual(_section()["storage_tools"], ["Confluence"])
+
+
+class TestVocabulariesStayInSync(BaseMCPTest):
+    """Chapter 3 cannot import chapter 4 (different phases), so it copies the audience
+    vocabulary. A copy that drifts is a join that stops matching — silently. Same for
+    the Literal parameters, which cannot be built from a runtime tuple."""
+
+    def test_audience_archetypes_match_the_4_4_literal(self):
+        import typing
+        from skills.planning_mcp import _AUDIENCE_ARCHETYPES
+        from skills.elicitation_communicate_mcp import prepare_communication_package
+        hints = typing.get_type_hints(prepare_communication_package)
+        self.assertEqual(set(_AUDIENCE_ARCHETYPES),
+                         set(typing.get_args(hints["audience_role"])))
+
+    def test_literal_parameters_match_the_shared_constants(self):
+        import typing
+        from skills.common import ATTRIBUTE_PRESETS, REUSE_SCOPES
+        hints = typing.get_type_hints(plan_information_management)
+        scope_values = set(typing.get_args(hints["reuse_target_scope"])) - {"", "None"}
+        preset_values = set(typing.get_args(hints["attributes_preset"])) - {"", "None"}
+        self.assertEqual(scope_values, set(REUSE_SCOPES))
+        self.assertEqual(preset_values, set(ATTRIBUTE_PRESETS))
 
 
 if __name__ == "__main__":
