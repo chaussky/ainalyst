@@ -1,0 +1,183 @@
+"""tests/test_ch3_info_mgmt_planning.py — BABOK 3.4 elements .2 / .4 / .6 (B3-3)."""
+
+import json
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from tests.conftest import setup_mocks, BaseMCPTest
+
+setup_mocks()
+
+from skills.planning_mcp import plan_information_management, _plan_path
+
+PROJECT = "b33_writer"
+
+
+def _section(project_id=PROJECT) -> dict:
+    with open(_plan_path(project_id), encoding="utf-8") as f:
+        return json.load(f)["information_management"]
+
+
+class TestAbstractionLevels(BaseMCPTest):
+
+    def test_levels_are_stored(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json=json.dumps([
+                {"audience": "Business Sponsor", "level": "Summary", "note": "value only"}]))
+        self.assertIn("✅", result)
+        rows = _section()["abstraction_levels"]
+        self.assertEqual(rows[0]["level"], "Summary")
+
+    def test_unknown_level_is_refused_with_the_allowed_values(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json='[{"audience": "Manager", "level": "Verbose"}]')
+        self.assertIn("❌", result)
+        self.assertIn("Summary", result)
+
+    def test_row_without_audience_is_refused_by_index(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json='[{"level": "Summary"}]')
+        self.assertIn("❌", result)
+        self.assertIn("1", result)
+
+    def test_job_title_audience_is_accepted_with_a_warning(self):
+        """A row may name a job title instead of one of the 4.4 archetypes — that is
+        legal (the consumer matches on either), but the BA should know it will only
+        match by job title."""
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json='[{"audience": "Head of Retail Lending", "level": "Detailed"}]')
+        self.assertIn("✅", result)
+        self.assertIn("⚠️", result)
+
+    def test_duplicate_audience_keeps_the_last_and_warns(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            abstraction_levels_json=json.dumps([
+                {"audience": "Manager", "level": "Summary"},
+                {"audience": "manager", "level": "Detailed"}]))
+        self.assertIn("⚠️", result)
+        rows = _section()["abstraction_levels"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["level"], "Detailed")
+
+    def test_shape_that_is_not_a_list_of_objects_is_refused(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]', abstraction_levels_json='["Manager"]')
+        self.assertIn("❌", result)
+        self.assertIn("abstraction_levels_json", result)
+
+
+class TestReusePlanning(BaseMCPTest):
+
+    def test_reuse_fields_are_stored(self):
+        plan_information_management(
+            PROJECT, '["Confluence"]',
+            reuse_target_scope="program",
+            reuse_repository="Confluence space REQ-LIB",
+            reuse_categories_json='["regulatory", "business rules"]')
+        reuse = _section()["reuse"]
+        self.assertEqual(reuse["target_scope"], "program")
+        self.assertEqual(reuse["repository"], "Confluence space REQ-LIB")
+        self.assertIn("regulatory", reuse["categories"])
+
+    def test_unlisted_category_is_accepted_with_a_warning(self):
+        """BABOK's list is open — an unlisted category must not be refused."""
+        result = plan_information_management(
+            PROJECT, '["Confluence"]', reuse_categories_json='["screen layouts"]')
+        self.assertIn("✅", result)
+        self.assertIn("⚠️", result)
+        self.assertIn("screen layouts", _section()["reuse"]["categories"])
+
+
+class TestAttributeVocabulary(BaseMCPTest):
+
+    def test_preset_is_stored_and_echoed_expanded(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]', attributes_preset="Standard")
+        self.assertEqual(_section()["attributes"]["preset"], "Standard")
+        self.assertIn("owner", result)
+
+    def test_expansion_is_not_stored(self):
+        """Only preset + additional are stored; one resolver expands them."""
+        plan_information_management(PROJECT, '["Confluence"]', attributes_preset="Full")
+        self.assertNotIn("effective", _section()["attributes"])
+
+    def test_attribute_outside_the_platform_model_is_refused_by_name(self):
+        result = plan_information_management(
+            PROJECT, '["Confluence"]',
+            attributes_preset="Minimum", additional_attributes_json='["urgency"]')
+        self.assertIn("❌", result)
+        self.assertIn("urgency", result)
+        self.assertIn("owner", result)   # the allowed list is shown
+
+
+class TestMergeOnRerun(BaseMCPTest):
+
+    def test_rerun_keeps_the_new_rich_fields(self):
+        plan_information_management(
+            PROJECT, '["Confluence"]', attributes_preset="Standard",
+            abstraction_levels_json='[{"audience": "Manager", "level": "Summary"}]')
+        plan_information_management(PROJECT, '["Confluence", "Jira"]')
+        section = _section()
+        self.assertEqual(section["attributes"]["preset"], "Standard")
+        self.assertEqual(len(section["abstraction_levels"]), 1)
+
+    def test_rerun_keeps_the_PRE_EXISTING_fields_too(self):
+        """Was: a re-run to add one storage tool silently reset traceability_level to
+        Medium and artifact_types to [] — and the delivered BA Plan then showed
+        values the BA never chose."""
+        plan_information_management(
+            PROJECT, '["Confluence"]', traceability_level="High",
+            artifact_types_json='["BRD"]', access_rules="BA edits, PO reads")
+        plan_information_management(PROJECT, '["Confluence", "Jira"]')
+        section = _section()
+        self.assertEqual(section["traceability_level"], "High")
+        self.assertEqual(section["artifact_types"], ["BRD"])
+        self.assertEqual(section["access_rules"], "BA edits, PO reads")
+
+    def test_rerun_reports_what_it_kept(self):
+        plan_information_management(PROJECT, '["Confluence"]', attributes_preset="Full")
+        result = plan_information_management(PROJECT, '["Confluence", "Jira"]')
+        self.assertIn("kept", result.lower())
+
+    def test_explicit_clearing_works(self):
+        plan_information_management(
+            PROJECT, '["Confluence"]', artifact_types_json='["BRD"]',
+            attributes_preset="Full", reuse_repository="REQ-LIB")
+        plan_information_management(
+            PROJECT, artifact_types_json="[]", attributes_preset="None",
+            reuse_repository="-")
+        section = _section()
+        self.assertEqual(section["artifact_types"], [])
+        self.assertEqual(section["attributes"]["preset"], "")
+        self.assertEqual(section["reuse"]["repository"], "")
+
+    def test_storage_tools_may_be_omitted_on_a_rerun(self):
+        plan_information_management(PROJECT, '["Confluence"]')
+        result = plan_information_management(PROJECT, traceability_level="High")
+        self.assertIn("✅", result)
+        self.assertEqual(_section()["storage_tools"], ["Confluence"])
+
+    def test_first_call_without_storage_tools_is_refused(self):
+        result = plan_information_management("b33_fresh", traceability_level="High")
+        self.assertIn("❌", result)
+        self.assertFalse(os.path.exists(_plan_path("b33_fresh")))
+
+    def test_storage_tools_cannot_be_cleared(self):
+        """A 3.4 plan with no place to store anything is not an empty field — it is
+        an unfinished task."""
+        plan_information_management(PROJECT, '["Confluence"]')
+        result = plan_information_management(PROJECT, storage_tools_json="[]")
+        self.assertIn("❌", result)
+        self.assertEqual(_section()["storage_tools"], ["Confluence"])
+
+
+if __name__ == "__main__":
+    unittest.main()

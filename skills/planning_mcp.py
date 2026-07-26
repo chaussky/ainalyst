@@ -45,6 +45,8 @@ from skills.common import (
     parse_json_dict_list as _parse_json_dict_list,
     update_stakeholder_registry_file, load_stakeholder_registry, stakeholder_identity,
     read_json_artifact, guard_artifact_errors,
+    ABSTRACTION_LEVELS, PLANNABLE_ATTRIBUTES, REUSE_CATEGORIES,
+    planned_attribute_set, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -82,6 +84,19 @@ _TRACEABILITY_LEVELS = {
     "Medium": "Requirements linked to Jira tickets and test cases",
     "Low":    "Basic: requirement numbering, links as needed",
 }
+
+# The eight 4.4 audience archetypes. Kept in sync with the `audience_role` Literal in
+# elicitation_communicate_mcp.prepare_communication_package — Chapter 3 cannot import
+# Chapter 4 (different phases), so this is a copy, and a test pins the two together.
+# A plan row naming something else is still accepted (it may be a job title), just
+# flagged: the consumer matches on either identifier.
+_AUDIENCE_ARCHETYPES = (
+    "Business Sponsor", "Manager", "Developer", "Architect / Tech Lead",
+    "Tester", "End User", "Customer", "Domain SME",
+)
+
+_CLEAR_TEXT = "-"          # explicit clearing value for free-text parameters
+_CLEAR_ENUM = "None"       # explicit clearing value for the Literal parameters
 
 _ISSUE_RECOMMENDATIONS = {
     "no templates":        "📋 Adopt standard requirement templates (SRS, User Story template)",
@@ -517,68 +532,266 @@ def plan_ba_governance(
     )
 
 
+def _merge_text(new: str, previous, default: str = "") -> str:
+    """Merge rule for a free-text field: "" keeps, "-" clears, anything else sets."""
+    if new == "":
+        return previous if previous is not None else default
+    return "" if new == _CLEAR_TEXT else new
+
+
 @mcp.tool()
 @guard_artifact_errors
 def plan_information_management(
     project_id: str,
-    storage_tools_json: str,
-    traceability_level: Literal["Low", "Medium", "High"] = "Medium",
-    artifact_types_json: str = "[]",
+    storage_tools_json: str = "",
+    traceability_level: Literal["", "Low", "Medium", "High"] = "",
+    artifact_types_json: str = "",
     access_rules: str = "",
     ba_notes: str = "",
+    abstraction_levels_json: str = "",
+    reuse_target_scope: Literal["", "None", "initiative", "program",
+                                "division", "enterprise"] = "",
+    reuse_repository: str = "",
+    reuse_categories_json: str = "",
+    attributes_preset: Literal["", "None", "Minimum", "Standard", "Full"] = "",
+    additional_attributes_json: str = "",
 ) -> str:
     """
     BABOK 3.4 — Plan business analysis information management.
 
-    Defines where and how requirements and artifacts are stored, and the traceability level.
+    Defines where and how requirements and artifacts are stored, the traceability
+    level, how much detail each audience gets, how requirements will be reused, and
+    which attributes this project maintains.
     Saves to {project}_ba_plan.json, section 'information_management'.
+
+    Re-running MERGES: a parameter left empty keeps its previous value. Clear a list
+    with "[]", a text field with "-", an enum with "None". `storage_tools` cannot be
+    cleared — a plan with nowhere to store anything is an unfinished task.
+
+    What reads this plan:
+      - 4.4 prepare_communication_package  — the planned level of detail per audience
+      - 5.2 find_reusable_requirements     — the planned reuse scope and repository
+      - 5.2 check_requirements_health      — the planned attribute set
 
     Args:
         project_id: Project identifier
-        storage_tools_json: JSON list of storage tools, e.g. '["Confluence", "Jira", "GitHub"]'
-        traceability_level: Traceability level (Low/Medium/High)
-        artifact_types_json: JSON list of artifact types, e.g. '["User Story", "BRD", "Test Case"]'
+        storage_tools_json: JSON list of storage tools, e.g. '["Confluence", "Jira"]'
+        traceability_level: Traceability level (Low/Medium/High). Default Medium.
+        artifact_types_json: JSON list of artifact types, e.g. '["User Story", "BRD"]'
         access_rules: Access rules (who reads, who edits)
         ba_notes: Additional agreements
+        abstraction_levels_json: BABOK 3.4 element .2 — JSON list of
+            '[{"audience": "Business Sponsor", "level": "Summary", "note": "..."}]'.
+            level: Summary | Standard | Detailed. `audience` may be one of the eight
+            4.4 archetypes or a job title from the stakeholder map — 4.4 matches on
+            either.
+        reuse_target_scope: BABOK 3.4 element .4 — the reuse level this project aims
+            for: initiative | program | division | enterprise. Becomes 5.2's DEFAULT;
+            an explicit value passed to 5.2 always wins.
+        reuse_repository: Where reusable requirements live and how other BAs reach it.
+        reuse_categories_json: JSON list of reuse candidate categories, e.g.
+            '["regulatory", "business rules"]'.
+        attributes_preset: BABOK 3.4 element .6 — which attribute set this project
+            maintains: Minimum | Standard | Full. 5.2's health audit checks exactly
+            this set.
+        additional_attributes_json: JSON list of attributes added on top of the preset.
     """
-    storage_tools, error = _parse_string_list(
-        storage_tools_json, "storage_tools_json", required=True)
-    if error:
-        return error
+    plan = _load_plan(project_id)
+    previous = plan.get("information_management") or {}
+    warnings = []
+    kept = []
 
-    artifact_types, error = _parse_string_list(artifact_types_json, "artifact_types_json")
-    if error:
-        return error
+    # --- storage tools: mergeable, but never clearable ---------------------
+    if storage_tools_json == "":
+        storage_tools = previous.get("storage_tools", [])
+        if not storage_tools:
+            return ("❌ `storage_tools_json` is required the first time 3.4 is planned.\n"
+                    "   Example: '[\"Confluence\", \"Jira\"]'")
+        kept.append("storage tools")
+    else:
+        storage_tools, error = _parse_string_list(
+            storage_tools_json, "storage_tools_json", required=True)
+        if error:
+            return error
 
-    trace_desc = _TRACEABILITY_LEVELS.get(traceability_level, _TRACEABILITY_LEVELS["Medium"])
+    # --- traceability level ------------------------------------------------
+    if traceability_level == "":
+        level = previous.get("traceability_level", "Medium")
+        if previous.get("traceability_level"):
+            kept.append("traceability level")
+    else:
+        level = traceability_level
+    trace_desc = _TRACEABILITY_LEVELS.get(level, _TRACEABILITY_LEVELS["Medium"])
+
+    # --- artifact types ----------------------------------------------------
+    if artifact_types_json == "":
+        artifact_types = previous.get("artifact_types", [])
+        if artifact_types:
+            kept.append("artifact types")
+    else:
+        artifact_types, error = _parse_string_list(artifact_types_json, "artifact_types_json")
+        if error:
+            return error
+
+    # --- element .2: level of abstraction ----------------------------------
+    if abstraction_levels_json == "":
+        abstraction_levels = previous.get("abstraction_levels", [])
+        if abstraction_levels:
+            kept.append("abstraction levels")
+    else:
+        rows, error = _parse_json_dict_list(
+            abstraction_levels_json, "abstraction_levels_json",
+            example='[{"audience": "Business Sponsor", "level": "Summary", "note": "..."}]')
+        if error:
+            return error
+        abstraction_levels = []
+        seen = {}
+        for i, row in enumerate(rows, 1):
+            audience = str(row.get("audience") or "").strip()
+            if not audience:
+                return (f"❌ `abstraction_levels_json`: row {i} has no `audience`.\n"
+                        f"   Every row needs an audience — an archetype from 4.4 or a "
+                        f"job title from the stakeholder map.")
+            row_level = str(row.get("level") or "").strip()
+            if row_level not in ABSTRACTION_LEVELS:
+                return (f"❌ `abstraction_levels_json`: row {i} has level "
+                        f"`{row_level or '(empty)'}`.\n"
+                        f"   Allowed: {', '.join(ABSTRACTION_LEVELS)}")
+            if audience not in _AUDIENCE_ARCHETYPES:
+                warnings.append(
+                    f"⚠️ `{audience}` is not one of the 4.4 audience archetypes — it will "
+                    f"match only by job title.")
+            key = reg_norm(audience)
+            entry = {"audience": audience, "level": row_level,
+                     "note": str(row.get("note") or "")}
+            if key in seen:
+                warnings.append(f"⚠️ `{audience}` appears twice — the last row wins.")
+                abstraction_levels[seen[key]] = entry
+            else:
+                seen[key] = len(abstraction_levels)
+                abstraction_levels.append(entry)
+
+    # --- element .4: reuse -------------------------------------------------
+    prev_reuse = previous.get("reuse") or {}
+    if reuse_target_scope == "":
+        target_scope = prev_reuse.get("target_scope", "")
+        if target_scope:
+            kept.append("reuse scope")
+    else:
+        target_scope = "" if reuse_target_scope == _CLEAR_ENUM else reuse_target_scope
+
+    repository = _merge_text(reuse_repository, prev_reuse.get("repository"))
+    if reuse_repository == "" and prev_reuse.get("repository"):
+        kept.append("reuse repository")
+
+    if reuse_categories_json == "":
+        reuse_categories = prev_reuse.get("categories", [])
+        if reuse_categories:
+            kept.append("reuse categories")
+    else:
+        reuse_categories, error = _parse_string_list(
+            reuse_categories_json, "reuse_categories_json")
+        if error:
+            return error
+        unlisted = [c for c in reuse_categories if c.lower() not in REUSE_CATEGORIES]
+        if unlisted:
+            # BABOK's list is explicitly open-ended, so this is a note, not a refusal.
+            warnings.append(
+                f"⚠️ Categories outside the BABOK list: {', '.join(unlisted)}. "
+                f"Kept — the list in the guide is not exhaustive.")
+
+    # --- element .6: attributes -------------------------------------------
+    prev_attrs = previous.get("attributes") or {}
+    if attributes_preset == "":
+        preset = prev_attrs.get("preset", "")
+        if preset:
+            kept.append("attribute preset")
+    else:
+        preset = "" if attributes_preset == _CLEAR_ENUM else attributes_preset
+
+    if additional_attributes_json == "":
+        additional = prev_attrs.get("additional", [])
+    else:
+        additional, error = _parse_string_list(
+            additional_attributes_json, "additional_attributes_json")
+        if error:
+            return error
+        unknown = [a for a in additional if a not in PLANNABLE_ATTRIBUTES]
+        if unknown:
+            # Planning an attribute the model cannot store would recreate the
+            # "declared but dead" class inside this very feature.
+            return (f"❌ Not stored by this platform: {', '.join(unknown)}.\n"
+                    f"   Plannable attributes: {', '.join(PLANNABLE_ATTRIBUTES)}\n"
+                    f"   BABOK also lists author, risks and urgency (p. 45-46); the "
+                    f"requirement model has no field for them, so 5.2 could never "
+                    f"check them.")
 
     info_mgmt = {
         "storage_tools": storage_tools,
-        "traceability_level": traceability_level,
+        "traceability_level": level,
         "traceability_description": trace_desc,
         "artifact_types": artifact_types,
-        "access_rules": access_rules or "BA edits, others read",
-        "ba_notes": ba_notes,
+        "access_rules": _merge_text(access_rules, previous.get("access_rules"),
+                                    "BA edits, others read") or "BA edits, others read",
+        "ba_notes": _merge_text(ba_notes, previous.get("ba_notes")),
+        "abstraction_levels": abstraction_levels,
+        "reuse": {"target_scope": target_scope, "repository": repository,
+                  "categories": reuse_categories},
+        "attributes": {"preset": preset, "additional": additional},
         "defined_on": str(date.today()),
     }
 
-    plan = _load_plan(project_id)
     plan["information_management"] = info_mgmt
     _save_plan(plan, project_id)
 
-    artifacts_note = ""
+    out = [
+        "✅ Information management plan recorded",
+        "",
+        f"  Project:           {project_id}",
+        f"  Tools:             {', '.join(storage_tools)}",
+        f"  Traceability:      {level} — {trace_desc}",
+    ]
     if artifact_types:
-        artifacts_note = f"  Artifact types:    {', '.join(artifact_types)}\n"
+        out.append(f"  Artifact types:    {', '.join(artifact_types)}")
+    out.append(f"  Access:            {info_mgmt['access_rules']}")
 
-    return (
-        f"✅ Information management plan recorded\n\n"
-        f"  Project:           {project_id}\n"
-        f"  Tools:             {', '.join(storage_tools)}\n"
-        f"  Traceability:      {traceability_level} — {trace_desc}\n"
-        f"{artifacts_note}"
-        f"  Access:            {info_mgmt['access_rules']}\n\n"
-        f"→ Next step: `evaluate_ba_performance` — set performance metrics."
-    )
+    if abstraction_levels:
+        out.append("")
+        out.append("  Level of detail (read by 4.4):")
+        for row in abstraction_levels:
+            suffix = f" — {row['note']}" if row["note"] else ""
+            out.append(f"    • {row['audience']}: {row['level']}{suffix}")
+
+    if target_scope or repository or reuse_categories:
+        out.append("")
+        out.append("  Reuse (read by 5.2):")
+        if target_scope:
+            out.append(f"    • Target scope: {target_scope} — becomes 5.2's default")
+        if repository:
+            out.append(f"    • Repository:   {repository}")
+        if reuse_categories:
+            out.append(f"    • Categories:   {', '.join(reuse_categories)}")
+
+    resolved = planned_attribute_set({"information_management": info_mgmt})
+    if resolved:
+        attrs, label = resolved
+        out.append("")
+        out.append(f"  Attributes audited by 5.2 ({label}):")
+        out.append(f"    {', '.join(attrs)}")
+        if "owner" not in attrs:
+            out.append("    ⚠️ `owner` is not in this set — 5.2's health audit will stop "
+                       "asking for it.")
+
+    if kept:
+        out.append("")
+        out.append(f"  ↩️ Kept from the previous plan: {', '.join(kept)}")
+
+    for w in warnings:
+        out.append(f"\n{w}")
+
+    out.append("")
+    out.append("→ Next step: `evaluate_ba_performance` — set performance metrics.")
+    return "\n".join(out)
 
 
 @mcp.tool()
