@@ -1010,6 +1010,154 @@ def planned_attribute_set(plan):
     return merged, label
 
 
+# ---------------------------------------------------------------------------
+# 3.1 BA Activities (.3) and Timing of BA Work (.4) — shared reader (B3-1)
+# ---------------------------------------------------------------------------
+#
+# Same placement reason as the 3.4 block above: chapter 3 sits in phase.py
+# BASE_SERVER and chapters 4/5 load in their own phases, so a consumer may not
+# import the chapter-3 module.
+#
+# BABOK 3.1 element .4 (printed p. 28) is a statement ABOUT the other knowledge
+# areas — "whether the business analysis tasks performed within the other
+# knowledge areas will be performed primarily in specific phases or iteratively".
+# That is why the planned unit of work is a BABOK TASK ID of this platform, not
+# free prose: a closed vocabulary is the only kind a consumer can match.
+
+TIMING_FORMS = ("phases", "iterations")
+
+# Same scale as influence/interest in 3.2 — one vocabulary per module is cheaper
+# to keep correct than three.
+EFFORT_LEVELS = ("Low", "Medium", "High")
+
+# The 25 BABOK tasks this platform implements. Chapter 8 (Solution Evaluation) is
+# deliberately absent — it is outside the release perimeter (decision 2026-07-26),
+# so planning work for it would point the BA at tools that do not exist.
+PLATFORM_TASKS = (
+    "3.1", "3.2", "3.3", "3.4", "3.5",
+    "4.1", "4.2", "4.3", "4.4", "4.5",
+    "5.1", "5.2", "5.3", "5.4", "5.5",
+    "6.1", "6.2", "6.3", "6.4",
+    "7.1", "7.2", "7.3", "7.4", "7.5", "7.6",
+)
+
+PLATFORM_CHAPTERS = ("3", "4", "5", "6", "7")
+
+# ONE rule, two callers (the 3.1b writer derives the form, the 5.5 reader falls
+# back to it). Two copies of a decision rule is exactly how the 5.5 dashboard and
+# the baseline gate drifted apart. Plain "Hybrid" is ABSENT on purpose: BABOK
+# calls predictive/adaptive a continuum (printed p. 26), a hybrid sits between the
+# two, and guessing would print an invented methodology onto a document that goes
+# out for signature. The tool asks instead.
+_TIMING_FORM_BY_APPROACH = {
+    "Predictive (Waterfall)": "phases",
+    "Adaptive (Agile)": "iterations",
+    "Hybrid (Agile + compliance gates)": "iterations",
+}
+
+
+def approach_to_timing_form(approach_label) -> str:
+    """`ba_approach.recommended_approach` -> "phases" / "iterations" / ""."""
+    if not isinstance(approach_label, str):
+        return ""
+    return _TIMING_FORM_BY_APPROACH.get(approach_label.strip(), "")
+
+
+_TASK_REF_PREFIXES = ("task ", "chapter ", "ch.", "ch ")
+
+
+def normalize_task_ref(value) -> str:
+    """A BA-written task reference -> canonical "4.1" / "4", or "" if unrecognised.
+
+    The producer validates and the consumers match through THIS function, both of
+    them. When a producer validates raw casing and a consumer matches normalised,
+    the BA gets a confident false claim — the 3.4 archetype defect.
+    """
+    if not isinstance(value, str):
+        return ""
+    text = value.strip().lower().rstrip(".")
+    for prefix in _TASK_REF_PREFIXES:
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+            break
+    # "Ch4" / "ch4" carry no separator, so the prefix loop above cannot strip them.
+    if text.startswith("ch") and text[2:].strip() in PLATFORM_CHAPTERS:
+        text = text[2:].strip()
+    if text in PLATFORM_TASKS or text in PLATFORM_CHAPTERS:
+        return text
+    return ""
+
+
+def activities_section(plan) -> dict:
+    """The `ba_activities` section, coerced into the shapes consumers assume.
+
+    `periods` is always a list of dicts here. Guarding only the section was not
+    enough one level down in 3.4, and a bare string where a list belongs is worse
+    than a crash: iterating it yields one entry per CHARACTER.
+    """
+    if not isinstance(plan, dict):
+        return {}
+    section = plan.get("ba_activities")
+    if not isinstance(section, dict):
+        return {}
+    out = dict(section)
+    periods = out.get("periods")
+    out["periods"] = ([p for p in periods if isinstance(p, dict)]
+                      if isinstance(periods, list) else [])
+    return out
+
+
+def planned_timing_form(plan):
+    """Element .4 — "phases" / "iterations", or None when nothing usable is planned."""
+    form = activities_section(plan).get("timing_form")
+    return form if form in TIMING_FORMS else None
+
+
+def _period_task_refs(period: dict) -> list:
+    """Canonical task refs of one period. A bare string counts as ONE ref."""
+    raw = period.get("tasks")
+    if isinstance(raw, str):
+        raw = [raw]
+    elif not isinstance(raw, list):
+        raw = []
+    return [ref for ref in (normalize_task_ref(t) for t in raw) if ref]
+
+
+def planned_work_period(plan, task_ref):
+    """Element .3 — the period that covers `task_ref`, or None.
+
+    A chapter shorthand covers its tasks ("4" answers a query for "4.1"); a task
+    does NOT answer a query for its whole chapter. That asymmetry falls out of the
+    vocabulary rather than out of a condition here: when the query IS a chapter,
+    `wanted` and `chapter` are the same string, so the second test below can only
+    ever repeat the first. Mutation testing is what showed that — an explicit
+    `wanted != chapter` guard written to "enforce" the asymmetry could be deleted
+    with every test still green, i.e. it was dead code claiming to do work. Both
+    directions are pinned by tests instead.
+
+    The record always carries all five keys with safe types: the 4.1 consumer
+    INDEXES it, and a shared reader must cover the consumer that indexes, not only
+    the ones that re-coerce.
+    """
+    wanted = normalize_task_ref(task_ref)
+    if not wanted:
+        return None
+    chapter = wanted.split(".")[0]
+    for period in activities_section(plan).get("periods", []):
+        refs = _period_task_refs(period)
+        if wanted in refs or chapter in refs:
+            deliverables = period.get("deliverables")
+            return {
+                "name": str(period.get("name") or ""),
+                "tasks": refs,
+                "deliverables": ([d for d in deliverables if isinstance(d, str)]
+                                 if isinstance(deliverables, list) else []),
+                "effort": str(period.get("effort") or ""),
+                "when": str(period.get("when") or ""),
+            }
+    return None
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 
