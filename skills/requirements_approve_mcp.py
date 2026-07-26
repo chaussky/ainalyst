@@ -35,6 +35,7 @@ from skills.common import (
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     MUST_PRIORITIES,
     find_spec_file, spec_section_body,
+    load_ba_plan, planned_timing_form, approach_to_timing_form,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -299,6 +300,54 @@ def _get_cr_context(repo: dict, req_id: str) -> list:
 # 5.5.1 — Prepare a package for approval
 # ---------------------------------------------------------------------------
 
+# The methodology is a 3.1 decision; before B3-1 the BA restated it here by hand and
+# nothing compared the two. Resolution order: explicit -> the planned timing form ->
+# the approach label. Plain "Hybrid" resolves to NEITHER of 5.5's two values, which is
+# exactly why element .4 (phases vs iterations) is the authoritative source rather
+# than the approach label.
+_FORM_TO_APPROACH = {"phases": "predictive", "iterations": "agile"}
+
+
+def _resolve_approach(project_name: str, approach: str) -> tuple:
+    """Returns (value, source_label, error). Only "" triggers resolution.
+
+    A non-empty value passes through unvalidated: it is the BA's explicit statement,
+    pydantic already checks it against the Literal in production, and rejecting it
+    here would change behaviour well beyond this feature.
+    """
+    if approach:
+        return approach, "stated in this call", ""
+    plan, note = load_ba_plan(project_name)
+    form = planned_timing_form(plan)
+    if form:
+        return (_FORM_TO_APPROACH[form],
+                f"from the 3.1 BA plan — timing form: {form}", "")
+    label = ""
+    if isinstance(plan, dict):
+        section = plan.get("ba_approach")
+        if isinstance(section, dict):
+            raw = section.get("recommended_approach")
+            label = raw if isinstance(raw, str) else ""
+    derived = approach_to_timing_form(label)
+    if derived:
+        return (_FORM_TO_APPROACH[derived],
+                f"from the 3.1 BA plan — approach: {label}", "")
+    reason = (f"the 3.1 approach `{label}` sits between predictive and adaptive"
+              if label else "the 3.1 BA plan does not state it")
+    error = (
+        f"❌ The methodology for this package could not be determined — {reason}.\n"
+        + (f"  {note}\n" if note else "")
+        + f"  Two ways to fix it:\n"
+        f"    • pass `approach=\"predictive\"` or `approach=\"agile\"` here, or\n"
+        f"    • record it once in 3.1 with `plan_ba_activities("
+        f"timing_form=\"phases\"|\"iterations\")` — every package then takes it from "
+        f"the plan.\n"
+        f"  It is not guessed: this value is printed on the package that goes out "
+        f"for signature."
+    )
+    return "", "", error
+
+
 @mcp.tool()
 @guard_artifact_errors
 def prepare_approval_package(
@@ -306,7 +355,7 @@ def prepare_approval_package(
     package_id: str,
     package_title: str,
     req_ids_json: str,
-    approach: Literal["predictive", "agile"],
+    approach: Literal["predictive", "agile", ""] = "",
     audience: Literal["business", "developer", "regulator", "all"] = "all",
     sprint_number: str = "",
 ) -> str:
@@ -323,6 +372,8 @@ def prepare_approval_package(
         req_ids_json:   JSON list of requirement IDs for the package.
                         Example: '["FR-001", "FR-002", "NFR-001"]'
         approach:       Methodology: predictive (Waterfall) or agile (Scrum/Kanban).
+                        Leave empty to take it from the 3.1 BA plan — the planned
+                        timing form, or failing that the recommended approach.
         audience:       Package audience:
                         - business: business requirements and acceptance criteria
                         - developer: functional + non-functional requirements
@@ -345,6 +396,11 @@ def prepare_approval_package(
 
     if not req_ids:
         return "❌ Error: the requirement list cannot be empty."
+
+    approach, approach_source, approach_error = _resolve_approach(
+        project_name, approach)
+    if approach_error:
+        return approach_error
 
     repo = _load_repo(project_name)
     history = _load_approval_history(project_name)
@@ -423,6 +479,10 @@ def prepare_approval_package(
         "package_id": package_id,
         "package_title": package_title,
         "approach": approach,
+        # Where the methodology came from, carried on the record: the status dashboard
+        # and the Approval Record read it back, and re-deriving it later would give a
+        # different answer once the plan changes — or none once it is gone.
+        "approach_source": approach_source,
         "audience": audience,
         "sprint_number": sprint_number,
         "req_ids": req_ids,
@@ -460,7 +520,7 @@ def prepare_approval_package(
         f"# Approval Package: {package_title}",
         f"**Project:** {project_name}  ",
         f"**Package:** {package_id}  ",
-        f"**Methodology:** {approach_label}{sprint_label}  ",
+        f"**Methodology:** {approach_label}{sprint_label} ({approach_source})  ",
         f"**Audience:** {audience}  ",
         f"**Date:** {date.today()}  ",
         f"**Requirements in the package:** {len(req_ids)}  ",
@@ -1199,7 +1259,8 @@ def create_requirements_baseline(
                            False (default) — block if blockers exist.
 
     Returns:
-        The Approval Record (Markdown), saved via save_artifact.
+        A summary of the baseline and the next steps. The Approval Record itself is
+        the Markdown artifact written via save_artifact — the return value is not it.
         Updated approved statuses in the 5.1 repository.
     """
     logger.info(f"create_requirements_baseline: {package_id} / {baseline_version} / {project_name}")
