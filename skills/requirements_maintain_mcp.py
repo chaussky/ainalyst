@@ -31,6 +31,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            has_been_approved,
     read_json_artifact, guard_artifact_errors,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
+    load_ba_plan, planned_attribute_set, planned_reuse,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -40,6 +41,17 @@ REPO_FILENAME = "traceability_repo.json"
 # Volatility threshold — minor version above this value triggers a warning
 VOLATILITY_WARNING_THRESHOLD = 3   # version 1.3+
 VOLATILITY_CRITICAL_THRESHOLD = 4  # version 1.4+
+
+
+def _attribute_missing(req: dict, attr: str) -> bool:
+    """Is a planned attribute (BABOK 3.4 element .6) unfilled on this requirement?
+
+    `reuse_candidate` is boolean and False is a legitimate answer — "not a reuse
+    candidate" is a decision, not a gap. Absence of the key is the gap.
+    """
+    if attr == "reuse_candidate":
+        return "reuse_candidate" not in req
+    return not req.get(attr)
 
 # "Staleness" threshold in days without an update
 STALE_DAYS_WARNING = 30
@@ -599,6 +611,14 @@ def check_requirements_health(
     logger.info(f"check_requirements_health: '{project_name}'")
 
     repo = _load_repo(project_name)
+
+    # BABOK 3.4 element .6: the project plans WHICH attributes it maintains, and this
+    # audit checks exactly that set. Without a plan the behaviour is unchanged — the
+    # single hard-coded owner check, worded exactly as before, and not one new line.
+    plan, plan_note = load_ba_plan(project_name)
+    resolved = planned_attribute_set(plan)
+    audited, audited_label = resolved if resolved else (("owner",), "platform default")
+
     # Only requirements are maintained here. The health criteria — volatility, owner,
     # staleness, reuse — describe a requirement's lifecycle, so applying them to other
     # chapters' nodes produced a report demanding an owner for every business objective
@@ -654,9 +674,16 @@ def check_requirements_health(
                 if days_draft > STALE_DAYS_WARNING:
                     issues.append(f"🟡 In draft status for {days_draft} days already")
 
-        # No owner
-        if not req.get("owner"):
-            issues.append("🟡 No owner")
+        # Planned attributes (BABOK 3.4 element .6). One line per requirement, not one
+        # per attribute: a Full preset on a bare requirement would otherwise add nine
+        # rows and push the real 🔴 findings out of the reader's view.
+        missing = [a for a in audited if _attribute_missing(req, a)]
+        if missing:
+            if resolved:
+                issues.append(f"🟡 Attributes not filled in: {', '.join(missing)}")
+            else:
+                # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
+                issues.append("🟡 No owner")
 
         req_info = {
             "id": req_id,
@@ -685,8 +712,14 @@ def check_requirements_health(
         "",
         f"**Project:** {project_name}  ",
         f"**Filter:** type={filter_type or 'all'}, status={filter_status or 'active'}  ",
+        # Named only when a plan actually selected the set. Without a plan this report
+        # stays byte-for-byte what it was — the guarantee that makes this feature safe
+        # for every project that never opened chapter 3.
+        *([f"**Audited attributes:** {', '.join(audited)} *({audited_label})*  "]
+          if resolved else []),
         f"**Date:** {date.today()}",
         "",
+        *([plan_note, ""] if plan_note else []),
         "## Summary",
         "",
         "| Status | Count | % |",
@@ -752,10 +785,29 @@ def check_requirements_health(
             f"update via `update_requirement` or `deprecate_requirements`."
         )
     if warnings:
-        no_owner = sum(1 for r in warnings if "owner" in " ".join(r["issues"]))
+        attr_gaps = [r for r in warnings
+                     if any(i.startswith("🟡 Attributes not filled in:") or i == "🟡 No owner"
+                            for i in r["issues"])]
         stale = sum(1 for r in warnings if "days" in " ".join(r["issues"]))
-        if no_owner:
-            lines.append(f"2. 🟡 **{no_owner} without an owner** — assign an owner via `update_requirement`.")
+        if attr_gaps:
+            if resolved:
+                # The counter used to look for the substring "owner", so a project on a
+                # preset without it saw 🟡 rows and no advice about them at all — a
+                # document contradicting itself inside one page.
+                missing_names = sorted({
+                    name.strip()
+                    for r in attr_gaps for issue in r["issues"]
+                    if issue.startswith("🟡 Attributes not filled in:")
+                    for name in issue.split(":", 1)[1].split(",")
+                })
+                lines.append(
+                    f"2. 🟡 **{len(attr_gaps)} with unfilled attributes** "
+                    f"({', '.join(missing_names)}) — fill them in via `update_requirement`.")
+            else:
+                # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
+                lines.append(
+                    f"2. 🟡 **{len(attr_gaps)} without an owner** — "
+                    f"assign an owner via `update_requirement`.")
         if stale:
             lines.append(f"3. 🟡 **{stale} not updated in a while** — confirm relevance with the stakeholder.")
     if not critical and not warnings:
