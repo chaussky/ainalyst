@@ -17,9 +17,22 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, parse_json_dict, parse_json_dict_list,
     pick_field, unrecognized_records_error,
+    info_management_section, load_ba_plan, planned_abstraction_level,
 )
 
 mcp = FastMCP("BABOK_Communicate")
+
+# BABOK 3.4 element .2 — what a planned level of detail MEANS when a package is built.
+# A bare label with no consequence is the "declared but dead" class; this turns the
+# planning decision into an instruction the BA can follow while adapting the content.
+_LEVEL_GUIDANCE = {
+    "Summary": ("conclusions, business value, the decision being asked for",
+                "requirement IDs, NFR wording, model internals"),
+    "Standard": ("requirements as a list with priorities, key risks, open questions",
+                 "acceptance criteria, exception flows, diagram internals"),
+    "Detailed": ("full requirement wording, acceptance criteria, exceptions, models",
+                 "nothing — this audience works with the material directly"),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +122,17 @@ def prepare_communication_package(
 
     today = date.today().strftime("%d.%m.%Y")
 
+    # BABOK 3.4 element .2. The plan keys a row by an audience the BA named — an
+    # archetype from this tool's vocabulary OR a job title from the stakeholder map.
+    # Matching on one of the two alone could not succeed by construction;
+    # check_communication_schedule already carries the same fix.
+    plan, plan_note = load_ba_plan(project_name)
+    level_row = planned_abstraction_level(
+        plan, audience_role, profile.get("stakeholder_role", ""))
+    planned_rows = info_management_section(plan).get("abstraction_levels")
+    planned_audiences = [r.get("audience", "") for r in planned_rows
+                         if isinstance(r, dict)] if isinstance(planned_rows, list) else []
+
     # Icons for attitude
     attitude = profile.get("attitude", "Neutral")
     attitude_icon = {"Champion": "🟢", "Neutral": "🟡", "Blocker": "🔴"}.get(attitude, "🟡")
@@ -121,6 +145,10 @@ def prepare_communication_package(
     lines.append(f"**Project:** {project_name}  ")
     lines.append(f"**Audience:** {audience_role}  ")
     lines.append(f"**Preparation date:** {today}  ")
+    if level_row:
+        note = f" — {level_row['note']}" if level_row.get("note") else ""
+        lines.append(
+            f"**Level of detail (planned in 3.4):** {level_row['level']}{note}  ")
     lines.append(f"**Source:** `{source_artifact_path}`\n")
     lines.append("---\n")
 
@@ -137,6 +165,16 @@ def prepare_communication_package(
         lines.append(f"| Key concerns | {profile['key_concerns']} |\n")
     else:
         lines.append("")
+
+    # The decoded level lives in the ARTEFACT, not in the return value: this tool
+    # returns only the save_artifact line, so a checklist put there would never reach
+    # the BA. Here it sits next to the material being adapted.
+    if level_row:
+        include, leave_out = _LEVEL_GUIDANCE.get(level_row["level"], ("", ""))
+        lines.append("---\n")
+        lines.append(f"## Level of Detail — {level_row['level']} (planned in 3.4)\n")
+        lines.append(f"**Include:** {include}  ")
+        lines.append(f"**Leave out:** {leave_out}\n")
 
     # Key messages
     if key_messages:
@@ -210,7 +248,19 @@ def prepare_communication_package(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_4_comm_package", project_id=project_name)
+    saved = save_artifact(meta + content, prefix="4_4_comm_package",
+                          project_id=project_name)
+
+    notes = []
+    if plan_note:
+        notes.append(plan_note)
+    elif planned_audiences and not level_row:
+        # Only when the project actually planned detail levels for SOMEONE. A project
+        # that planned storage but no levels has made no decision to be reminded of.
+        notes.append(
+            f"⚠️ Detail level for `{audience_role}` is not planned in 3.4. "
+            f"Planned audiences: {', '.join(a for a in planned_audiences if a)}.")
+    return saved + ("\n\n" + "\n".join(notes) if notes else "")
 
 
 # ---------------------------------------------------------------------------
