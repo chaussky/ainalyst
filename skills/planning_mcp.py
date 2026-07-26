@@ -793,7 +793,8 @@ def plan_information_management(
         out.append("")
         out.append("  Reuse (read by 5.2):")
         if target_scope:
-            out.append(f"    • Target scope: {target_scope} — becomes 5.2's default")
+            out.append(f"    • Target scope: {target_scope} — 5.2 ranks by it "
+                       f"(it does not exclude anything below)")
         if repository:
             out.append(f"    • Repository:   {repository}")
         if reuse_categories:

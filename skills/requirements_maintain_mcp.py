@@ -874,9 +874,12 @@ def find_reusable_requirements(
         project_name:     Project name.
         search_query:     Search query against the requirement text (optional).
         filter_type:      Filter by type: business | stakeholder | solution | transition
-        min_reuse_scope:  Minimum scope level: initiative | program | division |
-                          enterprise. Left empty, the level planned in 3.4 is used;
-                          without a plan, `initiative`. An explicit value always wins.
+        min_reuse_scope:  The reuse level being aimed for: initiative | program |
+                          division | enterprise. It RANKS, it does not filter — a
+                          requirement at or above the level scores one point more,
+                          and nothing is excluded for being below it. Left empty, the
+                          level planned in 3.4 is used; without a plan, `initiative`.
+                          An explicit value always wins over the plan.
 
     Returns:
         List of candidates with a reuse-suitability score.
@@ -1017,7 +1020,8 @@ def find_reusable_requirements(
         f"**Project:** {project_name}  ",
         f"**Query:** {search_query or 'all'}  ",
         f"**Type:** {filter_type or 'all'}  ",
-        f"**Minimum scope:** {effective_scope}{scope_source}  ",
+        f"**Target reuse scope:** {effective_scope}{scope_source} — "
+        f"raises the ranking, does not exclude  ",
         f"**Date:** {date.today()}",
         "",
         *([plan_note, ""] if plan_note else []),
@@ -1082,10 +1086,10 @@ def find_reusable_requirements(
             "",
             "Try:",
             "- Removing the type filter",
-            # Only when it can actually be followed: `initiative` IS the lowest level,
-            # so advising a BA already at it to lower to it is an unfollowable step.
-            *(["- Lowering min_reuse_scope to 'initiative'"]
-              if effective_scope != "initiative" else []),
+            "- Broadening the search query",
+            # "Lowering min_reuse_scope" used to be offered here. It could never change
+            # an empty result: the scope adds a point to the suitability score and
+            # excludes nothing. Advice that cannot work is worse than no advice.
             "- Flagging requirements via `update_requirement(reuse_candidate='true')`",
         ]
         if repository:

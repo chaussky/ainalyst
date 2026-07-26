@@ -163,7 +163,7 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("**Minimum scope:** division", result)
+        self.assertIn("**Target reuse scope:** division", result)
         self.assertIn("3.4 plan", result)
 
     def test_explicit_scope_always_wins_over_the_plan(self):
@@ -173,13 +173,13 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT, min_reuse_scope="initiative")
-        self.assertIn("**Minimum scope:** initiative", result)
+        self.assertIn("**Target reuse scope:** initiative", result)
         self.assertNotIn("3.4 plan", result)
 
     def test_without_a_plan_the_default_is_still_initiative(self):
         _write_repo(PROJECT, [dict(REUSABLE)])
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("**Minimum scope:** initiative", result)
+        self.assertIn("**Target reuse scope:** initiative", result)
         self.assertNotIn("3.4 plan", result)
 
     def test_planned_repository_is_named_instead_of_generic_advice(self):
@@ -197,20 +197,27 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         self.assertIn("regulatory", result)
         self.assertIn("business rules", result)
 
-    def test_no_advice_to_lower_a_scope_that_is_already_the_lowest(self):
-        """Telling the BA to lower the scope to `initiative` when `initiative` is
-        already in effect is advice that cannot be followed."""
+    def test_the_report_does_not_present_the_scope_as_a_filter(self):
+        """Found by reading a rendered report, not by an assertion: the header said
+        "Minimum scope: division" while a candidate with scope `initiative` sat in
+        the confirmed list two lines below. The scope has never excluded anything —
+        it adds one point to the suitability score. The words now say that."""
+        _write_repo(PROJECT, [dict(REUSABLE, reuse_scope="initiative")])
+        _write_plan(PROJECT, {"reuse": {"target_scope": "division",
+                                        "repository": "", "categories": []}})
+        result = find_reusable_requirements(PROJECT)
+        self.assertNotIn("Minimum scope", result)
+        self.assertIn("raises the ranking", result)
+        # the below-target candidate is still listed — that is the actual behaviour
+        self.assertIn("BR-001", result)
+
+    def test_empty_result_advice_does_not_offer_a_scope_that_filters_nothing(self):
+        """"Lowering min_reuse_scope" could never change an empty result, because the
+        scope excludes nothing. Advice that cannot work is worse than no advice."""
         _write_repo(PROJECT, [])
         result = find_reusable_requirements(PROJECT)
         self.assertIn("No suitable candidates", result)
         self.assertNotIn("Lowering min_reuse_scope", result)
-
-    def test_advice_to_lower_the_scope_appears_when_it_is_actionable(self):
-        _write_repo(PROJECT, [])
-        _write_plan(PROJECT, {"reuse": {"target_scope": "enterprise",
-                                        "repository": "", "categories": []}})
-        result = find_reusable_requirements(PROJECT)
-        self.assertIn("Lowering min_reuse_scope", result)
 
     def test_empty_result_advice_names_the_planned_repository(self):
         _write_repo(PROJECT, [])
@@ -227,7 +234,7 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
             f.write("{broken")
         result = find_reusable_requirements(PROJECT)
         self.assertIn("⚠️", result)
-        self.assertIn("**Minimum scope:** initiative", result)
+        self.assertIn("**Target reuse scope:** initiative", result)
 
 
 if __name__ == "__main__":

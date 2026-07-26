@@ -441,13 +441,19 @@ class TestFindReusableRequirements(BaseMCPTest):
         self.assertIsInstance(result, str)
 
     def test_min_scope_enterprise(self):
-        """Minimum scope enterprise — finds only enterprise candidates."""
+        """Target scope enterprise — ranks enterprise candidates higher.
+
+        The docstring used to say "finds only enterprise candidates", which the
+        assertions never checked and the code never did: the scope adds a point to
+        the suitability score and excludes nothing.
+        """
         result = self._call(min_reuse_scope="enterprise")
         self.assertIsInstance(result, str)
         self.assertIn("BR-002", result)
+        self.assertIn("raises the ranking, does not exclude", result)
 
     def test_min_scope_program_includes_enterprise(self):
-        """Minimum scope program includes enterprise."""
+        """Target scope program — enterprise candidates rank at least as high."""
         result = self._call(min_reuse_scope="program")
         self.assertIsInstance(result, str)
 
