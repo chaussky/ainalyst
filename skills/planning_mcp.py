@@ -236,7 +236,10 @@ def suggest_ba_approach(
         f"  **Recommended approach: {approach}**\n"
         f"  BABOK techniques: {', '.join(techniques)}\n\n"
         f"  💡 {hint}\n\n"
-        f"→ Next step: `plan_stakeholder_engagement` — build the stakeholder map."
+        f"→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.\n"
+        f"   Optional first: `plan_ba_activities` — which BABOK tasks run in which "
+        f"period and with what effort (BABOK 3.1, elements .3 and .4). 5.5 then takes "
+        f"the methodology from there instead of asking you again."
     )
 
 
@@ -1245,10 +1248,20 @@ def save_ba_plan(
     governance = plan.get("governance", {})
     info_mgmt = plan.get("information_management", {})
     performance = plan.get("performance", {})
+    activities = _sane_activities_section(plan.get("ba_activities"))
+    # The coercion always supplies `periods` and `timing_constraints`, so the dict is
+    # truthy even when nothing usable survived — and both the gate below and the
+    # renderer test this value. Without the question "was anything actually planned?",
+    # a damaged section produced an empty "## 3.1b" heading with a "(not set)" form
+    # inside a DELIVERED document, and an empty section let an otherwise empty plan
+    # through the gate.
+    if not any([activities.get("timing_form"), activities.get("periods"),
+                activities.get("timing_constraints"), activities.get("ba_notes")]):
+        activities = {}
 
     # `performance` counts too: the report renders a 3.5 section when it is present,
     # so omitting it here refused a plan that actually had content.
-    if not any([approach, engagement, governance, info_mgmt, performance]):
+    if not any([approach, activities, engagement, governance, info_mgmt, performance]):
         return (
             "⚠️ BA plan is empty or not filled in.\n"
             "Complete steps 3.1-3.5 before saving the report."
@@ -1286,6 +1299,43 @@ def save_ba_plan(
             "",
         ]
         md_lines += _notes_block(approach)
+
+    if activities:
+        form = activities.get("timing_form", "")
+        source = activities.get("form_source", "")
+        md_lines += [
+            "## 3.1b BA Activities and Timing",
+            "",
+            f"- **Timing form:** {form or '(not set)'}"
+            + (f" ({source})" if source else ""),
+        ]
+        if activities.get("generated"):
+            md_lines.append(
+                "- ℹ️ Generated from the approach — edit via `plan_ba_activities`.")
+        periods = activities.get("periods", [])
+        if periods:
+            md_lines += [
+                "",
+                "| Period | BABOK tasks | Deliverables | Effort | When |",
+                "|--------|-------------|--------------|--------|------|",
+            ]
+            for period in periods:
+                tasks = period.get("tasks")
+                tasks = ", ".join(t for t in tasks if isinstance(t, str)) \
+                    if isinstance(tasks, list) else ""
+                deliverables = period.get("deliverables")
+                deliverables = ", ".join(d for d in deliverables if isinstance(d, str)) \
+                    if isinstance(deliverables, list) else ""
+                md_lines.append(
+                    f"| {period.get('name', '')} | {tasks or '—'} | "
+                    f"{deliverables or '—'} | {period.get('effort', '') or '—'} | "
+                    f"{period.get('when', '') or '—'} |")
+        constraints = activities.get("timing_constraints", [])
+        if constraints:
+            md_lines += ["", "**Timing constraints:**", ""]
+            md_lines += [f"- {c}" for c in constraints]
+        md_lines.append("")
+        md_lines += _notes_block(activities)
 
     if engagement:
         stakeholders = engagement.get("stakeholders", [])

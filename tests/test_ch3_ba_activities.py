@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from skills.common import ba_plan_path
 from skills.planning_mcp import (
@@ -215,6 +216,115 @@ class TestRerun(_TempCwd):
         plan_ba_activities(PROJECT)
         plan = _read_plan()
         self.assertIn("Agile", plan["ba_approach"]["recommended_approach"])
+
+
+class TestReport(_TempCwd):
+
+    def setUp(self):
+        super().setUp()
+        # `save_artifact` is mocked suite-wide (ADR-068 — see
+        # tests/test_ch3_info_mgmt_planning.py::_report_text and every tests/test_ch4_4*
+        # / tests/test_ch5_5* file), so `save_ba_plan` never actually writes a file to
+        # disk here. The plan's original helper globbed the report directory for a
+        # real .md file, which the suite-wide mock never produces. Captured from the
+        # call instead, matching the established pattern — this changes only how the
+        # rendered text is retrieved, not any assertion below.
+        patcher = patch("skills.planning_mcp.save_artifact")
+        self._mock_save_artifact = patcher.start()
+        self._mock_save_artifact.return_value = "\n\n✅ Artifact saved: `x.md`"
+        self.addCleanup(patcher.stop)
+
+    def _report_text(self, project_id=PROJECT):
+        self.assertTrue(self._mock_save_artifact.call_args,
+                         "the BA plan report was not written")
+        return self._mock_save_artifact.call_args[0][0]
+
+    def test_the_section_renders_the_periods_as_a_table(self):
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Iteration 1", "tasks": ["4.1", "5.3"],
+             "deliverables": ["Backlog"], "effort": "High", "when": "Aug 2026"}]),
+            timing_constraints_json=json.dumps(["regulatory deadline 2026-12-31"]),
+            ba_notes="agreed with the sponsor")
+        save_ba_plan(PROJECT)
+        text = self._report_text()
+        self.assertIn("## 3.1b BA Activities and Timing", text)
+        # The whole row, not loose cells: "High" is printed by the 3.1 table above
+        # (change frequency / uncertainty), so a loose assertion could not tell the
+        # effort column from that. The row also pins the COLUMN ORDER.
+        self.assertIn("| Iteration 1 | 4.1, 5.3 | Backlog | High | Aug 2026 |", text)
+        for expected in ("iterations", "regulatory deadline 2026-12-31",
+                         "agreed with the sponsor"):
+            self.assertIn(expected, text, expected)
+
+    def test_a_generated_skeleton_says_so_in_the_deliverable(self):
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT)
+        save_ba_plan(PROJECT)
+        self.assertIn("Generated from the approach", self._report_text())
+
+    def test_declared_periods_carry_no_generated_notice(self):
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "High", "High")
+        plan_ba_activities(PROJECT, periods_json=json.dumps([
+            {"name": "Iteration A", "tasks": ["4.1"]}]))
+        save_ba_plan(PROJECT)
+        self.assertNotIn("Generated from the approach", self._report_text())
+
+    def test_a_plan_holding_only_this_section_is_not_refused_as_empty(self):
+        """The same gate mismatch that once refused a plan holding only 3.5."""
+        from skills.planning_mcp import save_ba_plan
+        path = ba_plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project_id": PROJECT, "ba_activities": {
+                "timing_form": "phases", "form_source": "declared by the BA",
+                "generated": False, "periods": [{"name": "Stage 1", "tasks": ["4"],
+                "deliverables": [], "effort": "High", "when": ""}],
+                "timing_constraints": [], "ba_notes": "", "planned_on": "2026-07-26"}}, f)
+        out = save_ba_plan(PROJECT)
+        self.assertNotIn("plan is empty", out)
+        self.assertIn("Stage 1", self._report_text())
+
+    def test_a_damaged_section_does_not_take_the_whole_report_down(self):
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "Low", "Low")
+        plan = _read_plan()
+        plan["ba_activities"] = {"periods": "oops", "timing_form": ["phases"]}
+        with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
+            json.dump(plan, f)
+        out = save_ba_plan(PROJECT)
+        self.assertNotIn("❌", out)
+        self.assertIn("3.1 Business Analysis Approach", self._report_text())
+
+    def test_a_damaged_section_renders_no_stub_heading_at_all(self):
+        """`_sane_activities_section` always supplies `periods` / `timing_constraints`,
+        so the coerced dict stays truthy even when nothing usable survived. Rendering
+        on truthiness alone put an empty "3.1b" heading with "(not set)" into a
+        DELIVERED document — the dashes-in-a-deliverable class."""
+        from skills.planning_mcp import save_ba_plan
+        suggest_ba_approach(PROJECT, "Low", "Low")
+        plan = _read_plan()
+        plan["ba_activities"] = {"periods": "oops", "timing_form": ["phases"]}
+        with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
+            json.dump(plan, f)
+        save_ba_plan(PROJECT)
+        self.assertNotIn("3.1b BA Activities and Timing", self._report_text())
+
+    def test_an_empty_section_does_not_make_an_otherwise_empty_plan_reportable(self):
+        from skills.planning_mcp import save_ba_plan
+        path = ba_plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project_id": PROJECT, "ba_activities": {}}, f)
+        out = save_ba_plan(PROJECT)
+        self.assertIn("plan is empty", out)
+
+    def test_31_points_at_the_new_optional_step(self):
+        out = suggest_ba_approach(PROJECT, "High", "High")
+        self.assertIn("plan_ba_activities", out)
 
 
 if __name__ == "__main__":
