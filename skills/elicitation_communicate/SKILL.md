@@ -58,6 +58,10 @@ If a stakeholder registry from 4.2 is available — use the profile (influence, 
 | **Architect / Tech lead** | Systemic, analytical | Constraints, NFRs, integrations, implementation risks | Operational details | Architectural implications, open questions for decision |
 | **Tester** | Structured | Scenarios, what-ifs, exceptions, acceptance criteria | Business context (brief) | Boundary values, negative scenarios |
 
+> If 3.4 planned a level of detail for this audience, the package states it and spells
+> out what to include and leave out. The plan may name the audience by archetype or by
+> job title — either matches.
+
 ---
 
 ### Mode B — Choosing format and channel

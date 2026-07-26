@@ -126,6 +126,11 @@ Algorithm:
 
 Full description of attributes: `references/lifecycle_guide.md` → "Requirement attributes"
 
+> The preset is chosen in **3.4** (`plan_information_management(attributes_preset=...)`),
+> and `check_requirements_health` audits exactly that set. Without a 3.4 plan the audit
+> checks `owner` only. A project on `Minimum` deliberately stops being asked for an
+> owner — you audit what you planned to maintain.
+
 ---
 
 ## Integration with other tasks

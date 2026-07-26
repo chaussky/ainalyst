@@ -190,6 +190,8 @@ The BA adapts finished artifacts for different audiences, chooses the right form
 
 **An adaptation table for 5 roles.** Built into SKILL.md: business sponsor, manager, developer, architect, tester. For each role: what to remove, what to add, what tone to use. For a Blocker, add a section on "why this matters to you."
 
+**The level of detail comes from Task 3.4, when it was planned.** If the BA recorded a planned level (Summary / Standard / Detailed) for this audience back in 3.4, `prepare_communication_package` states it in the package and adds an explicit include/leave-out checklist. The audience can be matched by its role archetype or by a stakeholder's job title from the registry — whichever the 3.4 plan used. If no level was planned for this audience, the package is built exactly as it would have been before this existed.
+
 **Format and channel recommendation.** With high influence and a negative attitude, a 1:1 meeting is recommended instead of a written message. For a standard update, email. This isn't something you can guess reliably without a system; the platform makes the choice deliberate.
 
 **A communication log.** `log_communication` records every instance of information being delivered: to whom, what, when, through which channel, whether follow-up is needed. This is both an evidence trail and a management tool.

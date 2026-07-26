@@ -143,6 +143,18 @@ Questions to discuss:
 
 Use the MCP tool `plan_information_management`.
 
+**3.4 also plans three things other chapters then act on:**
+
+| Decision | BABOK element | Who reads it |
+|---|---|---|
+| Level of detail per audience | .2 | 4.4 `prepare_communication_package` |
+| Reuse scope + repository + categories | .4 | 5.2 `find_reusable_requirements` |
+| Attribute set (Minimum / Standard / Full) | .6 | 5.2 `check_requirements_health` |
+
+Re-running 3.4 MERGES: an omitted parameter keeps its previous value. Clear a list
+with `"[]"`, a text field with `"-"`, an enum with `"None"`. Without a 3.4 plan, every
+consumer above behaves exactly as it did before this feature — none of it is required.
+
 ---
 
 ### Task 3.5 — Identify Business Analysis Performance Improvements

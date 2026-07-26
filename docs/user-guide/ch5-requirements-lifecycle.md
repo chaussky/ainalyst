@@ -115,6 +115,8 @@ The BA keeps the requirements registry current: updating statuses and versions, 
 
 **Automatic detection of "Must drift."** During the `check_requirements_health` audit, the system calculates the share of Must requirements out of the total. If it exceeds the threshold (40% by default), the BA gets a warning. This is a signal to revisit priorities before the next prioritization session.
 
+**Two more checks read the plan from Task 3.4, when there is one.** If 3.4 planned a reuse scope, `find_reusable_requirements` uses it as the minimum scope by default and names the planned repository — an explicit scope passed to the tool still wins. If 3.4 planned which attributes this project maintains (Minimum / Standard / Full), `check_requirements_health` audits exactly that set instead of just `owner`; a project on `Minimum` deliberately stops getting the "No owner" warning, because owner was never something it committed to tracking. Without a 3.4 plan, both tools behave exactly as they did before.
+
 ### Value for the BA
 
 **The registry reflects reality, not history.** When a developer opens the registry before a sprint, they see current statuses, current versions, current owners. The time spent asking "is this approved yet?" and "is this still relevant?" drops sharply.
