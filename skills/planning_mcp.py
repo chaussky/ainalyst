@@ -52,6 +52,7 @@ from skills.common import (
     read_json_artifact, guard_artifact_errors,
     ABSTRACTION_LEVELS, PLANNABLE_ATTRIBUTES, REUSE_CATEGORIES,
     planned_attribute_set, reg_norm,
+    EFFORT_LEVELS, normalize_task_ref, approach_to_timing_form, activities_section,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -576,6 +577,28 @@ def _sane_info_section(section) -> dict:
     return out
 
 
+def _sane_activities_section(section) -> dict:
+    """Coerce a stored 3.1b section into the shapes the writer and renderer assume.
+
+    Same reasoning as `_sane_info_section`: this is the only tool that can
+    overwrite a damaged section, so it must survive reading one. `periods` is
+    normalised by the shared reader, which both this module and the chapter-4/5
+    consumers go through — one coercion, not three.
+    """
+    if not isinstance(section, dict):
+        return {}
+    out = dict(activities_section({"ba_activities": section}))
+    for key in ("timing_form", "form_source", "ba_notes", "planned_on"):
+        if key in out and not isinstance(out[key], str):
+            out.pop(key, None)
+    constraints = out.get("timing_constraints")
+    out["timing_constraints"] = ([c for c in constraints if isinstance(c, str)]
+                                 if isinstance(constraints, list) else [])
+    if not isinstance(out.get("generated"), bool):
+        out.pop("generated", None)
+    return out
+
+
 def _merge_text(new: str, previous, default: str = "") -> str:
     """Merge rule for a free-text field: "" keeps, "-" clears, anything else sets."""
     if new == "":
@@ -859,6 +882,228 @@ def plan_information_management(
     out.append("")
     out.append("→ Next step: `evaluate_ba_performance` — set performance metrics.")
     return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# 3.1 elements .3 (BA Activities) and .4 (Timing of BA Work) — B3-1
+# ---------------------------------------------------------------------------
+#
+# BABOK Figure 3.1.2 (printed p. 27) ties the FORM of the breakdown to the approach:
+# predictive names the activities for each deliverable and then the tasks; adaptive
+# divides the work into iterations, names the deliverables of each, then the
+# activities. The skeletons below are those two shapes, expressed in the platform's
+# own task ids so a consumer can match them.
+#
+# The word "Phase" is deliberately NOT used in period names: `python phase.py`
+# switches the platform's SESSION phase, and a BA reading "Phase 2" in a plan would
+# reasonably think it is a phase to switch to.
+_SKELETON_ITERATIONS = (
+    {"name": "Iteration 1", "tasks": ["4", "6.1"],
+     "deliverables": ["Elicitation results", "As-is understanding"],
+     "effort": "High", "when": ""},
+    {"name": "Iteration 2", "tasks": ["5", "7"],
+     "deliverables": ["Prioritized backlog", "Requirement specifications"],
+     "effort": "Medium", "when": ""},
+)
+
+_SKELETON_PHASES = (
+    {"name": "Stage 1 — Discovery", "tasks": ["3", "4"],
+     "deliverables": ["BA plan", "Elicitation results"],
+     "effort": "High", "when": ""},
+    {"name": "Stage 2 — Analysis", "tasks": ["6"],
+     "deliverables": ["As-is / to-be models", "Change strategy"],
+     "effort": "High", "when": ""},
+    {"name": "Stage 3 — Specification and approval", "tasks": ["7", "5"],
+     "deliverables": ["Requirement specifications", "Approved baseline"],
+     "effort": "Medium", "when": ""},
+)
+
+
+@mcp.tool()
+@guard_artifact_errors
+def plan_ba_activities(
+    project_id: str,
+    timing_form: Literal["", "phases", "iterations"] = "",
+    periods_json: str = "[]",
+    timing_constraints_json: str = "[]",
+    ba_notes: str = "",
+) -> str:
+    """
+    BABOK 3.1 — plan the BA activities (element .3) and their timing (element .4).
+
+    Optional step, run after `suggest_ba_approach`. Records WHICH BABOK tasks are
+    done in which work period, with what effort, and what constrains the timing.
+    Saves to {project}_ba_plan.json, section 'ba_activities'.
+
+    Two chapters read this section afterwards:
+      - 5.5 prepare_approval_package takes the methodology from the timing form,
+        so the BA no longer states it a second time;
+      - 4.1 save_elicitation_plan names the period that covers elicitation work.
+
+    Args:
+        project_id: Project identifier
+        timing_form: "phases" (predictive) or "iterations" (adaptive). Leave empty
+            to derive it from the approach chosen in 3.1.
+        periods_json: JSON list of work periods. Leave empty for a starting
+            skeleton generated from the approach. Format:
+            '[{"name": "Iteration 1", "tasks": ["4.1", "4.2"],
+               "deliverables": ["Elicitation results"], "effort": "High",
+               "when": "Aug 2026"}]'
+            `tasks` are BABOK task ids of this platform (3.1-7.6) or a whole
+            chapter ("4").
+        timing_constraints_json: JSON list of what constrains the timing, e.g.
+            '["regulatory deadline 2026-12-31", "vendor available from September"]'
+        ba_notes: Additional context from the BA
+    """
+    periods_in, error = _parse_json_dict_list(
+        periods_json, "periods_json",
+        example='[{"name": "Iteration 1", "tasks": ["4.1"], "effort": "High"}]')
+    if error:
+        return error
+    constraints, error = _parse_string_list(
+        timing_constraints_json, "timing_constraints_json",
+        example='["regulatory deadline 2026-12-31"]')
+    if error:
+        return error
+
+    plan = _load_plan(project_id)
+    approach_section = plan.get("ba_approach")
+    approach_label = ""
+    if isinstance(approach_section, dict):
+        raw_label = approach_section.get("recommended_approach")
+        approach_label = raw_label if isinstance(raw_label, str) else ""
+    derived = approach_to_timing_form(approach_label)
+
+    warnings = []
+    if timing_form:
+        form, form_source = timing_form, "declared by the BA"
+        if derived and derived != timing_form:
+            warnings.append(
+                f"⚠️ You declared `{timing_form}`, but the 3.1 approach "
+                f"({approach_label}) implies `{derived}`. Stored what you declared — "
+                f"the decision is yours.")
+    elif derived:
+        form, form_source = derived, f"derived from {approach_label}"
+    else:
+        form, form_source = "", ""
+
+    # Nothing to derive AND nothing typed: there is nothing to store. An empty
+    # section would claim the planning happened and would pass the "empty plan"
+    # gate in save_ba_plan.
+    if not form and not periods_in:
+        reason = (f"the approach `{approach_label}` sits between predictive and "
+                  f"adaptive, so the form does not follow from it"
+                  if approach_label else
+                  "3.1 has not been run for this project yet")
+        return (
+            f"⚠️ Nothing recorded — {reason}.\n\n"
+            f"  Say which form the work takes and I will store it:\n"
+            f"    • `timing_form=\"phases\"`     — BA tasks run in specific stages\n"
+            f"    • `timing_form=\"iterations\"` — BA tasks run iteratively\n\n"
+            f"  (BABOK 3.1, element .4 — I will not guess it for you: the value ends "
+            f"up on the approval package that goes out for signature.)"
+        )
+
+    generated = not periods_in
+    source_periods = periods_in
+    if generated:
+        source_periods = [dict(p) for p in
+                          (_SKELETON_ITERATIONS if form == "iterations"
+                           else _SKELETON_PHASES)]
+
+    unknown_refs = []
+    off_scale_efforts = []
+    periods = []
+    for index, raw in enumerate(source_periods, start=1):
+        raw_tasks = raw.get("tasks")
+        if isinstance(raw_tasks, str):
+            raw_tasks = [raw_tasks]
+        elif not isinstance(raw_tasks, list):
+            raw_tasks = []
+        tasks = []
+        for candidate in raw_tasks:
+            ref = normalize_task_ref(candidate)
+            if ref:
+                if ref not in tasks:
+                    tasks.append(ref)
+            else:
+                unknown_refs.append(str(candidate))
+        raw_deliverables = raw.get("deliverables")
+        deliverables = ([d for d in raw_deliverables if isinstance(d, str)]
+                        if isinstance(raw_deliverables, list) else [])
+        effort = str(raw.get("effort") or "")
+        if effort and effort not in EFFORT_LEVELS:
+            off_scale_efforts.append(effort)
+        periods.append({
+            "name": str(raw.get("name") or f"Period {index}"),
+            "tasks": tasks,
+            "deliverables": deliverables,
+            "effort": effort,
+            "when": str(raw.get("when") or ""),
+        })
+
+    if not form:
+        warnings.append(
+            "⚠️ The timing form is not set, so 5.5 `prepare_approval_package` will "
+            "NOT take the methodology from this plan — you will keep passing "
+            "`approach` there by hand. Re-run with `timing_form=\"phases\"` or "
+            "`timing_form=\"iterations\"` to close that.")
+    if unknown_refs:
+        warnings.append(
+            f"⚠️ Not BABOK task ids of this platform, so they were dropped: "
+            f"{', '.join(unknown_refs)}. Use 3.1-7.6 or a whole chapter (\"4\"). "
+            f"Chapter 8 is not implemented yet.")
+    if off_scale_efforts:
+        warnings.append(
+            f"⚠️ Effort outside the Low/Medium/High scale, stored as given: "
+            f"{', '.join(off_scale_efforts)}.")
+
+    plan["ba_activities"] = {
+        "timing_form": form,
+        "form_source": form_source,
+        "generated": generated,
+        "periods": periods,
+        "timing_constraints": constraints,
+        "ba_notes": ba_notes,
+        "planned_on": str(date.today()),
+    }
+    _save_plan(plan, project_id)
+
+    lines = [
+        "✅ BA activities and timing recorded\n",
+        f"  Project:      {project_id}",
+        f"  Timing form:  {form or '(not set)'}"
+        + (f" ({form_source})" if form_source else ""),
+        f"  Periods:      {len(periods)}"
+        + ("  ℹ️ generated from the approach — edit and re-run to make them yours"
+           if generated else ""),
+        "",
+    ]
+    for period in periods:
+        lines.append(
+            f"  • {period['name']}"
+            f" — tasks: {', '.join(period['tasks']) or '—'}"
+            f" | deliverables: {', '.join(period['deliverables']) or '—'}"
+            f" | effort: {period['effort'] or '—'}"
+            f" | when: {period['when'] or '—'}")
+    if constraints:
+        lines += ["", f"  Timing constraints ({len(constraints)}):"]
+        lines += [f"    – {c}" for c in constraints]
+    if ba_notes:
+        lines += ["", f"  BA notes: {ba_notes}"]
+    if warnings:
+        lines += [""] + [f"  {w}" for w in warnings]
+    lines += [
+        "",
+        "ℹ️ What now reads this:",
+        "  • 5.5 `prepare_approval_package` — takes the methodology from the timing "
+        "form, so you do not state it twice",
+        "  • 4.1 `save_elicitation_plan` — names the period that covers elicitation "
+        "work and its planned effort",
+        "",
+        "→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.",
+    ]
+    return "\n".join(lines)
 
 
 @mcp.tool()
