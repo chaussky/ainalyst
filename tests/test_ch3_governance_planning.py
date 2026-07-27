@@ -244,5 +244,158 @@ class TestReport(BaseMCPTest):
         self.assertNotIn("C, F, O", report)          # ...without the invented entries
 
 
+class TestPrioritizationApproach(BaseMCPTest):
+    """BABOK 3.3 element .3 — technique / participants / criteria.
+
+    The three parts are independent: the plan may declare any subset, and clearing
+    one must never silently discard another the BA typed in a different call.
+    """
+
+    def setUp(self):
+        super().setUp()
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+
+    def _damage(self, block):
+        """Put a hand-edited prioritization block on disk.
+
+        The BA Plan renderer reads the STORED block, not `planned_prioritization`, so
+        the reader's vocabulary and type guards do not protect the delivered document.
+        """
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"]["prioritization"] = block
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    # --- storage -------------------------------------------------------------
+
+    def test_all_three_fields_are_stored(self):
+        plan_ba_governance(PROJECT, prioritization_technique="WSJF",
+                           prioritization_participants_json='["PO", "Head of Risk"]',
+                           prioritization_criteria_json='["cost", "risk"]')
+        block = _section()["prioritization"]
+        self.assertEqual(block["technique"], "WSJF")
+        self.assertEqual(block["participants"], ["PO", "Head of Risk"])
+        self.assertEqual(block["criteria"], ["cost", "risk"])
+
+    def test_the_three_fields_are_independent(self):
+        plan_ba_governance(PROJECT, prioritization_technique="WSJF",
+                           prioritization_participants_json='["PO"]',
+                           prioritization_criteria_json='["cost"]')
+        plan_ba_governance(PROJECT, prioritization_technique="None")
+        block = _section()["prioritization"]
+        self.assertEqual(block["technique"], "")
+        self.assertEqual(block["participants"], ["PO"])
+        self.assertEqual(block["criteria"], ["cost"])
+
+    def test_clearing_the_participants_leaves_the_technique_and_criteria(self):
+        """The other direction of the same rule — one shared branch would pass the
+        test above and still wipe two fields here."""
+        plan_ba_governance(PROJECT, prioritization_technique="WSJF",
+                           prioritization_participants_json='["PO"]',
+                           prioritization_criteria_json='["cost"]')
+        plan_ba_governance(PROJECT, prioritization_participants_json="[]")
+        block = _section()["prioritization"]
+        self.assertEqual(block["participants"], [])
+        self.assertEqual(block["technique"], "WSJF")
+        self.assertEqual(block["criteria"], ["cost"])
+
+    def test_a_re_run_keeps_the_block(self):
+        plan_ba_governance(PROJECT, prioritization_technique="MoSCoW",
+                           prioritization_criteria_json='["value"]')
+        plan_ba_governance(PROJECT, review_cycle="Monthly")
+        block = _section()["prioritization"]
+        self.assertEqual(block["technique"], "MoSCoW")
+        self.assertEqual(block["criteria"], ["value"])
+
+    def test_the_kept_line_names_the_prioritization_fields(self):
+        """B3-3 finding 9 again: the Kept line exists so the BA does not open the
+        JSON, so it has to be complete for the new fields too."""
+        plan_ba_governance(PROJECT, prioritization_technique="WSJF",
+                           prioritization_participants_json='["PO"]',
+                           prioritization_criteria_json='["cost"]')
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly").lower()
+        for expected in ("prioritization technique", "prioritization participants",
+                         "prioritization criteria"):
+            self.assertIn(expected, result, f"{expected} missing from the Kept line")
+
+    # --- validation ----------------------------------------------------------
+
+    def test_an_unparseable_participants_list_reports_the_parameter(self):
+        result = plan_ba_governance(PROJECT, prioritization_participants_json="not-json")
+        self.assertIn("❌", result)
+        self.assertIn("prioritization_participants_json", result)
+
+    def test_an_unparseable_criteria_list_reports_the_parameter(self):
+        result = plan_ba_governance(PROJECT, prioritization_criteria_json="{}")
+        self.assertIn("❌", result)
+        self.assertIn("prioritization_criteria_json", result)
+
+    def test_a_hand_edited_block_is_repaired_on_the_next_run(self):
+        """The writer is the only tool that can overwrite the section, so it must
+        survive — and clean — every shape that is valid JSON."""
+        self._damage({"technique": "Gut feel", "participants": "PO", "criteria": 7})
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertIn("✅", result)
+        self.assertEqual(_section()["prioritization"],
+                         {"technique": "", "participants": [], "criteria": []})
+
+    # --- the tool's own status line ------------------------------------------
+
+    def test_the_status_line_names_every_planned_part(self):
+        result = plan_ba_governance(
+            PROJECT, prioritization_technique="WSJF",
+            prioritization_participants_json='["PO", "Head of Risk"]',
+            prioritization_criteria_json='["cost", "risk"]')
+        self.assertIn("WSJF", result)
+        self.assertIn("PO, Head of Risk", result)
+        self.assertIn("cost, risk", result)
+
+    def test_criteria_alone_are_reported_back(self):
+        """A ✅ over content the BA cannot see recorded is how dropped input goes
+        unnoticed; any subset the plan accepts has to be echoed."""
+        result = plan_ba_governance(PROJECT, prioritization_criteria_json='["cost", "risk"]')
+        self.assertIn("cost, risk", result)
+
+    def test_no_prioritization_row_when_none_is_planned(self):
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertIn("Governance plan recorded", result)   # the status IS rendered...
+        self.assertNotIn("Prioritization:", result)         # ...with no .3 row
+
+    # --- the BA Plan report ---------------------------------------------------
+
+    def test_the_report_renders_the_block_only_when_planned(self):
+        report_without = _report_text()
+        self.assertIn("3.3 Governance", report_without)              # section IS there...
+        self.assertNotIn("Prioritization approach", report_without)  # ...without the block
+        plan_ba_governance(PROJECT, prioritization_technique="WSJF",
+                           prioritization_participants_json='["PO", "Head of Risk"]',
+                           prioritization_criteria_json='["cost", "risk"]')
+        report = _report_text()
+        self.assertIn("Prioritization approach", report)
+        self.assertIn("WSJF", report)
+        self.assertIn("PO, Head of Risk", report)
+        self.assertIn("cost, risk", report)
+
+    def test_a_string_where_the_participants_belong_does_not_render_per_character(self):
+        """The `decision_makers` defect one level deeper: the renderer joins the
+        participants, so `"participants": "PO"` would print two planned scorers,
+        P and O, inside a delivered document."""
+        self._damage({"technique": "WSJF", "participants": "PO", "criteria": ["cost"]})
+        report = _report_text()
+        self.assertIn("Prioritization approach", report)   # the block IS rendered...
+        self.assertNotIn("P, O", report)                   # ...without invented scorers
+
+    def test_a_technique_outside_the_vocabulary_is_not_rendered_as_planned(self):
+        """`planned_prioritization` drops an unknown technique for the 5.3 cross-check,
+        but the report reads the stored block directly — the same value has to be
+        dropped where it is stored, or the two disagree in a delivered document."""
+        self._damage({"technique": "Gut feel", "criteria": ["cost"]})
+        report = _report_text()
+        self.assertIn("Prioritization approach", report)   # the block IS rendered...
+        self.assertNotIn("Gut feel", report)               # ...without the junk technique
+
+
 if __name__ == "__main__":
     unittest.main()

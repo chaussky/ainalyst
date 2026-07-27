@@ -503,8 +503,31 @@ def _sane_governance_section(section) -> dict:
             isinstance(raw_days, int) and not isinstance(raw_days, bool)
             and 0 <= raw_days <= MAX_APPROVAL_SLA_DAYS):
         del out["approval_sla_days"]
-    if "prioritization" in out and not isinstance(out["prioritization"], dict):
-        del out["prioritization"]
+    if "prioritization" in out:
+        if isinstance(out["prioritization"], dict):
+            out["prioritization"] = _sane_prioritization_block(out["prioritization"])
+        else:
+            del out["prioritization"]
+    return out
+
+
+def _sane_prioritization_block(block: dict) -> dict:
+    """Coerce the element .3 block — the same guards, one nesting level deeper.
+
+    `planned_prioritization` in common.py protects the 5.3 cross-check, but the BA
+    Plan renderer reads the STORED block directly: without this, a hand-edited
+    `"participants": "PO"` printed two planned scorers, P and O, into a delivered
+    document, and `"technique": "Gut feel"` was rendered as the planned technique
+    while the reader that 5.3 uses reported none. Present keys only — inventing the
+    three keys here would make an empty block truthy for the renderer's `any()`.
+    """
+    out = dict(block)
+    for key in ("participants", "criteria"):
+        if key in out:
+            out[key] = ([v for v in out[key] if isinstance(v, str) and v.strip()]
+                        if isinstance(out[key], list) else [])
+    if "technique" in out and out["technique"] not in PRIORITIZATION_TECHNIQUES:
+        out["technique"] = ""
     return out
 
 
@@ -521,17 +544,21 @@ def plan_ba_governance(
     approval_timing_note: str = "",
     review_cycle: str = "",
     escalation_path: str = "",
+    prioritization_technique: Literal[
+        "", "None", "MoSCoW", "WSJF", "ImpactEffort", "TimeBoxing"] = "",
+    prioritization_participants_json: str = "",
+    prioritization_criteria_json: str = "",
 ) -> str:
     """
     BABOK 3.3 — Define the business analysis governance plan.
 
-    Records decision authority, change control, approvals and their timing. Project
-    criticality supplies the DEFAULT wording for the process fields; anything you
-    state yourself always wins and is labelled as yours wherever it is printed.
-    Saves to {project}_ba_plan.json, section 'governance'.
+    Records decision authority, change control, approvals and their timing, and the
+    prioritization approach. Project criticality supplies the DEFAULT wording for the
+    process fields; anything you state yourself always wins and is labelled as yours
+    wherever it is printed. Saves to {project}_ba_plan.json, section 'governance'.
 
     Re-running MERGES: a parameter left empty keeps its previous value. Clear a text
-    field with "-", a list with "[]", the SLA with 0.
+    field with "-", a list with "[]", an enum with "None", the SLA with 0.
 
     Args:
         project_id: Project identifier
@@ -548,6 +575,14 @@ def plan_ba_governance(
             express, e.g. "to the monthly CAB".
         review_cycle: BABOK 3.3 .1 — review cadence (optional — from a template)
         escalation_path: BABOK 3.3 .1 — escalation path (optional — from a template)
+        prioritization_technique: BABOK 3.3 .3 — the technique prioritization is
+            expected to use: MoSCoW / WSJF / ImpactEffort / TimeBoxing. "None"
+            clears it. A closed vocabulary, identical to the `method` of a 5.3
+            prioritization session.
+        prioritization_participants_json: BABOK 3.3 .3 — JSON list of the roles
+            expected to score, e.g. '["Product Owner", "Head of Risk"]'
+        prioritization_criteria_json: BABOK 3.3 .3 — JSON list of the criteria the
+            scoring is meant to weigh, e.g. '["cost", "risk", "value"]'
     """
     plan = _load_plan(project_id)
     previous = _sane_governance_section(plan.get("governance"))
@@ -640,7 +675,49 @@ def plan_ba_governance(
     else:
         notes = ba_notes
 
-    prioritization = previous.get("prioritization", {})
+    # --- element .3: Plan Prioritization Approach --------------------------
+    # The three parts are independent: clearing the technique must not silently
+    # discard the participants the BA listed in a different call.
+    prev_prio = previous.get("prioritization", {})
+    if not isinstance(prev_prio, dict):
+        prev_prio = {}
+
+    if prioritization_technique == "":
+        technique = prev_prio.get("technique", "")
+        if technique:
+            kept.append("prioritization technique")
+    elif prioritization_technique == _CLEAR_ENUM:
+        technique = ""
+    else:
+        technique = prioritization_technique
+
+    if prioritization_participants_json == "":
+        prio_participants = prev_prio.get("participants", [])
+        if prio_participants:
+            kept.append("prioritization participants")
+    else:
+        prio_participants, error = _parse_string_list(
+            prioritization_participants_json, "prioritization_participants_json")
+        if error:
+            return error
+
+    if prioritization_criteria_json == "":
+        prio_criteria = prev_prio.get("criteria", [])
+        if prio_criteria:
+            kept.append("prioritization criteria")
+    else:
+        prio_criteria, error = _parse_string_list(
+            prioritization_criteria_json, "prioritization_criteria_json")
+        if error:
+            return error
+
+    prioritization = {
+        # Defence in depth: the Literal only constrains the MCP call, and the stored
+        # value already passed _sane_prioritization_block on the way in.
+        "technique": technique if technique in PRIORITIZATION_TECHNIQUES else "",
+        "participants": prio_participants,
+        "criteria": prio_criteria,
+    }
 
     governance = {
         "project_criticality": criticality,
@@ -674,6 +751,18 @@ def plan_ba_governance(
                      if sla_days else "")
     timing_line = f"  Approval timing:    {timing_note}\n" if timing_note else ""
 
+    # Every part the BA may plan is echoed, including criteria on their own: a ✅ over
+    # content the analyst cannot see recorded is how dropped input goes unnoticed.
+    prio_line = ""
+    if any(prioritization.values()):
+        segments = [prioritization["technique"] or "technique not set"]
+        if prioritization["participants"]:
+            segments.append(
+                f"participants: {', '.join(prioritization['participants'])}")
+        if prioritization["criteria"]:
+            segments.append(f"criteria: {', '.join(prioritization['criteria'])}")
+        prio_line = f"  Prioritization:     {' | '.join(segments)}\n"
+
     return (
         f"✅ Governance plan recorded\n\n"
         f"  Project:            {project_id}\n"
@@ -683,7 +772,7 @@ def plan_ba_governance(
         f"  Approval:           {values['approval_process']} ({_src('approval_process')})\n"
         f"  Review cycle:       {values['review_cycle']} ({_src('review_cycle')})\n"
         f"  Escalation:         {values['escalation_path']} ({_src('escalation_path')})\n"
-        f"{deadline_line}{timing_line}\n"
+        f"{deadline_line}{timing_line}{prio_line}\n"
         + (f"  Kept from the previous plan: {', '.join(kept)}\n\n" if kept else "")
         + f"  {criticality_hints[criticality]}\n\n"
         f"→ Next step: `plan_information_management` — define the storage architecture."
@@ -1620,6 +1709,22 @@ def save_ba_plan(
             md_lines.append(
                 f"| Approval timing | {governance['approval_timing_note']} "
                 f"| declared in 3.3 |")
+        # Element .3 appears only when something was planned: an empty block in a
+        # document that goes to people reads as a gap in the analysis, not as an
+        # unused option. The block is already coerced by _sane_governance_section.
+        prio = governance.get("prioritization")
+        if isinstance(prio, dict) and any(prio.values()):
+            md_lines += [
+                "",
+                "**Prioritization approach (BABOK 3.3 .3)**",
+                "",
+                f"- **Technique:** {prio.get('technique') or 'not set'}",
+            ]
+            if prio.get("participants"):
+                md_lines.append(
+                    f"- **Participants:** {', '.join(prio['participants'])}")
+            if prio.get("criteria"):
+                md_lines.append(f"- **Criteria:** {', '.join(prio['criteria'])}")
         md_lines.append("")
         md_lines += _notes_block(governance)
 
