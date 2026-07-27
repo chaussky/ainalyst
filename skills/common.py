@@ -1162,6 +1162,179 @@ def planned_work_period(plan, task_ref):
     return None
 
 
+# ---------------------------------------------------------------------------
+# BABOK 3.3 — Governance Approach: the shared reader (B3-2)
+#
+# Chapters 5.3 / 5.4 / 5.5 read the governance plan ONLY through these helpers.
+# They load in the `lifecycle` phase and chapter 3 loads in BASE_SERVER, so no
+# chapter may import another's module.
+# ---------------------------------------------------------------------------
+
+# Moved here from planning_mcp so the "declared vs template" source label is decided
+# in exactly ONE place. Two copies of one decision rule is precisely how the 5.5
+# dashboard and the baseline gate drifted apart.
+GOVERNANCE_TEMPLATES = {
+    "High": {
+        "change_control": "Formal: Change Request (CR) → assessment → CAB approval",
+        "approval":       "Requires sign-off from Sponsor + Product Owner",
+        "review_cycle":   "Weekly status + formal review on every CR",
+        "escalation":     "BA → PM → Steering Committee",
+    },
+    "Medium": {
+        "change_control": "Adaptive: PO approves changes via the Backlog",
+        "approval":       "Product Owner + Lead BA",
+        "review_cycle":   "Bi-weekly review, retrospectives",
+        "escalation":     "BA → PO → PM",
+    },
+    "Low": {
+        "change_control": "Minimal: logged in Jira, verbal sign-off",
+        "approval":       "Lead BA",
+        "review_cycle":   "On request",
+        "escalation":     "BA → PM",
+    },
+}
+
+# BABOK 3.3 element .3. A CLOSED vocabulary, identical to the `method` Literal of
+# 5.3 start_prioritization_session: an open string could only be compared to the
+# session's method by fuzzy match, and a fuzzy match inside a cross-check is a guess
+# wearing the costume of a verification. Pinned by a test, because chapter 3 cannot
+# import chapter 5 to build it at runtime.
+PRIORITIZATION_TECHNIQUES = ("MoSCoW", "WSJF", "ImpactEffort", "TimeBoxing")
+
+# The ceiling for an approval SLA. A year is already absurd for one package; the
+# bound exists so a typo cannot travel on the document that goes out for signature.
+MAX_APPROVAL_SLA_DAYS = 365
+
+# Field name in the plan -> its key in GOVERNANCE_TEMPLATES. Defined once and
+# imported by the writer, so the reader and the writer cannot disagree about which
+# template backs which field.
+TEMPLATE_FIELD_KEYS = {
+    "change_control": "change_control",
+    "approval_process": "approval",
+    "review_cycle": "review_cycle",
+    "escalation_path": "escalation",
+}
+
+
+def governance_section(plan) -> dict:
+    """The `governance` section, or {} for any shape that is not a dict.
+
+    Deliberately does NOT supply missing keys. A coercion that fills the dict makes
+    its result permanently truthy, and every caller here asks "was THIS value
+    planned?", never "is the section truthy?".
+    """
+    if not isinstance(plan, dict):
+        return {}
+    section = plan.get("governance")
+    return section if isinstance(section, dict) else {}
+
+
+def _governance_string_list(value) -> list:
+    """Every non-blank string in `value`, or [] for anything that is not a list.
+
+    isinstance BEFORE use, never `or []`: a bare string where a list belongs is an
+    ordinary LLM mistake, and iterating it yields one entry per CHARACTER — invented
+    data a consumer would then present as planned governance.
+    """
+    if not isinstance(value, list):
+        return []
+    return [v for v in value if isinstance(v, str) and v.strip()]
+
+
+def planned_decision_makers(plan) -> list:
+    """BABOK 3.3 .1 — the roles holding decision authority, or []."""
+    return _governance_string_list(governance_section(plan).get("decision_makers"))
+
+
+def is_planned_decision_maker(plan, who) -> bool:
+    """Is `who` one of the planned decision makers?
+
+    The ONLY name matcher for governance. 5.4 passes `decided_by` and 5.5 passes
+    `stakeholder_name`; both are "a role or a name", and the plan holds roles. The
+    comparison runs through reg_norm on BOTH sides — when a producer validates raw
+    casing and a consumer matches normalised, the tool makes confident false claims.
+    """
+    key = reg_norm(who)
+    if not key:
+        return False
+    return any(reg_norm(dm) == key for dm in planned_decision_makers(plan))
+
+
+def _governance_declared(plan) -> set:
+    return set(_governance_string_list(governance_section(plan).get("declared")))
+
+
+def _governance_template_value(plan, field: str) -> tuple:
+    """(text, source) for one template-backed field.
+
+    `declared` is a RECORD carried on the section, never a comparison of the stored
+    value against the template: a BA who states wording identical to the template
+    still stated it, and a source recovered by comparing strings would be a lookalike
+    condition drifting from the fact it imitates.
+    """
+    section = governance_section(plan)
+    if field in _governance_declared(plan):
+        value = section.get(field)
+        if isinstance(value, str) and value.strip():
+            return value, "declared in 3.3"
+    criticality = section.get("project_criticality")
+    template = (GOVERNANCE_TEMPLATES.get(criticality)
+                if isinstance(criticality, str) else None)
+    if not template:
+        return "", ""
+    return template[TEMPLATE_FIELD_KEYS[field]], f"from the {criticality} template"
+
+
+def planned_approval_process(plan) -> tuple:
+    """BABOK 3.3 .4 — (process text, source). Source is "" when nothing is planned."""
+    return _governance_template_value(plan, "approval_process")
+
+
+def planned_escalation_path(plan) -> tuple:
+    """BABOK 3.3 .1 — (escalation path, source). Source is "" when nothing is planned."""
+    return _governance_template_value(plan, "escalation_path")
+
+
+def planned_approval_timing(plan) -> tuple:
+    """BABOK 3.3 .4 "the timing for the approvals" — (days, note, source).
+
+    `days` is a plain integer of BUSINESS days; the platform does no date arithmetic
+    (it has no working calendar, and a wrong date would travel on a signed document).
+    `note` carries event-based timing a number cannot express ("to the monthly CAB").
+
+    There is deliberately NO template fallback: a made-up deadline on a package that
+    goes out for signature is worse than no deadline at all.
+    """
+    section = governance_section(plan)
+    raw = section.get("approval_sla_days")
+    # `bool` is an `int` in Python, so a stored `true` would otherwise become a
+    # one-business-day deadline printed on the approval package.
+    days = (raw if isinstance(raw, int) and not isinstance(raw, bool)
+            and 1 <= raw <= MAX_APPROVAL_SLA_DAYS else None)
+    raw_note = section.get("approval_timing_note")
+    note = raw_note.strip() if isinstance(raw_note, str) else ""
+    source = "declared in 3.3" if (days is not None or note) else ""
+    return days, note, source
+
+
+def planned_prioritization(plan) -> dict:
+    """BABOK 3.3 .3 — {technique, participants, criteria}; missing parts are empty.
+
+    `technique` is emptied unless it is one of PRIORITIZATION_TECHNIQUES: the value
+    exists to be compared with 5.3's `method`, and rendering an unrecognised string
+    as "the planned technique" would present junk from a hand-edited file as a plan.
+    """
+    block = governance_section(plan).get("prioritization")
+    if not isinstance(block, dict):
+        return {"technique": "", "participants": [], "criteria": []}
+    technique = block.get("technique")
+    return {
+        "technique": technique if technique in PRIORITIZATION_TECHNIQUES else "",
+        "participants": _governance_string_list(block.get("participants")),
+        "criteria": _governance_string_list(block.get("criteria")),
+    }
+
+
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
     """Saves a Markdown artifact to reports/ and returns the path.
 
