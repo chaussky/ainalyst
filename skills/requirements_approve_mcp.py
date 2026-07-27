@@ -1010,6 +1010,29 @@ def record_approval_decision(
             "Once all decisions are in — check readiness via `check_approval_status`.",
         ]
 
+    # BABOK 3.3 .1 — cross-check against the planned decision authority.
+    #
+    # It fires ONLY for accountable/responsible. A `consulted` stakeholder is a
+    # reviewer, and BABOK 3.3 .1 lists reviewer and SME as roles distinct from
+    # approver, so their absence from the plan's list is correct, not a finding.
+    #
+    # That makes the explicit `stakeholder_raci` the GUARD for this check rather than
+    # its input — which is how this seam avoids the conflict that got B3-2 declined
+    # once already. This value decides whether a rejection HARD BLOCKS the baseline
+    # (`force` does not lift it), so deriving it from a plan would silently change
+    # what blocks. It is read here and never written.
+    if stakeholder_raci in ("accountable", "responsible"):
+        plan, _plan_note = load_ba_plan(project_name)
+        planned = planned_decision_makers(plan)
+        if planned and not is_planned_decision_maker(plan, stakeholder_name):
+            lines += [
+                "",
+                f"⚠️ `{stakeholder_name}` is recorded as **{stakeholder_raci}** but is "
+                f"not among the planned decision makers (3.3): {', '.join(planned)}.",
+                "The decision stands exactly as recorded — either update 3.3 with "
+                "`plan_ba_governance`, or confirm this person holds the authority.",
+            ]
+
     return "\n".join(lines)
 
 
@@ -1604,6 +1627,30 @@ def create_requirements_baseline(
             "### Verified with override",
             "",
             f"7.2 blockers were open and deliberately overridden: {forced_str}",
+            "",
+        ]
+
+    # BABOK 3.3 .1 — who was PLANNED to hold approval authority, and who of them
+    # actually spoke. A fact for the official record, not a gate: `_baseline_gate`
+    # is untouched by B3-2. Matched with the same `is_planned_decision_maker` the
+    # warning in record_approval_decision uses, so the record and the warning cannot
+    # disagree about who counts as an authority.
+    plan, _plan_note = load_ba_plan(project_name)
+    planned_authority = planned_decision_makers(plan)
+    if planned_authority:
+        responded = [name for name in package["stakeholder_decisions"]
+                     if is_planned_decision_maker(plan, name)]
+        responded_keys = {reg_norm(name) for name in responded}
+        silent = [a for a in planned_authority if reg_norm(a) not in responded_keys]
+        record_lines += [
+            "",
+            "---",
+            "",
+            "## Governance (3.3)",
+            "",
+            f"**Planned approval authority (3.3):** {', '.join(planned_authority)}  ",
+            (f"**Responded:** {', '.join(responded) or 'nobody'}."
+             + (f" No decision recorded from: {', '.join(silent)}." if silent else "")),
             "",
         ]
 

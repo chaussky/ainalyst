@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,7 +22,9 @@ setup_mocks()
 
 from skills.common import ba_plan_path
 from skills.planning_mcp import plan_ba_governance
-from skills.requirements_approve_mcp import prepare_approval_package
+from skills.requirements_approve_mcp import (
+    prepare_approval_package, record_approval_decision,
+    create_requirements_baseline)
 from skills.requirements_traceability_mcp import init_traceability_repo
 
 PROJECT = "gov55"
@@ -30,6 +33,22 @@ REQS = json.dumps([
     {"id": "FR-001", "title": "Login", "type": "functional"},
     {"id": "FR-002", "title": "Logout", "type": "functional"},
 ])
+
+
+def _record_text(*args, **kwargs) -> str:
+    """The Approval Record markdown, captured from the writer.
+
+    `create_requirements_baseline` returns a SUMMARY — its own docstring says "the
+    return value is not it". The record goes to save_artifact, which conftest mocks
+    suite-wide. This is the third tool in this feature whose return value is not the
+    delivered document, and the rule is not uniform (prepare_approval_package DOES
+    return its package), so it is verified per tool rather than assumed.
+    """
+    with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+        mock_sa.return_value = "\n\n✅ Artifact saved: `x.md`"
+        summary = create_requirements_baseline(*args, **kwargs)
+        record = mock_sa.call_args[0][0] if mock_sa.call_args else ""
+    return record, summary
 
 
 class GovernanceInThePackageTest(BaseMCPTest):
@@ -153,6 +172,106 @@ class GovernanceInThePackageTest(BaseMCPTest):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
         self.assertIn("Approval Package: Auth", self._prepare())
+
+
+class AuthorityCrossCheckTest(BaseMCPTest):
+    """BABOK 3.3 .1 — is the person recording a decision one of the planned
+    approvers? The check must never touch the RACI it reads."""
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        prepare_approval_package(PROJECT, "APKG-001", "Auth",
+                                 '["FR-001", "FR-002"]', approach="predictive")
+
+    def _record(self, name, raci, decision="approved", **kw):
+        return record_approval_decision(PROJECT, "APKG-001", name, raci, decision, **kw)
+
+    def test_an_unplanned_accountable_is_flagged_by_name(self):
+        result = self._record("Marketing Lead", "accountable")
+        self.assertIn("⚠️", result)
+        self.assertIn("Marketing Lead", result)
+        self.assertIn("CFO, Head of Risk", result)
+
+    def test_a_planned_accountable_is_not_flagged(self):
+        self.assertNotIn("not among the planned",
+                         self._record("CFO", "accountable"))
+
+    def test_a_planned_responsible_is_not_flagged(self):
+        self.assertNotIn("not among the planned",
+                         self._record("Head of Risk", "responsible"))
+
+    def test_the_match_is_case_and_space_insensitive(self):
+        self.assertNotIn("not among the planned",
+                         self._record("  head of   RISK ", "responsible"))
+
+    def test_a_consulted_stakeholder_is_never_flagged(self):
+        """THE HEART OF THIS FEATURE. A reviewer is legitimately not a decision
+        maker; the EXPLICIT raci is the GUARD for the cross-check, not its victim.
+        Warning here would re-create the conflict that got B3-2 declined the first
+        time round — raci decides whether a rejection HARD BLOCKS the baseline, so
+        it is read, never derived."""
+        result = self._record("Marketing Lead", "consulted")
+        self.assertIn("Marketing Lead", result)          # the decision IS recorded...
+        self.assertNotIn("not among the planned", result)  # ...silently
+
+    def test_the_cross_check_does_not_demote_an_ar_rejection(self):
+        """The hard block must survive the cross-check untouched."""
+        self._record("Marketing Lead", "accountable", decision="rejected",
+                     rejection_reason="out of scope")
+        _record, summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("❌", summary)
+        self.assertIn("NOT lifted by `force`", summary)
+
+    def test_nothing_is_flagged_when_no_authority_is_planned(self):
+        os.remove(ba_plan_path(PROJECT))
+        result = self._record("Anyone", "accountable")
+        self.assertIn("Anyone", result)
+        self.assertNotIn("not among the planned", result)
+
+
+class ApprovalRecordGovernanceTest(BaseMCPTest):
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        prepare_approval_package(PROJECT, "APKG-001", "Auth",
+                                 '["FR-001", "FR-002"]', approach="predictive")
+
+    def test_the_record_names_who_responded_and_who_did_not(self):
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("Planned approval authority", record)
+        self.assertIn("CFO, Head of Risk", record)
+        self.assertIn("No decision recorded from: Head of Risk", record)
+
+    def test_the_record_says_so_when_every_authority_responded(self):
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record_approval_decision(PROJECT, "APKG-001", "Head of Risk",
+                                 "responsible", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("Planned approval authority", record)
+        self.assertNotIn("No decision recorded from", record)
+
+    def test_an_unplanned_responder_does_not_count_as_a_planned_one(self):
+        """The `silent` list alone cannot prove this — it is computed by matching the
+        PLANNED names against the responders, so it reads the same whether or not the
+        responder list was filtered. Mutation testing showed exactly that: dropping
+        the filter left this test green. The "Responded" line is the evidence."""
+        record_approval_decision(PROJECT, "APKG-001", "Marketing Lead",
+                                 "accountable", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO", force=True)
+        self.assertIn("**Responded:** nobody.", record)
+        self.assertIn("No decision recorded from: CFO, Head of Risk", record)
+
+    def test_the_block_is_absent_without_a_plan(self):
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        os.remove(ba_plan_path(PROJECT))
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("Approval Record", record)      # the record IS rendered...
+        self.assertNotIn("Planned approval authority", record)   # ...without the block
 
 
 if __name__ == "__main__":
