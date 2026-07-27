@@ -111,8 +111,13 @@ class TestResolution(BaseMCPTest):
         _seed_plan({"timing_form": "iterations"},
                    approach_label="Hybrid (Agile + compliance gates)")
         out = self._prepare()
+        # The four-option decision menu IS the formal ceremony; "For Sprint Planning"
+        # is the informal one. Those two assertions carry the claim.
+        # An `assertIn("Response deadline", out)` used to sit here and did NOT: it was
+        # a hardcoded literal in the predictive branch, so it could not vary with the
+        # ceremony choice, and the sibling test below never had it. B3-2 made the
+        # deadline conditional on the 3.3 plan, which is what exposed it.
         self.assertIn("**Conditional**", out)
-        self.assertIn("Response deadline", out)
         self.assertNotIn("For Sprint Planning", out)
         self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
 

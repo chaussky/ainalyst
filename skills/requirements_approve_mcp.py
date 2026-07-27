@@ -38,6 +38,8 @@ from skills.common import (
     MUST_PRIORITIES,
     find_spec_file, spec_section_body,
     load_ba_plan, planned_timing_form, approach_to_timing_form,
+    planned_approval_timing, planned_approval_process, planned_decision_makers,
+    is_planned_decision_maker, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -374,6 +376,45 @@ def _resolve_approach(project_name: str, approach: str) -> tuple:
     return "", "", error
 
 
+def _governance_block(project_name: str) -> tuple:
+    """(markdown lines for the authority block, the deadline sentence or "").
+
+    BABOK 3.3 .4 — "the timing for the approvals" and who approves. Everything here
+    is NEW information: the package named no approver and stated no deadline, it only
+    pointed at a plan nothing read ("Response deadline: per the project's governance
+    plan."), printed inside a document that goes out for signature.
+
+    So a project without a governance plan gets a tool that says LESS than before —
+    never a dash, and never a refusal. That is the opposite of `_resolve_approach`
+    above, and deliberately so: `approach` was ALREADY a required input, so refusing
+    took nothing away, whereas refusing here would break every existing project.
+    """
+    plan, note = load_ba_plan(project_name)
+    days, timing_note, _timing_source = planned_approval_timing(plan)
+    process, process_source = planned_approval_process(plan)
+    approvers = planned_decision_makers(plan)
+
+    parts = []
+    if days:
+        parts.append(f"within {days} business days of receiving this package")
+    if timing_note:
+        parts.append(timing_note)
+    deadline = (f"Response deadline: {'; '.join(parts)} "
+                f"(per the 3.3 governance plan)." if parts else "")
+
+    lines = []
+    if approvers or process:
+        lines = ["---", "", "## Approval authority (3.3)", ""]
+        if approvers:
+            lines.append(f"**Approvers:** {', '.join(approvers)}  ")
+        if process:
+            lines.append(f"**Process:** {process} *({process_source})*  ")
+        lines.append("")
+    if note:
+        lines = ["", note, ""] + lines
+    return lines, deadline
+
+
 @mcp.tool()
 @guard_artifact_errors
 def prepare_approval_package(
@@ -597,6 +638,8 @@ def prepare_approval_package(
             lines += [f"**CR history:** {cr_info}", ""]
         lines.append("")
 
+    gov_lines, gov_deadline = _governance_block(project_name)
+
     # Instructions for stakeholders
     if approach == "predictive":
         # A regulated hybrid signs off formally AND runs in sprints, so the header
@@ -611,8 +654,11 @@ def prepare_approval_package(
             "- **Approved** — agreed without reservations\n"
             "- **Conditional** — agreed subject to a condition (state the condition)\n"
             "- **Rejected** — not agreed (state the reason)\n"
-            "- **Abstained** — abstaining\n\n"
-            "Response deadline: per the project's governance plan."
+            "- **Abstained** — abstaining"
+            # Was: "Response deadline: per the project's governance plan." — a pointer
+            # at a plan nothing read, printed on a document that goes out for
+            # signature. It now states the deadline, or says nothing at all.
+            + (f"\n\n{gov_deadline}" if gov_deadline else "")
             + cadence_note
         )
     else:
@@ -620,6 +666,10 @@ def prepare_approval_package(
         instruction = (
             f"For Sprint Planning{sprint_ref}. The Product Owner reviews and approves the backlog.\n"
             "Requirements accepted into the sprint will get status Approved and join the Sprint Baseline."
+            # The SLA answers "the timing for the approvals" (BABOK 3.3 .4) whatever
+            # the ceremony: a sprint package has a response window too. A project that
+            # planned no SLA sees this branch exactly as it was.
+            + (f"\n\n{gov_deadline}" if gov_deadline else "")
         )
 
     if unverified_ids:
@@ -642,6 +692,7 @@ def prepare_approval_package(
             "",
         ]
 
+    lines += gov_lines
     lines += [
         "---",
         "",
