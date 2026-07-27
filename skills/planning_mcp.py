@@ -57,6 +57,8 @@ from skills.common import (
     planned_attribute_set, reg_norm,
     EFFORT_LEVELS, TIMING_FORMS, normalize_task_ref, approach_to_timing_form,
     activities_section, planned_work_period,
+    GOVERNANCE_TEMPLATES, TEMPLATE_FIELD_KEYS, MAX_APPROVAL_SLA_DAYS,
+    PRIORITIZATION_TECHNIQUES,
 )
 
 mcp = FastMCP("BABOK_Planning")
@@ -68,25 +70,17 @@ PLAN_FILENAME = "ba_plan.json"
 # matrices live in common.py — single source of truth, ADR-REVIEW-5)
 # ---------------------------------------------------------------------------
 
-_GOVERNANCE_TEMPLATES = {
-    "High": {
-        "change_control": "Formal: Change Request (CR) → assessment → CAB approval",
-        "approval":       "Requires sign-off from Sponsor + Product Owner",
-        "review_cycle":   "Weekly status + formal review on every CR",
-        "escalation":     "BA → PM → Steering Committee",
-    },
-    "Medium": {
-        "change_control": "Adaptive: PO approves changes via the Backlog",
-        "approval":       "Product Owner + Lead BA",
-        "review_cycle":   "Bi-weekly review, retrospectives",
-        "escalation":     "BA → PO → PM",
-    },
-    "Low": {
-        "change_control": "Minimal: logged in Jira, verbal sign-off",
-        "approval":       "Lead BA",
-        "review_cycle":   "On request",
-        "escalation":     "BA → PM",
-    },
+# The 3.3 criticality templates live in skills/common.py: the readers in 5.3/5.4/5.5
+# decide "declared by the BA or from a template?" with the same table, and two copies
+# of one decision rule is how the 5.5 dashboard and the baseline gate drifted apart.
+
+# Display labels for the "Kept from the previous plan" line. Names only — the
+# field -> template-key mapping itself is TEMPLATE_FIELD_KEYS, imported from common.
+_FIELD_LABELS = {
+    "change_control": "change control",
+    "approval_process": "approval process",
+    "review_cycle": "review cycle",
+    "escalation_path": "escalation",
 }
 
 _TRACEABILITY_LEVELS = {
@@ -481,48 +475,189 @@ def plan_stakeholder_engagement(
     return "".join(lines)
 
 
+def _sane_governance_section(section) -> dict:
+    """Coerce a stored 3.3 section into the shapes the merge code and renderer assume.
+
+    The renderer already did `', '.join(governance.get('decision_makers', []))`, so a
+    file that is valid JSON with `"decision_makers": "CFO"` rendered "C, F, O" into a
+    DELIVERED document — three invented approvers — and this tool, the only one that
+    can repair the section, died on the same value. Unusable values are dropped so the
+    merge falls back to "not planned" and the BA can simply plan it again.
+    """
+    if not isinstance(section, dict):
+        return {}
+    out = dict(section)
+    for key in ("decision_makers", "declared"):
+        if key in out:
+            if isinstance(out[key], list):
+                out[key] = [v for v in out[key] if isinstance(v, str) and v.strip()]
+            else:
+                del out[key]
+    for key in ("change_control", "approval_process", "review_cycle",
+                "escalation_path", "approval_timing_note", "ba_notes",
+                "project_criticality", "defined_on"):
+        if key in out and not isinstance(out[key], str):
+            del out[key]
+    raw_days = out.get("approval_sla_days")
+    if "approval_sla_days" in out and not (
+            isinstance(raw_days, int) and not isinstance(raw_days, bool)
+            and 0 <= raw_days <= MAX_APPROVAL_SLA_DAYS):
+        del out["approval_sla_days"]
+    if "prioritization" in out and not isinstance(out["prioritization"], dict):
+        del out["prioritization"]
+    return out
+
+
 @mcp.tool()
 @guard_artifact_errors
 def plan_ba_governance(
     project_id: str,
-    project_criticality: Literal["Low", "Medium", "High"],
-    decision_makers_json: str,
+    project_criticality: Literal["", "Low", "Medium", "High"] = "",
+    decision_makers_json: str = "",
     change_control_process: str = "",
     ba_notes: str = "",
+    approval_process: str = "",
+    approval_sla_days: int = -1,
+    approval_timing_note: str = "",
+    review_cycle: str = "",
+    escalation_path: str = "",
 ) -> str:
     """
     BABOK 3.3 — Define the business analysis governance plan.
 
-    Records change control, approval, and escalation procedures.
-    Project criticality determines the level of formalization.
+    Records decision authority, change control, approvals and their timing. Project
+    criticality supplies the DEFAULT wording for the process fields; anything you
+    state yourself always wins and is labelled as yours wherever it is printed.
     Saves to {project}_ba_plan.json, section 'governance'.
+
+    Re-running MERGES: a parameter left empty keeps its previous value. Clear a text
+    field with "-", a list with "[]", the SLA with 0.
 
     Args:
         project_id: Project identifier
-        project_criticality: Project criticality (Low/Medium/High)
-        decision_makers_json: JSON list of decision-making roles, e.g. '["Sponsor", "PO", "Lead BA"]'
-        change_control_process: Description of the change control process (optional — filled from a template)
+        project_criticality: Project criticality (Low/Medium/High). Required the first
+            time — it selects the default wording for every process field.
+        decision_makers_json: JSON list of roles WITH DECISION AUTHORITY (BABOK 3.3 .1
+            approvers), e.g. '["Sponsor", "PO", "Lead BA"]'. Required the first time.
+        change_control_process: Change control process (optional — from a template)
         ba_notes: Additional agreements
+        approval_process: BABOK 3.3 .4 — who approves and how (optional — template)
+        approval_sla_days: BABOK 3.3 .4 — response deadline in BUSINESS days, 1-365.
+            0 clears it; leave unset to keep the stored value.
+        approval_timing_note: BABOK 3.3 .4 — event-based timing a number cannot
+            express, e.g. "to the monthly CAB".
+        review_cycle: BABOK 3.3 .1 — review cadence (optional — from a template)
+        escalation_path: BABOK 3.3 .1 — escalation path (optional — from a template)
     """
-    decision_makers, error = _parse_string_list(
-        decision_makers_json, "decision_makers_json", required=True)
-    if error:
-        return error
+    plan = _load_plan(project_id)
+    previous = _sane_governance_section(plan.get("governance"))
+    kept = []
+    declared = set(previous.get("declared", []))
 
-    tpl = _GOVERNANCE_TEMPLATES.get(project_criticality, _GOVERNANCE_TEMPLATES["Medium"])
+    # --- criticality: required DATA, optional PARAMETER ---------------------
+    # Optional because merge would otherwise force the BA to retype it on every
+    # refinement; still required, because without it every template default falls
+    # silently to Medium.
+    if project_criticality == "":
+        criticality = previous.get("project_criticality", "")
+        if criticality:
+            kept.append("criticality")
+    else:
+        criticality = project_criticality
+    if criticality not in GOVERNANCE_TEMPLATES:
+        return ("❌ `project_criticality` is required the first time 3.3 is planned "
+                "— it selects the default wording for every process field.\n"
+                "   Allowed: Low / Medium / High")
+
+    # --- decision makers ---------------------------------------------------
+    if decision_makers_json == "":
+        decision_makers = previous.get("decision_makers", [])
+        if decision_makers:
+            kept.append("decision makers")
+    else:
+        decision_makers, error = _parse_string_list(
+            decision_makers_json, "decision_makers_json")
+        if error:
+            return error
+    if not decision_makers:
+        return ("❌ `decision_makers_json` is required the first time 3.3 is planned "
+                "— without it 5.4 and 5.5 have nothing to cross-check a decision "
+                "against.\n   Example: '[\"Sponsor\", \"PO\", \"Lead BA\"]'")
+
+    # --- the four template-backed text fields ------------------------------
+    # `declared` is a RECORD, not a comparison: a BA who states wording identical to
+    # the template still stated it, and a source recovered by comparing strings would
+    # be a lookalike condition drifting from the fact it imitates.
+    values = {}
+    for field, param in (("change_control", change_control_process),
+                         ("approval_process", approval_process),
+                         ("review_cycle", review_cycle),
+                         ("escalation_path", escalation_path)):
+        template = GOVERNANCE_TEMPLATES[criticality][TEMPLATE_FIELD_KEYS[field]]
+        if param == "":
+            if field in declared and previous.get(field):
+                values[field] = previous[field]
+                kept.append(_FIELD_LABELS[field])
+            else:
+                # Undeclared fields are machine content: they must be regenerated
+                # when the criticality they were generated for changes.
+                values[field] = template
+        elif param == _CLEAR_TEXT:
+            declared.discard(field)
+            values[field] = template
+        else:
+            declared.add(field)
+            values[field] = param
+
+    # --- element .4: the timing of approvals -------------------------------
+    if approval_sla_days == -1:
+        sla_days = previous.get("approval_sla_days", 0)
+        if sla_days:
+            kept.append("approval SLA")
+    elif not 0 <= approval_sla_days <= MAX_APPROVAL_SLA_DAYS:
+        return (f"❌ `approval_sla_days` must be between 0 and "
+                f"{MAX_APPROVAL_SLA_DAYS} business days (0 clears it). "
+                f"Got: {approval_sla_days}")
+    else:
+        sla_days = approval_sla_days
+
+    if approval_timing_note == "":
+        timing_note = previous.get("approval_timing_note", "")
+        if timing_note:
+            kept.append("approval timing note")
+    elif approval_timing_note == _CLEAR_TEXT:
+        timing_note = ""
+    else:
+        timing_note = approval_timing_note
+
+    # --- ba_notes ----------------------------------------------------------
+    if ba_notes == "":
+        notes = previous.get("ba_notes", "")
+        if notes:
+            kept.append("notes")
+    elif ba_notes == _CLEAR_TEXT:
+        notes = ""
+    else:
+        notes = ba_notes
+
+    prioritization = previous.get("prioritization", {})
 
     governance = {
-        "project_criticality": project_criticality,
+        "project_criticality": criticality,
         "decision_makers": decision_makers,
-        "change_control": change_control_process or tpl["change_control"],
-        "approval_process": tpl["approval"],
-        "review_cycle": tpl["review_cycle"],
-        "escalation_path": tpl["escalation"],
-        "ba_notes": ba_notes,
-        "defined_on": str(date.today()),
+        "change_control": values["change_control"],
+        "approval_process": values["approval_process"],
+        "review_cycle": values["review_cycle"],
+        "escalation_path": values["escalation_path"],
+        "approval_sla_days": sla_days,
+        "approval_timing_note": timing_note,
+        "prioritization": prioritization,
+        "declared": sorted(declared),
+        "ba_notes": notes,
+        "defined_on": previous.get("defined_on", str(date.today())),
+        "updated_on": str(date.today()),
     }
 
-    plan = _load_plan(project_id)
     plan["governance"] = governance
     _save_plan(plan, project_id)
 
@@ -532,16 +667,25 @@ def plan_ba_governance(
         "Low": "✅ Low criticality: flexible process, record only key decisions.",
     }
 
+    def _src(field):
+        return "declared" if field in declared else f"from the {criticality} template"
+
+    deadline_line = (f"  Response deadline:  {sla_days} business days\n"
+                     if sla_days else "")
+    timing_line = f"  Approval timing:    {timing_note}\n" if timing_note else ""
+
     return (
         f"✅ Governance plan recorded\n\n"
         f"  Project:            {project_id}\n"
-        f"  Criticality:        {project_criticality}\n"
+        f"  Criticality:        {criticality}\n"
         f"  Decision makers:    {', '.join(decision_makers)}\n\n"
-        f"  Change control:     {governance['change_control']}\n"
-        f"  Approval:           {governance['approval_process']}\n"
-        f"  Review cycle:       {governance['review_cycle']}\n"
-        f"  Escalation:         {governance['escalation_path']}\n\n"
-        f"  {criticality_hints.get(project_criticality, '')}\n\n"
+        f"  Change control:     {values['change_control']} ({_src('change_control')})\n"
+        f"  Approval:           {values['approval_process']} ({_src('approval_process')})\n"
+        f"  Review cycle:       {values['review_cycle']} ({_src('review_cycle')})\n"
+        f"  Escalation:         {values['escalation_path']} ({_src('escalation_path')})\n"
+        f"{deadline_line}{timing_line}\n"
+        + (f"  Kept from the previous plan: {', '.join(kept)}\n\n" if kept else "")
+        + f"  {criticality_hints[criticality]}\n\n"
         f"→ Next step: `plan_information_management` — define the storage architecture."
     )
 
@@ -1444,20 +1588,39 @@ def save_ba_plan(
             )
         md_lines.append("")
 
+    # Same coercion as the writer. Without it the join below turned a stored
+    # `"decision_makers": "CFO"` into three approvers — "C, F, O" — inside a
+    # delivered document; guarding only the section was never enough.
+    governance = _sane_governance_section(governance)
     if governance:
+        gov_declared = set(governance.get("declared", []))
+        gov_criticality = governance.get("project_criticality", "")
+
+        def _gov_src(field):
+            return ("declared in 3.3" if field in gov_declared
+                    else f"from the {gov_criticality} template")
+
         md_lines += [
             "## 3.3 Governance",
             "",
-            f"| Parameter | Value |",
-            f"|----------|---------|",
-            f"| Criticality | {governance.get('project_criticality', '')} |",
-            f"| Decision makers | {', '.join(governance.get('decision_makers', []))} |",
-            f"| Change control | {governance.get('change_control', '')} |",
-            f"| Approval | {governance.get('approval_process', '')} |",
-            f"| Review cycle | {governance.get('review_cycle', '')} |",
-            f"| Escalation | {governance.get('escalation_path', '')} |",
-            "",
+            f"| Parameter | Value | Source |",
+            f"|----------|---------|--------|",
+            f"| Criticality | {gov_criticality} | declared in 3.3 |",
+            f"| Decision makers | {', '.join(governance.get('decision_makers', []))} | declared in 3.3 |",
+            f"| Change control | {governance.get('change_control', '')} | {_gov_src('change_control')} |",
+            f"| Approval | {governance.get('approval_process', '')} | {_gov_src('approval_process')} |",
+            f"| Review cycle | {governance.get('review_cycle', '')} | {_gov_src('review_cycle')} |",
+            f"| Escalation | {governance.get('escalation_path', '')} | {_gov_src('escalation_path')} |",
         ]
+        if governance.get("approval_sla_days"):
+            md_lines.append(
+                f"| Response deadline | {governance['approval_sla_days']} business days "
+                f"| declared in 3.3 |")
+        if governance.get("approval_timing_note"):
+            md_lines.append(
+                f"| Approval timing | {governance['approval_timing_note']} "
+                f"| declared in 3.3 |")
+        md_lines.append("")
         md_lines += _notes_block(governance)
 
     # Pre-existing sibling of the writer's guard: a section of the wrong shape reached

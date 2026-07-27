@@ -1,0 +1,248 @@
+"""tests/test_ch3_governance_planning.py — BABOK 3.3 merge + elements .1 / .4 (B3-2).
+
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+"""
+
+import json
+import os
+import sys
+import unittest
+from unittest.mock import patch
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from tests.conftest import setup_mocks, BaseMCPTest
+
+setup_mocks()
+
+from skills.common import GOVERNANCE_TEMPLATES
+from skills.planning_mcp import plan_ba_governance, save_ba_plan, _plan_path
+
+PROJECT = "gov_merge"
+
+
+def _section(project_id=PROJECT) -> dict:
+    with open(_plan_path(project_id), encoding="utf-8") as f:
+        return json.load(f)["governance"]
+
+
+def _report_text(project_id=PROJECT) -> str:
+    """The BA Plan markdown, captured from the writer.
+
+    save_ba_plan RETURNS a status message, not the report — asserting on its return
+    value proves nothing about the rendered document, and one such assertion passed
+    vacuously when this file was first written. save_artifact is mocked suite-wide
+    (ADR-068), so the markdown is read from the call. Task 9 exercises the real writer.
+    """
+    with patch("skills.planning_mcp.save_artifact") as mock_sa:
+        mock_sa.return_value = "\n\n✅ Artifact saved: `x.md`"
+        save_ba_plan(project_id)
+        return mock_sa.call_args[0][0] if mock_sa.call_args else ""
+
+
+class TestRequiredData(BaseMCPTest):
+    """criticality and decision_makers stop being required PARAMETERS (merge would
+    otherwise force the BA to retype them on every refinement) but stay required
+    DATA: without them every template default silently falls to Medium and both
+    cross-checks go permanently quiet."""
+
+    def test_first_call_without_criticality_is_refused_and_says_which(self):
+        result = plan_ba_governance(PROJECT, decision_makers_json='["CFO"]')
+        self.assertIn("❌", result)
+        self.assertIn("project_criticality", result)
+
+    def test_first_call_without_decision_makers_is_refused_and_says_which(self):
+        result = plan_ba_governance(PROJECT, "High")
+        self.assertIn("❌", result)
+        self.assertIn("decision_makers", result)
+
+    def test_clearing_the_list_on_a_first_call_is_refused_for_the_required_reason(self):
+        """Distinct from an unparseable list: "[]" now means CLEAR, so the refusal has
+        to come from the "required" gate rather than from list validation."""
+        result = plan_ba_governance(PROJECT, "High", "[]")
+        self.assertIn("❌", result)
+        self.assertIn("decision_makers", result)
+
+    def test_an_unparseable_list_still_reports_the_parameter(self):
+        result = plan_ba_governance(PROJECT, "High", "not-json")
+        self.assertIn("❌", result)
+        self.assertIn("decision_makers_json", result)
+
+
+class TestMerge(BaseMCPTest):
+
+    def test_a_re_run_keeps_everything_the_ba_typed(self):
+        """B3-1's worst defect: every parameter optional + replace = a silent wipe."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]',
+                           approval_sla_days=5, escalation_path="BA → CRO → Board",
+                           ba_notes="agreed at the kickoff")
+        plan_ba_governance(PROJECT, review_cycle="Monthly")
+        section = _section()
+        self.assertEqual(section["project_criticality"], "High")
+        self.assertEqual(section["decision_makers"], ["CFO", "Head of Risk"])
+        self.assertEqual(section["approval_sla_days"], 5)
+        self.assertEqual(section["escalation_path"], "BA → CRO → Board")
+        self.assertEqual(section["ba_notes"], "agreed at the kickoff")
+        self.assertEqual(section["review_cycle"], "Monthly")
+
+    def test_the_kept_line_names_every_preserved_field(self):
+        """B3-3 finding 9: an incomplete "Kept" line is worse than none — it exists so
+        the BA does not have to open the JSON."""
+        plan_ba_governance(PROJECT, "High", '["CFO"]',
+                           approval_sla_days=5, escalation_path="BA → CRO",
+                           approval_timing_note="to the CAB", ba_notes="kickoff")
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly").lower()
+        for expected in ("criticality", "decision makers", "approval sla",
+                         "escalation", "approval timing note", "notes"):
+            self.assertIn(expected, result, f"{expected} missing from the Kept line")
+
+    def test_clearing_text_returns_the_field_to_the_template(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]', escalation_path="BA → CRO")
+        plan_ba_governance(PROJECT, escalation_path="-")
+        section = _section()
+        self.assertNotIn("escalation_path", section.get("declared", []))
+        self.assertEqual(section["escalation_path"],
+                         GOVERNANCE_TEMPLATES["High"]["escalation"])
+
+    def test_clearing_the_sla_and_the_note(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]',
+                           approval_sla_days=5, approval_timing_note="to the CAB")
+        plan_ba_governance(PROJECT, approval_sla_days=0, approval_timing_note="-")
+        section = _section()
+        self.assertEqual(section["approval_sla_days"], 0)
+        self.assertEqual(section["approval_timing_note"], "")
+
+    def test_the_default_is_not_the_clearing_value(self):
+        """B3-1 corollary: when "not passed" and "clear it" are the same input, the
+        field becomes unclearable by anything."""
+        plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5)
+        plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertEqual(_section()["approval_sla_days"], 5)
+
+    def test_the_list_is_replaced_not_appended(self):
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        plan_ba_governance(PROJECT, decision_makers_json='["CRO"]')
+        self.assertEqual(_section()["decision_makers"], ["CRO"])
+
+    def test_the_defined_on_date_survives_a_re_run(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        first = _section()["defined_on"]
+        plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertEqual(_section()["defined_on"], first)
+
+
+class TestDeclaredVersusTemplate(BaseMCPTest):
+
+    def test_an_undeclared_field_follows_a_criticality_change(self):
+        """Machine content must be regenerated when what it was generated for
+        changes (B3-1 finding 3)."""
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        self.assertEqual(_section()["escalation_path"],
+                         GOVERNANCE_TEMPLATES["High"]["escalation"])
+        plan_ba_governance(PROJECT, "Low")
+        self.assertEqual(_section()["escalation_path"],
+                         GOVERNANCE_TEMPLATES["Low"]["escalation"])
+
+    def test_a_declared_field_survives_a_criticality_change(self):
+        """...and the BA's own words must NOT be regenerated — the exception to the
+        same rule."""
+        plan_ba_governance(PROJECT, "High", '["CFO"]', escalation_path="BA → CRO → Board")
+        plan_ba_governance(PROJECT, "Low")
+        self.assertEqual(_section()["escalation_path"], "BA → CRO → Board")
+        self.assertEqual(_section()["review_cycle"],
+                         GOVERNANCE_TEMPLATES["Low"]["review_cycle"])
+
+    def test_declaring_one_field_does_not_mark_the_others(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]', approval_process="Board signs")
+        self.assertEqual(_section()["declared"], ["approval_process"])
+
+    def test_a_declared_value_identical_to_the_template_is_recorded_as_declared(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]',
+                           review_cycle=GOVERNANCE_TEMPLATES["High"]["review_cycle"])
+        self.assertIn("review_cycle", _section()["declared"])
+
+    def test_change_control_keeps_working_as_before(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]',
+                           change_control_process="Two-person rule")
+        self.assertEqual(_section()["change_control"], "Two-person rule")
+        self.assertIn("change_control", _section()["declared"])
+
+
+class TestValidationAndDamage(BaseMCPTest):
+
+    def test_sla_out_of_range_is_a_readable_error(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        for bad in (-2, 400):
+            result = plan_ba_governance(PROJECT, approval_sla_days=bad)
+            self.assertIn("❌", result)
+            self.assertIn("approval_sla_days", result)
+
+    def test_an_out_of_range_sla_does_not_corrupt_the_stored_value(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5)
+        plan_ba_governance(PROJECT, approval_sla_days=400)
+        self.assertEqual(_section()["approval_sla_days"], 5)
+
+    def test_a_damaged_section_can_be_replanned_not_crashed(self):
+        """The writer is the only tool that can repair the section, so it must
+        survive every shape that is valid JSON."""
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"] = {"decision_makers": "CFO", "declared": "oops",
+                              "project_criticality": "High",
+                              "approval_sla_days": "soon",
+                              "prioritization": "later"}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        result = plan_ba_governance(PROJECT, decision_makers_json='["PO"]')
+        self.assertIn("✅", result)
+        self.assertEqual(_section()["decision_makers"], ["PO"])
+
+
+class TestReport(BaseMCPTest):
+
+    def test_the_report_labels_the_source_of_every_process_field(self):
+        """Pre-existing defect: `approval_process` came from the template and could
+        not be changed, while `decision_makers` was the BA's real list — two literals
+        answering ONE question, side by side in a delivered document."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        report = _report_text()
+        self.assertIn("CFO, Head of Risk", report)
+        self.assertIn("from the High template", report)
+
+    def test_a_declared_process_is_labelled_as_declared(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]',
+                           approval_process="CFO signs, Board is informed")
+        report = _report_text()
+        self.assertIn("CFO signs, Board is informed", report)
+        self.assertIn("declared in 3.3", report)
+
+    def test_the_sla_reaches_the_report(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5,
+                           approval_timing_note="to the monthly CAB")
+        report = _report_text()
+        self.assertIn("5 business days", report)
+        self.assertIn("to the monthly CAB", report)
+
+    def test_no_sla_row_when_none_is_planned(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        report = _report_text()
+        self.assertIn("3.3 Governance", report)      # the section IS rendered...
+        self.assertNotIn("business days", report)    # ...it just has no SLA row
+
+    def test_a_string_where_a_list_belongs_does_not_render_per_character(self):
+        plan_ba_governance(PROJECT, "High", '["CFO"]')
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"]["decision_makers"] = "CFO"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        report = _report_text()
+        self.assertIn("3.3 Governance", report)      # the section IS rendered...
+        self.assertNotIn("C, F, O", report)          # ...without the invented entries
+
+
+if __name__ == "__main__":
+    unittest.main()
