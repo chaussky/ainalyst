@@ -138,7 +138,10 @@ For details on the axes: `references/cr_assessment_guide.md` → "Five impact an
 **When:** the authorized stakeholder has made a decision.
 
 Algorithm:
-1. Obtain the decision from the authorized party (per governance 3.3)
+1. Obtain the decision from the authorized party (per governance 3.3 — `score_cr`
+   names the planned decision makers in its Step 4 block when 3.3 has been planned,
+   and `resolve_cr` cross-checks `decided_by` against them and flags a mismatch in
+   the CR Decision Record; it never blocks and never rewrites the name)
 2. Call `resolve_cr` with parameters:
    - `decision`: Approved / Approved_with_Modification / Deferred / Rejected
    - `decided_by`: who made the decision

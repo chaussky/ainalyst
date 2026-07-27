@@ -30,6 +30,8 @@ from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors,
+    load_ba_plan, planned_decision_makers, is_planned_decision_maker,
+    planned_escalation_path,
 )
 
 mcp = FastMCP("BABOK_Requirements_Assess_Changes")
@@ -774,12 +776,25 @@ def score_cr(
     if checks:
         lines += ["### ⚠️ Automatic checks", ""] + [f"- {c}" for c in checks] + [""]
 
+    # BABOK 3.3 .1 — NAME the planned decision authority instead of sending the BA off
+    # to look up a plan nothing here had ever read. Without a plan the sentence stays
+    # exactly as it was: it is still correct as an instruction, and silent degradation
+    # is only acceptable when the tool says LESS, never when it invents a name.
+    plan, _plan_note = load_ba_plan(project_name)
+    planned_deciders = planned_decision_makers(plan)
+    decider_line = (
+        f"Get a decision from an authorized stakeholder — the 3.3 governance plan "
+        f"names: {', '.join(planned_deciders)}. Then call `resolve_cr`:"
+        if planned_deciders else
+        "Get a decision from an authorized stakeholder (from governance 3.3) and "
+        "call `resolve_cr`:")
+
     lines += [
         "---",
         "",
         "## ➡️ Next step — Step 4: Record the decision",
         "",
-        "Get a decision from an authorized stakeholder (from governance 3.3) and call `resolve_cr`:",
+        decider_line,
         "",
         f"  - `project_name`: \"{project_name}\"",
         f"  - `cr_id`: \"{cr_id}\"",
@@ -825,7 +840,10 @@ def resolve_cr(
                               - Approved_with_Modification: accept with a modified scope
                               - Deferred: postpone until a future iteration
                               - Rejected: reject
-        decided_by:           Who made the decision (role/name from governance 3.3).
+        decided_by:           Who made the decision (role/name). Cross-checked against
+                              the decision makers planned in 3.3 — a mismatch is
+                              flagged here and in the CR Decision Record, never
+                              corrected and never blocked.
         rationale:            Rationale for the decision. Required — used in the audit trail.
         modification_notes:   Description of scope changes (only for Approved_with_Modification).
 
@@ -995,6 +1013,34 @@ def resolve_cr(
             "",
         ]
 
+    # BABOK 3.3 .1/.2 — carry the planned decision authority and the escalation path
+    # into the audit trail, and flag a decider who is not among them.
+    #
+    # `decided_by` is the BA's explicit statement and is NEVER rewritten: it is already
+    # stored on the CR node and in the repository history above, and a Decision Record
+    # that disagrees with the record it describes is worse than one that says nothing.
+    # The match runs through the one shared `is_planned_decision_maker`, so this
+    # warning and 5.5's cannot disagree about who counts as an authority.
+    gov_plan, _gov_note = load_ba_plan(project_name)
+    planned_deciders = planned_decision_makers(gov_plan)
+    escalation, escalation_source = planned_escalation_path(gov_plan)
+    unplanned_decider = bool(planned_deciders) and not is_planned_decision_maker(
+        gov_plan, decided_by)
+
+    if planned_deciders or escalation:
+        record_lines += ["---", "", "## Governance (3.3)", ""]
+        if planned_deciders:
+            record_lines.append(
+                f"**Planned decision authority:** {', '.join(planned_deciders)}  ")
+        if unplanned_decider:
+            record_lines.append(
+                f"⚠️ `{decided_by}` is not among them — recorded as decided by them "
+                f"regardless.  ")
+        if escalation:
+            record_lines.append(
+                f"**Escalation path:** {escalation} *({escalation_source})*  ")
+        record_lines.append("")
+
     # Next steps
     next_steps = []
     if decision in ("Approved", "Approved_with_Modification"):
@@ -1028,6 +1074,25 @@ def resolve_cr(
         f"**Rationale:** {rationale}",
         "",
     ]
+
+    if unplanned_decider:
+        output_lines += [
+            f"⚠️ `{decided_by}` is not among the planned decision makers (3.3): "
+            f"{', '.join(planned_deciders)}. The decision stands exactly as recorded "
+            f"— either update 3.3 with `plan_ba_governance`, or confirm this person "
+            f"holds the authority.",
+            "",
+        ]
+
+    # Escalation is the next step only where the requester lost. On an Approved CR it
+    # is in the record for the audit trail, but printing it here would be noise on the
+    # output the BA reads every single time.
+    if decision in ("Deferred", "Rejected") and escalation:
+        output_lines += [
+            f"ℹ️ If the requester disputes this, the planned escalation path is: "
+            f"{escalation} *({escalation_source})*.",
+            "",
+        ]
 
     if updated_reqs:
         output_lines += [
