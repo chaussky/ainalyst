@@ -173,6 +173,8 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 
 **Everything read from the plan is a cross-check or a default, never an override.** If Task 5.3 runs with a different technique than the one planned, the session keeps the technique the BA chose and says the plan disagrees. The same holds everywhere: the platform reports the difference, and the BA decides which of the two is out of date. Decisions stay with the analyst.
 
+**Plan roles; the platform recognizes people.** Task 3.3 records roles ("Product Owner"), but a CR is resolved by a person and a requirement is approved by a person. The stakeholder registry (built in Task 3.2 and kept up to date through Chapter 4) is what ties a name to a role, so "John Smith approved it" is recognized as the planned Product Owner. Without a registry the platform stays quiet instead of reporting a name it cannot match as a breach of governance — one more reason to do Task 3.2 before the Chapter 5 work.
+
 **Governance decision archive.** Everything recorded in Task 3.3 lives in `ba_plan.json` and is available at any time. To the question "how did we agree to handle changes?" the answer is in a single file.
 
 ### Value for the BA

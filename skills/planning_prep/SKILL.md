@@ -153,6 +153,18 @@ Every one of those is a **cross-check or a default — never an override.** 5.3 
 aggregation algorithm); 5.5 keeps an explicit RACI; a stated traceability level wins
 over the seed. The BA is told about the difference and decides.
 
+**Plan roles here; the checks resolve names through the stakeholder registry.** 3.3
+records roles ("Product Owner"), while a decision in 5.4 or 5.5 and a scoring session in
+5.3 are usually recorded against a person ("John Smith"). The registry that 3.2 seeds
+and 4.2 maintains ties the two together, so the person is recognised as the planned
+role. With no registry the platform says nothing rather than reporting a name it cannot
+match as a governance breach — one more reason to run 3.2 before the Chapter 5 work.
+
+**A plan made before this feature keeps its wording.** If 3.3 was planned in an earlier
+version, re-running it preserves the text that is there; the BA Plan marks those values
+"carried over from an earlier plan" rather than crediting them to the analyst, because
+their origin genuinely cannot be recovered. Re-state any field to make it yours.
+
 Re-running 3.3 MERGES, same as 3.4: an omitted parameter keeps its previous value,
 `"[]"` clears a list and `"-"` clears a text field. `project_criticality` is required
 only the first time.
