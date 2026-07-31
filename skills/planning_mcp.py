@@ -94,6 +94,28 @@ _FIELD_LABELS = {
     "escalation_path": "escalation",
 }
 
+_SEEDED = "seeded"      # stored FACT; the wording is built by _trace_source_text
+
+
+def _trace_source_text(level: str, criticality: str, source: str) -> str:
+    """How the traceability level got its value, in words — or "" if the BA stated it.
+
+    The FACT is stored and the SENTENCE is built here, by both the tool's reply and
+    the BA Plan renderer, because only they can see the CURRENT criticality. A stored
+    sentence naming the criticality at seed time went stale the moment 3.3 was
+    re-planned, and the delivered document then showed `| Criticality | High |` one
+    section above "(seeded from the 3.3 criticality: Low)" — two sections of one
+    signed document disagreeing about a value one of them cites. The value itself is
+    insert-only and does not move; only the explanation is recomputed.
+    """
+    if source != _SEEDED:
+        return ""
+    if criticality and criticality != level:
+        return (f"seeded from the 3.3 criticality when it was {level}; "
+                f"3.3 now says {criticality} — re-state the level if it should follow")
+    return f"seeded from the 3.3 criticality: {level}"
+
+
 _TRACEABILITY_LEVELS = {
     "High":   "Full traceability: Business goals → Requirements → Test cases → Code",
     "Medium": "Requirements linked to Jira tickets and test cases",
@@ -498,7 +520,7 @@ def _sane_governance_section(section) -> dict:
     if not isinstance(section, dict):
         return {}
     out = dict(section)
-    for key in ("decision_makers", "declared"):
+    for key in ("decision_makers", "declared", "carried_over"):
         if key in out:
             if isinstance(out[key], list):
                 out[key] = [v for v in out[key] if isinstance(v, str) and v.strip()]
@@ -509,6 +531,13 @@ def _sane_governance_section(section) -> dict:
                 "project_criticality", "defined_on"):
         if key in out and not isinstance(out[key], str):
             del out[key]
+    # Guarded for VALUE, like the traceability level and the technique. Type alone was
+    # not enough: a hand-edited "Catastrophic" — or an ordinary lower-cased "high" —
+    # left the readers returning nothing while the BA Plan's Source column cited "the
+    # Catastrophic template", naming a template that does not exist and vouching for
+    # the junk beside it.
+    if out.get("project_criticality") not in GOVERNANCE_TEMPLATES:
+        out.pop("project_criticality", None)
     raw_days = out.get("approval_sla_days")
     if "approval_sla_days" in out and not (
             isinstance(raw_days, int) and not isinstance(raw_days, bool)
@@ -599,6 +628,17 @@ def plan_ba_governance(
     previous = _sane_governance_section(plan.get("governance"))
     kept = []
     declared = set(previous.get("declared", []))
+    # THREE states of provenance, not two. `declared` is new in this feature, so a
+    # plan written before it cannot say which fields the BA authored — and an ABSENT
+    # key is not the same statement as an EMPTY one: empty is the current writer
+    # positively recording "the BA declared nothing", absent is "nobody knows".
+    # Collapsing them regenerated the analyst's own change-control text from the
+    # template on the very re-run this feature exists to encourage.
+    # Carried-over fields are kept but NOT credited to the BA, and the set is
+    # persisted so the second re-run does not undo what the first one preserved.
+    carried = set(previous.get("carried_over", []))
+    if "declared" not in previous:
+        carried |= {f for f in TEMPLATE_FIELD_KEYS if previous.get(f)}
 
     # --- criticality: required DATA, optional PARAMETER ---------------------
     # Optional because merge would otherwise force the BA to retype it on every
@@ -626,6 +666,16 @@ def plan_ba_governance(
         if error:
             return error
     if not decision_makers:
+        # Two different refusals, because the BA is in two different situations. On an
+        # already-planned project "required the first time 3.3 is planned" is simply
+        # false, and it sends them looking for a plan file that is right there.
+        if previous.get("decision_makers"):
+            return ("❌ `decision_makers_json` cannot be cleared — 5.4 and 5.5 "
+                    "cross-check every recorded decision against it, and an empty "
+                    "list would silently switch those checks off.\n"
+                    "   Pass the corrected list instead: "
+                    "'[\"Sponsor\", \"PO\", \"Lead BA\"]'\n"
+                    f"   Currently planned: {', '.join(previous['decision_makers'])}")
         return ("❌ `decision_makers_json` is required the first time 3.3 is planned "
                 "— without it 5.4 and 5.5 have nothing to cross-check a decision "
                 "against.\n   Example: '[\"Sponsor\", \"PO\", \"Lead BA\"]'")
@@ -641,18 +691,26 @@ def plan_ba_governance(
                          ("escalation_path", escalation_path)):
         template = GOVERNANCE_TEMPLATES[criticality][TEMPLATE_FIELD_KEYS[field]]
         if param == "":
-            if field in declared and previous.get(field):
+            if previous.get(field) and (field in declared or field in carried):
                 values[field] = previous[field]
                 kept.append(_FIELD_LABELS[field])
             else:
                 # Undeclared fields are machine content: they must be regenerated
-                # when the criticality they were generated for changes.
+                # when the criticality they were generated for changes. The marker is
+                # dropped with the value it described — the shape guard can delete a
+                # damaged field, and a `declared` entry outliving its value made the
+                # NEXT run stamp "declared in 3.3" on generated template text, in the
+                # audit documents 5.4 and 5.5 render from it.
+                declared.discard(field)
+                carried.discard(field)
                 values[field] = template
         elif param == _CLEAR_TEXT:
             declared.discard(field)
+            carried.discard(field)
             values[field] = template
         else:
             declared.add(field)
+            carried.discard(field)      # the BA has now authored it for real
             values[field] = param
 
     # --- element .4: the timing of approvals -------------------------------
@@ -741,6 +799,10 @@ def plan_ba_governance(
         "approval_timing_note": timing_note,
         "prioritization": prioritization,
         "declared": sorted(declared),
+        # Kept from a plan written before `declared` existed: the value survives, but
+        # nobody can say whether the BA authored it or the old writer generated it, so
+        # it is never credited to them in the Source column.
+        "carried_over": sorted(carried),
         "ba_notes": notes,
         "defined_on": previous.get("defined_on", str(date.today())),
         "updated_on": str(date.today()),
@@ -951,6 +1013,8 @@ def plan_information_management(
     # level the BA stated, and it never rolls a stored one back when the criticality
     # later changes (the defect `insert_defaults` was created for in 3.2).
     trace_source = ""
+    criticality = _sane_governance_section(
+        plan.get("governance")).get("project_criticality")
     if traceability_level == "":
         stored = previous.get("traceability_level")
         # Guarded for VALUE, not only for type. A hand-edited level used to be echoed
@@ -959,12 +1023,16 @@ def plan_information_management(
         if stored in _TRACEABILITY_LEVELS:
             level = stored
             kept.append("traceability level")
+            # The LABEL is carried with the value it describes. It used to be written
+            # only on the branch that performs the seed, so any ordinary follow-up call
+            # — adding artifact types, a reuse scope — silently dropped it while the
+            # seeded value stayed, and the guarantee that a default is visible as a
+            # default lasted exactly one call.
+            trace_source = previous.get("traceability_source", "")
         else:
-            criticality = _sane_governance_section(
-                plan.get("governance")).get("project_criticality")
             if criticality in _TRACEABILITY_LEVELS:
                 level = criticality
-                trace_source = f" (seeded from the 3.3 criticality: {criticality})"
+                trace_source = _SEEDED
             else:
                 level = "Medium"
     else:
@@ -1096,7 +1164,7 @@ def plan_information_management(
         # Plan is the document that gets signed. Recomputed on every run rather than
         # merged — the moment the BA states a level, the value stops being a default,
         # and a stale "seeded" label would misdescribe their own decision.
-        "traceability_source": trace_source.strip(" ()") if trace_source else "",
+        "traceability_source": trace_source,
         "artifact_types": artifact_types,
         # `-` restores the standing default rather than emptying the field: an empty
         # Access line in the delivered BA Plan is worse than the default it replaced.
@@ -1113,12 +1181,14 @@ def plan_information_management(
     plan["information_management"] = info_mgmt
     _save_plan(plan, project_id)
 
+    trace_note = _trace_source_text(level, criticality, trace_source)
     out = [
         "✅ Information management plan recorded",
         "",
         f"  Project:           {project_id}",
         f"  Tools:             {', '.join(storage_tools)}",
-        f"  Traceability:      {level} — {trace_desc}{trace_source}",
+        f"  Traceability:      {level} — {trace_desc}"
+        + (f" ({trace_note})" if trace_note else ""),
     ]
     if artifact_types:
         out.append(f"  Artifact types:    {', '.join(artifact_types)}")
@@ -1715,20 +1785,31 @@ def save_ba_plan(
     # `"decision_makers": "CFO"` into three approvers — "C, F, O" — inside a
     # delivered document; guarding only the section was never enough.
     governance = _sane_governance_section(governance)
+    # Bound OUTSIDE the block: the 3.4 section below explains the traceability level
+    # against it, and a project can have a 3.4 plan with no 3.3 one.
+    gov_criticality = governance.get("project_criticality", "") if governance else ""
     if governance:
         gov_declared = set(governance.get("declared", []))
-        gov_criticality = governance.get("project_criticality", "")
+        gov_carried = set(governance.get("carried_over", []))
 
         def _gov_src(field):
-            return ("declared in 3.3" if field in gov_declared
-                    else f"from the {gov_criticality} template")
+            # Three states, because there are three. A value carried over from a plan
+            # written before this feature is genuinely of unknown origin: crediting the
+            # analyst for it would be as wrong as calling it a template default.
+            if field in gov_declared:
+                return "declared in 3.3"
+            if field in gov_carried:
+                return "carried over from an earlier plan"
+            return (f"from the {gov_criticality} template" if gov_criticality
+                    else "template default")
 
         md_lines += [
             "## 3.3 Governance",
             "",
             f"| Parameter | Value | Source |",
             f"|----------|---------|--------|",
-            f"| Criticality | {gov_criticality} | declared in 3.3 |",
+            f"| Criticality | {gov_criticality or '—'} | "
+            f"{'declared in 3.3' if gov_criticality else 'not planned'} |",
             f"| Decision makers | {', '.join(governance.get('decision_makers', []))} | declared in 3.3 |",
             f"| Change control | {governance.get('change_control', '')} | {_gov_src('change_control')} |",
             f"| Approval | {governance.get('approval_process', '')} | {_gov_src('approval_process')} |",
@@ -1767,16 +1848,19 @@ def save_ba_plan(
     # renderer skips unusable values rather than failing the whole report.
     info_mgmt = _sane_info_section(info_mgmt)
     if info_mgmt:
+        # The source is stated for the same reason the 3.3 table one section up has a
+        # Source column: an unlabelled default reads as the BA's decision. Built here
+        # from the CURRENT criticality, so it cannot contradict the table above it.
+        trace_note = _trace_source_text(info_mgmt.get("traceability_level", ""),
+                                        gov_criticality,
+                                        info_mgmt.get("traceability_source", ""))
         md_lines += [
             "## 3.4 Information Management",
             "",
             f"- **Tools:** {', '.join(info_mgmt.get('storage_tools', []))}",
-            # The source is stated for the same reason the 3.3 table one section up
-            # has a Source column: an unlabelled default reads as the BA's decision.
             f"- **Traceability:** {info_mgmt.get('traceability_level', '')} — "
             f"{info_mgmt.get('traceability_description', '')}"
-            + (f" *({info_mgmt['traceability_source']})*"
-               if info_mgmt.get("traceability_source") else ""),
+            + (f" *({trace_note})*" if trace_note else ""),
             f"- **Access:** {info_mgmt.get('access_rules', '')}",
         ]
         artifact_types = info_mgmt.get("artifact_types", [])

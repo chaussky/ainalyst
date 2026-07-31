@@ -20,7 +20,7 @@ from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
 
-from skills.common import ba_plan_path
+from skills.common import ba_plan_path, stakeholder_registry_path
 from skills.planning_mcp import plan_ba_governance
 from skills.requirements_approve_mcp import (
     prepare_approval_package, record_approval_decision,
@@ -49,6 +49,15 @@ def _record_text(*args, **kwargs) -> str:
         summary = create_requirements_baseline(*args, **kwargs)
         record = mock_sa.call_args[0][0] if mock_sa.call_args else ""
     return record, summary
+
+
+def _seed_registry(rows, project_id=PROJECT):
+    """The stakeholder registry 3.2 seeds and 4.2 maintains — the bridge between a
+    planned ROLE and the NAME a tool is called with."""
+    path = stakeholder_registry_path(project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"project": project_id, "stakeholders": rows}, f)
 
 
 class GovernanceInThePackageTest(BaseMCPTest):
@@ -124,7 +133,28 @@ class GovernanceInThePackageTest(BaseMCPTest):
         result = self._prepare()
         self.assertIn("Approval authority", result)
         self.assertIn("CFO, Head of Risk", result)
-        self.assertIn("from the High template", result)
+
+    def test_the_package_names_ONE_set_of_approvers(self):
+        """FOUND BY BOTH BRANCH REVIEWERS. The criticality template's approval
+        sentence names ROLES of its own ("Sponsor + Product Owner"). Printed under the
+        BA's `**Approvers:**` list it made this signature request state two different
+        sets of approvers two lines apart. The BA's list is the authoritative answer;
+        a generated default is not a second opinion worth printing beside it."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        result = self._prepare()
+        self.assertIn("**Approvers:** CFO, Head of Risk", result)
+        self.assertNotIn("Sponsor + Product Owner", result)
+        self.assertNotIn("from the High template", result)
+
+    def test_a_declared_process_is_kept_beside_the_approvers(self):
+        """A process the BA authored is not a second opinion — it is theirs, and it
+        says HOW the people they named sign. Only the generated one is dropped."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]',
+                           approval_process="Both sign; Board is informed within 24h")
+        result = self._prepare()
+        self.assertIn("**Approvers:** CFO, Head of Risk", result)
+        self.assertIn("Both sign; Board is informed within 24h", result)
+        self.assertIn("declared in 3.3", result)
 
     def test_a_declared_process_is_labelled_as_the_bas(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]',
@@ -184,6 +214,12 @@ class AuthorityCrossCheckTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         prepare_approval_package(PROJECT, "APKG-001", "Auth",
                                  '["FR-001", "FR-002"]', approach="predictive")
+        # A real project has a registry (3.2 seeds it, 4.2 maintains it): it is what
+        # ties a planned ROLE to the NAME a decision is recorded under. Without one the
+        # check reports that it cannot tell and says nothing — `NoRegistryTest`.
+        _seed_registry([{"name": "Alice Chen", "role": "CFO"},
+                        {"name": "Dana Cole", "role": "Head of Risk"},
+                        {"name": "Priya Nair", "role": "Marketing Lead"}])
 
     def _record(self, name, raci, decision="approved", **kw):
         return record_approval_decision(PROJECT, "APKG-001", name, raci, decision, **kw)
@@ -239,6 +275,10 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         prepare_approval_package(PROJECT, "APKG-001", "Auth",
                                  '["FR-001", "FR-002"]', approach="predictive")
+        _seed_registry([{"name": "Alice Chen", "role": "CFO"},
+                        {"name": "Dana Cole", "role": "Head of Risk"},
+                        {"name": "Priya Nair (PO)", "role": "Product Owner"},
+                        {"name": "Sam Doyle (Architect)", "role": "Lead Architect"}])
 
     def test_the_record_names_who_responded_and_who_did_not(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")

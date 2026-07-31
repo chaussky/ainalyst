@@ -9,9 +9,19 @@ for TYPE *and* for VALUE, and a coercion never invents keys.
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
+import json
+import os
+import sys
 import unittest
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from tests.conftest import setup_mocks, BaseMCPTest
+
+setup_mocks()
+
 from skills.common import (
+    stakeholder_registry_path,
     GOVERNANCE_TEMPLATES,
     PRIORITIZATION_TECHNIQUES,
     governance_section,
@@ -21,6 +31,11 @@ from skills.common import (
     planned_approval_process,
     planned_escalation_path,
     planned_prioritization,
+    party_aliases,
+    planned_party_status,
+    PARTY_PLANNED,
+    PARTY_UNPLANNED,
+    PARTY_UNBRIDGEABLE,
 )
 
 
@@ -221,6 +236,84 @@ class TestVocabulary(unittest.TestCase):
         hints = typing.get_type_hints(start_prioritization_session)
         self.assertEqual(set(PRIORITIZATION_TECHNIQUES),
                          set(typing.get_args(hints["method"])))
+
+
+class TestTheRegistryBridgesRoleAndName(BaseMCPTest):
+    """3.3 plans ROLES; 5.3/5.4/5.5 are called with whatever the BA typed, usually a
+    person. Both branch reviewers found this independently: the join could not succeed
+    by construction, and its failure was rendered as an authority exception in signed
+    documents.
+    """
+
+    PROJECT = "bridge"
+    PLANNED = ["Sponsor", "Product Owner"]
+
+    def _registry(self, people):
+        path = stakeholder_registry_path(self.PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": self.PROJECT, "stakeholders": people}, f)
+
+    def test_a_person_is_matched_to_their_planned_role(self):
+        self._registry([{"name": "John Smith", "role": "Product Owner"}])
+        self.assertEqual(
+            planned_party_status(self.PROJECT, self.PLANNED, "John Smith"),
+            PARTY_PLANNED)
+
+    def test_the_bridge_works_in_the_other_direction_too(self):
+        """The plan may name a person and the tool be called with a role."""
+        self._registry([{"name": "John Smith", "role": "Product Owner"}])
+        self.assertEqual(
+            planned_party_status(self.PROJECT, ["John Smith"], "Product Owner"),
+            PARTY_PLANNED)
+
+    def test_a_person_whose_role_is_not_planned_is_still_reported(self):
+        self._registry([{"name": "Mark Feld", "role": "Scheduling Lead"}])
+        self.assertEqual(
+            planned_party_status(self.PROJECT, self.PLANNED, "Mark Feld"),
+            PARTY_UNPLANNED)
+
+    def test_without_a_registry_the_check_reports_that_it_cannot_tell(self):
+        """The decisive case. With nothing tying a role to a name, a non-match means
+        the two labels are incomparable — saying "lacks authority" would be a guess
+        stated as a fact in an audit document."""
+        self.assertEqual(
+            planned_party_status(self.PROJECT, self.PLANNED, "John Smith"),
+            PARTY_UNBRIDGEABLE)
+
+    def test_an_exact_role_match_needs_no_registry(self):
+        """A BA who types the role still gets a real answer with no registry at all —
+        the bridge only ever ADDS matches."""
+        self.assertEqual(
+            planned_party_status(self.PROJECT, self.PLANNED, "  product   OWNER "),
+            PARTY_PLANNED)
+
+    def test_no_plan_means_no_finding(self):
+        self.assertEqual(planned_party_status(self.PROJECT, [], "anyone"),
+                         PARTY_PLANNED)
+
+    def test_a_damaged_registry_does_not_raise(self):
+        path = stakeholder_registry_path(self.PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{ not json")
+        self.assertEqual(
+            planned_party_status(self.PROJECT, self.PLANNED, "John Smith"),
+            PARTY_UNBRIDGEABLE)
+
+    def test_registry_rows_of_the_wrong_shape_are_skipped(self):
+        self._registry(["oops", 7, None, {"name": "John Smith",
+                                          "role": "Product Owner"}])
+        self.assertEqual(party_aliases(self.PROJECT, "John Smith"),
+                         {"john smith", "product owner"})
+
+    def test_is_planned_decision_maker_uses_the_bridge_when_given_a_project(self):
+        self._registry([{"name": "John Smith", "role": "Product Owner"}])
+        plan = _plan(decision_makers=self.PLANNED)
+        self.assertTrue(is_planned_decision_maker(plan, "John Smith", self.PROJECT))
+        # ...and without a project_id it is the old exact match, unchanged.
+        self.assertFalse(is_planned_decision_maker(plan, "John Smith"))
+        self.assertTrue(is_planned_decision_maker(plan, "Product Owner"))
 
 
 if __name__ == "__main__":

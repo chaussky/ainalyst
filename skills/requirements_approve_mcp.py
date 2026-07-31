@@ -40,6 +40,7 @@ from skills.common import (
     load_ba_plan, planned_timing_form, approach_to_timing_form,
     planned_approval_timing, planned_approval_process, planned_decision_makers,
     is_planned_decision_maker, reg_norm,
+    planned_party_status, party_aliases, PARTY_UNPLANNED,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -403,11 +404,20 @@ def _governance_block(project_name: str) -> tuple:
                 f"(per the 3.3 governance plan)." if parts else "")
 
     lines = []
-    if approvers or process:
+    # The template's approval sentence NAMES ROLES ("Requires sign-off from Sponsor +
+    # Product Owner"). Printed under a `**Approvers:**` line holding the BA's own list,
+    # it made this package — a signature request — state two different sets of
+    # approvers two lines apart, and a recipient could not tell which one binds them.
+    # It was harmless while it only sat in the 3.3 table with nothing beside it.
+    # So the generated wording is dropped once the BA has named the approvers: the
+    # authoritative answer to "who signs" is their list, not a criticality default.
+    show_process = bool(process) and (process_source == "declared in 3.3"
+                                      or not approvers)
+    if approvers or show_process:
         lines = ["---", "", "## Approval authority (3.3)", ""]
         if approvers:
             lines.append(f"**Approvers:** {', '.join(approvers)}  ")
-        if process:
+        if show_process:
             lines.append(f"**Process:** {process} *({process_source})*  ")
         lines.append("")
     if note:
@@ -1022,9 +1032,13 @@ def record_approval_decision(
     # (`force` does not lift it), so deriving it from a plan would silently change
     # what blocks. It is read here and never written.
     if stakeholder_raci in ("accountable", "responsible"):
-        plan, _plan_note = load_ba_plan(project_name)
+        plan, plan_note = load_ba_plan(project_name)
         planned = planned_decision_makers(plan)
-        if planned and not is_planned_decision_maker(plan, stakeholder_name):
+        # Registry-bridged: 3.3 plans roles and this parameter is a person's name, so
+        # the unbridged comparison reported the actual Product Owner as an authority
+        # exception. PARTY_UNBRIDGEABLE stays silent — see `planned_party_status`.
+        if planned_party_status(project_name, planned,
+                                stakeholder_name) == PARTY_UNPLANNED:
             lines += [
                 "",
                 f"⚠️ `{stakeholder_name}` is recorded as **{stakeholder_raci}** but is "
@@ -1032,6 +1046,8 @@ def record_approval_decision(
                 "The decision stands exactly as recorded — either update 3.3 with "
                 "`plan_ba_governance`, or confirm this person holds the authority.",
             ]
+        if plan_note:
+            lines += ["", plan_note]
 
     return "\n".join(lines)
 
@@ -1638,9 +1654,20 @@ def create_requirements_baseline(
     plan, _plan_note = load_ba_plan(project_name)
     planned_authority = planned_decision_makers(plan)
     if planned_authority:
-        responded = [name for name in package["stakeholder_decisions"]
-                     if is_planned_decision_maker(plan, name)]
-        responded_keys = {reg_norm(name) for name in responded}
+        # RACI-guarded on BOTH sides of the block. It was guarded only on the
+        # "signed without being planned" list, so a planned approver recorded as
+        # `consulted` — a reviewer whose rejection explicitly does NOT block the
+        # baseline — counted as having responded and suppressed the "no decision
+        # recorded from" line. The record then showed the planned authority as having
+        # spoken when it never exercised authority at all.
+        authority_decisions = {
+            name: sh for name, sh in package["stakeholder_decisions"].items()
+            if sh.get("raci") in ("accountable", "responsible")}
+        responded = [name for name in authority_decisions
+                     if is_planned_decision_maker(plan, name, project_name)]
+        responded_keys = set()
+        for name in responded:
+            responded_keys |= party_aliases(project_name, name)
         silent = [a for a in planned_authority if reg_norm(a) not in responded_keys]
         # Who signed WITHOUT being planned. `record_approval_decision` already warns
         # about this, but that warning lives only in the tool's reply; the Approval
@@ -1650,10 +1677,13 @@ def create_requirements_baseline(
         # RACI-guarded, exactly like the warning — `consulted` is a reviewer and is
         # legitimately absent from the approver list, so naming them here would turn an
         # ordinary review into an authority exception.
+        # Registry-bridged like every other governance match, and only a definite
+        # PARTY_UNPLANNED is named: with no registry, a planned ROLE and a typed NAME
+        # cannot be compared, and this document is signed.
         unplanned_authority = [
-            name for name, sh in package["stakeholder_decisions"].items()
-            if sh.get("raci") in ("accountable", "responsible")
-            and not is_planned_decision_maker(plan, name)]
+            name for name in authority_decisions
+            if planned_party_status(project_name, planned_authority, name)
+            == PARTY_UNPLANNED]
         record_lines += [
             "",
             "---",
@@ -1661,8 +1691,11 @@ def create_requirements_baseline(
             "## Governance (3.3)",
             "",
             f"**Planned approval authority (3.3):** {', '.join(planned_authority)}  ",
+            # Trailing hard break: without it the ⚠️ line below renders joined onto
+            # this one as a single paragraph.
             (f"**Responded:** {', '.join(responded) or 'nobody'}."
-             + (f" No decision recorded from: {', '.join(silent)}." if silent else "")),
+             + (f" No decision recorded from: {', '.join(silent)}." if silent else "")
+             + "  "),
         ]
         if unplanned_authority:
             record_lines.append(

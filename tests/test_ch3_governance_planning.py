@@ -397,5 +397,143 @@ class TestPrioritizationApproach(BaseMCPTest):
         self.assertNotIn("Gut feel", report)               # ...without the junk technique
 
 
+class TestPlansWrittenBeforeThisFeature(BaseMCPTest):
+    """`declared` is NEW. Every other test in this file seeds state by calling the
+    CURRENT writer, which always writes the key — so none of them can construct the
+    one shape that exists on every real project that planned 3.3 before this branch.
+
+    Found by two independent branch reviewers. The class is general: when a merge
+    starts deciding what to keep from a NEW bookkeeping key, absent-key is not the
+    same state as empty-key, and only the old writer can produce absent.
+    """
+
+    LEGACY_TEXT = ("All CRs go to the Basel III Compliance Board within 48h; no "
+                   "change ships without a written regulator impact note.")
+
+    def _write_legacy(self, **overrides):
+        """A governance section exactly as the PRE-FEATURE writer stored it."""
+        section = {
+            "project_criticality": "High",
+            "decision_makers": ["Sponsor", "PO"],
+            "change_control": self.LEGACY_TEXT,
+            "approval_process": "Two-key sign-off: CRO and Head of Compliance.",
+            "review_cycle": "Fortnightly, minuted.",
+            "escalation_path": "BA → CRO → Board Risk Committee",
+            "defined_on": "2026-05-01",
+        }
+        section.update(overrides)
+        path = _plan_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project_id": PROJECT, "governance": section}, f)
+
+    def test_a_legacy_plan_keeps_its_text_when_a_new_field_is_added(self):
+        """The whole point of the feature is to make the BA re-run 3.3 and add a
+        technique. On a pre-feature plan that re-run replaced the analyst's own
+        regulator-facing process with template boilerplate, answered ✅, and attributed
+        the replacement to the template."""
+        self._write_legacy()
+        result = plan_ba_governance(PROJECT, prioritization_technique="MoSCoW")
+        self.assertEqual(_section()["change_control"], self.LEGACY_TEXT)
+        self.assertIn("Fortnightly, minuted.", result)
+        self.assertIn("BA → CRO → Board Risk Committee", result)
+
+    def test_a_legacy_value_of_unknown_origin_is_not_called_declared(self):
+        """Keeping it is right; crediting the analyst for it is not. The value's origin
+        is genuinely unknown — the old writer stored the template and a BA's own text
+        in the same field with nothing to tell them apart."""
+        self._write_legacy()
+        plan_ba_governance(PROJECT, prioritization_technique="MoSCoW")
+        report = _report_text()
+        self.assertIn(self.LEGACY_TEXT, report)
+        self.assertNotIn("declared in 3.3 | ", report.split("Change control")[1][:60])
+
+    def test_an_empty_declared_list_still_means_nothing_was_declared(self):
+        """The counterpart: `declared: []` is a POSITIVE statement by the current
+        writer that the BA declared nothing, so the template must be regenerated when
+        the criticality changes. Absent-key and empty-list must not collapse."""
+        self._write_legacy(declared=[])
+        plan_ba_governance(PROJECT, "Low")
+        self.assertEqual(_section()["change_control"],
+                         GOVERNANCE_TEMPLATES["Low"]["change_control"])
+
+
+class TestClearingTheDecisionMakers(BaseMCPTest):
+
+    def test_clearing_an_existing_list_says_what_is_actually_wrong(self):
+        """`"[]"` clears a list everywhere else in 3.3/3.4, and the docstring says so.
+        Refusing here is right — an empty list would switch the 5.4/5.5 cross-checks off
+        silently — but the refusal claimed 3.3 had never been planned, which on an
+        already-planned project is false and sends the BA hunting for a missing file."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        result = plan_ba_governance(PROJECT, decision_makers_json='[]')
+        self.assertIn("❌", result)
+        self.assertNotIn("the first time 3.3 is planned", result)
+        self.assertIn("CFO, Head of Risk", result)          # what is planned right now
+        # And it really did refuse: the stored list is untouched.
+        self.assertEqual(_section()["decision_makers"], ["CFO", "Head of Risk"])
+
+    def test_the_first_time_message_still_names_the_first_time(self):
+        result = plan_ba_governance(PROJECT, "High", decision_makers_json='[]')
+        self.assertIn("the first time 3.3 is planned", result)
+
+
+class TestDeclaredMarkerCannotOutliveItsValue(BaseMCPTest):
+
+    def test_a_dropped_field_loses_its_declared_marker(self):
+        """The shape guard deletes a non-string `escalation_path`, but the marker
+        naming it survived — the next run wrote the TEMPLATE and the reader then
+        reported it as `declared in 3.3`. A generated default attributed to the
+        analyst, in the CR Decision Record an auditor reads."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]',
+                           escalation_path="BA → CRO → Board")
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"]["escalation_path"] = {"oops": True}      # hand-edited
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertIn(GOVERNANCE_TEMPLATES["High"]["escalation"], result)
+        self.assertNotIn("Board", result)                  # the damaged value is gone
+        self.assertNotIn("escalation_path", _section().get("declared", []))
+        # And the reader must agree with the plan about who authored it.
+        from skills.common import planned_escalation_path
+        with open(path, encoding="utf-8") as f:
+            _text, source = planned_escalation_path(json.load(f))
+        self.assertNotIn("declared", source)
+
+
+class TestCriticalityIsGuardedByValue(BaseMCPTest):
+    """The neighbours guard for VALUE — the traceability level and the technique both
+    do, each with a comment explaining why. The criticality was left type-guarded only,
+    in the very section where the Source column was added."""
+
+    def _hand_edit_criticality(self, value):
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"]["project_criticality"] = value
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def test_the_report_does_not_cite_a_template_that_does_not_exist(self):
+        self._hand_edit_criticality("Catastrophic")
+        report = _report_text()
+        self.assertIn("3.3 Governance", report)            # the section IS rendered
+        self.assertNotIn("from the Catastrophic template", report)
+
+    def test_a_lower_cased_criticality_does_not_cite_an_empty_template(self):
+        """`"high"` is an ordinary hand edit. It silently disabled the readers, and the
+        Source column then read "from the high template"."""
+        self._hand_edit_criticality("high")
+        report = _report_text()
+        self.assertIn("3.3 Governance", report)
+        self.assertNotIn("from the high template", report)
+        self.assertNotIn("from the  template", report)
+
+
 if __name__ == "__main__":
     unittest.main()

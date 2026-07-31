@@ -31,7 +31,7 @@ from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
 
-from skills.common import ba_plan_path
+from skills.common import ba_plan_path, stakeholder_registry_path
 from skills.planning_mcp import plan_ba_governance
 from skills.requirements_prioritize_mcp import (
     start_prioritization_session, add_stakeholder_scores, run_aggregation,
@@ -53,12 +53,32 @@ MOSCOW_SCORES = ('[{"req_id": "FR-001", "score": "Must"}, '
 
 
 class PrioritizationGovernanceBase(BaseMCPTest):
-    """A 5.1 repository with two requirements, ready for a 5.3 session."""
+    """A 5.1 repository with two requirements, ready for a 5.3 session.
+
+    A stakeholder registry is seeded too, because a real project has one: 3.2 seeds it
+    and 4.2 maintains it, and it is what bridges a planned ROLE to a typed NAME. With
+    no registry at all the cross-check reports that it cannot tell (PARTY_UNBRIDGEABLE)
+    and stays silent — `NoRegistryTest` below covers that deliberately.
+    """
+
+    REGISTRY = [
+        {"name": "Priya Nair", "role": "Product Owner"},
+        {"name": "Dana Cole", "role": "Head of Risk"},
+        {"name": "Mark Feld", "role": "Marketing Lead"},
+        {"name": "Sam Doyle", "role": "Lead Architect"},
+    ]
 
     def setUp(self):
         super().setUp()
         # THREE arguments: `formality_level` is required and SECOND.
         init_traceability_repo(PROJECT, "Standard", REQS)
+        self._seed_registry(self.REGISTRY)
+
+    def _seed_registry(self, rows):
+        path = stakeholder_registry_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": PROJECT, "stakeholders": rows}, f)
 
     def _write_plan(self, governance):
         """Write a ba_plan.json by hand — for shapes `plan_ba_governance` cannot produce."""
@@ -320,6 +340,77 @@ class ReportReconcilesParticipationTest(PrioritizationGovernanceBase):
         header_end = lines.index("**Requirements updated:** 0")
         warning = next(i for i, l in enumerate(lines) if "match no repository node" in l)
         self.assertEqual(warning, header_end + 1)
+
+
+class RegistryBridgeTest(PrioritizationGovernanceBase):
+    """3.3 plans ROLES; `stakeholder_id` is normally a PERSON. Both branch reviewers
+    found this independently: an unbridged comparison warned on 100% of scorers on a
+    correctly-planned project and wrote "0 of 2 planned participants scored" into the
+    signed report while both of them had scored."""
+
+    def _plan_roles(self):
+        plan_ba_governance(PROJECT, "High", '["PO"]',
+                           prioritization_technique="MoSCoW",
+                           prioritization_participants_json=TWO_PARTICIPANTS)
+
+    def test_a_person_scoring_under_their_planned_role_is_not_flagged(self):
+        self._plan_roles()
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        result = add_stakeholder_scores(PROJECT, "S1", "Priya Nair", "High",
+                                        MOSCOW_SCORES)
+        self.assertIn("✅ Scores for stakeholder", result)
+        self.assertNotIn("is not among the participants planned in 3.3", result)
+
+    def test_the_report_counts_people_against_their_planned_roles(self):
+        self._plan_roles()
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        add_stakeholder_scores(PROJECT, "S1", "Priya Nair", "High", MOSCOW_SCORES)
+        add_stakeholder_scores(PROJECT, "S1", "Dana Cole", "High", MOSCOW_SCORES)
+        run_aggregation(PROJECT, "S1")
+        report = save_prioritization_result(PROJECT, "S1")
+        self.assertIn("2 of 2 planned participants scored", report)
+        self.assertNotIn("Did not score:", report)
+        self.assertNotIn("Scored without being planned:", report)
+
+    def test_a_person_whose_role_is_not_planned_is_still_reported(self):
+        """The bridge must not blunt the check — it only removes false accusations."""
+        self._plan_roles()
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        result = add_stakeholder_scores(PROJECT, "S1", "Mark Feld", "Medium",
+                                        MOSCOW_SCORES)
+        self.assertIn("is not among the participants planned in 3.3", result)
+
+
+class NoRegistryTest(BaseMCPTest):
+    """With nothing tying roles to names, a non-match means the two labels cannot be
+    compared. Saying "not among the planned participants" would be a guess printed as
+    a finding — so the check says nothing at all."""
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+
+    def test_an_unmatched_scorer_is_not_accused_without_a_registry(self):
+        plan_ba_governance(PROJECT, "High", '["PO"]',
+                           prioritization_participants_json=TWO_PARTICIPANTS)
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        result = add_stakeholder_scores(PROJECT, "S1", "Priya Nair", "High",
+                                        MOSCOW_SCORES)
+        self.assertIn("✅ Scores for stakeholder", result)
+        self.assertNotIn("is not among the participants planned in 3.3", result)
+
+    def test_an_exact_role_match_still_works_without_a_registry(self):
+        """The bridge only ADDS matches: a BA who types the planned role gets the same
+        answer they always did, with no registry in the project."""
+        plan_ba_governance(PROJECT, "High", '["PO"]',
+                           prioritization_technique="MoSCoW",
+                           prioritization_participants_json=TWO_PARTICIPANTS)
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        add_stakeholder_scores(PROJECT, "S1", "Product Owner", "High", MOSCOW_SCORES)
+        run_aggregation(PROJECT, "S1")
+        report = save_prioritization_result(PROJECT, "S1")
+        self.assertIn("1 of 2 planned participants scored", report)
+        self.assertIn("Did not score: Head of Risk", report)
 
 
 if __name__ == "__main__":

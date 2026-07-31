@@ -1246,18 +1246,81 @@ def planned_decision_makers(plan) -> list:
     return _governance_string_list(governance_section(plan).get("decision_makers"))
 
 
-def is_planned_decision_maker(plan, who) -> bool:
+def party_aliases(project_id: str, who) -> set:
+    """Every normalised label the stakeholder registry ties to `who` — name and role.
+
+    3.3 plans ROLES ("Product Owner"). 5.3, 5.4 and 5.5 are called with whatever the
+    BA types, which is usually a PERSON ("John Smith"). Comparing the two directly is
+    a join that cannot succeed by construction, and the failure is not a silent no-op:
+    it reports a legitimate approver as an authority exception in a signed document.
+
+    The registry that 3.2 seeds and 4.2 maintains is the only place the two are tied
+    together, and it is the same dual-key idea 3.4 -> 4.4 already uses ("an archetype
+    from 4.4 OR a job title from the stakeholder map"). A role is not unique, so one
+    label can resolve to several people; for a cross-check that is the safe direction —
+    it can only prevent a false accusation, never invent one.
+    """
+    key = reg_norm(who)
+    if not key:
+        return set()
+    aliases = {key}
+    for s in load_stakeholder_registry(project_id).get("stakeholders", []):
+        if not isinstance(s, dict):
+            continue
+        labels = {reg_norm(s.get("name")), reg_norm(s.get("role"))} - {""}
+        if key in labels:
+            aliases |= labels
+    return aliases
+
+
+# The three answers a governance cross-check can honestly give.
+PARTY_PLANNED = "planned"
+PARTY_UNPLANNED = "unplanned"
+PARTY_UNBRIDGEABLE = "unbridgeable"
+
+
+def planned_party_status(project_id: str, planned: list, who) -> str:
+    """Is `who` one of `planned`? PARTY_PLANNED / PARTY_UNPLANNED / PARTY_UNBRIDGEABLE.
+
+    The third answer is the point. With no stakeholder registry there is nothing to
+    bridge a planned ROLE to a typed NAME, so a non-match means "these two labels
+    cannot be compared", not "this person lacks authority" — and a document that says
+    the second when it means the first is worse than one that says nothing.
+    """
+    if not planned:
+        return PARTY_PLANNED
+    aliases = party_aliases(project_id, who)
+    if not aliases:
+        return PARTY_UNBRIDGEABLE
+    if any(reg_norm(p) in aliases for p in planned):
+        return PARTY_PLANNED
+    # A registry exists: the platform does know who its people are, so a name it
+    # cannot tie to any planned role is a finding worth stating.
+    if load_stakeholder_registry(project_id).get("stakeholders"):
+        return PARTY_UNPLANNED
+    return PARTY_UNBRIDGEABLE
+
+
+def is_planned_decision_maker(plan, who, project_id: str = "") -> bool:
     """Is `who` one of the planned decision makers?
 
     The ONLY name matcher for governance. 5.4 passes `decided_by` and 5.5 passes
     `stakeholder_name`; both are "a role or a name", and the plan holds roles. The
     comparison runs through reg_norm on BOTH sides — when a producer validates raw
     casing and a consumer matches normalised, the tool makes confident false claims.
+
+    With `project_id`, the registry bridges role and name (see `party_aliases`).
+    Without it the behaviour is the old exact match; callers that can name the project
+    should pass it, and every caller in this repo does.
     """
     key = reg_norm(who)
     if not key:
         return False
-    return any(reg_norm(dm) == key for dm in planned_decision_makers(plan))
+    planned = planned_decision_makers(plan)
+    if project_id:
+        return reg_norm(who) in {reg_norm(p) for p in planned} or any(
+            reg_norm(p) in party_aliases(project_id, who) for p in planned)
+    return any(reg_norm(dm) == key for dm in planned)
 
 
 def _governance_declared(plan) -> set:

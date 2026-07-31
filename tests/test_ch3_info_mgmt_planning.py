@@ -417,7 +417,10 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
         result = plan_information_management("seed4", access_rules="BA edits")
         self.assertIn("Traceability:      Low", result)
         self.assertIn("traceability level", result)                     # the Kept line
-        self.assertNotIn(self.SEEDED, result)
+        # The VALUE does not move. The explanation now says the criticality has since
+        # changed, rather than either rolling the level back or claiming the current
+        # criticality produced it.
+        self.assertIn("3.3 now says High", result)
 
     def test_a_governance_section_of_the_wrong_type_does_not_raise(self):
         """Chapter 3 loads in EVERY phase, so an AttributeError here is a protocol
@@ -492,6 +495,39 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
             report = mock_sa.call_args[0][0]
         self.assertIn("**Traceability:** Low", report)
         self.assertNotIn("seeded from", report)
+
+    def test_a_later_run_that_leaves_the_level_alone_keeps_the_label(self):
+        """FOUND BY BOTH BRANCH REVIEWERS, from opposite directions. The label was set
+        only on the branch that performs the seed, so any ordinary follow-up call —
+        adding artifact types, a reuse scope, an attribute preset — silently dropped it
+        while the seeded value stayed. The guarantee lasted exactly one call."""
+        plan_ba_governance("seed_keep", "High", '["CFO"]')
+        plan_information_management("seed_keep", '["Confluence"]')       # seeded High
+        result = plan_information_management("seed_keep", artifact_types_json='["BRD"]')
+        self.assertIn("Traceability:      High", result)
+        self.assertIn(self.SEEDED, result)
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ saved"
+            save_ba_plan("seed_keep")
+            report = mock_sa.call_args[0][0]
+        self.assertIn("seeded from the 3.3 criticality", report)
+
+    def test_the_label_does_not_outlive_the_criticality_it_names(self):
+        """The other direction: the criticality moves Low -> High after the seed, and
+        the delivered plan then showed `| Criticality | High |` one section above
+        "(seeded from the 3.3 criticality: Low)". Two sections of one signed document
+        disagreeing about a value one of them cites — the same class B3-1 guarded for
+        the 3.1b timing form, in the label added for 3.4."""
+        plan_ba_governance("seed_drift", "Low", '["Lead BA"]')
+        plan_information_management("seed_drift", '["Confluence"]')      # seeded Low
+        plan_ba_governance("seed_drift", "High")
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ saved"
+            save_ba_plan("seed_drift")
+            report = mock_sa.call_args[0][0]
+        self.assertIn("**Traceability:** Low", report)                   # value stands
+        self.assertNotIn("seeded from the 3.3 criticality: Low", report)
+        self.assertIn("3.3 now says High", report)
 
     def test_a_hand_edited_stored_level_falls_back_to_the_seed(self):
         """A stored level is guarded for value too. `Bogus` used to be echoed as the

@@ -29,7 +29,7 @@ from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
 
-from skills.common import ba_plan_path, data_path
+from skills.common import ba_plan_path, data_path, stakeholder_registry_path
 from skills.planning_mcp import plan_ba_governance
 from skills.requirements_assess_changes_mcp import (
     open_cr, run_cr_impact, score_cr, resolve_cr)
@@ -51,6 +51,12 @@ BOTH = "CFO, Head of Risk"
 class CRGovernanceBase(BaseMCPTest):
     """A scored CR-001, ready for `resolve_cr`."""
 
+    REGISTRY = [
+        {"name": "Alice Chen", "role": "CFO"},
+        {"name": "Dana Cole", "role": "Head of Risk"},
+        {"name": "Mark Feld", "role": "Marketing Lead"},
+    ]
+
     def setUp(self):
         super().setUp()
         init_traceability_repo(PROJECT, "Standard", REQS)
@@ -58,6 +64,16 @@ class CRGovernanceBase(BaseMCPTest):
                 "new_requirement", "standard", '["FR-001"]')
         run_cr_impact(PROJECT, "CR-001")
         score_cr(PROJECT, "CR-001", "High", "Medium")
+        # A real project has a registry: 3.2 seeds it, 4.2 maintains it, and it is
+        # what lets a `decided_by` NAME match a planned ROLE. Without one the check
+        # reports that it cannot tell and stays silent (`NoRegistryTest`).
+        self._seed_registry(self.REGISTRY)
+
+    def _seed_registry(self, rows):
+        path = stakeholder_registry_path(PROJECT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": PROJECT, "stakeholders": rows}, f)
 
     def _resolve(self, decision="Approved", decided_by="CFO", rationale="agreed",
                  **kwargs):
@@ -259,6 +275,80 @@ class NoPlanAndDamagedPlanTest(CRGovernanceBase):
         self.assertIn("# CR Decision Record: CR-001", record)
         self.assertIn("CR CR-001 — Approved", output)
         self.assertNotIn("Governance (3.3)", record)
+
+
+class RegistryBridgeTest(CRGovernanceBase):
+    """3.3 plans ROLES; `decided_by` is normally a PERSON. Both branch reviewers found
+    this: without a bridge the CR Decision Record reported the actual CFO as deciding
+    outside their authority."""
+
+    def test_a_person_deciding_under_their_planned_role_is_not_flagged(self):
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        record, output = self._resolve(decided_by="Alice Chen")
+        self.assertIn("## Governance (3.3)", record)      # the block IS rendered...
+        self.assertNotIn("is not among them", record)     # ...without an accusation
+        self.assertNotIn("not among the planned decision makers", output)
+
+    def test_a_person_outside_every_planned_role_is_still_flagged(self):
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        record, _output = self._resolve(decided_by="Mark Feld")
+        self.assertIn("is not among them", record)
+
+
+class NoRegistryTest(BaseMCPTest):
+    """With no registry, a planned ROLE and a typed NAME cannot be compared. The audit
+    record must not print that guess as a governance breach."""
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+        open_cr(PROJECT, "CR-001", "Add SSO", "Customer asked for SSO", "Sales",
+                "new_requirement", "standard", '["FR-001"]')
+        run_cr_impact(PROJECT, "CR-001")
+        score_cr(PROJECT, "CR-001", "High", "Medium")
+
+    def test_an_unmatched_decider_is_not_accused(self):
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        with patch("skills.requirements_assess_changes_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = ""
+            output = resolve_cr(PROJECT, "CR-001", "Approved", "Alice Chen", "agreed")
+            record = mock_sa.call_args[0][0]
+        self.assertIn("## Governance (3.3)", record)
+        self.assertNotIn("is not among them", record)
+        self.assertNotIn("not among the planned decision makers", output)
+
+    def test_an_exact_role_match_still_fires_without_a_registry(self):
+        """The bridge only ADDS matches — a BA typing the planned role is unaffected."""
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        with patch("skills.requirements_assess_changes_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = ""
+            resolve_cr(PROJECT, "CR-001", "Approved", "CFO", "agreed")
+            record = mock_sa.call_args[0][0]
+        self.assertIn(f"**Planned decision authority:** {BOTH}", record)
+        self.assertNotIn("is not among them", record)
+
+
+class DamagedPlanIsReportedTest(CRGovernanceBase):
+    """`load_ba_plan`'s contract says the caller must SHOW the warning. A corrupt plan
+    silently disabling every cross-check leaves an audit trail identical to a project
+    that never planned governance."""
+
+    def test_the_tool_says_the_plan_could_not_be_read(self):
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
+            f.write("{ not json")
+        _record, output = self._resolve(decided_by="Mark Feld")
+        self.assertIn("could not be read", output)
+
+    def test_the_decision_record_itself_stays_a_statement_about_the_cr(self):
+        """The warning belongs in the reply, not in the signed record — that document
+        is about the change request, not about the platform's file system."""
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
+            f.write("{ not json")
+        record, _output = self._resolve(decided_by="Mark Feld")
+        self.assertIn("# CR Decision Record", record)
+        self.assertNotIn("could not be read", record)
 
 
 if __name__ == "__main__":

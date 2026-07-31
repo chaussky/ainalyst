@@ -30,6 +30,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     load_ba_plan, planned_prioritization, reg_norm,
+    planned_party_status, PARTY_UNPLANNED, PARTY_PLANNED,
 )
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
@@ -630,11 +631,16 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
     planned_names = planned["participants"]
     if planned_names:
         scorers = list(session.get("stakeholder_scores", {}).keys())
+        # One matcher for all three lists, and it is the registry-bridged one: a plan
+        # naming roles and a session naming people made this paragraph state "0 of 2
+        # planned participants scored" over a session in which both of them did.
         scored = [p for p in planned_names
-                  if any(reg_norm(p) == reg_norm(s) for s in scorers)]
+                  if any(planned_party_status(project_name, [p], s) == PARTY_PLANNED
+                         for s in scorers)]
         missing = [p for p in planned_names if p not in scored]
         extra = [s for s in scorers
-                 if not any(reg_norm(p) == reg_norm(s) for p in planned_names)]
+                 if planned_party_status(project_name, planned_names, s)
+                 == PARTY_UNPLANNED]
         lines.append(f"**Participation:** {len(scored)} of {len(planned_names)} "
                      f"planned participants scored.  ")
         if missing:
@@ -1033,7 +1039,11 @@ def add_stakeholder_scores(
     A repeat call for the same stakeholder replaces the previous scores.
 
     Parameters:
-    - stakeholder_id: ID from the stakeholder registry (4.2), e.g. "SH-001"
+    - stakeholder_id: who is scoring — a name or a role, as recorded in the
+      stakeholder registry (3.2/4.2), e.g. "John Smith" or "Product Owner".
+      (The registry keys people by name; there are no "SH-00n" ids. If 3.3 planned
+      the prioritization participants, the registry is what lets a name entered here
+      match a role planned there.)
     - stakeholder_influence: the stakeholder's level of influence
     - scores_json: scores, depending on method:
 
@@ -1166,10 +1176,14 @@ def add_stakeholder_scores(
     # scores are ALREADY saved above: an unplanned scorer is a fact to report, not a
     # reason to lose the input. `stakeholder_influence` is likewise untouched — it
     # weights the aggregation, and deriving it from the plan would move priorities.
-    plan, _plan_note = load_ba_plan(project_name)
+    plan, plan_note = load_ba_plan(project_name)
     planned_participants = planned_prioritization(plan)["participants"]
-    if planned_participants and not any(
-            reg_norm(p) == reg_norm(stakeholder_id) for p in planned_participants):
+    # Through the registry bridge: 3.3 plans ROLES and this parameter is usually a
+    # person, so a bare comparison accused every scorer on a correctly-planned project.
+    # PARTY_UNBRIDGEABLE (no registry to tie the two together) says nothing at all —
+    # a guess stated as a finding is worse than no finding.
+    if planned_party_status(project_name, planned_participants,
+                            stakeholder_id) == PARTY_UNPLANNED:
         lines += [
             f"⚠️ `{stakeholder_id}` is not among the participants planned in 3.3: "
             f"{', '.join(planned_participants)}.",
@@ -1177,6 +1191,8 @@ def add_stakeholder_scores(
             "if the participant list is out of date.",
             "",
         ]
+    if plan_note:
+        lines += [plan_note, ""]
 
     lines.append(
         "Once all stakeholders have scored the requirements — call `run_aggregation`.")

@@ -31,6 +31,7 @@ from skills.common import (
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors,
     load_ba_plan, planned_decision_makers, is_planned_decision_maker,
+    planned_party_status, PARTY_UNPLANNED,
     planned_escalation_path,
 )
 
@@ -780,7 +781,7 @@ def score_cr(
     # to look up a plan nothing here had ever read. Without a plan the sentence stays
     # exactly as it was: it is still correct as an instruction, and silent degradation
     # is only acceptable when the tool says LESS, never when it invents a name.
-    plan, _plan_note = load_ba_plan(project_name)
+    plan, plan_note = load_ba_plan(project_name)
     planned_deciders = planned_decision_makers(plan)
     decider_line = (
         f"Get a decision from an authorized stakeholder — the 3.3 governance plan "
@@ -802,6 +803,8 @@ def score_cr(
         f"  - `decided_by`: who made the decision",
         f"  - `rationale`: rationale (required for the audit trail)",
     ]
+    if plan_note:
+        lines += ["", plan_note]
 
     return "\n".join(lines)
 
@@ -1021,11 +1024,14 @@ def resolve_cr(
     # that disagrees with the record it describes is worse than one that says nothing.
     # The match runs through the one shared `is_planned_decision_maker`, so this
     # warning and 5.5's cannot disagree about who counts as an authority.
-    gov_plan, _gov_note = load_ba_plan(project_name)
+    gov_plan, gov_note = load_ba_plan(project_name)
     planned_deciders = planned_decision_makers(gov_plan)
     escalation, escalation_source = planned_escalation_path(gov_plan)
-    unplanned_decider = bool(planned_deciders) and not is_planned_decision_maker(
-        gov_plan, decided_by)
+    # Registry-bridged: the plan holds roles, `decided_by` is usually a person. Only
+    # PARTY_UNPLANNED is a finding — with no registry the two labels cannot be
+    # compared, and an audit record must not print a guess as a governance breach.
+    unplanned_decider = planned_party_status(
+        project_name, planned_deciders, decided_by) == PARTY_UNPLANNED
 
     if planned_deciders or escalation:
         record_lines += ["---", "", "## Governance (3.3)", ""]
@@ -1123,6 +1129,14 @@ def resolve_cr(
         "### Next steps",
         "",
     ] + next_steps + ["", save_path]
+
+    # `load_ba_plan`'s contract is that the caller SHOWS this: an unreadable plan
+    # silently disables every cross-check, and the audit trail then reads exactly like
+    # a project that never planned governance. The BA has to be able to tell those
+    # apart. It goes in the reply, not in the Decision Record — the record is a
+    # statement about the CR, not about the platform's file system.
+    if gov_note:
+        output_lines += ["", gov_note]
 
     return "\n".join(output_lines)
 
