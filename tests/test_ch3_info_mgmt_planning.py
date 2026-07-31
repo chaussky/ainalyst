@@ -448,6 +448,51 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
         self.assertNotIn("Catastrophic", result)
         self.assertNotIn(self.SEEDED, result)
 
+    def test_the_delivered_plan_says_the_level_was_seeded_not_decided(self):
+        """FOUND BY THE LIVE RUN, reading the BA Plan report next to the tool's reply.
+
+        The tool's message says "(seeded from the 3.3 criticality: High)"; the report
+        said only "**Traceability:** High — ...". So the delivered document presented a
+        platform DEFAULT as though the BA had chosen it, one section below a 3.3 table
+        that labels every value's source. The tool's reply is ephemeral; the report is
+        what gets signed and sent.
+        """
+        plan_ba_governance("seed_doc", "High", '["CFO"]')
+        plan_information_management("seed_doc", '["Confluence"]')
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ saved"
+            save_ba_plan("seed_doc")
+            report = mock_sa.call_args[0][0]
+        self.assertIn("**Traceability:** High", report)
+        self.assertIn("seeded from the 3.3 criticality", report)
+
+    def test_stating_a_level_later_clears_the_seeded_label(self):
+        """Caught by mutation: merging the source instead of recomputing it left the
+        "seeded from the 3.3 criticality" label in place after the BA stated a level of
+        their own — the delivered plan then describes the analyst's own decision as a
+        platform default. A label about WHERE a value came from must be rewritten
+        whenever the value is, never merged forward."""
+        plan_ba_governance("seed_relabel", "High", '["CFO"]')
+        plan_information_management("seed_relabel", '["Confluence"]')      # seeded High
+        plan_information_management("seed_relabel", traceability_level="Low")
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ saved"
+            save_ba_plan("seed_relabel")
+            report = mock_sa.call_args[0][0]
+        self.assertIn("**Traceability:** Low", report)
+        self.assertNotIn("seeded from", report)
+
+    def test_a_stated_level_is_not_labelled_as_seeded_in_the_report(self):
+        plan_ba_governance("seed_doc2", "High", '["CFO"]')
+        plan_information_management("seed_doc2", '["Confluence"]',
+                                    traceability_level="Low")
+        with patch("skills.planning_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "\n\n✅ saved"
+            save_ba_plan("seed_doc2")
+            report = mock_sa.call_args[0][0]
+        self.assertIn("**Traceability:** Low", report)
+        self.assertNotIn("seeded from", report)
+
     def test_a_hand_edited_stored_level_falls_back_to_the_seed(self):
         """A stored level is guarded for value too. `Bogus` used to be echoed as the
         level while the DESCRIPTION silently fell back to Medium's — a delivered plan

@@ -1033,9 +1033,15 @@ def resolve_cr(
             record_lines.append(
                 f"**Planned decision authority:** {', '.join(planned_deciders)}  ")
         if unplanned_decider:
+            # Names the decider again rather than saying "them": directly under
+            # "**Planned decision authority:** A, B" the pronoun resolves to A and B,
+            # so "recorded as decided by them" stated the opposite of the fact — and
+            # contradicted the `**Decided by:**` header three lines above it, in a
+            # document written for an audit.
             record_lines.append(
-                f"⚠️ `{decided_by}` is not among them — recorded as decided by them "
-                f"regardless.  ")
+                f"⚠️ `{decided_by}` is not among them. The record credits the decision "
+                f"to `{decided_by}`, exactly as it was made — either update 3.3 with "
+                f"`plan_ba_governance`, or confirm this person holds the authority.  ")
         if escalation:
             record_lines.append(
                 f"**Escalation path:** {escalation} *({escalation_source})*  ")

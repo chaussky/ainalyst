@@ -266,6 +266,46 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         self.assertIn("**Responded:** nobody.", record)
         self.assertIn("No decision recorded from: CFO, Head of Risk", record)
 
+    def test_an_unplanned_accountable_signer_is_named_in_the_record(self):
+        """FOUND BY THE LIVE RUN. `record_approval_decision` warns that an accountable
+        signer is outside the planned authority — but that warning lives only in the
+        tool's ephemeral reply. The Approval Record, the one durable document, filtered
+        the responder list down to PLANNED names and so said nothing: the baseline read
+        as signed by nobody in particular. B2-bis's rule applies here too — recorded
+        without being stated is the same as hidden, and this is the audit trail.
+        """
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record_approval_decision(PROJECT, "APKG-001", "Priya Nair (PO)",
+                                 "accountable", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("Planned approval authority", record)
+        self.assertIn("Priya Nair (PO)", record.split("## Governance (3.3)")[1])
+
+    def test_a_planned_signer_is_never_listed_as_unnamed_in_the_plan(self):
+        """Caught by mutation, not by writing the test: dropping the
+        `is_planned_decision_maker` filter listed EVERY accountable signer under
+        "without being named in the 3.3 plan" — the official record then accuses the
+        planned authority of lacking authority, and every other assertion stays true."""
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record_approval_decision(PROJECT, "APKG-001", "Head of Risk",
+                                 "responsible", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        gov = record.split("## Governance (3.3)")[1]
+        self.assertIn("**Responded:** CFO, Head of Risk", gov)   # the block rendered
+        self.assertNotIn("without being named", gov)
+
+    def test_a_consulted_reviewer_outside_the_plan_is_not_reported_as_authority(self):
+        """The RACI guard, in the record as well as in the warning: `consulted` is a
+        reviewer and is legitimately absent from the approver list. Naming them here
+        would turn an ordinary review into an authority exception."""
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record_approval_decision(PROJECT, "APKG-001", "Sam Doyle (Architect)",
+                                 "consulted", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        gov = record.split("## Governance (3.3)")[1]
+        self.assertIn("**Responded:** CFO", gov)          # the block rendered
+        self.assertNotIn("Sam Doyle", gov)
+
     def test_the_block_is_absent_without_a_plan(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
         os.remove(ba_plan_path(PROJECT))

@@ -822,7 +822,7 @@ def _sane_info_section(section) -> dict:
         if not isinstance(out.get(key), dict):
             out.pop(key, None)
     for key in ("access_rules", "ba_notes", "traceability_level",
-                "traceability_description"):
+                "traceability_description", "traceability_source"):
         if key in out and not isinstance(out[key], str):
             out.pop(key, None)
     return out
@@ -1092,6 +1092,11 @@ def plan_information_management(
         "storage_tools": storage_tools,
         "traceability_level": level,
         "traceability_description": trace_desc,
+        # Stored, not just printed in the reply: the reply is ephemeral and the BA
+        # Plan is the document that gets signed. Recomputed on every run rather than
+        # merged — the moment the BA states a level, the value stops being a default,
+        # and a stale "seeded" label would misdescribe their own decision.
+        "traceability_source": trace_source.strip(" ()") if trace_source else "",
         "artifact_types": artifact_types,
         # `-` restores the standing default rather than emptying the field: an empty
         # Access line in the delivered BA Plan is worse than the default it replaced.
@@ -1766,7 +1771,12 @@ def save_ba_plan(
             "## 3.4 Information Management",
             "",
             f"- **Tools:** {', '.join(info_mgmt.get('storage_tools', []))}",
-            f"- **Traceability:** {info_mgmt.get('traceability_level', '')} — {info_mgmt.get('traceability_description', '')}",
+            # The source is stated for the same reason the 3.3 table one section up
+            # has a Source column: an unlabelled default reads as the BA's decision.
+            f"- **Traceability:** {info_mgmt.get('traceability_level', '')} — "
+            f"{info_mgmt.get('traceability_description', '')}"
+            + (f" *({info_mgmt['traceability_source']})*"
+               if info_mgmt.get("traceability_source") else ""),
             f"- **Access:** {info_mgmt.get('access_rules', '')}",
         ]
         artifact_types = info_mgmt.get("artifact_types", [])

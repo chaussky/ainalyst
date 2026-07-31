@@ -126,6 +126,23 @@ class DecidedByCrossCheckTest(CRGovernanceBase):
         self.assertIn(f"**Planned decision authority:** {BOTH}", record)
         self.assertIn("is not among them", record)
 
+    def test_the_record_does_not_say_the_planned_authority_decided(self):
+        """FOUND BY THE LIVE RUN, by reading the rendered record rather than grepping it.
+
+        The warning sat directly under `**Planned decision authority:** A, B` and read
+        "... is not among them — recorded as decided by them regardless". The pronoun
+        resolves to the PLANNED authorities, so the sentence states the opposite of the
+        fact: the decision was recorded as made by the unplanned person. In an audit
+        document that is not a wording nit — the header three lines up says
+        `**Decided by:** Marketing Lead`, and the two contradict each other.
+        """
+        plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
+        record, _output = self._resolve(decided_by="Marketing Lead")
+        self.assertIn("is not among them", record)          # the flag still fires
+        self.assertNotIn("decided by them", record)
+        # The record must name WHO it credits, and it is the person, not the plan.
+        self.assertIn("`Marketing Lead`", record)
+
     def test_a_planned_decider_is_not_flagged(self):
         """The match normalises BOTH sides through the one shared matcher — a producer
         that validates raw casing next to a consumer that matches normalised makes

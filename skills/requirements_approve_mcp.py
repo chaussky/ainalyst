@@ -1642,6 +1642,18 @@ def create_requirements_baseline(
                      if is_planned_decision_maker(plan, name)]
         responded_keys = {reg_norm(name) for name in responded}
         silent = [a for a in planned_authority if reg_norm(a) not in responded_keys]
+        # Who signed WITHOUT being planned. `record_approval_decision` already warns
+        # about this, but that warning lives only in the tool's reply; the Approval
+        # Record is the durable document, and filtering the responder list down to
+        # planned names left it silent about who actually carried the baseline.
+        # B2-bis's rule: recorded without being stated is the same as hidden.
+        # RACI-guarded, exactly like the warning — `consulted` is a reviewer and is
+        # legitimately absent from the approver list, so naming them here would turn an
+        # ordinary review into an authority exception.
+        unplanned_authority = [
+            name for name, sh in package["stakeholder_decisions"].items()
+            if sh.get("raci") in ("accountable", "responsible")
+            and not is_planned_decision_maker(plan, name)]
         record_lines += [
             "",
             "---",
@@ -1651,8 +1663,12 @@ def create_requirements_baseline(
             f"**Planned approval authority (3.3):** {', '.join(planned_authority)}  ",
             (f"**Responded:** {', '.join(responded) or 'nobody'}."
              + (f" No decision recorded from: {', '.join(silent)}." if silent else "")),
-            "",
         ]
+        if unplanned_authority:
+            record_lines.append(
+                f"⚠️ Decided by, without being named in the 3.3 plan: "
+                f"{', '.join(unplanned_authority)}.  ")
+        record_lines.append("")
 
     record_lines += [
         "",
