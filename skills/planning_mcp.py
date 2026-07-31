@@ -934,13 +934,31 @@ def plan_information_management(
             return error
 
     # --- traceability level ------------------------------------------------
+    # BABOK Figure 3.3.1 makes 3.4 a consumer of the governance approach: the change
+    # control and traceability standards together establish the product baselines. So
+    # the 3.3 criticality supplies a DEFAULT here — insert-only. It never overrides a
+    # level the BA stated, and it never rolls a stored one back when the criticality
+    # later changes (the defect `insert_defaults` was created for in 3.2).
+    trace_source = ""
     if traceability_level == "":
-        level = previous.get("traceability_level", "Medium")
-        if previous.get("traceability_level"):
+        stored = previous.get("traceability_level")
+        # Guarded for VALUE, not only for type. A hand-edited level used to be echoed
+        # under its own name while `.get(level, ...)` silently supplied Medium's
+        # DESCRIPTION — a delivered plan naming a traceability level that does not exist.
+        if stored in _TRACEABILITY_LEVELS:
+            level = stored
             kept.append("traceability level")
+        else:
+            criticality = _sane_governance_section(
+                plan.get("governance")).get("project_criticality")
+            if criticality in _TRACEABILITY_LEVELS:
+                level = criticality
+                trace_source = f" (seeded from the 3.3 criticality: {criticality})"
+            else:
+                level = "Medium"
     else:
         level = traceability_level
-    trace_desc = _TRACEABILITY_LEVELS.get(level, _TRACEABILITY_LEVELS["Medium"])
+    trace_desc = _TRACEABILITY_LEVELS[level]
 
     # --- artifact types ----------------------------------------------------
     if artifact_types_json == "":
@@ -1084,7 +1102,7 @@ def plan_information_management(
         "",
         f"  Project:           {project_id}",
         f"  Tools:             {', '.join(storage_tools)}",
-        f"  Traceability:      {level} — {trace_desc}",
+        f"  Traceability:      {level} — {trace_desc}{trace_source}",
     ]
     if artifact_types:
         out.append(f"  Artifact types:    {', '.join(artifact_types)}")

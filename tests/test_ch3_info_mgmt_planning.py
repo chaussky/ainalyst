@@ -12,7 +12,8 @@ from tests.conftest import setup_mocks, BaseMCPTest
 
 setup_mocks()
 
-from skills.planning_mcp import plan_information_management, save_ba_plan, _plan_path
+from skills.planning_mcp import (
+    plan_ba_governance, plan_information_management, save_ba_plan, _plan_path)
 
 PROJECT = "b33_writer"
 
@@ -357,6 +358,111 @@ class TestVocabulariesStayInSync(BaseMCPTest):
         preset_values = set(typing.get_args(hints["attributes_preset"])) - {"", "None"}
         self.assertEqual(scope_values, set(REUSE_SCOPES))
         self.assertEqual(preset_values, set(ATTRIBUTE_PRESETS))
+
+
+class TestTraceabilitySeededFromCriticality(BaseMCPTest):
+    """Seam D — BABOK Figure 3.3.1's 3.3 -> 3.4 arrow, made real (B3-2).
+
+    `plan_information_management` RETURNS a status message (probed). The traceability
+    line reads `  Traceability:      <level> — <description>`, so every assertion below
+    names that whole prefix: a bare `assertIn("High", ...)` would be satisfied by any
+    other occurrence of the word, and `_TRACEABILITY_LEVELS["High"]` does not contain
+    it at all.
+    """
+
+    SEEDED = "seeded from the 3.3 criticality"
+
+    def test_the_criticality_seeds_the_level_when_none_is_stated(self):
+        plan_ba_governance("seed1", "High", '["CFO"]')
+        result = plan_information_management("seed1", '["Confluence"]')
+        self.assertIn("Traceability:      High", result)
+        self.assertIn(f"{self.SEEDED}: High", result)
+        self.assertEqual(_section("seed1")["traceability_level"], "High")
+
+    def test_a_medium_criticality_seeds_medium_and_still_shows_the_source(self):
+        """Medium is also the hardcoded default, so only the source label can tell the
+        BA whether the value came from the 3.3 plan or from nowhere."""
+        plan_ba_governance("seed_m", "Medium", '["PO"]')
+        result = plan_information_management("seed_m", '["Confluence"]')
+        self.assertIn("Traceability:      Medium", result)
+        self.assertIn(f"{self.SEEDED}: Medium", result)
+
+    def test_without_a_governance_plan_the_default_is_unchanged(self):
+        result = plan_information_management("seed2", '["Confluence"]')
+        self.assertIn("Traceability:      Medium", result)
+        self.assertNotIn(self.SEEDED, result)
+
+    def test_a_stated_level_is_never_overridden(self):
+        plan_ba_governance("seed3", "High", '["CFO"]')
+        plan_information_management("seed3", '["Confluence"]', traceability_level="Low")
+        result = plan_information_management("seed3", access_rules="BA edits")
+        self.assertIn("Traceability:      Low", result)
+        self.assertNotIn("High", result)
+        self.assertNotIn(self.SEEDED, result)
+
+    def test_the_level_stated_in_the_same_call_wins_over_the_criticality(self):
+        plan_ba_governance("seed3b", "High", '["CFO"]')
+        result = plan_information_management("seed3b", '["Confluence"]',
+                                             traceability_level="Low")
+        self.assertIn("Traceability:      Low", result)
+        self.assertNotIn(self.SEEDED, result)
+
+    def test_the_seed_is_insert_only_across_a_criticality_change(self):
+        """A2's `insert_defaults` lesson: a re-run must never roll a stored value back.
+        The criticality moves Low -> High AFTER the level was seeded Low; the seeded
+        value is now a stored decision like any other and stays."""
+        plan_ba_governance("seed4", "Low", '["Lead BA"]')
+        plan_information_management("seed4", '["Confluence"]')          # seeded Low
+        plan_ba_governance("seed4", "High")
+        result = plan_information_management("seed4", access_rules="BA edits")
+        self.assertIn("Traceability:      Low", result)
+        self.assertIn("traceability level", result)                     # the Kept line
+        self.assertNotIn(self.SEEDED, result)
+
+    def test_a_governance_section_of_the_wrong_type_does_not_raise(self):
+        """Chapter 3 loads in EVERY phase, so an AttributeError here is a protocol
+        error in every session."""
+        for i, bad in enumerate((None, "oops", ["High"], 7)):
+            pid = f"seed_bad{i}"
+            with self.subTest(governance=bad):
+                path = _plan_path(pid)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump({"project_id": pid, "governance": bad}, f)
+                result = plan_information_management(pid, '["Confluence"]')
+                self.assertIn("✅", result)
+                self.assertIn("Traceability:      Medium", result)
+                self.assertNotIn(self.SEEDED, result)
+
+    def test_a_criticality_outside_the_vocabulary_does_not_seed(self):
+        """Guarded for VALUE, not only for type: a hand-edited "Catastrophic" must not
+        reach `_TRACEABILITY_LEVELS.get()` and silently become the Medium wording under
+        its own name."""
+        path = _plan_path("seed_junk")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project_id": "seed_junk",
+                       "governance": {"project_criticality": "Catastrophic"}}, f)
+        result = plan_information_management("seed_junk", '["Confluence"]')
+        self.assertIn("Traceability:      Medium", result)
+        self.assertNotIn("Catastrophic", result)
+        self.assertNotIn(self.SEEDED, result)
+
+    def test_a_hand_edited_stored_level_falls_back_to_the_seed(self):
+        """A stored level is guarded for value too. `Bogus` used to be echoed as the
+        level while the DESCRIPTION silently fell back to Medium's — a delivered plan
+        naming a traceability level the platform does not have."""
+        plan_ba_governance("seed5", "High", '["CFO"]')
+        plan_information_management("seed5", '["Confluence"]', traceability_level="Low")
+        path = _plan_path("seed5")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["information_management"]["traceability_level"] = "Bogus"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        result = plan_information_management("seed5", access_rules="BA edits")
+        self.assertIn("Traceability:      High", result)
+        self.assertNotIn("Bogus", result)
 
 
 if __name__ == "__main__":

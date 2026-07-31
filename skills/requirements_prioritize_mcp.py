@@ -29,6 +29,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
+    load_ba_plan, planned_prioritization, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
@@ -594,6 +595,57 @@ def _check_must_inflation(priorities: dict) -> dict:
     return {"inflated": ratio > MUST_INFLATION_THRESHOLD, "must_ratio": round(ratio, 2)}
 
 
+def _planned_approach_block(project_name: str, session: dict) -> list:
+    """BABOK 3.3 element .3 vs what the session actually did — [] when nothing is planned.
+
+    Reconciles the three planned parts (technique, participants, criteria) against the
+    method the session used and the stakeholders who actually scored. It reports; it
+    decides nothing. `method` and `stakeholder_influence` are the BA's explicit inputs
+    and between them determine every priority in the document below — a plan quietly
+    overriding either would change the result, not describe it.
+
+    Everything here goes through `planned_prioritization`, so a hand-edited plan cannot
+    put an unknown technique or a per-character participant list into a delivered report.
+    """
+    plan, _plan_note = load_ba_plan(project_name)
+    planned = planned_prioritization(plan)
+    if not any(planned.values()):
+        return []
+
+    method = session.get("method", "")
+    lines = ["## Planned approach (3.3)", ""]
+    if planned["technique"]:
+        match = "✅" if planned["technique"] == method else "⚠️"
+        lines.append(
+            f"**Technique:** {planned['technique']} planned — {method} used {match}  ")
+    else:
+        # Said plainly rather than omitted: the three parts are independent, and a
+        # block that silently skips the technique row reads as though one was planned
+        # and matched.
+        lines.append("**Technique:** not planned in 3.3  ")
+
+    if planned["criteria"]:
+        lines.append(f"**Criteria:** {', '.join(planned['criteria'])}  ")
+
+    planned_names = planned["participants"]
+    if planned_names:
+        scorers = list(session.get("stakeholder_scores", {}).keys())
+        scored = [p for p in planned_names
+                  if any(reg_norm(p) == reg_norm(s) for s in scorers)]
+        missing = [p for p in planned_names if p not in scored]
+        extra = [s for s in scorers
+                 if not any(reg_norm(p) == reg_norm(s) for p in planned_names)]
+        lines.append(f"**Participation:** {len(scored)} of {len(planned_names)} "
+                     f"planned participants scored.  ")
+        if missing:
+            lines.append(f"- Did not score: {', '.join(missing)}  ")
+        if extra:
+            lines.append(f"- Scored without being planned: {', '.join(extra)}  ")
+
+    lines.append("")
+    return lines
+
+
 def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
     """Renders the box: summary line, in/out table and the three note sections.
 
@@ -839,6 +891,21 @@ def start_prioritization_session(
     prio_data["sessions"].append(session)
     _save_prio(project_name, prio_data)
 
+    # BABOK 3.3 element .3 — the plan names a technique; this session picks the
+    # algorithm. `method` is the BA's explicit choice and is NEVER overridden: it
+    # selects the whole aggregation algorithm, and a plan silently switching it would
+    # change every priority the session produces. So this warns, and nothing else.
+    plan, _plan_note = load_ba_plan(project_name)
+    planned_technique = planned_prioritization(plan)["technique"]
+    governance_note = ""
+    if planned_technique and planned_technique != method:
+        governance_note = (
+            f"⚠️ This session uses **{method}**, but 3.3 plans the technique "
+            f"**{planned_technique}**.\n"
+            f"   The session proceeds with {method} — `method` is your explicit "
+            f"choice and selects the whole aggregation algorithm. Re-plan 3.3 with "
+            f"`plan_ba_governance` if the plan is out of date.")
+
     # Build the report
     lines = [
         f"<!-- BABOK 5.3 — Prioritize Requirements, Project: {project_name}, "
@@ -853,6 +920,11 @@ def start_prioritization_session(
     lines.append(f"**Opened on:** {date.today()}")
     if capacity_note:
         lines += ["", capacity_note]
+    # Next to the capacity note rather than at the foot of the document: both are
+    # warnings about how this session was SET UP, and the BA reads the head of the
+    # session sheet before scoring, not the tail of it afterwards.
+    if governance_note:
+        lines += ["", governance_note]
     lines += [
         "",
         "---",
@@ -1088,8 +1160,26 @@ def add_stakeholder_scores(
         "",
         f"**Stakeholders with scores:** {len(session['stakeholder_scores'])}",
         "",
-        "Once all stakeholders have scored the requirements — call `run_aggregation`.",
     ]
+
+    # BABOK 3.3 element .3 — the plan names who takes part in prioritization. The
+    # scores are ALREADY saved above: an unplanned scorer is a fact to report, not a
+    # reason to lose the input. `stakeholder_influence` is likewise untouched — it
+    # weights the aggregation, and deriving it from the plan would move priorities.
+    plan, _plan_note = load_ba_plan(project_name)
+    planned_participants = planned_prioritization(plan)["participants"]
+    if planned_participants and not any(
+            reg_norm(p) == reg_norm(stakeholder_id) for p in planned_participants):
+        lines += [
+            f"⚠️ `{stakeholder_id}` is not among the participants planned in 3.3: "
+            f"{', '.join(planned_participants)}.",
+            "   The scores are recorded anyway — re-plan 3.3 with `plan_ba_governance` "
+            "if the participant list is out of date.",
+            "",
+        ]
+
+    lines.append(
+        "Once all stakeholders have scored the requirements — call `run_aggregation`.")
     return "\n".join(lines)
 
 
@@ -1623,6 +1713,13 @@ def save_prioritization_result(
     ]
     if refinalise_note:
         lines += [refinalise_note, ""]
+
+    # BABOK 3.3 element .3 reconciled against what actually happened. Appended BELOW
+    # the header block on purpose: the two `lines.insert(7, ...)` calls further down
+    # address a FIXED index, so a block added above the header would swallow the
+    # "scored a typo" warning into this section instead of the header.
+    lines += _planned_approach_block(project_name, session)
+
     lines += [
         "---",
         "",
