@@ -121,6 +121,8 @@ Key questions:
 - Who makes the final decisions on requirements?
 - How are changes handled — formally (CR + CAB) or flexibly (through the PO)?
 - How are conflicts escalated?
+- How long do approvers get to respond?
+- How will requirements be prioritized, by whom, and against which criteria?
 
 **Response template by criticality:**
 
@@ -130,7 +132,33 @@ Key questions:
 | Medium | PO approves via Backlog | PO + Lead BA |
 | Low | Logged in Jira, verbal | Lead BA |
 
+The template is a **default**, not a verdict: whatever the BA states explicitly is
+recorded as stated, and the plan says which values were declared and which came from
+the template.
+
 Use the MCP tool `plan_ba_governance`.
+
+**3.3 is read by Chapter 5 — this is not a reference document:**
+
+| Decision | BABOK element | Who reads it |
+|---|---|---|
+| Decision makers | .1 | 5.5 `prepare_approval_package` prints them; 5.5 `record_approval_decision` and 5.4 `resolve_cr` cross-check who actually decided |
+| Escalation path | .1 | 5.4 `resolve_cr` carries it into the CR Decision Record |
+| Response deadline | .4 | 5.5 states it on the approval package |
+| Prioritization technique, participants, criteria | .3 | 5.3 cross-checks the session and reconciles participation in the result report |
+| Project criticality | .1 | seeds 3.4's traceability level, if the BA does not state one |
+
+Every one of those is a **cross-check or a default — never an override.** 5.3 keeps the
+`method` the BA chose even when the plan names another technique (it selects the whole
+aggregation algorithm); 5.5 keeps an explicit RACI; a stated traceability level wins
+over the seed. The BA is told about the difference and decides.
+
+Re-running 3.3 MERGES, same as 3.4: an omitted parameter keeps its previous value,
+`"[]"` clears a list and `"-"` clears a text field. `project_criticality` is required
+only the first time.
+
+Nothing here is required either: with no 3.3 plan, 5.3, 5.4 and 5.5 behave exactly as
+they did before and say nothing about a plan.
 
 ---
 

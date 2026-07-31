@@ -16,25 +16,36 @@ Storage:
   - {project}_ba_plan_*.md        — Markdown report (via save_artifact)
 
 Integration:
-  Output: ba_plan.json. Sections 3.1b (ba_activities) and 3.4 (information_management)
-  ARE read by other chapters — through the shared helpers in skills/common.py, so no
-  chapter imports this module:
+  Output: ba_plan.json. Sections 3.1b (ba_activities), 3.3 (governance) and 3.4
+  (information_management) ARE read by other chapters — through the shared helpers in
+  skills/common.py, so no chapter imports this module:
     - 4.4 prepare_communication_package — the planned level of detail per audience
     - 5.2 find_reusable_requirements    — the planned reuse scope and repository
     - 5.2 check_requirements_health     — the planned attribute set
-    - 5.5 prepare_approval_package      — the methodology, from the planned timing form
+    - 5.5 prepare_approval_package      — the methodology, from the planned timing
+                                          form; the response deadline and the
+                                          approvers, printed on the package
+    - 5.5 record_approval_decision      — cross-checks an accountable/responsible
+                                          decision against the planned authority
+    - 5.4 resolve_cr                    — cross-checks `decided_by`; the escalation
+                                          path in the CR Decision Record
+    - 5.3 the prioritization session    — cross-checks the technique and the
+                                          participants; the criteria in the report
     - 4.1 save_elicitation_plan         — the work period that covers elicitation
   3.2 additionally SEEDS the living stakeholder registry
   ({project}_stakeholder_registry.json) that 4.2 maintains and 7.4 reads, so the same
   people are not entered twice. Source fields only, and only on creation for the
   assumed ones — a re-run must never overwrite what elicitation established.
+  3.3 also seeds 3.4's traceability level from the project criticality, insert-only.
+
+  Every one of those is a CROSS-CHECK or a DEFAULT. No consumer overrides an explicit
+  input with a planned value: the plan is what the BA meant to do, and the parameter is
+  what the BA is doing.
 
   ⚠️ Still NOT consumed programmatically:
-    - the 3.3 governance section — approval authority and deadlines are applied by
-      the BA, not automatically (5.5 reads the 3.1 timing form, not this section).
     - 7.3 takes its business context from 6.1/6.2, not from this plan.
-  Wiring those two is a planned feature, not current behavior — do not promise
-  them to the BA in tool output.
+  Wiring that is a planned feature, not current behavior — do not promise it to the
+  BA in tool output.
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -1843,13 +1854,17 @@ def save_ba_plan(
         f"ℹ️ What is read automatically, and what is not:\n"
         f"  • Stakeholders from 3.2 are ALREADY seeded into the living registry that "
         f"4.2 maintains and 7.4 reads — 4.2 adds to it as interviews reveal more\n"
-        f"  • Sections 3.1b and 3.4 ARE read: 5.5 takes the approval package's "
-        f"methodology from the planned timing form, 4.1 names the work period that "
-        f"covers elicitation, 4.4 states the planned level of detail in every "
+        f"  • Sections 3.1b, 3.3 and 3.4 ARE read: 5.5 takes the approval package's "
+        f"methodology from the planned timing form and prints the response deadline "
+        f"and the approvers on it, 5.4 cross-checks who resolved a CR and carries the "
+        f"escalation path into the CR Decision Record, 5.3 cross-checks the "
+        f"prioritization technique and its participants, 4.1 names the work period "
+        f"that covers elicitation, 4.4 states the planned level of detail in every "
         f"communication package, and 5.2 ranks reuse candidates by the planned scope "
         f"and audits exactly the planned attribute set\n"
-        f"  • The rest is a reference document — the governance rules from 3.3 are "
-        f"applied by you when approving in 5.5\n"
+        f"  • Those are cross-checks and defaults — the decisions stay yours. None of "
+        f"them overrides a value you pass explicitly\n"
+        f"  • 7.3 still takes its business context from 6.1/6.2, not from this plan\n"
     )
 
 

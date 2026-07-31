@@ -167,6 +167,12 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 
 **Recording decision-makers.** It's explicitly recorded who signs off on requirements and CRs. This feeds directly into Task 5.4 (assess CR): the Decision Record goes to that specific person, not an abstract "sponsor."
 
+**Planning how requirements will be prioritized.** Who takes part, by which technique, against which criteria. Task 5.3 then runs the session and reconciles it against the plan.
+
+**Chapter 5 actually reads this section.** Task 3.3 is not a reference document the BA re-applies from memory. The approval package in Task 5.5 prints the planned approvers and the response deadline; Task 5.5 and Task 5.4 both check whether the person who recorded a decision is one of the planned decision-makers; Task 5.4 carries the escalation path into the CR Decision Record; Task 5.3 checks the session's technique and its participants and reconciles participation in the result report. The project criticality also supplies the default traceability level for Task 3.4.
+
+**Everything read from the plan is a cross-check or a default, never an override.** If Task 5.3 runs with a different technique than the one planned, the session keeps the technique the BA chose and says the plan disagrees. The same holds everywhere: the platform reports the difference, and the BA decides which of the two is out of date. Decisions stay with the analyst.
+
 **Governance decision archive.** Everything recorded in Task 3.3 lives in `ba_plan.json` and is available at any time. To the question "how did we agree to handle changes?" the answer is in a single file.
 
 ### Value for the BA
@@ -174,6 +180,7 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 - **The BA gets "cover" for saying no.** When yet another change request shows up, the BA can say: "Under our process, this is a CR that needs to be submitted in this format and approved by James." That's not a refusal, it's a process. Professional scope protection.
 - **The first CR doesn't turn into a crisis.** If governance isn't documented, the first serious change request causes chaos: nobody knows who decides, how to assess impact, or whether already-completed work needs to be redone. When governance is in place, it's just a routine procedure.
 - **The level of formality matches the context.** A small internal tool doesn't get buried in bureaucracy. A mission-critical system gets the right level of control. The platform helps find that balance instead of forcing a single standard.
+- **The rules don't quietly go stale.** A plan nobody reads drifts away from the project within a month, and nobody notices until an audit. Here, the moment a CR is resolved by someone outside the planned authority or a prioritization session runs with a different technique, the BA sees it — in the delivered document, not in a JSON file.
 
 ### How to use it: an example
 
