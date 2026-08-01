@@ -39,6 +39,7 @@ from skills.change_strategy_mcp import (
     DO_NOTHING_OPTION_ID,
     GAP_ANALYSIS_FILENAME,
     DATA_DIR,
+    _declared_element, _gap_coverage, _gap_file_seen, _gap_coverage_lines,
 )
 
 # ---------------------------------------------------------------------------
@@ -1353,6 +1354,151 @@ class TestImportedRiskZoneDerivedFromScore(BaseMCPTest):
         zones = {r["id"]: r["zone"] for r in strategy["imported_context"]["risks"]}
         self.assertEqual(zones["RK-001"], "high")
         self.assertEqual(zones["RK-002"], "low")
+
+
+class TestGapCoverage(BaseMCPTest):
+
+    def _strategy(self, caps, gaps=("technology", "policies")):
+        return {
+            "imported_context": {"gaps": [
+                {"element": e, "element_label": e, "complexity": "medium",
+                 "change_type": "improve", "gap_summary": "s"} for e in gaps]},
+            "solution_scope": {"capabilities": caps},
+            "scope": {"source_project_ids": []},
+        }
+
+    # --- _declared_element ---
+
+    def test_the_new_form_names_the_element(self):
+        self.assertEqual(_declared_element({"gap_source": "6.2:technology"}), "technology")
+
+    def test_the_prefixed_form_also_names_the_element(self):
+        self.assertEqual(
+            _declared_element({"gap_source": "6.2:gap_analysis:technology"}), "technology")
+
+    def test_the_OLD_bare_form_names_no_element(self):
+        """'6.2:gap_analysis' is a SOURCE, not an element. It must stay UNKNOWN and
+        must not become a phantom element named 'gap_analysis'."""
+        self.assertEqual(_declared_element({"gap_source": "6.2:gap_analysis"}), "")
+
+    def test_manual_and_missing_and_non_string_all_name_no_element(self):
+        for src in ("manual", "", "   ", "6.2:", 7, ["6.2:technology"], None):
+            self.assertEqual(_declared_element({"gap_source": src}), "", repr(src))
+        self.assertEqual(_declared_element({}), "")
+
+    # --- _gap_coverage ---
+
+    def test_a_declared_in_scope_capability_covers_its_element(self):
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology", "in_scope": True}]))
+        self.assertTrue(cov["checked"])
+        self.assertEqual(cov["covered"], ["technology"])
+        self.assertEqual(cov["undeclared"], ["policies"])
+        self.assertEqual(cov["unknown_caps"], 0)
+
+    def test_an_OUT_OF_SCOPE_declaration_is_deliberate_exclusion_not_coverage(self):
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology", "in_scope": False}]))
+        self.assertEqual(cov["covered"], [])
+        self.assertEqual(cov["excluded"], ["technology"])
+        self.assertNotIn("technology", cov["undeclared"])
+
+    def test_an_in_scope_capability_wins_over_an_out_of_scope_sibling(self):
+        cov = _gap_coverage(self._strategy([
+            {"name": "A", "gap_source": "6.2:technology", "in_scope": False},
+            {"name": "B", "gap_source": "6.2:technology", "in_scope": True}]))
+        self.assertEqual(cov["covered"], ["technology"])
+        self.assertEqual(cov["excluded"], [])
+
+    def test_an_element_the_analysis_does_not_contain_is_flagged_not_counted(self):
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:assets", "in_scope": True}]))
+        self.assertEqual(cov["claimed_absent"], ["assets"])
+        self.assertEqual(cov["covered"], [])
+        self.assertNotIn("assets", cov["analysed"])
+
+    def test_a_capability_with_no_declared_element_is_counted_as_uncheckable(self):
+        cov = _gap_coverage(self._strategy([
+            {"name": "A", "gap_source": "manual", "in_scope": True},
+            {"name": "B", "gap_source": "6.2:gap_analysis", "in_scope": True}]))
+        self.assertEqual(cov["unknown_caps"], 2)
+        self.assertEqual(cov["covered"], [])
+
+    def test_with_NO_imported_gaps_the_verdict_is_unchecked_and_carries_no_counts(self):
+        """Silence is right for the accusation and wrong for the count: a platform
+        that cannot tell must say so, not report a number it does not know."""
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}], gaps=()))
+        self.assertFalse(cov["checked"])
+        self.assertEqual(cov["analysed"], [])
+        self.assertEqual(cov["covered"], [])
+        self.assertEqual(cov["undeclared"], [])
+        self.assertEqual(cov["unknown_caps"], 0)
+
+    def test_a_strategy_written_BEFORE_this_feature_has_no_gaps_key_at_all(self):
+        """An ABSENT key is not an empty one. Every real project planned before this
+        branch has `imported_context` WITHOUT `gaps` — a shape the current writer can
+        no longer produce, so it must be built by hand."""
+        legacy = {
+            "imported_context": {"business_needs": [], "business_goals": [], "risks": []},
+            "solution_scope": {"capabilities": [
+                {"name": "A", "gap_source": "6.2:technology", "in_scope": True}]},
+            "scope": {},
+        }
+        cov = _gap_coverage(legacy)
+        self.assertFalse(cov["checked"])
+
+    def test_junk_shapes_degrade_to_unchecked_instead_of_raising(self):
+        for mirror in ("not a list", 7, None, [1, 2, "x"], [{"element": 5}]):
+            cov = _gap_coverage({"imported_context": {"gaps": mirror},
+                                 "solution_scope": {"capabilities": "not a list"},
+                                 "scope": {}})
+            self.assertFalse(cov["checked"], repr(mirror))
+
+    def test_defaulting_in_scope_matches_define_solution_scope(self):
+        """define_solution_scope defaults in_scope to True; coverage must agree, or a
+        capability the BA left implicit would read as deliberately excluded."""
+        cov = _gap_coverage(self._strategy([{"name": "A", "gap_source": "6.2:technology"}]))
+        self.assertEqual(cov["covered"], ["technology"])
+
+    # --- _gap_coverage_lines ---
+
+    def test_the_block_states_the_covered_count_against_the_analysed_total(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}]), PROJECT))
+        self.assertIn("**6.2 gap coverage:**", lines)
+        self.assertIn("Covered: technology (1 of 2 analysed)", lines)
+        self.assertIn("No in-scope capability DECLARES coverage of: policies", lines)
+
+    def test_without_an_analysis_the_block_says_so_and_prints_no_digits(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy([], gaps=()), PROJECT))
+        self.assertIn("no 6.2 gap analysis imported", lines)
+        self.assertIn("coverage was not checked", lines)
+        self.assertNotIn("of 0 analysed", lines)
+        self.assertNotIn("Covered:", lines)
+
+    def test_a_gap_file_on_disk_that_was_never_imported_gets_its_own_message(self):
+        """Otherwise the analyst reads 'cannot tell' over a file sitting in their
+        own project folder, and the advice ('re-run scope_change_strategy') is lost."""
+        _write_gap_file()
+        lines = "\n".join(_gap_coverage_lines(self._strategy([], gaps=()), PROJECT))
+        self.assertIn("exists but was not imported", lines)
+        self.assertIn("scope_change_strategy", lines)
+
+    def test_the_uncheckable_count_is_singular_for_one(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "manual"}]), PROJECT))
+        self.assertIn("Cannot be checked: 1 capability state", lines)
+
+    def test_every_optional_line_is_absent_when_it_has_nothing_to_say(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy([
+            {"name": "A", "gap_source": "6.2:technology"},
+            {"name": "B", "gap_source": "6.2:policies"}]), PROJECT))
+        self.assertIn("Covered: technology, policies", lines)
+        self.assertNotIn("Cannot be checked", lines)
+        self.assertNotIn("Claimed but absent", lines)
+        self.assertNotIn("Deliberately left unaddressed", lines)
+        self.assertNotIn("DECLARES coverage of", lines)
 
 
 if __name__ == "__main__":

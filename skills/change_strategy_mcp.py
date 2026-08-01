@@ -216,6 +216,152 @@ def _readiness_verdict(score: float) -> str:
         return "not_ready"
 
 
+# --- 6.2 gap coverage (ADR-097) -------------------------------------------
+# The join between 6.2 and 6.4 is what the ANALYST declared in `gap_source`, never
+# what the platform inferred. The two chapters use different vocabularies: 6.2's
+# eight ELEMENTS overlap 6.4's seven CATEGORIES on exactly two values, so matching
+# by category would report six of eight elements uncovered on every project — an
+# accusation manufactured by a namespace mismatch.
+GAP_COVERED = "covered"
+GAP_CLAIMED_ABSENT = "claimed_absent"
+GAP_UNKNOWN = "unknown"
+
+_GAP_SOURCE_PREFIX = "6.2:"
+
+
+def _declared_element(cap: dict) -> str:
+    """The 6.2 element a capability declares it covers, or "" when it declares none.
+
+    "" is a THIRD answer, not a negative one: it means the labels cannot be compared,
+    not that the gap is unaddressed. The pre-feature convention was the bare
+    "6.2:gap_analysis" — a source, not an element — and it must stay uncomparable
+    rather than become a phantom element named `gap_analysis`.
+    """
+    if not isinstance(cap, dict):
+        return ""
+    src = cap.get("gap_source", "")
+    if not isinstance(src, str):
+        return ""
+    src = src.strip()
+    if not src.startswith(_GAP_SOURCE_PREFIX):
+        return ""
+    element = src[len(_GAP_SOURCE_PREFIX):].strip()
+    if element.startswith("gap_analysis:"):
+        element = element[len("gap_analysis:"):].strip()
+    if not element or element == "gap_analysis":
+        return ""
+    return element
+
+
+def _gap_coverage(strategy: dict) -> dict:
+    """Reconciles the imported 6.2 gap mirror against the analyst's declarations.
+
+    `checked` False means the platform has nothing to compare against, and every
+    caller must then render "not checked" instead of a count: a number the platform
+    cannot support is worse than an admission that it has none.
+    """
+    empty = {"checked": False, "analysed": [], "covered": [], "undeclared": [],
+             "excluded": [], "claimed_absent": [], "unknown_caps": 0}
+    if not isinstance(strategy, dict):
+        return empty
+    mirror = (strategy.get("imported_context") or {}).get("gaps", [])
+    if not isinstance(mirror, list):
+        mirror = []
+
+    analysed = []
+    for gap in mirror:
+        if not isinstance(gap, dict):
+            continue
+        element = gap.get("element")
+        if isinstance(element, str) and element.strip() and element.strip() not in analysed:
+            analysed.append(element.strip())
+    if not analysed:
+        return empty
+
+    caps = (strategy.get("solution_scope") or {}).get("capabilities", [])
+    if not isinstance(caps, list):
+        caps = []
+
+    covered, excluded, claimed_absent = [], [], []
+    unknown_caps = 0
+    for cap in caps:
+        if not isinstance(cap, dict):
+            continue
+        element = _declared_element(cap)
+        if not element:
+            unknown_caps += 1
+            continue
+        if element not in analysed:
+            if element not in claimed_absent:
+                claimed_absent.append(element)
+            continue
+        # `in_scope` defaults to True exactly as define_solution_scope defaults it.
+        target = covered if cap.get("in_scope", True) else excluded
+        if element not in target:
+            target.append(element)
+
+    # One in-scope capability is enough: an element it covers is covered, whatever an
+    # out-of-scope sibling also says about it.
+    excluded = [e for e in excluded if e not in covered]
+    undeclared = [e for e in analysed if e not in covered and e not in excluded]
+    return {"checked": True, "analysed": analysed, "covered": covered,
+            "undeclared": undeclared, "excluded": excluded,
+            "claimed_absent": claimed_absent, "unknown_caps": unknown_caps}
+
+
+def _gap_file_seen(strategy: dict, project_id: str) -> bool:
+    """Is there a 6.2 gap analysis on disk for this strategy's import sources?
+
+    Separates "there is no gap analysis" from "there is one and it was not imported".
+    The second is one re-run away; telling the analyst the first sends them to build
+    an artefact they already have.
+    """
+    sources = (strategy.get("scope") or {}).get("source_project_ids") or []
+    if not isinstance(sources, list):
+        sources = []
+    for src in list(sources) + [project_id]:
+        if isinstance(src, str) and src and os.path.exists(_gap_file_path(src)):
+            return True
+    return False
+
+
+def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
+    """The coverage block — ONE renderer for the tool reply and the delivered document.
+
+    Two renderers is how the previous feature ended up with a BA Plan and a CR record
+    that stated different governance for the same project. There is one here.
+    """
+    cov = _gap_coverage(strategy)
+    if not cov["checked"]:
+        if _gap_file_seen(strategy, project_id):
+            return ["**6.2 gap coverage:** a 6.2 gap analysis exists but was not "
+                    "imported — re-run `scope_change_strategy` to pull it in."]
+        return ["**6.2 gap coverage:** no 6.2 gap analysis imported "
+                "— coverage was not checked."]
+
+    lines = ["**6.2 gap coverage:**"]
+    if cov["covered"]:
+        lines.append(f"- Covered: {', '.join(cov['covered'])} "
+                     f"({len(cov['covered'])} of {len(cov['analysed'])} analysed)")
+    if cov["undeclared"]:
+        # "DECLARES", not "covers": while any capability is uncheckable the three lists
+        # are not a partition, and an uncheckable capability may well cover this very
+        # element. The sentence states what the platform knows — the declarations.
+        lines.append("- No in-scope capability DECLARES coverage of: "
+                     + ", ".join(cov["undeclared"]))
+    if cov["excluded"]:
+        lines.append("- Deliberately left unaddressed (out of scope): "
+                     + ", ".join(cov["excluded"]))
+    if cov["claimed_absent"]:
+        lines.append("- Claimed but absent from the 6.2 analysis: "
+                     + ", ".join(cov["claimed_absent"]))
+    if cov["unknown_caps"]:
+        noun = "capability" if cov["unknown_caps"] == 1 else "capabilities"
+        lines.append(f"- Cannot be checked: {cov['unknown_caps']} {noun} "
+                     f"state no 6.2 element")
+    return lines
+
+
 # ---------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------
