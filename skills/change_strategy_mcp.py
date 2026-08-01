@@ -222,9 +222,14 @@ def _readiness_verdict(score: float) -> str:
 # eight ELEMENTS overlap 6.4's seven CATEGORIES on exactly two values, so matching
 # by category would report six of eight elements uncovered on every project — an
 # accusation manufactured by a namespace mismatch.
-GAP_COVERED = "covered"
-GAP_CLAIMED_ABSENT = "claimed_absent"
-GAP_UNKNOWN = "unknown"
+
+# 6.2 records a gap card for every future-state element it captured, including the two
+# that describe the CONTEXT of the change rather than a capability the organisation
+# must acquire. `business_needs` is in every one of 6.2's default element sets and
+# `external` is influences nobody builds a capability for. Counting them as uncovered
+# manufactures an accusation out of a vocabulary mismatch — the very thing matching by
+# category was rejected for, one level down.
+GAP_CONTEXT_ELEMENTS = ("business_needs", "external")
 
 _GAP_SOURCE_PREFIX = "6.2:"
 
@@ -261,26 +266,42 @@ def _gap_coverage(strategy: dict) -> dict:
     cannot support is worse than an admission that it has none.
     """
     empty = {"checked": False, "analysed": [], "covered": [], "undeclared": [],
-             "excluded": [], "excluded_by": {}, "claimed_absent": [], "unknown_caps": 0}
+             "excluded": [], "excluded_by": {}, "claimed_absent": [],
+             "context_elements": [], "unknown_caps": 0}
     if not isinstance(strategy, dict):
         return empty
     mirror = (strategy.get("imported_context") or {}).get("gaps", [])
     if not isinstance(mirror, list):
         mirror = []
 
-    analysed = []
+    # Keyed by casefold, valued by the first spelling seen: comparison ignores case,
+    # printing keeps whatever 6.2 actually wrote.
+    analysed_all: dict = {}
     for gap in mirror:
         if not isinstance(gap, dict):
             continue
         element = gap.get("element")
-        if isinstance(element, str) and element.strip() and element.strip() not in analysed:
-            analysed.append(element.strip())
-    if not analysed:
+        if isinstance(element, str) and element.strip():
+            analysed_all.setdefault(element.strip().casefold(), element.strip())
+    if not analysed_all:
         return empty
 
     caps = (strategy.get("solution_scope") or {}).get("capabilities", [])
     if not isinstance(caps, list):
         caps = []
+
+    # A capability that names a context element in `gap_source` is the analyst stating
+    # that on THIS project the element is closed by a capability after all. That is a
+    # judgement the platform has no standing to overrule, so an explicit declaration
+    # pulls the element back into the count — in scope or out of it, the declaration is
+    # what matters here.
+    declared_keys = {e.casefold() for e in (_declared_element(c) for c in caps
+                                            if isinstance(c, dict)) if e}
+    context_keys = [k for k in analysed_all
+                    if k in GAP_CONTEXT_ELEMENTS and k not in declared_keys]
+    context_elements = [analysed_all[k] for k in context_keys]
+    analysed_keys = {k: v for k, v in analysed_all.items() if k not in context_keys}
+    analysed = list(analysed_keys.values())
 
     covered, excluded, claimed_absent = [], [], []
     # Which capability carries each deliberate exclusion. The document renders IN-SCOPE
@@ -293,23 +314,26 @@ def _gap_coverage(strategy: dict) -> dict:
         if not isinstance(cap, dict):
             continue
         element = _declared_element(cap)
+        # `in_scope` defaults to True exactly as define_solution_scope defaults it.
+        in_scope = bool(cap.get("in_scope", True))
         if not element:
             unknown_caps += 1
             continue
-        if element not in analysed:
-            if element not in claimed_absent:
+        key = element.casefold()
+        if key not in analysed_keys:
+            if key not in {c.casefold() for c in claimed_absent}:
                 claimed_absent.append(element)
             continue
-        # `in_scope` defaults to True exactly as define_solution_scope defaults it.
-        if cap.get("in_scope", True):
-            if element not in covered:
-                covered.append(element)
+        canonical = analysed_keys[key]
+        if in_scope:
+            if canonical not in covered:
+                covered.append(canonical)
             continue
-        if element not in excluded:
-            excluded.append(element)
+        if canonical not in excluded:
+            excluded.append(canonical)
         name = cap.get("name")
         if isinstance(name, str) and name.strip():
-            excluded_by.setdefault(element, []).append(name.strip())
+            excluded_by.setdefault(canonical, []).append(name.strip())
 
     # One in-scope capability is enough: an element it covers is covered, whatever an
     # out-of-scope sibling also says about it.
@@ -318,8 +342,8 @@ def _gap_coverage(strategy: dict) -> dict:
     undeclared = [e for e in analysed if e not in covered and e not in excluded]
     return {"checked": True, "analysed": analysed, "covered": covered,
             "undeclared": undeclared, "excluded": excluded,
-            "excluded_by": excluded_by,
-            "claimed_absent": claimed_absent, "unknown_caps": unknown_caps}
+            "excluded_by": excluded_by, "claimed_absent": claimed_absent,
+            "context_elements": context_elements, "unknown_caps": unknown_caps}
 
 
 def _gap_file_seen(strategy: dict, project_id: str) -> bool:
@@ -360,7 +384,11 @@ def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
 
     lines = ["**6.2 gap coverage:**"]
     if cov["covered"]:
-        lines.append(f"- Covered: {_els(cov['covered'])} "
+        # "Declared covered", not "Covered": this line and the "DECLARES coverage of"
+        # line below are read off the SAME analyst declaration. Stating the positive as
+        # platform fact while hedging the negative would let a sponsor read the first as
+        # verified delivery and the second as a mere bookkeeping gap.
+        lines.append(f"- Declared covered: {_els(cov['covered'])} "
                      f"({len(cov['covered'])} of {len(cov['analysed'])} analysed)")
     if cov["undeclared"]:
         # "DECLARES", not "covers": while any capability is uncheckable the three lists
@@ -368,6 +396,12 @@ def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
         # element. The sentence states what the platform knows — the declarations.
         lines.append("- No in-scope capability DECLARES coverage of: "
                      + _els(cov["undeclared"]))
+    if cov["context_elements"]:
+        # Named, never hidden: 6.2 analysed them and the sponsor should see that the
+        # platform knows it. They are simply not something a capability closes, so
+        # they carry no accusation and sit outside the count above.
+        lines.append("- Context elements, not closed by capabilities: "
+                     + _els(cov["context_elements"]))
     if cov["excluded"]:
         parts = []
         for element in cov["excluded"]:

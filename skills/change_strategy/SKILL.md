@@ -116,7 +116,7 @@ Automatically adds OPT-000 (do_nothing) to the list of options.
   "category": "technology",
   "description": "Replacement of the current customer management system",
   "gap_severity": "high",
-  "gap_source": "6.2:gap_analysis",
+  "gap_source": "6.2:technology",
   "in_scope": true
 }
 ```
@@ -126,7 +126,9 @@ Automatically adds OPT-000 (do_nothing) to the list of options.
 **Questions to ask the BA:**
 > 1. What exactly should the organization be able to do after the project that it can't do now?
 > 2. What exactly is NOT in scope? (important to capture to prevent scope creep)
-> 3. Can we reference the gap_analysis from 6.2? (then gap_source = "6.2:gap_analysis")
+> 3. Which 6.2 element does this capability close? (then gap_source = "6.2:<element>",
+>    e.g. "6.2:technology" — the eight valid elements are listed in
+>    `references/change_strategy_guide.md` §4). If none, `"manual"`.
 
 ---
 
@@ -275,7 +277,7 @@ or add a preparatory phase 0 (organizational readiness).
 | Task | Relationship |
 |--------|-------|
 | ← 6.1 | Business needs BN-xxx → context for capabilities |
-| ← 6.2 | BG-xxx auto-imported; gap_analysis carried by the analyst into capabilities |
+| ← 6.2 | BG-xxx and the gap_analysis both auto-imported (the gaps as context); the analyst names the element each capability closes in `gap_source` |
 | ← 6.3 | RK-xxx → linked_risks in the options + risks_remaining in the phases |
 | → 7.1 | solution_scope.capabilities → what to specify |
 | → 7.4 | transition_states → requirements architecture by phase |

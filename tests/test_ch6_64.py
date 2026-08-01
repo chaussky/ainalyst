@@ -1467,7 +1467,7 @@ class TestGapCoverage(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}]), PROJECT))
         self.assertIn("**6.2 gap coverage:**", lines)
-        self.assertIn("Covered: `technology` (1 of 2 analysed)", lines)
+        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", lines)
         self.assertIn("No in-scope capability DECLARES coverage of: `policies`", lines)
 
     def test_without_an_analysis_the_block_says_so_and_prints_no_digits(self):
@@ -1475,7 +1475,7 @@ class TestGapCoverage(BaseMCPTest):
         self.assertIn("no 6.2 gap analysis imported", lines)
         self.assertIn("coverage was not checked", lines)
         self.assertNotIn("of 0 analysed", lines)
-        self.assertNotIn("Covered:", lines)
+        self.assertNotIn("covered:", lines)
 
     def test_a_gap_file_on_disk_that_was_never_imported_gets_its_own_message(self):
         """Otherwise the analyst reads 'cannot tell' over a file sitting in their
@@ -1494,7 +1494,7 @@ class TestGapCoverage(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy([
             {"name": "A", "gap_source": "6.2:technology"},
             {"name": "B", "gap_source": "6.2:policies"}]), PROJECT))
-        self.assertIn("Covered: `technology`, `policies`", lines)
+        self.assertIn("Declared covered: `technology`, `policies`", lines)
         self.assertNotIn("Cannot be checked", lines)
         self.assertNotIn("Claimed but absent", lines)
         self.assertNotIn("Deliberately left unaddressed", lines)
@@ -1555,7 +1555,7 @@ class TestLiveRunFindings(BaseMCPTest):
         out = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}],
             gaps=("technology", "capabilities")), PROJECT))
-        self.assertIn("Covered: `technology`", out)
+        self.assertIn("Declared covered: `technology`", out)
         self.assertIn("DECLARES coverage of: `capabilities`", out)
         self.assertNotIn("coverage of: capabilities", out)
 
@@ -1573,7 +1573,7 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
         self.assertIn("**6.2 gap coverage:**", out)
-        self.assertIn("Covered: `technology` (1 of 2 analysed)", out)
+        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", out)
         self.assertIn("No in-scope capability DECLARES coverage of: `policies`", out)
 
     def test_the_reply_says_it_could_not_check_rather_than_reporting_zero(self):
@@ -1604,7 +1604,7 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
         out = define_solution_scope(PROJECT, self._caps(("B", "6.2:policies")))
-        self.assertIn("Covered: `policies` (1 of 2 analysed)", out)
+        self.assertIn("Declared covered: `policies` (1 of 2 analysed)", out)
         self.assertIn("DECLARES coverage of: `technology`", out)
 
 
@@ -1651,7 +1651,7 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
         self.assertIn("**6.2 gap coverage:**", doc)
-        self.assertIn("Covered: `technology` (1 of 2 analysed)", doc)
+        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", doc)
         self.assertIn("DECLARES coverage of: `policies`", doc)
 
     def test_the_block_sits_inside_Solution_Scope_not_after_the_document(self):
@@ -1739,6 +1739,76 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
         self.assertIn("- Portal 🔴 gap:high | Portal intake", doc)
+
+
+class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
+    """`business_needs` sits in every one of 6.2's six default element sets and
+    `external` is influences nobody builds a capability for. Counting them as
+    uncovered printed an accusation on every normal project, and the only way to
+    silence it was a false declaration."""
+
+    def _strategy(self, caps, gaps):
+        return {
+            "imported_context": {"gaps": [
+                {"element": e, "element_label": e, "complexity": "medium",
+                 "change_type": "improve", "gap_summary": "s"} for e in gaps]},
+            "solution_scope": {"capabilities": caps},
+            "scope": {"source_project_ids": []},
+        }
+
+    def test_context_elements_leave_the_denominator_and_the_accusation(self):
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}],
+            gaps=("business_needs", "technology", "policies", "external")))
+        self.assertEqual(cov["analysed"], ["technology", "policies"])
+        self.assertEqual(cov["undeclared"], ["policies"])
+        self.assertEqual(cov["context_elements"], ["business_needs", "external"])
+
+    def test_the_block_names_them_on_their_own_line_and_counts_two_not_four(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}],
+            gaps=("business_needs", "technology", "policies", "external")), PROJECT))
+        self.assertIn("- Context elements, not closed by capabilities: "
+                      "`business_needs`, `external`", lines)
+        self.assertIn("(1 of 2 analysed)", lines)
+        self.assertNotIn("coverage of: `business_needs`", lines)
+        self.assertNotIn("`external`,", lines.split("Context elements")[0])
+
+    def test_the_context_line_is_absent_when_the_analysis_carries_none(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}],
+            gaps=("technology", "policies")), PROJECT))
+        self.assertNotIn("Context elements", lines)
+
+    def test_an_EXPLICIT_declaration_pulls_a_context_element_back_into_the_count(self):
+        """The analyst knows the project better than the platform's default list."""
+        cov = _gap_coverage(self._strategy(
+            [{"name": "A", "gap_source": "6.2:business_needs"}],
+            gaps=("business_needs", "technology")))
+        self.assertEqual(cov["covered"], ["business_needs"])
+        self.assertEqual(cov["analysed"], ["business_needs", "technology"])
+        self.assertEqual(cov["context_elements"], [])
+        self.assertEqual(cov["undeclared"], ["technology"])
+
+    def test_a_declared_context_element_is_never_ALSO_listed_as_context(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "6.2:external"}],
+            gaps=("external", "technology")), PROJECT))
+        self.assertIn("Declared covered: `external` (1 of 2 analysed)", lines)
+        self.assertNotIn("Context elements", lines)
+
+    def test_architecture_and_assets_are_capabilities_and_stay_in_the_denominator(self):
+        cov = _gap_coverage(self._strategy([], gaps=("architecture", "assets")))
+        self.assertEqual(cov["analysed"], ["architecture", "assets"])
+        self.assertEqual(cov["undeclared"], ["architecture", "assets"])
+        self.assertEqual(cov["context_elements"], [])
+
+    def test_an_analysis_of_ONLY_context_elements_reports_no_uncovered_anything(self):
+        lines = "\n".join(_gap_coverage_lines(
+            self._strategy([], gaps=("business_needs", "external")), PROJECT))
+        self.assertIn("Context elements, not closed by capabilities", lines)
+        self.assertNotIn("DECLARES coverage of", lines)
+        self.assertNotIn("analysed)", lines)
 
 
 if __name__ == "__main__":
