@@ -29,7 +29,10 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
   the element there as `gap_source = "6.2:technology"` (the 6.2 element this capability
   covers), and the platform reports which analysed gaps no capability addresses.
   A bare `"6.2:gap_analysis"` or `"manual"` names no element: coverage is then reported
-  as uncheckable rather than as uncovered.
+  as uncheckable rather than as uncovered. Two elements, `business_needs` and `external`,
+  are context rather than capability targets and are reported separately, excluded from
+  the coverage count by default — unless a capability's `gap_source` names one of them
+  explicitly, which pulls it back in.
 - From 6.3: we know the risks (RK-xxx) and the recommendation
 
 The task: build a **substantiated transition strategy** — what we're doing, how, and in what order.

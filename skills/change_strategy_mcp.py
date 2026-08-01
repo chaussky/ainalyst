@@ -589,12 +589,22 @@ def scope_change_strategy(
         # `complexity` measures change EFFORT where `gap_severity` measures gap SIZE.
         # A platform that mapped one onto the other would be classifying, not importing.
         gap_data = _safe_load_json(_gap_file_path(src_id))
-        # `is None` is the only "no file" signal. `if gap_data:` also swallowed a file
-        # that parsed to an empty object, and a file whose `gaps` list held nothing
-        # usable produced no warning at all — silence the analyst reads as a clean
-        # import, right before the coverage block says the import never happened.
-        if gap_data is not None:
-            gaps_before = len(imported_gaps)
+        # `is None` is the only "no file" signal — but "no file" and "usable" are not
+        # the only two shapes a file can hand back. Any valid JSON round-trips through
+        # read_json_artifact (a bare `[]`, `0`, `""` or `false` is not corrupt, so
+        # guard_artifact_errors never sees it), so `if gap_data is not None:` let a
+        # non-dict top level reach `gap_data.get("gaps", ...)` and raise AttributeError
+        # — an unhandled crash on step 1 of the pipeline where the previous `if
+        # gap_data:` had at least degraded into the "not found" branch. Guard by TYPE:
+        # a dict is the only shape this importer can read `gaps` out of. Everything
+        # else that is not None — including `[]` and `0` — reaches the shared
+        # "holds no usable elements" warning below, exactly like a dict whose `gaps`
+        # was empty or absent: from the analyst's side both are the same fact, a file
+        # that exists but gave nothing to import.
+        gaps_before = len(imported_gaps)
+        if gap_data is None:
+            warnings.append(f"⚠️ 6.2 gap_analysis not found for '{src_id}'")
+        elif isinstance(gap_data, dict):
             for gp in gap_data.get("gaps", []) if isinstance(gap_data.get("gaps"), list) else []:
                 if not isinstance(gp, dict):
                     continue
@@ -610,12 +620,11 @@ def scope_change_strategy(
                     "gap_summary": summary[:120] if isinstance(summary, str) else "",
                     "source_project": src_id,
                 })
-            if len(imported_gaps) == gaps_before:
-                warnings.append(
-                    f"⚠️ 6.2 gap_analysis for '{src_id}' was read but holds no usable "
-                    f"elements — nothing imported from it")
-        else:
-            warnings.append(f"⚠️ 6.2 gap_analysis not found for '{src_id}'")
+
+        if gap_data is not None and len(imported_gaps) == gaps_before:
+            warnings.append(
+                f"⚠️ 6.2 gap_analysis for '{src_id}' was read but holds no usable "
+                f"elements — nothing imported from it")
 
     strategy["imported_context"] = {
         "business_needs": imported_bn,
@@ -682,6 +691,19 @@ def scope_change_strategy(
                 unique_elements.setdefault(g["element"].casefold(), g["element"])
             lines.append(f"  🔍 Gap analysis (6.2): {len(unique_elements)} elements — "
                          + ", ".join(unique_elements.values()) + "\n")
+            # Reconciles this count with the "(N of M analysed)" the coverage block
+            # prints on the NEXT call (define_solution_scope): business_needs/external
+            # are CONTEXT elements, excluded from that denominator by default (see
+            # GAP_CONTEXT_ELEMENTS below), so "4 elements" here and "(1 of 2 analysed)"
+            # there were two true numbers about the same import with no stated link
+            # between them. Printed only when a context element is actually present.
+            context_elements = _gap_coverage(strategy).get("context_elements", [])
+            if context_elements:
+                lines.append(
+                    f"     — of which {len(context_elements)} "
+                    + ("is" if len(context_elements) == 1 else "are")
+                    + " context (not a capability target, excluded from coverage): "
+                    + ", ".join(context_elements) + "\n")
 
     if warnings:
         lines.append("\n**Warnings (graceful degradation):**\n")

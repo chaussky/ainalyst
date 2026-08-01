@@ -116,9 +116,19 @@ the only link between the two chapters — the platform never infers it from the
 
 With the element named, `define_solution_scope` and the final Change Strategy document
 both report: which analysed gaps are covered, which no in-scope capability declares,
-which are deliberately left out of scope, and how many capabilities could not be checked.
+which are deliberately left out of scope, how many capabilities could not be checked,
+and which analysed elements are context rather than a capability target.
 Where no gap analysis was imported, the platform says it did not check — it never
 reports a count it cannot support.
+
+Two of the eight valid elements, `business_needs` and `external`, are excluded from
+that count and from the "no in-scope capability declares" line by default — they are
+reported on a separate "Context elements" line instead. `business_needs` sits in every
+one of 6.2's default element sets, and `external` describes outside influences; neither
+is something a capability closes, so charging them against the denominator would
+manufacture an accusation out of a vocabulary mismatch, not a real gap. A capability
+whose `gap_source` explicitly names one of them overrides the default and pulls the
+element back into the count — the analyst's declaration always outranks the platform's.
 
 ---
 

@@ -340,6 +340,16 @@ def _write_gap_file(project_id: str = PROJECT, gaps=None):
     return path
 
 
+def _write_gap_file_raw(project_id: str, content):
+    """Writes ANY JSON value as the gap analysis file's top level — including
+    non-dict shapes (`[]`, `0`, ...) that `_write_gap_file` cannot produce, since
+    it always wraps `gaps` inside a dict."""
+    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_ANALYSIS_FILENAME}")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(content, f)
+    return path
+
+
 class TestGapAnalysisImport(BaseMCPTest):
 
     def test_gaps_are_imported_into_the_mirror(self):
@@ -414,6 +424,70 @@ class TestGapAnalysisImport(BaseMCPTest):
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
         self.assertIn("❌", result)
         self.assertIn("gap_analysis", result)
+
+    def test_a_top_level_list_is_degraded_not_crashed(self):
+        """Regression: `if gap_data is not None:` reached `gap_data.get("gaps", ...)`
+        on a bare `[]`, and `list` has no `.get` — an unhandled AttributeError on
+        step 1 of the pipeline instead of a warning. A dict is the only shape this
+        importer can read `gaps` out of; everything else non-None must degrade."""
+        _write_gap_file_raw(PROJECT, [])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("✅", result)
+        self.assertEqual(_load_strategy()["imported_context"]["gaps"], [])
+
+    def test_a_top_level_int_is_degraded_not_crashed(self):
+        """Same regression, `int` this time — `0` has no `.get` either."""
+        _write_gap_file_raw(PROJECT, 0)
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("✅", result)
+        self.assertEqual(_load_strategy()["imported_context"]["gaps"], [])
+
+    def test_an_unusable_top_level_shape_is_not_reported_as_not_found(self):
+        """A file that exists but is the wrong shape must stay distinguishable from
+        a missing file — 'not found' sends the analyst hunting for a file they
+        already have, instead of fixing the one that's actually broken."""
+        _write_gap_file_raw(PROJECT, [])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertNotIn("6.2 gap_analysis not found", result)
+        self.assertIn(
+            f"6.2 gap_analysis for '{PROJECT}' was read but holds no usable "
+            f"elements", result)
+
+    def test_context_elements_are_named_and_counted_in_the_reply(self):
+        """Regression: the reply printed '4 elements' while the coverage block one
+        call later said '(1 of 2 analysed)', with nothing on the page explaining why
+        4 and 2 were both true. The reply must name how many of its own count are
+        context elements, so the two numbers reconcile without outside knowledge."""
+        _write_gap_file(gaps=[
+            {"element": "business_needs", "gap_summary": "s", "complexity": "low"},
+            {"element": "technology", "gap_summary": "s", "complexity": "high"},
+            {"element": "policies", "gap_summary": "s", "complexity": "medium"},
+            {"element": "external", "gap_summary": "s", "complexity": "low"},
+        ])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("4 elements", result)
+        self.assertIn("of which 2 are context", result)
+        self.assertIn("business_needs, external", result)
+
+        # The reconciliation itself: total unique elements minus context elements
+        # is exactly what the coverage block calls "analysed" on the next call.
+        cov = _gap_coverage(_load_strategy())
+        self.assertEqual(len(cov["context_elements"]), 2)
+        self.assertEqual(len(cov["analysed"]), 4 - len(cov["context_elements"]))
+
+    def test_no_context_line_when_no_context_elements_are_present(self):
+        _write_gap_file()  # technology, policies only — no business_needs/external
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("Gap analysis (6.2)", result)
+        self.assertNotIn("of which", result)
+
+    def test_singular_wording_for_a_single_context_element(self):
+        _write_gap_file(gaps=[
+            {"element": "external", "gap_summary": "s", "complexity": "low"},
+            {"element": "technology", "gap_summary": "s", "complexity": "high"},
+        ])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("of which 1 is context", result)
 
 
 # ---------------------------------------------------------------------------
