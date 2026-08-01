@@ -1549,5 +1549,138 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         self.assertIn("DECLARES coverage of: technology", out)
 
 
+class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
+
+    def _doc(self, project_id=PROJECT):
+        """The DELIVERED document — save_change_strategy RETURNS a summary, and the
+        markdown goes to save_artifact. Asserting on the return value would pass or
+        fail for reasons unrelated to the document."""
+        with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            save_change_strategy(project_id=project_id)
+            return mock_sa.call_args[0][0]
+
+    def _pipeline_with_gaps(self, caps):
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        define_solution_scope(PROJECT, json.dumps(caps))
+        _make_readiness()
+        _add_option()
+        compare_strategy_options(
+            project_id=PROJECT,
+            scores_json=json.dumps({"OPT-001": {
+                "alignment_to_goals": 4, "risk_mitigation": 4, "cost": 3,
+                "time_to_value": 3, "org_readiness_fit": 3, "feasibility": 4}}),
+            opportunity_cost="none")
+        # save_change_strategy refuses to run (and never calls save_artifact) without
+        # at least one transition state — a precondition unrelated to gap coverage,
+        # but required for _doc() to reach the markdown at all.
+        define_transition_states(
+            project_id=PROJECT,
+            phase_number=1,
+            phase_name="Phase 1",
+            duration_months=6,
+            capabilities_delivered='["Delivered capability"]',
+            gaps_closed='[]',
+            risks_remaining='[]',
+            value_realizable="Value delivered",
+        )
+
+    def test_the_document_carries_the_coverage_block(self):
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
+        doc = self._doc()
+        self.assertIn("**6.2 gap coverage:**", doc)
+        self.assertIn("Covered: technology (1 of 2 analysed)", doc)
+        self.assertIn("DECLARES coverage of: policies", doc)
+
+    def test_the_block_sits_inside_Solution_Scope_not_after_the_document(self):
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
+        doc = self._doc()
+        self.assertLess(doc.index("## Solution Scope"), doc.index("**6.2 gap coverage:**"))
+        self.assertLess(doc.index("**6.2 gap coverage:**"), doc.index("## Enterprise Readiness"))
+
+    def test_a_capability_line_names_its_6_2_origin_and_labels_the_other_scale(self):
+        """gap_severity and complexity DELIBERATELY differ here. _write_gap_file gives
+        `technology` complexity "high"; a capability whose gap_severity were also "high"
+        would read the same whichever field the sub-line printed, and the assertion
+        would prove nothing about which scale is being rendered."""
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "low", "gap_source": "6.2:technology", "in_scope": True}])
+        doc = self._doc()
+        self.assertIn("↳ from 6.2 gap `technology` — change effort there: high", doc)
+        self.assertIn("(effort, not gap size)", doc)
+        self.assertIn("gap:low", doc)
+
+    def test_a_capability_with_no_declared_element_says_so_on_its_own_line(self):
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "manual", "in_scope": True}])
+        doc = self._doc()
+        self.assertIn("no 6.2 element stated in gap_source", doc)
+
+    def test_with_no_analysis_the_document_prints_the_block_ONCE_and_no_sub_lines(self):
+        """Every capability is formally uncheckable with no analysis. Saying it under
+        each one buries the document in a fact the block states in one line."""
+        _make_scope()
+        define_solution_scope(PROJECT, json.dumps([
+            {"name": "A", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "manual", "in_scope": True},
+            {"name": "B", "category": "people", "description": "d",
+             "gap_severity": "low", "gap_source": "manual", "in_scope": True}]))
+        _make_readiness()
+        _add_option()
+        compare_strategy_options(
+            project_id=PROJECT,
+            scores_json=json.dumps({"OPT-001": {
+                "alignment_to_goals": 4, "risk_mitigation": 4, "cost": 3,
+                "time_to_value": 3, "org_readiness_fit": 3, "feasibility": 4}}),
+            opportunity_cost="none")
+        define_transition_states(
+            project_id=PROJECT,
+            phase_number=1,
+            phase_name="Phase 1",
+            duration_months=6,
+            capabilities_delivered='["Delivered capability"]',
+            gaps_closed='[]',
+            risks_remaining='[]',
+            value_realizable="Value delivered",
+        )
+        doc = self._doc()
+        self.assertIn("coverage was not checked", doc)
+        self.assertNotIn("↳", doc)
+
+    def test_a_capability_missing_gap_severity_no_longer_crashes_the_save(self):
+        """A 7.5 surrogate file or a hand edit produces capabilities without the key.
+        The renderer indexed it directly and raised KeyError INSIDE the final save —
+        the one step whose failure loses the delivered document."""
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
+        path = _strategy_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        del data["solution_scope"]["capabilities"][0]["gap_severity"]
+        del data["solution_scope"]["capabilities"][0]["category"]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        doc = self._doc()
+        self.assertIn("Portal", doc)
+        self.assertIn("gap:not stated", doc)
+
+    def test_the_existing_capability_line_format_is_unchanged_for_valid_data(self):
+        """A positive companion for the KeyError fix: .get must not alter the string
+        every existing consumer and test reads."""
+        self._pipeline_with_gaps([
+            {"name": "Portal", "category": "technology", "description": "Portal intake",
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
+        doc = self._doc()
+        self.assertIn("- Portal 🔴 gap:high | Portal intake", doc)
+
+
 if __name__ == "__main__":
     unittest.main()

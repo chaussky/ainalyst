@@ -1407,15 +1407,48 @@ def save_change_strategy(
 
     cats = {}
     for cap in in_scope_caps:
-        cats.setdefault(cap["category"], []).append(cap)
+        cats.setdefault(cap.get("category", "uncategorised"), []).append(cap)
+
+    gap_by_element = {}
+    for gap in (strategy.get("imported_context") or {}).get("gaps", []) or []:
+        if isinstance(gap, dict) and isinstance(gap.get("element"), str):
+            gap_by_element.setdefault(gap["element"].strip(), gap)
+    coverage_checked = _gap_coverage(strategy)["checked"]
+
     for cat, caps_list in sorted(cats.items()):
         md_lines.append(f"### {cat}")
         for cap in caps_list:
-            gap_icon = {"high": "🔴", "medium": "🟡", "low": "🟢", "none": "⚪"}.get(cap["gap_severity"], "")
+            # .get, not [...]: a 7.5 surrogate file or a hand edit reaches this line
+            # without the key, and a KeyError here loses the delivered document at the
+            # last step of the chapter.
+            severity = cap.get("gap_severity") or "not stated"
+            gap_icon = {"high": "🔴", "medium": "🟡", "low": "🟢", "none": "⚪"}.get(severity, "")
             md_lines.append(
-                f"- {cap['name']} {gap_icon} gap:{cap['gap_severity']} | {cap.get('description', '')}"
+                f"- {cap.get('name', '')} {gap_icon} gap:{severity} "
+                f"| {cap.get('description', '')}"
             )
+            # The provenance sub-line exists only where there is provenance to state.
+            # With nothing imported EVERY capability is formally uncheckable, and the
+            # coverage block already says that once.
+            if not coverage_checked:
+                continue
+            element = _declared_element(cap)
+            if not element:
+                md_lines.append("  ↳ no 6.2 element stated in gap_source "
+                                "— coverage cannot be checked for this one")
+            elif element in gap_by_element:
+                effort = gap_by_element[element].get("complexity") or "not stated"
+                # The scale label rides on EVERY line, not in a header: `gap:` and
+                # `effort:` share the low/medium/high letters and mean different
+                # things — size of the gap versus effort of the change.
+                md_lines.append(f"  ↳ from 6.2 gap `{element}` — change effort there: "
+                                f"{effort} (effort, not gap size)")
+            else:
+                md_lines.append(f"  ↳ declares 6.2 element `{element}`, which the "
+                                f"imported gap analysis does not contain")
         md_lines.append("")
+
+    md_lines.extend(_gap_coverage_lines(strategy, project_id) + [""])
 
     if excluded:
         md_lines.extend(["**Explicitly out of scope:**", ""])
