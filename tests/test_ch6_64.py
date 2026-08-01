@@ -1467,8 +1467,8 @@ class TestGapCoverage(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}]), PROJECT))
         self.assertIn("**6.2 gap coverage:**", lines)
-        self.assertIn("Covered: technology (1 of 2 analysed)", lines)
-        self.assertIn("No in-scope capability DECLARES coverage of: policies", lines)
+        self.assertIn("Covered: `technology` (1 of 2 analysed)", lines)
+        self.assertIn("No in-scope capability DECLARES coverage of: `policies`", lines)
 
     def test_without_an_analysis_the_block_says_so_and_prints_no_digits(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy([], gaps=()), PROJECT))
@@ -1488,17 +1488,76 @@ class TestGapCoverage(BaseMCPTest):
     def test_the_uncheckable_count_is_singular_for_one(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "manual"}]), PROJECT))
-        self.assertIn("Cannot be checked: 1 capability state", lines)
+        self.assertIn("Cannot be checked: 1 capability (no 6.2 element", lines)
 
     def test_every_optional_line_is_absent_when_it_has_nothing_to_say(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy([
             {"name": "A", "gap_source": "6.2:technology"},
             {"name": "B", "gap_source": "6.2:policies"}]), PROJECT))
-        self.assertIn("Covered: technology, policies", lines)
+        self.assertIn("Covered: `technology`, `policies`", lines)
         self.assertNotIn("Cannot be checked", lines)
         self.assertNotIn("Claimed but absent", lines)
         self.assertNotIn("Deliberately left unaddressed", lines)
         self.assertNotIn("DECLARES coverage of", lines)
+
+
+class TestLiveRunFindings(BaseMCPTest):
+    """Three defects found by READING the delivered document of a live run, not by
+    grepping it. Each is invisible to a substring check: one is grammar, one is
+    evidence missing from the page, one is a word colliding with a heading twenty
+    lines above it."""
+
+    def _strategy(self, caps, gaps=("technology", "policies")):
+        return {
+            "imported_context": {"gaps": [
+                {"element": e, "element_label": e, "complexity": "medium",
+                 "change_type": "improve", "gap_summary": "s"} for e in gaps]},
+            "solution_scope": {"capabilities": caps},
+            "scope": {"source_project_ids": []},
+        }
+
+    def test_the_uncheckable_line_is_grammatical_for_one_and_for_many(self):
+        """The live document read "1 capability state no 6.2 element" — the noun was
+        singularised and the verb was not."""
+        one = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "manual"}]), PROJECT))
+        many = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "manual"},
+             {"name": "B", "gap_source": "manual"}]), PROJECT))
+        self.assertIn("Cannot be checked: 1 capability (", one)
+        self.assertNotIn("capability state", one)
+        self.assertIn("Cannot be checked: 2 capabilities (", many)
+
+    def test_a_deliberate_exclusion_names_the_capability_that_carries_it(self):
+        """The live document asserted "Deliberately left unaddressed (out of scope):
+        org_structure" while the capability holding that decision appeared NOWHERE in
+        the document — the capability list renders in-scope entries only, and the
+        "Explicitly out of scope" list holds different data. A sponsor read a claim
+        with no evidence anywhere on the page."""
+        out = "\n".join(_gap_coverage_lines(self._strategy([
+            {"name": "Second clinic site", "gap_source": "6.2:policies",
+             "in_scope": False}]), PROJECT))
+        self.assertIn("Deliberately left unaddressed (out of scope):", out)
+        self.assertIn("Second clinic site", out)
+
+    def test_two_capabilities_excluding_one_element_are_both_named(self):
+        out = "\n".join(_gap_coverage_lines(self._strategy([
+            {"name": "Site B", "gap_source": "6.2:policies", "in_scope": False},
+            {"name": "Site C", "gap_source": "6.2:policies", "in_scope": False}]),
+            PROJECT))
+        self.assertIn("Site B", out)
+        self.assertIn("Site C", out)
+
+    def test_element_names_are_quoted_so_they_cannot_read_as_prose(self):
+        """The document renders "**Capabilities (4):**" as a heading, and the 6.2
+        element `capabilities` appeared bare twenty lines below it. The capability
+        sub-lines already quote element names; the block did not."""
+        out = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "A", "gap_source": "6.2:technology"}],
+            gaps=("technology", "capabilities")), PROJECT))
+        self.assertIn("Covered: `technology`", out)
+        self.assertIn("DECLARES coverage of: `capabilities`", out)
+        self.assertNotIn("coverage of: capabilities", out)
 
 
 class TestSolutionScopeReportsCoverage(BaseMCPTest):
@@ -1514,8 +1573,8 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
         self.assertIn("**6.2 gap coverage:**", out)
-        self.assertIn("Covered: technology (1 of 2 analysed)", out)
-        self.assertIn("No in-scope capability DECLARES coverage of: policies", out)
+        self.assertIn("Covered: `technology` (1 of 2 analysed)", out)
+        self.assertIn("No in-scope capability DECLARES coverage of: `policies`", out)
 
     def test_the_reply_says_it_could_not_check_rather_than_reporting_zero(self):
         _make_scope()
@@ -1527,7 +1586,7 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _write_gap_file()
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:assets")))
-        self.assertIn("Claimed but absent from the 6.2 analysis: assets", out)
+        self.assertIn("Claimed but absent from the 6.2 analysis: `assets`", out)
 
     def test_the_existing_severity_distribution_still_renders(self):
         """A positive companion: the block must be ADDED, not swapped in for the
@@ -1545,8 +1604,8 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
         out = define_solution_scope(PROJECT, self._caps(("B", "6.2:policies")))
-        self.assertIn("Covered: policies (1 of 2 analysed)", out)
-        self.assertIn("DECLARES coverage of: technology", out)
+        self.assertIn("Covered: `policies` (1 of 2 analysed)", out)
+        self.assertIn("DECLARES coverage of: `technology`", out)
 
 
 class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
@@ -1592,8 +1651,8 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
         self.assertIn("**6.2 gap coverage:**", doc)
-        self.assertIn("Covered: technology (1 of 2 analysed)", doc)
-        self.assertIn("DECLARES coverage of: policies", doc)
+        self.assertIn("Covered: `technology` (1 of 2 analysed)", doc)
+        self.assertIn("DECLARES coverage of: `policies`", doc)
 
     def test_the_block_sits_inside_Solution_Scope_not_after_the_document(self):
         self._pipeline_with_gaps([

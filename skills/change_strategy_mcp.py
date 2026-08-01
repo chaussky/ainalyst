@@ -261,7 +261,7 @@ def _gap_coverage(strategy: dict) -> dict:
     cannot support is worse than an admission that it has none.
     """
     empty = {"checked": False, "analysed": [], "covered": [], "undeclared": [],
-             "excluded": [], "claimed_absent": [], "unknown_caps": 0}
+             "excluded": [], "excluded_by": {}, "claimed_absent": [], "unknown_caps": 0}
     if not isinstance(strategy, dict):
         return empty
     mirror = (strategy.get("imported_context") or {}).get("gaps", [])
@@ -283,6 +283,11 @@ def _gap_coverage(strategy: dict) -> dict:
         caps = []
 
     covered, excluded, claimed_absent = [], [], []
+    # Which capability carries each deliberate exclusion. The document renders IN-SCOPE
+    # capabilities only, so without this the block asserts "org_structure was left
+    # unaddressed on purpose" while the capability holding that decision appears
+    # nowhere on the page — a finding a sponsor cannot check against anything.
+    excluded_by: dict = {}
     unknown_caps = 0
     for cap in caps:
         if not isinstance(cap, dict):
@@ -296,16 +301,24 @@ def _gap_coverage(strategy: dict) -> dict:
                 claimed_absent.append(element)
             continue
         # `in_scope` defaults to True exactly as define_solution_scope defaults it.
-        target = covered if cap.get("in_scope", True) else excluded
-        if element not in target:
-            target.append(element)
+        if cap.get("in_scope", True):
+            if element not in covered:
+                covered.append(element)
+            continue
+        if element not in excluded:
+            excluded.append(element)
+        name = cap.get("name")
+        if isinstance(name, str) and name.strip():
+            excluded_by.setdefault(element, []).append(name.strip())
 
     # One in-scope capability is enough: an element it covers is covered, whatever an
     # out-of-scope sibling also says about it.
     excluded = [e for e in excluded if e not in covered]
+    excluded_by = {e: n for e, n in excluded_by.items() if e in excluded}
     undeclared = [e for e in analysed if e not in covered and e not in excluded]
     return {"checked": True, "analysed": analysed, "covered": covered,
             "undeclared": undeclared, "excluded": excluded,
+            "excluded_by": excluded_by,
             "claimed_absent": claimed_absent, "unknown_caps": unknown_caps}
 
 
@@ -339,26 +352,39 @@ def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
         return ["**6.2 gap coverage:** no 6.2 gap analysis imported "
                 "— coverage was not checked."]
 
+    # Element names are quoted here as they are on the capability sub-lines. Bare, they
+    # read as prose — and one of them, `capabilities`, is also the heading of the very
+    # section this block sits in, twenty lines further up the delivered document.
+    def _els(names):
+        return ", ".join(f"`{n}`" for n in names)
+
     lines = ["**6.2 gap coverage:**"]
     if cov["covered"]:
-        lines.append(f"- Covered: {', '.join(cov['covered'])} "
+        lines.append(f"- Covered: {_els(cov['covered'])} "
                      f"({len(cov['covered'])} of {len(cov['analysed'])} analysed)")
     if cov["undeclared"]:
         # "DECLARES", not "covers": while any capability is uncheckable the three lists
         # are not a partition, and an uncheckable capability may well cover this very
         # element. The sentence states what the platform knows — the declarations.
         lines.append("- No in-scope capability DECLARES coverage of: "
-                     + ", ".join(cov["undeclared"]))
+                     + _els(cov["undeclared"]))
     if cov["excluded"]:
+        parts = []
+        for element in cov["excluded"]:
+            by = cov.get("excluded_by", {}).get(element) or []
+            parts.append(f"`{element}` ({', '.join(by)})" if by else f"`{element}`")
         lines.append("- Deliberately left unaddressed (out of scope): "
-                     + ", ".join(cov["excluded"]))
+                     + ", ".join(parts))
     if cov["claimed_absent"]:
         lines.append("- Claimed but absent from the 6.2 analysis: "
-                     + ", ".join(cov["claimed_absent"]))
+                     + _els(cov["claimed_absent"]))
     if cov["unknown_caps"]:
+        # Parenthesised, so the sentence needs no verb: "1 capability state" was the
+        # live document's own grammar, with the noun singularised and the verb left
+        # plural.
         noun = "capability" if cov["unknown_caps"] == 1 else "capabilities"
         lines.append(f"- Cannot be checked: {cov['unknown_caps']} {noun} "
-                     f"state no 6.2 element")
+                     f"(no 6.2 element stated in gap_source)")
     return lines
 
 
