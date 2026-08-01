@@ -607,7 +607,12 @@ def define_solution_scope(
         project_id: Project identifier
         capabilities_json: JSON array of capabilities. Object format:
             {"name": "...", "category": "technology", "description": "...",
-             "gap_severity": "high", "gap_source": "6.2:gap_analysis", "in_scope": true}
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": true}
+            gap_source names the 6.2 element this capability covers ("6.2:technology",
+            "6.2:policies", ...) — that declaration is what lets the platform report
+            which analysed gaps no capability addresses. "manual" or a bare
+            "6.2:gap_analysis" names no element, and coverage is then reported as
+            uncheckable rather than as uncovered.
         explicitly_excluded: JSON list of strings — what is explicitly NOT in scope
         scope_summary: 2-3 sentences: what we are doing and what we are not doing
     """
@@ -693,6 +698,11 @@ def define_solution_scope(
         lines.append(f"  🟢 low:    {gaps['low']}\n")
     if gaps["none"] > 0:
         lines.append(f"  ⚪ none:   {gaps['none']} (capability already exists)\n")
+
+    # Computed AFTER _save_strategy, from the capabilities this call just stored —
+    # the tool replaces solution_scope wholesale, so anything read earlier describes
+    # the previous run.
+    lines.append("\n" + "\n".join(_gap_coverage_lines(strategy, project_id)) + "\n")
 
     if excluded:
         lines.append("\n**Explicit exclusions from scope:**\n")

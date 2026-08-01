@@ -1501,5 +1501,53 @@ class TestGapCoverage(BaseMCPTest):
         self.assertNotIn("DECLARES coverage of", lines)
 
 
+class TestSolutionScopeReportsCoverage(BaseMCPTest):
+
+    def _caps(self, *pairs):
+        return json.dumps([
+            {"name": n, "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": s, "in_scope": True}
+            for n, s in pairs])
+
+    def test_the_reply_reports_coverage_when_an_analysis_was_imported(self):
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
+        self.assertIn("**6.2 gap coverage:**", out)
+        self.assertIn("Covered: technology (1 of 2 analysed)", out)
+        self.assertIn("No in-scope capability DECLARES coverage of: policies", out)
+
+    def test_the_reply_says_it_could_not_check_rather_than_reporting_zero(self):
+        _make_scope()
+        out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
+        self.assertIn("coverage was not checked", out)
+        self.assertNotIn("0 of", out)
+
+    def test_the_reply_flags_an_element_the_analysis_does_not_contain(self):
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        out = define_solution_scope(PROJECT, self._caps(("A", "6.2:assets")))
+        self.assertIn("Claimed but absent from the 6.2 analysis: assets", out)
+
+    def test_the_existing_severity_distribution_still_renders(self):
+        """A positive companion: the block must be ADDED, not swapped in for the
+        distribution the analyst already relies on."""
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
+        self.assertIn("Distribution by gap_severity", out)
+        self.assertIn("🔴 high:   1", out)
+
+    def test_coverage_reflects_the_capabilities_of_THIS_call_not_the_previous_one(self):
+        """define_solution_scope replaces solution_scope wholesale; the coverage block
+        must be computed from what was just saved, or it reports the previous run."""
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
+        out = define_solution_scope(PROJECT, self._caps(("B", "6.2:policies")))
+        self.assertIn("Covered: policies (1 of 2 analysed)", out)
+        self.assertIn("DECLARES coverage of: technology", out)
+
+
 if __name__ == "__main__":
     unittest.main()
