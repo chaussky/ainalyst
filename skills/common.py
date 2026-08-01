@@ -1246,6 +1246,19 @@ def planned_decision_makers(plan) -> list:
     return _governance_string_list(governance_section(plan).get("decision_makers"))
 
 
+def registry_labels(s: dict) -> set:
+    """Every normalised label one registry record answers to: its name and its role.
+
+    A role is not a person and a person is not a role, but the registry is the only
+    place the two are tied together, and consumers are called with whichever the BA
+    typed. Kept in ONE function because `party_aliases` computed the same set inline
+    and a second copy would drift the day a third label (an email, an id) is added.
+    """
+    if not isinstance(s, dict):
+        return set()
+    return {reg_norm(s.get("name")), reg_norm(s.get("role"))} - {""}
+
+
 def party_aliases(project_id: str, who) -> set:
     """Every normalised label the stakeholder registry ties to `who` — name and role.
 
@@ -1267,7 +1280,7 @@ def party_aliases(project_id: str, who) -> set:
     for s in load_stakeholder_registry(project_id).get("stakeholders", []):
         if not isinstance(s, dict):
             continue
-        labels = {reg_norm(s.get("name")), reg_norm(s.get("role"))} - {""}
+        labels = registry_labels(s)
         if key in labels:
             aliases |= labels
     return aliases
@@ -1277,6 +1290,37 @@ def party_aliases(project_id: str, who) -> set:
 PARTY_PLANNED = "planned"
 PARTY_UNPLANNED = "unplanned"
 PARTY_UNBRIDGEABLE = "unbridgeable"
+
+
+# Is a typed label known to the stakeholder registry at all? A separate question from
+# `planned_party_status`, which asks about the 3.3 GOVERNANCE plan.
+PARTY_IN_REGISTRY = "in_registry"
+PARTY_NOT_IN_REGISTRY = "not_in_registry"
+
+
+def registry_party_status(project_id: str, who) -> str:
+    """Does the registry know `who`? IN_REGISTRY / NOT_IN_REGISTRY / UNBRIDGEABLE.
+
+    The third answer exists because the registry is a LIVING document (ADR-003): a
+    project may legitimately have none yet, and "not in the registry" said about a
+    project with no registry is an accusation manufactured from missing data — the
+    B3-2 lesson, one chapter over.
+
+    Note the deliberate asymmetry with 6.4's `gap_source`, where an unknown value is
+    REFUSED: there the vocabulary is CLOSED (eight elements the platform knows in
+    full), here it is OPEN and grows as stakeholders are discovered. Refusing against
+    an open list blocks the analyst exactly when they are recording something new.
+    """
+    key = reg_norm(who)
+    if not key:
+        return PARTY_UNBRIDGEABLE
+    people = load_stakeholder_registry(project_id).get("stakeholders") or []
+    if not people:
+        return PARTY_UNBRIDGEABLE
+    for s in people:
+        if key in registry_labels(s):
+            return PARTY_IN_REGISTRY
+    return PARTY_NOT_IN_REGISTRY
 
 
 def planned_party_status(project_id: str, planned: list, who) -> str:

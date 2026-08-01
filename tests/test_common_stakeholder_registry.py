@@ -8,7 +8,9 @@ depending on the other (Chapter 3 loads in every phase, Chapter 4 only in
 
 import json
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,6 +25,11 @@ from skills.common import (
     save_stakeholder_registry,
     merge_stakeholders,
     update_stakeholder_registry_file,
+    registry_labels,
+    registry_party_status,
+    PARTY_IN_REGISTRY,
+    PARTY_NOT_IN_REGISTRY,
+    PARTY_UNBRIDGEABLE,
 )
 
 TODAY = "20.07.2026"
@@ -152,6 +159,73 @@ class TestRegistryFile(BaseMCPTest):
         self.assertEqual(len(stored["stakeholders"]), 1)
         self.assertEqual(stored["stakeholders"][0]["influence"], "High")
         self.assertEqual(len(stored["history"]), 2)
+
+
+class TestRegistryPartyStatusHasThreeAnswers(unittest.TestCase):
+    """"Not in the registry" and "there is no registry" are different findings.
+
+    Saying the first when the platform means the second accuses the analyst of an
+    omission it cannot see — the distinction PARTY_UNBRIDGEABLE was introduced for
+    in B3-2, reused here because the stakeholder registry is a LIVING document.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.old = os.getcwd()
+        os.chdir(self.tmp)
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+
+    def tearDown(self):
+        os.chdir(self.old)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _write_registry(self, project_id, stakeholders):
+        path = os.path.join("governance_plans", "data",
+                            f"{project_id}_stakeholder_registry.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": project_id, "stakeholders": stakeholders,
+                       "history": []}, f)
+
+    def test_labels_of_a_record_carry_both_name_and_role(self):
+        labels = registry_labels({"name": "Ivan Petrov", "role": "Product Owner"})
+        self.assertEqual(labels, {"ivan petrov", "product owner"})
+
+    def test_labels_drop_the_empty_ones(self):
+        # A registry entry with no name is ordinary — 3.2 seeds role-only rows.
+        self.assertEqual(registry_labels({"name": "", "role": "Sponsor"}),
+                         {"sponsor"})
+        self.assertEqual(registry_labels({"name": None, "role": None}), set())
+
+    def test_a_name_in_the_registry_is_in_registry(self):
+        self._write_registry("pstat", [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        self.assertEqual(registry_party_status("pstat", "Ivan Petrov"),
+                         PARTY_IN_REGISTRY)
+
+    def test_a_role_resolves_too_because_the_bridge_is_two_way(self):
+        self._write_registry("pstat2", [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        self.assertEqual(registry_party_status("pstat2", "product owner"),
+                         PARTY_IN_REGISTRY)
+
+    def test_an_unknown_name_against_a_populated_registry_is_not_in_registry(self):
+        self._write_registry("pstat3", [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        self.assertEqual(registry_party_status("pstat3", "Nobody At All"),
+                         PARTY_NOT_IN_REGISTRY)
+
+    def test_no_registry_at_all_is_unbridgeable_not_absent(self):
+        # THE point of the third answer: nothing was written for this project, so the
+        # platform cannot say the person is missing — only that it cannot compare.
+        self.assertEqual(registry_party_status("pstat_none", "Ivan Petrov"),
+                         PARTY_UNBRIDGEABLE)
+
+    def test_an_empty_registry_file_is_also_unbridgeable(self):
+        self._write_registry("pstat4", [])
+        self.assertEqual(registry_party_status("pstat4", "Ivan Petrov"),
+                         PARTY_UNBRIDGEABLE)
+
+    def test_a_blank_name_is_unbridgeable_rather_than_matching_everything(self):
+        self._write_registry("pstat5", [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        self.assertEqual(registry_party_status("pstat5", "   "),
+                         PARTY_UNBRIDGEABLE)
 
 
 if __name__ == "__main__":
