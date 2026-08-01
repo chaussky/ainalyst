@@ -759,12 +759,29 @@ def define_solution_scope(
         return "❌ Errors in capabilities_json:\n" + "\n".join(f"  • {e}" for e in errors)
 
     strategy = _load_strategy(project_id)
+    # Read BEFORE the replacement. The coverage block invites the analyst back to add
+    # `gap_source`, and that second call carries capabilities_json and nothing else —
+    # which silently dropped the exclusions and the summary, taking "Explicitly out of
+    # scope" out of the delivered document. The tool still REPLACES wholesale (that is
+    # its contract); it just no longer does it quietly.
+    previous_scope = strategy.get("solution_scope") or {}
+    prev_excluded = previous_scope.get("explicitly_excluded") or []
+    prev_summary = previous_scope.get("scope_summary") or ""
     strategy["solution_scope"] = {
         "capabilities": valid_caps,
         "explicitly_excluded": excluded,
         "scope_summary": scope_summary,
     }
     _save_strategy(strategy, project_id)
+
+    overwritten = []
+    if prev_excluded and not excluded:
+        noun = "exclusion" if len(prev_excluded) == 1 else "exclusions"
+        verb = "was" if len(prev_excluded) == 1 else "were"
+        overwritten.append(f"{len(prev_excluded)} explicit {noun} {verb} replaced "
+                           f"by an empty list")
+    if prev_summary and not scope_summary:
+        overwritten.append("the scope summary was cleared")
 
     in_scope = [c for c in valid_caps if c.get("in_scope", True)]
     out_of_scope = [c for c in valid_caps if not c.get("in_scope", True)]
@@ -784,6 +801,14 @@ def define_solution_scope(
         f"  Capabilities in scope: {len(in_scope)}\n",
         f"  Explicit exclusions:   {len(excluded)}\n\n",
     ]
+
+    if overwritten:
+        # Directly under the "Explicit exclusions: 0" the analyst is about to misread.
+        lines.append(
+            "⚠️ This call REPLACED the previous solution scope: "
+            + "; ".join(overwritten)
+            + ". `define_solution_scope` replaces solution_scope wholesale — re-send "
+              "`explicitly_excluded` and `scope_summary` to keep them.\n\n")
 
     if cats:
         lines.append("**Capabilities by category:**\n")
@@ -1508,7 +1533,9 @@ def save_change_strategy(
 
     cats = {}
     for cap in in_scope_caps:
-        cats.setdefault(cap.get("category", "uncategorised"), []).append(cap)
+        # `or`, not a .get default: a key PRESENT with value null returns None, which
+        # `sorted(cats.items())` then compares against a str and raises TypeError.
+        cats.setdefault(cap.get("category") or "uncategorised", []).append(cap)
 
     # Keyed by casefold, exactly as _gap_coverage matches. Keyed by the raw string, a
     # capability declaring "6.2:Technology" was counted as covered by the block and
@@ -1523,14 +1550,19 @@ def save_change_strategy(
     for cat, caps_list in sorted(cats.items()):
         md_lines.append(f"### {cat}")
         for cap in caps_list:
-            # .get, not [...]: a 7.5 surrogate file or a hand edit reaches this line
-            # without the key, and a KeyError here loses the delivered document at the
-            # last step of the chapter.
+            # `cap.get(k) or default` throughout, never `cap[k]` and never
+            # `cap.get(k, default)`. define_solution_scope always writes these keys, so
+            # a capability missing one — or holding an explicit null — got here by a
+            # hand edit of the strategy JSON. (Not, as this comment once claimed, from
+            # a 7.5 surrogate: `set_change_strategy` in design_options_mcp writes
+            # neither `solution_scope` nor `capabilities`, and such a file stops at the
+            # earlier "⚠️ Solution scope is not defined" return.) A raise here loses the
+            # delivered document at the last step of the chapter.
             severity = cap.get("gap_severity") or "not stated"
             gap_icon = {"high": "🔴", "medium": "🟡", "low": "🟢", "none": "⚪"}.get(severity, "")
             md_lines.append(
-                f"- {cap.get('name', '')} {gap_icon} gap:{severity} "
-                f"| {cap.get('description', '')}"
+                f"- {cap.get('name') or ''} {gap_icon} gap:{severity} "
+                f"| {cap.get('description') or ''}"
             )
             # The provenance sub-line exists only where there is provenance to state.
             # With nothing imported EVERY capability is formally uncheckable, and the

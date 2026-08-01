@@ -1714,9 +1714,12 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
         self.assertNotIn("↳", doc)
 
     def test_a_capability_missing_gap_severity_no_longer_crashes_the_save(self):
-        """A 7.5 surrogate file or a hand edit produces capabilities without the key.
-        The renderer indexed it directly and raised KeyError INSIDE the final save —
-        the one step whose failure loses the delivered document."""
+        """A HAND EDIT of the strategy JSON produces capabilities without the key —
+        define_solution_scope always writes it, and the 7.5 surrogate this docstring
+        once blamed cannot: `set_change_strategy` writes neither `solution_scope` nor
+        `capabilities`, so such a file never reaches this renderer at all. The renderer
+        indexed the key directly and raised KeyError INSIDE the final save — the one
+        step whose failure loses the delivered document."""
         self._pipeline_with_gaps([
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
@@ -2006,6 +2009,135 @@ class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
         out = define_solution_scope(PROJECT, self._cap("6.2:assets"))
         self.assertIn("✅", out)
         self.assertIn("Claimed but absent from the 6.2 analysis: `assets`", out)
+
+
+class TestNullFieldsDoNotLoseTheDeliveredDocument(BaseMCPTest):
+    """`.get(key, default)` returns the default for an ABSENT key and None for a key
+    present with value null. A hand-edited strategy JSON carries the second shape, and
+    `sorted(cats.items())` then raised TypeError comparing str to None — out of
+    save_change_strategy, past guard_artifact_errors (which catches only
+    CorruptArtifactError), losing the document at the last step of the chapter."""
+
+    def _pipeline(self):
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        define_solution_scope(PROJECT, json.dumps([
+            {"name": "Portal", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True},
+            {"name": "Training", "category": "people", "description": "d",
+             "gap_severity": "low", "gap_source": "6.2:policies", "in_scope": True}]))
+        _make_readiness()
+        _add_option()
+        compare_strategy_options(
+            project_id=PROJECT,
+            scores_json=json.dumps({"OPT-001": {
+                "alignment_to_goals": 4, "risk_mitigation": 4, "cost": 3,
+                "time_to_value": 3, "org_readiness_fit": 3, "feasibility": 4}}),
+            opportunity_cost="none")
+        define_transition_states(
+            project_id=PROJECT, phase_number=1, phase_name="P1", duration_months=6,
+            capabilities_delivered='["Portal"]', gaps_closed='[]',
+            risks_remaining='[]', value_realizable="v")
+
+    def _nullify(self, *fields):
+        """NULL, not `del`: the existing test deletes the keys, which is exactly the
+        shape `.get(key, default)` already handles. Only an explicit null reaches the
+        comparison. TWO capabilities, so `sorted` actually compares a pair."""
+        path = _strategy_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        for field in fields:
+            data["solution_scope"]["capabilities"][0][field] = None
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def _doc(self):
+        with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            save_change_strategy(project_id=PROJECT)
+            return mock_sa.call_args[0][0]
+
+    def test_a_NULL_category_does_not_raise_out_of_the_tool(self):
+        self._pipeline()
+        self._nullify("category")
+        doc = self._doc()
+        self.assertIn("uncategorised", doc)
+        self.assertIn("Portal", doc)
+        self.assertIn("Training", doc)
+
+    def test_a_NULL_name_and_description_render_as_empty_not_as_the_word_None(self):
+        self._pipeline()
+        self._nullify("name", "description")
+        doc = self._doc()
+        self.assertNotIn("None", doc)
+
+    def test_a_NULL_gap_severity_reads_as_not_stated(self):
+        self._pipeline()
+        self._nullify("gap_severity")
+        self.assertIn("gap:not stated", self._doc())
+
+    def test_all_of_them_null_at_once_still_delivers_the_document(self):
+        self._pipeline()
+        self._nullify("category", "name", "description", "gap_severity")
+        doc = self._doc()
+        self.assertIn("## Solution Scope", doc)
+        self.assertIn("Training", doc)
+
+
+class TestASecondCallAnnouncesWhatItErased(BaseMCPTest):
+    """The coverage block invites the analyst back to add `gap_source`. That second
+    call carries `capabilities_json` and usually nothing else, and the tool replaces
+    solution_scope wholesale — so "Explicitly out of scope" vanished from the delivered
+    document without a word. The semantics stay a full replacement; the silence does
+    not."""
+
+    def setUp(self):
+        super().setUp()
+        _make_scope()
+
+    def _caps(self):
+        return json.dumps([{"name": "A", "category": "technology", "description": "d",
+                            "gap_severity": "high", "gap_source": "6.2:technology",
+                            "in_scope": True}])
+
+    def test_dropping_the_exclusions_is_announced_with_a_count(self):
+        define_solution_scope(PROJECT, self._caps(),
+                              explicitly_excluded='["Mobile app", "Billing"]',
+                              scope_summary="s")
+        out = define_solution_scope(PROJECT, self._caps())
+        self.assertIn("⚠️", out)
+        self.assertIn("2 explicit exclusions", out)
+
+    def test_clearing_the_summary_is_announced(self):
+        define_solution_scope(PROJECT, self._caps(), scope_summary="A real summary")
+        out = define_solution_scope(PROJECT, self._caps())
+        self.assertIn("scope summary", out)
+
+    def test_one_exclusion_is_announced_in_the_singular(self):
+        define_solution_scope(PROJECT, self._caps(), explicitly_excluded='["Mobile"]')
+        out = define_solution_scope(PROJECT, self._caps())
+        self.assertIn("1 explicit exclusion ", out)
+
+    def test_the_semantics_are_UNCHANGED_the_call_still_replaces_wholesale(self):
+        """Warn, do not rescue: the contract stays a full replacement."""
+        define_solution_scope(PROJECT, self._caps(),
+                              explicitly_excluded='["Mobile app"]', scope_summary="s")
+        define_solution_scope(PROJECT, self._caps())
+        scope = _load_strategy()["solution_scope"]
+        self.assertEqual(scope["explicitly_excluded"], [])
+        self.assertEqual(scope["scope_summary"], "")
+
+    def test_re_sending_both_values_triggers_no_warning(self):
+        define_solution_scope(PROJECT, self._caps(),
+                              explicitly_excluded='["Mobile app"]', scope_summary="s")
+        out = define_solution_scope(PROJECT, self._caps(),
+                                    explicitly_excluded='["Mobile app"]',
+                                    scope_summary="s")
+        self.assertNotIn("⚠️", out)
+
+    def test_a_FIRST_call_with_neither_value_warns_about_nothing(self):
+        out = define_solution_scope(PROJECT, self._caps())
+        self.assertNotIn("⚠️", out)
 
 
 if __name__ == "__main__":
