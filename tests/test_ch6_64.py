@@ -334,7 +334,7 @@ def _write_gap_file(project_id: str = PROJECT, gaps=None):
         ]
     data = {"project_id": project_id, "has_current_state_baseline": True,
             "gaps": gaps, "created": TODAY, "updated": TODAY}
-    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_gap_analysis.json")
+    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_ANALYSIS_FILENAME}")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     return path
@@ -408,7 +408,7 @@ class TestGapAnalysisImport(BaseMCPTest):
         self.assertEqual(_load_strategy()["solution_scope"], before)
 
     def test_a_corrupt_gap_file_is_reported_not_silently_skipped(self):
-        path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_gap_analysis.json")
+        path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_{GAP_ANALYSIS_FILENAME}")
         with open(path, "w", encoding="utf-8") as f:
             f.write("{not json")
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
@@ -1455,6 +1455,32 @@ class TestGapCoverage(BaseMCPTest):
                                  "scope": {}})
             self.assertFalse(cov["checked"], repr(mirror))
 
+    def test_junk_CAPABILITIES_under_a_VALID_mirror_degrade_instead_of_raising(self):
+        """The case above never reaches the capability guards at all: every mirror in
+        it is invalid, so the function returns before `isinstance(caps, list)` is ever
+        evaluated. A valid mirror is what puts that line under test."""
+        for caps in ("not a list", 7, None, {"name": "A"}, [1, "x", None]):
+            cov = _gap_coverage({
+                "imported_context": {"gaps": [{"element": "technology"}]},
+                "solution_scope": {"capabilities": caps},
+                "scope": {}})
+            self.assertTrue(cov["checked"], repr(caps))
+            self.assertEqual(cov["analysed"], ["technology"], repr(caps))
+            self.assertEqual(cov["covered"], [], repr(caps))
+            self.assertEqual(cov["undeclared"], ["technology"], repr(caps))
+            self.assertEqual(cov["unknown_caps"], 0, repr(caps))
+
+    def test_a_junk_solution_scope_or_imported_context_degrades_too(self):
+        """`x or {}` rescues None but not a non-empty string, which is truthy and has
+        no .get. Found by the case above, which is the first to get far enough to
+        dereference these two containers."""
+        cov = _gap_coverage({"imported_context": {"gaps": [{"element": "technology"}]},
+                             "solution_scope": "not a dict", "scope": "not a dict"})
+        self.assertTrue(cov["checked"])
+        self.assertEqual(cov["undeclared"], ["technology"])
+        self.assertFalse(_gap_coverage({"imported_context": "not a dict"})["checked"])
+        self.assertFalse(_gap_file_seen({"scope": "not a dict"}, "no_such_project"))
+
     def test_defaulting_in_scope_matches_define_solution_scope(self):
         """define_solution_scope defaults in_scope to True; coverage must agree, or a
         capability the BA left implicit would read as deliberately excluded."""
@@ -2138,6 +2164,47 @@ class TestASecondCallAnnouncesWhatItErased(BaseMCPTest):
     def test_a_FIRST_call_with_neither_value_warns_about_nothing(self):
         out = define_solution_scope(PROJECT, self._caps())
         self.assertNotIn("⚠️", out)
+
+
+class TestTheImportReplyCountsElementsNotRecords(BaseMCPTest):
+    """Two source projects that analysed the same elements printed "4 elements —
+    technology, policies, technology, policies" while the coverage block one call later
+    said "(2 of 2 analysed)". Two texts about one thing, differing by a factor of two."""
+
+    def test_duplicate_elements_across_sources_are_counted_once(self):
+        _write_gap_file(project_id="src_a")
+        _write_gap_file(project_id="src_b")
+        result = _make_scope(source_project_ids='["src_a", "src_b"]')
+        self.assertIn("Gap analysis (6.2): 2 elements — technology, policies", result)
+        self.assertNotIn("technology, policies, technology", result)
+
+    def test_the_mirror_itself_still_keeps_BOTH_records_with_their_provenance(self):
+        """Only the count is deduplicated. The mirror stays a faithful copy — dropping
+        a record would lose which project contributed it."""
+        _write_gap_file(project_id="src_a")
+        _write_gap_file(project_id="src_b")
+        _make_scope(source_project_ids='["src_a", "src_b"]')
+        gaps = _load_strategy()["imported_context"]["gaps"]
+        self.assertEqual(len(gaps), 4)
+        self.assertEqual({g["source_project"] for g in gaps}, {"src_a", "src_b"})
+
+    def test_the_reply_count_and_the_coverage_denominator_agree(self):
+        _write_gap_file(project_id="src_a")
+        _write_gap_file(project_id="src_b")
+        _make_scope(source_project_ids='["src_a", "src_b"]')
+        out = define_solution_scope(PROJECT, json.dumps([
+            {"name": "A", "category": "technology", "description": "d",
+             "gap_severity": "high", "gap_source": "6.2:technology",
+             "in_scope": True}]))
+        self.assertIn("(1 of 2 analysed)", out)
+
+    def test_distinct_elements_are_all_still_listed(self):
+        _write_gap_file(project_id="src_a", gaps=[
+            {"element": "technology", "gap_summary": "s", "complexity": "high"}])
+        _write_gap_file(project_id="src_b", gaps=[
+            {"element": "assets", "gap_summary": "s", "complexity": "low"}])
+        result = _make_scope(source_project_ids='["src_a", "src_b"]')
+        self.assertIn("Gap analysis (6.2): 2 elements — technology, assets", result)
 
 
 if __name__ == "__main__":

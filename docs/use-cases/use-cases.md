@@ -788,27 +788,50 @@ The first attempt at wording is the kind that usually comes out of a strategy me
 
 > **Chloe:** Yes. Now run gap analysis.
 
-> **AInalyst:** Gap analysis for the LMS-2026 project:
+> **AInalyst:** Gap analysis completed — **lms_2026**
 >
-> **GAP-001, functional (critical):**
-> The current system doesn't support mobile access. 67% of employees complete training away from their workstation. This is the main barrier to completion rate.
+> **Elements analyzed:** 3
+> **Current-state baseline:** ✅ from 6.1
 >
-> **GAP-002, content (high):**
-> 78% of content is over 2 years old and hasn't been updated. Low relevance is a direct cause of abandoned courses.
+> ---
 >
-> **GAP-003, integration (medium):**
-> No integration with the HR system, training progress doesn't show in the employee profile. Reduces motivation.
+> ## Technology and Infrastructure (`technology`)
 >
-> **GAP-004, analytics (low):**
-> Reporting is Excel export only. Managers can't see progress in real time.
+> **Change type:** ⬆️ Improve
+> **Complexity:** 🔴 High
 >
-> Four gaps of different scale. GAP-001 and GAP-002 are critical, hitting 70% isn't realistic without closing them. Pass this to the design phase as a basis for requirements?
+> **Current state:** Desktop-only LMS, no mobile client...
+> **Target state:** Responsive platform, full course completion from a phone...
+>
+> **Gap:** Current: Desktop-only LMS, no mobile client... → Target: Responsive platform, full course completion from a phone...
+>
+> ## Capabilities and Processes (`capabilities`)
+>
+> **Change type:** ⬆️ Improve
+> **Complexity:** 🟡 Medium
+>
+> **Current state:** Content refreshed ad hoc, no review cycle...
+> **Target state:** Mandatory annual review of every course...
+>
+> **Gap:** Current: Content refreshed ad hoc, no review cycle... → Target: Mandatory annual review of every course...
+>
+> ## Business Architecture (`architecture`)
+>
+> **Change type:** 🆕 New
+> **Complexity:** 🟡 Medium
+>
+> **Current state:** *(no 6.1 data)*
+> **Target state:** LMS ↔ HR system integration, progress visible in the employee profile...
+>
+> **Gap:** No current state — the element is being created from scratch. Target: LMS ↔ HR system integration...
+>
+> One gap card per future-state element you captured, each with a change type and a complexity rating. `technology` is the hardest of the three — hitting 70% isn't realistic without it. Pass this to the design phase as a basis for requirements?
 
 ---
 
 ### What Chloe gets
 
-Instead of a vague "improve engagement," a concrete, measurable target and four clearly described gaps with priorities. The gap analysis shows immediately: not everything needs fixing, closing GAP-001 and GAP-002 is enough to make the objective achievable.
+Instead of a vague "improve engagement," a concrete, measurable target and one clearly described gap per future-state element, each rated for how hard the change is. The gap analysis shows immediately: not everything needs fixing, and `technology` is where the effort sits.
 
 And importantly: BG-001 is now recorded in the traceability repository. When requirements for mobile access appear in the design phase, they'll automatically link to this objective. At any point you can ask "which requirements serve objective BG-001?" and get the full list.
 
@@ -816,7 +839,7 @@ And importantly: BG-001 is now recorded in the traceability repository. When req
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 6.2 MCP server (`future_state_mcp`), when `set_future_state_element` is called, immediately runs the wording through `validate_smart_goal`, checking for a metric, a time horizon, a baseline, and a target value. Objectives that fail validation aren't recorded. Once objective BG-001 is confirmed valid, the `run_gap_analysis` tool compares the current and future states across several dimensions and returns a structured list of gaps, each with a change type and a complexity rating. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
+The Task 6.2 MCP server (`future_state_mcp`), when `capture_future_state_element` is called, immediately runs the wording through `validate_smart_goal`, checking for a metric, a time horizon, a baseline, and a target value. Objectives that fail validation aren't recorded. Once objective BG-001 is confirmed valid, the `run_gap_analysis` tool compares the current and future states element by element — one gap card for each of the future-state elements captured, out of the eight BABOK defines — and returns them with a change type (new / improve / eliminate / replace) and a complexity rating (low / medium / high). It assigns no gap IDs and no priorities: how big a gap is stays the analyst's judgement, recorded later as `gap_severity` in 6.4. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
 
 ---
 

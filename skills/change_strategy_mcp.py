@@ -278,7 +278,11 @@ def _gap_coverage(strategy: dict) -> dict:
              "context_elements": [], "unknown_caps": 0}
     if not isinstance(strategy, dict):
         return empty
-    mirror = (strategy.get("imported_context") or {}).get("gaps", [])
+    # `x or {}` rescues None and {} but NOT a non-empty string, which is truthy and has
+    # no .get — the same degrade-don't-raise guard the mirror and the capability list
+    # each already carry, applied to the two containers holding them.
+    context = strategy.get("imported_context")
+    mirror = context.get("gaps", []) if isinstance(context, dict) else []
     if not isinstance(mirror, list):
         mirror = []
 
@@ -294,7 +298,8 @@ def _gap_coverage(strategy: dict) -> dict:
     if not analysed_all:
         return empty
 
-    caps = (strategy.get("solution_scope") or {}).get("capabilities", [])
+    scope_section = strategy.get("solution_scope")
+    caps = scope_section.get("capabilities", []) if isinstance(scope_section, dict) else []
     if not isinstance(caps, list):
         caps = []
 
@@ -371,7 +376,9 @@ def _gap_file_seen(strategy: dict, project_id: str) -> bool:
     The second is one re-run away; telling the analyst the first sends them to build
     an artefact they already have.
     """
-    sources = (strategy.get("scope") or {}).get("source_project_ids") or []
+    scope_section = strategy.get("scope")
+    sources = (scope_section.get("source_project_ids")
+               if isinstance(scope_section, dict) else None) or []
     if not isinstance(sources, list):
         sources = []
     # EXACTLY the importer's own source set — `sources or [project_id]`, the fallback
@@ -664,8 +671,17 @@ def scope_change_strategy(
             lines.append(f"  ⚠️  Risks (6.3):          {len(imported_risks)}"
                          + (f" ({len(high_risks)} High)" if high_risks else "") + "\n")
         if imported_gaps:
-            lines.append(f"  🔍 Gap analysis (6.2): {len(imported_gaps)} elements — "
-                         + ", ".join(g["element"] for g in imported_gaps) + "\n")
+            # UNIQUE elements, deduplicated the way _gap_coverage deduplicates them
+            # (by casefold, first spelling kept). Counting records made two source
+            # projects that analysed the same elements print "4 elements — technology,
+            # policies, technology, policies" while the coverage block one call later
+            # said "(2 of 2 analysed)". The mirror still keeps every record and its
+            # source_project; only this count collapses them.
+            unique_elements: dict = {}
+            for g in imported_gaps:
+                unique_elements.setdefault(g["element"].casefold(), g["element"])
+            lines.append(f"  🔍 Gap analysis (6.2): {len(unique_elements)} elements — "
+                         + ", ".join(unique_elements.values()) + "\n")
 
     if warnings:
         lines.append("\n**Warnings (graceful degradation):**\n")

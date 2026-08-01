@@ -98,8 +98,9 @@ In `define_solution_scope`, each capability receives a `gap_severity`:
 **`gap_severity` is yours, not the platform's.** The 6.2 gap analysis is auto-imported
 into 6.4, but it stores `complexity` — how hard the change is — and that is a different
 question from how big the gap is. The two share the words low/medium/high and mean
-different things, so the import never writes `gap_severity`. It shows 6.2's `complexity`
-beside your value, labelled, and leaves the judgement to you.
+different things, so the import never writes `gap_severity`. The saved Change Strategy
+document prints 6.2's `complexity` next to your value on each capability's line,
+labelled "effort, not gap size", and leaves the judgement to you.
 
 `gap_source` names **which 6.2 element** this capability covers, and that declaration is
 the only link between the two chapters — the platform never infers it from the category
