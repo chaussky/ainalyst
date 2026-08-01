@@ -35,8 +35,9 @@ from skills.change_strategy_mcp import (
     define_transition_states,
     save_change_strategy,
     _safe, _next_option_id, _readiness_verdict,
-    _strategy_path, _scope_path,
+    _strategy_path, _scope_path, _gap_file_path,
     DO_NOTHING_OPTION_ID,
+    GAP_ANALYSIS_FILENAME,
     DATA_DIR,
 )
 
@@ -311,6 +312,104 @@ class TestScopeChangeStrategy(BaseMCPTest):
         _make_scope(ba_notes="Regulatory deadline — Q2 2025")
         strategy = _load_strategy()
         self.assertEqual(strategy["scope"]["ba_notes"], "Regulatory deadline — Q2 2025")
+
+
+def _write_gap_file(project_id: str = PROJECT, gaps=None):
+    """Builds a 6.2 gap analysis by hand, in the shape run_gap_analysis writes.
+
+    Flat under DATA_DIR, like every other import fixture in this file: data_path
+    resolves the flat layout as its second candidate (common.py:156).
+    """
+    if gaps is None:
+        gaps = [
+            {"element": "technology", "element_label": "Technology and Infrastructure",
+             "current_description": "Paper intake", "future_description": "Portal intake",
+             "gap_summary": "Current: paper... -> Target: portal...",
+             "change_type": "improve", "complexity": "high"},
+            {"element": "policies", "element_label": "Policies",
+             "current_description": None, "future_description": "New retention policy",
+             "gap_summary": "No current state - created from scratch",
+             "change_type": "new", "complexity": "medium"},
+        ]
+    data = {"project_id": project_id, "has_current_state_baseline": True,
+            "gaps": gaps, "created": TODAY, "updated": TODAY}
+    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_gap_analysis.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    return path
+
+
+class TestGapAnalysisImport(BaseMCPTest):
+
+    def test_gaps_are_imported_into_the_mirror(self):
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        gaps = _load_strategy()["imported_context"]["gaps"]
+        self.assertEqual([g["element"] for g in gaps], ["technology", "policies"])
+        self.assertEqual(gaps[0]["complexity"], "high")
+        self.assertEqual(gaps[0]["change_type"], "improve")
+        self.assertEqual(gaps[0]["source_project"], PROJECT)
+
+    def test_the_reply_names_the_imported_elements(self):
+        _write_gap_file()
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("Gap analysis (6.2)", result)
+        self.assertIn("technology", result)
+
+    def test_a_project_with_ONLY_a_gap_analysis_still_gets_the_context_header(self):
+        """The 'Imported context' header was gated on the other three sources.
+        A project whose only artefact is a gap analysis must not lose the evidence."""
+        _write_gap_file()
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("Imported context", result)
+        self.assertIn("Gap analysis (6.2)", result)
+
+    def test_a_missing_gap_analysis_warns_and_does_not_block(self):
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("✅", result)
+        self.assertIn("6.2 gap_analysis not found", result)
+        self.assertEqual(_load_strategy()["imported_context"]["gaps"], [])
+
+    def test_the_mirror_is_RECOMPUTED_on_a_re_run_not_merged(self):
+        """imported_context mirrors a source file. A merge would let an element that
+        6.2 has since dropped outlive the analysis that named it."""
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        _write_gap_file(gaps=[{"element": "assets", "element_label": "Internal Assets",
+                               "gap_summary": "s", "change_type": "new",
+                               "complexity": "low"}])
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        gaps = _load_strategy()["imported_context"]["gaps"]
+        self.assertEqual([g["element"] for g in gaps], ["assets"])
+
+    def test_a_gap_without_an_element_is_skipped_not_imported_as_blank(self):
+        _write_gap_file(gaps=[
+            {"element": "", "gap_summary": "s", "complexity": "low"},
+            {"element": "   ", "gap_summary": "s", "complexity": "low"},
+            {"element": 7, "gap_summary": "s", "complexity": "low"},
+            "not a dict",
+            {"element": "technology", "gap_summary": "s", "complexity": "low"},
+        ])
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        gaps = _load_strategy()["imported_context"]["gaps"]
+        self.assertEqual([g["element"] for g in gaps], ["technology"])
+
+    def test_the_capabilities_of_the_analyst_are_never_touched_by_the_import(self):
+        """The whole point: the import writes context, never the BA's own judgement."""
+        _make_scope()
+        _make_scope_def()
+        before = _load_strategy()["solution_scope"]
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertEqual(_load_strategy()["solution_scope"], before)
+
+    def test_a_corrupt_gap_file_is_reported_not_silently_skipped(self):
+        path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_gap_analysis.json")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{not json")
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("❌", result)
+        self.assertIn("gap_analysis", result)
 
 
 # ---------------------------------------------------------------------------

@@ -53,6 +53,10 @@ REPO_FILENAME = "traceability_repo.json"
 BUSINESS_NEEDS_FILENAME = "business_needs.json"
 FUTURE_STATE_GOALS_FILENAME = "future_state_goals.json"  # 6.2 stores goals separately
 RISK_ASSESSMENT_FILENAME = "risk_assessment.json"
+# 6.2 writes the gap analysis; 6.4 reads it. The name is duplicated rather than
+# imported from future_state_mcp on purpose — these are two separate MCP servers,
+# and the three filenames above already follow this pattern.
+GAP_ANALYSIS_FILENAME = "gap_analysis.json"
 
 VALID_CHANGE_TYPES = ["transformation", "process_improvement", "technology_implementation", "regulatory_compliance", "other"]
 VALID_METHODOLOGIES = ["agile", "waterfall", "hybrid"]
@@ -85,6 +89,10 @@ def _safe(project_id: str) -> str:
 
 def _scope_path(project_id: str) -> str:
     return data_path(project_id, f"{_safe(project_id)}_{SCOPE_FILENAME}")
+
+
+def _gap_file_path(project_id: str) -> str:
+    return data_path(project_id, f"{_safe(project_id)}_{GAP_ANALYSIS_FILENAME}")
 
 
 def _strategy_path(project_id: str) -> str:
@@ -166,6 +174,7 @@ def _empty_strategy(project_id: str) -> dict:
             "business_needs": [],
             "business_goals": [],
             "risks": [],
+            "gaps": [],
         },
         "solution_scope": {
             "capabilities": [],
@@ -267,6 +276,7 @@ def scope_change_strategy(
     imported_bn = []
     imported_bg = []
     imported_risks = []
+    imported_gaps = []
 
     if not source_ids:
         source_ids = [project_id]
@@ -334,10 +344,36 @@ def scope_change_strategy(
         else:
             warnings.append(f"⚠️ 6.3 risk_assessment not found for '{src_id}'")
 
+        # 6.2: gap analysis (BABOK's .2 Gap Analysis element of 6.4, produced in 6.2).
+        # Imported as CONTEXT ONLY: it never writes gap_severity or in_scope. 6.2's unit
+        # is an ELEMENT (one of eight fixed areas) where 6.4's is a CAPABILITY, and 6.2's
+        # `complexity` measures change EFFORT where `gap_severity` measures gap SIZE.
+        # A platform that mapped one onto the other would be classifying, not importing.
+        gap_data = _safe_load_json(_gap_file_path(src_id))
+        if gap_data:
+            for gp in gap_data.get("gaps", []):
+                if not isinstance(gp, dict):
+                    continue
+                element = gp.get("element", "")
+                if not isinstance(element, str) or not element.strip():
+                    continue
+                summary = gp.get("gap_summary", "")
+                imported_gaps.append({
+                    "element": element.strip(),
+                    "element_label": gp.get("element_label", element.strip()),
+                    "change_type": gp.get("change_type", ""),
+                    "complexity": gp.get("complexity", ""),
+                    "gap_summary": summary[:120] if isinstance(summary, str) else "",
+                    "source_project": src_id,
+                })
+        else:
+            warnings.append(f"⚠️ 6.2 gap_analysis not found for '{src_id}'")
+
     strategy["imported_context"] = {
         "business_needs": imported_bn,
         "business_goals": imported_bg,
         "risks": imported_risks,
+        "gaps": imported_gaps,
     }
 
     # do_nothing is added automatically (ADR-080)
@@ -374,7 +410,7 @@ def scope_change_strategy(
         f"  Methodology: {methodology}\n\n",
     ]
 
-    if imported_bn or imported_bg or imported_risks:
+    if imported_bn or imported_bg or imported_risks or imported_gaps:
         lines.append("**Imported context:**\n")
         if imported_bn:
             lines.append(f"  📋 Business needs (6.1): {len(imported_bn)} — "
@@ -386,6 +422,9 @@ def scope_change_strategy(
             high_risks = [r for r in imported_risks if r.get("zone") == "high"]
             lines.append(f"  ⚠️  Risks (6.3):          {len(imported_risks)}"
                          + (f" ({len(high_risks)} High)" if high_risks else "") + "\n")
+        if imported_gaps:
+            lines.append(f"  🔍 Gap analysis (6.2): {len(imported_gaps)} elements — "
+                         + ", ".join(g["element"] for g in imported_gaps) + "\n")
 
     if warnings:
         lines.append("\n**Warnings (graceful degradation):**\n")
