@@ -816,7 +816,7 @@ And importantly: BG-001 is now recorded in the traceability repository. When req
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 6.2 MCP server (`future_state_mcp`), when `set_future_state_element` is called, immediately runs the wording through `validate_smart_goal`, checking for a metric, a time horizon, a baseline, and a target value. Objectives that fail validation aren't recorded. Once objective BG-001 is confirmed valid, the `run_gap_analysis` tool compares the current and future states across several dimensions and returns a structured list of gaps with priorities. The result is saved to `gap_analysis.json` and used automatically in Task 6.4 when evaluating change options.
+The Task 6.2 MCP server (`future_state_mcp`), when `set_future_state_element` is called, immediately runs the wording through `validate_smart_goal`, checking for a metric, a time horizon, a baseline, and a target value. Objectives that fail validation aren't recorded. Once objective BG-001 is confirmed valid, the `run_gap_analysis` tool compares the current and future states across several dimensions and returns a structured list of gaps, each with a change type and a complexity rating. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
 
 ---
 

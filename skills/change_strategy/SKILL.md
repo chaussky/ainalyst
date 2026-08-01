@@ -23,9 +23,13 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 6.4 is the **culmination of Chapter 6**. It synthesizes everything done in 6.1–6.3:
 - From 6.1: we know the current state and business needs (BN-xxx)
-- From 6.2: we know the future state and business goals (BG-xxx); the gap analysis
-  is NOT auto-imported — read the 6.2 artifact yourself and carry gap_severity into
-  `define_solution_scope` (set gap_source = "6.2:gap_analysis")
+- From 6.2: we know the future state and business goals (BG-xxx), and the gap analysis
+  is auto-imported as **context** — the platform cannot judge how big a gap is, so you
+  still set each capability's `gap_severity` yourself in `define_solution_scope`. Name
+  the element there as `gap_source = "6.2:technology"` (the 6.2 element this capability
+  covers), and the platform reports which analysed gaps no capability addresses.
+  A bare `"6.2:gap_analysis"` or `"manual"` names no element: coverage is then reported
+  as uncheckable rather than as uncovered.
 - From 6.3: we know the risks (RK-xxx) and the recommendation
 
 The task: build a **substantiated transition strategy** — what we're doing, how, and in what order.
@@ -74,7 +78,8 @@ save_change_strategy
 
 ## Step 1 — `scope_change_strategy`
 
-**What it does:** Initializes 6.4 + auto-imports context from 6.1, 6.2, 6.3.
+**What it does:** Initializes 6.4 + auto-imports context from 6.1, 6.2 (goals **and**
+the gap analysis), 6.3.
 
 **Parameters:**
 - `project_id` — the same one used in 6.1/6.2/6.3
@@ -83,7 +88,8 @@ save_change_strategy
 - `methodology` — agile / waterfall / hybrid
 - `source_project_ids` — JSON list of project_id values from 6.1/6.2/6.3 (for auto-import)
 
-**What it returns:** A summary of the imported context (BN, BG, RK) + confirmation of initialization.
+**What it returns:** A summary of the imported context (BN, BG, RK, 6.2 gap elements)
++ confirmation of initialization.
 Automatically adds OPT-000 (do_nothing) to the list of options.
 
 **Questions to ask the BA before calling:**

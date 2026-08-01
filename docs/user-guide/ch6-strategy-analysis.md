@@ -246,7 +246,11 @@ This is the culmination of strategy analysis and the starting point for Chapter 
 
 ### What We Built
 
-**Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads the artifacts of the previous tasks: business needs BN-xxx, business goals BG-xxx, risks RK-xxx. The BA starts work with the context already filled in; there is no need to "remember what we did earlier." The 6.2 gap analysis is not auto-imported — record each capability's gap_severity in `define_solution_scope` (auto-import is on the backlog).
+**Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads the artifacts of the previous tasks: business needs BN-xxx, business goals BG-xxx, risks RK-xxx, and the 6.2 gap analysis. The BA starts work with the context already filled in; there is no need to "remember what we did earlier."
+
+**The gap analysis arrives as context, and the judgement stays with the BA.** 6.2 records how *complex* each change is; 6.4 asks how *big* the gap is. Those are different questions that happen to share the words low/medium/high, so the platform never converts one into the other: the BA sets each capability's `gap_severity` in `define_solution_scope`, and the platform shows 6.2's complexity beside it, labelled.
+
+**What the platform does check is coverage.** When a capability names the element it covers — `gap_source: "6.2:technology"` — both the tool's reply and the final Change Strategy document report which analysed gaps are covered, which no in-scope capability declares, and which were deliberately left out of scope. Capabilities that name no element are counted as *uncheckable*, not as uncovered: an unstated link means the platform cannot tell, and saying otherwise would turn a missing declaration into an accusation. Where no gap analysis was imported at all, the document says the coverage was not checked rather than reporting a number it cannot support.
 
 **An explicit solution scope with capability categorization.** Every capability (process, technology, data, people, org structure) that changes in the project is explicitly registered with a critical gap level (high / medium / low / none) and a link to the gap analysis from 6.2. What is **out** of scope is also explicitly documented: this is the first line of defense against scope creep.
 

@@ -95,9 +95,29 @@ In `define_solution_scope`, each capability receives a `gap_severity`:
 | `medium` | Significant gap, requires effort | Planned in the main phases |
 | `high` | Critical gap, hard to close | Often determines the phase structure |
 
-`gap_source` can be:
-- `6.2:gap_analysis` — taken from the gap_analysis artifact (6.2)
-- `manual` — the BA determined it independently
+**`gap_severity` is yours, not the platform's.** The 6.2 gap analysis is auto-imported
+into 6.4, but it stores `complexity` — how hard the change is — and that is a different
+question from how big the gap is. The two share the words low/medium/high and mean
+different things, so the import never writes `gap_severity`. It shows 6.2's `complexity`
+beside your value, labelled, and leaves the judgement to you.
+
+`gap_source` names **which 6.2 element** this capability covers, and that declaration is
+the only link between the two chapters — the platform never infers it from the category
+(6.2's eight elements and 6.4's seven categories overlap on just two values):
+
+- `6.2:technology`, `6.2:policies`, `6.2:capabilities`, … — the 6.2 element covered.
+  Valid elements: `business_needs`, `org_structure`, `capabilities`, `technology`,
+  `policies`, `architecture`, `assets`, `external`.
+- `manual` — the BA determined it independently, without reference to a 6.2 element.
+- `6.2:gap_analysis` — the legacy form. It names a source, not an element, and is still
+  accepted; coverage for that capability is then reported as **uncheckable**, not as
+  uncovered.
+
+With the element named, `define_solution_scope` and the final Change Strategy document
+both report: which analysed gaps are covered, which no in-scope capability declares,
+which are deliberately left out of scope, and how many capabilities could not be checked.
+Where no gap analysis was imported, the platform says it did not check — it never
+reports a count it cannot support.
 
 ---
 
