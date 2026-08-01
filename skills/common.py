@@ -1327,6 +1327,11 @@ def _governance_declared(plan) -> set:
     return set(_governance_string_list(governance_section(plan).get("declared")))
 
 
+def _governance_carried_over(plan) -> set:
+    """Fields kept from a plan written before `declared` existed — origin unknown."""
+    return set(_governance_string_list(governance_section(plan).get("carried_over")))
+
+
 def _governance_template_value(plan, field: str) -> tuple:
     """(text, source) for one template-backed field.
 
@@ -1336,10 +1341,17 @@ def _governance_template_value(plan, field: str) -> tuple:
     condition drifting from the fact it imitates.
     """
     section = governance_section(plan)
-    if field in _governance_declared(plan):
+    # THREE states, the same three the writer records. Teaching the writer and the BA
+    # Plan renderer about `carried_over` and not this reader left one project with two
+    # delivered documents naming different escalation paths — and the CR Decision
+    # Record's was a template string the plan file does not contain anywhere.
+    declared = _governance_declared(plan)
+    carried = _governance_carried_over(plan)
+    if field in declared or field in carried:
         value = section.get(field)
         if isinstance(value, str) and value.strip():
-            return value, "declared in 3.3"
+            return value, ("declared in 3.3" if field in declared
+                           else "carried over from an earlier plan")
     criticality = section.get("project_criticality")
     template = (GOVERNANCE_TEMPLATES.get(criticality)
                 if isinstance(criticality, str) else None)

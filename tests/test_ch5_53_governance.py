@@ -381,6 +381,25 @@ class RegistryBridgeTest(PrioritizationGovernanceBase):
         self.assertIn("is not among the participants planned in 3.3", result)
 
 
+class OnePersonTwoPlannedRolesTest(PrioritizationGovernanceBase):
+    """FOUND BY THE FIX-WAVE RE-REVIEW. One person legitimately holding two planned
+    roles closes two rows with one signature — ordinary on a small project. The count
+    then states a fact about how many PEOPLE took part that nobody made."""
+
+    def test_the_report_says_when_one_person_covered_two_roles(self):
+        self._seed_registry([{"name": "Dana Cole", "role": "Product Owner"},
+                             {"name": "Dana Cole", "role": "Head of Risk"}])
+        plan_ba_governance(PROJECT, "High", '["PO"]',
+                           prioritization_technique="MoSCoW",
+                           prioritization_participants_json=TWO_PARTICIPANTS)
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        add_stakeholder_scores(PROJECT, "S1", "Dana Cole", "High", MOSCOW_SCORES)
+        run_aggregation(PROJECT, "S1")
+        report = save_prioritization_result(PROJECT, "S1")
+        self.assertIn("2 of 2 planned participants scored", report)
+        self.assertIn("1 stakeholder(s) covered 2 planned roles", report)
+
+
 class NoRegistryTest(BaseMCPTest):
     """With nothing tying roles to names, a non-match means the two labels cannot be
     compared. Saying "not among the planned participants" would be a guess printed as
@@ -398,6 +417,26 @@ class NoRegistryTest(BaseMCPTest):
                                         MOSCOW_SCORES)
         self.assertIn("✅ Scores for stakeholder", result)
         self.assertNotIn("is not among the participants planned in 3.3", result)
+
+    def test_the_report_does_not_claim_nobody_scored_when_it_cannot_tell(self):
+        """FOUND BY THE FIX-WAVE RE-REVIEW. An unbridgeable scorer fell into NEITHER
+        `scored` nor `extra`, but `missing` is derived from `scored` and still fired:
+        the signed report asserted "0 of 2 planned participants scored" over a session
+        both of them scored, and deleted the one line that named them — the only
+        evidence a reader had against the number."""
+        plan_ba_governance(PROJECT, "High", '["PO"]',
+                           prioritization_technique="MoSCoW",
+                           prioritization_participants_json=TWO_PARTICIPANTS)
+        start_prioritization_session(PROJECT, "S1", "MoSCoW")
+        add_stakeholder_scores(PROJECT, "S1", "Priya Nair", "High", MOSCOW_SCORES)
+        add_stakeholder_scores(PROJECT, "S1", "Dana Cole", "High", MOSCOW_SCORES)
+        run_aggregation(PROJECT, "S1")
+        report = save_prioritization_result(PROJECT, "S1")
+        self.assertIn("## Planned approach (3.3)", report)      # the block rendered
+        self.assertNotIn("0 of 2 planned participants scored", report)
+        self.assertIn("Priya Nair", report)                     # they are still named
+        self.assertIn("Dana Cole", report)
+        self.assertNotIn("Did not score:", report)              # ...and not accused
 
     def test_an_exact_role_match_still_works_without_a_registry(self):
         """The bridge only ADDS matches: a BA who types the planned role gets the same

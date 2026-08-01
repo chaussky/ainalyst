@@ -40,7 +40,7 @@ from skills.common import (
     load_ba_plan, planned_timing_form, approach_to_timing_form,
     planned_approval_timing, planned_approval_process, planned_decision_makers,
     is_planned_decision_maker, reg_norm,
-    planned_party_status, party_aliases, PARTY_UNPLANNED,
+    planned_party_status, party_aliases, PARTY_UNPLANNED, PARTY_UNBRIDGEABLE,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -1651,8 +1651,13 @@ def create_requirements_baseline(
     # is untouched by B3-2. Matched with the same `is_planned_decision_maker` the
     # warning in record_approval_decision uses, so the record and the warning cannot
     # disagree about who counts as an authority.
-    plan, _plan_note = load_ba_plan(project_name)
+    plan, plan_note = load_ba_plan(project_name)
     planned_authority = planned_decision_makers(plan)
+    if plan_note and not planned_authority:
+        # Same rule as the 5.3 report: without this the Approval Record of a project
+        # whose plan is corrupt is byte-identical to one that never planned governance,
+        # and this is the document an auditor reads.
+        record_lines += ["", "---", "", "## Governance (3.3)", "", plan_note, ""]
     if planned_authority:
         # RACI-guarded on BOTH sides of the block. It was guarded only on the
         # "signed without being planned" list, so a planned approver recorded as
@@ -1680,10 +1685,19 @@ def create_requirements_baseline(
         # Registry-bridged like every other governance match, and only a definite
         # PARTY_UNPLANNED is named: with no registry, a planned ROLE and a typed NAME
         # cannot be compared, and this document is signed.
-        unplanned_authority = [
-            name for name in authority_decisions
-            if planned_party_status(project_name, planned_authority, name)
-            == PARTY_UNPLANNED]
+        unplanned_authority, unmatched_authority = [], []
+        for name in authority_decisions:
+            status = planned_party_status(project_name, planned_authority, name)
+            if status == PARTY_UNPLANNED:
+                unplanned_authority.append(name)
+            elif status == PARTY_UNBRIDGEABLE:
+                # Neither list claimed them, so on a project with no registry the
+                # record read "Responded: nobody" three lines under that person's own
+                # signature — the very defect the unplanned-signer line was added to
+                # close, reintroduced by the silence rule that protects them from a
+                # false accusation. Silence is right for the accusation, not for the
+                # roll-call.
+                unmatched_authority.append(name)
         record_lines += [
             "",
             "---",
@@ -1691,12 +1705,24 @@ def create_requirements_baseline(
             "## Governance (3.3)",
             "",
             f"**Planned approval authority (3.3):** {', '.join(planned_authority)}  ",
+            # "No decision recorded from" was false whenever the named person had in
+            # fact recorded a `consulted` review — printed twenty lines above, in this
+            # same document. The RACI reading is the intended one; the sentence has to
+            # say which kind of decision it means.
             # Trailing hard break: without it the ⚠️ line below renders joined onto
             # this one as a single paragraph.
-            (f"**Responded:** {', '.join(responded) or 'nobody'}."
-             + (f" No decision recorded from: {', '.join(silent)}." if silent else "")
+            (f"**Responded (accountable/responsible):** "
+             f"{', '.join(responded) or 'nobody'}."
+             + (f" No approval decision recorded from: {', '.join(silent)}."
+                if silent else "")
              + "  "),
         ]
+        if unmatched_authority:
+            record_lines.append(
+                f"ℹ️ Also decided by: {', '.join(unmatched_authority)} — the platform "
+                f"cannot tell whether they are among the planned authority, because "
+                f"3.3 plans roles and this record names people. Build the stakeholder "
+                f"registry (3.2 / 4.2) to reconcile the two.  ")
         if unplanned_authority:
             record_lines.append(
                 f"⚠️ Decided by, without being named in the 3.3 plan: "

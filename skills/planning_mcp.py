@@ -108,9 +108,18 @@ def _trace_source_text(level: str, criticality: str, source: str) -> str:
     signed document disagreeing about a value one of them cites. The value itself is
     insert-only and does not move; only the explanation is recomputed.
     """
-    if source != _SEEDED:
+    # `startswith` accepts the SENTENCE the previous release stored as well as the
+    # fact this one stores: without it, every project planned before the change lost
+    # its label and delivered a platform default as the analyst's own decision.
+    if source != _SEEDED and not str(source).startswith("seeded"):
         return ""
-    if criticality and criticality != level:
+    if not criticality:
+        # The criticality was removed or hand-edited into something unusable, and the
+        # 3.3 table one section up now reads "not planned". Claiming the level came
+        # from a criticality that section says does not exist is the contradiction
+        # this helper was written to prevent.
+        return f"seeded from the 3.3 criticality, which 3.3 no longer states"
+    if criticality != level:
         return (f"seeded from the 3.3 criticality when it was {level}; "
                 f"3.3 now says {criticality} — re-state the level if it should follow")
     return f"seeded from the 3.3 criticality: {level}"
@@ -651,6 +660,17 @@ def plan_ba_governance(
     else:
         criticality = project_criticality
     if criticality not in GOVERNANCE_TEMPLATES:
+        # The same wording defect Fix 10 diagnosed for `decision_makers_json`, and the
+        # value guard added in this wave made it MORE reachable: a stored criticality
+        # can now vanish on its own. On a plan that already holds other 3.3 content,
+        # "the first time 3.3 is planned" is false and sends the BA looking for a file
+        # that is right there.
+        if previous:
+            return ("❌ `project_criticality` is missing from the stored 3.3 plan or "
+                    "holds a value this platform does not know.\n"
+                    "   It selects the default wording for every process field, so it "
+                    "has to be re-stated: Low / Medium / High.\n"
+                    "   Everything else you have planned in 3.3 is untouched.")
         return ("❌ `project_criticality` is required the first time 3.3 is planned "
                 "— it selects the default wording for every process field.\n"
                 "   Allowed: Low / Medium / High")
@@ -818,7 +838,15 @@ def plan_ba_governance(
     }
 
     def _src(field):
-        return "declared" if field in declared else f"from the {criticality} template"
+        # The same three states the report's Source column and the shared readers use.
+        # This echo knew only two, so a legacy re-run printed the analyst's own text
+        # with "(from the High template)" beside it — and the template's wording for
+        # that field was something else entirely.
+        if field in declared:
+            return "declared"
+        if field in carried:
+            return "carried over from an earlier plan"
+        return f"from the {criticality} template"
 
     deadline_line = (f"  Response deadline:  {sla_days} business days\n"
                      if sla_days else "")
@@ -1028,7 +1056,15 @@ def plan_information_management(
             # — adding artifact types, a reuse scope — silently dropped it while the
             # seeded value stayed, and the guarantee that a default is visible as a
             # default lasted exactly one call.
-            trace_source = previous.get("traceability_source", "")
+            stored_source = previous.get("traceability_source", "")
+            # The previous release stored the SENTENCE ("seeded from the 3.3
+            # criticality: High"); this one stores the FACT. Without this line every
+            # project planned before the change silently lost its label on the next
+            # 3.4 call and delivered a platform default as the analyst's decision —
+            # the same absent-versus-new-shape class as `declared`, in the sibling
+            # field one function away, introduced by the fix for it.
+            trace_source = (_SEEDED if stored_source.startswith("seeded")
+                            else stored_source)
         else:
             if criticality in _TRACEABILITY_LEVELS:
                 level = criticality

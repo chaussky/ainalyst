@@ -285,7 +285,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("Planned approval authority", record)
         self.assertIn("CFO, Head of Risk", record)
-        self.assertIn("No decision recorded from: Head of Risk", record)
+        self.assertIn("No approval decision recorded from: Head of Risk", record)
 
     def test_the_record_says_so_when_every_authority_responded(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
@@ -293,7 +293,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "responsible", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("Planned approval authority", record)
-        self.assertNotIn("No decision recorded from", record)
+        self.assertNotIn("No approval decision recorded from", record)
 
     def test_an_unplanned_responder_does_not_count_as_a_planned_one(self):
         """The `silent` list alone cannot prove this — it is computed by matching the
@@ -303,8 +303,8 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record_approval_decision(PROJECT, "APKG-001", "Marketing Lead",
                                  "accountable", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO", force=True)
-        self.assertIn("**Responded:** nobody.", record)
-        self.assertIn("No decision recorded from: CFO, Head of Risk", record)
+        self.assertIn("**Responded (accountable/responsible):** nobody.", record)
+        self.assertIn("No approval decision recorded from: CFO, Head of Risk", record)
 
     def test_an_unplanned_accountable_signer_is_named_in_the_record(self):
         """FOUND BY THE LIVE RUN. `record_approval_decision` warns that an accountable
@@ -331,7 +331,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "responsible", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("**Responded:** CFO, Head of Risk", gov)   # the block rendered
+        self.assertIn("**Responded (accountable/responsible):** CFO, Head of Risk", gov)   # the block rendered
         self.assertNotIn("without being named", gov)
 
     def test_a_consulted_reviewer_outside_the_plan_is_not_reported_as_authority(self):
@@ -343,7 +343,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "consulted", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("**Responded:** CFO", gov)          # the block rendered
+        self.assertIn("**Responded (accountable/responsible):** CFO", gov)          # the block rendered
         self.assertNotIn("Sam Doyle", gov)
 
     def test_the_block_is_absent_without_a_plan(self):
@@ -352,6 +352,65 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("Approval Record", record)      # the record IS rendered...
         self.assertNotIn("Planned approval authority", record)   # ...without the block
+
+
+class NoRegistryApprovalRecordTest(BaseMCPTest):
+    """FOUND BY THE FIX-WAVE RE-REVIEW — 5.3 and 5.4 got a no-registry class and 5.5
+    did not, so the regression the registry bridge introduced here was invisible."""
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        prepare_approval_package(PROJECT, "APKG-001", "Auth",
+                                 '["FR-001", "FR-002"]', approach="predictive")
+        # deliberately NO registry
+
+    def test_a_signer_who_cannot_be_matched_is_still_named(self):
+        """The record used to read "Responded: nobody" three lines under this person's
+        own signature: they were excluded from `responded` (no match) AND from the
+        unplanned list (silence protects them from a false accusation). Silence is
+        right for the ACCUSATION and wrong for the ROLL-CALL."""
+        record_approval_decision(PROJECT, "APKG-001", "Alice Chen", "accountable",
+                                 "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "Alice Chen",
+                                        force=True)
+        gov = record.split("## Governance (3.3)")[1]
+        self.assertIn("Alice Chen", gov)
+        self.assertIn("cannot tell", gov)
+        self.assertNotIn("without being named in the 3.3 plan", gov)   # no accusation
+
+    def test_an_exact_role_match_still_counts_without_a_registry(self):
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        gov = record.split("## Governance (3.3)")[1]
+        self.assertIn("**Responded (accountable/responsible):** CFO", gov)
+        self.assertNotIn("cannot tell", gov)
+
+
+class ConsultedIsNotSilenceTest(BaseMCPTest):
+    """FOUND BY THE FIX-WAVE RE-REVIEW. RACI-guarding the roll-call is right, but the
+    SENTENCE then claimed no decision was recorded from someone whose decision is
+    printed twenty lines above in the same document."""
+
+    def setUp(self):
+        super().setUp()
+        init_traceability_repo(PROJECT, "Standard", REQS)
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        prepare_approval_package(PROJECT, "APKG-001", "Auth",
+                                 '["FR-001", "FR-002"]', approach="predictive")
+        _seed_registry([{"name": "Alice Chen", "role": "CFO"},
+                        {"name": "Dana Cole", "role": "Head of Risk"}])
+
+    def test_the_sentence_says_which_kind_of_decision_is_missing(self):
+        record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
+        record_approval_decision(PROJECT, "APKG-001", "Head of Risk", "consulted",
+                                 "approved")
+        record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
+        self.assertIn("**Head of Risk** (consulted) — approved", record)
+        gov = record.split("## Governance (3.3)")[1]
+        self.assertIn("No approval decision recorded from: Head of Risk", gov)
+        self.assertNotIn("No decision recorded from: Head of Risk", gov)
 
 
 if __name__ == "__main__":

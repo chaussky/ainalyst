@@ -519,6 +519,25 @@ class TestCriticalityIsGuardedByValue(BaseMCPTest):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
 
+    def test_a_vanished_criticality_does_not_claim_3_3_was_never_planned(self):
+        """FOUND BY THE FIX-WAVE RE-REVIEW. The value guard added in the same wave gave
+        the stored criticality a NEW way to vanish, and the refusal on that path still
+        said "the first time 3.3 is planned" — false on a project whose plan is right
+        there, and the same wording defect the wave had just fixed one branch below."""
+        plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
+        path = _plan_path(PROJECT)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["governance"]["project_criticality"] = "Catastrophic"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        result = plan_ba_governance(PROJECT, review_cycle="Monthly")
+        self.assertIn("❌", result)
+        self.assertNotIn("the first time 3.3 is planned", result)
+        self.assertIn("Low / Medium / High", result)
+        # ...and it really did refuse without eating the stored plan.
+        self.assertEqual(_section()["decision_makers"], ["CFO", "Head of Risk"])
+
     def test_the_report_does_not_cite_a_template_that_does_not_exist(self):
         self._hand_edit_criticality("Catastrophic")
         report = _report_text()

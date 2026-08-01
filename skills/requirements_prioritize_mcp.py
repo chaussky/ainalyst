@@ -30,7 +30,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     load_ba_plan, planned_prioritization, reg_norm,
-    planned_party_status, PARTY_UNPLANNED, PARTY_PLANNED,
+    planned_party_status, PARTY_UNPLANNED, PARTY_PLANNED, PARTY_UNBRIDGEABLE,
 )
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
@@ -608,10 +608,13 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
     Everything here goes through `planned_prioritization`, so a hand-edited plan cannot
     put an unknown technique or a per-character participant list into a delivered report.
     """
-    plan, _plan_note = load_ba_plan(project_name)
+    plan, plan_note = load_ba_plan(project_name)
     planned = planned_prioritization(plan)
     if not any(planned.values()):
-        return []
+        # An unreadable plan removes this whole section from a SIGNED report, leaving
+        # output identical to a project that never planned an approach. That is the
+        # one case where silence is a claim, so the document says it.
+        return ["## Planned approach (3.3)", "", plan_note, ""] if plan_note else []
 
     method = session.get("method", "")
     lines = ["## Planned approach (3.3)", ""]
@@ -638,13 +641,40 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
                   if any(planned_party_status(project_name, [p], s) == PARTY_PLANNED
                          for s in scorers)]
         missing = [p for p in planned_names if p not in scored]
-        extra = [s for s in scorers
-                 if planned_party_status(project_name, planned_names, s)
-                 == PARTY_UNPLANNED]
-        lines.append(f"**Participation:** {len(scored)} of {len(planned_names)} "
-                     f"planned participants scored.  ")
-        if missing:
-            lines.append(f"- Did not score: {', '.join(missing)}  ")
+        extra, unmatched = [], []
+        for s in scorers:
+            status = planned_party_status(project_name, planned_names, s)
+            if status == PARTY_UNPLANNED:
+                extra.append(s)
+            elif status == PARTY_UNBRIDGEABLE:
+                unmatched.append(s)
+        # Silence is right for an ACCUSATION and wrong for a COUNT. An unbridgeable
+        # scorer belongs to neither list, so the paragraph reported "0 of 2 planned
+        # participants scored" over a session both of them scored — and, by dropping
+        # the only line that named them, deleted the evidence against its own number.
+        # The count is stated only when it can be trusted; otherwise the document says
+        # what it does not know.
+        if unmatched:
+            lines.append(
+                f"**Participation:** {len(scorers)} stakeholder(s) scored; the "
+                f"platform cannot tell which planned participants they are.  ")
+            lines.append(
+                f"- Could not be matched to the plan: {', '.join(unmatched)}  ")
+            lines.append(
+                "- 3.3 plans roles; a session records people. Build the stakeholder "
+                "registry (3.2 / 4.2) and the two can be reconciled.  ")
+        else:
+            lines.append(f"**Participation:** {len(scored)} of {len(planned_names)} "
+                         f"planned participants scored.  ")
+            if missing:
+                lines.append(f"- Did not score: {', '.join(missing)}  ")
+            # One person can legitimately hold two planned roles, and then one scorer
+            # closes two rows. Stating the count without stating that is a claim about
+            # how many PEOPLE took part that nobody made.
+            if len(scored) > len(scorers):
+                lines.append(
+                    f"- Note: {len(scorers)} stakeholder(s) covered "
+                    f"{len(scored)} planned roles between them.  ")
         if extra:
             lines.append(f"- Scored without being planned: {', '.join(extra)}  ")
 
@@ -901,11 +931,11 @@ def start_prioritization_session(
     # algorithm. `method` is the BA's explicit choice and is NEVER overridden: it
     # selects the whole aggregation algorithm, and a plan silently switching it would
     # change every priority the session produces. So this warns, and nothing else.
-    plan, _plan_note = load_ba_plan(project_name)
+    plan, plan_note = load_ba_plan(project_name)
     planned_technique = planned_prioritization(plan)["technique"]
-    governance_note = ""
+    governance_note = plan_note if plan_note else ""
     if planned_technique and planned_technique != method:
-        governance_note = (
+        governance_note = ((governance_note + "\n\n" if governance_note else "") +
             f"⚠️ This session uses **{method}**, but 3.3 plans the technique "
             f"**{planned_technique}**.\n"
             f"   The session proceeds with {method} — `method` is your explicit "

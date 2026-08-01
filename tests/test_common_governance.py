@@ -316,5 +316,46 @@ class TestTheRegistryBridgesRoleAndName(BaseMCPTest):
         self.assertTrue(is_planned_decision_maker(plan, "Product Owner"))
 
 
+class TestCarriedOverReachesTheReaders(BaseMCPTest):
+    """FOUND BY THE FIX-WAVE RE-REVIEW. The carried-over state was taught to the WRITER
+    and to the BA Plan renderer, and not to the three readers 5.4 and 5.5 actually
+    print from — so one project had two delivered documents naming different escalation
+    paths, and the CR record's was a string the plan file does not contain."""
+
+    def _legacy_plan(self):
+        return {"project_id": "p", "governance": {
+            "project_criticality": "High",
+            "decision_makers": ["Sponsor"],
+            "escalation_path": "BA → CRO → Board Risk Committee",
+            "approval_process": "Two-key sign-off: CRO and Head of Compliance.",
+            "declared": [],
+            "carried_over": ["escalation_path", "approval_process"],
+        }}
+
+    def test_a_carried_over_escalation_path_is_read_not_regenerated(self):
+        text, source = planned_escalation_path(self._legacy_plan())
+        self.assertEqual(text, "BA → CRO → Board Risk Committee")
+        self.assertNotIn("declared", source)          # not credited to the BA...
+        self.assertNotIn("template", source)          # ...and not blamed on a template
+
+    def test_a_carried_over_approval_process_is_read_not_regenerated(self):
+        text, source = planned_approval_process(self._legacy_plan())
+        self.assertEqual(text, "Two-key sign-off: CRO and Head of Compliance.")
+        self.assertIn("carried over", source)
+
+    def test_declared_still_wins_over_carried_over(self):
+        plan = self._legacy_plan()
+        plan["governance"]["declared"] = ["escalation_path"]
+        _text, source = planned_escalation_path(plan)
+        self.assertEqual(source, "declared in 3.3")
+
+    def test_a_carried_over_marker_without_a_value_falls_back_to_the_template(self):
+        plan = self._legacy_plan()
+        del plan["governance"]["escalation_path"]
+        text, source = planned_escalation_path(plan)
+        self.assertEqual(text, GOVERNANCE_TEMPLATES["High"]["escalation"])
+        self.assertIn("template", source)
+
+
 if __name__ == "__main__":
     unittest.main()
