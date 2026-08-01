@@ -939,5 +939,55 @@ class TestStakeholderRepresentationCountsOwner(BaseMCPTest):
                       "the verdict must say HOW it looked (owner + title words)")
 
 
+class TestDeclaredConcernsReadBothForms(BaseMCPTest):
+    """The field is written as objects and READ in two forms.
+
+    The bare string is what the previous reader understood (`str(sh).lower()`), so a
+    repository written by an older build — or by a human editing JSON — must keep
+    rendering. And a missing key, an explicit null and a non-list are THREE different
+    inputs: `.get(k, default)` is the border between the first two, and it is exactly
+    the border a `del`-only fixture never tests.
+    """
+
+    def test_the_object_form_yields_the_name(self):
+        req = {"id": "FR-001", "stakeholders": [
+            {"name": "Sales Head", "declared": "2026-08-01", "note": "revenue"}]}
+        self.assertEqual(mod74._declared_concerns(req), ["Sales Head"])
+
+    def test_the_bare_string_form_still_reads(self):
+        req = {"id": "FR-001", "stakeholders": ["Sales Head"]}
+        self.assertEqual(mod74._declared_concerns(req), ["Sales Head"])
+
+    def test_both_forms_in_one_list_read_together(self):
+        req = {"id": "FR-001", "stakeholders": [
+            "Sales Head", {"name": "Data Architect"}]}
+        self.assertEqual(mod74._declared_concerns(req), ["Sales Head", "Data Architect"])
+
+    def test_a_missing_key_yields_nothing(self):
+        self.assertEqual(mod74._declared_concerns({"id": "FR-001"}), [])
+
+    def test_an_explicit_null_yields_nothing_and_does_not_raise(self):
+        # NOT the same fixture as the one above: `.get(k, default)` protects against
+        # the missing key and does nothing about a key holding None.
+        self.assertEqual(mod74._declared_concerns({"id": "FR-001", "stakeholders": None}), [])
+
+    def test_a_non_list_value_yields_nothing_and_does_not_raise(self):
+        self.assertEqual(
+            mod74._declared_concerns({"id": "FR-001", "stakeholders": "Sales Head"}), [])
+        self.assertEqual(
+            mod74._declared_concerns({"id": "FR-001", "stakeholders": {"name": "X"}}), [])
+
+    def test_unreadable_entries_are_skipped_not_stringified(self):
+        # `str(entry)` on a number would put "42" into a signed document as a person.
+        req = {"id": "FR-001", "stakeholders": [42, None, {"role": "no name key"},
+                                                {"name": ""}, "Real Person"]}
+        self.assertEqual(mod74._declared_concerns(req), ["Real Person"])
+
+    def test_duplicates_collapse_by_normalised_identity(self):
+        req = {"id": "FR-001", "stakeholders": [
+            "Sales Head", {"name": "  sales   head "}, "SALES HEAD"]}
+        self.assertEqual(mod74._declared_concerns(req), ["Sales Head"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

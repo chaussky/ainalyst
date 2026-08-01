@@ -35,7 +35,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -193,6 +193,46 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
         if r["id"] == req_id:
             return r
     return None
+
+
+# ---------------------------------------------------------------------------
+# Stakeholder↔requirement model (ADR-098)
+# ---------------------------------------------------------------------------
+
+def _concern_name(entry) -> str:
+    """One declared stakeholder name from a `stakeholders` entry, or "".
+
+    TWO forms are accepted on read and exactly ONE is ever written. The bare string is
+    the form this module's previous reader understood (`str(sh).lower()`), so a file an
+    older build or a human wrote keeps rendering. Anything else returns "" rather than
+    being stringified: `str(42)` would put "42" into a signed document as a person.
+    """
+    if isinstance(entry, str):
+        return entry.strip()
+    if isinstance(entry, dict):
+        name = entry.get("name")
+        return name.strip() if isinstance(name, str) else ""
+    return ""
+
+
+def _declared_concerns(req: dict) -> list:
+    """Names the BA declared on ONE requirement, in order, deduped by reg_norm.
+
+    `.get(k) or []` rather than `.get(k, [])`: the missing key and an explicit null are
+    different inputs and only the first is what a default protects against. A non-list
+    value is a third input again — a hand-edited file — and must degrade, not raise.
+    """
+    raw = req.get("stakeholders") or []
+    if not isinstance(raw, list):
+        return []
+    out, seen = [], set()
+    for entry in raw:
+        name = _concern_name(entry)
+        key = reg_norm(name)
+        if key and key not in seen:
+            seen.add(key)
+            out.append(name)
+    return out
 
 
 # ---------------------------------------------------------------------------
