@@ -351,10 +351,13 @@ class TestGapAnalysisImport(BaseMCPTest):
         self.assertEqual(gaps[0]["source_project"], PROJECT)
 
     def test_the_reply_names_the_imported_elements(self):
+        """The joined element list, not a bare "technology": _make_scope defaults to
+        change_type="technology_implementation", which the header prints on every run,
+        so asserting the substring alone holds with the join deleted."""
         _write_gap_file()
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
         self.assertIn("Gap analysis (6.2)", result)
-        self.assertIn("technology", result)
+        self.assertIn("technology, policies", result)
 
     def test_a_project_with_ONLY_a_gap_analysis_still_gets_the_context_header(self):
         """The 'Imported context' header was gated on the other three sources.

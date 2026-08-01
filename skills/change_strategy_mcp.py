@@ -3,7 +3,7 @@ BABOK 6.4 — Define Change Strategy
 MCP tools for defining the change strategy.
 
 Tools:
-  - scope_change_strategy       — initialization + auto-import from 6.1, 6.2, 6.3
+  - scope_change_strategy       — initialization + auto-import from 6.1, 6.2 (goals + gaps), 6.3
   - define_solution_scope       — capabilities by category + explicitly_excluded
   - assess_enterprise_readiness — 6 readiness dimensions x score 1-5 -> readiness_score
   - add_strategy_option         — strategy option card
@@ -16,9 +16,10 @@ Storage:
   - {project}_change_strategy.json        — final artifact (contract for 7.x, 8.x)
 
 Integration:
-  In: 6.1 (business_needs), 6.2 (future_state_goals), 6.3 (risk_assessment)
-      (future_state / gap_analysis are NOT auto-imported — enter gap_severity in
-       define_solution_scope by hand; auto-import is a backlogged feature)
+  In: 6.1 (business_needs), 6.2 (future_state_goals + gap_analysis), 6.3 (risk_assessment)
+      The 6.2 gap analysis is imported as CONTEXT and cross-checked against the
+      capabilities: gap_severity and in_scope stay the analyst's own judgement and are
+      never written by the import (6.2 measures change EFFORT, 6.4 measures gap SIZE).
   Out: change_strategy.json -> 7.1, 7.4, 7.5, 7.6, 8.x;
        solution_scope + satisfies node -> 5.1 (optional)
 
@@ -233,9 +234,11 @@ def scope_change_strategy(
     Step 1 of the 6.4 pipeline: initialize the change strategy.
 
     Locks in the change type, horizon, and methodology.
-    Automatically imports context from 6.1 (business_needs), 6.2 (future_state_goals)
-    and 6.3 (risk_assessment). The 6.2 gap analysis is NOT auto-imported — record
-    gap_severity per capability in define_solution_scope. Adds do_nothing as OPT-000.
+    Automatically imports context from 6.1 (business_needs), 6.2 (future_state_goals
+    and gap_analysis) and 6.3 (risk_assessment). The gap analysis arrives as context
+    only — record gap_severity per capability in define_solution_scope yourself, and
+    name the element there as gap_source "6.2:<element>" so coverage can be checked.
+    Adds do_nothing as OPT-000.
     Graceful degradation: missing artifacts are skipped with a warning.
 
     Args:
