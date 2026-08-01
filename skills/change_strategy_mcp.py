@@ -66,6 +66,14 @@ VALID_INVESTMENT_LEVELS = ["high", "medium", "low"]
 VALID_RISK_IMPACTS = ["mitigates", "exacerbates", "neutral"]
 VALID_CAP_CATEGORIES = ["process", "technology", "data", "people", "org_structure", "knowledge", "location"]
 VALID_GAP_SEVERITIES = ["none", "low", "medium", "high"]
+# 6.2's eight future-state elements — the vocabulary `gap_source` draws from. Duplicated
+# rather than imported from future_state_mcp on purpose: these are two separate MCP
+# servers, only one of which is loaded in most phases, and the four import filenames
+# above already follow this rule. Without a dictionary here, "6.2:process" — a 6.4
+# CATEGORY, the most plausible mistake there is — was accepted in silence.
+VALID_GAP_ELEMENTS = ["business_needs", "org_structure", "capabilities", "technology",
+                      "policies", "architecture", "assets", "external"]
+_VALID_GAP_ELEMENT_KEYS = {e.casefold() for e in VALID_GAP_ELEMENTS}
 VALID_VERDICTS = ["ready", "proceed_with_caution", "not_ready"]
 
 DEFAULT_CRITERIA_WEIGHTS = {
@@ -316,12 +324,22 @@ def _gap_coverage(strategy: dict) -> dict:
         element = _declared_element(cap)
         # `in_scope` defaults to True exactly as define_solution_scope defaults it.
         in_scope = bool(cap.get("in_scope", True))
+        # IN-SCOPE only, for this line and for `claimed_absent` below. The delivered
+        # document renders in-scope capabilities and nothing else, so an out-of-scope
+        # one raises "Cannot be checked: 1 capability" over a page on which every
+        # capability shown IS traced — the same evidence-free claim `excluded_by` was
+        # added to fix. Counting rather than naming is the right half of that symmetry
+        # here: each in-scope capability already carries its own "no 6.2 element stated"
+        # sub-line in the document, so the count has its evidence on the page. The
+        # exclusion line names names instead, because there the out-of-scope
+        # capability's decision IS the claim being made.
         if not element:
-            unknown_caps += 1
+            if in_scope:
+                unknown_caps += 1
             continue
         key = element.casefold()
         if key not in analysed_keys:
-            if key not in {c.casefold() for c in claimed_absent}:
+            if in_scope and key not in {c.casefold() for c in claimed_absent}:
                 claimed_absent.append(element)
             continue
         canonical = analysed_keys[key]
@@ -356,7 +374,12 @@ def _gap_file_seen(strategy: dict, project_id: str) -> bool:
     sources = (strategy.get("scope") or {}).get("source_project_ids") or []
     if not isinstance(sources, list):
         sources = []
-    for src in list(sources) + [project_id]:
+    # EXACTLY the importer's own source set — `sources or [project_id]`, the fallback
+    # scope_change_strategy applies — and not a superset of it. Scanning the current
+    # project on top found files the import would never open once `source_project_ids`
+    # named someone else, and the message it triggered ("re-run scope_change_strategy")
+    # then advised a re-run that cannot pick the file up.
+    for src in (sources or [project_id]):
         if isinstance(src, str) and src and os.path.exists(_gap_file_path(src)):
             return True
     return False
@@ -559,8 +582,13 @@ def scope_change_strategy(
         # `complexity` measures change EFFORT where `gap_severity` measures gap SIZE.
         # A platform that mapped one onto the other would be classifying, not importing.
         gap_data = _safe_load_json(_gap_file_path(src_id))
-        if gap_data:
-            for gp in gap_data.get("gaps", []):
+        # `is None` is the only "no file" signal. `if gap_data:` also swallowed a file
+        # that parsed to an empty object, and a file whose `gaps` list held nothing
+        # usable produced no warning at all — silence the analyst reads as a clean
+        # import, right before the coverage block says the import never happened.
+        if gap_data is not None:
+            gaps_before = len(imported_gaps)
+            for gp in gap_data.get("gaps", []) if isinstance(gap_data.get("gaps"), list) else []:
                 if not isinstance(gp, dict):
                     continue
                 element = gp.get("element", "")
@@ -575,6 +603,10 @@ def scope_change_strategy(
                     "gap_summary": summary[:120] if isinstance(summary, str) else "",
                     "source_project": src_id,
                 })
+            if len(imported_gaps) == gaps_before:
+                warnings.append(
+                    f"⚠️ 6.2 gap_analysis for '{src_id}' was read but holds no usable "
+                    f"elements — nothing imported from it")
         else:
             warnings.append(f"⚠️ 6.2 gap_analysis not found for '{src_id}'")
 
@@ -704,6 +736,15 @@ def define_solution_scope(
             continue
         if gap_severity not in VALID_GAP_SEVERITIES:
             errors.append(f"Capability '{name}': invalid gap_severity '{gap_severity}'")
+            continue
+        # Only a gap_source that NAMES an element is checked. "manual" and the legacy
+        # bare "6.2:gap_analysis" name none, stay accepted, and report as uncheckable.
+        declared = _declared_element(cap)
+        if declared and declared.casefold() not in _VALID_GAP_ELEMENT_KEYS:
+            errors.append(
+                f"Capability '{name}': invalid gap_source element '{declared}'. "
+                f"gap_source names a 6.2 element as \"6.2:<element>\". "
+                f"Allowed: {', '.join(VALID_GAP_ELEMENTS)}")
             continue
         valid_caps.append({
             "name": name,
@@ -1469,10 +1510,14 @@ def save_change_strategy(
     for cap in in_scope_caps:
         cats.setdefault(cap.get("category", "uncategorised"), []).append(cap)
 
+    # Keyed by casefold, exactly as _gap_coverage matches. Keyed by the raw string, a
+    # capability declaring "6.2:Technology" was counted as covered by the block and
+    # reported one screen above as an element "the imported gap analysis does not
+    # contain" — two opposite verdicts on one page.
     gap_by_element = {}
     for gap in (strategy.get("imported_context") or {}).get("gaps", []) or []:
         if isinstance(gap, dict) and isinstance(gap.get("element"), str):
-            gap_by_element.setdefault(gap["element"].strip(), gap)
+            gap_by_element.setdefault(gap["element"].strip().casefold(), gap)
     coverage_checked = _gap_coverage(strategy)["checked"]
 
     for cat, caps_list in sorted(cats.items()):
@@ -1496,12 +1541,16 @@ def save_change_strategy(
             if not element:
                 md_lines.append("  ↳ no 6.2 element stated in gap_source "
                                 "— coverage cannot be checked for this one")
-            elif element in gap_by_element:
-                effort = gap_by_element[element].get("complexity") or "not stated"
+            elif element.casefold() in gap_by_element:
+                matched = gap_by_element[element.casefold()]
+                effort = matched.get("complexity") or "not stated"
+                # The 6.2 spelling, not the capability's: one name for one element
+                # across the whole document, the same one the coverage block prints.
+                shown = (matched.get("element") or element).strip()
                 # The scale label rides on EVERY line, not in a header: `gap:` and
                 # `effort:` share the low/medium/high letters and mean different
                 # things — size of the gap versus effort of the change.
-                md_lines.append(f"  ↳ from 6.2 gap `{element}` — change effort there: "
+                md_lines.append(f"  ↳ from 6.2 gap `{shown}` — change effort there: "
                                 f"{effort} (effort, not gap size)")
             else:
                 md_lines.append(f"  ↳ declares 6.2 element `{element}`, which the "

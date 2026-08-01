@@ -1811,5 +1811,202 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
         self.assertNotIn("analysed)", lines)
 
 
+class TestTheBlockOnlyJudgesWhatTheDocumentShows(BaseMCPTest):
+    """The delivered document renders IN-SCOPE capabilities only. `excluded_by` was
+    fixed to name its capabilities; the other two lines of the block still counted
+    out-of-scope ones, so a page where every rendered capability is traced could still
+    carry "Cannot be checked: 1 capability" over nothing the sponsor can find."""
+
+    def _strategy(self, caps, gaps=("technology", "policies")):
+        return {
+            "imported_context": {"gaps": [
+                {"element": e, "element_label": e, "complexity": "medium",
+                 "change_type": "improve", "gap_summary": "s"} for e in gaps]},
+            "solution_scope": {"capabilities": caps},
+            "scope": {"source_project_ids": []},
+        }
+
+    def test_an_OUT_OF_SCOPE_capability_with_no_element_is_not_counted_uncheckable(self):
+        cov = _gap_coverage(self._strategy([
+            {"name": "Traced", "gap_source": "6.2:technology", "in_scope": True},
+            {"name": "Dropped", "gap_source": "manual", "in_scope": False}]))
+        self.assertEqual(cov["unknown_caps"], 0)
+
+    def test_the_uncheckable_line_is_absent_when_only_out_of_scope_caps_lack_elements(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy([
+            {"name": "Traced", "gap_source": "6.2:technology", "in_scope": True},
+            {"name": "Dropped", "gap_source": "manual", "in_scope": False}]), PROJECT))
+        self.assertNotIn("Cannot be checked", lines)
+
+    def test_an_OUT_OF_SCOPE_capability_claiming_an_absent_element_is_not_flagged(self):
+        cov = _gap_coverage(self._strategy(
+            [{"name": "Dropped", "gap_source": "6.2:assets", "in_scope": False}]))
+        self.assertEqual(cov["claimed_absent"], [])
+
+    def test_the_claimed_absent_line_is_absent_for_an_out_of_scope_claim(self):
+        lines = "\n".join(_gap_coverage_lines(self._strategy(
+            [{"name": "Dropped", "gap_source": "6.2:assets", "in_scope": False}]),
+            PROJECT))
+        self.assertNotIn("Claimed but absent", lines)
+
+    def test_IN_SCOPE_capabilities_are_still_counted_by_both_lines(self):
+        """The positive companion: the fix must narrow the count to in-scope, not
+        switch it off."""
+        cov = _gap_coverage(self._strategy([
+            {"name": "A", "gap_source": "manual", "in_scope": True},
+            {"name": "B", "gap_source": "6.2:assets", "in_scope": True}]))
+        self.assertEqual(cov["unknown_caps"], 1)
+        self.assertEqual(cov["claimed_absent"], ["assets"])
+
+
+class TestTheNotImportedMessageTellsTheTruth(BaseMCPTest):
+    """"a 6.2 gap analysis exists but was not imported — re-run scope_change_strategy"
+    is actionable advice, and it was printed in two situations where re-running changes
+    nothing at all."""
+
+    def _strategy(self, sources):
+        return {
+            "imported_context": {"gaps": []},
+            "solution_scope": {"capabilities": []},
+            "scope": {"source_project_ids": sources},
+        }
+
+    # --- (a) the file was read and had nothing usable in it ---
+
+    def test_an_EMPTY_gaps_list_warns_instead_of_passing_for_a_clean_import(self):
+        _write_gap_file(gaps=[])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("no usable", result)
+        self.assertNotIn("6.2 gap_analysis not found", result)
+
+    def test_a_file_of_ONLY_unusable_entries_warns_too(self):
+        _write_gap_file(gaps=[{"element": ""}, "not a dict", {"element": 7}])
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("no usable", result)
+
+    def test_a_missing_file_still_says_NOT_FOUND_and_not_the_empty_wording(self):
+        """The two must stay distinguishable: one sends the analyst to build an
+        artefact, the other to repair one."""
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertIn("6.2 gap_analysis not found", result)
+        self.assertNotIn("no usable", result)
+
+    def test_a_populated_file_warns_about_neither(self):
+        _write_gap_file()
+        result = _make_scope(source_project_ids=f'["{PROJECT}"]')
+        self.assertNotIn("no usable", result)
+        self.assertNotIn("6.2 gap_analysis not found", result)
+
+    # --- (b) the detector must ask the importer's own question ---
+
+    def test_a_file_the_IMPORTER_would_never_read_is_not_reported_as_seen(self):
+        """The importer walks `sources or [project_id]`; the detector walked
+        `sources + [project_id]`. With sources set to another project, the detector
+        found the current project's file — which the import never opens — and advised
+        a re-run that cannot possibly pick it up."""
+        _write_gap_file(project_id=PROJECT)
+        self.assertTrue(os.path.exists(_gap_file_path(PROJECT)))
+        self.assertFalse(_gap_file_seen(self._strategy(["some_other_project"]), PROJECT))
+
+    def test_the_block_does_not_advise_an_impossible_re_run(self):
+        _write_gap_file(project_id=PROJECT)
+        lines = "\n".join(_gap_coverage_lines(
+            self._strategy(["some_other_project"]), PROJECT))
+        self.assertIn("no 6.2 gap analysis imported", lines)
+        self.assertNotIn("exists but was not imported", lines)
+
+    def test_a_file_at_a_NAMED_source_is_still_seen(self):
+        _write_gap_file(project_id="donor_project")
+        self.assertTrue(_gap_file_seen(self._strategy(["donor_project"]), PROJECT))
+
+    def test_with_no_sources_the_current_project_is_still_the_fallback(self):
+        """`sources or [project_id]` — the importer's own fallback, unchanged."""
+        _write_gap_file(project_id=PROJECT)
+        self.assertTrue(_gap_file_seen(self._strategy([]), PROJECT))
+
+
+class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
+    """`gap_source` was the only field of a capability nobody checked, and comparison
+    was case-sensitive — so one capital letter produced two mutually exclusive
+    sentences in the same delivered document."""
+
+    def setUp(self):
+        super().setUp()
+        _write_gap_file()
+        _make_scope(source_project_ids=f'["{PROJECT}"]')
+
+    def _cap(self, source, name="A"):
+        return json.dumps([{"name": name, "category": "technology", "description": "d",
+                            "gap_severity": "high", "gap_source": source,
+                            "in_scope": True}])
+
+    def test_a_6_4_CATEGORY_name_is_rejected_not_silently_accepted(self):
+        """"6.2:process" is the most plausible mistake there is: `process` is a valid
+        6.4 category and no 6.2 element at all."""
+        out = define_solution_scope(PROJECT, self._cap("6.2:process"))
+        self.assertIn("❌", out)
+        self.assertIn("process", out)
+        self.assertIn("org_structure", out)
+
+    def test_the_error_names_the_bad_value_and_lists_the_allowed_ones(self):
+        out = define_solution_scope(PROJECT, self._cap("6.2:invented_element"))
+        self.assertIn("invented_element", out)
+        for element in ("business_needs", "technology", "policies", "external"):
+            self.assertIn(element, out)
+
+    def test_a_rejected_capability_is_not_saved(self):
+        define_solution_scope(PROJECT, self._cap("6.2:process"))
+        self.assertEqual(
+            _load_strategy()["solution_scope"].get("capabilities", []), [])
+
+    def test_all_eight_elements_are_accepted(self):
+        for element in ("business_needs", "org_structure", "capabilities", "technology",
+                        "policies", "architecture", "assets", "external"):
+            out = define_solution_scope(PROJECT, self._cap(f"6.2:{element}"))
+            self.assertIn("✅", out, element)
+
+    def test_manual_and_the_legacy_bare_form_are_still_accepted(self):
+        for source in ("manual", "6.2:gap_analysis", ""):
+            self.assertIn("✅", define_solution_scope(PROJECT, self._cap(source)), source)
+
+    def test_a_capitalised_element_does_not_produce_two_opposite_verdicts(self):
+        """6.2's own report prints element_label "Technology and Infrastructure"; an
+        LLM copying the case produced BOTH "No in-scope capability DECLARES coverage
+        of: `technology`" AND "Claimed but absent: `Technology`" on one page."""
+        out = define_solution_scope(PROJECT, self._cap("6.2:Technology"))
+        self.assertIn("✅", out)
+        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", out)
+        self.assertNotIn("Claimed but absent", out)
+        self.assertNotIn("DECLARES coverage of: `technology`", out)
+
+    def test_the_document_sub_line_matches_a_capitalised_element_too(self):
+        define_solution_scope(PROJECT, self._cap("6.2:Technology", name="Portal"))
+        _make_readiness()
+        _add_option()
+        compare_strategy_options(
+            project_id=PROJECT,
+            scores_json=json.dumps({"OPT-001": {
+                "alignment_to_goals": 4, "risk_mitigation": 4, "cost": 3,
+                "time_to_value": 3, "org_readiness_fit": 3, "feasibility": 4}}),
+            opportunity_cost="none")
+        define_transition_states(
+            project_id=PROJECT, phase_number=1, phase_name="P1", duration_months=6,
+            capabilities_delivered='["Portal"]', gaps_closed='[]',
+            risks_remaining='[]', value_realizable="v")
+        with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            save_change_strategy(project_id=PROJECT)
+            doc = mock_sa.call_args[0][0]
+        self.assertIn("change effort there: high", doc)
+        self.assertNotIn("does not contain", doc)
+
+    def test_a_VALID_element_absent_from_THIS_analysis_is_still_flagged(self):
+        """The line keeps its legitimate job: `assets` is a real 6.2 element that this
+        particular analysis simply never captured."""
+        out = define_solution_scope(PROJECT, self._cap("6.2:assets"))
+        self.assertIn("✅", out)
+        self.assertIn("Claimed but absent from the 6.2 analysis: `assets`", out)
+
+
 if __name__ == "__main__":
     unittest.main()
