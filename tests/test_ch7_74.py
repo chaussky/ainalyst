@@ -1089,12 +1089,27 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         self.assertEqual(mod74._stakeholder_evidence("ev74g", repo)["FR-001"], [])
 
     def test_an_approval_file_whose_packages_is_a_list_does_not_raise(self):
-        # A top level that is valid JSON but the wrong SHAPE — the class that took the
-        # 6.4 gap importer down with AttributeError after `is not None` replaced a
-        # falsy check. Guard by TYPE, not by truthiness.
+        # A top level that is valid JSON but the wrong SHAPE.
+        #
+        # This asserts the ROUTE, not the packages-level guard: `load_approval_history`
+        # validates two levels and returns None for this file, so execution stops at
+        # `isinstance(history, dict)` and never reaches the guard the comment used to
+        # claim it covered (branch review A-5; the same reason mutating that guard
+        # leaves the suite green, recorded as T3-1). The route is worth pinning on its
+        # own — it is the one a real project takes.
         self._write_approvals("ev74h", ["PKG-001"])
         repo = make_repo("ev74h", [make_req("FR-001", "functional", "Auto routing")])
         self.assertEqual(mod74._stakeholder_evidence("ev74h", repo)["FR-001"], [])
+
+    def test_a_non_dict_packages_reaching_the_reader_directly_is_still_guarded(self):
+        # And THIS one reaches the guard. `_approval_voters` is defence in depth for
+        # the day something calls it without going through the shared reader, so the
+        # test has to bypass the reader the same way that caller would.
+        with patch.object(mod74, "load_approval_history",
+                          return_value={"packages": ["PKG-001"]}):
+            self.assertEqual(mod74._approval_voters("ev74h2"), {})
+        with patch.object(mod74, "load_approval_history", return_value="not a dict"):
+            self.assertEqual(mod74._approval_voters("ev74h3"), {})
 
     def test_the_same_person_from_two_sources_is_kept_twice_with_both_labels(self):
         # NOT deduped across sources: "declared AND voted in 5.5" is stronger evidence
@@ -2424,6 +2439,202 @@ class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
         concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
         self.assertIn("`FR-001`: revenue", concerns)
         self.assertIn("`FR-002`: SLA reporting", concerns)
+
+
+class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
+    """Branch review B-5. `_group_refs` had no ceiling and `who` was interpolated raw.
+
+    The viewpoint tables one section up cap themselves at `req_ids[:20]`; this one did
+    not, so one person on 60 requirements produced a single 1297-character bullet. And
+    a name containing `**` rendered as `****Bold Person****` while a name containing a
+    newline broke the list apart — the delivered document is Markdown, and the names in
+    it come from a stakeholder registry a human types into.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def test_a_person_on_sixty_requirements_does_not_produce_one_endless_line(self):
+        reqs = []
+        for i in range(1, 61):
+            r = make_req(f"FR-{i:03d}", "functional", f"Feature {i}")
+            r["stakeholders"] = [{"name": "Busy Person"}]
+            reqs.append(r)
+        save_repo(make_repo("b5_74", reqs))
+        save_stakeholder_registry("b5_74", [{"name": "Busy Person", "role": "Ops"}])
+        doc = self._doc("b5_74")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        bullet = next(l for l in concerns.splitlines() if "Busy Person" in l)
+        self.assertLess(len(bullet), 500, "one bullet must not run to a paragraph")
+        self.assertIn("60 requirements", bullet)
+        self.assertIn("more", bullet)
+        self.assertIn("`FR-001`", bullet)
+
+    def test_the_count_still_reports_every_requirement_not_only_the_shown_ones(self):
+        # Truncating the LIST is honest; truncating the COUNT would be a false number
+        # in a signed document.
+        reqs = []
+        for i in range(1, 31):
+            r = make_req(f"FR-{i:03d}", "functional", f"Feature {i}")
+            r["stakeholders"] = [{"name": "Busy Person"}]
+            reqs.append(r)
+        save_repo(make_repo("b5_74b", reqs))
+        save_stakeholder_registry("b5_74b", [{"name": "Busy Person", "role": "Ops"}])
+        doc = self._doc("b5_74b")
+        self.assertIn("30 requirements", doc)
+
+    def test_a_name_with_markdown_in_it_does_not_reformat_the_page(self):
+        repo = make_repo("b5_74c", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "**Bold Person**"}]
+        save_repo(repo)
+        save_stakeholder_registry("b5_74c", [{"name": "**Bold Person**", "role": "Ops"}])
+        doc = self._doc("b5_74c")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertNotIn("****", concerns)
+        self.assertIn("Bold Person", concerns)
+
+    def test_a_name_with_a_newline_does_not_break_the_list_apart(self):
+        repo = make_repo("b5_74d", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Line One\nLine Two"}]
+        save_repo(repo)
+        save_stakeholder_registry("b5_74d", [{"name": "Line One\nLine Two"}])
+        doc = self._doc("b5_74d")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        bullets = [l for l in concerns.splitlines() if l.startswith("- **")]
+        self.assertEqual(len(bullets), 1)
+        self.assertIn("Line One Line Two", bullets[0])
+
+    def test_a_hostile_name_is_also_tamed_in_the_gap_report(self):
+        # The gap message quotes `who` inside backticks, and a backtick in the name
+        # ends the code span early.
+        save_repo(make_repo("b5_74e", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("b5_74e", [{"name": "Weird `Name`", "role": "Ops"}])
+        result = mod74.check_architecture_gaps("b5_74e")
+        self.assertIn("Weird", result)
+        self.assertNotIn("`Weird `Name``", result)
+
+    def test_an_endless_note_is_capped_too(self):
+        pid = "b5_74f"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Ops"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                           note="x" * 900)
+        doc = self._doc(pid)
+        note_line = next(l for l in doc.splitlines() if l.strip().startswith("- `FR-001`:"))
+        self.assertLess(len(note_line), 300)
+
+
+class TestGapsInCoverageTheMutationsExposed(BaseMCPTest):
+    """Branch review A-5 and B-6 — two places where a mutation survived because
+    nothing tested the behaviour, not because the mutation was inert.
+
+    A-5: dropping the source dedup in `_group_refs` left the suite green. Two
+    declarations that resolve to ONE person through name AND role produce the same
+    (req_id, source) pair twice, so without the dedup the page reads
+    "`FR-001` (declared, declared)".
+
+    B-6: `_save_repo` was rewritten to write unconditionally to the canonical NESTED
+    path, and 138/138 passed — because every 7.4 fixture writes the repository FLAT,
+    and `data_path` follows the file that already exists. The docstring's claim that
+    no second copy can appear had zero coverage. The live run says the code is right;
+    this is the missing test, not a bug.
+    """
+
+    def test_one_person_reached_by_both_name_and_role_is_not_listed_twice(self):
+        repo = make_repo("a5_74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Ivan Petrov"},
+                                                   {"name": "Product Owner"}]
+        ev = mod74._stakeholder_evidence("a5_74", repo)
+        ties = mod74._ties_for_labels({"ivan petrov", "product owner"}, ev)
+        self.assertEqual(len(ties), 2, "both declarations are real evidence")
+        rendered = mod74._group_refs(
+            (t["req_id"], t["source"], t["archived"]) for t in ties)
+        self.assertEqual(rendered, "`FR-001` (declared)")
+
+    def test_the_same_person_in_the_document_is_one_requirement_not_two(self):
+        repo = make_repo("a5_74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Ivan Petrov"},
+                                                   {"name": "Product Owner"}]
+        save_repo(repo)
+        save_stakeholder_registry("a5_74b", [{"name": "Ivan Petrov",
+                                              "role": "Product Owner"}])
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot("a5_74b", "v1.0")
+            doc = mock_sa.call_args[0][0]
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("1 requirement: `FR-001` (declared)", concerns)
+        self.assertNotIn("declared, declared", concerns)
+
+    def test_a_nested_repository_is_written_back_in_place(self):
+        pid = "b6_74"
+        nested_dir = os.path.join("governance_plans", "data", pid)
+        os.makedirs(nested_dir, exist_ok=True)
+        nested = os.path.join(nested_dir, f"{pid}_traceability_repo.json")
+        with open(nested, "w", encoding="utf-8") as f:
+            json.dump(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]),
+                      f)
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        flat = os.path.join("governance_plans", "data", f"{pid}_traceability_repo.json")
+        self.assertFalse(os.path.exists(flat),
+                         "a second copy under the flat layout would split the graph")
+        with open(nested, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertEqual(stored["requirements"][0]["stakeholders"][0]["name"],
+                         "Sales Head")
+
+    def test_a_flat_repository_is_also_written_back_in_place(self):
+        # The other half of the same claim: `data_path` returns the path it READ from,
+        # so a legacy flat file must not sprout a nested twin either.
+        pid = "b6_74b"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        nested = os.path.join("governance_plans", "data", pid,
+                              f"{pid}_traceability_repo.json")
+        self.assertFalse(os.path.exists(nested))
+
+
+class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
+    """Branch review A-6. `CONCERN_TITLE` and `CONCERN_EVIDENCE` were declared and read
+    nowhere, while the four sources they name were spelled out by hand in the prose of
+    the critical gap message. A constant that lives only in prose drifts away from the
+    code the day one of them is renamed, and nothing fails.
+    """
+
+    def _project(self, pid):
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(pid, [{"name": "Priya Nair", "role": "Compliance"}])
+        return pid
+
+    def test_every_evidence_source_has_a_human_label(self):
+        for source in mod74.CONCERN_EVIDENCE + (mod74.CONCERN_TITLE,):
+            with self.subTest(source=source):
+                self.assertIn(source, mod74.CONCERN_LABELS)
+
+    def test_the_critical_message_is_assembled_from_those_labels(self):
+        # Patched rather than string-matched: matching the words proves only that the
+        # words are somewhere, not that the constant is what put them there.
+        pid = self._project("a6_74")
+        with patch.dict(mod74.CONCERN_LABELS,
+                        {mod74.CONCERN_OWNER: "SENTINEL-OWNER-LABEL"}):
+            result = mod74.check_architecture_gaps(pid)
+        self.assertIn("SENTINEL-OWNER-LABEL", result)
+
+    def test_the_heuristic_source_is_named_from_its_own_constant(self):
+        pid = self._project("a6_74b")
+        with patch.dict(mod74.CONCERN_LABELS,
+                        {mod74.CONCERN_TITLE: "SENTINEL-TITLE-LABEL"}):
+            result = mod74.check_architecture_gaps(pid)
+        self.assertIn("SENTINEL-TITLE-LABEL", result)
+
+    def test_the_message_still_names_all_three_evidence_sources_in_plain_words(self):
+        pid = self._project("a6_74c")
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("declared interest", result)
+        self.assertIn("7.1 owner", result)
+        self.assertIn("5.5 approval", result)
 
 
 if __name__ == "__main__":

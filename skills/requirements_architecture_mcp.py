@@ -312,6 +312,17 @@ CONCERN_TITLE = "title-match"
 
 CONCERN_EVIDENCE = (CONCERN_DECLARED, CONCERN_OWNER, CONCERN_APPROVAL)
 
+# How each source reads to a human. The gap message used to spell the same four out by
+# hand in its prose, so `CONCERN_TITLE` and `CONCERN_EVIDENCE` were declared and read
+# nowhere: rename a source and the message keeps quoting the old name, with nothing to
+# fail (branch review A-6). The verdict is now assembled from the tuple, in its order.
+CONCERN_LABELS = {
+    CONCERN_DECLARED: "declared interest (7.4)",
+    CONCERN_OWNER: "7.1 owner",
+    CONCERN_APPROVAL: "5.5 approval decision on it",
+    CONCERN_TITLE: "requirement title mentioning them (heuristic)",
+}
+
 
 def _approval_voters(project_id: str) -> dict:
     """{req_id: [stakeholder names]} from 5.5's durable record, or {} when unreadable.
@@ -485,6 +496,31 @@ def _heuristic_hit(labels: set, pool: set) -> bool:
     )
 
 
+# The delivered document is Markdown, and every name in it was typed by a human into a
+# stakeholder registry. A name holding `**` rendered as `****Bold Person****`, a name
+# holding a newline broke the bullet list apart, and a backtick closed the code span the
+# gap message puts around it early (branch review B-5). Neutralised on the way OUT, once,
+# rather than validated on the way in: the registry is a living document written by four
+# producers and this is the only page that formats it.
+_MD_SPECIALS = "*_`[]|<>\\"
+
+# Ceilings. The viewpoint tables one section up already cap at `req_ids[:20]`; the
+# concerns bullets had none, so one person on 60 requirements produced a single
+# 1297-character line.
+_MAX_REFS_SHOWN = 20
+_MAX_LABEL_CHARS = 80
+_MAX_NOTE_CHARS = 160
+
+
+def _md_label(value, limit: int = _MAX_LABEL_CHARS) -> str:
+    """Free text made safe to interpolate into one line of the delivered Markdown."""
+    text = " ".join(str(value or "").split())
+    for ch in _MD_SPECIALS:
+        text = text.replace(ch, "")
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
 def _group_refs(refs) -> str:
     """`FR-001` (7.1:owner, declared) — one reference per requirement, sources folded in.
 
@@ -506,11 +542,19 @@ def _group_refs(refs) -> str:
         if source not in by_req[req_id]:
             by_req[req_id].append(source)
         archived[req_id] = archived.get(req_id, False) or is_archived
-    return ", ".join(
-        f"`{req_id}` ({', '.join(sorted(sources))}"
+    ordered = sorted(by_req.items())
+    shown = ordered[:_MAX_REFS_SHOWN]
+    rendered = ", ".join(
+        f"`{_md_label(req_id, 40)}` ({', '.join(sorted(sources))}"
         + (", archived)" if archived.get(req_id) else ")")
-        for req_id, sources in sorted(by_req.items())
+        for req_id, sources in shown
     )
+    # The LIST is truncated, never the COUNT: the caller prints "60 requirements" above
+    # this string, and a shortened number would be a false claim rather than a shorter
+    # one. Saying how many were held back keeps the two halves consistent.
+    if len(ordered) > len(shown):
+        rendered += f", _+{len(ordered) - len(shown)} more_"
+    return rendered
 
 
 def _concern_lines(project_id: str, repo: dict) -> list:
@@ -549,7 +593,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
         # same-person hint below (branch review A-4).
         label_owner: dict = {}
         for sh in people:
-            who = sh.get("name") or sh.get("role") or "—"
+            who = _md_label(sh.get("name") or sh.get("role") or "—")
             labels = registry_labels(sh)
             seen_labels |= labels
             for lab in labels:
@@ -589,7 +633,8 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             # (branch review B-4).
             for req_id, why in sorted({(t["req_id"], t["note"]) for t in ties
                                        if t["note"]}):
-                lines.append(f"  - `{req_id}`: {why}")
+                lines.append(f"  - `{_md_label(req_id, 40)}`: "
+                             f"{_md_label(why, _MAX_NOTE_CHARS)}")
 
         # People the analyst tied to a requirement who are NOT in the registry.
         # `declare_stakeholder_interest` accepts them on purpose — the registry is a
@@ -634,15 +679,16 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 hint = ""
                 if matched:
                     shown = matched[:3]
-                    who_list = ", ".join(f"**{name}** (on `{lab}`)"
-                                         for lab, name in shown)
+                    who_list = ", ".join(
+                        f"**{_md_label(name)}** (on `{_md_label(lab, 40)}`)"
+                        for lab, name in shown)
                     more = "" if len(matched) <= 3 else f" +{len(matched) - 3} more"
                     hint = (f" — possibly the same person as {who_list}{more}: a "
                             f"partial-label match, a coincidence rather than a fact. "
                             f"If it is the same person, correct the record this tie "
                             f"came from rather than adding them to the registry.")
-                lines.append(f"- **{entry['display']}** — {count} {noun}: "
-                             f"{_group_refs(entry['refs'])}{hint}")
+                lines.append(f"- **{_md_label(entry['display'])}** — {count} "
+                             f"{noun}: {_group_refs(entry['refs'])}{hint}")
     else:
         # No usable registry rows — but this covers TWO different facts, and the
         # document must not conflate them: the file may genuinely be absent, or it
@@ -683,7 +729,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             refs = entry["refs"]
             count = len({r for r, _, _ in refs})
             noun = "requirement" if count == 1 else "requirements"
-            lines.append(f"- **{entry['display']}** — {count} {noun}: "
+            lines.append(f"- **{_md_label(entry['display'])}** — {count} {noun}: "
                          f"{_group_refs(refs)}")
         if not named:
             lines.append("- No stakeholder ties recorded on any requirement.")
@@ -1141,12 +1187,23 @@ def declare_stakeholder_interest(
     `add_trace_link` does it, and both directions are written to the repository
     history.
 
+    A TYPE is refused, a STATUS is not. The 5.1 graph also holds risks (6.3), business
+    goals (6.2), change requests (5.4) and test cases; none of them is a requirement, so
+    an id naming one is refused BY NAME rather than skipped in silence — accepting it
+    would let a business goal silence a coverage gap and would print an id the rest of
+    the document does not count. An ARCHIVED requirement (deprecated / superseded /
+    retired in 5.2) is a stage rather than a category: the declaration is accepted, with
+    a warning that the coverage check will not read it as live representation.
+
     Args:
         project_id:   Project identifier.
         stakeholder:  A name OR a role — whichever the registry knows ("Ivan Petrov",
                       "Product Owner"). Both resolve to the same person.
         req_ids_json: JSON array of requirement IDs: '["FR-001", "FR-002"]'.
         note:         Why their interests are touched (optional, stored per entry).
+                      PRINTED in the Architecture Document under the requirement it
+                      belongs to — it is the one place a sponsor reads the "why" in the
+                      analyst's own words, so write it for that reader.
         remove:       True — withdraw the declaration from these requirements.
 
     Returns:
@@ -1455,7 +1512,7 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
             # Identify by name, else role: neither producer of the registry (3.2
             # seeding, 4.2 elicitation) writes an `id`, so quoting it rendered an
             # empty pair of backticks on every one of these gaps.
-            who = sh.get("name") or sh.get("role") or "—"
+            who = _md_label(sh.get("name") or sh.get("role") or "—")
 
             ties = _ties_for_labels(labels, evidence)
             if any(not t["archived"] for t in ties):
@@ -1524,10 +1581,12 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "type": "stakeholder_no_view",
                     "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
+                    # Assembled from CONCERN_EVIDENCE, in its order, so renaming a
+                    # source cannot leave this sentence quoting the old name (A-6).
                     "message": (
                         f"Stakeholder `{who}` has no recorded tie to any requirement: "
-                        f"no declared interest (7.4), not a 7.1 owner, no 5.5 approval "
-                        f"decision, and no requirement title mentions them (heuristic). "
+                        + ", ".join(f"no {CONCERN_LABELS[s]}" for s in CONCERN_EVIDENCE)
+                        + f", and no {CONCERN_LABELS[CONCERN_TITLE]}. "
                         f"Their interests may be uncovered — record what you know with "
                         f"`declare_stakeholder_interest`."
                     ),
@@ -1648,8 +1707,13 @@ def check_architecture_gaps(
         declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
         alone is a warning, not a verdict)
       - Stakeholder reachable only by a title-word match → warning
+      - Stakeholder whose every tie points at a requirement archived in 5.2
+        (deprecated / superseded / retired) → warning: a stage is not a category, so
+        the tie is real, but nothing live covers that person
       - BG without viewpoint coverage (from business_context 7.3) → warning
       - Empty viewpoint (a viewpoint with no req) → info
+      - Registry read but holding nobody identifiable → info: "nobody was checked" and
+        "everybody is covered" must never render as the same clean sheet
 
     Level 2 — Semantic gaps (uses the 5.1 link graph):
       - UC without a corresponding BP → warning
@@ -1790,6 +1854,12 @@ def save_architecture_snapshot(
 
     Generates an Architecture Document (Markdown) via save_artifact.
     The document is handed off to 4.4 (communication with stakeholders) and 7.5 (design options).
+
+    The gap block inside that document is RECOMPUTED here, not read back from the last
+    `check_architecture_gaps`. The workflow deliberately puts `declare_stakeholder_interest`
+    between the two, so a stored block would report gaps the BA had just resolved —
+    directly beneath a concerns section, computed live, saying the opposite about the
+    same person. A project that never ran the check gets a real table rather than zeros.
 
     Args:
         project_id: Project identifier.
