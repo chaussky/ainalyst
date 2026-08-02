@@ -1682,5 +1682,76 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         self.assertIn("FR-900", result)
 
 
+class TestTheSpecFillsAGraphNodeThatWasCreatedEmpty(BaseMCPTest):
+    """Pre-release E2E finding E2-1. The analyst's `owner` never reached the graph.
+
+    The documented order is: `init_traceability_repo` (5.1) lays out the ids, titles and
+    types, then 7.1 writes each specification — with the owner, the priority and the
+    source artifact. But `_register_in_repo` returns early for an id it already knows,
+    so everything the specification stated was dropped into the void, and the note said
+    only "already registered in repository 5.1".
+
+    Live consequences, all on the default route: 7.4 reads `owner` as EVIDENCE that a
+    stakeholder is represented, so the person the analyst named became a 🔴 critical gap
+    in a signed architecture document; the 5.5 approval package showed a blank owner —
+    the exact defect the comment on the CREATE path says was fixed; and the 5.2 audit
+    reported the attribute as unfilled.
+
+    This module had already learned the lesson FOR EDGES: its own docstring says an
+    early return must not stop newly declared links from being written. Fields were left
+    behind.
+
+    Insert-only: a value already on the node is never overwritten — that is another
+    chapter's statement, and a specification re-run must not silently replace it.
+    """
+
+    P = "backfill71"
+
+    def _seed_graph(self, **extra):
+        node = {"id": "FR-001", "type": "functional", "title": "Invoice matching",
+                "version": "1.0", "status": "draft"}
+        node.update(extra)
+        save_spec_repo({"project": self.P, "requirements": [node],
+                        "links": [], "history": []})
+
+    def test_the_owner_named_in_the_spec_reaches_the_graph(self):
+        self._seed_graph()
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Invoice matching",
+                                "spec.md", "High", owner="Sergey Bok")
+        node = load_spec_repo(self.P)["requirements"][0]
+        self.assertEqual(node.get("owner"), "Sergey Bok")
+
+    def test_an_owner_already_recorded_is_never_replaced(self):
+        self._seed_graph(owner="Vera Ilyina")
+        mod71._register_in_repo(self.P, "FR-001", "functional", "Invoice matching",
+                                "spec.md", "High", owner="Sergey Bok")
+        node = load_spec_repo(self.P)["requirements"][0]
+        self.assertEqual(node.get("owner"), "Vera Ilyina",
+                         "another chapter's statement is not overwritten by a re-run")
+
+    def test_the_note_says_what_it_filled_in(self):
+        self._seed_graph()
+        note = mod71._register_in_repo(self.P, "FR-001", "functional", "Invoice matching",
+                                       "spec.md", "High", owner="Sergey Bok")
+        self.assertIn("owner", note.lower(),
+                      "silently filling is better than silently dropping, but saying "
+                      "so is better than both")
+
+    def test_nothing_is_claimed_when_there_was_nothing_to_fill(self):
+        self._seed_graph(owner="Vera Ilyina", priority="High",
+                         source_artifact="spec.md")
+        note = mod71._register_in_repo(self.P, "FR-001", "functional", "Invoice matching",
+                                       "spec.md", "High", owner="Sergey Bok")
+        self.assertNotIn("owner", note.lower())
+
+    def test_a_brand_new_node_still_carries_its_owner(self):
+        """The guard on over-fixing: the CREATE path must keep working."""
+        mod71._register_in_repo(self.P, "FR-777", "functional", "New one",
+                                "spec.md", "High", owner="Sergey Bok")
+        node = [r for r in load_spec_repo(self.P)["requirements"]
+                if r["id"] == "FR-777"][0]
+        self.assertEqual(node["owner"], "Sergey Bok")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -128,7 +128,31 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
 
     if req_id in existing_ids:
         logger.info(f"_register_in_repo: {req_id} already in repository, skipping node")
-        notes.append(f"ℹ️ `{req_id}` is already registered in repository 5.1.")
+        # The node stays, but what THIS specification states must not vanish into it.
+        #
+        # The documented order is 5.1 first (ids, types, titles), then 7.1 for each
+        # specification — and 7.1 is where the analyst names the owner. Returning early
+        # dropped that name, so `owner` stayed empty on the node: 7.4 reads it as
+        # EVIDENCE of representation and turned the named person into a critical gap in
+        # a signed document, the 5.5 package printed a blank owner, and the 5.2 audit
+        # called the attribute unfilled. Found by a pre-release live run (E2-1).
+        #
+        # INSERT-ONLY, the same rule the 3.2 registry seeding follows: a value already
+        # on the node was put there by another chapter, and a specification re-run must
+        # not silently replace it. Only what is absent or empty is filled.
+        node = next(r for r in repo["requirements"] if r.get("id") == req_id)
+        filled = []
+        for field, value in (("owner", owner), ("priority", priority),
+                             ("source_artifact", source_artifact)):
+            if value and not node.get(field):
+                node[field] = value
+                filled.append(field)
+        if filled:
+            notes.append(
+                f"ℹ️ `{req_id}` is already registered in repository 5.1 — filled in "
+                f"from this specification: {', '.join(filled)}.")
+        else:
+            notes.append(f"ℹ️ `{req_id}` is already registered in repository 5.1.")
     else:
         repo["requirements"].append({
             "id": req_id,
