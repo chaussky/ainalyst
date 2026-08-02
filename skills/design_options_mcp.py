@@ -267,10 +267,37 @@ def set_change_strategy(
     """
     logger.info(f"set_change_strategy: project_id='{project_id}', change_type='{change_type}'")
 
+    # This check comes FIRST, before any parameter is judged (pre-release E2E finding
+    # E1-1). It answers a question the analyst is actually asking, and it used to sit
+    # three validations below — unreachable for exactly the people it was written for.
+    #
+    # 6.4 and 7.5 name change types from vocabularies that share NO value
+    # (`technology_implementation` there, `technology` here). So a BA who completed 6.4
+    # and reached for the obvious next tool was handed "❌ Invalid change_type … Valid
+    # values: hybrid, organizational, process, technology" — a dead end quoting four
+    # words they had never seen — while the sentence that resolves their situation,
+    # "7.5 reads the 6.4 Change Strategy directly, no surrogate is needed", waited
+    # below. Nothing was ever overwritten; the answer was simply out of reach.
+    #
+    # Same class as branch-review A-2: a guard written correctly and placed after the
+    # thing it guards.
+    existing = _load_change_strategy(project_id)
+    if _is_rich_strategy(existing):
+        return (
+            f"⚠️ `{project_id}_change_strategy.json` is already populated by task 6.4 "
+            f"(the richer Change Strategy contract for 7.x/8.x). **Not overwriting.**\n\n"
+            f"7.5 reads the 6.4 Change Strategy directly — no surrogate is needed. "
+            f"To change the strategy, edit it via the 6.4 tools (`change_strategy` phase)."
+        )
+
     if change_type not in VALID_CHANGE_TYPES:
         return (
-            f"❌ Invalid change_type: '{change_type}'.\\n\\n"
-            f"Valid values: {', '.join(sorted(VALID_CHANGE_TYPES))}"
+            f"❌ Invalid change_type: '{change_type}'.\n\n"
+            f"Valid values: {', '.join(sorted(VALID_CHANGE_TYPES))}\n"
+            f"If this project already has a 6.4 Change Strategy, you do not need this "
+            f"tool at all — 7.5 reads 6.4 directly. 6.4 uses its own, longer vocabulary "
+            f"(`technology_implementation`, `process_improvement`, …); the two are not "
+            f"interchangeable."
         )
 
     if not scope.strip():
@@ -284,17 +311,6 @@ def set_change_strategy(
 
     path = _change_strategy_path(project_id)
     is_update = os.path.exists(path)
-
-    # Guard: do NOT clobber a real 6.4 Change Strategy contract with the flat 7.5 surrogate
-    # (audit finding 7.5-B). 6.4 is the authoritative source for 7.x/8.x; 7.5 reads it directly.
-    existing = _load_change_strategy(project_id)
-    if _is_rich_strategy(existing):
-        return (
-            f"⚠️ `{project_id}_change_strategy.json` is already populated by task 6.4 "
-            f"(the richer Change Strategy contract for 7.x/8.x). **Not overwriting.**\n\n"
-            f"7.5 reads the 6.4 Change Strategy directly — no surrogate is needed. "
-            f"To change the strategy, edit it via the 6.4 tools (`change_strategy` phase)."
-        )
 
     strategy = {
         "project_id": project_id,
@@ -405,7 +421,7 @@ def create_design_option(
 
     if approach not in VALID_APPROACHES:
         return (
-            f"❌ Invalid approach: '{approach}'.\\n\\n"
+            f"❌ Invalid approach: '{approach}'.\n\n"
             f"Valid values: {', '.join(sorted(VALID_APPROACHES))}"
         )
 
@@ -421,7 +437,7 @@ def create_design_option(
             raise ValueError("The components list must not be empty")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse components_json: {e}\\n\\n"
+            f"❌ Failed to parse components_json: {e}\n\n"
             f"Expected a non-empty JSON list: '[\"Backend API\", \"Web UI\"]'"
         )
 
@@ -432,7 +448,7 @@ def create_design_option(
             raise ValueError("Expected a list")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse improvement_opportunities_json: {e}\\n\\n"
+            f"❌ Failed to parse improvement_opportunities_json: {e}\n\n"
             f"Expected a JSON list: '[{{\"type\": \"efficiency\", \"description\": \"...\"}}]'"
         )
 
@@ -443,7 +459,7 @@ def create_design_option(
     ]
     if invalid_types:
         return (
-            f"❌ Invalid improvement opportunity types: {invalid_types}\\n\\n"
+            f"❌ Invalid improvement opportunity types: {invalid_types}\n\n"
             f"Valid types: {', '.join(sorted(VALID_OPPORTUNITY_TYPES))}"
         )
 
@@ -454,7 +470,7 @@ def create_design_option(
             raise ValueError("Expected a list")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse effectiveness_measures_json: {e}\\n\\n"
+            f"❌ Failed to parse effectiveness_measures_json: {e}\n\n"
             f"Expected a JSON list: '[\"Reduce processing time by 40%\"]'"
         )
 
@@ -462,7 +478,7 @@ def create_design_option(
     vendor_warning = ""
     if approach in ("buy", "hybrid") and not vendor_notes.strip():
         vendor_warning = (
-            "\\n\\n> ℹ️ **Recommendation:** for approach `{approach}` it's recommended to fill in `vendor_notes` "
+            "\n\n> ℹ️ **Recommendation:** for approach `{approach}` it's recommended to fill in `vendor_notes` "
             "— specify the vendor, cost, constraints, references."
         ).format(approach=approach)
 
@@ -604,8 +620,8 @@ def allocate_requirements(
     option = next((o for o in do_data["options"] if o["option_id"] == option_id), None)
     if option is None:
         return (
-            f"❌ Design option `{option_id}` not found in project `{project_id}`.\\n\\n"
-            f"Existing options: {[o['option_id'] for o in do_data['options']]}\\n"
+            f"❌ Design option `{option_id}` not found in project `{project_id}`.\n\n"
+            f"Existing options: {[o['option_id'] for o in do_data['options']]}\n"
             f"First call `create_design_option`."
         )
 
@@ -616,8 +632,8 @@ def allocate_requirements(
             raise ValueError("Expected a list")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse assignments_json: {e}\\n\\n"
-            f"Expected a JSON list: '[{{\"req_id\": \"FR-001\", \"version\": \"v1\", \"rationale\": \"...\"}}]'\\n"
+            f"❌ Failed to parse assignments_json: {e}\n\n"
+            f"Expected a JSON list: '[{{\"req_id\": \"FR-001\", \"version\": \"v1\", \"rationale\": \"...\"}}]'\n"
             f"Or pass an empty list '[]' to use auto_suggest only."
         )
 
@@ -628,7 +644,7 @@ def allocate_requirements(
     ]
     if invalid_versions:
         return (
-            f"❌ Invalid versions in assignments: {invalid_versions}\\n\\n"
+            f"❌ Invalid versions in assignments: {invalid_versions}\n\n"
             f"Valid versions: {', '.join(sorted(VALID_VERSIONS))}"
         )
 
@@ -651,7 +667,7 @@ def allocate_requirements(
 
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty or has no requirements.\\n\\n"
+            f"⚠️ The 5.1 repository for project `{project_id}` is empty or has no requirements.\n\n"
             f"Create requirements via the 7.1 tools before allocation."
         )
 
@@ -920,13 +936,13 @@ def compare_design_options(
 
     if not options:
         return (
-            f"⚠️ No design options for project `{project_id}`.\\n\\n"
+            f"⚠️ No design options for project `{project_id}`.\n\n"
             f"First create options via `create_design_option`."
         )
 
     if len(options) < 2:
         return (
-            f"⚠️ At least 2 design options are needed for comparison.\\n\\n"
+            f"⚠️ At least 2 design options are needed for comparison.\n\n"
             f"Current options: {len(options)}. Create one more via `create_design_option`."
         )
 
@@ -937,7 +953,7 @@ def compare_design_options(
             raise ValueError("Expected a list")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse criteria_json: {e}\\n\\n"
+            f"❌ Failed to parse criteria_json: {e}\n\n"
             f"Expected a JSON list: '[{{\"id\": \"vendor_support\", \"label\": \"Vendor support\", \"weight\": \"medium\"}}]'"
         )
 
@@ -1155,7 +1171,7 @@ def save_design_options_report(
 
     if not options:
         return (
-            f"⚠️ No design options for project `{project_id}`.\\n\\n"
+            f"⚠️ No design options for project `{project_id}`.\n\n"
             f"Create options via `create_design_option` before generating the report."
         )
 
@@ -1164,7 +1180,7 @@ def save_design_options_report(
         option_ids = [o["option_id"] for o in options]
         if recommended_option_id not in option_ids:
             return (
-                f"❌ Option `{recommended_option_id}` not found.\\n\\n"
+                f"❌ Option `{recommended_option_id}` not found.\n\n"
                 f"Existing options: {', '.join(option_ids)}"
             )
 

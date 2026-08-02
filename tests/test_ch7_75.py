@@ -923,5 +923,85 @@ class TestDesignOptionsAuditRegressions(Base75Test):
         self.assertEqual(data["solution_scope"]["scope_summary"], "6.4 data")
 
 
+class TestTheMessagesRenderAsText(Base75Test):
+    """Pre-release E2E finding E1-2. Every refusal and warning this module writes had
+    `\\n` ESCAPED, so the reader saw one run-on line with a literal backslash-n in it:
+
+        ❌ Invalid change_type: 'technology_implementation'.\\n\\nValid values: …
+
+    Eighteen sites, i.e. every error path of 7.5. The suite never saw it because these
+    tests assert substrings like "❌ Invalid change_type" — the break is in the
+    RENDERING, and only a reader of the assembled output meets it.
+    """
+
+    def _assert_renders(self, result):
+        self.assertNotIn("\\n", result,
+                         "a literal backslash-n reached the reader instead of a line break")
+
+    def test_an_invalid_change_type_renders(self):
+        self._assert_renders(mod75.set_change_strategy(
+            "e12a", "technology_implementation", "scope", "constraints", "12 months"))
+
+    def test_an_invalid_approach_renders(self):
+        self._assert_renders(mod75.create_design_option(
+            "e12b", "OPT-1", "Title", "rewrite everything", "[]", "[]", "[]"))
+
+    def test_broken_json_renders(self):
+        self._assert_renders(mod75.create_design_option(
+            "e12c", "OPT-1", "Title", "build", "{not json", "[]", "[]"))
+
+    def test_a_missing_option_renders(self):
+        self._assert_renders(mod75.allocate_requirements("e12d", "OPT-404"))
+
+    def test_the_vendor_recommendation_renders(self):
+        result = mod75.create_design_option(
+            "e12e", "OPT-1", "Title", "buy", "[]", "[]", "[]")
+        self._assert_renders(result)
+
+    def test_an_empty_project_report_renders(self):
+        self._assert_renders(mod75.save_design_options_report("e12f"))
+
+
+class TestTheSurrogateAnswersTheAnalystWhoDidChapterSix(Base75Test):
+    """Pre-release E2E finding E1-1. The guard that answers this analyst's actual
+    question sat BELOW the parameter validation, so it was unreachable for exactly the
+    people it was written for.
+
+    A BA who completed 6.4 arrives at 7.5 and calls `set_change_strategy` with 6.4's
+    own vocabulary. The two vocabularies share NO value, so they got
+    "❌ Invalid change_type … Valid values: hybrid, organizational, process, technology"
+    — a dead end — while the message that resolves their situation ("7.5 reads the 6.4
+    Change Strategy directly, no surrogate is needed") was three checks further down.
+
+    Same class as branch-review A-2: a guard written correctly and placed after the
+    thing it guards.
+    """
+
+    RICH_6_4 = {"project_id": "e11", "scope": {"change_type": "technology_implementation",
+                                               "time_horizon_months": 12},
+                "solution_scope": {"scope_summary": "Patient portal"}}
+
+    def test_the_analyst_is_told_the_surrogate_is_not_needed(self):
+        self._write_change_strategy("e11", self.RICH_6_4)
+        result = mod75.set_change_strategy(
+            "e11", "technology_implementation", "scope", "constraints", "12 months")
+        self.assertIn("6.4", result)
+        self.assertNotIn("Invalid change_type", result,
+                         "the vocabulary is beside the point — this project already "
+                         "has a strategy and 7.5 reads it directly")
+
+    def test_the_rich_strategy_is_still_not_overwritten(self):
+        self._write_change_strategy("e11b", dict(self.RICH_6_4, project_id="e11b"))
+        mod75.set_change_strategy("e11b", "technology", "s", "c", "t")
+        stored = self._read_change_strategy("e11b")
+        self.assertIn("solution_scope", stored)
+        self.assertEqual(stored["scope"]["change_type"], "technology_implementation")
+
+    def test_a_project_without_chapter_six_still_gets_the_vocabulary(self):
+        """The guard on over-fixing: validation must survive for its real audience."""
+        result = mod75.set_change_strategy("e11c", "nonsense", "s", "c", "t")
+        self.assertIn("Invalid change_type", result)
+
+
 if __name__ == "__main__":
     unittest.main()
