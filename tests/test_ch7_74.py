@@ -1284,5 +1284,105 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
             self.assertEqual(before[key], after[key])
 
 
+class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
+    """The critical verdict stops being a coincidence between a name and a title word.
+
+    The title heuristic is NOT deleted — deleting it would hand every existing project
+    a batch of new red gaps on upgrade. It is demoted: a stakeholder reachable only
+    that way is a WARNING that names its own weakness.
+    """
+
+    def test_a_declared_stakeholder_is_represented_and_the_source_is_named(self):
+        repo = make_repo("gv74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Priya Nair"}]
+        save_repo(repo)
+        save_stakeholder_registry("gv74", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74")
+        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+
+    def test_a_5_5_voter_is_represented_without_any_declaration(self):
+        # The point of reading 5.5: this works on projects that never call the new tool.
+        save_repo(make_repo("gv74b", [make_req("FR-001", "functional", "Auto routing")]))
+        path = os.path.join("governance_plans", "data", "gv74b_approval_history.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": "gv74b", "packages": {"PKG-001": {
+                "req_ids": ["FR-001"], "stakeholder_decisions": {"Priya Nair": {
+                    "raci": "accountable",
+                    "req_decisions": [{"req_id": "FR-001", "decision": "approved"}]}}}}}, f)
+        save_stakeholder_registry("gv74b", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74b")
+        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+
+    def test_a_stakeholder_reachable_only_by_a_title_word_is_a_warning_not_critical(self):
+        save_repo(make_repo("gv74c", [
+            make_req("FR-001", "functional", "Compliance reporting rules")]))
+        save_stakeholder_registry("gv74c", [{"name": "", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74c")
+        critical_block = result.split("## 🟡")[0]
+        self.assertNotIn("Compliance", critical_block.split("## 🔴")[-1]
+                         if "## 🔴" in critical_block else "")
+        self.assertIn("only by a word in a requirement title", result)
+        self.assertIn("declare_stakeholder_interest", result)
+
+    def test_a_stakeholder_with_nothing_at_all_is_still_critical(self):
+        save_repo(make_repo("gv74d", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("gv74d", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74d")
+        self.assertIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("🔴 Critical | 1", result)
+
+    def test_the_critical_message_names_every_place_it_looked(self):
+        # A verdict that hides its method invites more confidence than its evidence
+        # carries — the ADR-088 rule, kept and made specific.
+        save_repo(make_repo("gv74e", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("gv74e", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74e")
+        self.assertIn("declared interest", result)
+        self.assertIn("7.1 owner", result)
+        self.assertIn("5.5 approval", result)
+
+    def test_the_owner_is_still_represented_and_now_says_which_requirement(self):
+        # ADR-088 kept: the owner counts. What is NEW is that the reader can check it.
+        repo = make_repo("gv74f", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        save_stakeholder_registry("gv74f", [{"name": "David Kim", "role": "SIU"}])
+        result = mod74.check_architecture_gaps("gv74f")
+        self.assertNotIn("`David Kim` has no recorded tie", result)
+
+    def test_a_role_only_registry_row_resolves_through_its_role(self):
+        repo = make_repo("gv74g", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Product Owner"}]
+        save_repo(repo)
+        save_stakeholder_registry("gv74g", [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        result = mod74.check_architecture_gaps("gv74g")
+        self.assertNotIn("has no recorded tie", result)
+
+    def test_the_missing_registry_warning_is_unchanged(self):
+        # Regression guard: this branch is explicitly out of scope for the feature.
+        save_repo(make_repo("gv74h", [make_req("FR-001", "functional", "Auto routing")]))
+        result = mod74.check_architecture_gaps("gv74h")
+        self.assertIn("Stakeholder registry not found", result)
+
+    def test_a_short_shared_word_does_not_count_as_a_title_match(self):
+        # "it" is a real word of the title AND the stakeholder's role, but it is only
+        # 2 letters — below the 4-letter floor the heuristic requires. Without the
+        # floor this coincidence would wrongly demote a real gap to a warning.
+        save_repo(make_repo("gv74i", [make_req("FR-001", "functional", "Wire it now")]))
+        save_stakeholder_registry("gv74i", [{"name": "", "role": "IT"}])
+        result = mod74.check_architecture_gaps("gv74i")
+        self.assertIn("`IT` has no recorded tie", result)
+
+    def test_a_registry_row_with_neither_name_nor_role_is_silently_skipped(self):
+        # A row with nothing to key on cannot be looked up in evidence OR title words —
+        # it is not identifiable, so it must not be reported at all (not as a fabricated
+        # "—" critical gap).
+        save_repo(make_repo("gv74j", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("gv74j", [{"name": "", "role": ""}])
+        result = mod74.check_architecture_gaps("gv74j")
+        self.assertNotIn("Stakeholder `—`", result)
+        self.assertIn("🔴 Critical | 0", result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -37,7 +37,7 @@ from skills.common import (
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
     read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
     parse_json_str_list, registry_party_status, PARTY_IN_REGISTRY,
-    PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE,
+    PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE, registry_labels,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -947,7 +947,10 @@ def check_architecture_gaps(
     BABOK 7.4 — Checks the requirements architecture for gaps at two levels (ADR-038).
 
     Level 1 — Coverage matrix:
-      - Stakeholder without representation (from the 4.2 registry) → critical
+      - Stakeholder with no recorded tie to any requirement → critical (ADR-098:
+        declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
+        alone is a warning, not a verdict)
+      - Stakeholder reachable only by a title-word match → warning
       - BG without viewpoint coverage (from business_context 7.3) → warning
       - Empty viewpoint (a viewpoint with no req) → info
 
@@ -955,7 +958,6 @@ def check_architecture_gaps(
       - UC without a corresponding BP → warning
       - NFR without a link to an FR → warning
       - FR without a UC or US → info
-      - Stakeholder in the registry with no req at all → critical
 
     Args:
         project_id: Project identifier.
@@ -1022,59 +1024,60 @@ def check_architecture_gaps(
         all_stakeholders = stakeholders_data.get("stakeholders", [])
 
     if all_stakeholders:
-        # Collect stakeholder mentions in req (from the stakeholders field, the
-        # OWNER field, or title words). `owner` is the field 7.1 actually writes —
-        # matching only title words declared the owner of a requirement "not
-        # represented in any req" (a critical gap about the one person most
-        # concretely tied to it), while a job title sharing a 4-letter word with
-        # any requirement title counted as covered.
-        req_stakeholder_mentions: set = set()
+        # ADR-098: the verdict rests on RECORDED facts, each named in the message.
+        # Three of them are evidence — a declaration (7.4), the owner field (7.1), a
+        # vote on this requirement (5.5). The fourth, a word shared between a person's
+        # label and a requirement TITLE, is the check this module used to run alone.
+        # It is kept so that no existing project acquires red gaps on upgrade, and
+        # demoted to a warning that names its own weakness.
+        evidence = _stakeholder_evidence(project_id, repo)
+
+        title_words: set = set()
         for req in all_reqs:
-            for sh in req.get("stakeholders", []):
-                req_stakeholder_mentions.add(str(sh).lower())
-            owner = str(req.get("owner") or "").strip().lower()
-            if owner:
-                req_stakeholder_mentions.add(owner)
-            title = req.get("title", "").lower()
-            req_stakeholder_mentions.update(title.split())
+            title_words.update(str(req.get("title") or "").lower().split())
 
         for sh in all_stakeholders:
-            # `.get("name", "")` returns None when the key exists and holds null —
-            # a registry a human edited, or any producer that writes an explicit null —
-            # and `None.lower()` took the whole tool down with an AttributeError.
-            sh_name = str(sh.get("name") or "").strip().lower()
-            sh_role = str(sh.get("role") or "").strip().lower()
-            sh_id = sh.get("id", "")
+            labels = registry_labels(sh)
+            # Identify by name, else role: neither producer of the registry (3.2
+            # seeding, 4.2 elicitation) writes an `id`, so quoting it rendered an
+            # empty pair of backticks on every one of these gaps.
+            who = sh.get("name") or sh.get("role") or "—"
+            if not labels:
+                continue
 
-            # Match on the name, falling back to the ROLE when the name is empty.
-            # Registry entries with no name are ordinary — this module's own gap
-            # message falls back to the role for exactly that reason. Matching the
-            # empty string made `"" in mention` true for every mention, so those
-            # stakeholders were reported as covered by everything and the gap this
-            # check exists to find could never be raised for them.
-            needle = sh_name or sh_role
-            mentioned = bool(needle) and any(
-                needle in mention or mention in needle
-                for mention in req_stakeholder_mentions
-                if len(mention) >= 4
+            ties = _ties_for_labels(labels, evidence)
+            if ties:
+                continue
+
+            title_hit = any(
+                label in word or word in label
+                for label in labels
+                for word in title_words
+                if len(word) >= 4
             )
-            if not mentioned:
+            if title_hit:
+                gaps_warning.append({
+                    "type": "stakeholder_heuristic_only",
+                    "stakeholder_id": sh.get("id", ""),
+                    "stakeholder_name": sh.get("name", ""),
+                    "message": (
+                        f"Stakeholder `{who}` is reachable only by a word in a "
+                        f"requirement title (heuristic) — no declared interest, no "
+                        f"requirement owned, no 5.5 approval decision. Confirm with "
+                        f"`declare_stakeholder_interest`."
+                    ),
+                })
+            else:
                 gaps_critical.append({
                     "type": "stakeholder_no_view",
-                    "stakeholder_id": sh_id,
+                    "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
-                    # Identify by name, else role: neither producer of the registry
-                    # (3.2 seeding, 4.2 elicitation) writes an `id`, so quoting it
-                    # rendered an empty pair of backticks on every one of these gaps.
-                    # Say HOW the check looked: it is a heuristic over owner
-                    # fields and title words, not a real stakeholder↔requirement
-                    # model — a "critical" verdict that hides its method invites
-                    # more confidence than the evidence carries.
                     "message": (
-                        f"Stakeholder `{sh.get('name') or sh.get('role') or '—'}` "
-                        f"is not named as any requirement's owner and no requirement "
-                        f"title mentions them (heuristic check). "
-                        f"Their interests may be uncovered."
+                        f"Stakeholder `{who}` has no recorded tie to any requirement: "
+                        f"no declared interest (7.4), not a 7.1 owner, no 5.5 approval "
+                        f"decision, and no requirement title mentions them (heuristic). "
+                        f"Their interests may be uncovered — record what you know with "
+                        f"`declare_stakeholder_interest`."
                     ),
                 })
 
