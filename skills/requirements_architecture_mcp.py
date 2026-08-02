@@ -218,6 +218,21 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
     return None
 
 
+def _is_requirement(node) -> bool:
+    """Is this graph node a REQUIREMENT, or another chapter's artifact?
+
+    Nine producers write into the 5.1 graph. A risk (6.3), a business goal (6.2), a
+    change request (5.4), the 6.4 solution scope and a test case all live there for
+    traceability and are none of them requirements — `_build_views_from_repo`, the
+    `Total req` count and the level-2 type buckets have always said so. The
+    stakeholder path added by ADR-098 did not, so a declared interest on a risk was
+    answered "interest declared on 1 requirement(s)", counted as coverage, and
+    printed in the signed document under a header saying the project has one
+    requirement (branch review R-1).
+    """
+    return isinstance(node, dict) and node.get("type", "") not in SKIP_TYPES
+
+
 # ---------------------------------------------------------------------------
 # Stakeholder↔requirement model (ADR-098)
 # ---------------------------------------------------------------------------
@@ -323,11 +338,15 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
 
     A person reached from two sources is kept TWICE, once per source: "declared and also
     voted in 5.5" is stronger than either alone, and the document may show both.
+
+    Only REQUIREMENTS are walked. A tie recorded on a risk or a business goal — by hand
+    or by an older build — is not evidence of anything about requirement coverage, and
+    counting it let a business goal silence the very check this model exists for.
     """
     voters = _approval_voters(project_id)
     evidence: dict = {}
     for req in repo.get("requirements", []):
-        if not isinstance(req, dict):
+        if not _is_requirement(req):
             continue
         req_id = req.get("id")
         if not isinstance(req_id, str) or not req_id:
@@ -376,10 +395,15 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
     the gap report and the delivered document describe the same person and must not
     reach different conclusions about them. Two copies of this rule would drift, and the
     drift would surface as one page contradicting another in front of a sponsor.
+
+    Titles come from REQUIREMENTS only. The warning says the word was found "in a
+    requirement title", and a risk register whose entries name the very roles that are
+    missing ("Compliance officer unavailable for sign-off") turned that sentence into a
+    false statement about where the platform looked (branch review R-1).
     """
     title_words: set = set()
     for req in all_reqs:
-        if isinstance(req, dict):
+        if _is_requirement(req):
             title_words.update(str(req.get("title") or "").lower().split())
     name_pool: set = set()
     for items in evidence.values():
@@ -1045,18 +1069,44 @@ def declare_stakeholder_interest(
             f"First create requirements via the 7.1 tools."
         )
 
-    by_id = {r["id"]: r for r in all_reqs if isinstance(r, dict) and isinstance(r.get("id"), str)}
-    unknown = [rid for rid in req_ids if rid not in by_id]
-    if unknown:
+    in_graph = {r["id"]: r for r in all_reqs
+                if isinstance(r, dict) and isinstance(r.get("id"), str)}
+    by_id = {rid: r for rid, r in in_graph.items() if _is_requirement(r)}
+    unknown = [rid for rid in req_ids if rid not in in_graph]
+    # In the graph, but NOT a requirement. Refused by NAME rather than skipped: a
+    # silent skip would answer "declared on 0 requirement(s)" without ever saying
+    # which id was dropped or why — the defect class this branch already fixed twice.
+    # The distinction from an ARCHIVED requirement is deliberate: a type says what a
+    # node IS (a risk is not a requirement, so recording the tie would be a lie about
+    # what happened), a status says what STAGE it is at (a deprecated requirement is
+    # still a requirement, so that call is accepted with a warning).
+    non_reqs = [rid for rid in req_ids if rid in in_graph and rid not in by_id]
+    if unknown or non_reqs:
         # Refused as a whole, so a partial write cannot leave the BA guessing which
         # half landed. The vocabulary here is CLOSED — it is this project's own graph.
         known = ", ".join(f"`{rid}`" for rid in sorted(by_id)[:20])
         more = "" if len(by_id) <= 20 else f" (+{len(by_id) - 20} more)"
-        return (
-            f"❌ Not in repository 5.1: {', '.join(f'`{u}`' for u in unknown)}.\n"
-            f"   Existing requirements: {known}{more}\n"
-            f"   Nothing was written — fix the IDs and call again."
-        )
+        problems = []
+        if unknown:
+            problems.append(
+                f"❌ Not in repository 5.1: {', '.join(f'`{u}`' for u in unknown)}."
+            )
+        if non_reqs:
+            named = ", ".join(
+                f"`{rid}` is a `{in_graph[rid].get('type') or '?'}` node"
+                for rid in non_reqs
+            )
+            problems.append(
+                f"❌ Not requirements: {named}.\n"
+                f"   7.4 records whose interests a REQUIREMENT touches. Risks (6.3), "
+                f"business goals (6.2), change requests (5.4), the 6.4 solution scope "
+                f"and test cases share the 5.1 graph but are not requirements — no "
+                f"other 7.4 count includes them either."
+            )
+        return "\n".join(problems + [
+            f"   Existing requirements: {known or '—'}{more}",
+            f"   Nothing was written — fix the IDs and call again.",
+        ])
 
     today = str(date.today())
     key = reg_norm(name)

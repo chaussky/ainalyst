@@ -1723,5 +1723,102 @@ class TestLiveRunFindings74(BaseMCPTest):
         self.assertIn("**Marcus Webb** — no interest recorded", concerns)
 
 
+class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
+    """Branch review R-1. The whole new path walked `repo["requirements"]` with no
+    type filter, while every OTHER 7.4 path filters by `SKIP_TYPES`.
+
+    Three independently serious consequences, all reproduced live: the tool called a
+    risk "a requirement"; the coverage check the feature exists for could be silenced
+    with a business goal; and the delivered document printed ids that appear nowhere
+    else on the page, under a header saying "Total req | 1".
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _mixed_repo(self, project_id):
+        return make_repo(project_id, [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("RISK-002", "risk", "Compliance officer unavailable for sign-off"),
+            make_req("BG-001", "business_goal", "Reduce processing time"),
+            make_req("CR-001", "change_request", "Widen the export"),
+        ])
+
+    def test_a_hand_written_tie_on_a_risk_node_is_not_evidence(self):
+        repo = self._mixed_repo("skip74")
+        repo["requirements"][1]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        repo["requirements"][1]["owner"] = "Helen Vasquez"
+        ev = mod74._stakeholder_evidence("skip74", repo)
+        self.assertNotIn("RISK-002", ev)
+        self.assertEqual(ev["FR-001"], [])
+
+    def test_declaring_interest_on_a_risk_node_is_refused_and_says_why(self):
+        # A SILENT skip would be the same defect class this branch already fixed
+        # twice: the tool would answer "declared on 0" and never say which id it
+        # dropped or why.
+        save_repo(self._mixed_repo("skip74b"))
+        result = mod74.declare_stakeholder_interest(
+            "skip74b", "Helen Vasquez", '["RISK-002", "BG-001"]')
+        self.assertTrue(result.startswith("❌"), result)
+        self.assertIn("RISK-002", result)
+        self.assertIn("risk", result)
+        self.assertIn("BG-001", result)
+        self.assertIn("business_goal", result)
+
+    def test_one_non_requirement_id_refuses_the_whole_call_and_writes_nothing(self):
+        pid = "skip74c"
+        save_repo(self._mixed_repo(pid))
+        result = mod74.declare_stakeholder_interest(
+            pid, "Helen Vasquez", '["FR-001", "RISK-002"]')
+        self.assertTrue(result.startswith("❌"), result)
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        fr = next(r for r in stored["requirements"] if r["id"] == "FR-001")
+        self.assertEqual(fr.get("stakeholders", []), [])
+
+    def test_the_existing_ids_offered_by_the_refusal_are_requirements_only(self):
+        save_repo(self._mixed_repo("skip74d"))
+        result = mod74.declare_stakeholder_interest("skip74d", "Helen", '["FR-999"]')
+        self.assertIn("`FR-001`", result)
+        self.assertNotIn("`RISK-002`", result)
+        self.assertNotIn("`BG-001`", result)
+
+    def test_a_risk_title_is_not_a_word_the_heuristic_may_match(self):
+        # The second symptom of the same root: the heuristic pool ate risk and CR
+        # titles, so a `Compliance` role was demoted to a warning that claimed the
+        # word came from "a requirement title". No requirement mentions it.
+        save_repo(self._mixed_repo("skip74e"))
+        save_stakeholder_registry("skip74e", [{"name": "", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("skip74e")
+        self.assertIn("🔴 Critical | 1", result)
+        self.assertNotIn("only by a word in a requirement title", result)
+
+    def test_a_business_goal_cannot_silence_the_coverage_check(self):
+        repo = self._mixed_repo("skip74f")
+        repo["requirements"][2]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(repo)
+        save_stakeholder_registry("skip74f", [{"name": "Helen Vasquez", "role": "Ops"}])
+        result = mod74.check_architecture_gaps("skip74f")
+        self.assertIn("`Helen Vasquez` has no recorded tie", result)
+        self.assertIn("🔴 Critical | 1", result)
+
+    def test_the_document_never_prints_an_id_it_does_not_count(self):
+        repo = self._mixed_repo("skip74g")
+        repo["requirements"][1]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        repo["requirements"][2]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(repo)
+        save_stakeholder_registry("skip74g", [{"name": "Helen Vasquez", "role": "Ops"}])
+        doc = self._doc("skip74g")
+        self.assertIn("| Total req | 1 |", doc)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertNotIn("RISK-002", concerns)
+        self.assertNotIn("BG-001", concerns)
+        self.assertIn("**Helen Vasquez** — no interest recorded", concerns)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
