@@ -51,8 +51,9 @@ The platform automatically distributes requirements across viewpoints:
 ```
 1. analyze_requirements_architecture  ← automatically builds viewpoints from the 5.1 repository
 2. add_custom_viewpoint               ← [optional] add a project-specific viewpoint
-3. check_architecture_gaps            ← find gaps: coverage matrix + semantics
-4. save_architecture_snapshot         ← lock in the architecture → hand off to 4.4 and 7.5
+3. declare_stakeholder_interest       ← state whose interests each requirement touches
+4. check_architecture_gaps            ← find gaps: coverage matrix + semantics
+5. save_architecture_snapshot         ← lock in the architecture → hand off to 4.4 and 7.5
 ```
 
 ---
@@ -104,7 +105,45 @@ add_custom_viewpoint(
 
 ---
 
-### 3. `check_architecture_gaps`
+### 3. `declare_stakeholder_interest`
+
+**When:** once you know which requirements touch which people — usually right after
+`analyze_requirements_architecture`, and again whenever elicitation turns up someone new.
+
+```
+declare_stakeholder_interest(
+  project_id    = "crm_upgrade",
+  stakeholder   = "Ivan Petrov",              # a NAME or a ROLE — both resolve
+  req_ids_json  = '["FR-001", "FR-002"]',
+  note          = "owns the revenue report these feed"
+)
+```
+
+**This is the one stakeholder relation you state by hand.** It is deliberately not the
+same as two facts the platform already holds:
+
+| Relation | Who writes it | What it means |
+|----------|---------------|---------------|
+| declared interest | **7.4 — you, with this tool** | this requirement touches their interests |
+| `owner` | 7.1 | who is answerable for the WORDING of the requirement |
+| RACI | 5.5 | their role in a DECISION on an approval package |
+
+**You do not re-enter the last two.** `check_architecture_gaps` and the Architecture
+Document read them directly and say where each tie came from, so a person who owns a
+requirement or voted on it in 5.5 already counts as covered.
+
+**Repeat calls MERGE** — a second call never erases what an earlier one recorded. To
+withdraw a declaration, call again with `remove = True`. The reply always prints counts
+("declared on 2 requirement(s)", "already declared on 1"), so a no-op is visible.
+
+**A stakeholder the registry does not know is still recorded, with a warning** — the
+registry is a living document and you may be entering someone you met an hour ago. An
+unknown *requirement ID*, by contrast, is refused outright: that vocabulary is the
+project's own graph, and a typo there is cheapest to fix at the call.
+
+---
+
+### 4. `check_architecture_gaps`
 
 **When:** after `analyze_requirements_architecture` — to find weak spots.
 
@@ -115,7 +154,8 @@ check_architecture_gaps(project_id = "crm_upgrade")
 **Two levels of checking (ADR-038):**
 
 **Level 1 — Coverage matrix:**
-- Stakeholder with no view → `critical`
+- Stakeholder with no recorded tie to any requirement → `critical`
+- Stakeholder reachable only by a word shared with a requirement title → `warning`
 - BG with no viewpoint coverage → `warning`
 - Empty viewpoint → `info`
 
@@ -123,14 +163,19 @@ check_architecture_gaps(project_id = "crm_upgrade")
 - UC with no corresponding BP → `warning`
 - NFR not linked to an FR → `warning`
 - FR with no UC/US → `info`
-- Stakeholder in the registry with zero requirements → `critical`
+
+**How the stakeholder verdict is reached (ADR-098).** Three sources count as evidence:
+a declared interest (7.4), being a requirement's `owner` (7.1), and an approval decision
+on that requirement (5.5). A shared word with a requirement title is a fourth source,
+kept because it is how this check used to work — but it is a coincidence, not a fact, so
+it now yields a warning that names its own weakness instead of a critical verdict.
 
 ⚠️ **Interpretation:** level 2 depends on how complete the links in 5.1 are.
 If the BA hasn't added traceability via 5.1, there will be many false positives. Keep this in mind.
 
 ---
 
-### 4. `save_architecture_snapshot`
+### 5. `save_architecture_snapshot`
 
 **When:** the architecture is ready — before handing it off to 4.4 (communication) and 7.5 (design).
 
@@ -156,17 +201,20 @@ save_architecture_snapshot(
 2. Call `analyze_requirements_architecture` — get the full picture
 
 ### If the project is standard
-3. `check_architecture_gaps` — find gaps
-4. Resolve critical gaps: create missing requirements (7.1) or add traceability (5.1)
-5. `save_architecture_snapshot(version="v1.0")` — lock it in
+3. `declare_stakeholder_interest` — record whose interests each requirement touches
+4. `check_architecture_gaps` — find gaps
+5. Resolve critical gaps: declare the interests you know (7.4), create missing requirements (7.1), or add traceability (5.1)
+6. `save_architecture_snapshot(version="v1.0")` — lock it in
 
 ### If the project is regulated (banking, healthcare, government)
 3. `add_custom_viewpoint` — add viewpoints "Security", "Audit and Compliance"
-4. `check_architecture_gaps` — check, accounting for custom viewpoints
-5. `save_architecture_snapshot` — lock it in
+4. `declare_stakeholder_interest` — regulators and compliance officers rarely own or approve individual requirements, so their interest usually has to be stated explicitly
+5. `check_architecture_gaps` — check, accounting for custom viewpoints
+6. `save_architecture_snapshot` — lock it in
 
 ### Agile project (iterative work)
 - Call `analyze_requirements_architecture` at the end of each sprint
+- Declare interests for the requirements the sprint added — the declaration merges, so this is safe to repeat
 - Take a snapshot after each significant increment of requirements
 - Hand off the Architecture Document to the next sprint's planning
 
@@ -177,6 +225,7 @@ save_architecture_snapshot(
 | File | Contains |
 |------|----------|
 | `{project}_architecture.json` | Viewpoints, views, gaps, snapshot history |
+| `{project}_traceability_repo.json` | The `stakeholders` field on requirement nodes — declared interests only (7.4 writes this one field; everything else in the file belongs to chapter 5) |
 | `7_4_architecture_*.md` | Architecture Document → 4.4, 7.5 |
 
 ---
@@ -186,8 +235,9 @@ save_architecture_snapshot(
 | From | What comes in |
 |------|----------------|
 | 5.1 | Requirements repository — basis for viewpoint mapping and BFS gap analysis |
-| 4.2 | Stakeholder registry — coverage check |
-| 7.1 | Artifact types — automatic mapping to viewpoints |
+| 4.2 | Stakeholder registry — coverage check; the name↔role bridge for declared interests |
+| 5.5 | Approval decisions — a vote on a requirement is evidence that it touches the voter |
+| 7.1 | Artifact types — automatic mapping to viewpoints; the `owner` field — evidence of interest |
 | 7.3 | business_context (BG) — coverage matrix |
 
 | To | What we hand off |

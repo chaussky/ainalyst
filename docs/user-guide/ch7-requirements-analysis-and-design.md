@@ -234,9 +234,13 @@ The BA organizes requirements into a coherent structure, an architecture: defini
 
 **Custom viewpoints for specific contexts.** `add_custom_viewpoint` lets the BA add a viewpoint that isn't in the standard set: "Security and Access" for banks, "Audit and Compliance" for regulated projects, "Data Migration" for legacy-system replacement projects. The BA specifies which requirements belong to it, and the platform includes them in the architecture.
 
+**Whose interests a requirement touches — stated, not guessed.** `declare_stakeholder_interest` records that a stakeholder's interests are affected by specific requirements. This is deliberately a different thing from two facts the platform already holds: the `owner` field (7.1) says who is answerable for the *wording* of a requirement, and the RACI role (5.5) says who decided on an *approval package*. The BA does not re-enter those — the platform reads them as evidence and says where each tie came from. Repeat calls merge, so nothing an earlier call recorded is ever silently erased; withdrawing a declaration takes an explicit `remove`.
+
 **Two-level gap check.** `check_architecture_gaps` identifies gaps at two levels:
-- Matrix level: does every stakeholder have their own viewpoint? Is every business goal covered by at least one view?
-- Semantic level: is there a Use Case with no business process? An NFR not linked to any FR? A stakeholder with no requirements at all?
+- Matrix level: does every stakeholder in the registry have a recorded tie to at least one requirement? Is every business goal covered by at least one view?
+- Semantic level: is there a Use Case with no business process? An NFR not linked to any FR? An FR with no usage scenario?
+
+The stakeholder verdict rests on recorded facts — a declared interest, ownership of a requirement, or an approval decision on it. A person reachable only because their name happens to share a word with some requirement's title is reported as a *warning* that says so, not as a critical finding: a shared word is a coincidence, and a verdict that hides its method invites more confidence than its evidence carries.
 
 **A versioned architecture snapshot.** `save_architecture_snapshot` captures the current state of the architecture with a version number and a comment. The history of snapshots is preserved, so you can see how the requirements architecture evolved over the course of the project.
 
@@ -244,7 +248,7 @@ The BA organizes requirements into a coherent structure, an architecture: defini
 
 **Every stakeholder gets "their" slice.** The Architecture Document is organized by viewpoint. The customer opens the "Business Processes" section and sees only what they need. The architect opens "Functionality" and "Data." This reduces the cognitive load of reading and lowers the risk that an important requirement gets missed by the stakeholder who needs it.
 
-**Structural gaps are found before design.** Discovering that the "Financial Controller" user role exists in the stakeholder registry but isn't covered by any Use Case takes 10 minutes to fix in 7.4, by creating the missing artifact. Discovering the same thing in 7.5, while building design options, means rework and lost time.
+**Structural gaps are found before design.** Discovering that the "Financial Controller" role exists in the stakeholder registry but has no recorded tie to a single requirement takes minutes to resolve in 7.4 — either the tie exists and simply was never stated, in which case you declare it, or it genuinely does not, in which case a requirement is missing. Discovering the same thing in 7.5, while building design options, means rework and lost time.
 
 **An input artifact for design.** The Architecture Document is exactly what a technical architect needs to start work on design options (7.5): a structured picture instead of a chaotic list. The BA saves the team time and reduces the number of clarifying questions.
 

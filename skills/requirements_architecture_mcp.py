@@ -6,6 +6,7 @@ gaps, and recording an architecture snapshot.
 Tools:
   - analyze_requirements_architecture — automatically builds viewpoints from artifact types
   - add_custom_viewpoint              — BA adds a custom viewpoint (by req_ids)
+  - declare_stakeholder_interest      — BA states whose interests a requirement touches
   - check_architecture_gaps          — coverage matrix + semantic gaps (two levels)
   - save_architecture_snapshot       — records an architecture snapshot, generates Markdown
 
@@ -15,11 +16,19 @@ ADR-035: reads the stakeholder registry from 4.2 ({project}_stakeholder_registry
 ADR-036: custom viewpoints are bound to req_ids, not to types
 ADR-037: {project}_architecture.json with snapshots (pattern from 5.5)
 ADR-038: check_architecture_gaps — two levels: coverage matrix + semantic gaps
+ADR-098: stakeholder↔requirement model. The `stakeholders` field on a requirement node
+         holds ONLY what the BA declares here; the owner (7.1) and approval decisions
+         (5.5) are read on demand and never copied, so no stored copy can go stale.
+         A title-word match is kept as a fourth, explicitly labelled source and is a
+         warning, never a critical verdict (this REVISES ADR-088, which labelled the
+         heuristic honestly because no model existed yet).
 
-Reads:  {project}_traceability_repo.json (5.1)
+Reads:  {project}_traceability_repo.json (5.1) — also WRITTEN by declare_stakeholder_interest
         {project}_stakeholder_registry.json (4.2) — optional
+        {project}_approval_history.json (5.5) — optional, evidence of interest
         {project}_business_context.json (7.3) — optional
 Writes: {project}_architecture.json
+        {project}_traceability_repo.json (5.1) — the `stakeholders` field only
         7_4_architecture_*.md (via save_artifact)
 Output: Architecture Document → 4.4 (communication), 7.5 (design options)
 

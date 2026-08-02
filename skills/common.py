@@ -845,12 +845,17 @@ BA_PLAN_SUFFIX = "ba_plan.json"
 ABSTRACTION_LEVELS = ("Summary", "Standard", "Detailed")
 
 # Element .6 — attributes the PLATFORM can actually store on a requirement node.
-# Verified against update_requirement (5.2) and the node creators (5.1 / 7.1).
+# Verified against update_requirement (5.2) and the node creators (5.1 / 7.1 / 7.4).
 # BABOK also lists author, risks and urgency (p. 45-46); this model has no field
 # for them, so planning them is refused rather than accepted and never checked.
+# `stakeholders` joined with ADR-098: 7.4's declare_stakeholder_interest is its
+# writer. The list is the answer to "can the platform store this?", and the day a
+# field acquires a writer is the day the answer changes — leaving it out would make
+# 3.4 refuse to plan an attribute that now exists.
 PLANNABLE_ATTRIBUTES = (
     "status", "version", "source", "priority", "owner",
     "stability", "complexity", "reuse_candidate", "reuse_scope", "last_reviewed",
+    "stakeholders",
 )
 
 # Mirrors the table in skills/requirements_maintain/SKILL.md ("Always" / "Standard+"

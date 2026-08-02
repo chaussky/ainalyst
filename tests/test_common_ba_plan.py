@@ -120,6 +120,22 @@ class TestBaPlanReader(BaseMCPTest):
             self.assertNotIn("last_reviewed", preset)
         self.assertIn("last_reviewed", PLANNABLE_ATTRIBUTES)
 
+    def test_stakeholders_is_plannable_now_that_a_writer_exists(self):
+        """The list is documented as the attributes the PLATFORM can actually store on
+        a requirement node, verified against the node creators. 7.4's
+        `declare_stakeholder_interest` (ADR-098) is now one of those creators, and a
+        list that omits the field makes 3.4 REFUSE to plan an attribute the platform
+        does hold — the mismatched-vocabulary class, one chapter over."""
+        self.assertIn("stakeholders", PLANNABLE_ATTRIBUTES)
+
+    def test_stakeholders_is_in_no_preset(self):
+        """Deliberate, like `last_reviewed`: the presets mirror the table in
+        requirements_maintain/SKILL.md and belong to 5.2, whose `update_requirement`
+        cannot edit a list field. Adding it there would promise an audit 5.2 cannot
+        perform."""
+        for preset in ATTRIBUTE_PRESETS.values():
+            self.assertNotIn("stakeholders", preset)
+
     # --- reuse -------------------------------------------------------------
 
     def test_planned_reuse_returns_the_three_fields(self):

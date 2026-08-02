@@ -82,15 +82,41 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 ### Level 1: Coverage matrix
 
 **What's checked:**
-- Is there a stakeholder from the 4.2 registry with no view at all?
+- Is there a stakeholder from the 4.2 registry with no recorded tie to any requirement?
 - Is there a business objective from business_context (7.3) not covered by any viewpoint?
 - Is there an empty viewpoint (a viewpoint with no requirements)?
 
 | Problem | Severity | What to do |
 |---------|----------|-----------|
-| Stakeholder with no view | critical | Add requirements to the appropriate viewpoint |
+| Stakeholder with no recorded tie to any requirement | critical | Declare what you know with `declare_stakeholder_interest`, or create the missing requirements |
+| Stakeholder reachable only by a shared title word | warning | Confirm it with `declare_stakeholder_interest` — a shared word is a coincidence, not a fact |
 | BG with no viewpoint coverage | warning | Check traceability in 5.1 or create the missing requirements |
 | Empty viewpoint | info | Create artifacts of that type or remove the viewpoint |
+
+#### How the stakeholder verdict is reached (ADR-098)
+
+The platform asks four questions about each person in the registry, and says in the gap
+text which ones it asked:
+
+| Source | Written by | Counts as |
+|--------|------------|-----------|
+| A declared interest | 7.4, by the BA (`declare_stakeholder_interest`) | evidence |
+| The requirement's `owner` | 7.1 | evidence |
+| An approval decision on that requirement | 5.5 | evidence — a vote against counts too; opposing a requirement is the clearest possible sign it touches you |
+| A word of 4+ letters shared with a requirement title or with another recorded name | nobody — it is a coincidence | heuristic only |
+
+Any one piece of evidence and the stakeholder is covered, silently. Only the heuristic and
+it is a warning that names its own weakness. Nothing at all and it is critical.
+
+**Why the heuristic was kept rather than deleted.** It is how this check worked before the
+model existed. Removing it would have handed every existing project a batch of new critical
+findings on the day of the upgrade — about people whose coverage had not changed at all.
+Demoting it adds information without taking any away.
+
+**Names match through the registry.** The BA may write a role ("Product Owner") where 7.1
+recorded a name ("Ivan Petrov"); the registry ties the two together, so either resolves to
+the same person. An exact match is evidence; a partial one ("Priya" against "Priya Nair")
+is a heuristic, for the same reason a shared title word is.
 
 ### Level 2: Semantic gaps
 
@@ -101,7 +127,6 @@ Checks that go beyond the matrix — based on the links in the 5.1 repository:
 | UC with no BP | warning | A user interacts, but the business process isn't described |
 | NFR with no FR | warning | A non-functional constraint is left "hanging" with no link to a function |
 | FR with no UC or US | info | A function is described, but the usage scenario isn't documented |
-| Stakeholder in the registry with no view | critical | The stakeholder is identified, but their interests aren't covered by any requirement |
 
 **⚠️ Important about level 2:** semantic gap checks depend on how complete the 5.1 graph is.
 If the BA has added few links in traceability, there will be many false positives (an FR with no UC, not
