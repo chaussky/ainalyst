@@ -1103,5 +1103,186 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         self.assertEqual(mod74._stakeholder_evidence("ev74l", repo)["FR-001"], [])
 
 
+class TestDeclareStakeholderInterest(BaseMCPTest):
+    """The tool the whole feature exists for — and the one that can destroy BA input.
+
+    Repeat-call semantics are MERGE: all parameters are optional-looking and a replace
+    on the second call is this repository's "silent data loss" class. Removal is only
+    ever explicit, the way `add_trace_link(remove=...)` does it in 5.1.
+    """
+
+    def _repo(self, project_id="dsi74"):
+        save_repo(make_repo(project_id, [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("FR-002", "functional", "Notifications"),
+        ]))
+        return project_id
+
+    def _stored(self, project_id, req_id="FR-001"):
+        path = data_path(project_id, f"{project_id}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            repo = json.load(f)
+        return next(r for r in repo["requirements"] if r["id"] == req_id)
+
+    def test_a_declaration_is_stored_as_an_object_with_its_date(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                           note="revenue reporting")
+        entry = self._stored(pid)["stakeholders"][0]
+        self.assertEqual(entry["name"], "Sales Head")
+        self.assertEqual(entry["declared"], str(date.today()))
+        self.assertEqual(entry["note"], "revenue reporting")
+
+    def test_the_reply_counts_what_it_did(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head",
+                                                    '["FR-001", "FR-002"]')
+        self.assertIn("declared on 2 requirement(s)", result)
+
+    def test_a_second_identical_call_adds_nothing_and_says_so(self):
+        # Silence is right for an accusation and wrong for a count: "done" after a
+        # no-op leaves the BA unable to tell whether anything was recorded.
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        self.assertIn("declared on 0 requirement(s)", result)
+        self.assertIn("already declared on 1", result)
+        self.assertEqual(len(self._stored(pid)["stakeholders"]), 1)
+
+    def test_a_second_call_with_different_case_is_still_the_same_person(self):
+        # Identity is compared normalised (reg_norm), not by the raw string: a BA who
+        # types the same name with different capitalisation the second time must not
+        # produce a duplicate entry.
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        result = mod74.declare_stakeholder_interest(pid, "sales head", '["FR-001"]')
+        self.assertIn("declared on 0 requirement(s)", result)
+        self.assertIn("already declared on 1", result)
+        self.assertEqual(len(self._stored(pid)["stakeholders"]), 1)
+
+    def test_a_second_call_for_someone_else_does_not_erase_the_first(self):
+        # THE data-loss test. A replace here would wipe input the BA never withdrew.
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}, {"name": "Data Architect"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        mod74.declare_stakeholder_interest(pid, "Data Architect", '["FR-001"]')
+        names = [e["name"] for e in self._stored(pid)["stakeholders"]]
+        self.assertEqual(sorted(names), ["Data Architect", "Sales Head"])
+
+    def test_remove_takes_the_declaration_back_out(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                                    remove=True)
+        self.assertIn("removed from 1 requirement(s)", result)
+        self.assertEqual(self._stored(pid)["stakeholders"], [])
+
+    def test_removing_what_was_never_declared_reports_zero(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                                    remove=True)
+        self.assertIn("removed from 0 requirement(s)", result)
+
+    def test_an_unknown_req_id_is_refused_with_the_ones_that_exist(self):
+        # The requirement vocabulary is CLOSED — it is this project's own graph — so a
+        # typo is refused at the call, the cheapest moment to fix it.
+        pid = self._repo()
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-999"]')
+        self.assertTrue(result.startswith("❌"))
+        self.assertIn("FR-999", result)
+        self.assertIn("FR-001", result)
+        self.assertEqual(self._stored(pid).get("stakeholders", []), [])
+
+    def test_one_bad_id_refuses_the_whole_call_and_writes_nothing(self):
+        pid = self._repo()
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head",
+                                                    '["FR-001", "FR-999"]')
+        self.assertTrue(result.startswith("❌"))
+        self.assertEqual(self._stored(pid).get("stakeholders", []), [])
+
+    def test_a_known_stakeholder_gets_no_registry_warning(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        self.assertNotIn("not in the stakeholder registry", result)
+        self.assertNotIn("no stakeholder registry", result)
+
+    def test_a_role_resolves_against_the_registry_too(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Ivan Petrov", "role": "Product Owner"}])
+        result = mod74.declare_stakeholder_interest(pid, "Product Owner", '["FR-001"]')
+        self.assertNotIn("not in the stakeholder registry", result)
+
+    def test_an_unknown_stakeholder_is_recorded_with_a_warning(self):
+        # The registry is a LIVING document: refusing here would block a BA who just
+        # heard the name in an interview. Warn, record, and point at the fix.
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        result = mod74.declare_stakeholder_interest(pid, "Brand New Person", '["FR-001"]')
+        self.assertIn("not in the stakeholder registry", result)
+        self.assertIn("update_stakeholder_registry", result)
+        self.assertEqual(self._stored(pid)["stakeholders"][0]["name"], "Brand New Person")
+
+    def test_no_registry_at_all_says_it_cannot_compare_not_that_the_person_is_missing(self):
+        pid = self._repo("dsi74noreg")
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        self.assertIn("no stakeholder registry", result)
+        self.assertNotIn("not in the stakeholder registry", result)
+        self.assertEqual(self._stored(pid)["stakeholders"][0]["name"], "Sales Head")
+
+    def test_an_empty_stakeholder_name_is_refused(self):
+        pid = self._repo()
+        result = mod74.declare_stakeholder_interest(pid, "   ", '["FR-001"]')
+        self.assertTrue(result.startswith("❌"))
+
+    def test_broken_req_ids_json_is_refused(self):
+        pid = self._repo()
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", "not json")
+        self.assertTrue(result.startswith("❌"))
+
+    def test_an_empty_repository_degrades_softly(self):
+        result = mod74.declare_stakeholder_interest("dsi74empty", "Sales Head",
+                                                    '["FR-001"]')
+        self.assertTrue(result.startswith("⚠️"))
+
+    def test_the_declaration_is_written_to_history(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            repo = json.load(f)
+        actions = [h["action"] for h in repo["history"]]
+        self.assertIn("stakeholder_interest_declared", actions)
+        self.assertEqual(repo["history"][-1]["source"], "7.4_architecture")
+
+    def test_a_removal_is_written_to_history_too(self):
+        # Nothing disappears without a trace — the project rule for deprecation.
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]', remove=True)
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            repo = json.load(f)
+        self.assertIn("stakeholder_interest_removed",
+                      [h["action"] for h in repo["history"]])
+
+    def test_declaring_does_not_touch_any_other_field_of_the_requirement(self):
+        pid = self._repo()
+        save_stakeholder_registry(pid, [{"name": "Sales Head"}])
+        before = self._stored(pid)
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        after = self._stored(pid)
+        for key in ("id", "type", "title", "status", "priority", "version"):
+            self.assertEqual(before[key], after[key])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

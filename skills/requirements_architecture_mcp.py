@@ -36,6 +36,8 @@ from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
     read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
+    parse_json_str_list, registry_party_status, PARTY_IN_REGISTRY,
+    PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -140,6 +142,18 @@ def _load_repo(project_id: str) -> dict:
         # boundary by guard_artifact_errors (the chapters-5 / 7.1-7.3 pattern).
         return read_json_artifact(path, "7.4 stored artifact")
     return {"project": project_id, "requirements": [], "links": [], "history": []}
+
+
+def _save_repo(repo: dict, project_id: str) -> None:
+    """Persists the 5.1 graph. 7.4 is a writer of this file the same way 7.1, 6.3 and
+    5.4 already are — `data_path` returns the path it READ from, so no second copy of
+    the repository can appear under a different layout."""
+    path = _repo_path(project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    repo["updated"] = str(date.today())
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(repo, f, ensure_ascii=False, indent=2)
+    logger.info(f"Traceability repo saved by 7.4: {path}")
 
 
 def _load_stakeholders(project_id: str) -> Optional[dict]:
@@ -764,6 +778,159 @@ def add_custom_viewpoint(
         f"`check_architecture_gaps(project_id='{project_id}')` — check gaps taking the new viewpoint into account.",
     ]
 
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 7.4 — declare_stakeholder_interest (ADR-098)
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+@guard_artifact_errors
+def declare_stakeholder_interest(
+    project_id: str,
+    stakeholder: str,
+    req_ids_json: str,
+    note: str = "",
+    remove: bool = False,
+) -> str:
+    """
+    BABOK 7.4 — Declares that a stakeholder's interests are touched by requirements.
+
+    ADR-098. This is the ONE relation the BA states by hand. It is deliberately NOT
+    the same thing as two facts the platform already holds elsewhere:
+      - `owner` (written by 7.1) — who is answerable for the WORDING of a requirement;
+      - RACI (written by 5.5) — someone's role in a DECISION on an approval package.
+    Both are read as evidence by `check_architecture_gaps` and by the architecture
+    document, and NEITHER is copied here: a stored copy goes stale the moment its
+    owner changes it.
+
+    Repeat calls MERGE. Removal is explicit only (`remove=True`), the way 5.1's
+    `add_trace_link` does it, and both directions are written to the repository
+    history.
+
+    Args:
+        project_id:   Project identifier.
+        stakeholder:  A name OR a role — whichever the registry knows ("Ivan Petrov",
+                      "Product Owner"). Both resolve to the same person.
+        req_ids_json: JSON array of requirement IDs: '["FR-001", "FR-002"]'.
+        note:         Why their interests are touched (optional, stored per entry).
+        remove:       True — withdraw the declaration from these requirements.
+
+    Returns:
+        What changed, in counts, plus how the name compared against the 4.2 registry.
+    """
+    logger.info(
+        f"declare_stakeholder_interest: project_id='{project_id}', "
+        f"stakeholder='{stakeholder}', remove={remove}"
+    )
+
+    name = str(stakeholder or "").strip()
+    if not reg_norm(name):
+        return (
+            "❌ `stakeholder` cannot be empty — give a name or a role, "
+            "for example: `Ivan Petrov` or `Product Owner`."
+        )
+
+    req_ids, error = parse_json_str_list(
+        req_ids_json, "req_ids_json", required=True, example='["FR-001", "FR-002"]'
+    )
+    if error:
+        return error
+
+    repo = _load_repo(project_id)
+    all_reqs = repo.get("requirements", [])
+    if not all_reqs:
+        return (
+            f"⚠️ The 5.1 repository for project `{project_id}` is empty — "
+            f"nothing to declare interest in.\n"
+            f"First create requirements via the 7.1 tools."
+        )
+
+    by_id = {r["id"]: r for r in all_reqs if isinstance(r, dict) and isinstance(r.get("id"), str)}
+    unknown = [rid for rid in req_ids if rid not in by_id]
+    if unknown:
+        # Refused as a whole, so a partial write cannot leave the BA guessing which
+        # half landed. The vocabulary here is CLOSED — it is this project's own graph.
+        known = ", ".join(f"`{rid}`" for rid in sorted(by_id)[:20])
+        more = "" if len(by_id) <= 20 else f" (+{len(by_id) - 20} more)"
+        return (
+            f"❌ Not in repository 5.1: {', '.join(f'`{u}`' for u in unknown)}.\n"
+            f"   Existing requirements: {known}{more}\n"
+            f"   Nothing was written — fix the IDs and call again."
+        )
+
+    today = str(date.today())
+    key = reg_norm(name)
+    changed, skipped = [], []
+
+    for rid in dict.fromkeys(req_ids):          # order kept, duplicates in ONE call collapsed
+        req = by_id[rid]
+        current = req.get("stakeholders")
+        if not isinstance(current, list):
+            current = []
+        present = key in {reg_norm(_concern_name(e)) for e in current}
+
+        if remove:
+            if present:
+                req["stakeholders"] = [
+                    e for e in current if reg_norm(_concern_name(e)) != key
+                ]
+                changed.append(rid)
+            else:
+                skipped.append(rid)
+        else:
+            if present:
+                skipped.append(rid)
+            else:
+                entry = {"name": name, "declared": today}
+                if note:
+                    entry["note"] = note
+                req["stakeholders"] = current + [entry]
+                changed.append(rid)
+
+    if changed:
+        repo.setdefault("history", []).append({
+            "action": "stakeholder_interest_removed" if remove
+                      else "stakeholder_interest_declared",
+            "stakeholder": name,
+            "req_ids": changed,
+            "source": "7.4_architecture",
+            "date": today,
+        })
+        _save_repo(repo, project_id)
+
+    verb = "removed from" if remove else "declared on"
+    lines = [
+        f"✅ `{name}` — interest **{verb} {len(changed)} requirement(s)**"
+        + (f": {', '.join(f'`{r}`' for r in changed)}" if changed else "."),
+    ]
+    if skipped:
+        state = "was not declared on" if remove else "already declared on"
+        lines.append(
+            f"   ℹ️ {state} {len(skipped)}: {', '.join(f'`{r}`' for r in skipped)}"
+        )
+
+    status = registry_party_status(project_id, name)
+    if status == PARTY_NOT_IN_REGISTRY:
+        lines += [
+            "",
+            f"⚠️ `{name}` is not in the stakeholder registry (4.2). The declaration was "
+            f"recorded anyway — the registry is a living document. Add them with 4.2 "
+            f"`update_stakeholder_registry` so the coverage check can see them.",
+        ]
+    elif status == PARTY_UNBRIDGEABLE:
+        lines += [
+            "",
+            f"⚠️ There is no stakeholder registry for `{project_id}`, so this name could "
+            f"not be checked against anything. Create it via the 3.2 or 4.2 tools.",
+        ]
+
+    lines += [
+        "",
+        f"Next: `check_architecture_gaps(project_id='{project_id}')` — see which "
+        f"stakeholders still have no recorded tie to any requirement.",
+    ]
     return "\n".join(lines)
 
 
