@@ -2200,5 +2200,77 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         self.assertNotIn("nobody identifiable", result)
 
 
+class TestNothingThatUsedToBeSilentBecomesCritical(BaseMCPTest):
+    """Branch review A-3. `_heuristic_hit`'s docstring claims the set of stakeholders
+    the OLD rule called "represented" stays a subset of (silent | warning). For values
+    the old code reached through `str()`, it did not.
+
+    The old rule built its bucket with `str(sh).lower()` and `str(owner).lower()`, so a
+    dict in the `stakeholders` field or a non-string `owner` still put SOMETHING in it
+    to match against. Evidence deliberately drops both — `str(42)` would print "42" into
+    a signed document as a person — but dropping them from the COINCIDENCE pool as well
+    turned yesterday's silence into today's critical, which is the one thing decision 6
+    of this feature forbids.
+
+    Making the claim TRUE rather than narrowing it: the raw values rejoin the heuristic
+    pool, which is only ever matched against and never printed, so nothing becomes
+    evidence and nothing gets rendered as a person.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def test_a_role_only_dict_in_the_stakeholders_field_is_not_a_new_critical(self):
+        repo = make_repo("a3_74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"role": "Compliance Officer"}]
+        save_repo(repo)
+        save_stakeholder_registry("a3_74", [{"name": "", "role": "Compliance Officer"}])
+        result = mod74.check_architecture_gaps("a3_74")
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertIn("🟡 Warning | 1", result)
+
+    def test_a_non_string_owner_is_not_a_new_critical_either(self):
+        repo = make_repo("a3_74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = {"name": "Priya Nair"}
+        save_repo(repo)
+        save_stakeholder_registry("a3_74b", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("a3_74b")
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertIn("🟡 Warning | 1", result)
+
+    def test_the_unreadable_value_never_becomes_evidence(self):
+        # The pool is matched against, never rendered. A number in the field must not
+        # acquire a name, a tie or a line in the document.
+        repo = make_repo("a3_74c", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"role": "Compliance Officer"}]
+        repo["requirements"][0]["owner"] = 42
+        ev = mod74._stakeholder_evidence("a3_74c", repo)
+        self.assertEqual(ev["FR-001"], [])
+
+    def test_the_unreadable_value_is_never_printed_as_a_person(self):
+        repo = make_repo("a3_74d", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = {"name": "Priya Nair"}
+        save_repo(repo)
+        save_stakeholder_registry("a3_74d", [{"name": "Priya Nair", "role": "Compliance"}])
+        doc = self._doc("a3_74d")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertNotIn("{'name'", concerns)
+        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
+
+    def test_an_unrelated_unreadable_value_still_leaves_a_real_gap_critical(self):
+        # Guard against over-widening: the pool must not match everyone just because
+        # it now holds a stringified dict.
+        repo = make_repo("a3_74e", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = {"name": "Someone Else"}
+        save_repo(repo)
+        save_stakeholder_registry("a3_74e", [{"name": "Priya Nair", "role": "Compl"}])
+        result = mod74.check_architecture_gaps("a3_74e")
+        self.assertIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("🔴 Critical | 1", result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -420,10 +420,28 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
     false statement about where the platform looked (branch review R-1).
     """
     title_words: set = set()
-    for req in all_reqs:
-        if _is_requirement(req):
-            title_words.update(str(req.get("title") or "").lower().split())
     name_pool: set = set()
+    for req in all_reqs:
+        if not _is_requirement(req):
+            continue
+        title_words.update(str(req.get("title") or "").lower().split())
+        # The pre-ADR-098 rule reached EVERY value through `str()`, so a non-string
+        # `owner` and an unreadable `stakeholders` entry (a role-only dict, say) still
+        # put something in the bucket it matched against. Evidence drops both on
+        # purpose — `str(42)` would print "42" into a signed document as a person — but
+        # dropping them from the COINCIDENCE pool as well turned yesterday's silence
+        # into today's critical, the one outcome decision 6 forbids (branch review
+        # A-3). This pool is only ever matched against and never rendered, so the raw
+        # values can rejoin it without any of them becoming a name on the page.
+        raw_owner = reg_norm(req.get("owner"))
+        if raw_owner:
+            name_pool.add(raw_owner)
+        raw_declared = req.get("stakeholders")
+        if isinstance(raw_declared, list):
+            for entry in raw_declared:
+                token = reg_norm(entry if isinstance(entry, str) else str(entry))
+                if token:
+                    name_pool.add(token)
     for items in evidence.values():
         for item in items:
             who_norm = reg_norm(item.get("who"))
@@ -435,7 +453,8 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
 def _heuristic_hit(labels: set, pool: set) -> bool:
     """Bidirectional substring with the 4-character floor — the pre-ADR-098 rule.
 
-    Kept verbatim from the old flat-bucket check so the set of stakeholders it called
+    Kept verbatim from the old flat-bucket check, and fed from the same RAW values the
+    old bucket held (see `_heuristic_pools`), so the set of stakeholders it called
     "represented" stays a subset of (silent | warning) and no upgrade turns an existing
     project's silence into a critical finding.
     """
