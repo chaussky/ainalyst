@@ -1026,15 +1026,32 @@ def check_architecture_gaps(
     if all_stakeholders:
         # ADR-098: the verdict rests on RECORDED facts, each named in the message.
         # Three of them are evidence — a declaration (7.4), the owner field (7.1), a
-        # vote on this requirement (5.5). The fourth, a word shared between a person's
-        # label and a requirement TITLE, is the check this module used to run alone.
-        # It is kept so that no existing project acquires red gaps on upgrade, and
-        # demoted to a warning that names its own weakness.
+        # vote on this requirement (5.5) — and evidence is matched EXACTLY (fix
+        # review round 1: matching evidence by substring silently represented "Priya"
+        # against a registry row "Priya Nair", which is a coincidence, not a fact).
+        # A partial match — a shared word in a requirement TITLE, or a shared
+        # fragment of a name recorded as evidence for some OTHER tie — is the
+        # heuristic this module used to run alone before ADR-098. It is kept, so that
+        # no existing project acquires a NEW critical on upgrade, and demoted to a
+        # warning that names its own weakness.
         evidence = _stakeholder_evidence(project_id, repo)
 
         title_words: set = set()
         for req in all_reqs:
             title_words.update(str(req.get("title") or "").lower().split())
+
+        # Every name evidence ever recorded ANY tie under (owner / declared / 5.5
+        # voter, across ALL requirements) — the second heuristic pool. A registry
+        # row that only partially matches one of these strings is exactly the case
+        # the old flat-bucket heuristic covered (`needle in mention or mention in
+        # needle`); folding it in here keeps that old "represented" set a subset of
+        # (silent ∪ warning), so no input that used to be silent can become critical.
+        name_pool: set = set()
+        for items in evidence.values():
+            for item in items:
+                who_norm = reg_norm(item.get("who"))
+                if who_norm:
+                    name_pool.add(who_norm)
 
         for sh in all_stakeholders:
             labels = registry_labels(sh)
@@ -1055,6 +1072,12 @@ def check_architecture_gaps(
                 for word in title_words
                 if len(word) >= 4
             )
+            name_hit = any(
+                label in entry or entry in label
+                for label in labels
+                for entry in name_pool
+                if len(entry) >= 4
+            )
             if title_hit:
                 gaps_warning.append({
                     "type": "stakeholder_heuristic_only",
@@ -1065,6 +1088,18 @@ def check_architecture_gaps(
                         f"requirement title (heuristic) — no declared interest, no "
                         f"requirement owned, no 5.5 approval decision. Confirm with "
                         f"`declare_stakeholder_interest`."
+                    ),
+                })
+            elif name_hit:
+                gaps_warning.append({
+                    "type": "stakeholder_heuristic_only",
+                    "stakeholder_id": sh.get("id", ""),
+                    "stakeholder_name": sh.get("name", ""),
+                    "message": (
+                        f"Stakeholder `{who}` is reachable only by a partial name "
+                        f"match (heuristic) — no exact declared interest, no "
+                        f"requirement owned under this exact name, no 5.5 approval "
+                        f"decision. Confirm with `declare_stakeholder_interest`."
                     ),
                 })
             else:

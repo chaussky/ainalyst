@@ -1299,6 +1299,11 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_stakeholder_registry("gv74", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74")
         self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        # An EXACT tie must be fully silent — not merely "not critical". Without
+        # this, disabling the tie short-circuit still passes: the person's own
+        # exact evidence string re-enters through the name-pool heuristic and
+        # produces a warning instead, which the check above would not catch.
+        self.assertIn("🟡 Warning | 0", result)
 
     def test_a_5_5_voter_is_represented_without_any_declaration(self):
         # The point of reading 5.5: this works on projects that never call the new tool.
@@ -1312,15 +1317,18 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_stakeholder_registry("gv74b", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74b")
         self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("🟡 Warning | 0", result)
 
     def test_a_stakeholder_reachable_only_by_a_title_word_is_a_warning_not_critical(self):
         save_repo(make_repo("gv74c", [
             make_req("FR-001", "functional", "Compliance reporting rules")]))
         save_stakeholder_registry("gv74c", [{"name": "", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74c")
-        critical_block = result.split("## 🟡")[0]
-        self.assertNotIn("Compliance", critical_block.split("## 🔴")[-1]
-                         if "## 🔴" in critical_block else "")
+        # Discriminating check (a prior version of this assertion was dead code:
+        # `"## 🔴" in critical_block` was always False here since `gaps_critical`
+        # is empty in this fixture, so the guarded expression was always "" and
+        # `assertNotIn` could never fail for any implementation).
+        self.assertIn("🔴 Critical | 0", result)
         self.assertIn("only by a word in a requirement title", result)
         self.assertIn("declare_stakeholder_interest", result)
 
@@ -1349,6 +1357,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_stakeholder_registry("gv74f", [{"name": "David Kim", "role": "SIU"}])
         result = mod74.check_architecture_gaps("gv74f")
         self.assertNotIn("`David Kim` has no recorded tie", result)
+        self.assertIn("🟡 Warning | 0", result)
 
     def test_a_role_only_registry_row_resolves_through_its_role(self):
         repo = make_repo("gv74g", [make_req("FR-001", "functional", "Auto routing")])
@@ -1357,6 +1366,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_stakeholder_registry("gv74g", [{"name": "Ivan Petrov", "role": "Product Owner"}])
         result = mod74.check_architecture_gaps("gv74g")
         self.assertNotIn("has no recorded tie", result)
+        self.assertIn("🟡 Warning | 0", result)
 
     def test_the_missing_registry_warning_is_unchanged(self):
         # Regression guard: this branch is explicitly out of scope for the feature.
@@ -1382,6 +1392,50 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         result = mod74.check_architecture_gaps("gv74j")
         self.assertNotIn("Stakeholder `—`", result)
         self.assertIn("🔴 Critical | 0", result)
+
+    def test_a_partial_name_match_is_a_warning_not_a_critical(self):
+        # Review round 1, finding 1: `_ties_for_labels` matches evidence EXACTLY
+        # (correct — a fact), so "Priya" (owner) is no longer an exact tie to the
+        # registry's "Priya Nair". Before this fix that turned into a brand-new
+        # critical — exactly the "no existing project acquires new red gaps"
+        # invariant the brief exists to protect, broken through a different door.
+        # A partial match must land as a warning: not silence, not critical.
+        repo = make_repo("gv74k", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Priya"
+        save_repo(repo)
+        save_stakeholder_registry("gv74k", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74k")
+        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertIn("🟡 Warning | 1", result)
+        # A phrase only the new partial-name warning branch can assemble — the
+        # report has several sections, so a bare common word would be ambiguous.
+        self.assertIn("partial name match", result)
+
+    def test_an_exact_name_match_still_silences_the_gap(self):
+        # Guard against over-widening: adding the name pool must not stop an EXACT
+        # match from taking the tie path (silent) — it must still short-circuit
+        # before the heuristic is even consulted.
+        repo = make_repo("gv74l", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Priya Nair"
+        save_repo(repo)
+        save_stakeholder_registry("gv74l", [{"name": "Priya Nair", "role": "Compliance"}])
+        result = mod74.check_architecture_gaps("gv74l")
+        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertNotIn("partial name match", result)
+        self.assertIn("🟡 Warning | 0", result)
+
+    def test_a_short_partial_name_fragment_does_not_count_as_evidence(self):
+        # The 4-character floor applies to the name pool exactly as it does to
+        # title words: a 2-letter fragment ("Al" as an owner) must not manufacture
+        # a false "represented" warning for an unrelated registry row.
+        repo = make_repo("gv74m", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Al"
+        save_repo(repo)
+        save_stakeholder_registry("gv74m", [{"name": "Alina Petrova", "role": "Consultant"}])
+        result = mod74.check_architecture_gaps("gv74m")
+        self.assertIn("`Alina Petrova` has no recorded tie", result)
+        self.assertIn("🔴 Critical | 1", result)
 
 
 if __name__ == "__main__":
