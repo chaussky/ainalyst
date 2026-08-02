@@ -83,6 +83,7 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 
 **What's checked:**
 - Is there a stakeholder from the 4.2 registry with no recorded tie to any requirement?
+- Is there a stakeholder whose every tie points at a requirement 5.2 has archived?
 - Is there a business objective from business_context (7.3) not covered by any viewpoint?
 - Is there an empty viewpoint (a viewpoint with no requirements)?
 
@@ -90,8 +91,14 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 |---------|----------|-----------|
 | Stakeholder with no recorded tie to any requirement | critical | Declare what you know with `declare_stakeholder_interest`, or create the missing requirements |
 | Stakeholder reachable only by a shared title word | warning | Confirm it with `declare_stakeholder_interest` — a shared word is a coincidence, not a fact |
+| Stakeholder whose every tie is to an archived requirement | warning | Re-declare against the replacement, or confirm the person is out of scope now |
 | BG with no viewpoint coverage | warning | Check traceability in 5.1 or create the missing requirements |
 | Empty viewpoint | info | Create artifacts of that type or remove the viewpoint |
+| Registry read, but no row carries a name or a role | info | Nobody was checked — fill the registry in via the 3.2 or 4.2 tools |
+
+The last row exists because a clean sheet and an unchecked sheet look identical otherwise.
+A registry that is *absent* and a registry that is *present and unusable* are two different
+facts, and the report states which one it met rather than printing zeros for both.
 
 #### How the stakeholder verdict is reached (ADR-098)
 
@@ -105,8 +112,19 @@ text which ones it asked:
 | An approval decision on that requirement | 5.5 | evidence — a vote against counts too; opposing a requirement is the clearest possible sign it touches you |
 | A word of 4+ letters shared with a requirement title or with another recorded name | nobody — it is a coincidence | heuristic only |
 
-Any one piece of evidence and the stakeholder is covered, silently. Only the heuristic and
-it is a warning that names its own weakness. Nothing at all and it is critical.
+Any one piece of **live** evidence and the stakeholder is covered, silently. Only the
+heuristic and it is a warning that names its own weakness. Only evidence pointing at
+archived requirements and it is also a warning, with its own wording. Nothing at all and
+it is critical.
+
+**A type is refused; a status is not.** The 5.1 graph holds more than requirements — risks
+(6.3), business goals (6.2), change requests (5.4), the 6.4 solution scope, test cases.
+None of them is a requirement, so none is searched for ties and
+`declare_stakeholder_interest` refuses one by name: recording it would let a business goal
+silence a coverage gap, and would print an id under a heading counting requirements that
+do not include it. An **archived** requirement is the opposite case — deprecated,
+superseded or retired is a stage, not a category, so the declaration is accepted with a
+warning, shown in the document marked `archived`, and simply not counted as live coverage.
 
 **Why the heuristic was kept rather than deleted.** It is how this check worked before the
 model existed. Removing it would have handed every existing project a batch of new critical

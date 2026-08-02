@@ -149,6 +149,19 @@ registry is a living document and you may be entering someone you met an hour ag
 unknown *requirement ID*, by contrast, is refused outright: that vocabulary is the
 project's own graph, and a typo there is cheapest to fix at the call.
 
+**A TYPE is refused, a STATUS is not.** The 5.1 graph also holds risks (6.3), business
+goals (6.2), change requests (5.4), the 6.4 solution scope and test cases. Those are
+**not requirements**, so declaring an interest in one is refused by name — the tool
+would otherwise report "declared on 1 requirement(s)" about a risk, count it as
+coverage, and print its id in a document whose header says the project has no such
+requirement. An **archived** requirement (deprecated / superseded / retired) is a
+different matter: it is still a requirement, so the declaration is recorded, with a
+warning that the coverage check will not count it as live representation.
+
+**The `note` reaches the reader.** Whatever you write there is printed under the
+requirement it belongs to in the Architecture Document — it is the one place a sponsor
+can see *why* the interests are touched, in your own words.
+
 ---
 
 ### 4. `check_architecture_gaps`
@@ -164,8 +177,12 @@ check_architecture_gaps(project_id = "crm_upgrade")
 **Level 1 — Coverage matrix:**
 - Stakeholder with no recorded tie to any requirement → `critical`
 - Stakeholder reachable only by a word shared with a requirement title → `warning`
+- Stakeholder whose every recorded tie points at an **archived** requirement
+  (deprecated / superseded / retired in 5.2) → `warning`
 - BG with no viewpoint coverage → `warning`
 - Empty viewpoint → `info`
+- Registry read but holding nobody identifiable → `info` (nobody was checked, and
+  the report says so rather than reporting a clean sheet)
 
 **Level 2 — Semantic gaps (uses the 5.1 graph):**
 - UC with no corresponding BP → `warning`
@@ -199,6 +216,13 @@ save_architecture_snapshot(
 **What it creates:**
 - A snapshot in `{project}_architecture.json` (history is not overwritten, ADR-037)
 - A Markdown document via `save_artifact` → handed off to 4.4 and 7.5
+
+**The gap block is recomputed at save time, not read back.** The workflow below puts
+`declare_stakeholder_interest` between the gap check and the snapshot on purpose, so a
+stored block would report gaps you had just resolved — right underneath a concerns
+section, computed live, saying the opposite about the same person. That also means a
+project which never calls `check_architecture_gaps` still gets a real gap table rather
+than a row of zeros.
 
 ---
 
