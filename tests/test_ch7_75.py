@@ -962,6 +962,48 @@ class TestTheMessagesRenderAsText(Base75Test):
         self._assert_renders(mod75.save_design_options_report("e12f"))
 
 
+class TestTheTwoChangeTypeVocabulariesAreDocumented(Base75Test):
+    """Pre-release E2E finding E1-3, held as a TRIPWIRE rather than fixed.
+
+    6.4 and 7.5 ask the same question — what kind of change is this? — and accept sets
+    that share no value at all. Merging them is not a patch: it means choosing one set
+    and migrating strategies already written to disk, so it belongs to the CLI port.
+
+    Until then the mismatch is written down where the analyst meets it. This test fails
+    if either vocabulary changes, so nobody can edit one set and leave the explanation
+    describing the other. It pins the vocabularies LITERALLY on purpose: reading them
+    from the code would make the test agree with any edit, which is the opposite of
+    what a tripwire is for.
+    """
+
+    VOCAB_75 = {"technology", "process", "organizational", "hybrid"}
+    VOCAB_64 = {"transformation", "process_improvement", "technology_implementation",
+                "regulatory_compliance", "other"}
+
+    def test_the_7_5_vocabulary_is_unchanged(self):
+        self.assertEqual(mod75.VALID_CHANGE_TYPES, self.VOCAB_75,
+                         "if this set changed, revisit the mapping in the docstrings "
+                         "of set_change_strategy (7.5) and scope_change_strategy (6.4)")
+
+    def test_the_6_4_vocabulary_is_unchanged(self):
+        import typing
+        import skills.change_strategy_mcp as mod64
+        hints = typing.get_type_hints(mod64.scope_change_strategy)
+        self.assertEqual(set(typing.get_args(hints["change_type"])), self.VOCAB_64,
+                         "if this set changed, revisit the mapping in the docstrings "
+                         "of set_change_strategy (7.5) and scope_change_strategy (6.4)")
+
+    def test_they_still_share_nothing(self):
+        self.assertEqual(self.VOCAB_75 & self.VOCAB_64, set(),
+                         "the day they overlap, the explanation stops being true")
+
+    def test_both_tools_tell_the_analyst_about_the_other_set(self):
+        import skills.change_strategy_mcp as mod64
+        self.assertIn("6.4", mod75.set_change_strategy.__doc__)
+        self.assertIn("technology_implementation", mod75.set_change_strategy.__doc__)
+        self.assertIn("7.5", mod64.scope_change_strategy.__doc__)
+
+
 class TestTheSurrogateAnswersTheAnalystWhoDidChapterSix(Base75Test):
     """Pre-release E2E finding E1-1. The guard that answers this analyst's actual
     question sat BELOW the parameter validation, so it was unreachable for exactly the

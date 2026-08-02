@@ -87,6 +87,11 @@ the gap analysis), 6.3.
 **Parameters:**
 - `project_id` — the same one used in 6.1/6.2/6.3
 - `change_type` — transformation / process_improvement / technology_implementation / regulatory_compliance / other
+  <br>⚠️ 7.5 `set_change_strategy` asks the same question with a shorter, different set
+  (technology / process / organizational / hybrid) and the two share no value. You will not
+  normally meet this — 7.5 reads THIS strategy directly and refuses its own stand-in when a 6.4
+  strategy exists. The mapping, for the case you do, is in the 7.5 methodology. Merging the two
+  vocabularies requires migrating strategies already on disk and is scheduled for the CLI port.
 - `time_horizon_months` — target horizon in months
 - `methodology` — agile / waterfall / hybrid
 - `source_project_ids` — JSON list of project_id values from 6.1/6.2/6.3 (for auto-import)

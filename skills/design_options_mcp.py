@@ -254,6 +254,26 @@ def set_change_strategy(
                      process — changing business processes.
                      organizational — restructuring, roles, responsibilities.
                      hybrid — several types at once.
+
+                     ⚠️ THIS IS NOT THE 6.4 VOCABULARY. Task 6.4 asks the same
+                     question with five longer answers, and the two sets share no
+                     value, so 6.4's answer is not accepted here and vice versa:
+
+                       6.4 `technology_implementation` ~ `technology`  (clean match)
+                       6.4 `process_improvement`       ~ `process`     (clean match)
+                       6.4 `transformation`            — no counterpart; usually
+                            `hybrid`, or `organizational` if the change is purely
+                            structural
+                       6.4 `regulatory_compliance`     — no counterpart; choose by
+                            what the work actually is, most often `process`
+                       6.4 `other`                     — no counterpart; choose by
+                            what dominates
+
+                     If this project HAS a 6.4 change strategy, you do not need this
+                     tool at all: 7.5 reads 6.4 directly, and the call is refused
+                     before any of these values is even looked at. The two vocabularies
+                     are merged for real during the CLI port, not here — a merge means
+                     migrating strategies already written to disk.
         scope:       Change scope: what changes, what stays the same.
                      Example: "Replace the legacy CRM for the sales department. Financial accounting out of scope."
         constraints: Key constraints: budget, deadlines, technologies, regulations.

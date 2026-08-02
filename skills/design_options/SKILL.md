@@ -60,6 +60,23 @@ flat surrogate for projects that skipped Chapter 6.
 **Result:** `{project}_change_strategy.json` (flat surrogate format)
 **Guard:** if `{project}_change_strategy.json` already exists in the richer 6.4 format, this tool
 refuses to overwrite it — 7.5 will use the 6.4 strategy as-is. Edit it via the 6.4 tools instead.
+That refusal comes FIRST, before `change_type` is judged, so an analyst who did 6.4 is told the
+tool is unnecessary rather than handed a vocabulary error.
+
+⚠️ **`change_type` here is NOT the 6.4 vocabulary.** 6.4 asks the same question with five longer
+answers, and the two sets share no value:
+
+| 6.4 | 7.5 |
+|---|---|
+| `technology_implementation` | `technology` |
+| `process_improvement` | `process` |
+| `transformation` | no counterpart — usually `hybrid`, or `organizational` if purely structural |
+| `regulatory_compliance` | no counterpart — pick by what the work actually is, most often `process` |
+| `other` | no counterpart — pick by what dominates |
+
+You only need this table if the project skipped Chapter 6; otherwise 7.5 reads 6.4 directly and
+nothing is re-entered. Merging the two vocabularies means migrating strategies already written to
+disk, so it is scheduled for the CLI port rather than done piecemeal.
 
 ---
 
