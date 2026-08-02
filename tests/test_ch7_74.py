@@ -898,7 +898,10 @@ class TestArchAuditRegressions(BaseMCPTest):
             make_req("BG-001", "business_goal", "Reduce waiting", status="confirmed"),
         ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod74.analyze_requirements_architecture("bg74")
-        self.assertIn("**Total active req:** 1", result)
+        # The claim under test is the COUNT — a business goal is not a requirement.
+        # The label lost the word "active" in re-review N-5: it described a status
+        # filter this line has never had.
+        self.assertIn("**Total req:** 1", result)
 
     def test_gaps_recognizes_business_goal_node_in_graph(self):
         save_repo(make_repo("bg74c", [
@@ -1828,24 +1831,45 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         self.assertNotIn("`RISK-002`", result)
         self.assertNotIn("`BG-001`", result)
 
-    def test_a_risk_title_is_not_a_word_the_heuristic_may_match(self):
-        # The second symptom of the same root: the heuristic pool ate risk and CR
-        # titles, so a `Compliance` role was demoted to a warning that claimed the
-        # word came from "a requirement title". No requirement mentions it.
+    def test_a_risk_title_is_not_reported_as_a_requirement_title(self):
+        """R-1's second symptom, corrected in re-review N-2.
+
+        R-1 objected that a `Compliance` role matched by RISK-002's title was demoted
+        to a warning claiming the word came from "a requirement title" — no requirement
+        mentions it. The objection was to the SENTENCE, not to the match: this class
+        first answered it by dropping non-requirement nodes from the coincidence pool,
+        which made the same person a 🔴 CRITICAL where `afe5961` was silent — measured
+        against the baseline, and the one outcome decision 6 forbids.
+
+        So the warning stays and the sentence tells the truth about where it looked.
+        """
         save_repo(self._mixed_repo("skip74e"))
         save_stakeholder_registry("skip74e", [{"name": "", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("skip74e")
-        self.assertIn("🔴 Critical | 1", result)
+        self.assertIn("🔴 Critical | 0", result, "silence must not become a red gap")
+        self.assertIn("🟡 Warning | 1", result)
         self.assertNotIn("only by a word in a requirement title", result)
+        self.assertIn("OUTSIDE the requirements", result)
 
     def test_a_business_goal_cannot_silence_the_coverage_check(self):
+        """The finding's claim was SILENCE, and silence is what must not happen.
+
+        Declaring Helen on BG-001 used to make the check report nothing at all — the
+        coverage audit this whole feature exists for, switched off by a business goal.
+        It is still not silence; it is a warning that says her only trace lives outside
+        the requirements. Critical would be a new red gap where `afe5961` was silent
+        (re-review N-2), and the id is refused at the door now anyway, so this state
+        only reaches a repository that already held it.
+        """
         repo = self._mixed_repo("skip74f")
         repo["requirements"][2]["stakeholders"] = [{"name": "Helen Vasquez"}]
         save_repo(repo)
         save_stakeholder_registry("skip74f", [{"name": "Helen Vasquez", "role": "Ops"}])
         result = mod74.check_architecture_gaps("skip74f")
-        self.assertIn("`Helen Vasquez` has no recorded tie", result)
-        self.assertIn("🔴 Critical | 1", result)
+        self.assertNotIn("🟡 Warning | 0", result, "the check must not go quiet")
+        self.assertIn("`Helen Vasquez` is traceable only OUTSIDE the requirements",
+                      result)
+        self.assertIn("business goal", result)
 
     def test_the_document_never_prints_an_id_it_does_not_count(self):
         repo = self._mixed_repo("skip74g")
@@ -1858,7 +1882,12 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
         self.assertNotIn("RISK-002", concerns)
         self.assertNotIn("BG-001", concerns)
-        self.assertIn("**Helen Vasquez** — no interest recorded", concerns)
+        # The finding was about IDS the page cannot account for. Her line still names
+        # no such id — but "no interest recorded" would now be the wrong half of the
+        # distinction L-3 drew: something outside the requirements does mention her,
+        # and the page has to say which of the two states it met (re-review N-2).
+        self.assertIn("**Helen Vasquez** — no tie among the requirements", concerns)
+        self.assertIn("business goal (6.2)", concerns)
 
 
 class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
@@ -2635,6 +2664,287 @@ class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
         self.assertIn("declared interest", result)
         self.assertIn("7.1 owner", result)
         self.assertIn("5.5 approval", result)
+
+
+class TestARemoveThatMatchedNothingClaimsNothing(BaseMCPTest):
+    """Re-review N-4. The guard that keeps A-7's warning honest had no test: dropping
+    `if rid in changed` left the suite green, while a `remove` that matched nobody on
+    a hand-edited non-list value printed "⚠️ Replaced, not merged" about a field it
+    never touched — a fresh false statement inside the fix for a false statement.
+    """
+
+    def test_a_remove_matching_nobody_does_not_announce_a_replacement(self):
+        pid = "n4_74"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = {"name": "Old Note", "why": "keep me"}
+        save_repo(repo)
+        result = mod74.declare_stakeholder_interest(
+            pid, "Nobody At All", '["FR-001"]', remove=True)
+        self.assertNotIn("Replaced, not merged", result)
+        stored = json.load(open(data_path(pid, f"{pid}_traceability_repo.json"),
+                                encoding="utf-8"))
+        self.assertEqual(stored["requirements"][0]["stakeholders"],
+                         {"name": "Old Note", "why": "keep me"},
+                         "an unmatched remove must leave the stored value alone")
+
+    def test_a_write_over_a_non_list_value_still_announces_it(self):
+        pid = "n4_74b"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = {"name": "Old Note", "why": "keep me"}
+        save_repo(repo)
+        result = mod74.declare_stakeholder_interest(pid, "Marta Silva", '["FR-001"]')
+        self.assertIn("Replaced, not merged", result)
+
+
+class TestTheAnalyzeToolDoesNotCallArchivedActive(BaseMCPTest):
+    """Re-review N-5. `analyze_requirements_architecture` printed
+    "Total **active** req: 2" for a repository whose second requirement 5.2 had
+    deprecated — "active" is a claim about STATUS and the filter only ever looked at
+    TYPE.
+
+    The number itself is not changed: the delivered document counts archived rows in
+    `Total req` on purpose (dropping them would move a released number), so making
+    this one exclude them would buy a true word at the price of two tools disagreeing
+    about one project. The word goes, and the fact it was hiding is stated instead.
+    """
+
+    def _repo(self, pid):
+        repo = make_repo(pid, [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("FR-003", "functional", "Legacy import", status="deprecated"),
+        ])
+        save_repo(repo)
+
+    def test_the_word_active_is_not_used_for_a_type_only_filter(self):
+        pid = "n5_74"
+        self._repo(pid)
+        result = mod74.analyze_requirements_architecture(pid)
+        self.assertNotIn("active req", result)
+        self.assertIn("Total req", result)
+
+    def test_the_archived_ones_are_counted_out_loud(self):
+        pid = "n5_74b"
+        self._repo(pid)
+        result = mod74.analyze_requirements_architecture(pid)
+        self.assertIn("1 archived", result)
+
+    def test_a_repository_with_nothing_archived_says_nothing_about_it(self):
+        pid = "n5_74c"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        result = mod74.analyze_requirements_architecture(pid)
+        self.assertNotIn("archived", result)
+
+
+class TestTheNoteReachesEveryReaderItWasPromisedTo(BaseMCPTest):
+    """Re-review N-3. B-4 made `note` visible — in ONE of the three branches that
+    render this section.
+
+    The docstring, SKILL.md and the user guide all promise it without qualification,
+    but a person the analyst declared while they were NOT yet in the 4.2 registry — a
+    route the tool supports on purpose, answering "recorded anyway" — had their reason
+    dropped, and so did every project with no registry at all. Those are exactly the
+    readers most likely to need the "why": the ones whose tie is not yet corroborated
+    by anything else.
+    """
+
+    def _doc(self, pid):
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        return captured[0]
+
+    def test_a_person_outside_the_registry_keeps_their_reason(self):
+        pid = "n3_out_74"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [
+            {"name": "External Auditor", "note": "audits the routing rules yearly"}]
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Steward"}])
+        doc = self._doc(pid)
+        self.assertIn("External Auditor", doc)
+        self.assertIn("audits the routing rules yearly", doc)
+
+    def test_a_project_with_no_registry_keeps_the_reason_too(self):
+        pid = "n3_noreg_74"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [
+            {"name": "Marta Silva", "note": "owns the routing table"}]
+        save_repo(repo)
+        doc = self._doc(pid)
+        self.assertIn("owns the routing table", doc)
+
+
+class TestAnIdIsQuotedNotRewritten(BaseMCPTest):
+    """Re-review N-1. The B-5 sanitiser was applied to requirement IDS as well as to
+    names, and it strips `_ * [ ] | < > \\` — but an id is printed inside a code span,
+    where those characters are already literal.
+
+    Live symptom: a repository holding `FR_003` produced `FR003` in the delivered
+    document — the viewpoint row, the concerns line and the note line — while
+    `check_architecture_gaps` on the same project printed `FR_003`. Two surfaces
+    disagreeing about one object is the defect the wave existed to remove, and before
+    the wave both printed the id raw and agreed.
+
+    An id needs exactly what a code span cannot survive: a backtick, a pipe, a newline.
+    """
+
+    def test_an_underscore_in_an_id_reaches_the_page_intact(self):
+        pid = "n1_id_74"
+        repo = make_repo(pid, [make_req("FR_003", "functional", "Legacy import")])
+        repo["requirements"][0]["stakeholders"] = [
+            {"name": "Marta Silva", "note": "owns the import"}]
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Steward"}])
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        doc = captured[0]
+        self.assertIn("`FR_003`", doc)
+        self.assertNotIn("FR003", doc,
+                         "the page must not invent an id the repository does not hold")
+
+    def test_the_gap_report_and_the_document_spell_it_the_same_way(self):
+        pid = "n1_id_74b"
+        repo = make_repo(pid, [make_req("FR_003", "functional", "Legacy import")])
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Steward"}])
+        report = mod74.check_architecture_gaps(pid)
+        self.assertNotIn("FR003", report)
+
+    def test_a_backtick_in_an_id_cannot_break_out_of_its_code_span(self):
+        pid = "n1_id_74c"
+        repo = make_repo(pid, [make_req("FR-0`03", "functional", "Odd id")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Marta Silva"}]
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Steward"}])
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        line = [ln for ln in captured[0].splitlines() if "Marta Silva" in ln][0]
+        self.assertNotIn("`FR-0`03`", line)
+
+
+class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
+    """Re-review N-2. The R-1 fix took non-requirement NODES out of the coincidence
+    pool as well as out of the evidence, and that turned yesterday's silence into
+    today's critical — the one outcome decision 6 forbids.
+
+    Verified by running the same fixtures against the pre-branch baseline `afe5961`:
+
+        role-only registry row, word in a RISK title      silent -> CRITICAL
+        person is the `owner` of a risk node             silent -> CRITICAL
+        control: word in a real REQUIREMENT title        silent -> warning (allowed)
+
+    The complaint R-1 actually made about the pool was that the message LIED about
+    where the platform looked — it said "a word in a requirement title" when the word
+    sat in a risk title. That is fixed in the sentence, not by shrinking the pool. The
+    pool is a COINCIDENCE bucket: it is only ever matched against, never rendered, and
+    it can never promote anything to evidence. Exactly the reasoning A-3 already
+    applied to raw values, one step further out.
+    """
+
+    def _run(self, pid, reqs, people):
+        repo = make_repo(pid, reqs)
+        save_repo(repo)
+        save_stakeholder_registry(pid, people)
+        return mod74.check_architecture_gaps(pid)
+
+    def test_a_word_in_a_risk_title_is_a_warning_not_a_critical(self):
+        result = self._run(
+            "n2_risk_74",
+            [make_req("FR-001", "functional", "Auto routing"),
+             make_req("RISK-001", "risk", "Compliance officer unavailable")],
+            [{"role": "Compliance"}])
+        self.assertIn("| 🔴 Critical | 0 |", result)
+        self.assertIn("| 🟡 Warning | 1 |", result)
+
+    def test_that_warning_says_where_it_actually_looked(self):
+        result = self._run(
+            "n2_risk_74b",
+            [make_req("FR-001", "functional", "Auto routing"),
+             make_req("RISK-001", "risk", "Compliance officer unavailable")],
+            [{"role": "Compliance"}])
+        # Pinned on BOTH sides: without the warning assertion this passes while the
+        # person is critical, which is the state the class exists to forbid.
+        self.assertIn("| 🟡 Warning | 1 |", result)
+        self.assertNotIn("in a requirement title", result,
+                         "no requirement mentions them — a risk does, and the "
+                         "sentence claiming otherwise is what R-1 objected to")
+        self.assertIn("risk", result.lower())
+
+    def test_the_owner_of_a_risk_node_is_not_a_new_critical(self):
+        result = self._run(
+            "n2_owner_74",
+            [make_req("FR-001", "functional", "Auto routing"),
+             dict(make_req("RISK-001", "risk", "Vendor delay"),
+                  owner="Helen Vasquez")],
+            [{"name": "Helen Vasquez", "role": "Sponsor"}])
+        self.assertIn("| 🔴 Critical | 0 |", result)
+
+    def test_a_word_in_a_requirement_title_still_says_requirement(self):
+        result = self._run(
+            "n2_ctrl_74",
+            [make_req("FR-001", "functional", "Compliance reporting")],
+            [{"role": "Compliance"}])
+        self.assertIn("| 🟡 Warning | 1 |", result)
+        self.assertIn("in a requirement title", result)
+
+    def test_the_document_describes_that_person_the_way_the_report_does(self):
+        """T8-3's rule, applied to the sentence and not only to the pool.
+
+        The report says "traceable only OUTSIDE the requirements"; the document used
+        to call the same person "a partial name or title match", which in this case
+        points the reader at the requirements — where there is nothing to find.
+        """
+        pid = "n2_doc_74"
+        repo = make_repo(pid, [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("RISK-001", "risk", "Compliance officer unavailable"),
+        ])
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"role": "Compliance"}])
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        line = [ln for ln in captured[0].splitlines() if "Compliance" in ln][0]
+        self.assertIn("recorded outside them", line)
+        self.assertIn("risk (6.3)", line)
+        self.assertNotIn("partial name or title match", line,
+                         "that wording sends the reader into the requirements, "
+                         "where there is nothing to find")
+
+    def test_a_non_requirement_node_still_cannot_become_evidence(self):
+        """The guard on over-fixing: R-1's core must survive this restoration."""
+        repo = make_repo("n2_ev_74", [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("RISK-001", "risk", "Vendor delay"),
+        ])
+        repo["requirements"][1]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(repo)
+        evidence = mod74._stakeholder_evidence("n2_ev_74", repo)
+        self.assertNotIn("RISK-001", evidence,
+                         "a risk is still not a requirement, and a declaration on "
+                         "one is still not coverage")
 
 
 class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):

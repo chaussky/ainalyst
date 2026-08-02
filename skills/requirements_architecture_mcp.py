@@ -269,7 +269,7 @@ def _viewpoint_row(repo: dict, req_id: str) -> str:
     # word. Only what actually breaks a table cell is neutralised: a pipe and a newline.
     title = " ".join(str(req.get("title", "")).split()).replace("|", r"\|")[:60]
     mark = " _(archived)_" if _is_archived(req) else ""
-    return f"| `{_md_label(req_id, 40)}` | {req.get('type', '?')} | {title}{mark} |"
+    return f"| `{_md_id(req_id)}` | {req.get('type', '?')} | {title}{mark} |"
 
 
 # ---------------------------------------------------------------------------
@@ -464,24 +464,54 @@ def _ties_for_labels(labels: set, evidence: dict) -> list:
 
 
 def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
-    """The two coincidence pools a label can match: title words, and recorded names.
+    """The coincidence pools a label can match: title words — kept apart by whether the
+    title belonged to a requirement — and recorded names.
 
     Lives here, called from BOTH `check_architecture_gaps` and `_concern_lines`, because
     the gap report and the delivered document describe the same person and must not
     reach different conclusions about them. Two copies of this rule would drift, and the
     drift would surface as one page contradicting another in front of a sponsor.
 
-    Titles come from REQUIREMENTS only. The warning says the word was found "in a
-    requirement title", and a risk register whose entries name the very roles that are
-    missing ("Compliance officer unavailable for sign-off") turned that sentence into a
-    false statement about where the platform looked (branch review R-1).
+    The pool spans the WHOLE 5.1 graph, risks and goals and change requests included,
+    exactly as the pre-ADR-098 bucket did. R-1's objection was never that the pool was
+    too wide — it was that the sentence LIED about where the platform had looked, saying
+    "a word in a requirement title" when the word sat in a risk title. That is fixed by
+    keeping the two title sets apart and naming the right one, not by narrowing the
+    pool: narrowing it turned silence into a critical for a role-only registry row named
+    by a risk, and for the owner of a risk node, which is the single outcome decision 6
+    forbids (re-review N-2, measured against `afe5961`).
+
+    Nothing here can promote anything to evidence — `_stakeholder_evidence` stays
+    requirements-only, so a declaration on a risk is still not coverage. This is a
+    bucket that is matched against and never rendered, which is what lets it hold raw
+    values (branch review A-3) and foreign node types alike.
     """
     title_words: set = set()
+    outside_pool: set = set()
     name_pool: set = set()
     for req in all_reqs:
-        if not _is_requirement(req):
+        if not isinstance(req, dict):
             continue
-        title_words.update(str(req.get("title") or "").lower().split())
+        words = str(req.get("title") or "").lower().split()
+        if not _is_requirement(req):
+            # Everything a NON-requirement node carries — its title words and any name
+            # recorded on it — goes into one pool, because it answers one question:
+            # "is this person traceable anywhere OUTSIDE the requirements?" The verdict
+            # built from it says exactly that, which is the honesty R-1 asked for and
+            # the silence decision 6 asked for, at the same time.
+            outside_pool.update(words)
+            outside_owner = reg_norm(req.get("owner"))
+            if outside_owner:
+                outside_pool.add(outside_owner)
+            outside_declared = req.get("stakeholders")
+            if isinstance(outside_declared, list):
+                for entry in outside_declared:
+                    token = reg_norm(entry if isinstance(entry, str)
+                                     else _concern_name(entry) or str(entry))
+                    if token:
+                        outside_pool.add(token)
+            continue
+        title_words.update(words)
         # The pre-ADR-098 rule reached EVERY value through `str()`, so a non-string
         # `owner` and an unreadable `stakeholders` entry (a role-only dict, say) still
         # put something in the bucket it matched against. Evidence drops both on
@@ -504,7 +534,7 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
             who_norm = reg_norm(item.get("who"))
             if who_norm:
                 name_pool.add(who_norm)
-    return title_words, name_pool
+    return title_words, outside_pool, name_pool
 
 
 def _heuristic_hit(labels: set, pool: set) -> bool:
@@ -539,6 +569,22 @@ _MAX_LABEL_CHARS = 80
 _MAX_NOTE_CHARS = 160
 
 
+def _md_id(value, limit: int = 40) -> str:
+    """A requirement id on its way into a `code span`, and NOT through `_md_label`.
+
+    `_md_label` strips `_ * [ ] | < >` because a NAME holding them is a formatting
+    accident. An id is not: inside backticks those characters are already literal, and
+    a repository holding `FR_003` was served `FR003` in three places of the delivered
+    document while the gap report of the same run printed `FR_003` (re-review N-1).
+    Two surfaces disagreeing about one object is what the wave existed to remove.
+
+    Only what a code span genuinely cannot survive is neutralised: a backtick closes
+    it early, a pipe splits a table cell, a newline ends the line.
+    """
+    text = " ".join(str(value or "").split()).replace("`", "").replace("|", r"\|")
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
 def _md_label(value, limit: int = _MAX_LABEL_CHARS) -> str:
     """Free text made safe to interpolate into one line of the delivered Markdown."""
     text = " ".join(str(value or "").split())
@@ -546,6 +592,23 @@ def _md_label(value, limit: int = _MAX_LABEL_CHARS) -> str:
         text = text.replace(ch, "")
     text = " ".join(text.split())
     return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
+def _note_lines(pairs) -> list:
+    """The BA's own `why`, indented under the bullet that owns it.
+
+    It was stored by `declare_stakeholder_interest`, invited by its docstring — and
+    read by nobody: one write, zero reads (branch review B-4). B-4's fix then printed
+    it in ONE of the three branches that render this section, so a person declared
+    while not yet in the 4.2 registry — a route the tool supports on purpose — still
+    lost their reason, and so did every project with no registry at all (re-review
+    N-3). Those are the readers who need it most: nothing else corroborates their tie.
+
+    One function, called from all three branches. Three copies of a rendering rule is
+    how T8-3 happened.
+    """
+    return [f"  - `{_md_id(req_id)}`: {_md_label(why, _MAX_NOTE_CHARS)}"
+            for req_id, why in sorted({(r, w) for r, w in pairs if w})]
 
 
 def _group_refs(refs) -> str:
@@ -572,7 +635,7 @@ def _group_refs(refs) -> str:
     ordered = sorted(by_req.items())
     shown = ordered[:_MAX_REFS_SHOWN]
     rendered = ", ".join(
-        f"`{_md_label(req_id, 40)}` ({', '.join(sorted(sources))}"
+        f"`{_md_id(req_id)}` ({', '.join(sorted(sources))}"
         + (", archived)" if archived.get(req_id) else ")")
         for req_id, sources in shown
     )
@@ -612,7 +675,8 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             "read here without being copied.",
             "",
         ]
-        title_words, name_pool = _heuristic_pools(repo.get("requirements", []), evidence)
+        title_words, outside_pool, name_pool = _heuristic_pools(
+            repo.get("requirements", []), evidence)
         seen_labels: set = set()
         # label -> the display names that answer to it. A LIST, not one name: a role
         # is not unique, and two people sharing one ("Compliance") used to collapse to
@@ -634,11 +698,26 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 # for both erased a distinction the platform had drawn one tool over
                 # (live-run finding L-3), and left the sponsor unable to see why one
                 # person was a critical gap and the other only a warning.
-                if _heuristic_hit(labels, title_words) or _heuristic_hit(labels, name_pool):
+                if (_heuristic_hit(labels, title_words)
+                        or _heuristic_hit(labels, name_pool)):
                     lines.append(
                         f"- **{who}** — no exact tie recorded; reachable only by a "
                         f"partial name or title match (a coincidence, not a fact). "
                         f"Confirm with `declare_stakeholder_interest`."
+                    )
+                elif _heuristic_hit(labels, outside_pool):
+                    # The gap report calls this state "traceable only OUTSIDE the
+                    # requirements". Saying "a partial name or title match" here sent
+                    # the reader into the requirements, where there is nothing to
+                    # find — two surfaces describing one person in words that point
+                    # opposite ways is the T8-3 class, one layer up from the pool the
+                    # two already share.
+                    lines.append(
+                        f"- **{who}** — no tie among the requirements; reachable only "
+                        f"through something recorded outside them — a risk (6.3), a "
+                        f"business goal (6.2) or a change request (5.4). A "
+                        f"coincidence, not a fact. Confirm with "
+                        f"`declare_stakeholder_interest`."
                     )
                 else:
                     lines.append(f"- **{who}** — no interest recorded.")
@@ -662,15 +741,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 f"- **{who}** — {count} {noun}: "
                 f"{_group_refs((t['req_id'], t['source'], t['archived']) for t in ties)}"
                 f"{all_archived}")
-            # The BA's own `why`. It was stored by `declare_stakeholder_interest`,
-            # invited by its docstring — and read by nobody: one write, zero reads.
-            # The concerns section is the single place a sponsor needs that reason,
-            # so a field tested as data and never as output stayed invisible
-            # (branch review B-4).
-            for req_id, why in sorted({(t["req_id"], t["note"]) for t in ties
-                                       if t["note"]}):
-                lines.append(f"  - `{_md_label(req_id, 40)}`: "
-                             f"{_md_label(why, _MAX_NOTE_CHARS)}")
+            lines += _note_lines((t["req_id"], t.get("note")) for t in ties)
 
         # People the analyst tied to a requirement who are NOT in the registry.
         # `declare_stakeholder_interest` accepts them on purpose — the registry is a
@@ -683,8 +754,10 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 key = reg_norm(item["who"])
                 if not key or key in seen_labels:
                     continue
-                entry = outside.setdefault(key, {"display": item["who"], "refs": []})
+                entry = outside.setdefault(key, {"display": item["who"], "refs": [],
+                                                 "notes": []})
                 entry["refs"].append((req_id, item["source"], item["archived"]))
+                entry["notes"].append((req_id, item.get("note")))
         if outside:
             lines += ["", "**Tied to requirements but not in the 4.2 registry** — add "
                           "them with `update_stakeholder_registry` so the coverage "
@@ -716,7 +789,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 if matched:
                     shown = matched[:3]
                     who_list = ", ".join(
-                        f"**{_md_label(name)}** (on `{_md_label(lab, 40)}`)"
+                        f"**{_md_label(name)}** (on `{_md_id(lab)}`)"
                         for lab, name in shown)
                     more = "" if len(matched) <= 3 else f" +{len(matched) - 3} more"
                     hint = (f" — possibly the same person as {who_list}{more}: a "
@@ -725,6 +798,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                             f"came from rather than adding them to the registry.")
                 lines.append(f"- **{_md_label(entry['display'])}** — {count} "
                              f"{noun}: {_group_refs(entry['refs'])}{hint}")
+                lines += _note_lines(entry["notes"])
     else:
         # No usable registry rows — but this covers TWO different facts, and the
         # document must not conflate them: the file may genuinely be absent, or it
@@ -758,8 +832,10 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 key = reg_norm(item["who"])
                 if not key:
                     continue
-                entry = named.setdefault(key, {"display": item["who"], "refs": []})
+                entry = named.setdefault(key, {"display": item["who"], "refs": [],
+                                               "notes": []})
                 entry["refs"].append((req_id, item["source"], item["archived"]))
+                entry["notes"].append((req_id, item.get("note")))
         for key in sorted(named, key=lambda k: named[k]["display"]):
             entry = named[key]
             refs = entry["refs"]
@@ -767,6 +843,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             noun = "requirement" if count == 1 else "requirements"
             lines.append(f"- **{_md_label(entry['display'])}** — {count} {noun}: "
                          f"{_group_refs(refs)}")
+            lines += _note_lines(entry["notes"])
         if not named:
             lines.append("- No stakeholder ties recorded on any requirement.")
 
@@ -882,6 +959,13 @@ def analyze_requirements_architecture(
     # Statistics
     active_reqs = [r for r in all_reqs if r.get("type", "") not in SKIP_TYPES]
     total = len(active_reqs)
+    # This line used to read "Total **active** req", which is a claim about STATUS made
+    # by a filter that only ever looked at TYPE (re-review N-5). The count itself stays
+    # as it is: the delivered document counts archived rows in `Total req` on purpose,
+    # and excluding them here would buy one true word at the price of two tools
+    # disagreeing about one project. So the word goes and the fact is stated instead.
+    archived_count = sum(1 for r in active_reqs if _is_archived(r))
+    archived_note = f" _({archived_count} archived in 5.2)_" if archived_count else ""
     in_viewpoints = sum(len(ids) for ids in auto_views.values())
     coverage_pct = round(in_viewpoints / total * 100, 1) if total > 0 else 0.0
 
@@ -902,7 +986,7 @@ def analyze_requirements_architecture(
         f"# 🏗️ Requirements architecture — {project_id}",
         "",
         f"**Date:** {date.today()}  ",
-        f"**Total active req:** {total}  ",
+        f"**Total req:** {total}{archived_note}  ",
         f"**Covered by viewpoints:** {in_viewpoints} ({coverage_pct}%)",
         "",
         "---",
@@ -1529,11 +1613,11 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
         # warning that names its own weakness.
         evidence = _stakeholder_evidence(project_id, repo)
 
-        # The two coincidence pools. Built by the SAME helper the delivered document
+        # The coincidence pools. Built by the SAME helper the delivered document
         # uses, so the report and the document cannot reach different conclusions
         # about the same person — two copies of this rule would drift, and the drift
         # would surface as one page contradicting another in front of a sponsor.
-        title_words, name_pool = _heuristic_pools(all_reqs, evidence)
+        title_words, outside_pool, name_pool = _heuristic_pools(all_reqs, evidence)
 
         for sh in all_stakeholders:
             # The guard comes FIRST. `registry_labels` is safe on any value, but the
@@ -1582,6 +1666,7 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 for word in title_words
                 if len(word) >= 4
             )
+            outside_hit = _heuristic_hit(labels, outside_pool)
             name_hit = any(
                 label in entry or entry in label
                 for label in labels
@@ -1597,6 +1682,27 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                         f"Stakeholder `{who}` is reachable only by a word in a "
                         f"requirement title (heuristic) — no declared interest, no "
                         f"requirement owned, no 5.5 approval decision. Confirm with "
+                        f"`declare_stakeholder_interest`."
+                    ),
+                })
+            elif outside_hit:
+                # Everything tying this person to the project sits OUTSIDE the
+                # requirements: a risk title naming their role, a business goal they
+                # were once declared on, a change request they own. Calling that "a
+                # requirement title" was the false statement R-1 objected to; dropping
+                # the case was the new critical N-2 measured against `afe5961`. Naming
+                # the place avoids both, and tells the BA where to go look.
+                gaps_warning.append({
+                    "type": "stakeholder_outside_requirements",
+                    "stakeholder_id": sh.get("id", ""),
+                    "stakeholder_name": sh.get("name", ""),
+                    "message": (
+                        f"Stakeholder `{who}` is traceable only OUTSIDE the "
+                        f"requirements (heuristic) — a risk (6.3), a business goal "
+                        f"(6.2) or a change request (5.4) carries their name or a "
+                        f"word of it. Nothing among the requirements does: no "
+                        f"declared interest, no requirement owned, no 5.5 approval "
+                        f"decision. Record what actually holds with "
                         f"`declare_stakeholder_interest`."
                     ),
                 })
@@ -1755,6 +1861,10 @@ def check_architecture_gaps(
         declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
         alone is a warning, not a verdict)
       - Stakeholder reachable only by a title-word match → warning
+      - Stakeholder traceable only OUTSIDE the requirements — a risk (6.3), goal (6.2)
+        or change request (5.4) carries their name or a word of it → warning. Never a
+        critical: decision 6 forbids handing an existing project a new red gap, and
+        the pre-ADR-098 bucket spanned the whole graph, so these were silent before
       - Stakeholder whose every tie points at a requirement archived in 5.2
         (deprecated / superseded / retired) → warning: a stage is not a category, so
         the tie is real, but nothing live covers that person

@@ -91,6 +91,7 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 |---------|----------|-----------|
 | Stakeholder with no recorded tie to any requirement | critical | Declare what you know with `declare_stakeholder_interest`, or create the missing requirements |
 | Stakeholder reachable only by a shared title word | warning | Confirm it with `declare_stakeholder_interest` — a shared word is a coincidence, not a fact |
+| Stakeholder traceable only OUTSIDE the requirements — named by a risk, a goal or a change request | warning | Go to the node that names them and record what actually holds among the requirements |
 | Stakeholder whose every tie is to an archived requirement | warning | Re-declare against the replacement, or confirm the person is out of scope now |
 | BG with no viewpoint coverage | warning | Check traceability in 5.1 or create the missing requirements |
 | Empty viewpoint | info | Create artifacts of that type or remove the viewpoint |
@@ -111,6 +112,7 @@ text which ones it asked:
 | The requirement's `owner` | 7.1 | evidence |
 | An approval decision on that requirement | 5.5 | evidence — a vote against counts too; opposing a requirement is the clearest possible sign it touches you |
 | A word of 4+ letters shared with a requirement title or with another recorded name | nobody — it is a coincidence | heuristic only |
+| The same, but found on a node that is NOT a requirement — a risk, a goal, a change request | nobody — it is a coincidence, and it sits outside the requirements | heuristic only, and the verdict says so |
 
 Any one piece of **live** evidence and the stakeholder is covered, silently. Only the
 heuristic and it is a warning that names its own weakness. Only evidence pointing at
@@ -119,10 +121,19 @@ it is critical.
 
 **A type is refused; a status is not.** The 5.1 graph holds more than requirements — risks
 (6.3), business goals (6.2), change requests (5.4), the 6.4 solution scope, test cases.
-None of them is a requirement, so none is searched for ties and
+None of them is a requirement, so none is searched for EVIDENCE and
 `declare_stakeholder_interest` refuses one by name: recording it would let a business goal
 silence a coverage gap, and would print an id under a heading counting requirements that
-do not include it. An **archived** requirement is the opposite case — deprecated,
+do not include it.
+
+They do stay in the COINCIDENCE pool, which is a different thing. That pool is only ever
+matched against, never rendered, and can only ever produce a warning — so a role named by
+a risk title, or a person who owns a change request, is reported as "traceable only
+outside the requirements" rather than as having nothing at all. Removing them from the
+pool as well was tried and measured: against the pre-branch baseline it turned four kinds
+of silence into red gaps, which is the single outcome decision 6 forbids. The objection
+that the older wording answered — a warning claiming the word came from "a requirement
+title" when it came from a risk — is answered in the sentence, where it belongs. An **archived** requirement is the opposite case — deprecated,
 superseded or retired is a stage, not a category, so the declaration is accepted with a
 warning, shown in the document marked `archived`, and simply not counted as live coverage.
 

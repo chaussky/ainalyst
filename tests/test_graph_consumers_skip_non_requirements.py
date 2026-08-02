@@ -187,9 +187,12 @@ class TestArchitectureSkipsNonRequirements(BaseMCPTest):
     def test_total_active_counts_only_requirements(self):
         import re
         out = a74.analyze_requirements_architecture("mixed")
+        # The label dropped the word "active" in re-review N-5 — it announced a status
+        # filter the line never had. The claim under test is the COUNT: of a graph
+        # holding goals, risks and a scope node, exactly one entry is a requirement.
         self.assertTrue(
-            re.search(r"Total active req:\*\*\s*1\b", out),
-            f"Expected exactly 1 active requirement, got:\n{out[:600]}",
+            re.search(r"Total req:\*\*\s*1\b", out),
+            f"Expected exactly 1 requirement, got:\n{out[:600]}",
         )
 
 

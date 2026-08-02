@@ -177,6 +177,9 @@ check_architecture_gaps(project_id = "crm_upgrade")
 **Level 1 — Coverage matrix:**
 - Stakeholder with no recorded tie to any requirement → `critical`
 - Stakeholder reachable only by a word shared with a requirement title → `warning`
+- Stakeholder traceable only **outside** the requirements — a risk (6.3), a business goal
+  (6.2) or a change request (5.4) carries their name or a word of it → `warning`, and the
+  message says which kind of node it found, so the BA knows where to go and look
 - Stakeholder whose every recorded tie points at an **archived** requirement
   (deprecated / superseded / retired in 5.2) → `warning`
 - Archived requirements leave level 2 entirely: nobody is advised to write a use case
