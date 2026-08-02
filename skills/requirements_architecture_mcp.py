@@ -1309,7 +1309,23 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
         })
         all_stakeholders = []
     else:
-        all_stakeholders = stakeholders_data.get("stakeholders", [])
+        raw = stakeholders_data.get("stakeholders")
+        all_stakeholders = raw if isinstance(raw, list) else []
+        # A registry that exists but holds nobody identifiable used to produce a
+        # report of 🔴 0 / 🟡 0 and not one note: the "not found" note above fires
+        # only on a missing FILE, so the sponsor read a clean verdict on a project
+        # where no person had been checked against anything. An empty registry is a
+        # legitimate early state, not a clean bill of health (branch review B-1).
+        if not [s for s in all_stakeholders if registry_labels(s)]:
+            gaps_info.append({
+                "type": "stakeholder_registry_unusable",
+                "message": (
+                    f"The stakeholder registry for `{project_id}` was read, but holds "
+                    f"nobody identifiable — no row carries a name or a role. Nobody was "
+                    f"checked for representation, so this report says nothing about "
+                    f"stakeholder coverage. Record the people via the 4.2 tools."
+                ),
+            })
 
     if all_stakeholders:
         # ADR-098: the verdict rests on RECORDED facts, each named in the message.

@@ -217,10 +217,35 @@ class TestRegistryPartyStatusHasThreeAnswers(unittest.TestCase):
         self.assertEqual(registry_party_status("pstat_none", "Ivan Petrov"),
                          PARTY_UNBRIDGEABLE)
 
-    def test_an_empty_registry_file_is_also_unbridgeable(self):
+    def test_an_empty_registry_file_is_not_the_same_as_no_registry(self):
+        # WAS `test_an_empty_registry_file_is_also_unbridgeable`, and it cemented the
+        # very collapse the third answer exists to prevent (branch review B-1).
+        # UNBRIDGEABLE means "there is nothing here to compare against, so no claim can
+        # be made" and its advice is "create the registry" — false and unhelpful for a
+        # project that HAS one, on disk, that simply holds nobody yet. The registry is
+        # a living document: empty is a legitimate early state, not a missing artifact.
+        #
+        # The old verdict was inconsistent inside this very function too: a registry of
+        # [{"influence": "High"}] — rows present, none identifiable — already returned
+        # NOT_IN_REGISTRY. Same state, different answer, decided by list length.
         self._write_registry("pstat4", [])
         self.assertEqual(registry_party_status("pstat4", "Ivan Petrov"),
-                         PARTY_UNBRIDGEABLE)
+                         PARTY_NOT_IN_REGISTRY)
+
+    def test_a_registry_of_unidentifiable_rows_answers_the_same_as_an_empty_one(self):
+        self._write_registry("pstat4b", [{"influence": "High"}])
+        self.assertEqual(registry_party_status("pstat4b", "Ivan Petrov"),
+                         PARTY_NOT_IN_REGISTRY)
+
+    def test_a_registry_holding_only_null_is_still_a_registry_that_exists(self):
+        # The file is there and was read; `stakeholders: null` is a damaged list, not
+        # a missing artifact, so "create the registry" is still the wrong advice.
+        path = os.path.join("governance_plans", "data",
+                            "pstat4c_stakeholder_registry.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": "pstat4c", "stakeholders": None}, f)
+        self.assertEqual(registry_party_status("pstat4c", "Ivan Petrov"),
+                         PARTY_NOT_IN_REGISTRY)
 
     def test_a_blank_name_is_unbridgeable_rather_than_matching_everything(self):
         self._write_registry("pstat5", [{"name": "Ivan Petrov", "role": "Product Owner"}])

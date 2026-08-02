@@ -2117,5 +2117,88 @@ class TestArchivedRequirementsAreNotCoverage(BaseMCPTest):
         self.assertNotIn("archived", result.lower())
 
 
+class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
+    """Branch review B-1. The three-valued answer collapsed on two surfaces of three.
+
+    (a) `registry_party_status` asked "is the people list empty?" and answered
+    UNBRIDGEABLE — the answer reserved for "there is nothing to compare against".
+    So with the file ON DISK the tool said "There is no stakeholder registry for
+    `s_empty` … Create it via the 3.2 or 4.2 tools" while the document for the same
+    project said "Stakeholder registry has no identifiable people". Two surfaces
+    asserting opposite things about one state, and the advice was wrong.
+
+    (b) `check_architecture_gaps` printed 🔴 0 / 🟡 0 and NOT ONE info note, because
+    its "registry not found" note fires only on a missing FILE. The sponsor read a
+    clean verdict on a project where nobody had been checked.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _write_registry(self, project_id, payload):
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+        path = os.path.join("governance_plans", "data",
+                            f"{project_id}_stakeholder_registry.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+
+    def test_declaring_against_an_empty_registry_does_not_tell_the_ba_to_create_one(self):
+        pid = "b1_74"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry(pid, {"project": pid, "stakeholders": []})
+        result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
+        self.assertNotIn("no stakeholder registry", result)
+        self.assertIn("not in the stakeholder registry", result)
+
+    def test_the_tool_and_the_document_agree_about_an_empty_registry(self):
+        pid = "b1_74b"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry(pid, {"project": pid, "stakeholders": []})
+        reply = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
+        doc = self._doc(pid)
+        self.assertNotIn("Create it via the 3.2 or 4.2 tools", reply)
+        self.assertIn("no identifiable people", doc)
+
+    def test_a_missing_registry_still_says_it_cannot_compare(self):
+        # The other side of the branch: the third answer must survive where it is true.
+        pid = "b1_74c"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
+        self.assertIn("no stakeholder registry", result)
+
+    def test_an_empty_registry_produces_an_info_note_in_the_gap_report(self):
+        pid = "b1_74d"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry(pid, {"project": pid, "stakeholders": []})
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("nobody identifiable", result)
+        self.assertNotIn("registry not found", result.lower())
+
+    def test_a_registry_of_unidentifiable_rows_produces_the_same_note(self):
+        pid = "b1_74e"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry(pid, {"project": pid,
+                                   "stakeholders": [{"influence": "High"}]})
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("nobody identifiable", result)
+
+    def test_a_null_stakeholder_list_produces_the_note_rather_than_a_clean_verdict(self):
+        pid = "b1_74f"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry(pid, {"project": pid, "stakeholders": None})
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("nobody identifiable", result)
+
+    def test_a_populated_registry_gets_no_such_note(self):
+        pid = "b1_74g"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
+        result = mod74.check_architecture_gaps(pid)
+        self.assertNotIn("nobody identifiable", result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

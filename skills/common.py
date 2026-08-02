@@ -1329,14 +1329,21 @@ def registry_party_status(project_id: str, who) -> str:
     REFUSED: there the vocabulary is CLOSED (eight elements the platform knows in
     full), here it is OPEN and grows as stakeholders are discovered. Refusing against
     an open list blocks the analyst exactly when they are recording something new.
+
+    UNBRIDGEABLE is decided by the FILE, not by the list inside it. An empty registry
+    is a legitimate early state of a living document — the file exists, it was read,
+    and it simply holds nobody yet — so "there is no registry, create it via 3.2 or
+    4.2" is a false statement about a project that has one on disk. It also made this
+    function disagree with itself: rows that carry no name and no role already
+    returned NOT_IN_REGISTRY, the same state answered differently depending on how
+    many unusable rows happened to be in the list (branch review B-1).
     """
     key = reg_norm(who)
     if not key:
         return PARTY_UNBRIDGEABLE
-    people = load_stakeholder_registry(project_id).get("stakeholders") or []
-    if not people:
+    if not os.path.exists(stakeholder_registry_path(project_id)):
         return PARTY_UNBRIDGEABLE
-    for s in people:
+    for s in load_stakeholder_registry(project_id).get("stakeholders") or []:
         if key in registry_labels(s):
             return PARTY_IN_REGISTRY
     return PARTY_NOT_IN_REGISTRY
