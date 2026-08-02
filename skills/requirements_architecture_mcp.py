@@ -245,6 +245,33 @@ def _is_archived(node) -> bool:
     return isinstance(node, dict) and node.get("status") in ARCHIVED_REQUIREMENT_STATUSES
 
 
+def _viewpoint_row(repo: dict, req_id: str) -> str:
+    """One row of a viewpoint table in the delivered document, or "" if unknown.
+
+    The table is addressed to "Developer, architect" and is an input artifact for 7.5,
+    so a requirement 5.2 retired must not read here as one to build — the concerns
+    section on the same page already says an archived tie is not live coverage, and one
+    id governed by two rules on one page is the defect class this branch keeps meeting.
+
+    MARKED, never dropped. Dropping the row would move `Total req` for every existing
+    project, and that is a released number; marking adds the missing fact and changes
+    no count. It is also the choice B-2 already made one section down.
+
+    Both the auto and the custom viewpoint tables render through here: two copies of
+    this rule would drift apart, which is exactly how T8-3 happened.
+    """
+    req = _find_req(repo, req_id)
+    if not req:
+        return ""
+    # NOT `_md_label` on the title. That one strips `*` and `_` because a NAME holding
+    # them is a formatting accident, but a requirement title reading "user_id must be
+    # unique" means it, and quietly serving "userid" would be a worse lie than a bold
+    # word. Only what actually breaks a table cell is neutralised: a pipe and a newline.
+    title = " ".join(str(req.get("title", "")).split()).replace("|", r"\|")[:60]
+    mark = " _(archived)_" if _is_archived(req) else ""
+    return f"| `{_md_label(req_id, 40)}` | {req.get('type', '?')} | {title}{mark} |"
+
+
 # ---------------------------------------------------------------------------
 # Stakeholder↔requirement model (ADR-098)
 # ---------------------------------------------------------------------------
@@ -620,8 +647,17 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             noun = "requirement" if count == 1 else "requirements"
             # An all-archived person is a THIRD state again, and the gap report calls
             # it a warning — so the page must not read like full coverage (B-2).
-            all_archived = "" if any(not t["archived"] for t in ties) else \
-                " — every one of them archived (5.2), so none of it is live coverage"
+            # The plural has to follow the count: "1 requirement … every one of them
+            # archived" is not a sentence, and this line is read by a sponsor.
+            if any(not t["archived"] for t in ties):
+                all_archived = ""
+            elif count == 1:
+                # The ref already carries "(… , archived)", so repeating the word here
+                # only stutters — the sentence has to add the CONSEQUENCE instead.
+                all_archived = " — so it is not live coverage"
+            else:
+                all_archived = (" — every one of them archived (5.2), so none of it "
+                                "is live coverage")
             lines.append(
                 f"- **{who}** — {count} {noun}: "
                 f"{_group_refs((t['req_id'], t['source'], t['archived']) for t in ties)}"
@@ -1619,10 +1655,22 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     # LEVEL 2: Semantic gaps (uses the 5.1 graph)
     # ------------------------------------------------------------------
 
+    # Archived requirements leave this level entirely, and that cuts BOTH ways on
+    # purpose — the same rule B-2 established one level up, applied consistently:
+    #   as a SUBJECT: "write a use case for FR-003" is work the analyst must not be
+    #     sent to do about something 5.2 retired last month;
+    #   as a TARGET: a live UC whose only business process was deprecated is hanging,
+    #     and calling it covered would be the exact "archived counts as coverage"
+    #     defect B-2 fixed, merely relocated to level 2.
+    # The second half can turn silence into a WARNING on an existing project, which
+    # decision 6 permits (only silence → critical is forbidden), and it is pinned by
+    # `test_a_live_use_case_left_with_only_an_archived_process_is_a_gap`.
+    # 7.2 (`:1413`) and 7.3 (`:1308`) already skip these three statuses in their
+    # audits — 7.4 was the last chapter reading them as live.
     reqs_by_type: dict = {}
     for req in all_reqs:
         t = req.get("type", "")
-        if t not in SKIP_TYPES:
+        if t not in SKIP_TYPES and not _is_archived(req):
             reqs_by_type.setdefault(t, []).append(req)
 
     bp_ids = {r["id"] for r in reqs_by_type.get("business_process", [])}
@@ -2035,11 +2083,9 @@ def save_architecture_snapshot(
                 "|----|------|-------|",
             ]
             for rid in req_ids[:20]:
-                req = _find_req(repo, rid)
-                if req:
-                    doc_lines.append(
-                        f"| `{rid}` | {req.get('type', '?')} | {req.get('title', '')[:60]} |"
-                    )
+                row = _viewpoint_row(repo, rid)
+                if row:
+                    doc_lines.append(row)
             if len(req_ids) > 20:
                 doc_lines.append(f"| _+{len(req_ids) - 20} more_ | | |")
         else:
@@ -2058,11 +2104,9 @@ def save_architecture_snapshot(
                 "|----|------|-------|",
             ]
             for rid in req_ids[:20]:
-                req = _find_req(repo, rid)
-                if req:
-                    doc_lines.append(
-                        f"| `{rid}` | {req.get('type', '?')} | {req.get('title', '')[:60]} |"
-                    )
+                row = _viewpoint_row(repo, rid)
+                if row:
+                    doc_lines.append(row)
         doc_lines.append("")
 
     doc_lines += ["---", ""] + _concern_lines(project_id, repo)

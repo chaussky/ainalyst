@@ -2637,5 +2637,118 @@ class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
         self.assertIn("5.5 approval", result)
 
 
+class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):
+    """Found by READING the assembled page after the fix wave, not by any test.
+
+    B-2 taught ONE surface — the stakeholder coverage verdict — that an archived
+    requirement is not live. The two surfaces beside it on the SAME page stayed
+    status-blind, so the delivered document said both of these about `FR-003`:
+
+        ### Functionality (3 req)
+        | `FR-003` | functional | Legacy import |          <- offered to "Developer, architect"
+        - **Marta Silva** — 1 requirement: `FR-003` (declared, archived) …
+
+    and the gap report advised writing a use case for a requirement 5.2 had retired.
+    That is this branch's own recurring class: forbid the platform to guess in one
+    place and the NEIGHBOUR keeps guessing. 7.2 (`:1413`) and 7.3 (`:1308`) already
+    skip these statuses; 7.4 was the last chapter that did not.
+
+    Marked, never hidden — the same choice B-2 made. Dropping archived rows would
+    change `Total req` for every existing project; marking them adds the missing fact
+    and changes no count.
+    """
+
+    def _doc(self, pid):
+        """The document as DELIVERED — the snapshot returns different text (PF-2)."""
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        return captured[0]
+
+    def _repo_with_archived(self, pid):
+        live = make_req("FR-001", "functional", "Auto routing")
+        gone = make_req("FR-003", "functional", "Legacy import", status="deprecated")
+        repo = make_repo(pid, [live, gone])
+        save_repo(repo)
+        return repo
+
+    def test_an_archived_requirement_is_marked_in_the_viewpoint_table(self):
+        pid = "arch_vp_74"
+        self._repo_with_archived(pid)
+        doc = self._doc(pid)
+        row = [ln for ln in doc.splitlines() if "`FR-003`" in ln and "|" in ln]
+        self.assertTrue(row, "FR-003 should still be listed — marked, not hidden")
+        self.assertIn("archived", row[0],
+                      "the developer reading this table must not take a retired "
+                      "requirement for a live one")
+
+    def test_a_live_requirement_is_not_marked(self):
+        pid = "arch_vp_74b"
+        self._repo_with_archived(pid)
+        doc = self._doc(pid)
+        row = [ln for ln in doc.splitlines() if "`FR-001`" in ln and "|" in ln]
+        self.assertTrue(row)
+        self.assertNotIn("archived", row[0])
+
+    def test_the_count_above_the_table_still_counts_archived_rows(self):
+        pid = "arch_vp_74c"
+        self._repo_with_archived(pid)
+        doc = self._doc(pid)
+        self.assertIn("| Total req | 2 |", doc,
+                      "marking must not silently change a released number")
+
+    def test_an_archived_requirement_gets_no_semantic_gap_advice(self):
+        pid = "arch_sem_74"
+        self._repo_with_archived(pid)
+        result = mod74.check_architecture_gaps(pid)
+        self.assertNotIn("`FR-003`", result,
+                         "advising a use case for a retired requirement is work "
+                         "the analyst must not be sent to do")
+
+    def test_a_live_requirement_still_gets_semantic_gap_advice(self):
+        pid = "arch_sem_74b"
+        self._repo_with_archived(pid)
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("`FR-001`", result)
+
+    def test_a_live_use_case_left_with_only_an_archived_process_is_a_gap(self):
+        """The other half of the same rule, and the half that ADDS a finding.
+
+        B-2 said an archived tie is not coverage. A live use case whose only business
+        process was deprecated is therefore hanging, and staying silent about it would
+        be that very defect relocated to level 2. Silence → warning is the direction
+        decision 6 permits; only silence → critical is forbidden.
+        """
+        pid = "arch_sem_74c"
+        uc = make_req("UC-001", "use_case", "Submit a claim")
+        bp = make_req("BP-001", "business_process", "Claim intake", status="deprecated")
+        repo = make_repo(pid, [uc, bp],
+                         [{"from": "UC-001", "to": "BP-001", "relation": "derives"}])
+        save_repo(repo)
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("`UC-001`", result)
+        self.assertIn("Business Process", result)
+        self.assertNotIn("`BP-001`", result,
+                         "the retired process is not itself reported — it is simply "
+                         "no longer counted as cover")
+
+    def test_one_archived_tie_does_not_read_as_a_plural(self):
+        pid = "arch_word_74"
+        repo = self._repo_with_archived(pid)
+        repo["requirements"][1]["stakeholders"] = [{"name": "Marta Silva"}]
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Data Steward"}])
+        doc = self._doc(pid)
+        line = [ln for ln in doc.splitlines() if "Marta Silva" in ln][0]
+        self.assertIn("1 requirement:", line)
+        self.assertNotIn("every one of them", line,
+                         "'1 requirement … every one of them archived' is not English")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

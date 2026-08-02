@@ -179,6 +179,10 @@ check_architecture_gaps(project_id = "crm_upgrade")
 - Stakeholder reachable only by a word shared with a requirement title → `warning`
 - Stakeholder whose every recorded tie points at an **archived** requirement
   (deprecated / superseded / retired in 5.2) → `warning`
+- Archived requirements leave level 2 entirely: nobody is advised to write a use case
+  for a retired requirement, and a live UC whose only BP was deprecated is reported as
+  hanging rather than as covered. In the Architecture Document they stay in the
+  viewpoint tables, tagged `_(archived)_`, and `Total req` still counts them.
 - BG with no viewpoint coverage → `warning`
 - Empty viewpoint → `info`
 - Registry read but holding nobody identifiable → `info` (nobody was checked, and

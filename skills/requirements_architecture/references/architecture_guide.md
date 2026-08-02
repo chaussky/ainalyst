@@ -126,6 +126,16 @@ do not include it. An **archived** requirement is the opposite case — deprecat
 superseded or retired is a stage, not a category, so the declaration is accepted with a
 warning, shown in the document marked `archived`, and simply not counted as live coverage.
 
+The same rule holds everywhere else the archived requirement appears, because one id
+governed by two rules on one page is how a signed document contradicts itself:
+
+- the viewpoint tables still list it, tagged `_(archived)_` — the table is read by
+  developers and by 7.5, and a retired requirement must not read there as one to build;
+- `Total req` still counts it — marking adds a fact, it does not move a released number;
+- level 2 skips it, as a subject and as a target: no one is advised to write a use case
+  for a retired requirement, and a live use case whose only business process was
+  deprecated is reported as hanging rather than as covered.
+
 **Why the heuristic was kept rather than deleted.** It is how this check worked before the
 model existed. Removing it would have handed every existing project a batch of new critical
 findings on the day of the upgrade — about people whose coverage had not changed at all.
