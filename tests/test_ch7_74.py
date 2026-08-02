@@ -989,5 +989,119 @@ class TestDeclaredConcernsReadBothForms(BaseMCPTest):
         self.assertEqual(mod74._declared_concerns(req), ["Sales Head"])
 
 
+class TestEvidenceHasFourNamedSources(BaseMCPTest):
+    """Every tie carries WHERE it came from, and nothing is copied.
+
+    `owner` belongs to 7.1 and the votes belong to 5.5. A copy of either would go
+    stale the moment its owner changed it — so both are computed on read and the
+    stored field holds only what the BA declared.
+    """
+
+    def _write_approvals(self, project_id, packages):
+        safe = project_id.lower().replace(" ", "_")
+        path = os.path.join("governance_plans", "data",
+                            f"{safe}_approval_history.json")
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"project": project_id, "packages": packages}, f)
+
+    def test_a_declared_name_is_evidence_labelled_declared(self):
+        repo = make_repo("ev74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Sales Head"}]
+        ev = mod74._stakeholder_evidence("ev74", repo)
+        self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared"}])
+
+    def test_the_owner_is_evidence_labelled_with_its_chapter(self):
+        repo = make_repo("ev74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Ivan Petrov"
+        ev = mod74._stakeholder_evidence("ev74b", repo)
+        self.assertEqual(ev["FR-001"], [{"who": "Ivan Petrov", "source": "7.1:owner"}])
+
+    def test_a_5_5_vote_on_this_requirement_is_evidence(self):
+        self._write_approvals("ev74c", {"PKG-001": {"req_ids": ["FR-001"],
+            "stakeholder_decisions": {"Priya Nair": {"raci": "accountable",
+                "req_decisions": [{"req_id": "FR-001", "decision": "approved"}]}}}})
+        repo = make_repo("ev74c", [make_req("FR-001", "functional", "Auto routing")])
+        ev = mod74._stakeholder_evidence("ev74c", repo)
+        self.assertEqual(ev["FR-001"], [{"who": "Priya Nair", "source": "5.5:approval"}])
+
+    def test_a_rejection_counts_as_interest_too(self):
+        # Interest is not agreement: someone who voted AGAINST a requirement is the
+        # clearest possible evidence that it touches them.
+        self._write_approvals("ev74d", {"PKG-001": {"req_ids": ["FR-001"],
+            "stakeholder_decisions": {"Priya Nair": {"raci": "accountable",
+                "req_decisions": [{"req_id": "FR-001", "decision": "rejected",
+                                   "rejection_reason": "too costly"}]}}}})
+        repo = make_repo("ev74d", [make_req("FR-001", "functional", "Auto routing")])
+        ev = mod74._stakeholder_evidence("ev74d", repo)
+        self.assertEqual([e["who"] for e in ev["FR-001"]], ["Priya Nair"])
+
+    def test_a_vote_on_a_different_requirement_is_not_evidence_for_this_one(self):
+        self._write_approvals("ev74e", {"PKG-001": {"req_ids": ["FR-002"],
+            "stakeholder_decisions": {"Priya Nair": {"raci": "consulted",
+                "req_decisions": [{"req_id": "FR-002", "decision": "approved"}]}}}})
+        repo = make_repo("ev74e", [make_req("FR-001", "functional", "Auto routing"),
+                                   make_req("FR-002", "functional", "Notifications")])
+        ev = mod74._stakeholder_evidence("ev74e", repo)
+        self.assertEqual(ev["FR-001"], [])
+        self.assertEqual([e["who"] for e in ev["FR-002"]], ["Priya Nair"])
+
+    def test_no_approval_file_degrades_to_the_other_sources(self):
+        repo = make_repo("ev74f", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Ivan Petrov"
+        ev = mod74._stakeholder_evidence("ev74f", repo)
+        self.assertEqual([e["source"] for e in ev["FR-001"]], ["7.1:owner"])
+
+    def test_a_damaged_approval_file_does_not_take_the_tool_down(self):
+        safe = "ev74g"
+        path = os.path.join("governance_plans", "data", f"{safe}_approval_history.json")
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{not json at all")
+        repo = make_repo("ev74g", [make_req("FR-001", "functional", "Auto routing")])
+        self.assertEqual(mod74._stakeholder_evidence("ev74g", repo)["FR-001"], [])
+
+    def test_an_approval_file_whose_packages_is_a_list_does_not_raise(self):
+        # A top level that is valid JSON but the wrong SHAPE — the class that took the
+        # 6.4 gap importer down with AttributeError after `is not None` replaced a
+        # falsy check. Guard by TYPE, not by truthiness.
+        self._write_approvals("ev74h", ["PKG-001"])
+        repo = make_repo("ev74h", [make_req("FR-001", "functional", "Auto routing")])
+        self.assertEqual(mod74._stakeholder_evidence("ev74h", repo)["FR-001"], [])
+
+    def test_the_same_person_from_two_sources_is_kept_twice_with_both_labels(self):
+        # NOT deduped across sources: "declared AND voted in 5.5" is stronger evidence
+        # than either alone, and the document is entitled to show both.
+        self._write_approvals("ev74i", {"PKG-001": {"req_ids": ["FR-001"],
+            "stakeholder_decisions": {"Sales Head": {"raci": "accountable",
+                "req_decisions": [{"req_id": "FR-001", "decision": "approved"}]}}}})
+        repo = make_repo("ev74i", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Sales Head"}]
+        ev = mod74._stakeholder_evidence("ev74i", repo)
+        self.assertEqual(sorted(e["source"] for e in ev["FR-001"]),
+                         ["5.5:approval", "declared"])
+
+    def test_ties_for_labels_finds_a_person_by_either_name_or_role(self):
+        repo = make_repo("ev74j", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Product Owner"}]
+        repo["requirements"][0]["owner"] = "Ivan Petrov"
+        ev = mod74._stakeholder_evidence("ev74j", repo)
+        ties = mod74._ties_for_labels({"ivan petrov", "product owner"}, ev)
+        self.assertEqual(sorted(t["source"] for t in ties),
+                         ["7.1:owner", "declared"])
+
+    def test_ties_for_labels_ignores_everyone_else(self):
+        repo = make_repo("ev74k", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Ivan Petrov"
+        ev = mod74._stakeholder_evidence("ev74k", repo)
+        self.assertEqual(mod74._ties_for_labels({"someone else"}, ev), [])
+
+    def test_evidence_never_reads_the_title(self):
+        # The title heuristic is deliberately NOT one of the three evidence sources —
+        # it stays where it is, in the gap check, explicitly labelled as a heuristic.
+        repo = make_repo("ev74l", [make_req("FR-001", "functional", "Sales Head report")])
+        self.assertEqual(mod74._stakeholder_evidence("ev74l", repo)["FR-001"], [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

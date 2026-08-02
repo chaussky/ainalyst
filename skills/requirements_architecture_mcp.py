@@ -35,7 +35,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
-    read_json_artifact, guard_artifact_errors, reg_norm,
+    read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -233,6 +233,117 @@ def _declared_concerns(req: dict) -> list:
             seen.add(key)
             out.append(name)
     return out
+
+
+# Where a stakeholder↔requirement tie came from. The first three are EVIDENCE — a fact
+# some chapter recorded on purpose. The fourth is the pre-existing title heuristic,
+# kept so no existing project loses coverage it had yesterday, and labelled so no
+# reader mistakes it for the other three.
+CONCERN_DECLARED = "declared"
+CONCERN_OWNER = "7.1:owner"
+CONCERN_APPROVAL = "5.5:approval"
+CONCERN_TITLE = "title-match"
+
+CONCERN_EVIDENCE = (CONCERN_DECLARED, CONCERN_OWNER, CONCERN_APPROVAL)
+
+
+def _approval_voters(project_id: str) -> dict:
+    """{req_id: [stakeholder names]} from 5.5's durable record, or {} when unreadable.
+
+    Read through the SHARED loader rather than by importing 5.5: that module loads in
+    the `lifecycle` phase and this one in `design`, so the phases never overlap and the
+    import would fail at runtime. `_compute_req_status` in 5.5 documents the same
+    constraint from the other side.
+
+    Every level is guarded by TYPE, not by truthiness. A file that is valid JSON of the
+    wrong shape ("packages" as a list) reaches `.get` and raises AttributeError, which
+    `guard_artifact_errors` does not catch — the exact failure that lost the first step
+    of chapter 6 until afe5961.
+    """
+    history = load_approval_history(project_id)
+    if not isinstance(history, dict):
+        return {}
+    packages = history.get("packages")
+    if not isinstance(packages, dict):
+        return {}
+    out: dict = {}
+    for pkg in packages.values():
+        if not isinstance(pkg, dict):
+            continue
+        decisions = pkg.get("stakeholder_decisions")
+        if not isinstance(decisions, dict):
+            continue
+        for sh_name, sh_data in decisions.items():
+            if not isinstance(sh_data, dict):
+                continue
+            req_decisions = sh_data.get("req_decisions")
+            if not isinstance(req_decisions, list):
+                continue
+            for rd in req_decisions:
+                if not isinstance(rd, dict):
+                    continue
+                req_id = rd.get("req_id")
+                if not isinstance(req_id, str) or not req_id:
+                    continue
+                names = out.setdefault(req_id, [])
+                if sh_name not in names:
+                    names.append(sh_name)
+    return out
+
+
+def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
+    """{req_id: [{"who", "source"}]} — every RECORDED tie, each carrying its provenance.
+
+    Nothing here is written back. `owner` is 7.1's field and the votes are 5.5's record;
+    a stored copy would say the wrong name the moment either owner changed theirs, which
+    is the whole reason the declared field holds declarations only.
+
+    A person reached from two sources is kept TWICE, once per source: "declared and also
+    voted in 5.5" is stronger than either alone, and the document may show both.
+    """
+    voters = _approval_voters(project_id)
+    evidence: dict = {}
+    for req in repo.get("requirements", []):
+        if not isinstance(req, dict):
+            continue
+        req_id = req.get("id")
+        if not isinstance(req_id, str) or not req_id:
+            continue
+        found: list = []
+        seen: set = set()
+
+        def _add(who: str, source: str) -> None:
+            key = (reg_norm(who), source)
+            if key[0] and key not in seen:
+                seen.add(key)
+                found.append({"who": who, "source": source})
+
+        for name in _declared_concerns(req):
+            _add(name, CONCERN_DECLARED)
+        owner = req.get("owner")
+        if isinstance(owner, str):
+            _add(owner.strip(), CONCERN_OWNER)
+        for name in voters.get(req_id, []):
+            if isinstance(name, str):
+                _add(name.strip(), CONCERN_APPROVAL)
+        evidence[req_id] = found
+    return evidence
+
+
+def _ties_for_labels(labels: set, evidence: dict) -> list:
+    """Recorded ties for ONE stakeholder: [{"req_id", "source"}], sorted by req_id.
+
+    `labels` is what `registry_labels` returns for that person — name AND role — so a
+    requirement whose owner is a name and whose declaration is a role both resolve to
+    the same human. Sorted so the delivered document does not reorder between runs on
+    identical data.
+    """
+    ties = []
+    for req_id, items in evidence.items():
+        for item in items:
+            if reg_norm(item["who"]) in labels:
+                ties.append({"req_id": req_id, "source": item["source"]})
+    return sorted(ties, key=lambda t: (t["req_id"], t["source"]))
 
 
 # ---------------------------------------------------------------------------
