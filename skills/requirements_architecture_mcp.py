@@ -47,6 +47,7 @@ from skills.common import (
     read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
     parse_json_str_list, registry_party_status, PARTY_IN_REGISTRY,
     PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE, registry_labels,
+    ARCHIVED_REQUIREMENT_STATUSES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -233,6 +234,17 @@ def _is_requirement(node) -> bool:
     return isinstance(node, dict) and node.get("type", "") not in SKIP_TYPES
 
 
+def _is_archived(node) -> bool:
+    """Is this requirement retired from the active set? (5.2's three terminal statuses.)
+
+    Archived requirements are never deleted — the project rule — so they stay in the
+    graph, in the history and in the traceability matrix. What they must NOT do is
+    count as coverage: a stakeholder whose every recorded tie was deprecated last
+    month is not represented in the architecture being signed today.
+    """
+    return isinstance(node, dict) and node.get("status") in ARCHIVED_REQUIREMENT_STATUSES
+
+
 # ---------------------------------------------------------------------------
 # Stakeholder↔requirement model (ADR-098)
 # ---------------------------------------------------------------------------
@@ -330,7 +342,7 @@ def _approval_voters(project_id: str) -> dict:
 
 
 def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
-    """{req_id: [{"who", "source"}]} — every RECORDED tie, each carrying its provenance.
+    """{req_id: [{"who", "source", "archived"}]} — every RECORDED tie with its provenance.
 
     Nothing here is written back. `owner` is 7.1's field and the votes are 5.5's record;
     a stored copy would say the wrong name the moment either owner changed theirs, which
@@ -342,6 +354,10 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
     Only REQUIREMENTS are walked. A tie recorded on a risk or a business goal — by hand
     or by an older build — is not evidence of anything about requirement coverage, and
     counting it let a business goal silence the very check this model exists for.
+
+    Each item also carries `archived` — the STATUS of the requirement the tie points at.
+    It travels with the tie rather than being looked up again by every consumer, so the
+    gap report and the document cannot disagree about which ties are live.
     """
     voters = _approval_voters(project_id)
     evidence: dict = {}
@@ -351,6 +367,7 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
         req_id = req.get("id")
         if not isinstance(req_id, str) or not req_id:
             continue
+        archived = _is_archived(req)
         found: list = []
         seen: set = set()
 
@@ -358,7 +375,7 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
             key = (reg_norm(who), source)
             if key[0] and key not in seen:
                 seen.add(key)
-                found.append({"who": who, "source": source})
+                found.append({"who": who, "source": source, "archived": archived})
 
         for name in _declared_concerns(req):
             _add(name, CONCERN_DECLARED)
@@ -373,7 +390,7 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
 
 
 def _ties_for_labels(labels: set, evidence: dict) -> list:
-    """Recorded ties for ONE stakeholder: [{"req_id", "source"}], sorted by req_id.
+    """Recorded ties for ONE stakeholder: the evidence items that resolve to them.
 
     `labels` is what `registry_labels` returns for that person — name AND role — so a
     requirement whose owner is a name and whose declaration is a role both resolve to
@@ -384,7 +401,8 @@ def _ties_for_labels(labels: set, evidence: dict) -> list:
     for req_id, items in evidence.items():
         for item in items:
             if reg_norm(item["who"]) in labels:
-                ties.append({"req_id": req_id, "source": item["source"]})
+                ties.append({"req_id": req_id, "source": item["source"],
+                             "archived": item.get("archived", False)})
     return sorted(ties, key=lambda t: (t["req_id"], t["source"]))
 
 
@@ -435,14 +453,24 @@ def _group_refs(refs) -> str:
     A requirement backed by two sources used to render as two entries, so the count
     ("1 requirement") disagreed with the list under it. Both halves were true and the
     page still read as broken (live-run finding L-1).
+
+    An archived requirement (5.2 deprecated / superseded / retired) is SHOWN and
+    marked, never hidden: the BA declared that tie and is entitled to see what became
+    of it. Dropping it silently would be the same class this branch has already fixed
+    twice — the tool saying it recorded something the page never mentions.
     """
     by_req: dict = {}
-    for req_id, source in refs:
+    archived: dict = {}
+    for ref in refs:
+        req_id, source = ref[0], ref[1]
+        is_archived = bool(ref[2]) if len(ref) > 2 else False
         by_req.setdefault(req_id, [])
         if source not in by_req[req_id]:
             by_req[req_id].append(source)
+        archived[req_id] = archived.get(req_id, False) or is_archived
     return ", ".join(
-        f"`{req_id}` ({', '.join(sorted(sources))})"
+        f"`{req_id}` ({', '.join(sorted(sources))}"
+        + (", archived)" if archived.get(req_id) else ")")
         for req_id, sources in sorted(by_req.items())
     )
 
@@ -502,8 +530,14 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 continue
             count = len({t["req_id"] for t in ties})
             noun = "requirement" if count == 1 else "requirements"
-            lines.append(f"- **{who}** — {count} {noun}: "
-                         f"{_group_refs((t['req_id'], t['source']) for t in ties)}")
+            # An all-archived person is a THIRD state again, and the gap report calls
+            # it a warning — so the page must not read like full coverage (B-2).
+            all_archived = "" if any(not t["archived"] for t in ties) else \
+                " — every one of them archived (5.2), so none of it is live coverage"
+            lines.append(
+                f"- **{who}** — {count} {noun}: "
+                f"{_group_refs((t['req_id'], t['source'], t['archived']) for t in ties)}"
+                f"{all_archived}")
 
         # People the analyst tied to a requirement who are NOT in the registry.
         # `declare_stakeholder_interest` accepts them on purpose — the registry is a
@@ -517,14 +551,14 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 if not key or key in seen_labels:
                     continue
                 entry = outside.setdefault(key, {"display": item["who"], "refs": []})
-                entry["refs"].append((req_id, item["source"]))
+                entry["refs"].append((req_id, item["source"], item["archived"]))
         if outside:
             lines += ["", "**Tied to requirements but not in the 4.2 registry** — add "
                           "them with `update_stakeholder_registry` so the coverage "
                           "check can see them:", ""]
             for key in sorted(outside, key=lambda k: outside[k]["display"]):
                 entry = outside[key]
-                count = len({r for r, _ in entry["refs"]})
+                count = len({r for r, _, _ in entry["refs"]})
                 noun = "requirement" if count == 1 else "requirements"
                 # A short form of a registry name ("Priya" for "Priya Nair") lands here
                 # because the label did not match EXACTLY — and then the block's advice,
@@ -567,18 +601,18 @@ def _concern_lines(project_id: str, repo: dict) -> list:
         # "David Kim" vs "david kim" — and keying on the raw text split one person
         # into two bullets, each under-reporting their own tie count (fix review
         # round 1). The first spelling encountered is kept for display.
-        named: dict = {}  # reg_norm(who) -> {"display": who, "refs": [(req_id, source), ...]}
+        named: dict = {}  # reg_norm(who) -> {"display": who, "refs": [(req_id, source, archived), ...]}
         for req_id, items in evidence.items():
             for item in items:
                 key = reg_norm(item["who"])
                 if not key:
                     continue
                 entry = named.setdefault(key, {"display": item["who"], "refs": []})
-                entry["refs"].append((req_id, item["source"]))
+                entry["refs"].append((req_id, item["source"], item["archived"]))
         for key in sorted(named, key=lambda k: named[k]["display"]):
             entry = named[key]
             refs = entry["refs"]
-            count = len({r for r, _ in refs})
+            count = len({r for r, _, _ in refs})
             noun = "requirement" if count == 1 else "requirements"
             lines.append(f"- **{entry['display']}** — {count} {noun}: "
                          f"{_group_refs(refs)}")
@@ -1174,6 +1208,22 @@ def declare_stakeholder_interest(
             f"   ℹ️ {state} {len(skipped)}: {', '.join(f'`{r}`' for r in skipped)}"
         )
 
+    # A STATUS is not a TYPE. A deprecated requirement is still a requirement, so the
+    # call is ACCEPTED — refusing it (the treatment risks and business goals get) would
+    # be wrong, nothing was misrepresented. But a tie to something 5.2 has retired is
+    # not live coverage, and the BA who is about to read "declared on 1 requirement"
+    # deserves to know which of them the gap check will not count (branch review B-2).
+    archived_targets = sorted({rid for rid in req_ids
+                               if rid in by_id and _is_archived(by_id[rid])})
+    if archived_targets and not remove:
+        lines += [
+            "",
+            f"⚠️ Archived in 5.2: {', '.join(f'`{r}`' for r in archived_targets)} "
+            f"(deprecated / superseded / retired). The declaration was recorded — an "
+            f"archived requirement is still a requirement — but the coverage check "
+            f"does not count it as live representation.",
+        ]
+
     status = registry_party_status(project_id, name)
     if status == PARTY_NOT_IN_REGISTRY:
         lines += [
@@ -1296,7 +1346,29 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
             who = sh.get("name") or sh.get("role") or "—"
 
             ties = _ties_for_labels(labels, evidence)
+            if any(not t["archived"] for t in ties):
+                continue
             if ties:
+                # Every recorded tie points at a requirement 5.2 has archived. That is
+                # its own finding and its own message: "no tie" would be false (the BA
+                # recorded these) and silence would be worse (nothing live covers this
+                # person). A WARNING, never a critical — decision 6 forbids handing an
+                # existing project a new red gap on upgrade, and this state used to be
+                # silent (branch review B-2).
+                archived_ids = sorted({t["req_id"] for t in ties})
+                gaps_warning.append({
+                    "type": "stakeholder_only_archived",
+                    "stakeholder_id": sh.get("id", ""),
+                    "stakeholder_name": sh.get("name", ""),
+                    "message": (
+                        f"Stakeholder `{who}` has ties only to archived requirements "
+                        f"({', '.join(f'`{r}`' for r in archived_ids)}) — deprecated, "
+                        f"superseded or retired in 5.2. Nothing live covers their "
+                        f"interests. Re-declare against the replacement with "
+                        f"`declare_stakeholder_interest`, or confirm they are out of "
+                        f"scope now."
+                    ),
+                })
                 continue
 
             title_hit = any(

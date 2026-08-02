@@ -1010,13 +1010,27 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         repo = make_repo("ev74", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["stakeholders"] = [{"name": "Sales Head"}]
         ev = mod74._stakeholder_evidence("ev74", repo)
-        self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared"}])
+        # `archived` travels WITH the tie (branch review B-2) rather than being looked
+        # up again by each consumer, so the gap report and the document cannot disagree
+        # about which ties are live. Asserted in full, not by subset: a field that
+        # silently stops being written is exactly what a subset assertion hides.
+        self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared",
+                                         "archived": False}])
 
     def test_the_owner_is_evidence_labelled_with_its_chapter(self):
         repo = make_repo("ev74b", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Ivan Petrov"
         ev = mod74._stakeholder_evidence("ev74b", repo)
-        self.assertEqual(ev["FR-001"], [{"who": "Ivan Petrov", "source": "7.1:owner"}])
+        self.assertEqual(ev["FR-001"], [{"who": "Ivan Petrov", "source": "7.1:owner",
+                                         "archived": False}])
+
+    def test_the_archived_flag_follows_the_requirement_status(self):
+        repo = make_repo("ev74m", [
+            make_req("FR-001", "functional", "Old feature", status="deprecated")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Sales Head"}]
+        ev = mod74._stakeholder_evidence("ev74m", repo)
+        self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared",
+                                         "archived": True}])
 
     def test_a_5_5_vote_on_this_requirement_is_evidence(self):
         self._write_approvals("ev74c", {"PKG-001": {"req_ids": ["FR-001"],
@@ -1024,7 +1038,8 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
                 "req_decisions": [{"req_id": "FR-001", "decision": "approved"}]}}}})
         repo = make_repo("ev74c", [make_req("FR-001", "functional", "Auto routing")])
         ev = mod74._stakeholder_evidence("ev74c", repo)
-        self.assertEqual(ev["FR-001"], [{"who": "Priya Nair", "source": "5.5:approval"}])
+        self.assertEqual(ev["FR-001"], [{"who": "Priya Nair", "source": "5.5:approval",
+                                         "archived": False}])
 
     def test_a_rejection_counts_as_interest_too(self):
         # Interest is not agreement: someone who voted AGAINST a requirement is the
@@ -2000,6 +2015,106 @@ class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
         self.assertIsInstance(stored["history"], list)
         self.assertEqual(stored["history"][-1]["action"],
                          "stakeholder_interest_declared")
+
+
+class TestArchivedRequirementsAreNotCoverage(BaseMCPTest):
+    """Branch review B-2. 7.4 filtered by `type` and never once by `status`.
+
+    Declare an interest, then deprecate the requirement: the gap report said 🔴 0 /
+    🟡 0 and the document printed "Helen Vasquez — 1 requirement: `FR-002` (declared)"
+    with no mark at all. A stakeholder whose every tie is archived reads as fully
+    covered — and the archive set {deprecated, superseded, retired} has been settled
+    across six modules since long before this chapter existed.
+
+    The verdict is a WARNING, never a critical: decision 6 of this feature says no
+    existing project may acquire a NEW red gap on upgrade, and silence → warning is
+    allowed where silence → critical is not (the invariant already broken once, T5-1).
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _repo_with(self, pid, statuses):
+        reqs = []
+        for i, status in enumerate(statuses, 1):
+            reqs.append(make_req(f"FR-00{i}", "functional", f"Feature {i}",
+                                 status=status))
+            reqs[-1]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(make_repo(pid, reqs))
+        save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
+        return pid
+
+    def test_a_stakeholder_whose_only_tie_is_deprecated_is_a_warning(self):
+        pid = self._repo_with("arch74", ["deprecated"])
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertIn("🟡 Warning | 1", result)
+        self.assertIn("archived", result)
+        self.assertIn("Helen Vasquez", result)
+
+    def test_superseded_and_retired_count_as_archived_too(self):
+        for status in ("superseded", "retired"):
+            with self.subTest(status=status):
+                pid = self._repo_with(f"arch74_{status}", [status])
+                result = mod74.check_architecture_gaps(pid)
+                self.assertIn("🟡 Warning | 1", result)
+
+    def test_one_live_tie_among_archived_ones_is_still_full_coverage(self):
+        pid = self._repo_with("arch74b", ["deprecated", "verified"])
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertIn("🟡 Warning | 0", result)
+
+    def test_an_all_archived_stakeholder_never_becomes_a_new_critical(self):
+        # The invariant guard: warning is the ceiling for this state.
+        pid = self._repo_with("arch74c", ["deprecated", "retired"])
+        result = mod74.check_architecture_gaps(pid)
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertNotIn("has no recorded tie", result)
+
+    def test_the_document_shows_the_archived_tie_and_marks_it(self):
+        # Hiding it would be the "silent skip" class this branch fixed twice: the BA
+        # declared that tie and must see what became of it.
+        pid = self._repo_with("arch74d", ["deprecated"])
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("`FR-001` (declared, archived)", concerns)
+        self.assertIn("Helen Vasquez", concerns)
+
+    def test_a_live_tie_carries_no_archived_mark(self):
+        pid = self._repo_with("arch74e", ["verified"])
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("`FR-001` (declared)", concerns)
+        self.assertNotIn("archived", concerns)
+
+    def test_declaring_on_an_archived_requirement_is_accepted_with_a_warning(self):
+        # A STATUS is not a TYPE: a deprecated requirement is still a requirement, so
+        # the tool records the declaration and says what it recorded it on. Refusing
+        # here (the R-1 treatment) would be wrong — nothing was misrepresented.
+        pid = "arch74f"
+        save_repo(make_repo(pid, [
+            make_req("FR-001", "functional", "Old feature", status="deprecated")]))
+        save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
+        result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
+        self.assertIn("declared on 1 requirement(s)", result)
+        self.assertIn("archived", result.lower())
+        self.assertIn("FR-001", result)
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertEqual(stored["requirements"][0]["stakeholders"][0]["name"],
+                         "Helen Vasquez")
+
+    def test_declaring_on_a_live_requirement_says_nothing_about_archives(self):
+        pid = "arch74g"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Live feature")]))
+        save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
+        result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
+        self.assertNotIn("archived", result.lower())
 
 
 if __name__ == "__main__":

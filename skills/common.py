@@ -64,6 +64,20 @@ TEST_NODE_TYPES = {"test"}
 # Everything that must not be counted, scored, verified or approved as a requirement.
 NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NODE_TYPES
 
+# The three terminal statuses `deprecate_requirements` (5.2) can assign. A requirement
+# in one of them is ARCHIVED: kept forever for audit (nothing is ever deleted here) and
+# counted by nothing. The set has been settled since 5.2 shipped and is spelled out
+# locally in six modules; 7.4 was the one chapter that never asked the question at all,
+# so a stakeholder whose every tie had been deprecated read as fully covered in a signed
+# architecture document (branch review B-2).
+#
+# NOTE the deliberate distinction from NON_REQUIREMENT_NODE_TYPES above: a TYPE says
+# what a node IS (a risk is not a requirement), a STATUS says what stage it is at (a
+# deprecated requirement is still a requirement). The two are treated differently on
+# purpose — 7.4 refuses to record a tie to a risk and accepts one to an archived
+# requirement with a warning.
+ARCHIVED_REQUIREMENT_STATUSES = {"deprecated", "superseded", "retired"}
+
 # Relations that justify a node's existence upward — "something explains why I am here".
 # `threatens` (6.3) and `modifies` (5.4) belong here: a risk that threatens an
 # objective and a change request that modifies a requirement are both anchored, and
