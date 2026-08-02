@@ -1915,5 +1915,92 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         self.assertIn("`Priya Nair` has no recorded tie", gaps_block)
 
 
+class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
+    """Branch review R-2, R-3 and A-2 — three stored shapes that escaped as raw
+    exceptions past `guard_artifact_errors`, which only converts CorruptArtifactError.
+
+    All three are the class this repository keeps re-learning: guard by TYPE, not by
+    truthiness, and put the guard BEFORE the access it protects. The neighbouring
+    functions already did it right — `_declared_concerns` uses `.get(k) or []` and says
+    why, `load_stakeholder_registry` normalises `history` and says why — so each of
+    these is one function that did not follow a rule written two screens away.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _write_registry(self, project_id, payload):
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+        path = os.path.join("governance_plans", "data",
+                            f"{project_id}_stakeholder_registry.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+
+    def test_a_null_stakeholders_list_in_the_registry_still_delivers_the_document(self):
+        # R-2. `.get("stakeholders", [])` returns None for an explicit null and the
+        # next line iterates it. check_architecture_gaps degrades cleanly on the very
+        # same file, so the two tools disagreed about whether it is readable.
+        repo = make_repo("shape74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        self._write_registry("shape74", {"project": "shape74", "stakeholders": None})
+        doc = self._doc("shape74")
+        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("David Kim", doc)
+
+    def test_a_non_list_stakeholders_value_in_the_registry_does_not_raise_either(self):
+        repo = make_repo("shape74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        self._write_registry("shape74b", {"project": "shape74b",
+                                          "stakeholders": {"name": "Ivan"}})
+        doc = self._doc("shape74b")
+        self.assertIn("## Stakeholder concerns", doc)
+
+    def test_a_registry_row_that_is_a_bare_string_does_not_take_the_gap_check_down(self):
+        # A-2. The guard `if not labels: continue` existed — two lines BELOW the
+        # `sh.get("name")` it protects.
+        save_repo(make_repo("shape74c", [make_req("FR-001", "functional", "Auto routing")]))
+        self._write_registry("shape74c", {"project": "shape74c",
+                                          "stakeholders": ["Ivan Petrov"]})
+        result = mod74.check_architecture_gaps("shape74c")
+        self.assertIn("🔴 Critical | 0", result)
+        self.assertNotIn("Traceback", result)
+
+    def test_a_dict_history_does_not_lose_the_declaration(self):
+        # R-3. `.setdefault("history", []).append(...)` raises on a stored dict, and
+        # the raise happens BEFORE _save_repo — so the declaration vanished from
+        # memory as well as from disk.
+        pid = "shape74d"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["history"] = {}
+        save_repo(repo)
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        self.assertIn("declared on 1 requirement(s)", result)
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertEqual(stored["requirements"][0]["stakeholders"][0]["name"],
+                         "Sales Head")
+        self.assertIn("stakeholder_interest_declared",
+                      [h["action"] for h in stored["history"]])
+
+    def test_a_string_history_is_normalised_the_same_way(self):
+        pid = "shape74e"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["history"] = "was a list once"
+        save_repo(repo)
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertIsInstance(stored["history"], list)
+        self.assertEqual(stored["history"][-1]["action"],
+                         "stakeholder_interest_declared")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

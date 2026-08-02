@@ -456,8 +456,15 @@ def _concern_lines(project_id: str, repo: dict) -> list:
     """
     evidence = _stakeholder_evidence(project_id, repo)
     registry = _load_stakeholders(project_id)
-    people = registry.get("stakeholders", []) if isinstance(registry, dict) else []
-    people = [s for s in people if isinstance(s, dict) and registry_labels(s)]
+    # `.get(k) or []`, then a type check — the rule the function two screens up
+    # states in its own docstring. A stored `"stakeholders": null` made `.get(k, [])`
+    # hand back None and the comprehension below iterate it, and the resulting
+    # TypeError is not a CorruptArtifactError, so `guard_artifact_errors` let it out
+    # of the tool: no document at all, on a file `check_architecture_gaps` reads
+    # happily (branch review R-2).
+    raw_people = (registry.get("stakeholders") or []) if isinstance(registry, dict) else []
+    people = ([s for s in raw_people if isinstance(s, dict) and registry_labels(s)]
+              if isinstance(raw_people, list) else [])
 
     lines = ["## Stakeholder concerns", ""]
 
@@ -1138,7 +1145,15 @@ def declare_stakeholder_interest(
                 changed.append(rid)
 
     if changed:
-        repo.setdefault("history", []).append({
+        # Normalised by TYPE before appending, the way `load_stakeholder_registry`
+        # does it for the same field and for the same reason. `setdefault` only
+        # protects against a MISSING key: on a stored `"history": {}` the append
+        # raised AttributeError, which escaped `guard_artifact_errors` — and it
+        # raised BEFORE `_save_repo`, so the declaration the BA had just made
+        # disappeared from memory as well as from the file (branch review R-3).
+        if not isinstance(repo.get("history"), list):
+            repo["history"] = []
+        repo["history"].append({
             "action": "stakeholder_interest_removed" if remove
                       else "stakeholder_interest_declared",
             "stakeholder": name,
@@ -1266,13 +1281,19 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
         title_words, name_pool = _heuristic_pools(all_reqs, evidence)
 
         for sh in all_stakeholders:
+            # The guard comes FIRST. `registry_labels` is safe on any value, but the
+            # line that used to sit between them was not: a registry row stored as a
+            # bare string ("Ivan Petrov" instead of {"name": ...}) reached
+            # `sh.get("name")` and took the whole tool down with AttributeError,
+            # while `_concern_lines` — which filters by isinstance first — rendered
+            # the same file without complaint (branch review A-2).
             labels = registry_labels(sh)
+            if not labels:
+                continue
             # Identify by name, else role: neither producer of the registry (3.2
             # seeding, 4.2 elicitation) writes an `id`, so quoting it rendered an
             # empty pair of backticks on every one of these gaps.
             who = sh.get("name") or sh.get("role") or "—"
-            if not labels:
-                continue
 
             ties = _ties_for_labels(labels, evidence)
             if ties:
