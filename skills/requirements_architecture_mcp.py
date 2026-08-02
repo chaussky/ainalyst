@@ -265,8 +265,19 @@ def _concern_name(entry) -> str:
     return ""
 
 
-def _declared_concerns(req: dict) -> list:
-    """Names the BA declared on ONE requirement, in order, deduped by reg_norm.
+def _concern_note(entry) -> str:
+    """The `why` the BA typed alongside a declaration, or "".
+
+    Only the object form can carry one; the bare-string form is a name and nothing else.
+    """
+    if isinstance(entry, dict):
+        note = entry.get("note")
+        return note.strip() if isinstance(note, str) else ""
+    return ""
+
+
+def _declared_entries(req: dict) -> list:
+    """[(name, note)] the BA declared on ONE requirement, in order, deduped by reg_norm.
 
     `.get(k) or []` rather than `.get(k, [])`: the missing key and an explicit null are
     different inputs and only the first is what a default protects against. A non-list
@@ -281,8 +292,13 @@ def _declared_concerns(req: dict) -> list:
         key = reg_norm(name)
         if key and key not in seen:
             seen.add(key)
-            out.append(name)
+            out.append((name, _concern_note(entry)))
     return out
+
+
+def _declared_concerns(req: dict) -> list:
+    """Just the names — the shape every caller wanted before `note` became readable."""
+    return [name for name, _ in _declared_entries(req)]
 
 
 # Where a stakeholder↔requirement tie came from. The first three are EVIDENCE — a fact
@@ -342,7 +358,8 @@ def _approval_voters(project_id: str) -> dict:
 
 
 def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
-    """{req_id: [{"who", "source", "archived"}]} — every RECORDED tie with its provenance.
+    """{req_id: [{"who", "source", "archived", "note"}]} — every RECORDED tie, with its
+    provenance and the BA's own reason where they gave one.
 
     Nothing here is written back. `owner` is 7.1's field and the votes are 5.5's record;
     a stored copy would say the wrong name the moment either owner changed theirs, which
@@ -371,14 +388,15 @@ def _stakeholder_evidence(project_id: str, repo: dict) -> dict:
         found: list = []
         seen: set = set()
 
-        def _add(who: str, source: str) -> None:
+        def _add(who: str, source: str, note: str = "") -> None:
             key = (reg_norm(who), source)
             if key[0] and key not in seen:
                 seen.add(key)
-                found.append({"who": who, "source": source, "archived": archived})
+                found.append({"who": who, "source": source, "archived": archived,
+                              "note": note})
 
-        for name in _declared_concerns(req):
-            _add(name, CONCERN_DECLARED)
+        for name, note in _declared_entries(req):
+            _add(name, CONCERN_DECLARED, note)
         owner = req.get("owner")
         if isinstance(owner, str):
             _add(owner.strip(), CONCERN_OWNER)
@@ -402,7 +420,8 @@ def _ties_for_labels(labels: set, evidence: dict) -> list:
         for item in items:
             if reg_norm(item["who"]) in labels:
                 ties.append({"req_id": req_id, "source": item["source"],
-                             "archived": item.get("archived", False)})
+                             "archived": item.get("archived", False),
+                             "note": item.get("note", "")})
     return sorted(ties, key=lambda t: (t["req_id"], t["source"]))
 
 
@@ -524,13 +543,19 @@ def _concern_lines(project_id: str, repo: dict) -> list:
         ]
         title_words, name_pool = _heuristic_pools(repo.get("requirements", []), evidence)
         seen_labels: set = set()
-        label_owner: dict = {}          # normalised registry label -> display name
+        # label -> the display names that answer to it. A LIST, not one name: a role
+        # is not unique, and two people sharing one ("Compliance") used to collapse to
+        # whichever was read first, so the second could never be named in the
+        # same-person hint below (branch review A-4).
+        label_owner: dict = {}
         for sh in people:
             who = sh.get("name") or sh.get("role") or "—"
             labels = registry_labels(sh)
             seen_labels |= labels
             for lab in labels:
-                label_owner.setdefault(lab, who)
+                holders = label_owner.setdefault(lab, [])
+                if who not in holders:
+                    holders.append(who)
             ties = _ties_for_labels(labels, evidence)
             if not ties:
                 # "Nothing at all" and "only a coincidence" are DIFFERENT states, and
@@ -557,6 +582,14 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 f"- **{who}** — {count} {noun}: "
                 f"{_group_refs((t['req_id'], t['source'], t['archived']) for t in ties)}"
                 f"{all_archived}")
+            # The BA's own `why`. It was stored by `declare_stakeholder_interest`,
+            # invited by its docstring — and read by nobody: one write, zero reads.
+            # The concerns section is the single place a sponsor needs that reason,
+            # so a field tested as data and never as output stayed invisible
+            # (branch review B-4).
+            for req_id, why in sorted({(t["req_id"], t["note"]) for t in ties
+                                       if t["note"]}):
+                lines.append(f"  - `{req_id}`: {why}")
 
         # People the analyst tied to a requirement who are NOT in the registry.
         # `declare_stakeholder_interest` accepts them on purpose — the registry is a
@@ -585,12 +618,29 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 # the owner field. Say which registry member they resemble, so the same
                 # human is not read as two (live-run finding L-4, produced by the fix
                 # for L-2 and caught only by re-reading the assembled page).
-                same = next(
-                    (label_owner[lab] for lab in sorted(label_owner)
-                     if _heuristic_hit({key}, {lab})),
-                    "",
+                #
+                # It is a SUBSTRING match and it says so. "Compliance Officer" against a
+                # registry row {"name": "Ivan Petrov", "role": "Compliance"} welded two
+                # different named humans together on the strength of one shared word,
+                # and stated it flatly — the only heuristic claim on this branch that
+                # did not name itself as one (branch review A-4). Every match is listed,
+                # not just whichever came first alphabetically, so the reader can check
+                # the claim against the registry.
+                matched = sorted(
+                    {(lab, name) for lab in label_owner
+                     if _heuristic_hit({key}, {lab})
+                     for name in label_owner[lab]}
                 )
-                hint = f" — possibly the same person as **{same}**" if same else ""
+                hint = ""
+                if matched:
+                    shown = matched[:3]
+                    who_list = ", ".join(f"**{name}** (on `{lab}`)"
+                                         for lab, name in shown)
+                    more = "" if len(matched) <= 3 else f" +{len(matched) - 3} more"
+                    hint = (f" — possibly the same person as {who_list}{more}: a "
+                            f"partial-label match, a coincidence rather than a fact. "
+                            f"If it is the same person, correct the record this tie "
+                            f"came from rather than adding them to the registry.")
                 lines.append(f"- **{entry['display']}** — {count} {noun}: "
                              f"{_group_refs(entry['refs'])}{hint}")
     else:
@@ -1171,11 +1221,19 @@ def declare_stakeholder_interest(
     today = str(date.today())
     key = reg_norm(name)
     changed, skipped = [], []
+    # A `stakeholders` value that is not a list cannot be merged into — it is replaced.
+    # That is the only honest option (there is no way to append a declaration to a dict
+    # somebody hand-edited), but it used to happen in SILENCE, against the promise
+    # "never silently erases" printed in both SKILL.md and the user guide. Named in the
+    # reply and kept in the history, so the sentence becomes true (branch review A-7).
+    replaced: dict = {}
 
     for rid in dict.fromkeys(req_ids):          # order kept, duplicates in ONE call collapsed
         req = by_id[rid]
         current = req.get("stakeholders")
         if not isinstance(current, list):
+            if current is not None:
+                replaced[rid] = current
             current = []
         present = key in {reg_norm(_concern_name(e)) for e in current}
 
@@ -1197,6 +1255,11 @@ def declare_stakeholder_interest(
                 req["stakeholders"] = current + [entry]
                 changed.append(rid)
 
+    # Only the requirements actually WRITTEN can have lost anything: a `remove` that
+    # matched nothing never reassigns the field, so the stored value is untouched and
+    # claiming it was replaced would be its own false statement.
+    replaced = {rid: value for rid, value in replaced.items() if rid in changed}
+
     if changed:
         # Normalised by TYPE before appending, the way `load_stakeholder_registry`
         # does it for the same field and for the same reason. `setdefault` only
@@ -1206,14 +1269,19 @@ def declare_stakeholder_interest(
         # disappeared from memory as well as from the file (branch review R-3).
         if not isinstance(repo.get("history"), list):
             repo["history"] = []
-        repo["history"].append({
+        entry = {
             "action": "stakeholder_interest_removed" if remove
                       else "stakeholder_interest_declared",
             "stakeholder": name,
             "req_ids": changed,
             "source": "7.4_architecture",
             "date": today,
-        })
+        }
+        if replaced:
+            # Nothing is ever deleted in this project — a discarded hand-edit is data
+            # too, and the history is where it survives.
+            entry["replaced"] = replaced
+        repo["history"].append(entry)
         _save_repo(repo, project_id)
 
     verb = "removed from" if remove else "declared on"
@@ -1226,6 +1294,15 @@ def declare_stakeholder_interest(
         lines.append(
             f"   ℹ️ {state} {len(skipped)}: {', '.join(f'`{r}`' for r in skipped)}"
         )
+
+    if replaced:
+        lines += [
+            "",
+            f"⚠️ Replaced, not merged: {', '.join(f'`{r}`' for r in sorted(replaced))} "
+            f"held a `stakeholders` value that is not a list of declarations, so it "
+            f"could not be appended to. The previous value is preserved under "
+            f"`replaced` in the repository history.",
+        ]
 
     # A STATUS is not a TYPE. A deprecated requirement is still a requirement, so the
     # call is ACCEPTED — refusing it (the treatment risks and business goals get) would

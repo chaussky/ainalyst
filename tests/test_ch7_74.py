@@ -1015,14 +1015,25 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         # about which ties are live. Asserted in full, not by subset: a field that
         # silently stops being written is exactly what a subset assertion hides.
         self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared",
-                                         "archived": False}])
+                                         "archived": False, "note": ""}])
 
     def test_the_owner_is_evidence_labelled_with_its_chapter(self):
         repo = make_repo("ev74b", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Ivan Petrov"
         ev = mod74._stakeholder_evidence("ev74b", repo)
         self.assertEqual(ev["FR-001"], [{"who": "Ivan Petrov", "source": "7.1:owner",
-                                         "archived": False}])
+                                         "archived": False, "note": ""}])
+
+    def test_the_note_travels_with_the_declaration(self):
+        # `note` was a write-only field until branch review B-4: stored, invited by the
+        # docstring, read by nobody. It rides with the tie so the document can print it.
+        repo = make_repo("ev74n", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [
+            {"name": "Sales Head", "note": "owns the revenue report"}]
+        ev = mod74._stakeholder_evidence("ev74n", repo)
+        self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared",
+                                         "archived": False,
+                                         "note": "owns the revenue report"}])
 
     def test_the_archived_flag_follows_the_requirement_status(self):
         repo = make_repo("ev74m", [
@@ -1030,7 +1041,7 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         repo["requirements"][0]["stakeholders"] = [{"name": "Sales Head"}]
         ev = mod74._stakeholder_evidence("ev74m", repo)
         self.assertEqual(ev["FR-001"], [{"who": "Sales Head", "source": "declared",
-                                         "archived": True}])
+                                         "archived": True, "note": ""}])
 
     def test_a_5_5_vote_on_this_requirement_is_evidence(self):
         self._write_approvals("ev74c", {"PKG-001": {"req_ids": ["FR-001"],
@@ -1039,7 +1050,7 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         repo = make_repo("ev74c", [make_req("FR-001", "functional", "Auto routing")])
         ev = mod74._stakeholder_evidence("ev74c", repo)
         self.assertEqual(ev["FR-001"], [{"who": "Priya Nair", "source": "5.5:approval",
-                                         "archived": False}])
+                                         "archived": False, "note": ""}])
 
     def test_a_rejection_counts_as_interest_too(self):
         # Interest is not agreement: someone who voted AGAINST a requirement is the
@@ -2270,6 +2281,149 @@ class TestNothingThatUsedToBeSilentBecomesCritical(BaseMCPTest):
         result = mod74.check_architecture_gaps("a3_74e")
         self.assertIn("`Priya Nair` has no recorded tie", result)
         self.assertIn("🔴 Critical | 1", result)
+
+
+class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
+    """Branch review A-4. The one heuristic claim on the branch that did not say so.
+
+    Reproduced: registry {"name": "Ivan Petrov", "role": "Compliance"} and an owner
+    field reading "Compliance Officer" produced "**Compliance Officer** — 1 requirement:
+    `FR-001` (7.1:owner) — possibly the same person as **Ivan Petrov**". Two different
+    named humans, welded together by the word "compliance", stated flatly. Every other
+    heuristic statement in this feature names itself as one.
+
+    `sorted(label_owner)` also picked one match alphabetically and hid the rest, so the
+    document could not even be checked against its own data.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def test_the_hint_says_what_matched_and_that_it_is_a_coincidence(self):
+        repo = make_repo("a4_74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Compliance Officer"
+        save_repo(repo)
+        save_stakeholder_registry("a4_74", [{"name": "Ivan Petrov",
+                                             "role": "Compliance"}])
+        doc = self._doc("a4_74")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("possibly the same person as **Ivan Petrov**", concerns)
+        self.assertIn("compliance", concerns)
+        self.assertIn("coincidence", concerns)
+
+    def test_every_registry_member_that_matches_is_named_not_just_the_first(self):
+        repo = make_repo("a4_74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "Compliance Officer"
+        save_repo(repo)
+        # Two humans sharing ONE role label. `label_owner.setdefault` kept only the
+        # first, so the second could not be named however the match was picked —
+        # the other half of A-4's "chosen alphabetically among several matches".
+        save_stakeholder_registry("a4_74b", [
+            {"name": "Ivan Petrov", "role": "Compliance"},
+            {"name": "Zoe Adams", "role": "Compliance"},
+        ])
+        doc = self._doc("a4_74b")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        hint = concerns.split("not in the 4.2 registry")[1]
+        self.assertIn("Ivan Petrov", hint)
+        self.assertIn("Zoe Adams", hint)
+
+    def test_an_exact_short_form_still_reads_as_one_person(self):
+        # The L-4 fixture must keep working: this is the case the hint exists for.
+        repo = make_repo("a4_74c", [make_req("FR-001", "functional", "Retention")])
+        repo["requirements"][0]["owner"] = "Priya"
+        save_repo(repo)
+        save_stakeholder_registry("a4_74c", [{"name": "Priya Nair", "role": "Compl"}])
+        doc = self._doc("a4_74c")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("possibly the same person as **Priya Nair**", concerns)
+
+
+class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
+    """Branch review A-7 and B-4 — two halves of the same promise.
+
+    A-7: a `stakeholders` value that is not a list is REPLACED, and the tool said
+    nothing. SKILL.md and the user guide both promise the platform "never silently
+    erases". The replacement stays — a hand-edited dict cannot be merged into a list of
+    declarations — but it is now named, so the sentence is true.
+
+    B-4: `note` was a write-only field. One write, zero reads: the docstring invites the
+    BA to record WHY the interests are touched, and the concerns section — the one place
+    a sponsor needs that "why" — never showed it. Tested as data, never as output.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _repo(self, pid="a7_74"):
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing"),
+                                  make_req("FR-002", "functional", "Notifications")]))
+        save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
+        return pid
+
+    def test_replacing_a_non_list_stakeholders_value_is_named_in_the_reply(self):
+        pid = self._repo()
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = {"name": "Old Note", "why": "keep me"}
+        save_repo(repo)
+        result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        self.assertIn("FR-001", result)
+        self.assertIn("replaced", result.lower())
+
+    def test_the_discarded_value_is_kept_in_the_repository_history(self):
+        # "Never delete data" is a project rule, not a preference.
+        pid = self._repo("a7_74b")
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = {"name": "Old Note", "why": "keep me"}
+        save_repo(repo)
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        path = data_path(pid, f"{pid}_traceability_repo.json")
+        with open(path, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+        replaced = [h for h in stored["history"] if h.get("replaced")]
+        self.assertTrue(replaced, "the discarded value must survive somewhere")
+        self.assertEqual(replaced[0]["replaced"]["FR-001"],
+                         {"name": "Old Note", "why": "keep me"})
+
+    def test_an_ordinary_list_value_produces_no_such_warning(self):
+        pid = self._repo("a7_74c")
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        result = mod74.declare_stakeholder_interest(pid, "Data Architect", '["FR-001"]')
+        self.assertNotIn("replaced", result.lower())
+
+    def test_the_note_reaches_the_delivered_document(self):
+        pid = self._repo("b4_74")
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                           note="owns the revenue report these feed")
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("owns the revenue report these feed", concerns)
+        self.assertIn("FR-001", concerns)
+
+    def test_a_declaration_without_a_note_adds_no_empty_line(self):
+        pid = self._repo("b4_74b")
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("**Sales Head** — 1 requirement: `FR-001` (declared)", concerns)
+        self.assertNotIn("  - `FR-001`:", concerns)
+
+    def test_each_note_says_which_requirement_it_belongs_to(self):
+        pid = self._repo("b4_74c")
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
+                                           note="revenue")
+        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-002"]',
+                                           note="SLA reporting")
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("`FR-001`: revenue", concerns)
+        self.assertIn("`FR-002`: SLA reporting", concerns)
 
 
 if __name__ == "__main__":
