@@ -191,6 +191,86 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         self.assertIn("🟡 No owner", result)
 
 
+class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
+    """Branch review R-4. The advice line hard-coded ONE tool's name for every
+    attribute, and it is the wrong tool for three of the twelve.
+
+    `update_requirement` has thirteen parameters and none of them writes `source` or
+    `stakeholders`; `last_reviewed` is stamped by the platform and can never be
+    "filled in" by hand at all. `source` is the heavy half: a node created by the
+    standard `init_traceability_repo` has no `source` key, and the Minimum preset —
+    the smallest and commonest — audits it. So the false line fires on the DEFAULT
+    route of every project with a 3.4 plan, and has done since long before ADR-098.
+
+    The owner's decision was to keep `stakeholders` in PLANNABLE_ATTRIBUTES and fix
+    the advice: the list documents what the platform can STORE, and striking an
+    attribute out of it to route around a defect in another module would write a
+    falsehood into the shared vocabulary.
+    """
+
+    def test_source_is_not_blamed_on_update_requirement(self):
+        _write_repo(PROJECT, [dict(BARE_REQ, owner="PO")])
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
+        result = check_requirements_health(PROJECT)
+        advice = result.split("Recommended actions")[1]
+        self.assertIn("source", advice)
+        self.assertIn("init_traceability_repo", advice)
+
+    def test_stakeholders_points_at_its_own_writer_in_7_4(self):
+        _write_repo(PROJECT, [dict(BARE_REQ, owner="PO", source="Interview")])
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
+                                             "additional": ["stakeholders"]}})
+        result = check_requirements_health(PROJECT)
+        advice = result.split("Recommended actions")[1]
+        self.assertIn("declare_stakeholder_interest", advice)
+        self.assertIn("7.4", advice)
+
+    def test_last_reviewed_is_named_as_platform_stamped_not_as_a_chore(self):
+        _write_repo(PROJECT, [dict(BARE_REQ, owner="PO", source="Interview")])
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
+                                             "additional": ["last_reviewed"]}})
+        result = check_requirements_health(PROJECT)
+        advice = result.split("Recommended actions")[1]
+        self.assertIn("stamped by the platform", advice)
+
+    def test_the_nine_ordinary_attributes_still_name_update_requirement(self):
+        _write_repo(PROJECT, [dict(BARE_REQ, owner="PO", source="Interview")])
+        _write_plan(PROJECT, {"attributes": {"preset": "Standard", "additional": []}})
+        result = check_requirements_health(PROJECT)
+        advice = result.split("Recommended actions")[1]
+        self.assertIn("update_requirement", advice)
+        self.assertIn("priority", advice)
+
+    def test_a_mixed_set_routes_each_attribute_to_its_own_writer(self):
+        _write_repo(PROJECT, [dict(BARE_REQ)])
+        _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
+                                             "additional": ["owner", "stakeholders"]}})
+        result = check_requirements_health(PROJECT)
+        advice = result.split("Recommended actions")[1]
+        self.assertIn("update_requirement", advice)
+        self.assertIn("init_traceability_repo", advice)
+        self.assertIn("declare_stakeholder_interest", advice)
+
+    def test_the_advice_is_one_line_however_many_writers_are_involved(self):
+        _write_repo(PROJECT, [dict(BARE_REQ)])
+        _write_plan(PROJECT, {"attributes": {"preset": "Full",
+                                             "additional": ["stakeholders"]}})
+        result = check_requirements_health(PROJECT)
+        actions = result.split("Recommended actions")[1]
+        self.assertEqual(actions.count("unfilled attributes"), 1)
+        self.assertNotIn("2. 🟡 **", actions.split("not updated in a while")[0])
+
+    def test_the_plan_less_wording_is_untouched_byte_for_byte(self):
+        # The legacy branch has a byte-for-byte contract and is deliberately out of
+        # scope: a project with no 3.4 plan must not see one new character.
+        _write_repo(PROJECT, [dict(BARE_REQ)])
+        result = check_requirements_health(PROJECT)
+        self.assertIn(
+            "1. 🟡 **1 without an owner** — assign an owner via `update_requirement`.",
+            result)
+        self.assertNotIn("init_traceability_repo", result)
+
+
 from skills.requirements_maintain_mcp import find_reusable_requirements
 
 REUSABLE = {"id": "BR-001", "type": "business", "title": "KYC check",

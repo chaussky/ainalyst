@@ -132,6 +132,14 @@ same as two facts the platform already holds:
 Document read them directly and say where each tie came from, so a person who owns a
 requirement or voted on it in 5.5 already counts as covered.
 
+⚠️ **Ownership is computed on the fly, so handing it over can silently uncover
+somebody.** Because 7.4 reads `owner` at check time instead of storing a copy (nothing
+here can go stale), a single `update_requirement(new_owner = ...)` in 5.2 can turn the
+previous owner into a **new critical gap**: their one recorded tie was the owner field,
+and it now points at somebody else. 5.2 warns when it happens. If the previous owner's
+interests are still touched, record that here with `declare_stakeholder_interest` — a
+declared interest is the one tie the platform keeps.
+
 **Repeat calls MERGE** — a second call never erases what an earlier one recorded. To
 withdraw a declaration, call again with `remove = True`. The reply always prints counts
 ("declared on 2 requirement(s)", "already declared on 1"), so a no-op is visible.

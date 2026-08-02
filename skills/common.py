@@ -872,6 +872,43 @@ PLANNABLE_ATTRIBUTES = (
     "stakeholders",
 )
 
+# WHICH TOOL actually writes each plannable attribute. Nine of the twelve are
+# `update_requirement`'s parameters; three are not, and the 5.2 audit named
+# `update_requirement` for all of them because the tool's name was hard-coded into the
+# advice line.
+#
+# The heavy one is `source`, and it predates ADR-098 by a long way: a node created by
+# the standard `init_traceability_repo` has no `source` key at all (it has
+# `source_artifact`, a different field), and the Minimum preset — the smallest and
+# commonest — audits `source`. So the false advice fires on the DEFAULT route of every
+# project that ever wrote a 3.4 plan. The writer exists; it is simply not the tool the
+# line named.
+#
+# Kept next to PLANNABLE_ATTRIBUTES so the two cannot drift: an attribute added to that
+# tuple without a writer here is a promise the platform cannot keep (branch review R-4).
+ATTRIBUTE_WRITERS = {
+    "status": "`update_requirement` (5.2)",
+    "version": "`update_requirement` (5.2)",
+    "priority": "`update_requirement` (5.2)",
+    "owner": "`update_requirement` (5.2)",
+    "stability": "`update_requirement` (5.2)",
+    "complexity": "`update_requirement` (5.2)",
+    "reuse_candidate": "`update_requirement` (5.2)",
+    "reuse_scope": "`update_requirement` (5.2)",
+    "title": "`update_requirement` (5.2)",
+    "source": "`init_traceability_repo` (5.1 — re-state the requirement; it merges "
+              "by `stated` rather than duplicating)",
+    "stakeholders": "`declare_stakeholder_interest` (7.4, `design` phase)",
+    "last_reviewed": "stamped by the platform on every update (nothing to fill in "
+                     "by hand — drop it from the plan if it keeps showing up)",
+}
+
+
+def attribute_writer(attribute: str) -> str:
+    """The tool that can fill `attribute` in, or a safe fallback for an unknown one."""
+    return ATTRIBUTE_WRITERS.get(attribute, "`update_requirement` (5.2)")
+
+
 # Mirrors the table in skills/requirements_maintain/SKILL.md ("Always" / "Standard+"
 # / "Full") — that prose existed with nothing selecting it. `last_reviewed` is in no
 # preset on purpose: the platform stamps it on every update, so it would flag every

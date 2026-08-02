@@ -32,6 +32,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     read_json_artifact, guard_artifact_errors,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
     load_ba_plan, planned_attribute_set, planned_reuse, REUSE_SCOPES,
+    attribute_writer, reg_norm,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -406,7 +407,27 @@ def update_requirement(
         f"| Last reviewed | {req.get('last_reviewed', '—')} |",
     ]
 
-    content = "\n".join(lines) + volatility_warning
+    # Handing ownership over is a one-line edit here and a NEW 🔴 gap in 7.4 — ADR-098
+    # reads `owner` on demand rather than storing a copy (so no copy can go stale), and
+    # the price of that decision is that the previous owner's only recorded tie can
+    # vanish with this call. Reproduced live: 🔴 0 before, 🔴 1 after, and the
+    # architecture document moved the previous owner to "no interest recorded" without
+    # anybody saying so (branch review B-3). Warn, never block: the BA may have meant
+    # exactly this — they simply have to be able to see it.
+    ownership_note = ""
+    previous_owner = str(old_values.get("owner", "") or "").strip()
+    if previous_owner and previous_owner != "—" and \
+            reg_norm(previous_owner) != reg_norm(new_owner):
+        ownership_note = (
+            f"\n\n⚠️ **Ownership moved away from `{previous_owner}`.** 7.4 computes "
+            f"stakeholder↔requirement ties from `owner` ON THE FLY (ADR-098) rather "
+            f"than storing them, so `{previous_owner}` may now show up in "
+            f"`check_architecture_gaps` as having no recorded tie to any requirement. "
+            f"If their interests are still touched, record that with 7.4 "
+            f"`declare_stakeholder_interest` — it is the one tie the platform keeps."
+        )
+
+    content = "\n".join(lines) + volatility_warning + ownership_note
 
     # Export hook
     hook_result = _export_hook(
@@ -821,9 +842,24 @@ def check_requirements_health(
                 # document contradicting itself inside one page.
                 missing_names = sorted({name for r in attr_gaps
                                         for name in r["missing_attributes"]})
+                # Routed through the shared table instead of hard-coding one tool's
+                # name. `update_requirement` cannot write `source` or `stakeholders` —
+                # it has no parameter for either — and `last_reviewed` is stamped by
+                # the platform, so the old line sent the BA to a tool that would have
+                # refused three of the twelve audited attributes. `source` in
+                # particular is audited by the Minimum preset, so the wrong advice
+                # fired on the default route of every planned project (R-4).
+                by_writer: dict = {}
+                for name in missing_names:
+                    by_writer.setdefault(attribute_writer(name), []).append(name)
+                routes = "; ".join(
+                    f"{', '.join(names)} → {writer}"
+                    for writer, names in sorted(by_writer.items(),
+                                                key=lambda kv: kv[1][0])
+                )
                 actions.append(
                     f"🟡 **{len(attr_gaps)} with unfilled attributes** "
-                    f"({', '.join(missing_names)}) — fill them in via `update_requirement`.")
+                    f"({', '.join(missing_names)}) — fill them in: {routes}.")
             else:
                 # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
                 actions.append(

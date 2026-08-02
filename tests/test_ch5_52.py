@@ -542,5 +542,57 @@ class TestIntegration52(BaseMCPTest):
         self.assertGreaterEqual(len(data.get("history", [])), 3)
 
 
+class TestHandingOverOwnershipWarnsAboutTheArchitectureSide(BaseMCPTest):
+    """Branch review B-3. A one-line 5.2 edit manufactured a new 🔴 in 7.4 in silence.
+
+    ADR-098 decided that ownership is READ on demand and never copied, precisely so no
+    stored copy can go stale. The cost of that decision is that changing `owner` here
+    silently rewrites who 7.4 considers represented: the previous owner drops to "no
+    recorded tie to any requirement" and the architecture document moves them to "no
+    interest recorded". Nowhere did the platform mention it.
+
+    Not blocked — warned. The BA may well have meant exactly that; they just have to
+    be able to see it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        _setup_repo()
+
+    def _call(self, **overrides):
+        kwargs = {"project_name": PROJECT, "req_id": "BR-001",
+                  "change_reason": "team change", **overrides}
+        with patch("skills.requirements_maintain_mcp.save_artifact"):
+            return mod52.update_requirement(**kwargs)
+
+    def test_replacing_an_owner_says_what_it_does_to_7_4_coverage(self):
+        self._call(new_owner="David Kim")
+        result = self._call(new_owner="Marta Silva")
+        self.assertIn("David Kim", result)
+        self.assertIn("declare_stakeholder_interest", result)
+        self.assertIn("7.4", result)
+
+    def test_the_hint_names_the_mechanism_not_just_the_symptom(self):
+        # A warning that does not say WHY reads as noise and gets ignored.
+        self._call(new_owner="David Kim")
+        result = self._call(new_owner="Marta Silva")
+        self.assertIn("on the fly", result.lower())
+
+    def test_setting_an_owner_where_there_was_none_warns_about_nobody(self):
+        # Nothing was taken away from anyone, so there is nothing to warn about.
+        result = self._call(new_owner="David Kim")
+        self.assertNotIn("declare_stakeholder_interest", result)
+
+    def test_re_stating_the_same_owner_warns_about_nobody(self):
+        self._call(new_owner="David Kim")
+        result = self._call(new_owner="david kim", new_status="approved")
+        self.assertNotIn("declare_stakeholder_interest", result)
+
+    def test_an_update_that_does_not_touch_the_owner_says_nothing(self):
+        self._call(new_owner="David Kim")
+        result = self._call(new_status="approved")
+        self.assertNotIn("declare_stakeholder_interest", result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
