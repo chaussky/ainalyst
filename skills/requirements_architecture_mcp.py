@@ -537,6 +537,36 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
     return title_words, outside_pool, name_pool
 
 
+# What a coincidence pool can say about a stakeholder who has no exact tie. Values are
+# internal keys, never printed: each surface writes its own sentence from them.
+COINCIDENCE_NONE = ""
+COINCIDENCE_REQUIREMENT = "requirement_side"
+COINCIDENCE_OUTSIDE = "outside_requirements"
+
+
+def _coincidence_kind(labels: set, title_words: set, name_pool: set,
+                      outside_pool: set) -> str:
+    """Which coincidence — if any — reaches this person. DECIDED HERE, rendered twice.
+
+    ORDER IS LOAD-BEARING and it is the reason this function exists. "Traceable only
+    OUTSIDE the requirements" is the WEAKEST of the three claims, and the word `only`
+    makes it false the moment anything on the requirement side matches. The gap report
+    and the delivered document each grew their own branch order — report
+    title -> outside -> name, document (title or name) -> outside — and a person
+    matching BOTH sides got two different descriptions of one state, the report's
+    being contradicted three lines below on its own page.
+
+    Aligning two hand-written orders would have held only until a fourth state
+    appeared. Two surfaces describing one object must not each carry their own copy of
+    the rule; that is the T8-3 lesson, and this fix is where it applies to itself.
+    """
+    if _heuristic_hit(labels, title_words) or _heuristic_hit(labels, name_pool):
+        return COINCIDENCE_REQUIREMENT
+    if _heuristic_hit(labels, outside_pool):
+        return COINCIDENCE_OUTSIDE
+    return COINCIDENCE_NONE
+
+
 def _heuristic_hit(labels: set, pool: set) -> bool:
     """Bidirectional substring with the 4-character floor — the pre-ADR-098 rule.
 
@@ -683,10 +713,20 @@ def _concern_lines(project_id: str, repo: dict) -> list:
         # whichever was read first, so the second could never be named in the
         # same-person hint below (branch review A-4).
         label_owner: dict = {}
+        # normalised label -> the registry's OWN wording for it. `registry_labels`
+        # returns comparison keys, and the hint below used to print one of those
+        # straight into the delivered page: a sponsor read "(on `priya nair`)",
+        # lower-cased and whitespace-collapsed, which is the platform's internal
+        # value, not anything a human typed (re-review RR-2). Same class as the empty
+        # backticks `stakeholder_id` used to render.
+        label_text: dict = {}
         for sh in people:
             who = _md_label(sh.get("name") or sh.get("role") or "—")
             labels = registry_labels(sh)
             seen_labels |= labels
+            for raw in (sh.get("name"), sh.get("role")):
+                if isinstance(raw, str) and raw.strip():
+                    label_text.setdefault(reg_norm(raw), raw.strip())
             for lab in labels:
                 holders = label_owner.setdefault(lab, [])
                 if who not in holders:
@@ -698,20 +738,14 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 # for both erased a distinction the platform had drawn one tool over
                 # (live-run finding L-3), and left the sponsor unable to see why one
                 # person was a critical gap and the other only a warning.
-                if (_heuristic_hit(labels, title_words)
-                        or _heuristic_hit(labels, name_pool)):
+                kind = _coincidence_kind(labels, title_words, name_pool, outside_pool)
+                if kind == COINCIDENCE_REQUIREMENT:
                     lines.append(
                         f"- **{who}** — no exact tie recorded; reachable only by a "
                         f"partial name or title match (a coincidence, not a fact). "
                         f"Confirm with `declare_stakeholder_interest`."
                     )
-                elif _heuristic_hit(labels, outside_pool):
-                    # The gap report calls this state "traceable only OUTSIDE the
-                    # requirements". Saying "a partial name or title match" here sent
-                    # the reader into the requirements, where there is nothing to
-                    # find — two surfaces describing one person in words that point
-                    # opposite ways is the T8-3 class, one layer up from the pool the
-                    # two already share.
+                elif kind == COINCIDENCE_OUTSIDE:
                     lines.append(
                         f"- **{who}** — no tie among the requirements; reachable only "
                         f"through something recorded outside them — a risk (6.3), a "
@@ -789,7 +823,7 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 if matched:
                     shown = matched[:3]
                     who_list = ", ".join(
-                        f"**{_md_label(name)}** (on `{_md_id(lab)}`)"
+                        f"**{_md_label(name)}** (on `{_md_id(label_text.get(lab, lab))}`)"
                         for lab, name in shown)
                     more = "" if len(matched) <= 3 else f" +{len(matched) - 3} more"
                     hint = (f" — possibly the same person as {who_list}{more}: a "
@@ -1660,20 +1694,14 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 })
                 continue
 
-            title_hit = any(
-                label in word or word in label
-                for label in labels
-                for word in title_words
-                if len(word) >= 4
-            )
-            outside_hit = _heuristic_hit(labels, outside_pool)
-            name_hit = any(
-                label in entry or entry in label
-                for label in labels
-                for entry in name_pool
-                if len(entry) >= 4
-            )
-            if title_hit:
+            # WHICH SIDE reaches this person is decided once, for both surfaces. This
+            # report is then free to be more specific WITHIN the requirement side —
+            # it has separate wording for a title word and for a partial name — but
+            # it may not disagree with the document about whether anything on the
+            # requirement side matched at all (re-review RR-1).
+            kind = _coincidence_kind(labels, title_words, name_pool, outside_pool)
+            title_hit = _heuristic_hit(labels, title_words)
+            if kind == COINCIDENCE_REQUIREMENT and title_hit:
                 gaps_warning.append({
                     "type": "stakeholder_heuristic_only",
                     "stakeholder_id": sh.get("id", ""),
@@ -1685,7 +1713,19 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                         f"`declare_stakeholder_interest`."
                     ),
                 })
-            elif outside_hit:
+            elif kind == COINCIDENCE_REQUIREMENT:
+                gaps_warning.append({
+                    "type": "stakeholder_heuristic_only",
+                    "stakeholder_id": sh.get("id", ""),
+                    "stakeholder_name": sh.get("name", ""),
+                    "message": (
+                        f"Stakeholder `{who}` is reachable only by a partial name "
+                        f"match (heuristic) — no exact declared interest, no "
+                        f"requirement owned under this exact name, no 5.5 approval "
+                        f"decision. Confirm with `declare_stakeholder_interest`."
+                    ),
+                })
+            elif kind == COINCIDENCE_OUTSIDE:
                 # Everything tying this person to the project sits OUTSIDE the
                 # requirements: a risk title naming their role, a business goal they
                 # were once declared on, a change request they own. Calling that "a
@@ -1704,18 +1744,6 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                         f"declared interest, no requirement owned, no 5.5 approval "
                         f"decision. Record what actually holds with "
                         f"`declare_stakeholder_interest`."
-                    ),
-                })
-            elif name_hit:
-                gaps_warning.append({
-                    "type": "stakeholder_heuristic_only",
-                    "stakeholder_id": sh.get("id", ""),
-                    "stakeholder_name": sh.get("name", ""),
-                    "message": (
-                        f"Stakeholder `{who}` is reachable only by a partial name "
-                        f"match (heuristic) — no exact declared interest, no "
-                        f"requirement owned under this exact name, no 5.5 approval "
-                        f"decision. Confirm with `declare_stakeholder_interest`."
                     ),
                 })
             else:

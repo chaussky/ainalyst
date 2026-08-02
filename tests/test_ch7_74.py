@@ -2355,7 +2355,10 @@ class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
         doc = self._doc("a4_74")
         concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
         self.assertIn("possibly the same person as **Ivan Petrov**", concerns)
-        self.assertIn("compliance", concerns)
+        # The label it matched on, in the registry's own wording. This used to assert
+        # the lower-cased form — that is the comparison key, and asserting it pinned a
+        # leak of an internal value into a signed document (re-review RR-2).
+        self.assertIn("(on `Compliance`)", concerns)
         self.assertIn("coincidence", concerns)
 
     def test_every_registry_member_that_matches_is_named_not_just_the_first(self):
@@ -2945,6 +2948,105 @@ class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
         self.assertNotIn("RISK-001", evidence,
                          "a risk is still not a requirement, and a declaration on "
                          "one is still not coverage")
+
+
+class TestOneVerdictDecidedOnce(BaseMCPTest):
+    """Re-review of the wave's own last round (44dda9f, 0a1668f).
+
+    The fix that gave the "outside the requirements" state its own sentence added the
+    branch to BOTH surfaces — and in a DIFFERENT ORDER. The report asks
+    title -> outside -> name; the document asked (title or name) -> outside. A person
+    matching the requirement side AND the non-requirement side therefore got two
+    different descriptions, and the report's was false:
+
+        REPORT:   `Priya Nair` is traceable only OUTSIDE the requirements …
+                  Nothing among the requirements does
+        DOCUMENT: **Priya Nair** — reachable only by a partial name or title match
+        DOCUMENT: **Priya** — 1 requirement: `FR-001` (7.1:owner) — possibly the same
+                  person as **Priya Nair**
+
+    "Nothing among the requirements does" is contradicted three lines below by the
+    same page: FR-001's owner field carries her name. `only OUTSIDE` is the WEAKEST
+    claim of the three and may fire only when nothing on the requirement side matched.
+
+    Fixed by deciding once, in `_coincidence_kind`, and rendering twice — aligning two
+    hand-written orders would have drifted again the moment a fourth state appears.
+    """
+
+    def _fixture(self, pid):
+        """Both pools hit: `owner` on a REQUIREMENT, and a RISK title."""
+        repo = make_repo(pid, [
+            dict(make_req("FR-001", "functional", "Auto routing"), owner="Priya"),
+            make_req("RISK-001", "risk", "Nair audit blocked"),
+        ])
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Priya Nair", "role": "QA"}])
+
+    def test_only_outside_does_not_fire_when_a_requirement_side_pool_matched(self):
+        pid = "rr1_74"
+        self._fixture(pid)
+        report = mod74.check_architecture_gaps(pid)
+        self.assertNotIn("OUTSIDE the requirements", report,
+                         "FR-001's owner field carries her name — the page says so "
+                         "itself a few lines down")
+        self.assertIn("partial name match", report)
+
+    def test_the_report_and_the_document_say_the_same_thing(self):
+        pid = "rr1_74b"
+        self._fixture(pid)
+        report = mod74.check_architecture_gaps(pid)
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        outside_in_report = "OUTSIDE the requirements" in report
+        outside_in_doc = "recorded outside them" in captured[0]
+        self.assertEqual(outside_in_report, outside_in_doc,
+                         "two surfaces, one person, one verdict")
+
+    def test_the_hint_quotes_the_registry_text_not_the_internal_key(self):
+        """Re-review RR-2. The label it matched on was printed NORMALISED.
+
+        A sponsor read "possibly the same person as **Priya Nair** (on `priya nair`)" —
+        lower-cased, whitespace-collapsed: the platform's comparison key, surfaced in a
+        signed document. Same class as the empty backticks that `stakeholder_id` used
+        to render. The label is worth naming (it tells the BA whether the match came
+        from the name or from the role), so it is kept — in the registry's own words.
+        """
+        pid = "rr2_74"
+        repo = make_repo(pid, [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Compliance Officer"}]
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"name": "Ivan Petrov", "role": "Compliance"}])
+        captured = []
+        original = mod74.save_artifact
+        mod74.save_artifact = (
+            lambda content, prefix="", project_id=None: captured.append(content) or "✅")
+        try:
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        finally:
+            mod74.save_artifact = original
+        doc = captured[0]
+        self.assertIn("possibly the same person as **Ivan Petrov**", doc)
+        self.assertIn("(on `Compliance`)", doc, "the registry's own wording")
+        self.assertNotIn("(on `compliance`)", doc, "not the comparison key")
+
+    def test_the_outside_verdict_still_fires_when_only_that_side_matches(self):
+        """The guard on over-fixing: the state N-2 restored must stay reachable."""
+        pid = "rr1_74c"
+        repo = make_repo(pid, [
+            make_req("FR-001", "functional", "Auto routing"),
+            make_req("RISK-001", "risk", "Compliance officer unavailable"),
+        ])
+        save_repo(repo)
+        save_stakeholder_registry(pid, [{"role": "Compliance"}])
+        report = mod74.check_architecture_gaps(pid)
+        self.assertIn("OUTSIDE the requirements", report)
+        self.assertIn("🔴 Critical | 0", report)
 
 
 class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):
