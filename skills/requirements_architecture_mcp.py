@@ -360,6 +360,62 @@ def _ties_for_labels(labels: set, evidence: dict) -> list:
     return sorted(ties, key=lambda t: (t["req_id"], t["source"]))
 
 
+def _concern_lines(project_id: str, repo: dict) -> list:
+    """The 'Stakeholder concerns' section of the architecture document.
+
+    Every line names the req_id it rests on, because the reader of THIS page must be
+    able to check it: a document renders a subset of the data, and a claim about
+    something outside that subset is unverifiable (the class the 6.4 live run found).
+    """
+    evidence = _stakeholder_evidence(project_id, repo)
+    registry = _load_stakeholders(project_id)
+    people = registry.get("stakeholders", []) if isinstance(registry, dict) else []
+    people = [s for s in people if isinstance(s, dict) and registry_labels(s)]
+
+    lines = ["## Stakeholder concerns", ""]
+
+    if people:
+        lines += [
+            "Whose interests each requirement touches. `declared` is the analyst's own "
+            "statement (7.4); the other sources are facts recorded by another task and "
+            "read here without being copied.",
+            "",
+        ]
+        for sh in people:
+            who = sh.get("name") or sh.get("role") or "—"
+            ties = _ties_for_labels(registry_labels(sh), evidence)
+            if not ties:
+                lines.append(f"- **{who}** — no interest recorded.")
+                continue
+            refs = ", ".join(f"`{t['req_id']}` ({t['source']})" for t in ties)
+            count = len({t["req_id"] for t in ties})
+            noun = "requirement" if count == 1 else "requirements"
+            lines.append(f"- **{who}** — {count} {noun}: {refs}")
+    else:
+        # No registry: the platform has no denominator, so it names what it DID find
+        # and says plainly that the list of people was never checked for completeness.
+        named: dict = {}
+        for req_id, items in evidence.items():
+            for item in items:
+                named.setdefault(item["who"], []).append((req_id, item["source"]))
+        lines.append(
+            "⚠️ Stakeholder registry not found — the list of people was not checked "
+            "for completeness. Below are only the ties recorded on the requirements "
+            "themselves."
+        )
+        lines.append("")
+        for who, refs in sorted(named.items()):
+            joined = ", ".join(f"`{r}` ({s})" for r, s in sorted(refs))
+            count = len({r for r, _ in refs})
+            noun = "requirement" if count == 1 else "requirements"
+            lines.append(f"- **{who}** — {count} {noun}: {joined}")
+        if not named:
+            lines.append("- No stakeholder ties recorded on any requirement.")
+
+    lines.append("")
+    return lines
+
+
 # ---------------------------------------------------------------------------
 # BFS for semantic gap analysis
 # ---------------------------------------------------------------------------
@@ -1517,6 +1573,8 @@ def save_architecture_snapshot(
                         f"| `{rid}` | {req.get('type', '?')} | {req.get('title', '')[:60]} |"
                     )
         doc_lines.append("")
+
+    doc_lines += ["---", ""] + _concern_lines(project_id, repo)
 
     # Gap status
     doc_lines += [

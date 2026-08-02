@@ -39,6 +39,7 @@ import os
 import sys
 import unittest
 from datetime import date
+from unittest.mock import patch
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
@@ -1436,6 +1437,116 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         result = mod74.check_architecture_gaps("gv74m")
         self.assertIn("`Alina Petrova` has no recorded tie", result)
         self.assertIn("🔴 Critical | 1", result)
+
+
+class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
+    """Assertions go against the DELIVERED document, not the reply.
+
+    `save_architecture_snapshot` sends the document to save_artifact and RETURNS a
+    summary — the two are different texts, and asserting the block against the return
+    value would pass vacuously forever.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached — "
+                                            "check the tool's early returns")
+            return mock_sa.call_args[0][0]
+
+    def test_a_declared_tie_is_shown_with_its_requirement_and_its_source(self):
+        # Every claim must be checkable ON THIS PAGE: the req_id is printed, so the
+        # reader can find it in the viewpoint tables above.
+        repo = make_repo("doc74", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Priya Nair"}]
+        save_repo(repo)
+        save_stakeholder_registry("doc74", [{"name": "Priya Nair", "role": "Compliance"}])
+        doc = self._doc("doc74")
+        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("Priya Nair", doc)
+        self.assertIn("`FR-001` (declared)", doc)
+
+    def test_the_owner_tie_names_its_chapter_in_the_document(self):
+        repo = make_repo("doc74b", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        save_stakeholder_registry("doc74b", [{"name": "David Kim", "role": "SIU"}])
+        doc = self._doc("doc74b")
+        self.assertIn("`FR-001` (7.1:owner)", doc)
+
+    def test_a_stakeholder_with_no_tie_is_a_state_not_an_accusation(self):
+        save_repo(make_repo("doc74c", [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry("doc74c", [{"name": "Priya Nair", "role": "Compliance"}])
+        doc = self._doc("doc74c")
+        self.assertIn("no interest recorded", doc)
+
+    def test_without_a_registry_the_section_says_the_list_was_not_checked(self):
+        # The denominator is a claim about the domain too: with no registry the
+        # platform must not imply the list of people is complete.
+        repo = make_repo("doc74d", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        doc = self._doc("doc74d")
+        self.assertIn("stakeholder registry not found", doc.lower())
+        self.assertIn("David Kim", doc)
+
+    def test_the_section_lands_before_the_gaps_section(self):
+        # Placement matters: anything appended after `"\n".join(doc_lines)` is dead
+        # code that neither errors nor prints — the 6.4 Task-4 trap.
+        repo = make_repo("doc74e", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        save_stakeholder_registry("doc74e", [{"name": "David Kim"}])
+        doc = self._doc("doc74e")
+        self.assertLess(doc.index("## Stakeholder concerns"),
+                        doc.index("## Architecture gaps"))
+
+    def test_the_summary_reply_does_not_contain_the_section(self):
+        # Documents the asymmetry so a later reader does not "fix" the test by
+        # asserting against the return value.
+        repo = make_repo("doc74f", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        save_stakeholder_registry("doc74f", [{"name": "David Kim"}])
+        with patch.object(mod74, "save_artifact"):
+            reply = mod74.save_architecture_snapshot("doc74f", "v1.0")
+        self.assertNotIn("## Stakeholder concerns", reply)
+
+    def test_one_tie_and_two_ties_both_read_correctly(self):
+        # A number branch that inflects one of two agreeing words is half a fix — check
+        # BOTH forms in one test, not only the one the run happened to hit.
+        repo = make_repo("doc74g", [make_req("FR-001", "functional", "Auto routing"),
+                                    make_req("FR-002", "functional", "Notifications")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Solo Person"}]
+        repo["requirements"][1]["stakeholders"] = [{"name": "Busy Person"}]
+        repo["requirements"][0]["owner"] = "Busy Person"
+        save_repo(repo)
+        save_stakeholder_registry("doc74g", [{"name": "Solo Person"}, {"name": "Busy Person"}])
+        doc = self._doc("doc74g")
+        self.assertIn("1 requirement", doc)
+        self.assertIn("2 requirements", doc)
+        self.assertNotIn("1 requirements", doc)
+
+    def test_a_null_stakeholders_field_does_not_lose_the_document(self):
+        # An explicit null, not a deleted key — different guards, and this is the one
+        # `.get(k, default)` does nothing about.
+        repo = make_repo("doc74h", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["stakeholders"] = None
+        save_repo(repo)
+        save_stakeholder_registry("doc74h", [{"name": "David Kim"}])
+        doc = self._doc("doc74h")
+        self.assertIn("## Stakeholder concerns", doc)
+
+    def test_a_registry_row_with_neither_name_nor_role_is_not_rendered(self):
+        # Mirrors the gaps-side guard
+        # (test_a_registry_row_with_neither_name_nor_role_is_silently_skipped): a row
+        # with nothing to key on is not identifiable, so the document must not
+        # fabricate a "—" bullet for it.
+        repo = make_repo("doc74i", [make_req("FR-001", "functional", "Auto routing")])
+        save_repo(repo)
+        save_stakeholder_registry("doc74i", [{"name": "", "role": ""}])
+        doc = self._doc("doc74i")
+        self.assertNotIn("**—**", doc)
 
 
 if __name__ == "__main__":
