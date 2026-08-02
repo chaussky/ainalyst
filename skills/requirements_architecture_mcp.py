@@ -1186,47 +1186,22 @@ def declare_stakeholder_interest(
 # 7.4.3 — check_architecture_gaps
 # ---------------------------------------------------------------------------
 
-@mcp.tool()
-@guard_artifact_errors
-def check_architecture_gaps(
-    project_id: str,
-) -> str:
+def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
+    """(critical, warning, info) — the gap analysis, computed from what is on disk NOW.
+
+    Lives in ONE function because TWO tools state its result: `check_architecture_gaps`
+    prints it, and `save_architecture_snapshot` puts it in the signed document. The
+    snapshot used to read `arch["gaps"]`, frozen by whenever the check last ran — and
+    the workflow this chapter's own SKILL.md teaches is "check gaps → declare the
+    interests you know → save the snapshot", so the ordinary route produced a document
+    whose concerns section said a stakeholder was tied to `FR-001` and whose gap block,
+    ten lines below, said the same stakeholder had no tie to anything (branch review
+    A-1). Both halves were computed correctly; only one of them was computed now.
+
+    Comparing timestamps instead would not have caught it: both files stamp `updated`
+    as a DATE, and the whole route runs inside a single session.
     """
-    BABOK 7.4 — Checks the requirements architecture for gaps at two levels (ADR-038).
-
-    Level 1 — Coverage matrix:
-      - Stakeholder with no recorded tie to any requirement → critical (ADR-098:
-        declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
-        alone is a warning, not a verdict)
-      - Stakeholder reachable only by a title-word match → warning
-      - BG without viewpoint coverage (from business_context 7.3) → warning
-      - Empty viewpoint (a viewpoint with no req) → info
-
-    Level 2 — Semantic gaps (uses the 5.1 link graph):
-      - UC without a corresponding BP → warning
-      - NFR without a link to an FR → warning
-      - FR without a UC or US → info
-
-    Args:
-        project_id: Project identifier.
-
-    Returns:
-        A gap report with severity: critical / warning / info.
-        Severity does not block — it only informs (project pattern).
-    """
-    logger.info(f"check_architecture_gaps: project_id='{project_id}'")
-
-    repo = _load_repo(project_id)
     all_reqs = repo.get("requirements", [])
-    reqs_by_id = {r["id"]: r for r in all_reqs}
-
-    if not all_reqs:
-        return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty.\n\n"
-            f"First create requirements via the 7.1 tools."
-        )
-
-    arch = _load_architecture(project_id)
 
     # Build current views (auto + custom)
     auto_views = _build_views_from_repo(repo)
@@ -1235,9 +1210,9 @@ def check_architecture_gaps(
         if not vp_data.get("auto", True):
             views[vp_key] = vp_data.get("req_ids", [])
 
-    gaps_critical = []
-    gaps_warning = []
-    gaps_info = []
+    gaps_critical: list = []
+    gaps_warning: list = []
+    gaps_info: list = []
 
     # ------------------------------------------------------------------
     # LEVEL 1: Coverage matrix
@@ -1443,12 +1418,62 @@ def check_architecture_gaps(
                 ),
             })
 
-    # Save gaps to the architecture
-    arch["gaps"] = {
+    return gaps_critical, gaps_warning, gaps_info
+
+
+def _gaps_as_messages(gaps_critical: list, gaps_warning: list, gaps_info: list) -> dict:
+    """The `gaps` block as it is stored on the architecture file — messages only."""
+    return {
         "critical": [g["message"] for g in gaps_critical],
         "warning": [g["message"] for g in gaps_warning],
         "info": [g["message"] for g in gaps_info],
     }
+
+
+@mcp.tool()
+@guard_artifact_errors
+def check_architecture_gaps(
+    project_id: str,
+) -> str:
+    """
+    BABOK 7.4 — Checks the requirements architecture for gaps at two levels (ADR-038).
+
+    Level 1 — Coverage matrix:
+      - Stakeholder with no recorded tie to any requirement → critical (ADR-098:
+        declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
+        alone is a warning, not a verdict)
+      - Stakeholder reachable only by a title-word match → warning
+      - BG without viewpoint coverage (from business_context 7.3) → warning
+      - Empty viewpoint (a viewpoint with no req) → info
+
+    Level 2 — Semantic gaps (uses the 5.1 link graph):
+      - UC without a corresponding BP → warning
+      - NFR without a link to an FR → warning
+      - FR without a UC or US → info
+
+    Args:
+        project_id: Project identifier.
+
+    Returns:
+        A gap report with severity: critical / warning / info.
+        Severity does not block — it only informs (project pattern).
+    """
+    logger.info(f"check_architecture_gaps: project_id='{project_id}'")
+
+    repo = _load_repo(project_id)
+    all_reqs = repo.get("requirements", [])
+
+    if not all_reqs:
+        return (
+            f"⚠️ The 5.1 repository for project `{project_id}` is empty.\n\n"
+            f"First create requirements via the 7.1 tools."
+        )
+
+    arch = _load_architecture(project_id)
+    gaps_critical, gaps_warning, gaps_info = _compute_gaps(project_id, repo, arch)
+
+    # Save gaps to the architecture
+    arch["gaps"] = _gaps_as_messages(gaps_critical, gaps_warning, gaps_info)
     _save_architecture(arch)
 
     # ------------------------------------------------------------------
@@ -1586,6 +1611,19 @@ def save_architecture_snapshot(
 
     arch = _load_architecture(project_id)
 
+    # Check for duplicate version FIRST. Everything below mutates `arch` — the
+    # viewpoints, the views and (since A-1) the recomputed gaps — and this early
+    # return must leave the stored file exactly as it found it, or the BA would be
+    # told nothing was recorded while the gap block had already been rewritten.
+    existing_versions = [s["version"] for s in arch.get("snapshots", [])]
+    if version in existing_versions:
+        return (
+            f"⚠️ Version `{version}` already exists in the snapshots of project `{project_id}`.\n"
+            f"Existing versions: {', '.join(existing_versions)}\n"
+            f"Use the next version, for example: "
+            f"`{version.replace('v', 'v').split('.')[0]}.{int(version.split('.')[-1]) + 1}`"
+        )
+
     # Build current views
     auto_views = _build_views_from_repo(repo)
     all_views = {**auto_views}
@@ -1606,11 +1644,18 @@ def save_architecture_snapshot(
         }
     arch["views"] = all_views
 
+    # Gaps are RECOMPUTED, not read back. The section above this one is computed live
+    # at save time, and the workflow SKILL.md teaches puts `declare_stakeholder_interest`
+    # BETWEEN the gap check and the snapshot — so a stored block would state, ten lines
+    # under a resolved tie, that the same person is tied to nothing (branch review A-1).
+    gaps_critical, gaps_warning, gaps_info = _compute_gaps(project_id, repo, arch)
+    gaps = _gaps_as_messages(gaps_critical, gaps_warning, gaps_info)
+    arch["gaps"] = gaps
+
     # Summary statistics for the snapshot
     total_reqs = len([r for r in all_reqs if r.get("type", "") not in SKIP_TYPES])
     viewpoints_count = len(all_views)
     custom_count = len(custom_viewpoints)
-    gaps = arch.get("gaps", {"critical": [], "warning": [], "info": []})
     summary = {
         "total_reqs": total_reqs,
         "viewpoints_count": viewpoints_count,
@@ -1627,16 +1672,6 @@ def save_architecture_snapshot(
         "notes": notes or "",
         "summary": summary,
     }
-
-    # Check for duplicate version
-    existing_versions = [s["version"] for s in arch.get("snapshots", [])]
-    if version in existing_versions:
-        return (
-            f"⚠️ Version `{version}` already exists in the snapshots of project `{project_id}`.\n"
-            f"Existing versions: {', '.join(existing_versions)}\n"
-            f"Use the next version, for example: "
-            f"`{version.replace('v', 'v').split('.')[0]}.{int(version.split('.')[-1]) + 1}`"
-        )
 
     arch["snapshots"].append(snapshot)
     _save_architecture(arch)

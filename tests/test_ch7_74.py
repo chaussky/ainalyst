@@ -1820,5 +1820,100 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         self.assertIn("**Helen Vasquez** — no interest recorded", concerns)
 
 
+class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
+    """Branch review A-1. The delivered document contradicted itself along the route
+    this chapter's own SKILL.md prescribes.
+
+    `_concern_lines` is computed LIVE at save time; the "Architecture gaps" block ten
+    lines below it read `arch["gaps"]`, frozen by the last `check_architecture_gaps`.
+    The standard workflow is 4 `check_architecture_gaps` → 5 "resolve critical gaps:
+    declare the interests you know" → 6 `save_architecture_snapshot`, so the stale
+    block is what the ordinary route produces, not an edge case.
+
+    Marking the block "possibly stale" instead was structurally blind to the finding:
+    both files stamp `updated` as a DATE, and the whole route runs inside one session,
+    so a same-day comparison always says "fresh".
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached")
+            return mock_sa.call_args[0][0]
+
+    def _project(self, pid):
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(pid, [{"name": "Priya Nair", "role": "Compliance"}])
+        return pid
+
+    def test_a_gap_resolved_between_the_check_and_the_snapshot_is_gone_from_the_document(self):
+        pid = self._project("a1_74")
+        report = mod74.check_architecture_gaps(pid)
+        self.assertIn("🔴 Critical | 1", report)
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
+        doc = self._doc(pid)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        gaps_block = doc.split("## Architecture gaps")[1]
+        self.assertIn("`FR-001` (declared)", concerns)
+        self.assertIn("| 🔴 Critical | 0 |", gaps_block)
+        self.assertNotIn("has no recorded tie", gaps_block)
+
+    def test_the_reply_stops_claiming_an_unresolved_gap_that_was_resolved(self):
+        pid = self._project("a1_74b")
+        mod74.check_architecture_gaps(pid)
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
+        with patch.object(mod74, "save_artifact"):
+            reply = mod74.save_architecture_snapshot(pid, "v1.0")
+        self.assertIn("| 🔴 Critical gaps | 0 |", reply)
+        self.assertNotIn("critical gap(s) not resolved", reply)
+
+    def test_a_gap_that_appeared_after_the_check_is_in_the_snapshot(self):
+        # The other direction: recomputing must not only ever lower the number.
+        pid = "a1_74c"
+        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(pid, [{"name": "Priya Nair", "role": "Compliance"}])
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
+        report = mod74.check_architecture_gaps(pid)
+        self.assertIn("🔴 Critical | 0", report)
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]', remove=True)
+        doc = self._doc(pid)
+        gaps_block = doc.split("## Architecture gaps")[1]
+        self.assertIn("| 🔴 Critical | 1 |", gaps_block)
+        self.assertIn("has no recorded tie", gaps_block)
+
+    def test_the_snapshot_stores_the_recomputed_gaps_on_the_architecture_file(self):
+        pid = self._project("a1_74d")
+        mod74.check_architecture_gaps(pid)
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
+        with patch.object(mod74, "save_artifact"):
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        self.assertEqual(load_arch(pid)["gaps"]["critical"], [])
+
+    def test_a_refused_duplicate_version_writes_nothing_at_all(self):
+        # The recompute rides along with `_save_architecture`, so it must sit AFTER
+        # the duplicate-version guard: an early return that had already rewritten
+        # the gaps would be a write the BA was told did not happen.
+        pid = self._project("a1_74e")
+        mod74.check_architecture_gaps(pid)
+        with patch.object(mod74, "save_artifact"):
+            mod74.save_architecture_snapshot(pid, "v1.0")
+        before = json.dumps(load_arch(pid), sort_keys=True)
+        mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            reply = mod74.save_architecture_snapshot(pid, "v1.0")
+            self.assertFalse(mock_sa.called)
+        self.assertIn("already exists", reply)
+        self.assertEqual(json.dumps(load_arch(pid), sort_keys=True), before)
+
+    def test_the_snapshot_and_the_gap_report_agree_without_calling_the_check_at_all(self):
+        # A project that never runs `check_architecture_gaps` used to sign a document
+        # whose gap table was all zeros because nothing had ever filled it in.
+        pid = self._project("a1_74f")
+        doc = self._doc(pid)
+        gaps_block = doc.split("## Architecture gaps")[1]
+        self.assertIn("| 🔴 Critical | 1 |", gaps_block)
+        self.assertIn("`Priya Nair` has no recorded tie", gaps_block)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
