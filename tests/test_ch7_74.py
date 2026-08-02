@@ -1595,5 +1595,133 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         self.assertIn("2 requirements", doc)
 
 
+class TestLiveRunFindings74(BaseMCPTest):
+    """Three defects a live run found by READING the delivered document.
+
+    None of them is reachable by grep: each one is a true statement sitting next to
+    another true statement, and only the assembled page shows the contradiction.
+    """
+
+    def _doc(self, project_id, version="v1.0"):
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mod74.save_architecture_snapshot(project_id, version)
+            self.assertTrue(mock_sa.called, "save_artifact was not reached — "
+                                            "check the tool's early returns")
+            return mock_sa.call_args[0][0]
+
+    def test_two_sources_on_one_requirement_are_one_reference_not_two(self):
+        """L-1. The count said "1 requirement" and the list showed `FR-001` twice.
+
+        Both halves were literally true — one requirement, two sources — but a reader
+        sees a count that disagrees with the list beneath it and stops trusting the
+        page. Sources belong grouped under the requirement they are sources for.
+        """
+        repo = make_repo("live74a", [make_req("FR-001", "functional", "Shift handover")])
+        repo["requirements"][0]["owner"] = "Marcus Webb"
+        repo["requirements"][0]["stakeholders"] = [{"name": "Marcus Webb"}]
+        save_repo(repo)
+        save_stakeholder_registry("live74a", [{"name": "Marcus Webb", "role": "Nurse"}])
+        doc = self._doc("live74a")
+        self.assertIn("`FR-001` (7.1:owner, declared)", doc)
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertEqual(concerns.count("`FR-001`"), 1,
+                         "one requirement must be referenced once, however many "
+                         "sources vouch for it")
+        self.assertIn("1 requirement:", concerns)
+
+    def test_a_person_declared_but_absent_from_the_registry_is_still_shown(self):
+        """L-2. The tool said "recorded anyway"; the document showed nothing.
+
+        `declare_stakeholder_interest` deliberately accepts a stakeholder the registry
+        does not know — the registry is a living document. But the section was built by
+        walking the REGISTRY, so that person appeared nowhere, and the analyst who was
+        told the declaration was recorded could not find it on the page.
+        """
+        repo = make_repo("live74b", [make_req("FR-001", "functional", "Consent capture")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(repo)
+        save_stakeholder_registry("live74b", [{"name": "Ivan Petrov", "role": "PO"}])
+        doc = self._doc("live74b")
+        self.assertIn("Helen Vasquez", doc)
+        self.assertIn("not in the 4.2 registry", doc)
+        self.assertIn("`FR-001` (declared)", doc)
+
+    def test_a_heuristic_only_stakeholder_is_not_reported_as_having_nothing(self):
+        """L-3. Two people in different states rendered identically.
+
+        `owner: "Priya"` against a registry row "Priya Nair" is a heuristic match — the
+        gap report says so and calls it a warning. The document said "no interest
+        recorded", the same words it used for a stakeholder with nothing at all, so the
+        page erased a distinction the platform had already drawn.
+        """
+        repo = make_repo("live74c", [
+            make_req("FR-001", "functional", "Retention schedule"),
+            make_req("FR-002", "functional", "Bulk export"),
+        ])
+        repo["requirements"][0]["owner"] = "Priya"
+        save_repo(repo)
+        save_stakeholder_registry("live74c", [
+            {"name": "Priya Nair", "role": "Compliance"},
+            {"name": "Marcus Webb", "role": "Nurse"},
+        ])
+        doc = self._doc("live74c")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
+        self.assertIn("**Marcus Webb** — no interest recorded", concerns)
+        self.assertNotIn("**Priya Nair** — no interest recorded", concerns)
+
+    def test_a_short_form_of_a_registry_name_is_flagged_as_probably_the_same_person(self):
+        """L-4, produced by the fix for L-2 and found by re-reading the page.
+
+        `owner: "Priya"` against a registry row "Priya Nair" now appears TWICE: above as
+        a registry member with no exact tie, and below as an unknown party. They are one
+        human, and the advice attached to the lower entry ("add them to the registry") is
+        actively wrong for them — the fix is to correct the owner field, not the registry.
+        """
+        repo = make_repo("live74e", [make_req("FR-001", "functional", "Retention schedule")])
+        repo["requirements"][0]["owner"] = "Priya"
+        save_repo(repo)
+        save_stakeholder_registry("live74e", [{"name": "Priya Nair", "role": "Compliance"}])
+        doc = self._doc("live74e")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("possibly the same person as **Priya Nair**", concerns)
+
+    def test_a_genuinely_unknown_party_carries_no_same_person_hint(self):
+        """The other side of the branch: a name that resembles nobody in the registry
+        must not acquire a hint, or the hint means nothing."""
+        repo = make_repo("live74f", [make_req("FR-001", "functional", "Retention schedule")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "Helen Vasquez"}]
+        save_repo(repo)
+        save_stakeholder_registry("live74f", [{"name": "Ivan Petrov", "role": "PO"}])
+        doc = self._doc("live74f")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("**Helen Vasquez**", concerns)
+        self.assertNotIn("possibly the same person", concerns)
+
+    def test_the_two_states_agree_with_the_gap_report(self):
+        """The document and the gap report must not disagree about the same person.
+
+        Same fixture as above, read through the other tool: whoever the report calls a
+        warning must not be the one the document calls empty, and vice versa.
+        """
+        repo = make_repo("live74d", [
+            make_req("FR-001", "functional", "Retention schedule"),
+            make_req("FR-002", "functional", "Bulk export"),
+        ])
+        repo["requirements"][0]["owner"] = "Priya"
+        save_repo(repo)
+        save_stakeholder_registry("live74d", [
+            {"name": "Priya Nair", "role": "Compliance"},
+            {"name": "Marcus Webb", "role": "Nurse"},
+        ])
+        report = mod74.check_architecture_gaps("live74d")
+        self.assertIn("🔴 Critical | 1", report)
+        self.assertIn("🟡 Warning | 1", report)
+        doc = self._doc("live74d")
+        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
+        self.assertIn("**Marcus Webb** — no interest recorded", concerns)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

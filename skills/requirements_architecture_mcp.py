@@ -369,6 +369,60 @@ def _ties_for_labels(labels: set, evidence: dict) -> list:
     return sorted(ties, key=lambda t: (t["req_id"], t["source"]))
 
 
+def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
+    """The two coincidence pools a label can match: title words, and recorded names.
+
+    Lives here, called from BOTH `check_architecture_gaps` and `_concern_lines`, because
+    the gap report and the delivered document describe the same person and must not
+    reach different conclusions about them. Two copies of this rule would drift, and the
+    drift would surface as one page contradicting another in front of a sponsor.
+    """
+    title_words: set = set()
+    for req in all_reqs:
+        if isinstance(req, dict):
+            title_words.update(str(req.get("title") or "").lower().split())
+    name_pool: set = set()
+    for items in evidence.values():
+        for item in items:
+            who_norm = reg_norm(item.get("who"))
+            if who_norm:
+                name_pool.add(who_norm)
+    return title_words, name_pool
+
+
+def _heuristic_hit(labels: set, pool: set) -> bool:
+    """Bidirectional substring with the 4-character floor — the pre-ADR-098 rule.
+
+    Kept verbatim from the old flat-bucket check so the set of stakeholders it called
+    "represented" stays a subset of (silent | warning) and no upgrade turns an existing
+    project's silence into a critical finding.
+    """
+    return any(
+        label in entry or entry in label
+        for label in labels
+        for entry in pool
+        if len(entry) >= 4
+    )
+
+
+def _group_refs(refs) -> str:
+    """`FR-001` (7.1:owner, declared) — one reference per requirement, sources folded in.
+
+    A requirement backed by two sources used to render as two entries, so the count
+    ("1 requirement") disagreed with the list under it. Both halves were true and the
+    page still read as broken (live-run finding L-1).
+    """
+    by_req: dict = {}
+    for req_id, source in refs:
+        by_req.setdefault(req_id, [])
+        if source not in by_req[req_id]:
+            by_req[req_id].append(source)
+    return ", ".join(
+        f"`{req_id}` ({', '.join(sorted(sources))})"
+        for req_id, sources in sorted(by_req.items())
+    )
+
+
 def _concern_lines(project_id: str, repo: dict) -> list:
     """The 'Stakeholder concerns' section of the architecture document.
 
@@ -390,16 +444,71 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             "read here without being copied.",
             "",
         ]
+        title_words, name_pool = _heuristic_pools(repo.get("requirements", []), evidence)
+        seen_labels: set = set()
+        label_owner: dict = {}          # normalised registry label -> display name
         for sh in people:
             who = sh.get("name") or sh.get("role") or "—"
-            ties = _ties_for_labels(registry_labels(sh), evidence)
+            labels = registry_labels(sh)
+            seen_labels |= labels
+            for lab in labels:
+                label_owner.setdefault(lab, who)
+            ties = _ties_for_labels(labels, evidence)
             if not ties:
-                lines.append(f"- **{who}** — no interest recorded.")
+                # "Nothing at all" and "only a coincidence" are DIFFERENT states, and
+                # the gap report already distinguishes them. Printing the same words
+                # for both erased a distinction the platform had drawn one tool over
+                # (live-run finding L-3), and left the sponsor unable to see why one
+                # person was a critical gap and the other only a warning.
+                if _heuristic_hit(labels, title_words) or _heuristic_hit(labels, name_pool):
+                    lines.append(
+                        f"- **{who}** — no exact tie recorded; reachable only by a "
+                        f"partial name or title match (a coincidence, not a fact). "
+                        f"Confirm with `declare_stakeholder_interest`."
+                    )
+                else:
+                    lines.append(f"- **{who}** — no interest recorded.")
                 continue
-            refs = ", ".join(f"`{t['req_id']}` ({t['source']})" for t in ties)
             count = len({t["req_id"] for t in ties})
             noun = "requirement" if count == 1 else "requirements"
-            lines.append(f"- **{who}** — {count} {noun}: {refs}")
+            lines.append(f"- **{who}** — {count} {noun}: "
+                         f"{_group_refs((t['req_id'], t['source']) for t in ties)}")
+
+        # People the analyst tied to a requirement who are NOT in the registry.
+        # `declare_stakeholder_interest` accepts them on purpose — the registry is a
+        # living document — and says "recorded anyway". Walking only the registry made
+        # that recording invisible on the page, so the analyst was told one thing and
+        # shown another (live-run finding L-2).
+        outside: dict = {}
+        for req_id, items in evidence.items():
+            for item in items:
+                key = reg_norm(item["who"])
+                if not key or key in seen_labels:
+                    continue
+                entry = outside.setdefault(key, {"display": item["who"], "refs": []})
+                entry["refs"].append((req_id, item["source"]))
+        if outside:
+            lines += ["", "**Tied to requirements but not in the 4.2 registry** — add "
+                          "them with `update_stakeholder_registry` so the coverage "
+                          "check can see them:", ""]
+            for key in sorted(outside, key=lambda k: outside[k]["display"]):
+                entry = outside[key]
+                count = len({r for r, _ in entry["refs"]})
+                noun = "requirement" if count == 1 else "requirements"
+                # A short form of a registry name ("Priya" for "Priya Nair") lands here
+                # because the label did not match EXACTLY — and then the block's advice,
+                # "add them to the registry", is wrong for them: the thing to correct is
+                # the owner field. Say which registry member they resemble, so the same
+                # human is not read as two (live-run finding L-4, produced by the fix
+                # for L-2 and caught only by re-reading the assembled page).
+                same = next(
+                    (label_owner[lab] for lab in sorted(label_owner)
+                     if _heuristic_hit({key}, {lab})),
+                    "",
+                )
+                hint = f" — possibly the same person as **{same}**" if same else ""
+                lines.append(f"- **{entry['display']}** — {count} {noun}: "
+                             f"{_group_refs(entry['refs'])}{hint}")
     else:
         # No usable registry rows — but this covers TWO different facts, and the
         # document must not conflate them: the file may genuinely be absent, or it
@@ -437,12 +546,11 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 entry["refs"].append((req_id, item["source"]))
         for key in sorted(named, key=lambda k: named[k]["display"]):
             entry = named[key]
-            who = entry["display"]
             refs = entry["refs"]
-            joined = ", ".join(f"`{r}` ({s})" for r, s in sorted(refs))
             count = len({r for r, _ in refs})
             noun = "requirement" if count == 1 else "requirements"
-            lines.append(f"- **{who}** — {count} {noun}: {joined}")
+            lines.append(f"- **{entry['display']}** — {count} {noun}: "
+                         f"{_group_refs(refs)}")
         if not named:
             lines.append("- No stakeholder ties recorded on any requirement.")
 
@@ -1126,22 +1234,11 @@ def check_architecture_gaps(
         # warning that names its own weakness.
         evidence = _stakeholder_evidence(project_id, repo)
 
-        title_words: set = set()
-        for req in all_reqs:
-            title_words.update(str(req.get("title") or "").lower().split())
-
-        # Every name evidence ever recorded ANY tie under (owner / declared / 5.5
-        # voter, across ALL requirements) — the second heuristic pool. A registry
-        # row that only partially matches one of these strings is exactly the case
-        # the old flat-bucket heuristic covered (`needle in mention or mention in
-        # needle`); folding it in here keeps that old "represented" set a subset of
-        # (silent ∪ warning), so no input that used to be silent can become critical.
-        name_pool: set = set()
-        for items in evidence.values():
-            for item in items:
-                who_norm = reg_norm(item.get("who"))
-                if who_norm:
-                    name_pool.add(who_norm)
+        # The two coincidence pools. Built by the SAME helper the delivered document
+        # uses, so the report and the document cannot reach different conclusions
+        # about the same person — two copies of this rule would drift, and the drift
+        # would surface as one page contradicting another in front of a sponsor.
+        title_words, name_pool = _heuristic_pools(all_reqs, evidence)
 
         for sh in all_stakeholders:
             labels = registry_labels(sh)
