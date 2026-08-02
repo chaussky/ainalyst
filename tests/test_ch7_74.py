@@ -1542,11 +1542,57 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         # (test_a_registry_row_with_neither_name_nor_role_is_silently_skipped): a row
         # with nothing to key on is not identifiable, so the document must not
         # fabricate a "—" bullet for it.
+        #
+        # Fix review round 1: the file WAS found here — it just has no identifiable
+        # rows — so the document must not say "not found" either. That claim is
+        # false and a sponsor cannot tell "nobody registered yet" from "the
+        # registry step was skipped entirely".
         repo = make_repo("doc74i", [make_req("FR-001", "functional", "Auto routing")])
         save_repo(repo)
         save_stakeholder_registry("doc74i", [{"name": "", "role": ""}])
         doc = self._doc("doc74i")
         self.assertNotIn("**—**", doc)
+        self.assertNotIn("registry not found", doc.lower())
+        self.assertIn("no identifiable people", doc)
+
+    def test_an_empty_registry_list_is_not_reported_as_not_found(self):
+        # A registry persisted as {"stakeholders": []} — the ordinary shape the
+        # first time elicitation runs with nobody identified yet. The file exists
+        # and was read; the document must say THAT, not that it was not found.
+        #
+        # NOTE: `save_stakeholder_registry(pid, [])` cannot express this — its
+        # `stakeholders or [default row]` falls back to a non-empty default on an
+        # empty list, since `[]` is falsy. Writing the registry file directly here
+        # to get a genuinely empty list on disk.
+        repo = make_repo("doc74j", [make_req("FR-001", "functional", "Auto routing")])
+        repo["requirements"][0]["owner"] = "David Kim"
+        save_repo(repo)
+        os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+        with open(os.path.join("governance_plans", "data", "doc74j_stakeholder_registry.json"),
+                  "w", encoding="utf-8") as f:
+            json.dump({"project": "doc74j", "stakeholders": [], "history": []}, f)
+        doc = self._doc("doc74j")
+        self.assertIn("no identifiable people", doc)
+        self.assertNotIn("not found", doc.lower())
+        self.assertIn("David Kim", doc)
+
+    def test_the_no_registry_fallback_merges_case_variants_of_one_person(self):
+        # `_stakeholder_evidence` stores `who` verbatim and normalises only for
+        # comparison. Two producer tasks (7.4's declaration, 7.1's owner field) can
+        # type the same human differently — "David Kim" vs "david kim" — and
+        # grouping by the raw string split one person into two under-reporting
+        # bullets (fix review round 1). Grouping by identity keeps them as one.
+        repo = make_repo("doc74k", [make_req("FR-001", "functional", "Auto routing"),
+                                    make_req("FR-002", "functional", "Notifications")])
+        repo["requirements"][0]["stakeholders"] = [{"name": "David Kim"}]
+        repo["requirements"][1]["owner"] = "david kim"
+        save_repo(repo)
+        doc = self._doc("doc74k")
+        self.assertEqual(doc.count("**David Kim**"), 1)
+        self.assertNotIn("**david kim**", doc)
+        self.assertIn("`FR-001` (declared)", doc)
+        self.assertIn("`FR-002` (7.1:owner)", doc)
+        self.assertIn("2 requirements", doc)
 
 
 if __name__ == "__main__":

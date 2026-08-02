@@ -392,19 +392,44 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             noun = "requirement" if count == 1 else "requirements"
             lines.append(f"- **{who}** — {count} {noun}: {refs}")
     else:
-        # No registry: the platform has no denominator, so it names what it DID find
-        # and says plainly that the list of people was never checked for completeness.
-        named: dict = {}
+        # No usable registry rows — but this covers TWO different facts, and the
+        # document must not conflate them: the file may genuinely be absent, or it
+        # may have been read successfully and simply hold nobody identifiable yet
+        # (e.g. `{"stakeholders": []}` on the very first elicitation pass). Saying
+        # "not found" in the second case is a false claim on a signed document — the
+        # same denominator-is-a-claim problem this function's own docstring warns
+        # about, only inverted (fix review round 1).
+        if registry is None:
+            lines.append(
+                "⚠️ Stakeholder registry not found — the list of people was not checked "
+                "for completeness. Below are only the ties recorded on the requirements "
+                "themselves."
+            )
+        else:
+            lines.append(
+                "⚠️ Stakeholder registry has no identifiable people — none of its rows "
+                "carries a name or a role, so completeness could not be checked against "
+                "it. Below are only the ties recorded on the requirements themselves."
+            )
+        lines.append("")
+
+        # Grouped by IDENTITY (reg_norm), not by the raw string: two producer tasks
+        # (7.4's declaration, 7.1's owner field) type the same human differently —
+        # "David Kim" vs "david kim" — and keying on the raw text split one person
+        # into two bullets, each under-reporting their own tie count (fix review
+        # round 1). The first spelling encountered is kept for display.
+        named: dict = {}  # reg_norm(who) -> {"display": who, "refs": [(req_id, source), ...]}
         for req_id, items in evidence.items():
             for item in items:
-                named.setdefault(item["who"], []).append((req_id, item["source"]))
-        lines.append(
-            "⚠️ Stakeholder registry not found — the list of people was not checked "
-            "for completeness. Below are only the ties recorded on the requirements "
-            "themselves."
-        )
-        lines.append("")
-        for who, refs in sorted(named.items()):
+                key = reg_norm(item["who"])
+                if not key:
+                    continue
+                entry = named.setdefault(key, {"display": item["who"], "refs": []})
+                entry["refs"].append((req_id, item["source"]))
+        for key in sorted(named, key=lambda k: named[k]["display"]):
+            entry = named[key]
+            who = entry["display"]
+            refs = entry["refs"]
             joined = ", ".join(f"`{r}` ({s})" for r, s in sorted(refs))
             count = len({r for r, _ in refs})
             noun = "requirement" if count == 1 else "requirements"
