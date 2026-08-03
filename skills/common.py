@@ -302,8 +302,28 @@ def project_id_suggestion(project_id) -> str:
     return candidate
 
 
-def project_id_error(project_id) -> Optional[str]:
+def secondary_project_ids_error(values, field: str) -> Optional[str]:
+    """Refusal for a list of project ids taken as INPUT, or None when all are usable.
+
+    Chapters 6.3 and 6.4 accept other projects' ids (`source_project_ids`,
+    `traceability_project_id`) and used to carry them, unchecked, into an artifact
+    saved with a ✅ — the refusal arrived a STEP LATER, from a path helper, once files
+    had already been written, and it said "`project_id` cannot be …" although the
+    analyst's own `project_id` was fine. Validate at the point of parsing, before the
+    first write, and name the field the value actually came from.
+    """
+    for value in values or []:
+        message = project_id_error(value, field=field)
+        if message:
+            return message
+    return None
+
+
+def project_id_error(project_id, field: str = "project_id") -> Optional[str]:
     """The BA-facing refusal for an unusable `project_id`, or None when it is fine.
+
+    `field` names the parameter the value came from, so a bad id inside
+    `source_project_ids` does not report itself as a bad `project_id`.
 
     Returns a string rather than raising so callers that want to ASK (validators,
     tests, a future CLI front-end) do not have to catch. `require_valid_project_id`
@@ -338,8 +358,8 @@ def project_id_error(project_id) -> Optional[str]:
             pass
 
     return (
-        f"❌ `project_id` cannot be `{shown}`.\n"
-        f"   `project_id` is the key to every artifact of the project: it IS the name "
+        f"❌ `{field}` cannot be `{shown}`.\n"
+        f"   `{field}` is the key to every artifact of a project: it IS the name "
         f"of the project's folder, so it has to be spelled exactly the way a folder is "
         f"— lower-case `a-z`, `0-9`, `_` and `-`, starting with a letter or a digit, "
         f"with no spaces and no doubled `_`. Any other spelling would have to be "

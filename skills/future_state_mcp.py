@@ -687,10 +687,19 @@ def define_goals_and_objectives(
     if register_in_traceability:
         repo = _load_repo(project_id)
         if repo is None:
+            # Same unfulfilled promise 6.1 carried: there is no back-fill, registration
+            # is a side effect of THIS call, and 6.2 did not even name the manual route
+            # 6.1 offered — it left the analyst with nothing that works.
             traceability_status = (
-                "\n\n⚠️ The 5.1 traceability repository was not found.\n"
-                "Create it via `init_traceability_repo` (5.1); "
-                f"the `{goal_id}` node of type `business_goal` will then be added automatically."
+                f"\n\n⚠️ The 5.1 traceability repository does not exist yet, so "
+                f"`{goal_id}` was NOT registered in it. Goals recorded from now on will "
+                f"be registered as they are created — this one will not be added "
+                f"retroactively.\n"
+                f"To put it in the graph, create the repository WITH it:\n"
+                f"`init_traceability_repo(project_name='{project_id}', "
+                f"formality_level='Standard', requirements_json='[{{\"id\": \"{goal_id}\", "
+                f"\"type\": \"business_goal\", \"title\": \"...\", \"version\": \"1.0\", "
+                f"\"status\": \"confirmed\"}}]')`"
             )
         else:
             existing_ids = {r["id"] for r in repo["requirements"]}

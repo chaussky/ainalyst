@@ -38,7 +38,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, secondary_project_ids_error,
 )
 
 mcp = FastMCP("BABOK_RiskAssessment")
@@ -220,6 +220,14 @@ def scope_risk_assessment(
     except json.JSONDecodeError:
         return "❌ Error: source_project_ids must be a JSON array, e.g. '[\"crm\"]'"
 
+    # Validate the OTHER projects' ids here, before anything is written. Carried
+    # unchecked, a broken one landed in a saved artifact under a ✅ and the refusal
+    # surfaced a step later, from a path helper, naming `project_id` — which the
+    # analyst had spelled correctly.
+    bad = secondary_project_ids_error(source_ids, "source_project_ids")
+    if bad:
+        return bad
+
     scope = {
         "project_id": project_id,
         "initiative_type": initiative_type,
@@ -283,6 +291,10 @@ def import_risks_from_context(
         source_ids = json.loads(source_project_ids) if source_project_ids.strip() else []
     except json.JSONDecodeError:
         source_ids = []
+
+    bad = secondary_project_ids_error(source_ids, "source_project_ids")
+    if bad:
+        return bad
 
     if not source_ids:
         source_ids = [project_id]
@@ -954,6 +966,11 @@ def save_risk_assessment(
     # --- Optional push to 5.1 traceability ---
     traceability_notes = []
     if push_to_traceability:
+        bad = secondary_project_ids_error(
+            [traceability_project_id] if traceability_project_id else [],
+            "traceability_project_id")
+        if bad:
+            return bad
         repo_pid = traceability_project_id or project_id
         repo_path = _repo_path(project_id, repo_pid)
         if os.path.exists(repo_path):

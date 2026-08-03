@@ -541,7 +541,17 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
     def test_goal_no_repo_warning(self):
         r = _goal(register=True)
-        self.assertIn("not found", r.lower())
+        self.assertIn("does not exist yet", r.lower())
+
+    def test_the_warning_promises_only_what_the_platform_does(self):
+        """G-1. The message used to say that creating the repository would add this
+        node "automatically". There is no back-fill: registration is a side effect of
+        THIS call, so the analyst followed the instruction, got an empty graph, and
+        nothing said so. 6.2 did not even offer the manual route 6.1 mentioned."""
+        r = _goal(register=True)
+        self.assertNotIn("will then be added automatically", r)
+        self.assertIn("not be added retroactively", r)
+        self.assertIn("requirements_json", r, "no route that actually works was named")
 
     def test_goal_register_false_no_repo_needed(self):
         r = _goal(register=False)

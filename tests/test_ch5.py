@@ -199,14 +199,14 @@ class TestMaintainMCP(BaseMCPTest):
 
     def test_update_status(self):
         self._prepare()
-        mod52.update_requirement(self.P, "FR-001", "After 5.5", new_status="approved")
+        mod52.update_requirement(self.P, "FR-001", "After 5.5", new_status="implemented")
         repo = load_test_repo(self.P)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
-        self.assertEqual(fr001["status"], "approved")
+        self.assertEqual(fr001["status"], "implemented")
 
     def test_update_writes_history(self):
         self._prepare()
-        mod52.update_requirement(self.P, "FR-001", "Test", new_status="approved")
+        mod52.update_requirement(self.P, "FR-001", "Test", new_status="implemented")
         repo = load_test_repo(self.P)
         self.assertTrue(any(h["action"] == "requirement_updated" for h in repo["history"]))
 
@@ -219,7 +219,7 @@ class TestMaintainMCP(BaseMCPTest):
 
     def test_update_unknown_id(self):
         self._prepare()
-        result = mod52.update_requirement(self.P, "XX-999", "Test", new_status="approved")
+        result = mod52.update_requirement(self.P, "XX-999", "Test", new_status="implemented")
         self.assertIn("not found", result)
 
     def test_update_no_changes(self):
@@ -275,7 +275,7 @@ class TestMaintainMCP(BaseMCPTest):
     def test_find_reusable_approved_candidate(self):
         self._prepare()
         mod52.update_requirement(self.P, "FR-001", "For reuse",
-                                 new_status="approved", reuse_candidate="true")
+                                 new_status="implemented", reuse_candidate="true")
         result = mod52.find_reusable_requirements(self.P)
         self.assertIn("FR-001", result)
 
@@ -293,12 +293,12 @@ class TestIntegration51_52(BaseMCPTest):
             {"id": "FR-001", "type": "solution", "title": "Test",
              "version": "1.0", "status": "confirmed"}
         ]))
-        mod52.update_requirement(self.P, "FR-001", "Integration", new_status="approved")
+        mod52.update_requirement(self.P, "FR-001", "Integration", new_status="implemented")
         files = list_data_files()
         self.assertEqual(len(files), 1)
         repo = load_test_repo(self.P)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
-        self.assertEqual(fr001["status"], "approved")
+        self.assertEqual(fr001["status"], "implemented")
 
     def test_history_from_both_modules(self):
         mod51.init_traceability_repo(self.P, "Standard", json.dumps([

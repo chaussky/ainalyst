@@ -759,11 +759,20 @@ def define_business_needs(
     if register_in_traceability:
         repo = _load_repo(project_id)
         if repo is None:
+            # This used to promise that creating the repository would pull the node in
+            # "automatically". No such back-fill exists: registration is a side effect
+            # of THIS call, and a graph created afterwards starts empty. The analyst
+            # followed the instruction, got an empty graph, and nothing said so.
             traceability_status = (
-                "\n\n⚠️ The 5.1 traceability repository was not found.\n"
-                "Create it via `init_traceability_repo` (5.1), "
-                f"then the `{need_id}` node of type `business_need` will be added automatically.\n"
-                "To add it manually, use `init_traceability_repo` with this requirement in the list."
+                f"\n\n⚠️ The 5.1 traceability repository does not exist yet, so "
+                f"`{need_id}` was NOT registered in it. Needs recorded from now on will "
+                f"be registered as they are created — this one will not be added "
+                f"retroactively.\n"
+                f"To put it in the graph, create the repository WITH it:\n"
+                f"`init_traceability_repo(project_name='{project_id}', "
+                f"formality_level='Standard', requirements_json='[{{\"id\": \"{need_id}\", "
+                f"\"type\": \"business_need\", \"title\": \"...\", \"version\": \"1.0\", "
+                f"\"status\": \"confirmed\"}}]')`"
             )
         else:
             existing_ids = {r["id"] for r in repo["requirements"]}

@@ -150,6 +150,18 @@ class TestScopeRiskAssessment(BaseMCPTest):
         result = _make_scope(source_project_ids="[]")
         self.assertIn("✅", result)
 
+    def test_a_broken_source_id_is_refused_before_anything_is_written(self):
+        """P3. Secondary ids were carried unchecked into a saved artifact under a ✅,
+        and the refusal arrived a STEP LATER out of a path helper — saying
+        "`project_id` cannot be …" when the analyst's own project_id was correct."""
+        result = _make_scope(source_project_ids='["CRM Upgrade"]')
+        self.assertIn("❌", result)
+        self.assertIn("source_project_ids", result,
+                      "the refusal blamed the wrong parameter")
+        written = [os.path.join(r, f)
+                   for r, _d, fs in os.walk("governance_plans") for f in fs]
+        self.assertEqual(written, [], f"files were written before the refusal: {written}")
+
     def test_scope_invalid_source_ids_json(self):
         result = scope_risk_assessment(
             project_id=PROJECT,

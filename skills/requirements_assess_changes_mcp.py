@@ -531,9 +531,28 @@ def run_cr_impact(
         "",
     ]
 
+    # The count above includes the CR's own targets; the breakdown below groups by link
+    # type, and a target has no link to itself, so it fell out of every group. "Total
+    # nodes affected: 3" over a list of two — a reader adding up the rows gets a
+    # different number from the one printed over them. Give the targets a row of their
+    # own: more informative than shrinking the count, and the two agree again.
+    if target_req_ids:
+        lines += [
+            "### Affected nodes by link type",
+            "",
+            f"**the change itself** — {len(target_req_ids)} requirement(s) the CR "
+            f"rewrites:",
+        ]
+        for rid in target_req_ids:
+            node = _find_node(repo, rid)
+            title = node.get("title", "—") if node else "—"
+            lines.append(f"  - `{rid}` {title}")
+        lines.append("")
+
     # Affected items by link type
     if affected:
-        lines += ["### Affected nodes by link type", ""]
+        if not target_req_ids:
+            lines += ["### Affected nodes by link type", ""]
         relation_comments = {
             "depends": "dependents → may lose meaning",
             "verifies": "tests → need to be reviewed/rewritten",

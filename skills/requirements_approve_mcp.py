@@ -1660,6 +1660,8 @@ def create_requirements_baseline(
         "",
     ]
 
+    if not approved_reqs:
+        record_lines.append("*(none — no requirement in this package reached full approval)*")
     for rid in approved_reqs:
         node = _find_node(repo, rid)
         title = node.get("title", "—") if node else "—"
@@ -1689,6 +1691,8 @@ def create_requirements_baseline(
         ]
 
     record_lines += ["", "---", "", "## Stakeholder decisions", ""]
+    if not baseline_snapshot["stakeholder_summary"]:
+        record_lines.append("*(none — nobody recorded a decision on this package)*")
     for sh_name, sh_summary in baseline_snapshot["stakeholder_summary"].items():
         icon = {"approved": "✅", "conditional": "🟡", "rejected": "❌", "abstained": "⚪"}.get(
             sh_summary["overall_decision"], "—"
@@ -1840,15 +1844,28 @@ def create_requirements_baseline(
                 f"{', '.join(unplanned_authority)}.  ")
         record_lines.append("")
 
+    # Built from what the baseline actually contains. As fixed text it advised handing
+    # a list of approved requirements to development over a baseline holding NONE, next
+    # to two section headings with no body and no word saying they were empty.
+    record_lines += ["", "---", "", "## Next steps", ""]
+    if approved_reqs:
+        record_lines += [
+            "1. Hand off the Approval Record to stakeholders via `prepare_communication_package` (4.4)",
+            f"2. Hand off the {len(approved_reqs)} approved requirement(s) to development (Chapter 6)",
+            "3. Any changes to approved requirements — only via `open_cr` (5.4)",
+        ]
+    else:
+        record_lines += [
+            "⚠️ **This baseline contains no approved requirements.** There is nothing to "
+            "hand on to development, and nothing here is a statement that the scope was "
+            "agreed.",
+            "",
+            "1. Check the package status with `check_approval_status` — it names what is "
+            "pending, rejected or conditional",
+            "2. Collect the missing decisions via `record_approval_decision`, then "
+            "baseline a new version",
+        ]
     record_lines += [
-        "",
-        "---",
-        "",
-        "## Next steps",
-        "",
-        f"1. Hand off the Approval Record to stakeholders via `prepare_communication_package` (4.4)",
-        f"2. Hand off the list of approved requirements to development (Chapter 6)",
-        f"3. Any changes to approved requirements — only via `open_cr` (5.4)",
         "",
         "---",
         "",

@@ -225,7 +225,21 @@ def run_consistency_check(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_3_consistency_check", project_id=project_name)
+    # A CHECK answers a question, so its verdict belongs in the answer — not only in a
+    # file the analyst has to open. Same reasoning as 4.4's schedule check.
+    saved = save_artifact(meta + content, prefix="4_3_consistency_check",
+                          project_id=project_name)
+    verdict = [
+        f"🔎 **Consistency check — {project_name}**",
+        "",
+        f"- Artifacts checked: {len(artifacts)}",
+        f"- Issues: {len(issues)} (🔴 critical: {len(critical)}, "
+        f"🟠 significant: {len(significant)}, 🟡 minor: {len(minor)})",
+        f"- Status: {readiness_status}",
+    ]
+    if needs_clarification:
+        verdict.append("- ⚠️ Clarification needed before continuing")
+    return "\n".join(verdict) + "\n" + saved
 
 
 # ---------------------------------------------------------------------------

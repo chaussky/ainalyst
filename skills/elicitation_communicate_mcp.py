@@ -820,7 +820,27 @@ def check_communication_schedule(
         f"-->\n\n"
     )
 
-    return save_artifact(meta + content, prefix="4_4_comm_schedule", project_id=project_name)
+    # A CHECK's product is the answer, not the file. Returning only the save line meant
+    # the analyst asked "who have I not spoken to in a while?" and got back
+    # "✅ Artifact saved" — which reads as "all clear", and swallowed precisely the
+    # warning that exists to stop that reading. (Contrast the package-building tools of
+    # this module, which deliberately return only the save line: their content is large
+    # and meant for forwarding.)
+    saved = save_artifact(meta + content, prefix="4_4_comm_schedule", project_id=project_name)
+
+    verdict = [f"📡 **Communication schedule check — {project_name}**", ""]
+    if urgent or triggered or followup_due:
+        verdict.append(f"- 🔴 Urgent: {len(urgent)}")
+        verdict.append(f"- 🟠 Triggered by events: {len(triggered)}")
+        verdict.append(f"- 🟡 Follow-up due: {len(followup_due)}")
+    else:
+        verdict.append("- ✅ Nothing overdue among the cadences this tool recognises")
+    if unknown_frequencies or no_cadence_roles:
+        skipped = len(unknown_frequencies) + len(no_cadence_roles)
+        verdict.append(
+            f"- ⚠️ **{skipped} stakeholder(s)/cadence(s) were NOT evaluated** "
+            f"(unrecognised cadence, or none recorded) — this is not a clean bill of health")
+    return "\n".join(verdict) + "\n" + saved
 
 
 # ---------------------------------------------------------------------------

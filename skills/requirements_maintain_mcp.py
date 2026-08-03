@@ -32,7 +32,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     read_json_artifact, guard_artifact_errors,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
     load_ba_plan, planned_attribute_set, planned_reuse, REUSE_SCOPES,
-    attribute_writer, reg_norm, days_since,
+    attribute_writer, reg_norm, days_since, ARCHIVED_REQUIREMENT_STATUSES,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -61,6 +61,16 @@ def _attribute_missing(req: dict, attr: str) -> bool:
 # "Staleness" threshold in days without an update
 STALE_DAYS_WARNING = 30
 STALE_DAYS_CRITICAL = 60
+
+# The closed vocabulary of `status`, as documented by update_requirement. Kept as a
+# constant so the docstring and the check cannot drift apart — the vocabulary was
+# written down and never turned into a check, which is how `new_status="banana"` came
+# to store cleanly.
+STATUS_APPROVED_LITERAL = "approved"
+VALID_REQUIREMENT_STATUSES = {
+    "draft", "confirmed", STATUS_APPROVED_LITERAL, "implemented", "on_hold",
+    "verified", "validated", "pending_approval", "rejected", "under_change",
+} | ARCHIVED_REQUIREMENT_STATUSES
 
 
 # ---------------------------------------------------------------------------
@@ -309,6 +319,36 @@ def update_requirement(
             f"   Levels (7.1): {', '.join(sorted(LEVEL_PRIORITIES))}"
         )
 
+    # `status` has a closed vocabulary too — spelled out in this docstring — and it
+    # routes MORE than priority does: archived-ness, the 5.1/5.2/7.1 filters, and
+    # "proven in practice" in the reuse report. A typo stored cleanly and left the
+    # requirement neither live nor archived, with nothing said.
+    if new_status and new_status not in VALID_REQUIREMENT_STATUSES:
+        return (
+            f"❌ Unknown status `{new_status}`.\n"
+            f"   Allowed: {', '.join(sorted(VALID_REQUIREMENT_STATUSES))}\n"
+            f"   Status routes archiving and every chapter's filters, so an "
+            f"unrecognised value leaves the requirement neither live nor archived."
+        )
+
+    # `approved` is not a description of a requirement — it is the record of an EVENT:
+    # stakeholders read a package and signed it. Setting it here would bypass all four
+    # gates of 5.5 in one call (no A/R rejection, ≥70% approval, no overdue conditions,
+    # 7.2 verification), and 5.2's own reuse report would then present the requirement
+    # as "✅ Approved in 5.5 — proven in practice", citing a procedure that never
+    # happened. Owner's decision, 2026-08-03.
+    if new_status == STATUS_APPROVED_LITERAL:
+        return (
+            f"❌ `approved` cannot be set here.\n"
+            f"   Approval is a decision made by stakeholders, not an attribute the "
+            f"analyst edits: it is recorded by chapter 5.5, which checks that nobody "
+            f"Accountable/Responsible rejected the requirement, that enough people "
+            f"approved, and that its conditions are not overdue.\n"
+            f"   Route: `prepare_approval_package` → `record_approval_decision` → "
+            f"`create_requirements_baseline` (5.5).\n"
+            f"   Nothing has been changed."
+        )
+
     changes = []
     old_values = {}
 
@@ -408,6 +448,41 @@ def update_requirement(
         f"| Last reviewed | {req.get('last_reviewed', '—')} |",
     ]
 
+    # A node's MEANING changed (its wording, or its stage) — so ask the graph what was
+    # resting on it. The check used to hang on the NAME of the operation:
+    # `deprecate_requirements` warned about incoming links, `update_requirement` did
+    # not, although renaming is the worse case. Deprecating makes the edges look
+    # suspect; renaming leaves them looking healthy while they go on justifying
+    # requirements written against different words.
+    meaning_note = ""
+    incoming = [lnk for lnk in repo.get("links", [])
+                if lnk.get("to") == req_id
+                and lnk.get("relation") in ("satisfies", "derives", "verifies")]
+    if new_title and incoming:
+        by_id = ", ".join(sorted({f"`{lnk['from']}`" for lnk in incoming}))
+        meaning_note = (
+            f"\n\n⚠️ **{len(incoming)} requirement(s) were justified by this one, and "
+            f"the wording just changed:** {by_id}.\n"
+            f"Their links still read as ordinary justification — check that they still "
+            f"hold against the new wording."
+        )
+
+    # Reviving an archived requirement reverses a 5.2 decision. The opposite direction
+    # (deprecating) warns about links and recommends the coverage audit; this direction
+    # said nothing at all.
+    revival_note = ""
+    old_status = str(old_values.get("status", "") or "")
+    if old_status in ARCHIVED_REQUIREMENT_STATUSES and \
+            new_status and new_status not in ARCHIVED_REQUIREMENT_STATUSES:
+        incoming_ids = ", ".join(sorted({f"`{lnk['from']}`" for lnk in incoming}))
+        edges_part = (f"; {len(incoming)} link(s) point at it: {incoming_ids}"
+                      if incoming else "")
+        revival_note = (
+            f"\n\n♻️ **This requirement was `{old_status}` and is live again.** That "
+            f"reverses a 5.2 decision{edges_part}.\n"
+            f"Run `check_coverage` (5.1) to see what it is connected to now."
+        )
+
     # Handing ownership over is a one-line edit here and a NEW 🔴 gap in 7.4 — ADR-098
     # reads `owner` on demand rather than storing a copy (so no copy can go stale), and
     # the price of that decision is that the previous owner's only recorded tie can
@@ -428,7 +503,8 @@ def update_requirement(
             f"`declare_stakeholder_interest` — it is the one tie the platform keeps."
         )
 
-    content = "\n".join(lines) + volatility_warning + ownership_note
+    content = ("\n".join(lines) + volatility_warning + ownership_note
+               + meaning_note + revival_note)
 
     # Export hook
     hook_result = _export_hook(

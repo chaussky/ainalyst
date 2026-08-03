@@ -18,7 +18,8 @@ from unittest.mock import patch, MagicMock
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
+from tests.conftest import (setup_mocks, BaseMCPTest, make_test_repo,
+                            save_test_repo, load_test_repo)
 setup_mocks()
 
 import skills.requirements_maintain_mcp as mod52
@@ -117,23 +118,23 @@ class TestUpdateRequirement(BaseMCPTest):
 
     def test_update_status(self):
         """Updating the status goes through without errors."""
-        result = self._call(new_status="approved")
+        result = self._call(new_status="implemented")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_update_status_persisted(self):
         """The new status is saved to the file."""
-        self._call(new_status="approved")
+        self._call(new_status="implemented")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         req = next(r for r in data["requirements"] if r["id"] == "BR-001")
-        self.assertEqual(req["status"], "approved")
+        self.assertEqual(req["status"], "implemented")
 
     def test_update_writes_history(self):
         """The change history is written to the repository."""
-        self._call(new_status="approved")
+        self._call(new_status="implemented")
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
@@ -223,7 +224,7 @@ class TestUpdateRequirement(BaseMCPTest):
                 project_name=PROJECT,
                 req_id="BR-001",
                 change_reason="test",
-                new_status="approved",
+                new_status="implemented",
             )
             mock_sa.assert_called_once()
 
@@ -345,6 +346,57 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
+
+    def _update(self, req_id="FR-001", **kwargs):
+        with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod52.update_requirement(
+                project_name=PROJECT, req_id=req_id,
+                change_reason="test", **kwargs)
+
+    def test_an_unknown_status_is_refused_like_an_unknown_priority(self):
+        """`status` routes everything — archived-ness, the 5.1/5.2/7.1 filters, "proven
+        in practice" in reuse. A typo stored cleanly and left the requirement neither
+        live nor archived, silently. The neighbouring field with a closed vocabulary,
+        `priority`, has been validated since the same lesson was learned for it."""
+        result = self._update(new_status="banana")
+        self.assertIn("❌", result)
+        self.assertIn("banana", result)
+        repo = load_test_repo(PROJECT)
+        node = [r for r in repo["requirements"] if r["id"] == "FR-001"][0]
+        self.assertNotEqual(node.get("status"), "banana", "it was written to disk anyway")
+
+    def test_approved_cannot_be_set_here_bypassing_chapter_5_5(self):
+        """Owner's decision, 2026-08-03. `approved` is not a description of a
+        requirement — it is the record of an event: stakeholders read a package and
+        signed. Set by hand it bypasses all four gates of 5.5 at once, and 5.2's own
+        reuse report then presents the requirement as "✅ Approved in 5.5 — proven in
+        practice", citing a procedure that never happened."""
+        result = self._update(new_status="approved")
+        self.assertIn("❌", result)
+        self.assertIn("5.5", result)
+        # every other status in the vocabulary still works
+        self.assertNotIn("❌", self._update(new_status="on_hold"))
+
+    def test_reviving_an_archived_requirement_leaves_a_trace(self):
+        """The reverse direction warns about edges and recommends a coverage check;
+        this one said nothing at all, so a 5.2 decision was reversed with no marker
+        anywhere in the answer."""
+        self._set_field("FR-001", status="retired")
+        result = self._update(new_status="confirmed")
+        self.assertNotIn("❌", result)
+        self.assertIn("retired", result.lower())
+        self.assertIn("check_coverage", result)
+
+    def test_changing_the_meaning_of_a_node_names_what_leans_on_it(self):
+        """G-2. `deprecate_requirements` warns about incoming links; renaming did not,
+        although it is the worse case: after a rename the edges still LOOK healthy and
+        go on justifying requirements that were written against different words. The
+        check has to hang on the FACT (this node has incoming justifications), not on
+        the name of the operation."""
+        result = self._update(req_id="BR-001", new_title="A different thing entirely")
+        self.assertIn("FR-001", result,
+                      "the requirements resting on this one were not named")
 
     def _set_field(self, req_id, **fields):
         safe_name = normalize_project_id(PROJECT)
@@ -592,7 +644,7 @@ class TestIntegration52(BaseMCPTest):
                     req_id="BR-001",
                     change_reason=reason,
                     note=f"Note: {reason}",
-                    new_status="approved",
+                    new_status="implemented",
                 )
         safe_name = PROJECT.lower().replace(" ", "_")
         path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
@@ -644,12 +696,12 @@ class TestHandingOverOwnershipWarnsAboutTheArchitectureSide(BaseMCPTest):
 
     def test_re_stating_the_same_owner_warns_about_nobody(self):
         self._call(new_owner="David Kim")
-        result = self._call(new_owner="david kim", new_status="approved")
+        result = self._call(new_owner="david kim", new_status="implemented")
         self.assertNotIn("declare_stakeholder_interest", result)
 
     def test_an_update_that_does_not_touch_the_owner_says_nothing(self):
         self._call(new_owner="David Kim")
-        result = self._call(new_status="approved")
+        result = self._call(new_status="implemented")
         self.assertNotIn("declare_stakeholder_interest", result)
 
 

@@ -41,7 +41,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, SOLUTION_SCOPE_NODE_TYPE,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, secondary_project_ids_error,
 )
 
 mcp = FastMCP("BABOK_ChangeStrategy")
@@ -495,6 +495,9 @@ def scope_change_strategy(
     """
     try:
         source_ids = json.loads(source_project_ids) if source_project_ids.strip() else []
+        bad = secondary_project_ids_error(source_ids, "source_project_ids")
+        if bad:
+            return bad
     except json.JSONDecodeError:
         return "❌ Error: source_project_ids must be a JSON array, e.g. '[\"crm\"]'"
 
@@ -1425,6 +1428,11 @@ def save_change_strategy(
     # --- Optional push to the 5.1 traceability repository (ADR-082) ---
     traceability_notes = []
     if push_to_traceability:
+        bad = secondary_project_ids_error(
+            [traceability_project_id] if traceability_project_id else [],
+            "traceability_project_id")
+        if bad:
+            return bad
         repo_pid = traceability_project_id or project_id
         repo_path = _repo_path(project_id, repo_pid)
         if os.path.exists(repo_path):

@@ -26,6 +26,7 @@ Coverage:
 
 import json
 import os
+import re
 import sys
 import unittest
 from datetime import date
@@ -359,6 +360,19 @@ class TestRunCRImpact(BaseMCPTest):
         self._setup_and_open()
         result = mod54.run_cr_impact(self.P, "CR-001")
         self.assertIn("Impact analysis", result)
+
+    def test_the_headline_count_matches_the_list_below_it(self):
+        """V-2 — a direct hit on "a number that does not match the list under it".
+        The count included the CR's own targets, while the breakdown grouped by link
+        type, and a target has no link to itself, so it appeared in neither group."""
+        self._setup_and_open()
+        result = mod54.run_cr_impact(self.P, "CR-001")
+
+        headline = int(re.search(r"\*\*Total nodes affected:\*\* (\d+)", result).group(1))
+        breakdown = result.split("### Affected nodes by link type")[1].split("\n---")[0]
+        listed = len([ln for ln in breakdown.split("\n") if ln.strip().startswith("- `")])
+        self.assertEqual(headline, listed,
+                         f"headline says {headline}, the breakdown lists {listed}")
 
     def test_run_cr_impact_creates_modifies_links(self):
         self._setup_and_open()
