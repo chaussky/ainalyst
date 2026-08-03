@@ -191,17 +191,16 @@ def data_dir_for(project_id) -> str:    # governance_plans/data/<safe_pid>/
 def report_dir_for(project_id) -> str:  # governance_plans/reports/<safe_pid>/
 
 def data_path(project_id, filename) -> str:
-    """Single resolver for the JSON path (read and write): nested, if it exists;
-    otherwise flat (legacy in place), if it exists; otherwise nested (new artifact)."""
+    """Single resolver for the JSON path (read and write): data/<project_id>/<filename>.
+    ONE candidate — the artifact is written and looked for in the same place."""
 ```
 
 Rules for developers:
-- **JSON**: build the path via `data_path(project_id, f"{safe}_{FILENAME}")`, and create the directory when writing via `os.makedirs(os.path.dirname(path), exist_ok=True)` (not `os.makedirs(DATA_DIR, ...)`). The file name keeps the `{safe}_` prefix, which gives a trivial fallback to old flat files and self-identification.
-- **Markdown**: call `save_artifact(content, prefix, project_id=...)`. With `project_id`, the report is written to `reports/<project_id>/`. Without `project_id`, the old flat behavior is kept (backward compatibility).
-- **Reading** old flat artifacts works automatically: `data_path` returns the flat path if a nested one does not yet exist. Listing (`session_start.sh`) walks subfolders recursively.
-- **Migration**: `python migrate_artifacts.py` (dry run) → `--apply`. It only moves old flat files into subfolders (normalizing both the folder and the file name, so the layout becomes canonical); it deletes nothing.
+- **JSON**: build the path via `data_path(project_id, f"{safe}_{FILENAME}")`, and create the directory when writing via `os.makedirs(os.path.dirname(path), exist_ok=True)` (not `os.makedirs(DATA_DIR, ...)`). The file name keeps the `{safe}_` prefix, so a file identifies itself when read out of context.
+- **Markdown**: call `save_artifact(content, prefix, project_id=...)`. With `project_id`, the report is written to `reports/<project_id>/`. Without `project_id`, it lands directly in `reports/` — that path belongs to no project and nothing reads it back; pass the id.
+- **One layout, no fallbacks** (owner's decision, 2026-08-03). `data_path` and `specs_dir` used to try five and four locations respectively, so that artifacts predating the per-project layout kept resolving. No project predates the platform, so those candidates could only ever find a file a TEST had placed — while costing every reader a multi-way search whose answer depended on what happened to be on disk. `migrate_artifacts.py` went with them.
 
-**The `project_id` contract.** Use names from `[a-z0-9_-]` (case and spaces are handled: `lower`, space → `_`). For these, normalization is idempotent and reversible, and the fallback and migration work with no surprises.
+**The `project_id` contract: an id must be a FIXED POINT of `normalize_project_id`** — spelled exactly the way its folder will be. `^[a-z0-9][a-z0-9_-]*$`, plus `normalize_project_id(pid) == pid`, plus not reserved. That makes id → folder bijective, so a collision cannot be constructed: there is no second spelling that lands on the same folder. Refused, all for the same reason: `CRM Up`, `demo.v2`, `crm__up`, `_crm`, `црм_апгрейд`.
 
 **An id that cannot be represented is REFUSED, not rewritten** (owner's decision, 2026-08-03). `normalize_project_id` is many-to-one — it strips everything outside `[a-z0-9_-]` — so a non-latin id lost every character and landed in one shared placeholder folder, where two different projects silently mixed each other's artifacts. The guard that stops this:
 
@@ -218,10 +217,7 @@ def project_id_suggestion(project_id) -> str:        # latin hint, for the TEXT 
 
 **Every tool that takes `project_id`/`project_name` MUST carry `@guard_artifact_errors`** (below `@mcp.tool()`). That decorator converts both `CorruptArtifactError` and `InvalidProjectIdError` into the `❌` string a tool must return; without it the refusal escapes as a protocol error. This is enforced by `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, which scans every module — a new tool that forgets it fails the suite.
 
-Consequences for "exotic" names:
-- `data_path`/`specs_dir` still search under the pre-migration name (`_legacy_safe`), so a legacy artifact whose id is **inside** the accepted alphabet (e.g. `demo.v2`) keeps resolving;
-- a legacy id **outside** it (`r&d_portal`, `CRM (v2)`, any cyrillic name) is now refused, so its artifacts are unreachable until the project is renamed. The files are not deleted — `migrate_artifacts.py` has no rename mode yet, so this is a manual rename today;
-- names still collapse together inside the accepted alphabet (`a.b`, `a b` and `a_b` → `a_b`); this is the pre-existing slugification trade-off. Do not use `project_id` values that differ only in separators.
+Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, any cyrillic name) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
 
 ### `_ensure_dirs()` and `save_artifact()`
 

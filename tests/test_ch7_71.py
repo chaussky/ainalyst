@@ -26,11 +26,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # Mocks are applied via conftest
-from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo
+from tests.conftest import (BaseMCPTest, make_test_repo, save_test_repo, load_test_repo,
+                            data_file)
 
 import skills.requirements_spec_mcp as mod71
 from skills.common import specs_dir
-from skills.common import data_path
+from skills.common import data_path, normalize_project_id, InvalidProjectIdError
 
 
 # ---------------------------------------------------------------------------
@@ -53,9 +54,7 @@ def make_spec_repo(project_id: str, requirements: list = None) -> dict:
 
 def save_spec_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
     """Saves the 5.1 repository for the tests."""
-    safe = repo["project"].lower().replace(" ", "_")
-    path = os.path.join(governance_dir, f"{safe}_traceability_repo.json")
-    os.makedirs(governance_dir, exist_ok=True)
+    path = data_file(repo["project"], "traceability_repo.json", governance_dir)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
     return path
@@ -63,7 +62,7 @@ def save_spec_repo(repo: dict, governance_dir: str = "governance_plans/data") ->
 
 def load_spec_repo(project_id: str, governance_dir: str = "governance_plans/data") -> dict:
     """Loads the 5.1 repository."""
-    safe = project_id.lower().replace(" ", "_")
+    safe = normalize_project_id(project_id)
     path = data_path(project_id, f"{safe}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -96,11 +95,11 @@ def make_confirmed_artifact_reports(project_id: str, content: str = None) -> str
 
 
 def make_confirmed_artifact(project_id: str, content: str = None) -> str:
-    """Creates a test 4.3 artifact and returns the path."""
-    safe = project_id.lower().replace(" ", "_")
-    filename = f"4_3_{safe}_confirmed_test.md"
-    path = os.path.join("governance_plans", "data", filename)
-    os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
+    """A 4.3 artifact with the fuller default body (needs and NFRs, not objectives only).
+
+    Writes through make_confirmed_artifact_reports: there is one layout, and a fixture
+    seeded anywhere else is a file the consumer cannot find.
+    """
     artifact_content = content or f"""# Confirmed elicitation results
 
 ## Business objectives
@@ -120,9 +119,7 @@ def make_confirmed_artifact(project_id: str, content: str = None) -> str:
 - The system must operate 24/7
 - Response time no more than 3 seconds
 """
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(artifact_content)
-    return path
+    return make_confirmed_artifact_reports(project_id, artifact_content)
 
 
 # ---------------------------------------------------------------------------
@@ -131,26 +128,30 @@ def make_confirmed_artifact(project_id: str, content: str = None) -> str:
 
 class TestSpecUtilities(unittest.TestCase):
 
-    def test_repo_path_normalizes_spaces(self):
-        path = mod71._repo_path("My Project")
-        self.assertNotIn(" ", path)
-        self.assertIn("my_project", path)
-        self.assertIn("traceability_repo.json", path)
+    def test_repo_path_is_under_the_project_folder(self):
+        path = mod71._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
-    def test_repo_path_lowercase(self):
-        path = mod71._repo_path("CRM 2024")
-        self.assertIn("crm_2024", path)
+    def test_a_path_is_never_built_for_an_id_that_needs_rewriting(self):
+        # Both spellings used to be accepted and folded onto `my_project`, which is
+        # what made two ids share one folder. The path helper is the place that has to
+        # refuse, because it is the last step before a read or a write.
+        #
+        # The exception class is looked up through the module ON EACH CALL, not bound
+        # at import: other tests reload skills.common, and a class captured beforehand
+        # stops being the one that is raised.
+        import skills.common as common_mod
+        for spelled_wrong in ("My Project", "CRM 2024", "my__project"):
+            with self.assertRaises(common_mod.InvalidProjectIdError):
+                mod71._repo_path(spelled_wrong)
+            with self.assertRaises(common_mod.InvalidProjectIdError):
+                mod71._specs_dir(spelled_wrong)
 
     def test_specs_dir_format(self):
         # issue #1: specs in data/<project>/specs/ (new nested layout)
         d = mod71._specs_dir("crm_2024")
         self.assertIn(os.path.join("crm_2024", "specs"), d)
         self.assertIn("governance_plans", d)
-
-    def test_specs_dir_normalizes_spaces(self):
-        d = mod71._specs_dir("My Project")
-        self.assertNotIn(" ", d)
-        self.assertIn(os.path.join("my_project", "specs"), d)
 
     def test_load_repo_empty_when_missing(self):
         """Loading a non-existent repository returns an empty structure."""
@@ -1168,19 +1169,18 @@ class TestConfirmedArtifactRealLayout(BaseMCPTest):
 
     def test_find_confirmed_artifact_in_reports_layout(self):
         path = make_confirmed_artifact_reports(self.P)
-        # Returns (path, project_scoped): the caller has to know whether the match
-        # came from a pattern that could filter by project.
-        found, project_scoped = mod71._find_confirmed_artifact(self.P)
+        found = mod71._find_confirmed_artifact(self.P)
         self.assertIsNotNone(found, "consumer must find the artifact in the real reports/<pid>/ layout")
-        self.assertTrue(project_scoped, "the per-project folder DOES filter by project")
         self.assertEqual(os.path.abspath(found), os.path.abspath(path))
 
-    def test_find_confirmed_artifact_still_finds_legacy_data_layout(self):
-        # backward compat: the old flat data/ fixture must still be found
-        path = make_confirmed_artifact(self.P)
-        found, _project_scoped = mod71._find_confirmed_artifact(self.P)
-        self.assertIsNotNone(found)
-        self.assertEqual(os.path.abspath(found), os.path.abspath(path))
+    def test_another_projects_artifact_is_not_offered_as_this_ones(self):
+        # The folder is the ONLY thing that says whose artifact this is. The search
+        # used to fall back to patterns that could not filter by project at all, so
+        # this project could be handed another one's interviews and derive
+        # requirements from them — the fallback warned, but the warning was the only
+        # thing standing between the two projects.
+        make_confirmed_artifact_reports("someone_else")
+        self.assertIsNone(mod71._find_confirmed_artifact(self.P))
 
     def test_analyze_finds_real_producer_artifact(self):
         make_confirmed_artifact_reports(self.P)

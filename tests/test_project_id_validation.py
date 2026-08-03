@@ -62,14 +62,22 @@ class TestTheValidatorSeparatesRefusalFromNormalisation(unittest.TestCase):
         self.assertIsNotNone(common.project_id_error("a  b"))
 
     def test_valid_ids_still_pass_untouched(self):
-        for pid in ("crm_upgrade", "bank-portal", "hr_auto2", "CRM Up", "  crm  "):
+        for pid in ("crm_upgrade", "bank-portal", "hr_auto2", "crm2"):
             self.assertIsNone(common.project_id_error(pid), pid)
 
-    def test_legacy_punctuation_ids_stay_valid(self):
-        # Pre-migration ids kept dots ('demo.v2'). They must keep resolving, so they
-        # must stay VALID — the migration answer is the alphabet, not a disk lookup.
-        # Pinned together with test_artifact_layout::test_legacy_exotic_name_is_found.
-        self.assertIsNone(common.project_id_error("demo.v2"))
+    def test_a_spelling_the_normaliser_would_rewrite_is_refused(self):
+        """The rule is a FIXED POINT: an id must already be spelled the way its folder
+        will be (owner's decision, 2026-08-03, second round).
+
+        Every id below used to be accepted and folded. Folding is what made two
+        different ids share one folder — `demo.v2` and `demo_v2` were two projects
+        with one set of artifacts between them."""
+        for pid in ("CRM Up", "  crm  ", "demo.v2", "crm__up", "_crm", "crm-",
+                    "CRM_UPGRADE"):
+            message = common.project_id_error(pid)
+            self.assertIsNotNone(message, f"{pid!r} would be rewritten, so it is not an id")
+            self.assertEqual(common.project_id_error(common.normalize_project_id(pid)), None,
+                             f"the normalised form of {pid!r} must itself be usable")
 
     def test_the_guard_does_not_consult_the_disk(self):
         # The trap this pins: an earlier design let an id through when its normalised

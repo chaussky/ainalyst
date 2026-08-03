@@ -3,9 +3,8 @@ tests/test_artifact_layout.py — artifact layout in project subfolders (issue #
 
 Covers:
   - safe normalization of project_id (protection against path traversal);
-  - the data_path resolver (nested write + flat fallback);
-  - save_artifact with project_id (markdown in reports/<project_id>/);
-  - the migrate_artifacts.py migration script (move-only, dry-run, idempotent).
+  - the data_path resolver (one location: data/<project_id>/);
+  - save_artifact with project_id (markdown in reports/<project_id>/).
 """
 
 import os
@@ -55,42 +54,23 @@ class TestDataPath(unittest.TestCase):
             os.path.normpath("governance_plans/data/crm/crm_traceability_repo.json"),
         )
 
-    def test_legacy_flat_is_read_in_place(self):
+    def test_a_file_beside_the_project_folder_is_not_this_project_s_file(self):
+        """The resolver answers with ONE location and does not go looking around it.
+
+        It used to try five, so that artifacts predating the per-project layout kept
+        resolving. A flat file carries no project id in its folder, so the search
+        could only ever be a guess — and it guessed against whatever happened to be
+        on disk. Owner's decision (2026-08-03): one layout, no fallbacks."""
         flat = "governance_plans/data/crm_traceability_repo.json"
         with open(flat, "w", encoding="utf-8") as f:
             f.write("{}")
         p = common.data_path("crm", "crm_traceability_repo.json")
-        self.assertEqual(os.path.normpath(p), os.path.normpath(flat))
-
-    def test_nested_wins_over_flat(self):
-        os.makedirs("governance_plans/data/crm", exist_ok=True)
-        nested = "governance_plans/data/crm/crm_traceability_repo.json"
-        with open(nested, "w", encoding="utf-8") as f:
-            f.write("{}")
-        with open("governance_plans/data/crm_traceability_repo.json", "w", encoding="utf-8") as f:
-            f.write("{}")
-        p = common.data_path("crm", "crm_traceability_repo.json")
-        self.assertEqual(os.path.normpath(p), os.path.normpath(nested))
-
-    def test_legacy_exotic_name_is_found(self):
-        # legacy file created by pre-migration normalization (the dot was kept by the old _safe)
-        legacy = "governance_plans/data/demo.v2_traceability_repo.json"
-        with open(legacy, "w", encoding="utf-8") as f:
-            f.write("{}")
-        # the runtime builds the name via normalize_project_id (demo_v2_...), but must find the legacy file
-        p = common.data_path("demo.v2", "demo_v2_traceability_repo.json")
-        self.assertEqual(os.path.normpath(p), os.path.normpath(legacy))
-
-    def test_specs_dir_finds_legacy_exotic(self):
-        os.makedirs("governance_plans/data/demo.v2_specs", exist_ok=True)
-        d = common.specs_dir("demo.v2")
         self.assertEqual(
-            os.path.normpath(d),
-            os.path.normpath("governance_plans/data/demo.v2_specs"),
-        )
+            os.path.normpath(p),
+            os.path.normpath("governance_plans/data/crm/crm_traceability_repo.json"))
 
-    def test_specs_dir_new_is_nested_canonical(self):
-        d = common.specs_dir("Demo V2")
+    def test_specs_dir_is_nested_canonical(self):
+        d = common.specs_dir("demo_v2")
         self.assertEqual(
             os.path.normpath(d),
             os.path.normpath("governance_plans/data/demo_v2/specs"),
@@ -175,78 +155,3 @@ class TestSaveArtifact(unittest.TestCase):
         for prefix in ("4_3_confirmed_result", "6_1_current_state_crm", "confluence_pull",
                        "Elicitation_Results_crm_upgrade_12-03-2026"):
             self.assertEqual(common.safe_filename_part(prefix), prefix)
-
-
-class TestMigration(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.mkdtemp()
-        self._cwd = os.getcwd()
-        os.chdir(self.tmp)
-        os.makedirs("governance_plans/data", exist_ok=True)
-        os.makedirs("governance_plans/reports", exist_ok=True)
-
-    def tearDown(self):
-        os.chdir(self._cwd)
-        shutil.rmtree(self.tmp, ignore_errors=True)
-
-    def _write(self, path, text="{}"):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
-
-    def test_moves_flat_data_into_subdir(self):
-        import migrate_artifacts
-        self._write("governance_plans/data/crm_traceability_repo.json", '{"x":1}')
-        migrate_artifacts.migrate(apply=True)
-        self.assertTrue(os.path.exists("governance_plans/data/crm/crm_traceability_repo.json"))
-        self.assertFalse(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
-        with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
-            self.assertEqual(f.read(), '{"x":1}')  # data is intact
-
-    def test_dry_run_moves_nothing(self):
-        import migrate_artifacts
-        self._write("governance_plans/data/crm_traceability_repo.json")
-        migrate_artifacts.migrate(apply=False)
-        self.assertTrue(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
-
-    def test_idempotent_and_never_overwrites(self):
-        import migrate_artifacts
-        self._write("governance_plans/data/crm/crm_traceability_repo.json", '{"nested":1}')
-        self._write("governance_plans/data/crm_traceability_repo.json", '{"flat":1}')
-        migrate_artifacts.migrate(apply=True)  # target is occupied → don't touch either
-        with open("governance_plans/data/crm/crm_traceability_repo.json", encoding="utf-8") as f:
-            self.assertEqual(f.read(), '{"nested":1}')
-        self.assertTrue(os.path.exists("governance_plans/data/crm_traceability_repo.json"))
-
-    def test_specs_dir_migrates(self):
-        import migrate_artifacts
-        self._write("governance_plans/data/crm_specs/dd_001.md", "# dd")
-        migrate_artifacts.migrate(apply=True)
-        self.assertTrue(os.path.exists("governance_plans/data/crm/specs/dd_001.md"))
-
-    def test_report_with_embedded_project_migrates(self):
-        import migrate_artifacts
-        self._write("governance_plans/reports/6_1_current_state_crm_20260616_120000.md", "# r")
-        migrate_artifacts.migrate(apply=True)
-        self.assertTrue(os.path.exists(
-            "governance_plans/reports/crm/6_1_current_state_crm_20260616_120000.md"))
-
-    def test_report_without_project_stays_put(self):
-        import migrate_artifacts
-        self._write("governance_plans/reports/4_4_comm_package_20260616_120000.md", "# r")
-        migrate_artifacts.migrate(apply=True)
-        self.assertTrue(os.path.exists(
-            "governance_plans/reports/4_4_comm_package_20260616_120000.md"))
-
-    def test_migration_canonicalizes_exotic_name(self):
-        # legacy file with an exotic name → canonical layout (both folder and name normalized)
-        import migrate_artifacts
-        import skills.common as c
-        self._write("governance_plans/data/demo.v2_traceability_repo.json", '{"x":1}')
-        migrate_artifacts.migrate(apply=True)
-        self.assertTrue(os.path.exists(
-            "governance_plans/data/demo_v2/demo_v2_traceability_repo.json"))
-        # and the runtime finds the file by the original (exotic) project_id
-        self.assertTrue(os.path.exists(c.data_path("demo.v2", "demo_v2_traceability_repo.json")))
-        with open("governance_plans/data/demo_v2/demo_v2_traceability_repo.json", encoding="utf-8") as f:
-            self.assertEqual(f.read(), '{"x":1}')

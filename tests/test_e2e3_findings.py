@@ -6,7 +6,6 @@ Findings covered:
   F-C  malformed JSON SHAPE (scalar / list-of-strings) must return "❌", not raise
        (deprecate_requirements 5.2, open_cr 5.4, prepare_approval_package 5.5,
         define_solution_scope 6.4) — same class as CH3-A/B, CH4-A.
-  F-F  migrate_artifacts must migrate 6.3/6.4 scope files + stakeholder registry.
   F-D  generate_recommendation must reach 6.2 potential_value when source_ids is empty.
   F-E  save_change_strategy must not crash when a 7.5 surrogate wrote scope as a string.
   F-A  7.3 must not claim alignment/coverage from a title word-overlap with no graph edge.
@@ -90,28 +89,6 @@ class TestFE_ScopeStringGuard(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# F-F — migrate_artifacts must recognise the real 6.3/6.4 scope filenames and the
-# living stakeholder registry (they carried no matching suffix and stayed flat).
-# ---------------------------------------------------------------------------
-
-class TestFF_MigrationSuffixes(BaseMCPTest):
-
-    def test_scope_and_registry_files_migrate(self):
-        import migrate_artifacts
-        data = os.path.join("governance_plans", "data")
-        names = ("p1_risk_assessment_scope.json", "p1_change_strategy_scope.json",
-                 "p1_stakeholder_registry.json")
-        for name in names:
-            with open(os.path.join(data, name), "w", encoding="utf-8") as f:
-                json.dump({"x": 1}, f)
-        migrate_artifacts.migrate(apply=True)
-        for name in names:
-            self.assertTrue(os.path.exists(os.path.join(data, "p1", name)),
-                            f"{name} was not migrated to the nested layout")
-            self.assertFalse(os.path.exists(os.path.join(data, name)),
-                             f"{name} was left flat")
-
-
 # ---------------------------------------------------------------------------
 # F-D — generate_recommendation (6.3) must reach the 6.2 potential_value even when
 # the BA named no explicit sources (scope stores source_project_ids as []).

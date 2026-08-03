@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.conftest import setup_mocks, BaseMCPTest
+from tests.conftest import setup_mocks, BaseMCPTest, data_file
 
 setup_mocks()
 
@@ -257,7 +257,7 @@ class TestScopeChangeStrategy(BaseMCPTest):
                 {"id": "BN-001", "need_title": "CRM Required", "priority": "High"}
             ]
         }
-        needs_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_business_needs.json")
+        needs_path = data_file(_safe(PROJECT), "business_needs.json")
         with open(needs_path, "w", encoding="utf-8") as f:
             json.dump(needs_data, f)
 
@@ -271,7 +271,7 @@ class TestScopeChangeStrategy(BaseMCPTest):
         """Test import of business_goals from 6.2 (REAL 6.2: goals live in the
         future_state_goals.json file with a goal_title field)."""
         goals_data = {"goals": [{"id": "BG-001", "goal_title": "NPS growth by 15%"}]}
-        goals_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_future_state_goals.json")
+        goals_path = data_file(_safe(PROJECT), "future_state_goals.json")
         with open(goals_path, "w", encoding="utf-8") as f:
             json.dump(goals_data, f)
 
@@ -291,7 +291,7 @@ class TestScopeChangeStrategy(BaseMCPTest):
                  "response_strategy": "mitigate"}
             ]
         }
-        risk_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_risk_assessment.json")
+        risk_path = data_file(_safe(PROJECT), "risk_assessment.json")
         with open(risk_path, "w", encoding="utf-8") as f:
             json.dump(risk_data, f)
 
@@ -316,11 +316,7 @@ class TestScopeChangeStrategy(BaseMCPTest):
 
 
 def _write_gap_file(project_id: str = PROJECT, gaps=None):
-    """Builds a 6.2 gap analysis by hand, in the shape run_gap_analysis writes.
-
-    Flat under DATA_DIR, like every other import fixture in this file: data_path
-    resolves the flat layout as its second candidate (common.py:156).
-    """
+    """Builds a 6.2 gap analysis by hand, in the shape run_gap_analysis writes."""
     if gaps is None:
         gaps = [
             {"element": "technology", "element_label": "Technology and Infrastructure",
@@ -334,7 +330,7 @@ def _write_gap_file(project_id: str = PROJECT, gaps=None):
         ]
     data = {"project_id": project_id, "has_current_state_baseline": True,
             "gaps": gaps, "created": TODAY, "updated": TODAY}
-    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_ANALYSIS_FILENAME}")
+    path = data_file(project_id, GAP_ANALYSIS_FILENAME)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     return path
@@ -344,7 +340,7 @@ def _write_gap_file_raw(project_id: str, content):
     """Writes ANY JSON value as the gap analysis file's top level — including
     non-dict shapes (`[]`, `0`, ...) that `_write_gap_file` cannot produce, since
     it always wraps `gaps` inside a dict."""
-    path = os.path.join(DATA_DIR, f"{_safe(project_id)}_{GAP_ANALYSIS_FILENAME}")
+    path = data_file(project_id, GAP_ANALYSIS_FILENAME)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(content, f)
     return path
@@ -418,7 +414,7 @@ class TestGapAnalysisImport(BaseMCPTest):
         self.assertEqual(_load_strategy()["solution_scope"], before)
 
     def test_a_corrupt_gap_file_is_reported_not_silently_skipped(self):
-        path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_{GAP_ANALYSIS_FILENAME}")
+        path = data_file(PROJECT, GAP_ANALYSIS_FILENAME)
         with open(path, "w", encoding="utf-8") as f:
             f.write("{not json")
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
@@ -1189,7 +1185,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
             "requirements": [{"id": "BG-001", "type": "business_goal", "title": "NPS Growth"}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
@@ -1254,7 +1250,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
             "requirements": [{"id": "BG-001", "type": "business_goal", "title": "Test"}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
@@ -1377,7 +1373,7 @@ class TestPipeline(BaseMCPTest):
                               "version": "1.0", "status": "confirmed", "added": TODAY}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 

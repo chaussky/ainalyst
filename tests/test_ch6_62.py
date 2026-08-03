@@ -25,7 +25,7 @@ from datetime import date
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
+from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo, data_file
 
 setup_mocks()
 
@@ -137,7 +137,7 @@ def _save_current_state_data(project=PROJECT):
         "created": str(date.today()),
         "updated": str(date.today()),
     }
-    with open(f"governance_plans/data/{_safe(project)}_current_state_scope.json", "w") as f:
+    with open(data_file(_safe(project), "current_state_scope.json"), "w") as f:
         json.dump(scope_data, f)
 
     # current_state
@@ -158,7 +158,7 @@ def _save_current_state_data(project=PROJECT):
         "created": str(date.today()),
         "updated": str(date.today()),
     }
-    with open(f"governance_plans/data/{_safe(project)}_current_state.json", "w") as f:
+    with open(data_file(_safe(project), "current_state.json"), "w") as f:
         json.dump(state_data, f)
 
     # business_needs
@@ -189,7 +189,7 @@ def _save_current_state_data(project=PROJECT):
         "created": str(date.today()),
         "updated": str(date.today()),
     }
-    with open(f"governance_plans/data/{_safe(project)}_business_needs.json", "w") as f:
+    with open(data_file(_safe(project), "business_needs.json"), "w") as f:
         json.dump(needs_data, f)
 
 
@@ -220,7 +220,7 @@ def _save_future_state_goals(project=PROJECT):
         "created": str(date.today()),
         "updated": str(date.today()),
     }
-    with open(f"governance_plans/data/{_safe(project)}_future_state_goals.json", "w") as f:
+    with open(data_file(_safe(project), "future_state_goals.json"), "w") as f:
         json.dump(goals_data, f)
 
 
@@ -509,7 +509,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
         _goal(linked_bn='["BN-001"]', register=True)
 
-        with open(f"governance_plans/data/{_safe(PROJECT)}_traceability_repo.json") as f:
+        with open(data_file(_safe(PROJECT), "traceability_repo.json")) as f:
             updated_repo = json.load(f)
 
         ids = [r["id"] for r in updated_repo["requirements"]]
@@ -532,7 +532,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
         _goal(linked_bn='["BN-001"]')
 
-        with open(f"governance_plans/data/{_safe(PROJECT)}_traceability_repo.json") as f:
+        with open(data_file(_safe(PROJECT), "traceability_repo.json")) as f:
             updated_repo = json.load(f)
 
         links = updated_repo["links"]
@@ -969,7 +969,7 @@ class TestPipeline(BaseMCPTest):
         _goal(title="Goal 1", register=True)
         _goal(title="Goal 2", register=True)
 
-        with open(f"governance_plans/data/{_safe(PROJECT)}_traceability_repo.json") as f:
+        with open(data_file(_safe(PROJECT), "traceability_repo.json")) as f:
             updated_repo = json.load(f)
 
         ids = [r["id"] for r in updated_repo["requirements"]]
@@ -1038,7 +1038,7 @@ class TestIntegration73(BaseMCPTest):
             "created": str(date.today()),
             "updated": str(date.today()),
         }
-        with open(f"governance_plans/data/{_safe(PROJECT)}_future_state.json", "w") as f:
+        with open(data_file(_safe(PROJECT), "future_state.json"), "w") as f:
             json.dump(state_data, f)
 
         r = set_business_context(
@@ -1072,7 +1072,7 @@ class TestIntegration73(BaseMCPTest):
             "created": str(date.today()),
             "updated": str(date.today()),
         }
-        with open(f"governance_plans/data/{_safe(PROJECT)}_future_state.json", "w") as f:
+        with open(data_file(_safe(PROJECT), "future_state.json"), "w") as f:
             json.dump(state_data, f)
         scope_data = {
             "project_id": PROJECT,
@@ -1082,7 +1082,7 @@ class TestIntegration73(BaseMCPTest):
             "created": str(date.today()),
             "updated": str(date.today()),
         }
-        with open(f"governance_plans/data/{_safe(PROJECT)}_future_state_scope.json", "w") as f:
+        with open(data_file(_safe(PROJECT), "future_state_scope.json"), "w") as f:
             json.dump(scope_data, f)
 
         r = set_business_context(

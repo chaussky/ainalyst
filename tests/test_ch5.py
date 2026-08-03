@@ -25,14 +25,12 @@ import skills.requirements_maintain_mcp as mod52
 
 class TestTraceabilityUtils(unittest.TestCase):
 
-    def test_repo_path_normalizes_spaces(self):
-        path = mod51._repo_path("My Project")
-        self.assertNotIn(" ", path)
-        self.assertIn("my_project", path)
-        self.assertIn("traceability_repo.json", path)
+    def test_repo_path_is_under_the_project_folder(self):
+        path = mod51._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
     def test_repo_path_consistency_51_52(self):
-        for name in ["Test Project", "CRM 2024", "bank online"]:
+        for name in ["test_project", "crm_2024", "bank_online"]:
             self.assertEqual(
                 mod51._repo_path(name), mod52._repo_path(name),
                 f"Paths differ for: {name}"

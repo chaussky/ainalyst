@@ -173,8 +173,8 @@ governance_plans/
     └── 7_6_recommendation_crm_upgrade_<date>.md   ← recommendation to the sponsor (7.6)
 ```
 
-Old flat artifacts (predating the layout) are read as before; you can lay them out into
-subfolders once with: `python migrate_artifacts.py` (it moves, doesn't delete).
+Every artifact lives in exactly one place — the project's folder. A file lying directly
+in `data/` or `reports/` belongs to no project and is not read by anything.
 Point the BA to results only in `reports/`.
 
 ---
@@ -194,11 +194,13 @@ decision always belongs to the analyst — especially in tasks 5.3, 5.4, and 5.5
 Use a short name from `[a-z0-9_-]`, no spaces (for example `crm_upgrade`, `bank_portal`).
 Once chosen — use it everywhere.
 
-**This is enforced, not advised.** A `project_id` that cannot be written as a folder name —
-anything non-latin (`црм_апгрейд`, `統一平台`), or built only from punctuation — is **refused**
-by every tool, and nothing is written. The reason is not tidiness: such ids used to be stripped
-down to one shared placeholder, so two different projects landed in one folder and silently
-mixed each other's artifacts.
+**This is enforced, not advised.** The rule is one sentence: **`project_id` must be spelled
+exactly the way its folder is** — lower-case, starting with a letter or a digit, no spaces,
+no doubled `_`. Anything a folder name cannot carry as written is **refused** by every tool,
+and nothing is written: `црм_апгрейд`, `統一平台`, `!!!`, but also `CRM Up`, `demo.v2`,
+`crm__up`, `_crm`. The reason is not tidiness: an id that has to be rewritten to fit is an id
+some OTHER spelling also rewrites to, and two projects then land in one folder and silently
+mix each other's artifacts.
 
 So when the BA names a project in Russian, **agree on a latin `project_id` BEFORE the first tool
 call** — don't discover it through a refusal. Offer a transliteration, confirm it, then use it

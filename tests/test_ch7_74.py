@@ -44,7 +44,7 @@ from unittest.mock import patch
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import BaseMCPTest
+from tests.conftest import BaseMCPTest, data_file
 
 import skills.requirements_architecture_mcp as mod74
 from skills.common import data_path
@@ -80,7 +80,7 @@ def make_repo(project_id, requirements=None, links=None):
 
 def save_repo(repo):
     safe = repo["project"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_traceability_repo.json")
+    path = data_file(safe, "traceability_repo.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -105,7 +105,7 @@ def make_stakeholders(project_id, stakeholders=None):
 
 def save_stakeholders(data):
     safe = data["project"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_stakeholders.json")
+    path = data_file(safe, "stakeholders.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -127,7 +127,7 @@ def make_context(project_id, goals=None):
 
 def save_context(ctx):
     safe = ctx["project_id"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_business_context.json")
+    path = data_file(safe, "business_context.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(ctx, f, ensure_ascii=False, indent=2)
@@ -174,9 +174,8 @@ class TestUtilities(BaseMCPTest):
         self.assertEqual(mod74._safe("A B C"), "a_b_c")
 
     def test_repo_path(self):
-        path = mod74._repo_path("CRM Upgrade")
-        self.assertIn("crm_upgrade", path)
-        self.assertIn("traceability_repo", path)
+        path = mod74._repo_path("crm_upgrade")
+        self.assertIn(os.path.join("crm_upgrade", "crm_upgrade_traceability_repo"), path)
 
     def test_architecture_path(self):
         path = mod74._architecture_path("crm_upgrade")
@@ -870,7 +869,7 @@ class TestPipeline(BaseMCPTest):
 def save_stakeholder_registry(project_id, stakeholders=None):
     """Writes the registry under the REAL 4.2 filename (*_stakeholder_registry.json)."""
     safe = project_id.lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_stakeholder_registry.json")
+    path = data_file(safe, "stakeholder_registry.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump({"project": project_id, "stakeholders": stakeholders or
@@ -1003,8 +1002,7 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
 
     def _write_approvals(self, project_id, packages):
         safe = project_id.lower().replace(" ", "_")
-        path = os.path.join("governance_plans", "data",
-                            f"{safe}_approval_history.json")
+        path = data_file(safe, "approval_history.json")
         os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project": project_id, "packages": packages}, f)
@@ -1084,7 +1082,7 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
 
     def test_a_damaged_approval_file_does_not_take_the_tool_down(self):
         safe = "ev74g"
-        path = os.path.join("governance_plans", "data", f"{safe}_approval_history.json")
+        path = data_file(safe, "approval_history.json")
         os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             f.write("{not json at all")
@@ -1353,7 +1351,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
     def test_a_5_5_voter_is_represented_without_any_declaration(self):
         # The point of reading 5.5: this works on projects that never call the new tool.
         save_repo(make_repo("gv74b", [make_req("FR-001", "functional", "Auto routing")]))
-        path = os.path.join("governance_plans", "data", "gv74b_approval_history.json")
+        path = data_file("gv74b", "approval_history.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project": "gv74b", "packages": {"PKG-001": {
                 "req_ids": ["FR-001"], "stakeholder_decisions": {"Priya Nair": {
@@ -1612,7 +1610,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         repo["requirements"][0]["owner"] = "David Kim"
         save_repo(repo)
         os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
-        with open(os.path.join("governance_plans", "data", "doc74j_stakeholder_registry.json"),
+        with open(data_file("doc74j", "stakeholder_registry.json"),
                   "w", encoding="utf-8") as f:
             json.dump({"project": "doc74j", "stakeholders": [], "history": []}, f)
         doc = self._doc("doc74j")
@@ -2004,8 +2002,7 @@ class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
 
     def _write_registry(self, project_id, payload):
         os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
-        path = os.path.join("governance_plans", "data",
-                            f"{project_id}_stakeholder_registry.json")
+        path = data_file(project_id, "stakeholder_registry.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
 
@@ -2195,8 +2192,7 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
 
     def _write_registry(self, project_id, payload):
         os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
-        path = os.path.join("governance_plans", "data",
-                            f"{project_id}_stakeholder_registry.json")
+        path = data_file(project_id, "stakeholder_registry.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
 
@@ -2600,32 +2596,27 @@ class TestGapsInCoverageTheMutationsExposed(BaseMCPTest):
         self.assertIn("1 requirement: `FR-001` (declared)", concerns)
         self.assertNotIn("declared, declared", concerns)
 
-    def test_a_nested_repository_is_written_back_in_place(self):
+    def test_the_graph_is_written_back_to_the_one_file_it_was_read_from(self):
+        """A second copy of the graph anywhere would split it: two files, each holding
+        half the analyst's work, and whichever the resolver happened to answer with
+        would look complete."""
         pid = "b6_74"
-        nested_dir = os.path.join("governance_plans", "data", pid)
-        os.makedirs(nested_dir, exist_ok=True)
-        nested = os.path.join(nested_dir, f"{pid}_traceability_repo.json")
+        nested = data_file(pid, "traceability_repo.json")
         with open(nested, "w", encoding="utf-8") as f:
             json.dump(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]),
                       f)
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        flat = os.path.join("governance_plans", "data", f"{pid}_traceability_repo.json")
-        self.assertFalse(os.path.exists(flat),
-                         "a second copy under the flat layout would split the graph")
+
+        copies = []
+        for root, _dirs, files in os.walk("governance_plans"):
+            copies += [os.path.normpath(os.path.join(root, f)) for f in files
+                       if f.endswith("_traceability_repo.json")]
+        self.assertEqual(copies, [os.path.normpath(nested)],
+                         f"the graph exists in more than one place: {copies}")
         with open(nested, "r", encoding="utf-8") as f:
             stored = json.load(f)
         self.assertEqual(stored["requirements"][0]["stakeholders"][0]["name"],
                          "Sales Head")
-
-    def test_a_flat_repository_is_also_written_back_in_place(self):
-        # The other half of the same claim: `data_path` returns the path it READ from,
-        # so a legacy flat file must not sprout a nested twin either.
-        pid = "b6_74b"
-        save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
-        mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        nested = os.path.join("governance_plans", "data", pid,
-                              f"{pid}_traceability_repo.json")
-        self.assertFalse(os.path.exists(nested))
 
 
 class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):

@@ -78,31 +78,34 @@ class TestStakeholderCoverageMatching(BaseMCPTest):
         self.assertNotIn("Underwriter", gaps)
 
 
-class TestConfirmedArtifactSearchIsHonestAboutScope(BaseMCPTest):
-    """The per-project pattern is tried first. The unfiltered fallbacks exist because
-    a legacy FLAT layout has no project id in the filename OR the folder — there is
-    nothing to filter on — so they cannot simply be deleted. They can, however, stop
-    being silent."""
+class TestConfirmedArtifactSearchCannotReachAnotherProject(BaseMCPTest):
+    """The search used to fall back to patterns that filter by nothing at all, so a
+    flat artifact belonging to some other project could be read into THIS project's
+    requirements. It announced itself when it did — but the announcement was the only
+    thing standing between two projects. The fallbacks went with the legacy layout
+    (owner's decision, 2026-08-03); the folder now IS the filter."""
 
-    def test_an_unfiltered_match_is_announced(self):
-        import skills.requirements_spec_mcp as t71
+    def _write_flat_artifact(self):
         os.makedirs(os.path.join("governance_plans", "reports"), exist_ok=True)
-        # A flat artifact belonging to some other project.
-        with open(os.path.join("governance_plans", "reports",
-                               "4_3_confirmed_result_20260701_120000.md"),
-                  "w", encoding="utf-8") as f:
+        path = os.path.join("governance_plans", "reports",
+                            "4_3_confirmed_result_20260701_120000.md")
+        with open(path, "w", encoding="utf-8") as f:
             f.write("# Confirmed results\n\nSome other project's elicitation.\n")
+        return path
+
+    def test_a_file_outside_the_project_folder_is_not_used(self):
+        import skills.requirements_spec_mcp as t71
+        self._write_flat_artifact()
         out = t71.analyze_elicitation_context(PID)
-        self.assertIn(
-            "not filtered by project", out.lower(),
-            "the analyst was given another project's artifact with no indication",
-        )
+        self.assertNotIn("4_3_confirmed_result_20260701_120000.md", out,
+                         "an artifact belonging to no project was read into this one")
+        self.assertIn("not found", out.lower())
 
     def test_the_file_that_was_used_is_named(self):
         import skills.requirements_spec_mcp as t71
-        os.makedirs(os.path.join("governance_plans", "reports"), exist_ok=True)
-        with open(os.path.join("governance_plans", "reports",
-                               "4_3_confirmed_result_20260701_120000.md"),
+        d = os.path.join("governance_plans", "reports", PID)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "4_3_confirmed_result_20260701_120000.md"),
                   "w", encoding="utf-8") as f:
             f.write("# Confirmed results\n\nContent.\n")
         out = t71.analyze_elicitation_context(PID)

@@ -472,16 +472,16 @@ def _resolve_artifact(project_id: str, selector: str):
                 continue  # different drives on Windows
         if not inside:
             allowed = ", ".join(f"`{r}`" for r in roots) if roots else "(none exist yet)"
-            # A pre-layout artifact sits in a FLAT reports/ with no project folder. It
-            # really is this project's file, so "outside project X" was a false
-            # statement; the flat directory is deliberately NOT a root, because it is
-            # not scoped to a project and would expose every other project's documents.
+            # A file sitting directly in reports/ carries no project id at all, so it
+            # cannot be attributed to a project. The flat directory is deliberately NOT
+            # a root: it is not scoped to a project and allowing it would expose every
+            # other project's documents to whoever publishes.
             legacy_hint = ""
             if os.path.dirname(real) == os.path.realpath(REPORTS_DIR):
                 legacy_hint = (
-                    "\n\nThis looks like a pre-layout artifact in the flat `reports/` "
-                    "folder. Run `python migrate_artifacts.py` to move it into "
-                    "`reports/<project_id>/`, then publish it."
+                    "\n\nThis file sits directly in `reports/`, which belongs to no "
+                    "project. Move it into `reports/<project_id>/` — the folder is what "
+                    "says whose document it is — then publish it."
                 )
             return None, (
                 f"❌ `{selector}` is not in this project's directories.\n"

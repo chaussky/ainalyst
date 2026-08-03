@@ -194,25 +194,22 @@ class InvalidProjectIdError(Exception):
 # onto the EXISTING project 'crm' and be waved through precisely because the collision
 # target exists.
 #
-# Latin letters and digits carry the meaning; `_`, `-`, `.` and single spaces are
-# separators. The dot and the space are here for continuity with the pre-per-project
-# layout, which kept dots ('demo.v2') and folded spaces to '_'. Both are PINNED
-# behaviour (test_artifact_layout).
+# The rule is ONE sentence: a project_id must be spelled exactly the way its folder will
+# be, i.e. it must be a FIXED POINT of normalize_project_id. That makes id -> folder
+# bijective, so a collision cannot be constructed at all — there is no second spelling
+# that lands on the same folder.
 #
-# KNOWN RESIDUAL, deliberately left and documented rather than silently fixed:
-# 'demo.v2' / 'demo_v2' and 'crm up' / 'crm_up' still fold together. That collision is
-# latin-only, visible to the analyst in what they typed, and predates this guard; the
-# blocker this guard exists for is the alphabet one, where NOTHING of the id survived.
+# Owner's decision, 2026-08-03 (second round). The earlier, softer rule accepted any
+# latin spelling and let the normaliser fold it, which left a residual class of
+# collisions: 'demo.v2'/'demo_v2' and 'crm up'/'crm_up' shared a folder. Warning about
+# them was the alternative and was rejected — a warning has to be carried through the
+# hottest path in the platform (every path helper) to reach the analyst, and it still
+# leaves two projects in one folder for anyone who ignores it.
 #
-# ⚠️ OWNER DECIDED 2026-08-03 (second round) TO TIGHTEN THIS to a fixed-point rule —
-# `normalize_project_id(pid) == pid` — together with dropping the legacy layout, so
-# that id -> folder becomes bijective and the residual disappears by construction.
-# That change was STARTED AND REVERTED in the same session: it is correct in the
-# product but it invalidates the way ~500 tests seed their fixtures (they write the
-# flat layout on purpose, see conftest.save_test_repo), and finishing it properly
-# needs its own session. See the E2E gate journal, section "Что осталось владельцу".
-# DOUBLE spaces are refused, since 'a  b' and 'a b' differ by nothing a reader can see.
-_PID_ACCEPTABLE = re.compile(r"^[A-Za-z0-9_.-]+(?: [A-Za-z0-9_.-]+)*$")
+# Refused by this rule, each for the same reason (the normaliser would rewrite them):
+# 'CRM Up' (case and space), 'demo.v2' (dot), 'crm__up' (doubled separator), '_crm'
+# (leading separator), 'црм_апгрейд' (nothing survives).
+_PID_ACCEPTABLE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 # Cyrillic -> latin, for the HINT ONLY. 'ц' -> 'c' rather than 'ts' because the ids a
 # Russian-speaking BA types are usually latin words spelled in cyrillic ('црм' = CRM).
@@ -251,8 +248,7 @@ def _pid_is_acceptable(text: str) -> bool:
         return False
     if text.lower() in _PID_RESERVED:
         return False
-    normalized = normalize_project_id(text)
-    return normalized != "_unknown" and normalized not in _PID_RESERVED
+    return normalize_project_id(text) == text
 
 
 def project_id_suggestion(project_id) -> str:
@@ -278,8 +274,12 @@ def project_id_error(project_id) -> Optional[str]:
     Returns a string rather than raising so callers that want to ASK (validators,
     tests, a future CLI front-end) do not have to catch. `require_valid_project_id`
     is the raising variant used on the path helpers.
+
+    The id is judged EXACTLY as given — not stripped first. Surrounding spaces are a
+    rewriting the analyst cannot see, and `'crm'` and `'  crm  '` sharing one folder is
+    the same collision as any other, just harder to notice.
     """
-    text = str(project_id or "").strip()
+    text = str(project_id or "")
     if _pid_is_acceptable(text):
         return None
 
@@ -305,10 +305,12 @@ def project_id_error(project_id) -> Optional[str]:
 
     return (
         f"❌ `project_id` cannot be `{shown}`.\n"
-        f"   `project_id` is the key to every artifact of the project, and only "
-        f"`a-z`, `0-9`, `_` and `-` survive into the folder name. Anything else is "
-        f"stripped — so two different ids would end up in ONE folder and the projects "
-        f"would start overwriting each other's artifacts.\n"
+        f"   `project_id` is the key to every artifact of the project: it IS the name "
+        f"of the project's folder, so it has to be spelled exactly the way a folder is "
+        f"— lower-case `a-z`, `0-9`, `_` and `-`, starting with a letter or a digit, "
+        f"with no spaces and no doubled `_`. Any other spelling would have to be "
+        f"rewritten to fit, and two different ids rewritten the same way would land in "
+        f"ONE folder and overwrite each other's artifacts.\n"
         f"{hint}\n"
         f"   No project data has been written."
     )
@@ -333,26 +335,19 @@ def report_dir_for(project_id: str) -> str:
     return os.path.join(REPORTS_DIR, normalize_project_id(project_id))
 
 
-def _legacy_safe(project_id: str) -> str:
-    """Pre-per-project name normalization — used ONLY to locate already existing files.
-
-    ⚠️ The owner decided 2026-08-03 to drop this compatibility entirely (no project
-    predates the platform). The removal was started and REVERTED in the same session:
-    it is right, but ~500 tests seed their fixtures through this layout on purpose, and
-    redoing them needs its own session. See the E2E gate journal.
-    """
-    return str(project_id).lower().replace(" ", "_")
-
-
 def data_path(project_id: str, filename: str) -> str:
     """Single resolver for the JSON path (used for both reading and writing).
 
-    filename already includes the {safe_pid}_ prefix. Returns the first existing
-    candidate, otherwise the canonical nested layout:
-      1) data/<norm>/<filename>          — canonical nested;
-      2) data/<filename>                 — flat (pre-per-project layout);
-      3..5) same, with the pre-per-project name.
-    The directory is created by the writing side: os.makedirs(os.path.dirname(path), ...).
+    filename already includes the {safe_pid}_ prefix. There is exactly ONE candidate,
+    data/<project_id>/<filename>, and it is where the artifact is both written and
+    looked for. The directory is created by the writing side:
+    os.makedirs(os.path.dirname(path), ...).
+
+    Until 2026-08-03 this resolver tried five locations, so that artifacts written
+    before the per-project layout existed kept resolving. The owner dropped that
+    compatibility: no project predates the platform, so the fallbacks could only ever
+    find a file some TEST had placed, while costing every reader a five-way search
+    whose result depended on what happened to be on disk.
 
     The project_id guard runs FIRST and is not conditioned on whether files already
     exist. Conditioning it on existence was tried and reverted — "already exists" is
@@ -360,44 +355,16 @@ def data_path(project_id: str, filename: str) -> str:
     folder, so the escape hatch waved through the worst input it was supposed to stop.
     """
     require_valid_project_id(project_id)
-    norm = normalize_project_id(project_id)
-    candidates = [
-        os.path.join(DATA_DIR, norm, filename),
-        os.path.join(DATA_DIR, filename),
-    ]
-    legacy = _legacy_safe(project_id)
-    if legacy != norm and filename.startswith(norm + "_"):
-        legacy_name = legacy + filename[len(norm):]
-        candidates += [
-            os.path.join(DATA_DIR, norm, legacy_name),
-            os.path.join(DATA_DIR, legacy, legacy_name),
-            os.path.join(DATA_DIR, legacy_name),
-        ]
-    for cand in candidates:
-        if os.path.exists(cand):
-            return cand
-    return candidates[0]  # new artifact → canonical nested layout
+    return os.path.join(DATA_DIR, normalize_project_id(project_id), filename)
 
 
 def specs_dir(project_id: str) -> str:
     """The 7.1 specs directory: data/<project_id>/specs/.
 
-    Falls back to the pre-per-project layouts, like data_path above.
+    One location, like data_path above.
     """
     require_valid_project_id(project_id)
-    norm = normalize_project_id(project_id)
-    nested = os.path.join(DATA_DIR, norm, "specs")
-    candidates = [nested, os.path.join(DATA_DIR, f"{norm}_specs")]
-    legacy = _legacy_safe(project_id)
-    if legacy != norm:
-        candidates += [
-            os.path.join(DATA_DIR, legacy, "specs"),
-            os.path.join(DATA_DIR, f"{legacy}_specs"),
-        ]
-    for cand in candidates:
-        if os.path.isdir(cand):
-            return cand
-    return nested
+    return os.path.join(DATA_DIR, normalize_project_id(project_id), "specs")
 
 
 # ---------------------------------------------------------------------------

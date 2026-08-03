@@ -14,7 +14,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tests.conftest import setup_mocks, BaseMCPTest
+from tests.conftest import setup_mocks, BaseMCPTest, data_file
 
 setup_mocks()
 
@@ -180,8 +180,7 @@ class TestRegistryPartyStatusHasThreeAnswers(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _write_registry(self, project_id, stakeholders):
-        path = os.path.join("governance_plans", "data",
-                            f"{project_id}_stakeholder_registry.json")
+        path = data_file(project_id, "stakeholder_registry.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project": project_id, "stakeholders": stakeholders,
                        "history": []}, f)
@@ -240,8 +239,7 @@ class TestRegistryPartyStatusHasThreeAnswers(unittest.TestCase):
     def test_a_registry_holding_only_null_is_still_a_registry_that_exists(self):
         # The file is there and was read; `stakeholders: null` is a damaged list, not
         # a missing artifact, so "create the registry" is still the wrong advice.
-        path = os.path.join("governance_plans", "data",
-                            "pstat4c_stakeholder_registry.json")
+        path = data_file("pstat4c", "stakeholder_registry.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project": "pstat4c", "stakeholders": None}, f)
         self.assertEqual(registry_party_status("pstat4c", "Ivan Petrov"),

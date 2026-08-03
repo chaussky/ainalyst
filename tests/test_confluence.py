@@ -1228,7 +1228,7 @@ class TestResolveArtifact(BaseMCPTest):
         legacy = self._write("reports", "Old_Report.md", "# Legacy\n")
         path, message = confluence_mod._resolve_artifact(self.PID, legacy)
         self.assertIsNone(path)
-        self.assertIn("migrate_artifacts", message)
+        self.assertIn("reports/<project_id>/", message)
 
     def test_a_non_markdown_artifact_is_refused(self):
         """A .puml is diagram source: it renders as noise, and the extension leaks
@@ -1423,16 +1423,23 @@ class TestPublishFailureEdges(BaseMCPTest):
         self.assertIn("❌", result)
         mock_client.update_page.assert_not_called()
 
-    def test_title_uses_the_normalized_project_id(self):
-        """report_dir_for normalizes, so two casings resolve to ONE file — but the raw
-        id in the title made them two Confluence pages for one artifact."""
+    def test_one_artifact_maps_to_one_page(self):
+        """Two casings used to resolve to ONE file but TWO Confluence pages, because
+        report_dir_for normalized and the title carried the raw id. Publishing is
+        irreversible, so the second page could not be taken back.
+
+        The second spelling is no longer an id at all (fixed-point rule, 2026-08-03),
+        which closes the gap at the source — and the refusal has to reach the BA as an
+        answer, since publishing is exactly where an unhandled exception costs most."""
         self._write("7_6_recommendation_20260720_101010.md", "# R\n\nBody.\n")
-        titles = set()
-        for pid in ("a4proj", "A4Proj"):
-            mock_client = _make_mock_confluence(page_exists=False)
-            self._publish(mock_client, project_id=pid)
-            titles.add(mock_client.create_page.call_args.kwargs["title"])
-        self.assertEqual(len(titles), 1, f"one artifact must map to one page: {titles}")
+        mock_client = _make_mock_confluence(page_exists=False)
+        self._publish(mock_client, project_id="a4proj")
+        self.assertIn("a4proj", mock_client.create_page.call_args.kwargs["title"])
+
+        mock_client = _make_mock_confluence(page_exists=False)
+        result = self._publish(mock_client, project_id="A4Proj")
+        self.assertIn("❌", result)
+        mock_client.create_page.assert_not_called()
 
     def test_missing_parent_page_is_refused_not_ignored(self):
         """It used to create the page at the space root and answer ✅ — telling the BA

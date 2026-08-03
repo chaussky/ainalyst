@@ -75,12 +75,12 @@ from datetime import date
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import BaseMCPTest, setup_mocks
+from tests.conftest import BaseMCPTest, setup_mocks, data_file
 
 setup_mocks()
 
 import skills.value_recommend_mcp as mod76
-from skills.common import data_path
+from skills.common import data_path, normalize_project_id
 
 
 # ---------------------------------------------------------------------------
@@ -174,39 +174,31 @@ def make_context(project_id="test_proj", goals=None):
 
 
 def save_design_options(do_data: dict, tmp_dir: str):
-    pid = do_data["project_id"].lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_design_options.json")
-    os.makedirs(os.path.join(tmp_dir, "governance_plans", "data"), exist_ok=True)
+    path = data_file(do_data["project_id"], "design_options.json", os.path.join(tmp_dir, "governance_plans", "data"))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(do_data, f, ensure_ascii=False, indent=2)
 
 
 def save_context(ctx: dict, tmp_dir: str):
-    pid = ctx["project_id"].lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_business_context.json")
-    os.makedirs(os.path.join(tmp_dir, "governance_plans", "data"), exist_ok=True)
+    path = data_file(ctx["project_id"], "business_context.json", os.path.join(tmp_dir, "governance_plans", "data"))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(ctx, f, ensure_ascii=False, indent=2)
 
 
 def save_architecture(arch: dict, project_id: str, tmp_dir: str):
-    pid = project_id.lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_architecture.json")
-    os.makedirs(os.path.join(tmp_dir, "governance_plans", "data"), exist_ok=True)
+    path = data_file(project_id, "architecture.json", os.path.join(tmp_dir, "governance_plans", "data"))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(arch, f, ensure_ascii=False, indent=2)
 
 
 def save_risks(risks_data: dict, project_id: str, tmp_dir: str):
-    pid = project_id.lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_risks.json")
-    os.makedirs(os.path.join(tmp_dir, "governance_plans", "data"), exist_ok=True)
+    path = data_file(project_id, "risks.json", os.path.join(tmp_dir, "governance_plans", "data"))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(risks_data, f, ensure_ascii=False, indent=2)
 
 
 def load_rec_file(project_id: str, tmp_dir: str) -> dict:
-    pid = project_id.lower().replace(" ", "_")
+    pid = normalize_project_id(project_id)
     path = data_path(project_id, f"{pid}_recommendation.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -1005,9 +997,8 @@ class TestPipeline(BaseMCPTest):
 def save_risk_assessment_63(project_id, tmp_dir, risks_list):
     """Writes the 6.3 risk register in the REAL producer shape:
     filename <pid>_risk_assessment.json, key `risks` = LIST, each risk has risk_score (no risk_level)."""
-    pid = project_id.lower().replace(" ", "_")
-    path = os.path.join(tmp_dir, "governance_plans", "data", f"{pid}_risk_assessment.json")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    path = data_file(project_id, "risk_assessment.json",
+                     os.path.join(tmp_dir, "governance_plans", "data"))
     with open(path, "w", encoding="utf-8") as f:
         json.dump({"project_id": project_id, "risks": risks_list}, f)
     return path

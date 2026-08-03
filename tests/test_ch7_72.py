@@ -31,7 +31,7 @@ from datetime import date
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import BaseMCPTest, save_test_repo
+from tests.conftest import BaseMCPTest, save_test_repo, data_file
 
 import skills.requirements_verify_mcp as mod72
 from skills.common import data_path
@@ -55,7 +55,7 @@ def make_repo(project_id: str, requirements: list = None, links: list = None) ->
 
 def save_repo(repo: dict) -> str:
     safe = repo["project"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_traceability_repo.json")
+    path = data_file(safe, "traceability_repo.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -117,14 +117,12 @@ def make_uc_req(req_id="UC-001", title="Create an application", status="draft",
 class TestUtilities(BaseMCPTest):
 
     def test_repo_path(self):
-        path = mod72._repo_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertIn("traceability_repo.json", path)
+        path = mod72._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
     def test_issues_path(self):
-        path = mod72._issues_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertIn("verification_issues.json", path)
+        path = mod72._issues_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_verification_issues.json"), path)
 
     def test_load_repo_empty(self):
         repo = mod72._load_repo("nonexistent_proj")
@@ -466,12 +464,12 @@ class TestCheckModelConsistency(BaseMCPTest):
         self.assertIn("not found", result)
 
     def test_empty_specs_dir(self):
-        os.makedirs("governance_plans/data/proj_mc2_specs", exist_ok=True)
+        os.makedirs(os.path.join("governance_plans", "data", "proj_mc2", "specs"), exist_ok=True)
         result = mod72.check_model_consistency("proj_mc2")
         self.assertIn("no .md or .puml files", result)
 
     def test_dd_erd_mismatch(self):
-        specs_dir = "governance_plans/data/proj_mc3_specs"
+        specs_dir = os.path.join("governance_plans", "data", "proj_mc3", "specs")
         os.makedirs(specs_dir, exist_ok=True)
 
         # DD with entity Application
@@ -487,7 +485,7 @@ class TestCheckModelConsistency(BaseMCPTest):
         self.assertIn("Client", result)
 
     def test_dd_erd_consistent(self):
-        specs_dir = "governance_plans/data/proj_mc4_specs"
+        specs_dir = os.path.join("governance_plans", "data", "proj_mc4", "specs")
         os.makedirs(specs_dir, exist_ok=True)
 
         with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:
@@ -500,7 +498,7 @@ class TestCheckModelConsistency(BaseMCPTest):
         self.assertIn("No inconsistencies found", result)
 
     def test_uc_actor_not_in_diagram(self):
-        specs_dir = "governance_plans/data/proj_mc5_specs"
+        specs_dir = os.path.join("governance_plans", "data", "proj_mc5", "specs")
         os.makedirs(specs_dir, exist_ok=True)
 
         # UC spec with an actor
@@ -1029,7 +1027,7 @@ class TestPipeline(BaseMCPTest):
     def test_pipeline_model_consistency(self):
         """check_model_consistency finds a DD vs ERD mismatch."""
         project_id = "pipeline_models"
-        specs_dir = f"governance_plans/data/{project_id}_specs"
+        specs_dir = os.path.join("governance_plans", "data", project_id, "specs")
         os.makedirs(specs_dir, exist_ok=True)
 
         with open(os.path.join(specs_dir, "dd_001.md"), "w", encoding="utf-8") as f:

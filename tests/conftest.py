@@ -150,16 +150,26 @@ def make_test_repo(project_name: str = "test_project") -> dict:
     }
 
 
-def save_test_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
-    """Saves the test repository FLAT (legacy layout, issue #1).
+def data_file(project_id: str, suffix: str, governance_dir: str = "governance_plans/data") -> str:
+    """The path of a project's JSON artifact, with the directory created.
 
-    Intentionally writes to a flat data/ to reproduce already-existing
-    (pre-migration) artifacts: the module path resolver data_path will see the flat
-    file and keep reading/writing it in place — a fallback to legacy.
+    The one place tests build a data path. There is exactly ONE layout —
+    data/<project_id>/<project_id>_<suffix> — so a fixture seeded through this helper
+    sits where the production resolver looks, and nowhere else. Tests used to seed
+    FLAT files on purpose, to reproduce artifacts predating the per-project layout;
+    that layout and its read fallbacks were dropped on 2026-08-03, so a flat fixture is
+    now simply a file nothing can find.
     """
-    safe_name = repo["project"].lower().replace(" ", "_")
-    path = os.path.join(governance_dir, f"{safe_name}_traceability_repo.json")
-    os.makedirs(governance_dir, exist_ok=True)
+    from skills.common import normalize_project_id
+    safe_name = normalize_project_id(project_id)
+    out_dir = os.path.join(governance_dir, safe_name)
+    os.makedirs(out_dir, exist_ok=True)
+    return os.path.join(out_dir, f"{safe_name}_{suffix}")
+
+
+def save_test_repo(repo: dict, governance_dir: str = "governance_plans/data") -> str:
+    """Seeds the test traceability repository where the platform stores it."""
+    path = data_file(repo["project"], "traceability_repo.json", governance_dir)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
     return path
@@ -167,8 +177,8 @@ def save_test_repo(repo: dict, governance_dir: str = "governance_plans/data") ->
 
 def load_test_repo(project_name: str, governance_dir: str = "governance_plans/data") -> dict:
     """Loads the test repository via the shared path resolver (issue #1)."""
-    from skills.common import data_path
-    safe_name = project_name.lower().replace(" ", "_")
+    from skills.common import data_path, normalize_project_id
+    safe_name = normalize_project_id(project_name)
     path = data_path(project_name, f"{safe_name}_traceability_repo.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)

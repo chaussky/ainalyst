@@ -21,7 +21,7 @@ from datetime import date
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo
+from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_repo, data_file
 
 setup_mocks()
 
@@ -133,7 +133,7 @@ def _save_needs_json(project=PROJECT, needs_list=None):
         "updated": str(date.today()),
     }
     os.makedirs("governance_plans/data", exist_ok=True)
-    path = f"governance_plans/data/{_safe(project)}_business_needs.json"
+    path = data_file(_safe(project), "business_needs.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return path
@@ -152,7 +152,7 @@ def _save_scope_json(project=PROJECT):
         "updated": str(date.today()),
     }
     os.makedirs("governance_plans/data", exist_ok=True)
-    path = f"governance_plans/data/{_safe(project)}_current_state_scope.json"
+    path = data_file(_safe(project), "current_state_scope.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return path
@@ -447,7 +447,7 @@ class TestDefineBusinessNeeds(BaseMCPTest):
         save_test_repo(repo, governance_dir="governance_plans/data")
         _needs(register=True)
         # Check that BN-001 appeared in the repository
-        with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
+        with open(data_file(PROJECT, "traceability_repo.json"), encoding="utf-8") as f:
             repo = json.load(f)
         ids = [r["id"] for r in repo["requirements"]]
         self.assertIn("BN-001", ids)
@@ -457,7 +457,7 @@ class TestDefineBusinessNeeds(BaseMCPTest):
         repo = make_test_repo(PROJECT)
         save_test_repo(repo, governance_dir="governance_plans/data")
         _needs(register=True)
-        with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
+        with open(data_file(PROJECT, "traceability_repo.json"), encoding="utf-8") as f:
             repo = json.load(f)
         bn = next(r for r in repo["requirements"] if r["id"] == "BN-001")
         self.assertEqual(bn["type"], "business_need")
@@ -472,7 +472,7 @@ class TestDefineBusinessNeeds(BaseMCPTest):
         repo = make_test_repo(PROJECT)
         save_test_repo(repo, governance_dir="governance_plans/data")
         _needs(register=False)
-        with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
+        with open(data_file(PROJECT, "traceability_repo.json"), encoding="utf-8") as f:
             repo = json.load(f)
         ids = [r["id"] for r in repo["requirements"]]
         self.assertNotIn("BN-001", ids)
@@ -689,7 +689,7 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("BN-001", r)
         self.assertIn("5.1", r)
         # Check that the node is in the repo
-        with open(f"governance_plans/data/{PROJECT}_traceability_repo.json", encoding="utf-8") as f:
+        with open(data_file(PROJECT, "traceability_repo.json"), encoding="utf-8") as f:
             repo = json.load(f)
         types = [req["type"] for req in repo["requirements"]]
         self.assertIn("business_need", types)

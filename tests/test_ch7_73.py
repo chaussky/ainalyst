@@ -40,7 +40,7 @@ from datetime import date
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from tests.conftest import BaseMCPTest
+from tests.conftest import BaseMCPTest, data_file
 
 import skills.requirements_validate_mcp as mod73
 from skills.common import data_path
@@ -64,7 +64,7 @@ def make_repo(project_id: str, requirements=None, links=None) -> dict:
 
 def save_repo(repo: dict) -> None:
     safe = repo["project"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_traceability_repo.json")
+    path = data_file(safe, "traceability_repo.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(repo, f, ensure_ascii=False, indent=2)
@@ -111,7 +111,7 @@ def make_context(project_id: str, goals=None) -> dict:
 
 def save_context(ctx: dict) -> None:
     safe = ctx["project_id"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_business_context.json")
+    path = data_file(safe, "business_context.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(ctx, f, ensure_ascii=False, indent=2)
@@ -129,7 +129,7 @@ def make_assumptions_data(project_id: str, assumptions=None) -> dict:
 
 def save_assumptions_data(data: dict) -> None:
     safe = data["project"].lower().replace(" ", "_")
-    path = os.path.join("governance_plans", "data", f"{safe}_assumptions.json")
+    path = data_file(safe, "assumptions.json")
     os.makedirs(os.path.join("governance_plans", "data"), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -153,19 +153,16 @@ class TestUtilities(BaseMCPTest):
         self.assertEqual(mod73._safe("crm upgrade"), "crm_upgrade")
 
     def test_repo_path(self):
-        path = mod73._repo_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertIn("traceability_repo.json", path)
+        path = mod73._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
     def test_context_path(self):
-        path = mod73._context_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertIn("business_context.json", path)
+        path = mod73._context_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_business_context.json"), path)
 
     def test_assumptions_path(self):
-        path = mod73._assumptions_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertIn("assumptions.json", path)
+        path = mod73._assumptions_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_assumptions.json"), path)
 
     def test_load_repo_empty(self):
         repo = mod73._load_repo("nonexistent_73")

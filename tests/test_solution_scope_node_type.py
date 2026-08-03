@@ -34,7 +34,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.conftest import setup_mocks, BaseMCPTest
+from tests.conftest import setup_mocks, BaseMCPTest, data_file
 
 setup_mocks()
 
@@ -168,7 +168,7 @@ class TestSixFourWritesTheNewLiterals(BaseMCPTest):
             "requirements": [{"id": "BG-001", "type": "business_goal", "title": "NPS"}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
         strategy = _load_strategy()

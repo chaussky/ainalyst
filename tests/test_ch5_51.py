@@ -582,16 +582,18 @@ class TestExportTraceabilityMatrix(BaseMCPTest):
 class TestUtils51(unittest.TestCase):
     """Tests for the 5.1 module's helper functions."""
 
-    def test_repo_path_normalizes_spaces(self):
-        """Spaces in project_name are converted to underscores."""
-        path = mod51._repo_path("My Project")
-        self.assertIn("my_project", path)
-        self.assertNotIn(" ", path)
+    def test_repo_path_is_under_the_project_folder(self):
+        """The id IS the folder name — no rewriting happens on the way to the path."""
+        path = mod51._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
-    def test_repo_path_lowercase(self):
-        """The project name is lowercased."""
-        path = mod51._repo_path("CRM_UPGRADE")
-        self.assertEqual(path, mod51._repo_path("crm_upgrade"))
+    def test_a_spelling_that_would_be_rewritten_gets_no_path(self):
+        """`CRM_UPGRADE` and `crm_upgrade` used to resolve to the SAME file, which is
+        how two ids came to share one folder. Now only the second is an id at all."""
+        import skills.common as common_mod
+        for spelled_wrong in ("CRM_UPGRADE", "My Project"):
+            with self.assertRaises(common_mod.InvalidProjectIdError):
+                mod51._repo_path(spelled_wrong)
 
     def test_find_req_existing(self):
         """_find_req finds a requirement by ID."""

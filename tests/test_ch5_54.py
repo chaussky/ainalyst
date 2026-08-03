@@ -44,15 +44,14 @@ import skills.requirements_assess_changes_mcp as mod54
 
 class TestUtils(unittest.TestCase):
 
-    def test_repo_path_normalizes_spaces(self):
-        path = mod54._repo_path("My Project")
-        self.assertNotIn(" ", path)
-        self.assertIn("my_project", path)
-        self.assertIn("traceability_repo.json", path)
+    def test_repo_path_is_under_the_project_folder(self):
+        path = mod54._repo_path("my_project")
+        self.assertIn(os.path.join("my_project", "my_project_traceability_repo.json"), path)
 
-    def test_repo_path_lowercase(self):
-        path = mod54._repo_path("CRM 2024")
-        self.assertIn("crm_2024", path)
+    def test_a_spelling_that_would_be_rewritten_gets_no_path(self):
+        import skills.common as common_mod
+        with self.assertRaises(common_mod.InvalidProjectIdError):
+            mod54._repo_path("CRM 2024")
 
     def test_find_node_existing(self):
         repo = make_test_repo()

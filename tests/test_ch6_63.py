@@ -24,7 +24,7 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import conftest for mocking
-from tests.conftest import setup_mocks, BaseMCPTest
+from tests.conftest import setup_mocks, BaseMCPTest, data_file
 
 setup_mocks()
 
@@ -194,14 +194,17 @@ class TestScopeRiskAssessment(BaseMCPTest):
 
 class TestImportRisksFromContext(BaseMCPTest):
 
-    def _write_json(self, filename: str, data: dict):
-        os.makedirs(DATA_DIR, exist_ok=True)
-        path = os.path.join(DATA_DIR, filename)
+    def _write_json(self, project_id: str, suffix: str, data: dict):
+        # The project_id is passed in, never derived from the file name. The name's
+        # prefix IS the normalised id, but taking it back out of the name is a guess
+        # (`b33_writer_future_state.json` -> `b33`) and seeds the fixture into a folder
+        # no tool will ever look in.
+        path = data_file(project_id, suffix)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
 
     def _write_fs_state(self, project_id: str = PROJECT):
-        self._write_json(f"{_safe(project_id)}_future_state.json", {
+        self._write_json(project_id, "future_state.json", {
             "constraints": [
                 {"description": "Budget is limited", "category": "financial"},
                 {"description": "Q3 deadline", "category": "time"},
@@ -209,7 +212,7 @@ class TestImportRisksFromContext(BaseMCPTest):
         })
 
     def _write_gap(self, project_id: str = PROJECT):
-        self._write_json(f"{_safe(project_id)}_gap_analysis.json", {
+        self._write_json(project_id, "gap_analysis.json", {
             "gaps": [
                 {"element": "technology", "complexity": "high"},
                 {"element": "capabilities", "complexity": "low"},
@@ -218,7 +221,7 @@ class TestImportRisksFromContext(BaseMCPTest):
 
     def _write_cs_state(self, project_id: str = PROJECT):
         # REAL 6.1 structure: root_causes at the top level, each with a `root_cause` field.
-        self._write_json(f"{_safe(project_id)}_current_state.json", {
+        self._write_json(project_id, "current_state.json", {
             "root_causes": [
                 {"rca_id": "RCA-001", "problem_statement": "P", "root_cause": "Outdated processes"},
             ]
@@ -226,7 +229,7 @@ class TestImportRisksFromContext(BaseMCPTest):
 
     def _write_cs_needs(self, project_id: str = PROJECT):
         # REAL 6.1 structure: key `needs`, field `need_title`, capitalized priority.
-        self._write_json(f"{_safe(project_id)}_business_needs.json", {
+        self._write_json(project_id, "business_needs.json", {
             "needs": [
                 {"id": "BN-001", "need_title": "HR Automation", "priority": "High"},
                 {"id": "BN-002", "need_title": "Cost Reduction", "priority": "Medium"},
@@ -235,7 +238,7 @@ class TestImportRisksFromContext(BaseMCPTest):
         })
 
     def _write_elicitation(self, project_id: str = PROJECT):
-        self._write_json(f"{_safe(project_id)}_elicitation_results.json", {
+        self._write_json(project_id, "elicitation_results.json", {
             "risks_mentioned": [
                 {"description": "Employee resistance to change", "stakeholder": "HR Director"},
             ]
@@ -929,7 +932,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
             "links": [],
             "history": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
@@ -973,7 +976,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
             "requirements": [{"id": "BN-001", "type": "business_need", "title": "T", "version": "1.0", "status": "confirmed", "added": TODAY}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
@@ -1005,7 +1008,7 @@ class TestSaveRiskAssessment(BaseMCPTest):
             "requirements": [{"id": "BN-001", "type": "business_need", "title": "T", "version": "1.0", "status": "confirmed", "added": TODAY}],
             "links": [],
         }
-        repo_path = os.path.join(DATA_DIR, f"{_safe(PROJECT)}_traceability_repo.json")
+        repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
