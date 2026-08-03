@@ -649,6 +649,65 @@ class TestSavePrioritizationResult(BaseMCPTest):
             mock_sa.return_value = ""
             return mod53.save_prioritization_result(**kwargs)
 
+    def test_the_platforms_own_word_for_this_field_is_accepted(self):
+        """`priority` is what the concept is called everywhere else — the graph node's
+        field, this module's own aggregation output, 7.1's writer. Only the input said
+        `score`, and a record using the natural spelling was rejected as a bad VALUE
+        ("Invalid value 'None'"), sending the analyst to re-check priorities they had
+        written correctly."""
+        _start_session(session="wave-syn")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            result = mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label="wave-syn", stakeholder_id="SH-001",
+                stakeholder_influence="High",
+                scores_json=json.dumps([{"req_id": "FR-001", "priority": "Must"}]))
+        self.assertNotIn("❌", result)
+        self.assertIn("Requirements scored:** 1", result)
+
+    def test_a_record_with_no_recognisable_score_names_the_field(self):
+        _start_session(session="wave-nokey")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            result = mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label="wave-nokey", stakeholder_id="SH-001",
+                stakeholder_influence="High",
+                scores_json=json.dumps([{"req_id": "FR-001", "verdict": "Must"}]))
+        self.assertIn("❌", result)
+        self.assertIn("`score`", result)
+        self.assertNotIn("Invalid value", result,
+                         "a missing KEY was diagnosed as a bad VALUE")
+
+    def test_an_empty_session_does_not_claim_it_wrote_priorities(self):
+        """A session where no score was ever accepted used to close FOREVER and hand
+        back a document saying both `Requirements updated: 0` and "Priorities have
+        been written to the 5.1 repository".
+
+        The production path into this is one keystroke wide: mistype the score field
+        and every score is rejected (finding V-4), then finalise."""
+        _start_session(session="wave-empty")
+        with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = ""
+            result = mod53.save_prioritization_result(PROJECT, "wave-empty")
+
+        self.assertNotIn("Priorities have been written", result)
+        self.assertIn("Requirements updated:** 0", result)
+        self.assertIn("no scores", result.lower())
+
+    def test_an_empty_session_is_not_closed_by_finalising_it(self):
+        """Nothing was collected, so there is nothing to finalise. Closing anyway cost
+        the analyst the session — `add_stakeholder_scores`, `run_aggregation` and
+        `resolve_conflict` all refuse on a closed one — in exchange for a document
+        that recorded nothing."""
+        _start_session(session="wave-empty2")
+        with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = ""
+            mod53.save_prioritization_result(PROJECT, "wave-empty2")
+
+        _add_scores_moscow(session="wave-empty2", sh_id="SH-001", influence="High")
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-empty2")
+        self.assertNotIn("already closed", agg.lower(),
+                         "the analyst lost the session by finalising an empty one")
+
     def test_save_result_works(self):
         """Finalizing the session goes through without errors."""
         result = self._call()

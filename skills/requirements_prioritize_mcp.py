@@ -31,6 +31,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     load_ba_plan, planned_prioritization, reg_norm,
     planned_party_status, PARTY_UNPLANNED, PARTY_PLANNED, PARTY_UNBRIDGEABLE,
+    pick_field, unrecognized_records_error,
 )
 
 mcp = FastMCP("BABOK_Requirements_Prioritize")
@@ -1119,10 +1120,20 @@ def add_stakeholder_scores(
     if method == "MoSCoW":
         valid_vals = set(MOSCOW_WEIGHTS.keys())
         for item in raw_scores:
-            rid = item.get("req_id")
-            score = item.get("score")
+            rid = pick_field(item, "req_id", "requirement_id", "id")
+            # `priority` is what this concept is called EVERYWHERE else in the
+            # platform: the graph node's field, this module's own aggregation output
+            # (`{req_id: {"priority": ...}}`), and 7.1's writer. Only the input here
+            # said `score`, so the natural spelling was rejected — and rejected as a
+            # bad VALUE ("Invalid value 'None'"), sending the analyst to re-check
+            # priorities they had written correctly.
+            score = pick_field(item, "score", "priority", "moscow")
             if not rid:
                 return f"❌ Missing req_id in: {item}"
+            if not score:
+                return unrecognized_records_error(
+                    "scores_json", ("score", "priority", "moscow"),
+                    '[{"req_id": "FR-001", "score": "Must"}]')
             if score not in valid_vals:
                 return (f"❌ Invalid value '{score}' for {rid}. "
                         f"Allowed: Must / Should / Could / Won't")
@@ -1130,7 +1141,7 @@ def add_stakeholder_scores(
 
     elif method == "WSJF":
         for item in raw_scores:
-            rid = item.get("req_id")
+            rid = pick_field(item, "req_id", "requirement_id", "id")
             if not rid:
                 return f"❌ Missing req_id in: {item}"
             normalized[rid] = {
@@ -1143,9 +1154,9 @@ def add_stakeholder_scores(
     elif method == "ImpactEffort":
         valid_ie = {"Low", "Medium", "High"}
         for item in raw_scores:
-            rid = item.get("req_id")
-            impact = item.get("impact", "Medium")
-            effort = item.get("effort", "Medium")
+            rid = pick_field(item, "req_id", "requirement_id", "id")
+            impact = pick_field(item, "impact", "value") or "Medium"
+            effort = pick_field(item, "effort", "cost", "size") or "Medium"
             if not rid:
                 return f"❌ Missing req_id in: {item}"
             if impact not in valid_ie or effort not in valid_ie:
@@ -1156,7 +1167,7 @@ def add_stakeholder_scores(
     elif method == "TimeBoxing":
         valid_vals = set(MOSCOW_WEIGHTS.keys())
         for item in raw_scores:
-            rid = item.get("req_id")
+            rid = pick_field(item, "req_id", "requirement_id", "id")
             if not rid:
                 return f"❌ Missing req_id in: {item}"
             if "cost" not in item:
@@ -1737,12 +1748,24 @@ def save_prioritization_result(
             "method": session["method"],
         })
 
-    if not already_closed:
+    # NOTHING was collected: no score reached the aggregate, so there is no result to
+    # write and nothing to finalise. Closing anyway cost the analyst the session —
+    # add_stakeholder_scores, run_aggregation and resolve_conflict all refuse on a
+    # closed one — in exchange for a document that recorded nothing. The production
+    # path in is one keystroke wide: mistype the score field, every score is rejected
+    # (finding V-4), then finalise.
+    #
+    # "Don't block — warn": the report is still produced, and it says plainly that
+    # nothing was collected. The session stays open so the work can continue.
+    nothing_collected = not session.get("aggregated")
+
+    if not already_closed and not nothing_collected:
         _save_repo(project_name, repo)
 
     # Close the session
-    session["status"] = "closed"
-    session["closed_at"] = str(date.today())
+    if not nothing_collected:
+        session["status"] = "closed"
+        session["closed_at"] = str(date.today())
     _save_prio(project_name, prio_data)
 
     # Markdown report
@@ -1759,6 +1782,14 @@ def save_prioritization_result(
     ]
     if refinalise_note:
         lines += [refinalise_note, ""]
+
+    if nothing_collected:
+        lines += [
+            "⚠️ **No scores were collected in this session** — the aggregate is empty, "
+            "so nothing was written to the 5.1 repository and the counts below are not "
+            "a statement about the backlog. The session remains open.",
+            "",
+        ]
 
     # BABOK 3.3 element .3 reconciled against what actually happened. Appended BELOW
     # the header block on purpose: the two `lines.insert(7, ...)` calls further down
@@ -1858,15 +1889,32 @@ def save_prioritization_result(
             "",
         ]
 
-    lines += [
-        "---",
-        "",
-        "## Next steps",
-        "",
-        "- Priorities have been written to the 5.1 repository",
-        "- Results are available for 6.3 (Assess Risks)",
-        "- If the context changes — run a new prioritization session",
-    ]
+    # The next-steps block is built from what actually happened. As a fixed text it
+    # advised handing on results that do not exist — the sharpest case being a session
+    # with no scores at all, where the same document read "Requirements updated: 0"
+    # and "Priorities have been written to the 5.1 repository".
+    lines += ["---", "", "## Next steps", ""]
+    if nothing_collected:
+        lines += [
+            "- ⚠️ **No scores were collected in this session, so no priority was "
+            "written to the 5.1 repository.** Nothing above is a statement about the "
+            "backlog.",
+            "- The session is still OPEN. Add scores with `add_stakeholder_scores` "
+            "(the field is `score`), then `run_aggregation`, then finalise again.",
+        ]
+    elif already_closed:
+        lines += [
+            "- This report was regenerated from the stored result — the 5.1 repository "
+            "was not written to again.",
+            "- Results are available for 6.3 (Assess Risks)",
+        ]
+    else:
+        lines += [
+            f"- Priorities have been written to the 5.1 repository "
+            f"({updated_count} requirement(s))",
+            "- Results are available for 6.3 (Assess Risks)",
+            "- If the context changes — run a new prioritization session",
+        ]
 
     content = "\n".join(lines)
     saved = save_artifact(content, prefix=f"5_3_prioritization_{project_name.lower().replace(' ', '_')}", project_id=project_name)
