@@ -27,7 +27,7 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, parse_json_dict_list,
                            update_stakeholder_registry_file,
-                           load_stakeholder_registry, reg_norm)
+                           load_stakeholder_registry, reg_norm, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Collaborate")
 
@@ -123,6 +123,7 @@ def _record_engagement_in_registry(project_name: str, stakeholder_role: str,
 
 
 @mcp.tool()
+@guard_artifact_errors
 def log_decision(
     project_name: str,
     decision_date: str,
@@ -275,6 +276,7 @@ def log_decision(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_meeting_notes(
     project_name: str,
     meeting_date: str,
@@ -440,6 +442,7 @@ def save_meeting_notes(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def update_engagement_status(
     project_name: str,
     stakeholder_role: str,

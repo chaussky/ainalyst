@@ -39,8 +39,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, normalize_project_id, report_dir_for, specs_dir,
-    REPORTS_DIR,
-)
+    REPORTS_DIR, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Confluence_Integration")
 
@@ -623,6 +622,7 @@ def push_to_confluence(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def pull_from_confluence(
     page_title: str,
     space_key: str = "",
@@ -898,6 +898,7 @@ def list_space_pages(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def publish_artifact_to_confluence(
     project_id: str,
     artifact: str = "",

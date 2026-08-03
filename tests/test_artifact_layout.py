@@ -144,7 +144,12 @@ class TestSaveArtifact(unittest.TestCase):
         e.g. "Elicitation_Plan_{project_name}". normalize_project_id guarded the folder,
         but a separator inside the PREFIX made the write land outside it — or fail with
         FileNotFoundError because the implied directory does not exist."""
-        common.save_artifact("# hi", "Elicitation_Plan_CRM/Q3 upgrade", project_id="CRM/Q3 upgrade")
+        # The project_id here is a VALID one: since the E2E gate of 2026-08-03 an id
+        # carrying a separator is refused outright (see the assertion at the end and
+        # tests/test_project_id_validation.py). The property this test exists for —
+        # a separator inside the PREFIX must not steer the write out of the folder —
+        # is unaffected by that decision and is still exercised.
+        common.save_artifact("# hi", "Elicitation_Plan_CRM/Q3 upgrade", project_id="crm_q3_upgrade")
         written = []
         for root, _dirs, fs in os.walk("governance_plans/reports"):
             for f in fs:
@@ -154,6 +159,10 @@ class TestSaveArtifact(unittest.TestCase):
             written[0].startswith(os.path.normpath("governance_plans/reports/crm_q3_upgrade")),
             written[0])
         self.assertFalse(os.path.isdir(os.path.join("governance_plans", "reports", "CRM")))
+
+        # ...and the id itself no longer gets silently rewritten into that folder.
+        with self.assertRaises(common.InvalidProjectIdError):
+            common.save_artifact("# hi", "Elicitation_Plan", project_id="CRM/Q3 upgrade")
 
     def test_backslash_and_traversal_in_prefix_neutralized(self):
         common.save_artifact("# hi", "..\\..\\evil", project_id="proj")

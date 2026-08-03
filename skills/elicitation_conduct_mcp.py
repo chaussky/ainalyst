@@ -20,8 +20,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, data_path, normalize_project_id,
     parse_json_dict, parse_json_dict_list, parse_json_list,
-    update_stakeholder_registry_file,
-)
+    update_stakeholder_registry_file, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Elicitation_Conduct")
 
@@ -178,6 +177,7 @@ def _record_session_risks(project_name: str, session_date: str, stakeholder_role
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def process_elicitation_results(
     project_name: str,
     session_date: str,
@@ -387,6 +387,7 @@ def process_elicitation_results(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def compare_elicitation_results(
     project_name: str,
     sessions_summary: str,
@@ -492,6 +493,7 @@ def compare_elicitation_results(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_cr_elicitation_analysis(
     project_name: str,
     cr_description: str,
@@ -602,6 +604,7 @@ def save_cr_elicitation_analysis(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def update_stakeholder_registry(
     project_name: str,
     session_source: str,

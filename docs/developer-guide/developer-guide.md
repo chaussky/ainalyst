@@ -201,9 +201,27 @@ Rules for developers:
 - **Reading** old flat artifacts works automatically: `data_path` returns the flat path if a nested one does not yet exist. Listing (`session_start.sh`) walks subfolders recursively.
 - **Migration**: `python migrate_artifacts.py` (dry run) → `--apply`. It only moves old flat files into subfolders (normalizing both the folder and the file name, so the layout becomes canonical); it deletes nothing.
 
-**The `project_id` contract.** Use names from `[a-z0-9_-]` (case and spaces are handled: `lower`, space → `_`). For these, normalization is idempotent and reversible, and the fallback and migration work with no surprises. `normalize_project_id` replaces characters outside this set (`.`, `/`, `(`, and so on) with `_` for safety (anti-traversal). Consequences for "exotic" names:
-- `data_path`/`specs_dir` also search for files under the pre-migration name (`_legacy_safe`), so artifacts already created are not lost even without migration;
-- different names can collapse into the same folder (`a.b` and `a_b` → `a_b`); this is a deliberate slugification trade-off. Do not use `project_id` values that differ only in characters outside `[a-z0-9_-]`.
+**The `project_id` contract.** Use names from `[a-z0-9_-]` (case and spaces are handled: `lower`, space → `_`). For these, normalization is idempotent and reversible, and the fallback and migration work with no surprises.
+
+**An id that cannot be represented is REFUSED, not rewritten** (owner's decision, 2026-08-03). `normalize_project_id` is many-to-one — it strips everything outside `[a-z0-9_-]` — so a non-latin id lost every character and landed in one shared placeholder folder, where two different projects silently mixed each other's artifacts. The guard that stops this:
+
+```python
+def project_id_error(project_id) -> Optional[str]:   # BA-facing refusal, or None
+def require_valid_project_id(project_id) -> None:    # raises InvalidProjectIdError
+def project_id_suggestion(project_id) -> str:        # latin hint, for the TEXT only
+```
+
+- `require_valid_project_id` is called by `data_dir_for`, `report_dir_for`, `data_path` and `specs_dir` — every read and write goes through one of them.
+- The check is **stateless**: it never asks whether files already exist. Conditioning it on existence was tried and reverted, because "the folder already exists" is true exactly in the dangerous case (an id collapsing onto another project's folder).
+- Transliteration is used **only** to build the hint inside the refusal text. It never reaches a path, so the table is not part of the on-disk contract and can be changed without losing projects.
+- The placeholder itself (`_unknown` / `unknown`) is a **reserved** id. Pass the RAW `project_id` to `data_path` — never a pre-normalized value, or the guard is bypassed.
+
+**Every tool that takes `project_id`/`project_name` MUST carry `@guard_artifact_errors`** (below `@mcp.tool()`). That decorator converts both `CorruptArtifactError` and `InvalidProjectIdError` into the `❌` string a tool must return; without it the refusal escapes as a protocol error. This is enforced by `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, which scans every module — a new tool that forgets it fails the suite.
+
+Consequences for "exotic" names:
+- `data_path`/`specs_dir` still search under the pre-migration name (`_legacy_safe`), so a legacy artifact whose id is **inside** the accepted alphabet (e.g. `demo.v2`) keeps resolving;
+- a legacy id **outside** it (`r&d_portal`, `CRM (v2)`, any cyrillic name) is now refused, so its artifacts are unreachable until the project is renamed. The files are not deleted — `migrate_artifacts.py` has no rename mode yet, so this is a manual rename today;
+- names still collapse together inside the accepted alphabet (`a.b`, `a b` and `a_b` → `a_b`); this is the pre-existing slugification trade-off. Do not use `project_id` values that differ only in separators.
 
 ### `_ensure_dirs()` and `save_artifact()`
 

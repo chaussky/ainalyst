@@ -149,20 +149,197 @@ def normalize_project_id(project_id: str) -> str:
     return s or "_unknown"
 
 
+# ---------------------------------------------------------------------------
+# project_id validity — the mapping id -> folder must be INJECTIVE
+# ---------------------------------------------------------------------------
+#
+# normalize_project_id above keeps only [a-z0-9_-]; everything else is stripped. That
+# makes it many-to-one, and a many-to-one KEY is a data collision: two different
+# cyrillic ids both became '_unknown' and the two projects silently mixed each other's
+# artifacts (a delivered 6.1 document titled after one project listed the business
+# needs of two others). The mixed case was worse — 'crm_обновление' collapsed onto the
+# EXISTING project 'crm' and served its data back as if it were its own.
+#
+# Owner's decision (2026-08-03, E2E gate): REFUSE an id that cannot survive the
+# mapping. The alternatives were rejected deliberately. Transliterating would make a
+# lookup table part of the on-disk path contract — edit the table later and old
+# projects stop being found. Storing a display id alongside the folder id would give
+# one concept two keys, and every one of the ~114 tools would have to know which of
+# the two it means.
+#
+# Transliteration is still used — but ONLY to build the SUGGESTION inside the refusal
+# text. It never reaches a path, so no hidden state enters the artifact layout.
+#
+# The validator is deliberately SEPARATE from normalize_project_id: the normaliser is
+# called on ids that are already valid and on the legacy-path fallbacks, so making it
+# raise would change a primitive used far from this decision. Pinned by
+# tests/test_project_id_validation.py::test_the_normaliser_itself_is_unchanged.
+
+
+class InvalidProjectIdError(Exception):
+    """A project_id that cannot be represented as a folder name. `str(exc)` is BA-facing.
+
+    Converted into the ❌ answer a tool must return by the EXISTING tool boundary,
+    `guard_artifact_errors` — the same event class as a corrupt artifact: the call
+    cannot proceed, nothing has been written, and the analyst needs one sentence
+    saying what to do. It is a sibling rather than a subclass of CorruptArtifactError
+    so that "the artifact is damaged" and "the id is unusable" stay separable for any
+    future caller that wants to treat only one of them.
+    """
+
+
+# What an id may be built from. The rule is deliberately about the ALPHABET and
+# stateless — it never consults the disk — because the alternative (allow anything that
+# already has files) re-opens the exact hole it closes: 'crm_обновление' would resolve
+# onto the EXISTING project 'crm' and be waved through precisely because the collision
+# target exists.
+#
+# Latin letters and digits carry the meaning; `_`, `-`, `.` and single spaces are
+# separators. The dot and the space are here for continuity with the pre-per-project
+# layout, which kept dots ('demo.v2') and folded spaces to '_'. Both are PINNED
+# behaviour (test_artifact_layout).
+#
+# KNOWN RESIDUAL, deliberately left and documented rather than silently fixed:
+# 'demo.v2' / 'demo_v2' and 'crm up' / 'crm_up' still fold together. That collision is
+# latin-only, visible to the analyst in what they typed, and predates this guard; the
+# blocker this guard exists for is the alphabet one, where NOTHING of the id survived.
+#
+# ⚠️ OWNER DECIDED 2026-08-03 (second round) TO TIGHTEN THIS to a fixed-point rule —
+# `normalize_project_id(pid) == pid` — together with dropping the legacy layout, so
+# that id -> folder becomes bijective and the residual disappears by construction.
+# That change was STARTED AND REVERTED in the same session: it is correct in the
+# product but it invalidates the way ~500 tests seed their fixtures (they write the
+# flat layout on purpose, see conftest.save_test_repo), and finishing it properly
+# needs its own session. See the E2E gate journal, section "Что осталось владельцу".
+# DOUBLE spaces are refused, since 'a  b' and 'a b' differ by nothing a reader can see.
+_PID_ACCEPTABLE = re.compile(r"^[A-Za-z0-9_.-]+(?: [A-Za-z0-9_.-]+)*$")
+
+# Cyrillic -> latin, for the HINT ONLY. 'ц' -> 'c' rather than 'ts' because the ids a
+# Russian-speaking BA types are usually latin words spelled in cyrillic ('црм' = CRM).
+_TRANSLIT = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
+    "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
+    "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
+    "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh", "щ": "shch",
+    "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+    "і": "i", "ї": "yi", "є": "e", "ґ": "g",
+}
+
+_PID_FALLBACK_SUGGESTION = "my_project"
+
+# The placeholder normalize_project_id returns for input it cannot represent is itself
+# a well-formed id, so it PASSED the alphabet check — and a caller that normalised
+# before asking (the documented contract is to pass the RAW id) walked straight past
+# the guard: every unusable id collapsed onto this one name and two projects shared a
+# folder again, which is the exact defect the guard exists to stop. Reserving the word
+# closes that door from the other side, so the guard no longer depends on every caller
+# getting the argument right.
+_PID_RESERVED = {"unknown", "_unknown"}
+
+
+def _pid_is_acceptable(text: str) -> bool:
+    """The shared predicate. Kept separate from project_id_error so the error text and
+    the suggestion cannot call each other — an id of 'unknown' made that pair recurse
+    without end.
+
+    The alphabet check and the fixed-point check look redundant and are not: the
+    alphabet rejects characters, the fixed point rejects SPELLINGS the normaliser would
+    rewrite (`crm__up`, `_crm`). Either alone leaves a way for two ids to share a
+    folder.
+    """
+    if not text or not _PID_ACCEPTABLE.match(text):
+        return False
+    if text.lower() in _PID_RESERVED:
+        return False
+    normalized = normalize_project_id(text)
+    return normalized != "_unknown" and normalized not in _PID_RESERVED
+
+
+def project_id_suggestion(project_id) -> str:
+    """A valid latin id built from `project_id`, for the refusal text only.
+
+    Guarantees a VALID result: whatever survives transliteration is normalised, and if
+    nothing usable survives ('!!!', or an alphabet the table does not cover) a generic
+    example is returned instead. A hint the analyst cannot copy-paste is not a hint —
+    but see project_id_error: the generic example is NOT offered as a ready value,
+    because handing the same name to every uncovered alphabet rebuilds the collision.
+    """
+    text = str(project_id or "").strip().lower()
+    out = "".join(_TRANSLIT.get(ch, ch) for ch in text)
+    candidate = normalize_project_id(out)
+    if not _pid_is_acceptable(candidate):
+        return _PID_FALLBACK_SUGGESTION
+    return candidate
+
+
+def project_id_error(project_id) -> Optional[str]:
+    """The BA-facing refusal for an unusable `project_id`, or None when it is fine.
+
+    Returns a string rather than raising so callers that want to ASK (validators,
+    tests, a future CLI front-end) do not have to catch. `require_valid_project_id`
+    is the raising variant used on the path helpers.
+    """
+    text = str(project_id or "").strip()
+    if _pid_is_acceptable(text):
+        return None
+
+    shown = str(project_id) if str(project_id or "").strip() else "(empty)"
+    suggestion = project_id_suggestion(project_id)
+    if suggestion == _PID_FALLBACK_SUGGESTION:
+        # Naming a value the analyst can copy would hand the SAME name to every
+        # project whose alphabet the table does not cover, recreating the collision
+        # through the advice itself. Say so instead of offering it.
+        hint = (f"   Nothing could be transliterated automatically — pick a short "
+                f"latin name yourself (for example `{_PID_FALLBACK_SUGGESTION}`).")
+    else:
+        hint = f"   Try: `{suggestion}`"
+        # The suggestion is not part of the path contract, so it MAY look at the disk
+        # — and it must: advising a name that is already another project's folder
+        # would walk the analyst back into the collision this refusal just prevented.
+        try:
+            if os.path.isdir(os.path.join(DATA_DIR, normalize_project_id(suggestion))):
+                hint += (f"\n   ⚠️ `{suggestion}` already belongs to another project "
+                         f"in this workspace — choose a different name.")
+        except OSError:
+            pass
+
+    return (
+        f"❌ `project_id` cannot be `{shown}`.\n"
+        f"   `project_id` is the key to every artifact of the project, and only "
+        f"`a-z`, `0-9`, `_` and `-` survive into the folder name. Anything else is "
+        f"stripped — so two different ids would end up in ONE folder and the projects "
+        f"would start overwriting each other's artifacts.\n"
+        f"{hint}\n"
+        f"   No project data has been written."
+    )
+
+
+def require_valid_project_id(project_id) -> None:
+    """Raises InvalidProjectIdError for an id that cannot be used as a folder name."""
+    message = project_id_error(project_id)
+    if message is not None:
+        raise InvalidProjectIdError(message)
+
+
 def data_dir_for(project_id: str) -> str:
     """governance_plans/data/<safe_pid>/ — the project's JSON-artifact directory."""
+    require_valid_project_id(project_id)
     return os.path.join(DATA_DIR, normalize_project_id(project_id))
 
 
 def report_dir_for(project_id: str) -> str:
     """governance_plans/reports/<safe_pid>/ — the project's Markdown-report directory."""
+    require_valid_project_id(project_id)
     return os.path.join(REPORTS_DIR, normalize_project_id(project_id))
 
 
 def _legacy_safe(project_id: str) -> str:
-    """Pre-migration name normalization (issue #1) — used ONLY to locate already
-    existing legacy files. Before normalize_project_id was introduced, names were
-    built as project_id.lower().replace(" ", "_"), which kept dots and other characters.
+    """Pre-per-project name normalization — used ONLY to locate already existing files.
+
+    ⚠️ The owner decided 2026-08-03 to drop this compatibility entirely (no project
+    predates the platform). The removal was started and REVERTED in the same session:
+    it is right, but ~500 tests seed their fixtures through this layout on purpose, and
+    redoing them needs its own session. See the E2E gate journal.
     """
     return str(project_id).lower().replace(" ", "_")
 
@@ -170,15 +347,19 @@ def _legacy_safe(project_id: str) -> str:
 def data_path(project_id: str, filename: str) -> str:
     """Single resolver for the JSON path (used for both reading and writing).
 
-    filename already includes the {safe_pid}_ prefix (issue #1, decision point 1). Returns
-    the first existing candidate, otherwise falls back to the canonical nested layout:
+    filename already includes the {safe_pid}_ prefix. Returns the first existing
+    candidate, otherwise the canonical nested layout:
       1) data/<norm>/<filename>          — canonical nested;
-      2) data/<filename>                 — canonical flat (legacy layout);
-      3..5) same, but with the PRE-migration name (for project_id values with characters
-            outside [a-z0-9_-], e.g. dots — the old _safe kept them, while
-            normalize_project_id rewrites them).
+      2) data/<filename>                 — flat (pre-per-project layout);
+      3..5) same, with the pre-per-project name.
     The directory is created by the writing side: os.makedirs(os.path.dirname(path), ...).
+
+    The project_id guard runs FIRST and is not conditioned on whether files already
+    exist. Conditioning it on existence was tried and reverted — "already exists" is
+    true precisely in the dangerous case, where an id collapses onto ANOTHER project's
+    folder, so the escape hatch waved through the worst input it was supposed to stop.
     """
+    require_valid_project_id(project_id)
     norm = normalize_project_id(project_id)
     candidates = [
         os.path.join(DATA_DIR, norm, filename),
@@ -199,11 +380,11 @@ def data_path(project_id: str, filename: str) -> str:
 
 
 def specs_dir(project_id: str) -> str:
-    """The 7.1 specs directory: data/<project_id>/specs/ (issue #1).
+    """The 7.1 specs directory: data/<project_id>/specs/.
 
-    Falls back to legacy layouts (including PRE-migration names with dots, etc.):
-    flat data/<safe>_specs/ and variants using the old normalization.
+    Falls back to the pre-per-project layouts, like data_path above.
     """
+    require_valid_project_id(project_id)
     norm = normalize_project_id(project_id)
     nested = os.path.join(DATA_DIR, norm, "specs")
     candidates = [nested, os.path.join(DATA_DIR, f"{norm}_specs")]
@@ -514,18 +695,24 @@ def read_json_artifact(path: str, what: str = "artifact") -> dict:
 
 
 def guard_artifact_errors(fn):
-    """Converts CorruptArtifactError into the ❌ string an MCP tool must return.
+    """Converts the two BA-facing failures into the ❌ string an MCP tool must return.
 
     Applied at the tool boundary rather than at each of the ~32 load sites, so a new
-    tool cannot forget it. Only this one exception is caught — everything else
+    tool cannot forget it. Only these two exceptions are caught — everything else
     propagates unchanged, because swallowing unknown errors is how a tool starts
     reporting success it did not achieve.
+
+      CorruptArtifactError  — a stored artifact exists but cannot be parsed.
+      InvalidProjectIdError — the project_id cannot be used as a folder name.
+
+    Both share the contract that makes returning them safe: they are raised BEFORE
+    anything is written, so the ❌ answer is also a promise that nothing changed.
     """
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
-        except CorruptArtifactError as exc:
+        except (CorruptArtifactError, InvalidProjectIdError) as exc:
             logger.warning(f"{fn.__name__}: {exc}")
             return str(exc)
     return wrapper

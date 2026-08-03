@@ -18,8 +18,7 @@ from skills.common import (
     save_artifact, logger, parse_json_dict, parse_json_dict_list,
     pick_field, unrecognized_records_error,
     info_management_section, load_ba_plan, planned_abstraction_level,
-    ABSTRACTION_LEVELS, reg_norm,
-)
+    ABSTRACTION_LEVELS, reg_norm, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Communicate")
 
@@ -41,6 +40,7 @@ _LEVEL_GUIDANCE = {
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def prepare_communication_package(
     project_name: str,
     source_artifact_path: str,
@@ -289,6 +289,7 @@ def prepare_communication_package(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def log_communication(
     project_name: str,
     communication_package_path: str,
@@ -461,6 +462,7 @@ def log_communication(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def check_communication_schedule(
     project_name: str,
     today_date: str,

@@ -15,7 +15,7 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, parse_json_dict_list,
                            update_stakeholder_registry_file,
-                           activities_section, load_ba_plan, planned_work_period)
+                           activities_section, load_ba_plan, planned_work_period, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Elicitation_Prep")
 
@@ -152,6 +152,7 @@ def _planned_context(project_name: str, technique: str) -> tuple:
 
 
 @mcp.tool()
+@guard_artifact_errors
 def save_elicitation_plan(
     project_name: str,
     goals: str,

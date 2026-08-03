@@ -270,11 +270,16 @@ def set_business_context(
         # producers write their files through normalize_project_id, so a pid
         # with characters outside [a-z0-9_-] built a DIFFERENT filename here
         # and the prefill silently reported "data not found".
+        # The normalised value belongs in the FILE NAME only. data_path takes the RAW
+        # id — it normalises internally and derives the legacy fallbacks from it, and
+        # handing it a pre-normalised value walks straight past the project_id guard:
+        # every unusable id collapses to the same placeholder, which is itself a
+        # well-formed id, so two different projects silently share one folder again.
         safe_sp = normalize_project_id(from_strategy_project_id)
-        fs_goals_path = data_path(safe_sp, f"{safe_sp}_future_state_goals.json")
-        fs_state_path = data_path(safe_sp, f"{safe_sp}_future_state.json")
-        fs_scope_path = data_path(safe_sp, f"{safe_sp}_future_state_scope.json")
-        cs_needs_path = data_path(safe_sp, f"{safe_sp}_business_needs.json")
+        fs_goals_path = data_path(from_strategy_project_id, f"{safe_sp}_future_state_goals.json")
+        fs_state_path = data_path(from_strategy_project_id, f"{safe_sp}_future_state.json")
+        fs_scope_path = data_path(from_strategy_project_id, f"{safe_sp}_future_state_scope.json")
+        cs_needs_path = data_path(from_strategy_project_id, f"{safe_sp}_business_needs.json")
 
         try:
             prefill_parts = []
@@ -359,9 +364,11 @@ def set_business_context(
     # ADR-055: prefill from 6.1 if from_current_state_project_id is passed (deprecated)
     elif from_current_state_project_id.strip():
         prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id` (ADR-065)."
+        # Raw id to data_path, normalised value only in the file name — see the note
+        # on the from_strategy_project_id branch above.
         safe_cs = normalize_project_id(from_current_state_project_id)
-        needs_path = data_path(safe_cs, f"{safe_cs}_business_needs.json")
-        scope_path = data_path(safe_cs, f"{safe_cs}_current_state_scope.json")
+        needs_path = data_path(from_current_state_project_id, f"{safe_cs}_business_needs.json")
+        scope_path = data_path(from_current_state_project_id, f"{safe_cs}_current_state_scope.json")
 
         if os.path.exists(needs_path):
             try:

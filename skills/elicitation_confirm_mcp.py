@@ -14,8 +14,7 @@ from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from skills.common import (
-    save_artifact, logger, DATA_DIR, parse_json_dict, parse_json_dict_list,
-)
+    save_artifact, logger, DATA_DIR, parse_json_dict, parse_json_dict_list, guard_artifact_errors)
 
 mcp = FastMCP("BABOK_Elicitation_Confirm")
 
@@ -25,6 +24,7 @@ mcp = FastMCP("BABOK_Elicitation_Confirm")
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def run_consistency_check(
     project_name: str,
     source_artifacts_json: str,
@@ -233,6 +233,7 @@ def run_consistency_check(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@guard_artifact_errors
 def save_confirmed_elicitation_result(
     project_name: str,
     stakeholder_role: str,
