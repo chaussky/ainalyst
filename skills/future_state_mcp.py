@@ -42,7 +42,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, pick_field,
                            unrecognized_records_error,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
 )
 
 mcp = FastMCP("BABOK_FutureState")
@@ -213,6 +213,17 @@ def _save_repo(repo: dict) -> None:
     repo["updated"] = str(date.today())
     _save_json(path, repo)
     logger.info(f"Traceability repository updated from 6.2: {path}")
+
+
+def _needs_line(need_ids, graph_nodes: dict) -> str:
+    """"*Addresses BN:* ..." with archived needs marked.
+
+    The ids were printed bare, so a need SUPERSEDED in 5.2 read as the standing
+    justification of a live goal — the reader has no way to tell without opening the
+    graph by hand.
+    """
+    shown = [f"{nid}{archived_suffix(graph_nodes.get(nid))}" for nid in need_ids]
+    return "\n*Addresses BN:* " + ", ".join(shown)
 
 
 def _next_goal_id(goals_data: dict) -> str:
@@ -1523,6 +1534,17 @@ def save_future_state(
             "",
         ]
 
+    # A goal and a need each live in TWO stores: this chapter's own JSON and the node
+    # 5.1 holds. Chapter 5 tools write the graph and never touch the copy here, so
+    # rendering from the copy alone reprinted a title that had been changed, showed a
+    # goal retired in 5.2 as live with a SMART tick, and offered a SUPERSEDED need as
+    # a live goal's justification — all in the same minute the 5.1 documents of the
+    # same project said otherwise. The graph is the shared record, so it decides what
+    # is CURRENT, and any divergence is NAMED: silently redrawing either copy loses an
+    # analyst's edit.
+    graph_repo = _load_repo(project_id) or {}
+    graph_nodes = {n.get("id"): n for n in graph_repo.get("requirements", [])}
+
     report_lines += [
         "---",
         "",
@@ -1543,7 +1565,7 @@ def save_future_state(
                 for k, v in elem_data["target_metrics"].items():
                     report_lines.append(f"- {k}: {v}")
             if elem_data.get("linked_business_needs"):
-                report_lines.append(f"\n*Addresses BN:* {', '.join(elem_data['linked_business_needs'])}")
+                report_lines.append(_needs_line(elem_data["linked_business_needs"], graph_nodes))
             if elem_data.get("notes"):
                 report_lines.append(f"\n*Notes: {elem_data['notes']}*")
         else:
@@ -1560,11 +1582,27 @@ def save_future_state(
         ]
         for goal in goals_list:
             smart_mark = "✅ SMART" if goal.get("smart_validated") else "⚠️ needs refinement"
+            node = graph_nodes.get(goal["id"])
+            shown_title = goal["goal_title"]
+            divergence = ""
+            if node:
+                graph_title = (node.get("title") or "").strip()
+                if graph_title and graph_title != goal["goal_title"].strip():
+                    shown_title = graph_title
+                    divergence = (
+                        f"\n> ⚠️ The title here differs from the one 6.2 recorded "
+                        f"(`{goal['goal_title']}`). The 5.1 graph is shown, since that "
+                        f"is where 5.2 writes; re-run `define_goals_and_objectives` to "
+                        f"settle the two.")
+                if is_archived(node):
+                    smart_mark = f"📦 archived in 5.2 — {node.get('status')}"
             report_lines += [
-                f"### {goal['id']} — {goal['goal_title']} ({smart_mark})",
+                f"### {goal['id']} — {shown_title} ({smart_mark})",
                 "",
                 goal.get("description", "—"),
             ]
+            if divergence:
+                report_lines.append(divergence)
             if goal.get("objectives"):
                 report_lines += ["", "**Target metrics:**"]
                 for obj in goal["objectives"]:
@@ -1572,7 +1610,7 @@ def save_future_state(
                         f"- **{obj.get('title', '—')}**: {obj.get('baseline', '?')} → {obj.get('target', '?')} by {obj.get('deadline', '?')}"
                     )
             if goal.get("linked_business_needs"):
-                report_lines.append(f"\n*Addresses BN:* {', '.join(goal['linked_business_needs'])}")
+                report_lines.append(_needs_line(goal["linked_business_needs"], graph_nodes))
             report_lines.append("")
 
     # Constraints

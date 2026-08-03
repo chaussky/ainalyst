@@ -872,6 +872,60 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
 # save_future_state
 # ---------------------------------------------------------------------------
 
+class TestTheDocumentAgreesWithTheGraph(BaseMCPTest):
+    """G-3. A business goal lives in TWO stores: 6.2's own JSON and the node 5.1 holds.
+    Chapter 5 tools write the graph, 6.2 re-reads only its own copy, and both render
+    documents with equal confidence. In one minute, one project, the analyst got two
+    different titles for BG-001 and a retired goal shown as live with a SMART tick."""
+
+    def _rebuild(self):
+        with patch("skills.future_state_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            save_future_state(project_id=PROJECT, project_title="Project")
+            return mock_sa.call_args[0][0]
+
+    def _graph_edit(self, goal_id, **fields):
+        import skills.future_state_mcp as mod
+        repo = mod._load_repo(PROJECT)
+        for node in repo["requirements"]:
+            if node["id"] == goal_id:
+                node.update(fields)
+        mod._save_repo(repo)
+
+    def test_a_title_changed_in_the_graph_is_not_silently_overwritten(self):
+        _full_pipeline()
+        self._graph_edit("BG-001", title="Make the application visible to the customer",
+                         version="2.0")
+        doc = self._rebuild()
+        self.assertIn("Make the application visible to the customer", doc,
+                       "6.2 redrew its own stale copy as if nothing had happened")
+        self.assertIn("differs", doc.lower())
+
+    def test_a_superseded_need_is_not_offered_as_a_live_justification(self):
+        import skills.future_state_mcp as mod
+        _full_pipeline()
+        repo = mod._load_repo(PROJECT)
+        repo["requirements"].append(
+            {"id": "BN-001", "type": "business_need", "title": "Applications get lost",
+             "version": "1.0", "status": "superseded"})
+        mod._save_repo(repo)
+        doc = self._rebuild()
+        bn_lines = [ln for ln in doc.split("\n") if "Addresses BN" in ln]
+        self.assertTrue(bn_lines, doc)
+        for line in bn_lines:
+            self.assertIn("archived", line.lower(),
+                          f"a superseded need was cited as a standing justification: {line}")
+
+    def test_a_goal_retired_in_the_graph_is_not_shown_as_live(self):
+        _full_pipeline()
+        self._graph_edit("BG-001", status="retired")
+        doc = self._rebuild()
+        goal_heading = [ln for ln in doc.split("\n") if ln.startswith("### BG-001")]
+        self.assertTrue(goal_heading, doc)
+        self.assertIn("archived", goal_heading[0].lower(),
+                      "a retired goal was presented as a live one")
+
+
 class TestSaveFutureState(BaseMCPTest):
 
     def test_save_no_scope_error(self):
