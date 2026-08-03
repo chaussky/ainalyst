@@ -313,6 +313,35 @@ class TestCreateUserStory(BaseMCPTest):
         result = self._make()
         self.assertIn("US-001", result)
 
+    def test_a_title_cannot_steer_the_spec_out_of_the_specs_folder(self):
+        """The 7.1 producers build the spec filename themselves out of the id and the
+        TITLE — free text an LLM writes from the analyst's dictation. Nothing
+        sanitised it, so `title="../../../escaped"` wrote two levels above specs/ and
+        answered with the full document and no warning, while the graph node pointed
+        at a path that did not exist."""
+        result = mod71.create_user_story(
+            project_id=self.P, story_id="US-900", title="../../../escaped",
+            role="Manager", action="do a thing", benefit="value accrues",
+            acceptance_criteria_json=json.dumps(["First criterion", "Second criterion"]),
+            priority="High", source_artifact="")
+        self.assertNotIn("❌", result)
+
+        specs = os.path.realpath(mod71._specs_dir(self.P))
+        written = []
+        for root, _dirs, files in os.walk("governance_plans"):
+            written += [os.path.realpath(os.path.join(root, f)) for f in files
+                        if f.endswith(".md")]
+        self.assertTrue(written, "nothing was written at all")
+        for path in written:
+            self.assertEqual(os.path.commonpath([path, specs]), specs,
+                             f"a spec escaped the specs folder: {path}")
+
+        # ...and the graph points at the file that actually exists.
+        repo = load_spec_repo(self.P)
+        node = [r for r in repo["requirements"] if r["id"] == "US-900"][0]
+        self.assertTrue(os.path.exists(node["source_artifact"]),
+                        f"source_artifact points nowhere: {node['source_artifact']}")
+
     def test_success_contains_as_a(self):
         result = self._make()
         self.assertIn("As a", result)

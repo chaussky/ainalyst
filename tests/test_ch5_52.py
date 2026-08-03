@@ -22,7 +22,7 @@ from tests.conftest import setup_mocks, BaseMCPTest, make_test_repo, save_test_r
 setup_mocks()
 
 import skills.requirements_maintain_mcp as mod52
-from skills.common import data_path
+from skills.common import data_path, normalize_project_id
 
 
 # ---------------------------------------------------------------------------
@@ -70,10 +70,25 @@ class TestUtils52(unittest.TestCase):
         past = str(date.today() - timedelta(days=10))
         self.assertEqual(mod52._days_since(past), 10)
 
-    def test_days_since_invalid(self):
-        """An invalid date → a large number (or doesn't crash)."""
-        result = mod52._days_since("not-a-date")
-        self.assertIsInstance(result, int)
+    def test_days_since_accepts_the_platforms_other_format(self):
+        """Chapter 4 and the stakeholder registry write `dd.mm.yyyy`; the graph writes
+        ISO. Both are the platform's own, and a date crossing a chapter boundary is
+        the normal case."""
+        past = date.today() - timedelta(days=10)
+        self.assertEqual(mod52._days_since(past.strftime("%d.%m.%Y")), 10)
+        self.assertEqual(mod52._days_since(past.isoformat()), 10)
+
+    def test_days_since_invalid_is_unknown_not_zero(self):
+        """Zero means "reviewed today". Answering it on a parse failure made every
+        unreadable date report as maximally fresh — the platform asserting the
+        opposite of the truth rather than staying silent."""
+        self.assertIsNone(mod52._days_since("not-a-date"))
+        self.assertIsNone(mod52._days_since(""))
+
+    def test_days_since_future_is_negative_not_clamped(self):
+        """A negative age is how a caller can tell the data is damaged. Clamping it to
+        0 would hide a file edited by hand or restored from a backup."""
+        self.assertEqual(mod52._days_since((date.today() + timedelta(days=5)).isoformat()), -5)
 
 
 # ---------------------------------------------------------------------------
@@ -330,6 +345,50 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
+
+    def _set_field(self, req_id, **fields):
+        safe_name = normalize_project_id(PROJECT)
+        path = data_path(PROJECT, f"{safe_name}_traceability_repo.json")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        for r in data["requirements"]:
+            if r["id"] == req_id:
+                r.update(fields)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+
+    def test_the_platforms_other_date_format_is_not_read_as_today(self):
+        """The whole of chapter 4 and the stakeholder registry write `dd.mm.yyyy`.
+        The parser knew ISO only and returned 0 on failure — a value indistinguishable
+        from "reviewed today" — so a requirement last touched 64 days ago was reported
+        as 🟢 Healthy. That is worse than silence: the platform asserts the opposite."""
+        old_iso = (date.today() - timedelta(days=64)).isoformat()
+        old_dotted = (date.today() - timedelta(days=64)).strftime("%d.%m.%Y")
+
+        self._set_field("FR-001", last_reviewed=old_iso)
+        iso_result = self._call()
+        self._set_field("FR-001", last_reviewed=old_dotted)
+        dotted_result = self._call()
+
+        self.assertIn("64 days", iso_result)
+        self.assertIn("64 days", dotted_result,
+                      "the platform's own second date format read as today")
+
+    def test_an_unparseable_date_is_reported_as_unknown_not_as_fresh(self):
+        self._set_field("FR-001", last_reviewed="not a date at all")
+        result = self._call()
+        self.assertIn("FR-001", result)
+        self.assertIn("could not be read", result.lower(),
+                      "a damaged date passed silently as if the requirement were fresh")
+
+    def test_a_review_date_in_the_future_is_reported_not_silently_trusted(self):
+        """A file edited by hand, restored from a backup, or written by a machine with a
+        skewed clock. The age goes negative, both `>` comparisons are false, and
+        staleness is switched off for that requirement forever, without a trace."""
+        self._set_field("FR-001", last_reviewed=(date.today() + timedelta(days=30)).isoformat())
+        result = self._call()
+        self.assertIn("FR-001", result)
+        self.assertIn("in the future", result.lower())
 
     def test_detects_volatile_requirement(self):
         """A requirement with version 1.4+ is flagged as volatile."""

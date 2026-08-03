@@ -33,6 +33,7 @@ from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
     read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
+    safe_filename_part, CorruptArtifactError,
 )
 
 mcp = FastMCP("BABOK_Requirements_Spec")
@@ -237,10 +238,33 @@ def _specs_dir(project_id: str) -> str:
 
 
 def _save_spec(content: str, project_id: str, filename: str) -> str:
-    """Saves an artifact to governance_plans/{project_id}_specs/. Returns the path."""
-    specs_dir = _specs_dir(project_id)
-    os.makedirs(specs_dir, exist_ok=True)
-    filepath = os.path.join(specs_dir, filename)
+    """Saves a specification to data/<project_id>/specs/. Returns the path.
+
+    The guard lives HERE, in the one writer, rather than in each of the six producers
+    that build a filename. Every producer composes the name out of the requirement id
+    and its TITLE — free text, written by an LLM from the analyst's dictation — and none
+    of them called the shared sanitiser: `title="../../../escaped"` put the file two
+    levels above specs/, answered with the full document and no warning, and left the
+    graph node's `source_artifact` pointing at a path that does not exist.
+
+    Two layers, deliberately. `safe_filename_part` removes the separators; the
+    containment check then refuses anything that still resolves outside the directory,
+    so a future producer that formats its own name cannot reopen this.
+    """
+    target_dir = _specs_dir(project_id)
+    os.makedirs(target_dir, exist_ok=True)
+    filepath = os.path.join(target_dir, safe_filename_part(filename))
+
+    real_dir = os.path.realpath(target_dir)
+    real_path = os.path.realpath(filepath)
+    if os.path.commonpath([real_path, real_dir]) != real_dir:
+        raise CorruptArtifactError(
+            f"❌ The specification file name resolves outside the project's specs "
+            f"folder: `{filename}`.\n"
+            f"   Nothing has been written. Rename the requirement so its title does "
+            f"not read as a path."
+        )
+
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     logger.info(f"Specification saved: {filepath}")

@@ -41,6 +41,7 @@ from skills.common import (
     planned_approval_timing, planned_approval_process, planned_decision_makers,
     is_planned_decision_maker, reg_norm,
     planned_party_status, party_aliases, PARTY_UNPLANNED, PARTY_UNBRIDGEABLE,
+    parse_platform_date,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -200,12 +201,18 @@ def _baseline_gate(package: dict) -> dict:
                 }
                 open_conditions.append(entry)
                 if rd.get("condition_deadline"):
-                    try:
-                        if date.fromisoformat(rd["condition_deadline"]) < today:
-                            entry["overdue"] = True
-                            overdue_conditions.append(entry)
-                    except ValueError:
-                        pass
+                    # Both formats the platform writes; an unreadable one is UNKNOWN
+                    # and must say so. `date.fromisoformat` inside `except: pass` meant
+                    # a deadline written the chapter-4 way (`01.04.2025`, sixteen
+                    # months past) printed with no marker while the verdict stated
+                    # "not overdue" — and `overdue_conditions`, one of the four
+                    # baseline gates, could never fire on such data.
+                    parsed = parse_platform_date(rd["condition_deadline"])
+                    if parsed is None:
+                        entry["deadline_unreadable"] = True
+                    elif parsed < today:
+                        entry["overdue"] = True
+                        overdue_conditions.append(entry)
 
     pending_reqs = [rid for rid in req_ids if statuses[rid] == STATUS_PENDING]
     # An empty approved set is 0% and is therefore blocked by this same rule.
@@ -1221,7 +1228,15 @@ def check_approval_status(
     if overdue_conditions:
         verdict_reasons.append(f"🔴 {len(overdue_conditions)} overdue condition(s)")
 
-    if open_conditions and not overdue_conditions:
+    unreadable_deadlines = [c for c in open_conditions if c.get("deadline_unreadable")]
+    if unreadable_deadlines:
+        # "Not overdue" is a claim, and it cannot be made about a deadline nobody could
+        # read. Say what is actually known.
+        verdict_reasons.append(
+            f"🟡 {len(unreadable_deadlines)} condition(s) whose deadline could not be "
+            f"read — whether they are overdue is UNKNOWN")
+
+    if open_conditions and not overdue_conditions and not unreadable_deadlines:
         # Not blocking, but flag it
         verdict_reasons.append(f"🟡 {len(open_conditions)} open condition(s) (not overdue)")
 
@@ -1304,7 +1319,8 @@ def check_approval_status(
     if open_conditions:
         lines += ["### 🟡 Open conditions (Conditional)", ""]
         for c in open_conditions:
-            overdue_flag = " ⚠️ OVERDUE" if c.get("overdue") else ""
+            overdue_flag = " ⚠️ OVERDUE" if c.get("overdue") else (
+                " ⚠️ DEADLINE UNREADABLE" if c.get("deadline_unreadable") else "")
             deadline_str = f" | Deadline: {c['condition_deadline']}{overdue_flag}" if c['condition_deadline'] else ""
             lines.append(
                 f"- `{c['req_id']}` — {c['condition_text']}"

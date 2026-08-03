@@ -32,7 +32,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     read_json_artifact, guard_artifact_errors,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
     load_ba_plan, planned_attribute_set, planned_reuse, REUSE_SCOPES,
-    attribute_writer, reg_norm,
+    attribute_writer, reg_norm, days_since,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -124,13 +124,14 @@ def _minor_version(version: str) -> int:
         return 0
 
 
-def _days_since(date_str: str) -> int:
-    """Number of days since the given date."""
-    try:
-        d = datetime.strptime(date_str, "%Y-%m-%d").date()
-        return (date.today() - d).days
-    except (ValueError, TypeError):
-        return 0
+def _days_since(date_str: str):
+    """Days since the given date, or None when the date cannot be read.
+
+    Returns None rather than 0. Zero is the answer for "reviewed today", so returning
+    it on a parse failure made every unreadable date report as maximally fresh — see
+    common.days_since for the invariant.
+    """
+    return days_since(date_str)
 
 
 # ---------------------------------------------------------------------------
@@ -687,8 +688,21 @@ def check_requirements_health(
         last_reviewed = req.get("last_reviewed") or req.get("added", "")
         if last_reviewed:
             days = _days_since(last_reviewed)
-            if days > STALE_DAYS_CRITICAL:
-                issues.append(f"🟡 Not updated for {days} days")
+            if days is None:
+                # Not "fresh" and not "stale" — unknown, and the analyst is the only
+                # one who can say which. Staying silent here is how a damaged date
+                # switched the staleness check off for good.
+                issues.append(
+                    f"🟡 Review date could not be read (`{last_reviewed}`) — staleness "
+                    f"was NOT checked for this requirement")
+            elif days < 0:
+                issues.append(
+                    f"🟡 Review date is {abs(days)} days in the future "
+                    f"(`{last_reviewed}`) — the data is damaged, staleness cannot be judged")
+            elif days > STALE_DAYS_CRITICAL:
+                # The heavier branch must not read as LIGHTER than the softer one: it
+                # used to lose the call to action the >30 case carries.
+                issues.append(f"🟡 Not updated for {days} days — review it")
             elif days > STALE_DAYS_WARNING:
                 issues.append(f"🟡 Not updated for {days} days — worth checking")
 
@@ -697,7 +711,7 @@ def check_requirements_health(
             added = req.get("added", "")
             if added:
                 days_draft = _days_since(added)
-                if days_draft > STALE_DAYS_WARNING:
+                if days_draft is not None and days_draft > STALE_DAYS_WARNING:
                     issues.append(f"🟡 In draft status for {days_draft} days already")
 
         # Planned attributes (BABOK 3.4 element .6). One line per requirement, not one

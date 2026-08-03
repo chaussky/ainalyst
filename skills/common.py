@@ -6,7 +6,7 @@ import os
 import re
 import sys
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -526,6 +526,54 @@ class Stakeholder(BaseModel):
 
 
 _FILENAME_ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
+
+
+# ---------------------------------------------------------------------------
+# Dates the platform itself writes
+# ---------------------------------------------------------------------------
+#
+# TWO spellings, both produced by the platform: ISO (`2026-05-31`) in the graph, in 5.x
+# and in 6.x, and `31.05.2026` throughout chapter 4 and the stakeholder registry
+# (_registry_today below). A reader that knows one of them meets the other whenever a
+# date crosses a chapter boundary — which is the normal case, since that is what the
+# artifacts are for.
+#
+# The invariant this exists to hold: A FAILED PARSE MUST NOT RETURN THE MOST FAVOURABLE
+# VALUE. `_days_since` used to answer 0 on a parse error — indistinguishable from
+# "reviewed today" — so a requirement untouched for 64 days was reported as 🟢 Healthy,
+# and 5.5 printed a deadline 16 months past as "not overdue". Unparseable means
+# UNKNOWN, and unknown has to be visible in the document rather than resolved in the
+# reader's favour.
+_PLATFORM_DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
+
+
+def parse_platform_date(value) -> Optional[date]:
+    """A date written in either format the platform uses, or None if unreadable."""
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    text = str(value or "").strip()
+    if not text:
+        return None
+    for fmt in _PLATFORM_DATE_FORMATS:
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def days_since(value) -> Optional[int]:
+    """Days between the given date and today, or None if the date cannot be read.
+
+    NEGATIVE is a real answer, not an impossibility: a date in the future means the
+    data is damaged (a hand-edited file, a restore, a machine with a skewed clock).
+    Callers must branch on it — an age that is only ever compared against upper bounds
+    silently switches the whole check off for that record.
+    """
+    parsed = parse_platform_date(value)
+    return None if parsed is None else (date.today() - parsed).days
 
 
 def safe_filename_part(part: str) -> str:

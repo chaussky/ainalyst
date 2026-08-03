@@ -680,6 +680,39 @@ class TestCheckApprovalStatus(BaseMCPTest):
         self.assertIn("OVERDUE", result)
         self.assertIn("Not ready", result)
 
+    def _conditional_with_deadline(self, deadline):
+        record_approval_decision(
+            project_name=PROJECT,
+            package_id="APKG-001",
+            stakeholder_name="Ivanov",
+            stakeholder_raci="accountable",
+            decision="conditional",
+            req_decisions_json=json.dumps([
+                {"req_id": "FR-001", "decision": "conditional",
+                 "condition_text": "Clarify access", "condition_deadline": deadline,
+                 "condition_owner": "Ivanov"},
+                {"req_id": "FR-002", "decision": "approved"},
+            ]),
+        )
+        return check_approval_status(PROJECT, "APKG-001")
+
+    def test_a_deadline_in_the_platforms_other_format_is_still_a_deadline(self):
+        """`date.fromisoformat` inside `except ValueError: pass` treated every
+        `dd.mm.yyyy` deadline — the format the whole of chapter 4 writes — as no
+        deadline at all. A condition sixteen months past printed unmarked, the verdict
+        said "not overdue", and `overdue_conditions`, one of the four baseline gates,
+        could not fire on such data."""
+        long_past = (date.today() - timedelta(days=480)).strftime("%d.%m.%Y")
+        result = self._conditional_with_deadline(long_past)
+        self.assertIn("OVERDUE", result)
+        self.assertNotIn("(not overdue)", result)
+
+    def test_an_unreadable_deadline_is_not_reported_as_not_overdue(self):
+        result = self._conditional_with_deadline("whenever")
+        self.assertIn("UNREADABLE", result.upper())
+        self.assertNotIn("(not overdue)", result,
+                         "a claim was made about a deadline nobody could read")
+
     def test_pending_requirements_block_baseline(self):
         # Don't record any decision — everything is pending
         result = check_approval_status(PROJECT, "APKG-001")

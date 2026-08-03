@@ -180,8 +180,10 @@ class TestMaintainUtils(unittest.TestCase):
     def test_days_since_past(self):
         self.assertEqual(mod52._days_since(str(date.today() - timedelta(days=10))), 10)
 
-    def test_days_since_invalid(self):
-        self.assertEqual(mod52._days_since("bad-date"), 0)
+    def test_days_since_invalid_is_unknown_not_zero(self):
+        # 0 is the answer for "reviewed today", so returning it on a parse failure made
+        # an unreadable date report as maximally fresh (gate finding R-2).
+        self.assertIsNone(mod52._days_since("bad-date"))
 
 
 # ---------------------------------------------------------------------------
