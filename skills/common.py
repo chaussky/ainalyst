@@ -904,6 +904,39 @@ def approval_outcome(project_id: str, req_id: str) -> str:
     return compute_approval_outcome(latest, req_id)
 
 
+def deciding_package(project_id: str, req_id: str):
+    """(package_id, package) of the round that decides this requirement, or (None, None).
+
+    Same selection rule as approval_outcome — the LATEST round governs — exposed so a
+    surface can SAY which round that is. The rule existed only inside the computation,
+    so a package whose every requirement had been re-decided by a later round still
+    rendered as though it were live: `check_approval_status` printed
+    `🔴 Verdict: Not ready for baseline` over a rejection that a newer round had
+    already overturned, and the newer round's Approval Record carried no trace of what
+    it overturned. Two live documents of one project contradicting each other, with the
+    reversal missing from the audit.
+    """
+    history = load_approval_history(project_id)
+    if history is None:
+        return None, None
+    candidates = [(pid, pkg) for pid, pkg in history["packages"].items()
+                  if isinstance(pkg, dict) and req_id in (pkg.get("req_ids") or [])]
+    if not candidates:
+        return None, None
+    return max(enumerate(candidates),
+               key=lambda pair: (str(pair[1][1].get("created_date", "")), pair[0]))[1]
+
+
+def superseding_packages(project_id: str, package_id: str, package: dict) -> dict:
+    """{req_id: later_package_id} for requirements of this package decided elsewhere."""
+    out = {}
+    for req_id in package.get("req_ids") or []:
+        decider_id, _ = deciding_package(project_id, req_id)
+        if decider_id and decider_id != package_id:
+            out[req_id] = decider_id
+    return out
+
+
 def has_been_approved(project_id: str, req_id: str) -> bool:
     """True only for a full approval.
 

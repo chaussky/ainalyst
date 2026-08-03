@@ -41,7 +41,8 @@ from skills.common import (
     planned_approval_timing, planned_approval_process, planned_decision_makers,
     is_planned_decision_maker, reg_norm,
     planned_party_status, party_aliases, PARTY_UNPLANNED, PARTY_UNBRIDGEABLE,
-    parse_platform_date,
+    parse_platform_date, deciding_package, superseding_packages,
+    load_approval_history,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -137,6 +138,48 @@ def _get_req_approval_summary(package: dict, req_id: str) -> dict:
                     "rejection_reason": rd.get("rejection_reason", ""),
                 })
     return {"req_id": req_id, "decisions": decisions}
+
+
+def _decisions_this_round_overrides(project_name: str, package_id: str,
+                                    req_ids: list) -> list:
+    """Rejections and conditions recorded in EARLIER rounds for these requirements.
+
+    Packages are rounds: where a requirement appears in several, the latest governs
+    (common.approval_outcome). So a rejection from an earlier round is genuinely
+    overridden here — and that is exactly the fact a reader of this record needs, since
+    it means someone with decision authority said no and this document goes past them.
+    """
+    history = load_approval_history(project_name)
+    if history is None:
+        return []
+    wanted = set(req_ids)
+    out = []
+    for other_id, other in history["packages"].items():
+        if other_id == package_id or not isinstance(other, dict):
+            continue
+        shared = wanted & set(other.get("req_ids") or [])
+        if not shared:
+            continue
+        for req_id in sorted(shared):
+            # Only where THIS package is the one that decides now.
+            decider_id, _ = deciding_package(project_name, req_id)
+            if decider_id != package_id:
+                continue
+            for sh_name, sh_data in (other.get("stakeholder_decisions") or {}).items():
+                for rd in sh_data.get("req_decisions", []):
+                    if rd.get("req_id") != req_id:
+                        continue
+                    if rd.get("decision") not in ("rejected", "conditional"):
+                        continue
+                    out.append({
+                        "req_id": req_id,
+                        "package_id": other_id,
+                        "stakeholder": sh_name,
+                        "raci": sh_data.get("raci", "—"),
+                        "decision": rd["decision"],
+                        "reason": rd.get("rejection_reason") or rd.get("condition_text") or "",
+                    })
+    return out
 
 
 def _compute_req_status(req_id: str, package: dict) -> str:
@@ -1334,11 +1377,42 @@ def check_approval_status(
             lines.append(f"- `{cr['req_id']}` — rejected by `{cr['stakeholder']}` (consulted): {cr['reason']}")
         lines += ["", "Recommend documenting this as a managed risk.", ""]
 
+    # A package is modelled as a ROUND: where a requirement appears in several, the
+    # LATEST one governs (common.approval_outcome — a settled decision, so a
+    # re-submission after rework can be decided). That rule lived only inside the
+    # computation, so an overtaken round went on rendering as though it were live:
+    # `🔴 Verdict: Not ready for baseline` over a rejection a newer round had already
+    # overturned, with nothing saying so. Two live documents of one project
+    # contradicting each other.
+    superseded_by = superseding_packages(project_name, package_id, package)
+    fully_superseded = superseded_by and len(superseded_by) == len(package.get("req_ids") or [])
+    if superseded_by:
+        later = sorted(set(superseded_by.values()))
+        listed = ", ".join(f"`{p}`" for p in later)
+        if fully_superseded:
+            lines += [
+                f"> 📦 **This round has been superseded by {listed}.** Every requirement "
+                f"in it has since been decided again, and the later round is what governs "
+                f"— the verdict below describes THIS round's decisions, not the project's "
+                f"current position.",
+                "",
+            ]
+        else:
+            rows = ", ".join(f"`{rid}` → `{pid}`" for rid, pid in sorted(superseded_by.items()))
+            lines += [
+                f"> 📦 **{len(superseded_by)} requirement(s) of this round have since been "
+                f"decided by a later one:** {rows}. For those, the later round governs.",
+                "",
+            ]
+
     # Verdict
+    verdict_word = "Ready for baseline" if can_baseline else "Not ready for baseline"
+    if fully_superseded:
+        verdict_icon, verdict_word = "📦", "Superseded — this round no longer decides anything"
     lines += [
         "---",
         "",
-        f"## {verdict_icon} Verdict: {'Ready for baseline' if can_baseline else 'Not ready for baseline'}",
+        f"## {verdict_icon} Verdict: {verdict_word}",
         "",
     ]
 
@@ -1592,6 +1666,27 @@ def create_requirements_baseline(
         version = node.get("version", "—") if node else "—"
         priority = node.get("priority", "—") if node else "—"
         record_lines.append(f"- ✅ `{rid}` {title} (v{version}, priority: {priority})")
+
+    # What THIS round overturned. A requirement rejected in an earlier round and
+    # approved here is decided by this one (the settled "latest round governs" rule),
+    # and the reversal is the single most consequential fact in the document — a person
+    # with decision authority said no, and this record supersedes them. It used to
+    # appear nowhere: the new record was silent, the old package still printed its
+    # rejection as current, and the reversal was in no audit trail at all.
+    overturned = _decisions_this_round_overrides(project_name, package_id, req_ids)
+    if overturned:
+        record_lines += ["", "---", "", "## Decisions this round overrides", ""]
+        for item in overturned:
+            record_lines.append(
+                f"- `{item['req_id']}` was **{item['decision']}** by "
+                f"`{item['stakeholder']}` ({item['raci']}) in package `{item['package_id']}`"
+                + (f" — {item['reason']}" if item.get("reason") else "")
+            )
+        record_lines += [
+            "",
+            "These earlier decisions no longer govern: the round recorded here is the "
+            "later one. Confirm the people who objected have been brought along.",
+        ]
 
     record_lines += ["", "---", "", "## Stakeholder decisions", ""]
     for sh_name, sh_summary in baseline_snapshot["stakeholder_summary"].items():

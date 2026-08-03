@@ -608,6 +608,53 @@ class TestCloseApprovalCondition(BaseMCPTest):
 # check_approval_status
 # ---------------------------------------------------------------------------
 
+class TestASupersededRoundSaysSoItself(BaseMCPTest):
+    """V-5, in the corrected reading. Packages ARE rounds: where a requirement appears
+    in several, the latest governs — a settled decision (`approval_outcome`, pinned by
+    test_the_latest_package_decides), so a requirement can be re-submitted after
+    rework. The BASELINE GATE is not the defect and is not touched here.
+
+    What was wrong is the DISPLAY. An overtaken round went on rendering as live: it
+    printed `🔴 Verdict: Not ready for baseline` over a rejection the newer round had
+    already overturned, and the newer round's Approval Record carried no trace of the
+    reversal. Two live documents of one project contradicting each other, and the
+    reversal in no audit trail."""
+
+    def setUp(self):
+        super().setUp()
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(package_id="PKG-A", req_ids=["FR-001"])
+        _record(package_id="PKG-A", stakeholder="Ivanov", raci="accountable",
+                decision="rejected", rejection_reason="the flow is wrong",
+                req_decisions=[{"req_id": "FR-001", "decision": "rejected",
+                                "rejection_reason": "the flow is wrong"}])
+        _open_package(package_id="PKG-B", req_ids=["FR-001"])
+        _record(package_id="PKG-B", stakeholder="Ivanov", raci="accountable",
+                decision="approved",
+                req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
+
+    def test_the_overtaken_round_names_the_round_that_overtook_it(self):
+        result = check_approval_status(PROJECT, "PKG-A")
+        self.assertIn("PKG-B", result,
+                      "the older round still reads as the project's current position")
+        self.assertIn("superseded", result.lower())
+
+    def test_the_new_record_names_the_decision_it_overrides(self):
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            create_requirements_baseline(PROJECT, "PKG-B", "2.0", decided_by="Ivanov")
+            record = mock_sa.call_args[0][0]
+        self.assertIn("PKG-A", record, "the reversal is in no audit trail")
+        self.assertIn("Ivanov", record)
+        self.assertIn("the flow is wrong", record)
+
+    def test_a_round_nobody_overtook_is_left_alone(self):
+        _open_package(package_id="PKG-C", req_ids=["FR-002"])
+        _record(package_id="PKG-C", req_decisions=[{"req_id": "FR-002", "decision": "approved"}])
+        result = check_approval_status(PROJECT, "PKG-C")
+        self.assertNotIn("superseded", result.lower())
+
+
 class TestCheckApprovalStatus(BaseMCPTest):
 
     def setUp(self):
