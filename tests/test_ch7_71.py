@@ -967,9 +967,16 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         result = mod71.build_coverage_matrix(self.P)
         self.assertIn("coverage matrix", result)
 
-    def test_deprecated_excluded(self):
-        """Deprecated requirements are not included in the matrix."""
+    def test_deprecated_is_shown_and_marked_but_is_not_coverage(self):
+        """Owner's decision, 2026-08-03: archived requirements are shown, marked and
+        counted — they only stop counting as coverage.
+
+        Hiding them moved the denominator silently: this matrix and the 5.1 documents
+        of the same project reported different sizes for the same graph."""
         repo = make_spec_repo(self.P, [
+            {"id": "BG-001", "type": "business_goal", "title": "Faster processing",
+             "version": "1.0", "status": "confirmed", "added": str(date.today()),
+             "source_artifact": ""},
             {"id": "FR-001", "type": "functional", "title": "Active",
              "version": "1.0", "status": "draft", "added": str(date.today()),
              "source_artifact": ""},
@@ -977,11 +984,25 @@ class TestBuildCoverageMatrix(BaseMCPTest):
              "version": "1.0", "status": "deprecated", "added": str(date.today()),
              "source_artifact": ""},
         ])
+        repo["links"] = [
+            {"from": "FR-DEP", "to": "BG-001", "relation": "satisfies",
+             "rationale": "withdrawn", "added": str(date.today())},
+        ]
         save_spec_repo(repo)
         result = mod71.build_coverage_matrix(self.P)
-        # FR-001 should be present, FR-DEP should not
-        self.assertIn("FR-001", result)
-        self.assertNotIn("FR-DEP", result)
+
+        self.assertIn("FR-DEP", result, "an archived requirement vanished from the matrix")
+        dep_row = [ln for ln in result.split("\n") if "FR-DEP" in ln and ln.startswith("|")]
+        self.assertTrue(dep_row)
+        self.assertIn("archived", dep_row[0].lower(), "it is shown but not marked")
+        self.assertIn("| — of them archived (5.2) | 1 |", result)
+
+        # ...and the objective it used to serve is NOT covered by it.
+        goal_row = [ln for ln in result.split("\n")
+                    if "BG-001" in ln and "Faster processing" in ln]
+        self.assertTrue(goal_row)
+        self.assertIn("🔴", goal_row[0],
+                      "a withdrawn requirement was counted as serving the objective")
 
     def test_shows_summary_table(self):
         repo = make_spec_repo(self.P, [

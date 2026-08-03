@@ -10,6 +10,7 @@ save_artifact is patched via patch() per ADR-068.
 
 import json
 import os
+import re
 import sys
 import unittest
 from datetime import date
@@ -23,7 +24,7 @@ from tests.conftest import (setup_mocks, BaseMCPTest, make_test_repo,
 setup_mocks()
 
 import skills.requirements_traceability_mcp as mod51
-from skills.common import data_path
+from skills.common import data_path, normalize_project_id
 
 
 # ---------------------------------------------------------------------------
@@ -417,22 +418,76 @@ class TestCheckCoverage(BaseMCPTest):
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    def test_deprecated_excluded_from_coverage(self):
-        """Deprecated requirements are not included in the audit."""
-        # Mark FR-002 as deprecated directly in the repository
-        safe_name = PROJECT.lower().replace(" ", "_")
-        path = data_path(safe_name, f"{safe_name}_traceability_repo.json")
+    def _deprecate(self, req_id="FR-002"):
+        """Marks a requirement archived directly in the repository."""
+        safe_name = normalize_project_id(PROJECT)
+        path = data_path(PROJECT, f"{safe_name}_traceability_repo.json")
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for r in data["requirements"]:
-            if r["id"] == "FR-002":
+            if r["id"] == req_id:
                 r["status"] = "deprecated"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
 
+    def test_an_archived_requirement_is_shown_and_counted_but_is_not_coverage(self):
+        """Owner's decision, 2026-08-03: archived requirements are SHOWN, MARKED and
+        COUNTED — they just do not count as coverage.
+
+        They used to be filtered out of the selection, so the denominator changed
+        silently: the same graph in the same minute gave `Total items 6` here and
+        `Total requirements: 8` in the traceability matrix. Worse, the audit is what
+        `deprecate_requirements` tells the analyst to run next to check for orphaned
+        links to the node just archived — and it did not mention the node at all."""
+        self._deprecate("FR-002")
         result = self._call()
-        self.assertIsInstance(result, str)
-        self.assertNotIn("❌", result)
+
+        self.assertIn("FR-002", result, "an archived requirement vanished from the audit")
+        self.assertIn("archived", result.lower())
+        # It is counted, and it is not counted as coverage.
+        archived_row = [ln for ln in result.split("\n") if "Archived" in ln and "|" in ln]
+        self.assertTrue(archived_row, f"no archived row in the summary:\n{result}")
+        self.assertIn("| 1 |", archived_row[0])
+
+    def test_the_audit_and_the_matrix_agree_on_how_many_items_there_are(self):
+        """Two documents of one project, one minute apart, must not disagree on the
+        size of the graph. The difference used to be exactly the archived nodes."""
+        self._deprecate("FR-002")
+        audit = self._call()
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            matrix = mod51.export_traceability_matrix(project_name=PROJECT)
+
+        def _number_after(text, label):
+            for line in text.split("\n"):
+                if label in line:
+                    return int(re.search(r"(\d+)", line.split(label)[1]).group(1))
+            raise AssertionError(f"{label!r} not found in:\n{text}")
+
+        self.assertEqual(_number_after(audit, "Total items"),
+                         _number_after(matrix, "Total requirements:"),
+                         "the audit and the matrix report different totals for one graph")
+
+    def test_a_link_pointing_at_an_archived_node_is_marked_in_the_matrix(self):
+        """The links table prints ids only. A signatory reading it saw a requirement
+        justified by a retired objective as an ordinary one — the status was in a
+        different table, and only if they cross-referenced by hand."""
+        with patch("skills.requirements_traceability_mcp.save_artifact"):
+            mod51.add_trace_link(project_name=PROJECT, from_id="FR-002", to_id="BR-001",
+                                 relation="derives", rationale="justified by BR-001",
+                                 remove=False)
+        self._deprecate("FR-002")
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            matrix = mod51.export_traceability_matrix(project_name=PROJECT)
+
+        link_rows = [ln for ln in matrix.split("\n")
+                     if ln.startswith("|") and "FR-002" in ln and (
+                         "derives" in ln or "satisfies" in ln or "verifies" in ln)]
+        self.assertTrue(link_rows, f"no link row mentioning FR-002:\n{matrix}")
+        for row in link_rows:
+            self.assertIn("archived", row.lower(),
+                          f"a link to an archived node carries no marker: {row}")
 
     def test_child_with_derives_link_is_not_orphan(self):
         """A requirement that derives from a parent must NOT be flagged 'no source'.

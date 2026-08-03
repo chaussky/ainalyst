@@ -32,7 +32,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
 )
 
 mcp = FastMCP("BABOK_Requirements_Spec")
@@ -1591,10 +1591,12 @@ def build_coverage_matrix(
     logger.info(f"build_coverage_matrix: '{project_id}'")
 
     repo = _load_repo(project_id)
-    active = [
-        r for r in repo["requirements"]
-        if r.get("status") not in {"deprecated", "superseded", "retired"}
-    ]
+    # Archived requirements are SHOWN, MARKED and COUNTED here; what they never do is
+    # count as coverage of an objective (owner's decision, 2026-08-03 — see the doctrine
+    # at common.ARCHIVED_REQUIREMENT_STATUSES). Dropping them from the selection made
+    # this matrix and the 5.1 documents of the same project report different sizes for
+    # the same graph.
+    active = list(repo["requirements"])
 
     if not active:
         return (
@@ -1712,11 +1714,16 @@ def build_coverage_matrix(
             if r.get("type") in ("business_need", "business")
         }
         per_goal = {gid: [] for gid in goal_ids_set}
+        archived_req_ids = {r["id"] for r in requirements if is_archived(r)}
         for lnk in links:
             if lnk.get("relation") not in goal_link_relations:
                 continue
             frm, to = lnk.get("from"), lnk.get("to")
             if frm not in req_ids:
+                continue
+            # An archived requirement is not evidence that its objective is served: it
+            # was withdrawn. It stays in the registry table below, marked.
+            if frm in archived_req_ids:
                 continue
             if to in goal_ids_set:
                 if frm not in per_goal[to]:
@@ -1729,7 +1736,10 @@ def build_coverage_matrix(
     unattached = [
         r for r in requirements
         if r["id"] not in linked_req_ids and r["id"] not in need_only_req_ids
+        and not is_archived(r)
     ]
+    archived_reqs = [r for r in requirements if is_archived(r)]
+    by_id = {r["id"]: r for r in active}
 
     lines = [
         f"<!-- BABOK 7.1 — Coverage Matrix | Project: {project_id} | {date.today()} -->",
@@ -1746,6 +1756,7 @@ def build_coverage_matrix(
         "|------------|----------|",
         f"| Business objectives | {num_goals} |",
         f"| Requirements in the registry | {total_reqs} |",
+        f"| — of them archived (5.2) | {len(archived_reqs)} |",
         f"| Avg requirements per objective | {avg_per_goal:.1f} |",
     ]
 
@@ -1773,7 +1784,9 @@ def build_coverage_matrix(
                 flag = "🟢"
             title_short = title[:70] + "..." if len(title) > 70 else title
             ids = ", ".join(f"`{i}`" for i in covered) if covered else "—"
-            lines.append(f"| {flag} | `{gid}` {title_short} | {len(covered)} | {ids} |")
+            mark = archived_suffix(by_id.get(gid))
+            lines.append(
+                f"| {flag} | `{gid}` {title_short}{mark} | {len(covered)} | {ids} |")
         lines += [
             "",
             "> 🔴 no requirement serves this objective &nbsp;|&nbsp; 🟢 1–9 &nbsp;|&nbsp; "
@@ -1806,7 +1819,8 @@ def build_coverage_matrix(
         "|----|------|-------|",
     ]
     for req in requirements:
-        lines.append(f"| `{req['id']}` | {req.get('type', '—')} | {req.get('title', '—')} |")
+        lines.append(f"| `{req['id']}` | {req.get('type', '—')} | {req.get('title', '—')}"
+                     f"{archived_suffix(req)} |")
 
     # Precise mode ONLY. In degraded mode nothing is linked because nothing CAN be linked,
     # so listing every requirement as unattached would be exactly the kind of false claim

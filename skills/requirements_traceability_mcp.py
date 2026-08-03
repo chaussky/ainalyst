@@ -32,7 +32,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            BUSINESS_NODE_TYPES, has_been_approved,
     has_passed_verification, has_been_validated,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
-    link_date,
+    link_date, is_archived, archived_suffix,
 )
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
@@ -649,21 +649,29 @@ def check_coverage(
     repo = _load_repo(project_name)
     formality = repo.get("formality_level", "Standard")
 
-    # Exclude archived statuses — they shouldn't appear in the coverage audit
-    archive_statuses = {"deprecated", "superseded", "retired"}
-    requirements = [r for r in repo["requirements"] if r.get("status") not in archive_statuses]
+    # Archived requirements are SHOWN, MARKED and COUNTED — they simply never count as
+    # coverage (owner's decision, 2026-08-03; see the doctrine at ARCHIVED_REQUIREMENT_
+    # STATUSES). They used to be dropped from the selection here, which moved the
+    # denominator without saying so: this audit answered `Total items 6` while the
+    # matrix answered 8 for the same graph. It also silenced the audit about exactly
+    # what `deprecate_requirements` sends the analyst here to check — links still
+    # pointing at the node just archived.
+    requirements = list(repo["requirements"])
     if filter_type:
         requirements = [r for r in requirements if r.get("type") == filter_type]
 
     if not requirements:
-        return f"ℹ️ No active requirements {'of type `' + filter_type + '`' if filter_type else ''} found in the `{project_name}` repository."
+        return f"ℹ️ No requirements {'of type `' + filter_type + '`' if filter_type else ''} found in the `{project_name}` repository."
+
+    archived = [r for r in requirements if is_archived(r)]
+    live = [r for r in requirements if not is_archived(r)]
 
     orphans_no_source = []
     orphans_no_impl = []
     orphans_no_test = []
     fully_covered = []
 
-    for req in requirements:
+    for req in live:
         req_id = req["id"]
         req_type = req.get("type", "")
 
@@ -763,6 +771,9 @@ def check_coverage(
         else:
             fully_covered.append(req_info)
 
+    # Every item of the graph is in exactly one bucket, and the four sum to the total:
+    # covered + orphan + gaps + archived. A reader adding up the column gets the number
+    # printed under it.
     total = len(requirements)
     covered_pct = round(len(fully_covered) / total * 100) if total else 0
     # The audit spans the whole traceability graph. Analysis artifacts (risk /
@@ -789,6 +800,7 @@ def check_coverage(
         f"| 🟢 Full coverage | {len(fully_covered)} | {covered_pct}% |",
         f"| 🔴 No source (orphan) | {len(orphans_no_source)} | {round(len(orphans_no_source)/total*100) if total else 0}% |",
         f"| 🟡 Coverage gaps | {len(orphans_no_impl)} | {round(len(orphans_no_impl)/total*100) if total else 0}% |",
+        f"| 📦 Archived (5.2) | {len(archived)} | {round(len(archived)/total*100) if total else 0}% |",
         f"| **Total items** | **{total}** | 100% |",
         "",
     ]
@@ -848,6 +860,43 @@ def check_coverage(
         for r in fully_covered:
             lines.append(f"| `{r['id']}` | {r['type']} | {r['title']} | {r['links_count']} |")
         lines.append("")
+
+    if archived:
+        # This section is the reason `deprecate_requirements` says "run check_coverage
+        # next": a link left pointing at an archived node still LOOKS like a
+        # justification on every other surface. Naming the live nodes that still lean
+        # on it is the whole answer the analyst came for.
+        lines += [
+            "## 📦 Archived requirements (5.2)",
+            "",
+            "> Kept for audit — nothing is ever deleted. They are listed and counted, "
+            "but they do **not** count as coverage: an archived requirement is not "
+            "evidence that anything is justified, implemented or verified.",
+            "",
+            "| ID | Type | Title | Status | Still referenced by |",
+            "|----|-----|----------|--------|---------------------|",
+        ]
+        dangling = 0
+        for req in archived:
+            req_id = req["id"]
+            referrers = sorted({
+                lnk["from"] for lnk in _find_links(repo, req_id)
+                if lnk["to"] == req_id and not is_archived(_find_req(repo, lnk["from"]))
+            })
+            if referrers:
+                dangling += 1
+            shown = ", ".join(f"`{r}`" for r in referrers) if referrers else "—"
+            lines.append(
+                f"| `{req_id}` | {req.get('type', '?')} | {req.get('title', '—')} "
+                f"| {req.get('status', '—')} | {shown} |")
+        lines.append("")
+        if dangling:
+            lines += [
+                f"> ⚠️ **{dangling} archived requirement(s) are still referenced by live "
+                f"ones.** Those links read as ordinary justification everywhere else — "
+                f"re-point them with `add_trace_link`, or archive what depends on them.",
+                "",
+            ]
 
     lines += [
         "---",
@@ -1032,13 +1081,18 @@ def export_traceability_matrix(
         "|----|-----------|---|-------------|-----------|",
     ]
 
+    # Each end is labelled by asking the NODE, not by printing the id. The status is
+    # already in the requirements table above, but a signatory reading the links
+    # section saw `FR-001 satisfies BG-002` with no hint that BG-002 was retired last
+    # month — the two halves of one document, and only a manual cross-reference
+    # between them.
     for lnk in sorted(links, key=lambda x: (x.get("relation", ""), x.get("from", ""))):
         rel = rel_icons.get(lnk["relation"], lnk["relation"])
         rationale = lnk.get("rationale", "—")
         added = link_date(lnk)
-        lines.append(
-            f"| `{lnk['from']}` | {rel} | `{lnk['to']}` | {rationale} | {added} |"
-        )
+        src = f"`{lnk['from']}`{archived_suffix(_find_req(repo, lnk['from']))}"
+        dst = f"`{lnk['to']}`{archived_suffix(_find_req(repo, lnk['to']))}"
+        lines.append(f"| {src} | {rel} | {dst} | {rationale} | {added} |")
 
     if not links:
         lines.append("| — | — | — | No links yet | — |")

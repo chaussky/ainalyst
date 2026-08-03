@@ -65,11 +65,27 @@ TEST_NODE_TYPES = {"test"}
 NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NODE_TYPES
 
 # The three terminal statuses `deprecate_requirements` (5.2) can assign. A requirement
-# in one of them is ARCHIVED: kept forever for audit (nothing is ever deleted here) and
-# counted by nothing. The set has been settled since 5.2 shipped and is spelled out
-# locally in six modules; 7.4 was the one chapter that never asked the question at all,
-# so a stakeholder whose every tie had been deprecated read as fully covered in a signed
-# architecture document (branch review B-2).
+# in one of them is ARCHIVED: kept forever for audit, because nothing is ever deleted
+# here.
+#
+# WHAT ARCHIVED MEANS ON A SURFACE (owner's decision, 2026-08-03). Two different
+# questions, and they used to be answered as one:
+#
+#   "does it appear in the report?"      -> YES, always, and MARKED as archived.
+#                                           It is also included in the total.
+#   "does it count as evidence?"         -> NO. Never coverage, never representation,
+#                                           never a satisfied objective.
+#
+# The doctrine here used to read "counted by nothing", and surfaces implemented it by
+# filtering archived nodes out of the SELECTION. That changes the denominator silently:
+# `check_coverage` reported `Total items 6` while `export_traceability_matrix` reported
+# `Total requirements: 8` for the same graph in the same minute — two documents of one
+# project disagreeing about how big it is. And the audit is precisely what
+# `deprecate_requirements` tells the analyst to run next, to find links left pointing at
+# the node just archived; filtered out, it could not mention it.
+#
+# So: filter on the VERDICT, never on the selection. 7.4 already worked this way
+# (manifest 2.7.4-K) — the helpers below are that pattern, made shared.
 #
 # NOTE the deliberate distinction from NON_REQUIREMENT_NODE_TYPES above: a TYPE says
 # what a node IS (a risk is not a requirement), a STATUS says what stage it is at (a
@@ -77,6 +93,24 @@ NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NO
 # purpose — 7.4 refuses to record a tie to a risk and accepts one to an archived
 # requirement with a warning.
 ARCHIVED_REQUIREMENT_STATUSES = {"deprecated", "superseded", "retired"}
+
+ARCHIVED_MARK = "_(archived)_"
+
+
+def is_archived(node) -> bool:
+    """Has this requirement been retired from the active set by 5.2?"""
+    return isinstance(node, dict) and node.get("status") in ARCHIVED_REQUIREMENT_STATUSES
+
+
+def archived_suffix(node, mark: str = ARCHIVED_MARK) -> str:
+    """" _(archived)_" for an archived node, "" otherwise — for appending to a label.
+
+    Every surface that prints a node uses this, so "shown and marked" cannot be
+    forgotten on one of them. A renderer that prints an id WITHOUT consulting the node
+    is the shape of the defect: the id looks ordinary, and the status lives in a
+    different table the reader has to cross-reference by hand.
+    """
+    return f" {mark}" if is_archived(node) else ""
 
 # Relations that justify a node's existence upward — "something explains why I am here".
 # `threatens` (6.3) and `modifies` (5.4) belong here: a risk that threatens an
