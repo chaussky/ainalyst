@@ -33,7 +33,7 @@ from skills.common import (
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
     read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
-    safe_filename_part, CorruptArtifactError,
+    safe_filename_part, CorruptArtifactError, list_with_cap,
 )
 
 mcp = FastMCP("BABOK_Requirements_Spec")
@@ -1781,8 +1781,18 @@ def build_coverage_matrix(
         f"| Business objectives | {num_goals} |",
         f"| Requirements in the registry | {total_reqs} |",
         f"| — of them archived (5.2) | {len(archived_reqs)} |",
-        f"| Avg requirements per objective | {avg_per_goal:.1f} |",
     ]
+    if precise:
+        # Counted over LINKS, so it matches the column of the table below: a
+        # requirement serving two objectives is counted under each of them. The old
+        # figure was registry/objectives, which agrees with no list in the document.
+        pairs = sum(len(v) for v in per_goal.values())
+        lines.append(
+            f"| Avg requirements per objective | {pairs / max(1, num_goals):.1f} "
+            f"(over {pairs} objective↔requirement links) |")
+    else:
+        lines.append(
+            f"| Requirements per objective (registry ÷ objectives) | {avg_per_goal:.1f} |")
 
     if precise:
         covered_count = sum(1 for gid in per_goal if per_goal[gid])
@@ -1798,23 +1808,30 @@ def build_coverage_matrix(
             "| | Objective | Requirements | IDs |",
             "|---|-----------|--------------|-----|",
         ]
+        # The threshold is relative: "far more than this project's own average"
+        # rather than a fixed 10. On 105 requirements across 4 objectives every
+        # objective was permanently 🟡, so the flag stopped carrying information.
+        # The floor keeps it meaningful on small projects, where the average is tiny.
+        mean_per_goal = sum(len(v) for v in per_goal.values()) / max(1, num_goals)
+        over_threshold = max(10, mean_per_goal * 2)
         for gid, title in goal_entries:
             covered = per_goal.get(gid, [])
             if not covered:
                 flag = "🔴"
-            elif len(covered) >= 10:
+            elif len(covered) > over_threshold:
                 flag = "🟡"
             else:
                 flag = "🟢"
             title_short = title[:70] + "..." if len(title) > 70 else title
-            ids = ", ".join(f"`{i}`" for i in covered) if covered else "—"
+            ids = list_with_cap(covered)
             mark = archived_suffix(by_id.get(gid))
             lines.append(
                 f"| {flag} | `{gid}` {title_short}{mark} | {len(covered)} | {ids} |")
         lines += [
             "",
-            "> 🔴 no requirement serves this objective &nbsp;|&nbsp; 🟢 1–9 &nbsp;|&nbsp; "
-            "🟡 10+ (possible over-engineering)",
+            f"> 🔴 no requirement serves this objective &nbsp;|&nbsp; 🟢 normal "
+            f"&nbsp;|&nbsp; 🟡 more than {over_threshold:.0f} — twice this project's "
+            f"average of {mean_per_goal:.1f} (possible over-engineering)",
             "",
         ]
     else:

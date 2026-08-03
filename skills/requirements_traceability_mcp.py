@@ -32,7 +32,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
                            BUSINESS_NODE_TYPES, has_been_approved,
     has_passed_verification, has_been_validated,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
-    link_date, is_archived, archived_suffix,
+    link_date, is_archived, archived_suffix, NODE_TYPE_LABELS,
 )
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
@@ -780,8 +780,18 @@ def check_coverage(
     # change_request / solution_scope) are traced for connectivity but are NOT
     # requirements to prioritise (5.3) or approve (5.5) — call that out so the counts
     # and the "ready for 5.3/5.5" verdict are not read as a requirement tally.
-    analysis_count = len([r for r in requirements
-                          if r.get("type", "") in NON_REQUIREMENT_NODE_TYPES])
+    non_requirements = [r for r in requirements
+                        if r.get("type", "") in NON_REQUIREMENT_NODE_TYPES]
+    analysis_count = len(non_requirements)
+    # The caption is built from the types actually present. It used to be a hard-coded
+    # list ("risks / change requests / solution scope") printed beside a count taken
+    # over a WIDER set (business roots + analysis + tests), so a project with no risk
+    # and no CR still read "4 analysis artifact(s) (risks / change requests / ...)" —
+    # a caption naming categories the project does not contain.
+    present_labels = sorted({
+        NODE_TYPE_LABELS.get(r.get("type", ""), r.get("type", "") or "untyped")
+        for r in non_requirements
+    })
 
     lines = [
         f"<!-- BABOK 5.1 — Coverage Audit | Project: {project_name} | {date.today()} -->",
@@ -806,9 +816,10 @@ def check_coverage(
     ]
     if analysis_count:
         lines += [
-            f"> ℹ️ **{total - analysis_count} requirement(s)** + **{analysis_count} analysis "
-            f"artifact(s)** (risks / change requests / solution scope). Analysis artifacts are "
-            f"audited for graph connectivity only — they are not prioritised (5.3) or approved (5.5).",
+            f"> ℹ️ **{total - analysis_count} requirement(s)** + **{analysis_count} "
+            f"non-requirement node(s)** ({', '.join(present_labels)}). They are audited "
+            f"for graph connectivity only — they are not prioritised (5.3) or "
+            f"approved (5.5).",
             "",
         ]
 

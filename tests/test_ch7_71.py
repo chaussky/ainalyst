@@ -1043,16 +1043,75 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         self.assertIn("Summary", result)
         self.assertIn("Requirements in the registry", result)
 
-    def test_over_engineering_flag_triggers(self):
-        """10+ requirements for one objective -> over-engineering flag."""
-        reqs = [
-            {"id": f"FR-{i:03d}", "type": "functional", "title": f"Req {i}",
-             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""}
-            for i in range(12)
-        ]
-        save_spec_repo(make_spec_repo(self.P, reqs))
-        result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("🟡", result)
+    def _matrix_with_goals(self, per_goal_counts):
+        """One objective per entry, carrying that many `satisfies` links."""
+        reqs, links, goals, n = [], [], [], 0
+        for gi, count in enumerate(per_goal_counts, start=1):
+            gid = f"BG-{gi:03d}"
+            goals.append({"id": gid, "type": "business_goal", "title": f"Objective {gi}",
+                          "version": "1.0", "status": "confirmed",
+                          "added": str(date.today()), "source_artifact": ""})
+            for _ in range(count):
+                n += 1
+                rid = f"FR-{n:03d}"
+                reqs.append({"id": rid, "type": "functional", "title": f"Req {n}",
+                             "version": "1.0", "status": "draft",
+                             "added": str(date.today()), "source_artifact": ""})
+                links.append({"from": rid, "to": gid, "relation": "satisfies",
+                              "rationale": "serves", "added": str(date.today())})
+        repo = make_spec_repo(self.P, goals + reqs)
+        repo["links"] = links
+        save_spec_repo(repo)
+        return mod71.build_coverage_matrix(self.P)
+
+    def _row_for(self, result, goal_id):
+        rows = [ln for ln in result.split("\n")
+                if ln.startswith("|") and f"`{goal_id}`" in ln]
+        self.assertTrue(rows, f"no row for {goal_id}:\n{result}")
+        return rows[0]
+
+    def test_over_engineering_flags_the_objective_that_stands_out(self):
+        """The old test built 12 requirements with NO objectives and asserted `🟡` was
+        somewhere in the output — which the LEGEND line satisfies on its own, so it
+        passed whatever the flag did. This one reads the objective's own row.
+
+        The threshold is relative: an absolute "10+" left every objective permanently
+        yellow on a real project (105 requirements over 4 objectives), and a signal
+        that never switches off teaches the analyst to ignore the colour."""
+        result = self._matrix_with_goals([40, 2, 2, 2])
+        self.assertIn("🟡", self._row_for(result, "BG-001"),
+                      "the objective carrying 40 of 46 requirements is not flagged")
+        for gid in ("BG-002", "BG-003", "BG-004"):
+            self.assertNotIn("🟡", self._row_for(result, gid))
+
+    def test_an_evenly_loaded_project_flags_nothing(self):
+        """105 requirements over 4 objectives is a NORMAL large project, not four
+        anomalies."""
+        result = self._matrix_with_goals([26, 26, 26, 27])
+        for gid in ("BG-001", "BG-002", "BG-003", "BG-004"):
+            self.assertNotIn("🟡", self._row_for(result, gid))
+
+    def test_the_id_list_in_a_cell_has_a_ceiling(self):
+        """B-1. A cell held 60 identifiers — some 700 characters in one Markdown table
+        cell — while 7.4 had solved this next door. The COUNT is never capped."""
+        result = self._matrix_with_goals([60])
+        row = self._row_for(result, "BG-001")
+        self.assertIn("| 60 |", row, "the count must stay complete")
+        self.assertIn("more_", row, "the id list has no ceiling")
+        self.assertLess(row.count("`FR-"), 15, f"the whole list is still printed: {row}")
+
+    def test_the_average_matches_the_column_under_it(self):
+        """B-2. "Avg requirements per objective 26.2" sat above a column summing to
+        135: the average was registry ÷ objectives, while the table counts
+        objective↔requirement PAIRS, and a requirement may serve several."""
+        result = self._matrix_with_goals([3, 3, 2])
+        rows = result.split("\n")
+        avg_line = [ln for ln in rows if "Avg requirements per objective" in ln][0]
+        counts = [int(ln.split("|")[3].strip()) for ln in rows
+                  if ln.startswith("| 🟢") or ln.startswith("| 🟡") or ln.startswith("| 🔴")]
+        expected = sum(counts) / len(counts) if counts else 0
+        self.assertIn(f"{expected:.1f}", avg_line,
+                      f"average {avg_line!r} does not describe the column {counts}")
 
     def test_reads_business_goals_from_artifact(self):
         """If a 4.3 artifact exists — uses its business objectives."""
@@ -1288,17 +1347,6 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
         ]))
         result = mod71.build_coverage_matrix(self.P)
         self.assertIn("check_coverage", result)
-
-    def test_over_engineering_hint_still_present(self):
-        # keep the global over-engineering signal (>= 10 reqs, no goals)
-        reqs = [
-            {"id": f"FR-{i:03d}", "type": "functional", "title": f"Req {i}",
-             "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""}
-            for i in range(12)
-        ]
-        save_spec_repo(make_spec_repo(self.P, reqs))
-        result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("🟡", result)
 
     # --- C1: objectives come from the REAL source (6.2), not the 4.3 artifact ---
 

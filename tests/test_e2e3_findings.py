@@ -308,8 +308,15 @@ class TestConfirmationFindings(BaseMCPTest):
         tr.add_trace_link(pid, "SOL-001", "FR-001", "satisfies", "x")
         out = tr.check_coverage(pid)
         self.assertIn("Total items", out)
-        self.assertIn("analysis artifact", out)
+        self.assertIn("non-requirement node", out)
         self.assertIn("Fully covered items", out)
+        # G-6: the caption is built from the types actually present. It used to be a
+        # fixed list printed beside a count taken over a wider set, so a project with
+        # no risk and no change request still read "(risks / change requests / ...)".
+        self.assertIn("risks (6.3)", out)
+        self.assertIn("solution scope (6.4)", out)
+        self.assertNotIn("change requests (5.4)", out,
+                         "the caption names a category this project does not contain")
 
     def test_r1_2_arch_places_51_classes_in_other_viewpoint(self):
         import skills.requirements_traceability_mcp as tr

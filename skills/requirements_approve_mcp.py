@@ -41,7 +41,7 @@ from skills.common import (
     planned_approval_timing, planned_approval_process, planned_decision_makers,
     is_planned_decision_maker, reg_norm,
     planned_party_status, party_aliases, PARTY_UNPLANNED, PARTY_UNBRIDGEABLE,
-    parse_platform_date, deciding_package, superseding_packages,
+    parse_platform_date, deciding_package, superseding_packages, list_with_cap,
     load_approval_history,
 )
 
@@ -1729,12 +1729,12 @@ def create_requirements_baseline(
         record_lines += ["", "---", "", "## 7.2 verification", ""]
 
     if unverified_in_baseline:
-        ids_str = ", ".join(f"`{rid}`" for rid in unverified_in_baseline)
+        ids_str = list_with_cap(unverified_in_baseline, cap=20)
         record_lines += [
             "### ⚠️ Baselined without 7.2 verification",
             "",
-            f"These requirements entered the baseline without passing verification "
-            f"(7.2): {ids_str}",
+            f"**{len(unverified_in_baseline)} requirement(s)** entered the baseline "
+            f"without passing verification (7.2): {ids_str}",
             "",
             "> Approval is a stakeholder decision; verification is a quality check.",
             "> These requirements carry an unmeasured quality risk into the baseline.",

@@ -47,7 +47,7 @@ from skills.common import (
     read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
     parse_json_str_list, registry_party_status, PARTY_IN_REGISTRY,
     PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE, registry_labels,
-    ARCHIVED_REQUIREMENT_STATUSES,
+    ARCHIVED_REQUIREMENT_STATUSES, list_with_cap,
 )
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
@@ -1867,6 +1867,36 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     return gaps_critical, gaps_warning, gaps_info
 
 
+def _render_gap_section(gaps: list) -> list:
+    """Gap lines, with runs of the SAME kind of gap collapsed into one entry.
+
+    On 105 requirements the info section was 60 numbered items carrying one sentence
+    with a different id each — a document the reader scrolls past rather than reads.
+    Grouping keeps every id (under the shared ceiling) and every count: what shrinks is
+    the repetition, not the information.
+    """
+    out: list = []
+    by_type: dict = {}
+    for gap in gaps:
+        by_type.setdefault(gap.get("type", "other"), []).append(gap)
+
+    n = 0
+    for gap_type, group in by_type.items():
+        if len(group) < 3:
+            for gap in group:
+                n += 1
+                out += [f"**{n}.** {gap['message']}", ""]
+            continue
+        # One sentence for the group, then the ids it covers.
+        n += 1
+        sample = group[0]["message"]
+        # everything after the id prefix, so the shared explanation survives verbatim
+        shared = sample.split("— ", 1)[1] if "— " in sample else sample
+        ids = list_with_cap([g.get("req_id") or g.get("id") or "?" for g in group], cap=15)
+        out += [f"**{n}.** **{len(group)} requirement(s)** — {shared}", f"   {ids}", ""]
+    return out
+
+
 def _gaps_as_messages(gaps_critical: list, gaps_warning: list, gaps_info: list) -> dict:
     """The `gaps` block as it is stored on the architecture file — messages only."""
     return {
@@ -1965,27 +1995,21 @@ def check_architecture_gaps(
             "## 🔴 Critical — require resolution",
             "",
         ]
-        for i, gap in enumerate(gaps_critical, 1):
-            lines.append(f"**{i}.** {gap['message']}")
-            lines.append("")
+        lines += _render_gap_section(gaps_critical)
 
     if gaps_warning:
         lines += [
             "## 🟡 Warning — worth reviewing",
             "",
         ]
-        for i, gap in enumerate(gaps_warning, 1):
-            lines.append(f"**{i}.** {gap['message']}")
-            lines.append("")
+        lines += _render_gap_section(gaps_warning)
 
     if gaps_info:
         lines += [
             "## ℹ️ Info — for completeness",
             "",
         ]
-        for i, gap in enumerate(gaps_info, 1):
-            lines.append(f"**{i}.** {gap['message']}")
-            lines.append("")
+        lines += _render_gap_section(gaps_info)
 
     if total_gaps == 0:
         lines += [

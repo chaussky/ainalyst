@@ -96,6 +96,36 @@ ARCHIVED_REQUIREMENT_STATUSES = {"deprecated", "superseded", "retired"}
 
 ARCHIVED_MARK = "_(archived)_"
 
+# Human labels for the node types that are NOT requirements, so a caption printed next
+# to a count can be built from the types actually present instead of a hard-coded list.
+NODE_TYPE_LABELS = {
+    "business": "business requirements",
+    "business_need": "business needs (6.1)",
+    "business_goal": "business objectives (6.2)",
+    "risk": "risks (6.3)",
+    "change_request": "change requests (5.4)",
+    SOLUTION_SCOPE_NODE_TYPE: "solution scope (6.4)",
+    "test": "tests",
+}
+
+
+def list_with_cap(items, cap: int = 10, formatter=None) -> str:
+    """Renders a list of ids with a ceiling: show `cap`, then name the remainder.
+
+    The rule "the list is capped, the COUNT never is" was solved in 7.4 (manifest
+    2.7.4-N) as a local decision, so neighbouring surfaces did not have it: 7.1's
+    coverage matrix put 60 identifiers — some 700 characters — into a single Markdown
+    table cell. Shared here so a surface gets the behaviour by using the helper.
+    """
+    fmt = formatter or (lambda value: f"`{value}`")
+    values = list(items)
+    if not values:
+        return "—"
+    shown = ", ".join(fmt(v) for v in values[:cap])
+    if len(values) > cap:
+        shown += f", _+{len(values) - cap} more_"
+    return shown
+
 
 def is_archived(node) -> bool:
     """Has this requirement been retired from the active set by 5.2?"""
@@ -1812,16 +1842,27 @@ def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -
     If project_id is provided, the artifact is written to reports/<project_id>/ (issue #1).
     Without project_id, the default behavior is preserved (flat reports/).
     """
+    # The project_id guard runs BEFORE any directory is made. `_ensure_dirs()` used to
+    # come first, so a refused call still left the root governance_plans/{data,reports}
+    # behind — no project data, but a side effect from a call that says it did nothing.
+    out_dir = report_dir_for(project_id) if project_id else REPORTS_DIR
     _ensure_dirs()
+    os.makedirs(out_dir, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{safe_filename_part(prefix)}_{timestamp}.md"
-    if project_id:
-        out_dir = report_dir_for(project_id)
-        os.makedirs(out_dir, exist_ok=True)
-    else:
-        out_dir = REPORTS_DIR
     filepath = os.path.join(out_dir, filename)
+
+    # Two artifacts of one project born in the same second used to share a name, and
+    # the second overwrote the first while answering "✅ Artifact saved" — a delivered
+    # document destroyed by a call that reported success. Timestamps are only
+    # second-granular, so the name has to be made unique rather than assumed unique.
+    if os.path.exists(filepath):
+        stem, ext = os.path.splitext(filename)
+        n = 2
+        while os.path.exists(os.path.join(out_dir, f"{stem}_{n}{ext}")):
+            n += 1
+        filepath = os.path.join(out_dir, f"{stem}_{n}{ext}")
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)

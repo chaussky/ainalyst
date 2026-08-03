@@ -33,6 +33,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     VALID_PRIORITIES, MOSCOW_PRIORITIES, LEVEL_PRIORITIES,
     load_ba_plan, planned_attribute_set, planned_reuse, REUSE_SCOPES,
     attribute_writer, reg_norm, days_since, ARCHIVED_REQUIREMENT_STATUSES,
+    approval_outcome,
 )
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
@@ -1098,6 +1099,25 @@ def find_reusable_requirements(
         elif status == "confirmed":
             score += 1
             score_notes.append("🟡 Status confirmed — not yet approved")
+
+        # Age and unresolved objections. The module KNOWS how to compute both —
+        # `check_requirements_health` next door reads staleness, and 5.5's decisions
+        # are on disk — but the fitness card was built purely from node attributes, so
+        # it offered a requirement nobody had looked at in two months, carrying an
+        # Accountable rejection in another package, as "proven in practice".
+        age = _days_since(req.get("last_reviewed") or req.get("added", ""))
+        if age is None:
+            score_notes.append("🟡 Age unknown — the review date could not be read")
+        elif age > STALE_DAYS_CRITICAL:
+            score_notes.append(
+                f"🟡 Not reviewed for {age} days — confirm it still reflects the "
+                f"current process before reusing it")
+        outcome = approval_outcome(project_name, req.get("id", ""))
+        if outcome == "rejected":
+            score_notes.append(
+                "❌ Rejected in 5.5 — the objection was never withdrawn")
+        elif outcome == "conditional":
+            score_notes.append("🟡 Approved in 5.5 with open conditions")
 
         minor = _minor_version(req.get("version", "1.0"))
         if minor <= 1:
