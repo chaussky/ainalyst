@@ -857,5 +857,137 @@ class TestAddTraceLinkWarnsOnMissingTarget(BaseMCPTest):
         self.assertNotIn("not in the repository", out)
 
 
+class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
+    """The audit banner states the doctrine — "an archived requirement is not evidence
+    that anything is justified, implemented or verified" — and until this test the
+    VERDICT did not honour it. Archived nodes were removed from the SELECTION only:
+    they were shown and counted, while `has_source` / `has_impl` / `has_test` still
+    accepted a link whose far end was retired. A requirement whose need, component and
+    test had all been archived read "🟢 Full coverage" three lines under the banner
+    denying it, and the audit declared the project ready for 5.3 and 5.5.
+
+    Filter on the VERDICT, never on the selection (the doctrine this wave established
+    in 5.1): the node stays visible and counted, but it stops being evidence.
+    """
+
+    P = "archived_evidence"
+
+    def _save(self, nodes, links):
+        repo = make_test_repo(self.P)
+        repo["requirements"] = nodes
+        repo["links"] = links
+        save_test_repo(repo)
+
+    def _run(self):
+        with patch("skills.requirements_traceability_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod51.check_coverage(project_name=self.P)
+
+    @staticmethod
+    def _node(node_id, node_type, status="confirmed"):
+        return {"id": node_id, "type": node_type, "title": f"{node_id} probe",
+                "version": "1.0", "status": status, "added": str(date.today()),
+                "source_artifact": ""}
+
+    @staticmethod
+    def _edge(frm, to, relation):
+        return {"from": frm, "to": to, "relation": relation,
+                "created": str(date.today())}
+
+    def _live_requirement_leaning_on_archived_evidence(self):
+        self._save(
+            [self._node("BN-001", "business_need", "retired"),
+             self._node("FR-001", "solution"),
+             self._node("COMP-1", "component", "retired"),
+             self._node("TC-001", "test", "retired")],
+            [self._edge("FR-001", "BN-001", "derives"),
+             self._edge("COMP-1", "FR-001", "satisfies"),
+             self._edge("TC-001", "FR-001", "verifies")],
+        )
+
+    def test_a_retired_source_does_not_justify_a_live_requirement(self):
+        self._live_requirement_leaning_on_archived_evidence()
+        out = self._run()
+        covered = out.split("## 🟢 Fully covered items", 1)
+        self.assertEqual(len(covered), 1,
+                         "FR-001 is justified only by retired nodes — it cannot be "
+                         "fully covered:\n" + out)
+        self.assertIn("`FR-001`", out)
+
+    def test_the_verdict_does_not_call_that_project_ready(self):
+        self._live_requirement_leaning_on_archived_evidence()
+        out = self._run()
+        self.assertNotIn("Coverage is complete", out)
+
+    @staticmethod
+    def _covered_section(out):
+        """The '🟢 Fully covered' table only. The summary row above it carries the same
+        words, so a whole-output assertion would pass on the wrong evidence."""
+        if "## 🟢 Fully covered items" not in out:
+            return ""
+        return out.split("## 🟢 Fully covered items", 1)[1].split("\n## ", 1)[0]
+
+    def test_a_live_source_still_justifies(self):
+        """The rule must not degenerate into "nothing is ever covered"."""
+        self._save(
+            [self._node("BN-001", "business_need"),
+             self._node("FR-001", "solution"),
+             self._node("COMP-1", "component"),
+             self._node("TC-001", "test")],
+            [self._edge("FR-001", "BN-001", "derives"),
+             self._edge("COMP-1", "FR-001", "satisfies"),
+             self._edge("TC-001", "FR-001", "verifies")],
+        )
+        self.assertIn("`FR-001`", self._covered_section(self._run()))
+
+    def test_an_external_id_still_justifies(self):
+        """An id outside the graph is documented legitimate use (ADR-087): it is
+        unknown, not archived. Reading "not live" as "archived" would turn every
+        external reference into an orphan — the false-positive this rule must avoid."""
+        self._save(
+            [self._node("FR-001", "solution")],
+            [self._edge("FR-001", "EXT-999", "derives"),
+             self._edge("COMP-EXT", "FR-001", "satisfies"),
+             self._edge("TC-EXT", "FR-001", "verifies")],
+        )
+        self.assertIn("`FR-001`", self._covered_section(self._run()))
+
+    def test_a_graph_of_only_archived_nodes_is_not_complete_coverage(self):
+        """Before the archived population was kept in the selection, the empty-set
+        cutoff above caught this case and answered "no active requirements". Keeping
+        them made `requirements` non-empty, so the cutoff stopped firing and a project
+        whose every requirement had been retired was declared ready for approval."""
+        self._save(
+            [self._node("BR-001", "business", "retired"),
+             self._node("FR-001", "solution", "retired")],
+            [self._edge("FR-001", "BR-001", "derives")],
+        )
+        out = self._run()
+        self.assertNotIn("Coverage is complete", out)
+        self.assertIn("archived", out.lower())
+
+    def test_a_stale_link_is_named_where_the_analyst_reads_the_verdict(self):
+        """`deprecate_requirements` sends the analyst here to find links left pointing
+        at what it just archived. The warning lived in the body while the verdict two
+        paragraphs below said the traceability was ready — the same document answering
+        its own warning with "nothing to do"."""
+        self._save(
+            [self._node("BR-001", "business"),
+             self._node("BR-OLD", "business", "retired"),
+             self._node("FR-001", "solution"),
+             self._node("COMP-1", "component")],
+            [self._edge("FR-001", "BR-001", "derives"),
+             self._edge("BR-001", "BR-OLD", "derives"),
+             self._edge("COMP-1", "FR-001", "satisfies"),
+             self._edge("TC-EXT", "FR-001", "verifies")],
+        )
+        out = self._run()
+        # Coverage really IS complete here — every live node has live evidence. The
+        # defect was that "complete" was the ONLY thing the verdict said, while the
+        # body warned about a link nobody had re-pointed.
+        recommendations = out.split("## Recommendations", 1)[1]
+        self.assertIn("BR-OLD", recommendations)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

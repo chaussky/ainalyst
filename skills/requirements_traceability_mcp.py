@@ -33,6 +33,7 @@ from skills.common import (save_artifact, logger, DATA_DIR, data_path,
     has_passed_verification, has_been_validated,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     link_date, is_archived, archived_suffix, NODE_TYPE_LABELS,
+    list_with_cap,
 )
 
 mcp = FastMCP("BABOK_Requirements_Traceability")
@@ -97,6 +98,22 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
         if r["id"] == req_id:
             return r
     return None
+
+
+def _counts_as_evidence(repo: dict, node_id: str) -> bool:
+    """May a link to `node_id` be read as justification, implementation or a test?
+
+    No, if the node has been archived by 5.2 — that is the doctrine the coverage audit
+    prints above its archived table, and it has to hold for the VERDICT and not only
+    for the selection. A requirement whose need, component and test were all retired
+    was reported as fully covered three lines under the banner denying it.
+
+    Yes, if the id is not in the graph at all: an id outside the repository is a
+    documented legitimate reference (ADR-087), so it is EXTERNAL, not archived. Reading
+    "not live" as "archived" would turn every external reference into an orphan — the
+    false positive `add_trace_link` was deliberately built to avoid.
+    """
+    return not is_archived(_find_req(repo, node_id))
 
 
 def _find_links(repo: dict, req_id: str) -> list:
@@ -666,6 +683,18 @@ def check_coverage(
     archived = [r for r in requirements if is_archived(r)]
     live = [r for r in requirements if not is_archived(r)]
 
+    # Computed ONCE, and both the table and the recommendations below read it: the count
+    # and the list have to come from the same traversal, or the document ends up
+    # printing a number no row supports.
+    archived_referrers = {
+        req["id"]: sorted({
+            lnk["from"] for lnk in _find_links(repo, req["id"])
+            if lnk["to"] == req["id"] and not is_archived(_find_req(repo, lnk["from"]))
+        })
+        for req in archived
+    }
+    still_referenced = sorted(k for k, v in archived_referrers.items() if v)
+
     orphans_no_source = []
     orphans_no_impl = []
     orphans_no_test = []
@@ -686,17 +715,24 @@ def check_coverage(
         # neither of which ever has a derives edge.
         # HAS an implementation when something derives from it (children point in as
         # `to`) or something satisfies it.
+        #
+        # Every one of the three asks the SAME question of the far end: is the node at
+        # the other end of this link still evidence? An archived one is not — see
+        # `_counts_as_evidence`.
         has_source = any(
             lnk["relation"] in ("derives", "satisfies") and lnk["from"] == req_id
+            and _counts_as_evidence(repo, lnk["to"])
             for lnk in links
         )
         has_impl = any(
-            (lnk["relation"] == "derives" and lnk["to"] == req_id) or
-            (lnk["relation"] == "satisfies" and lnk["to"] == req_id)
+            ((lnk["relation"] == "derives" and lnk["to"] == req_id) or
+             (lnk["relation"] == "satisfies" and lnk["to"] == req_id))
+            and _counts_as_evidence(repo, lnk["from"])
             for lnk in links
         )
         has_test = any(
             lnk["relation"] == "verifies" and lnk["to"] == req_id
+            and _counts_as_evidence(repo, lnk["from"])
             for lnk in links
         )
 
@@ -710,6 +746,7 @@ def check_coverage(
         elif req_type == "test":
             has_source = has_source or any(
                 lnk["relation"] == "verifies" and lnk["from"] == req_id
+                and _counts_as_evidence(repo, lnk["to"])
                 for lnk in links
             )
         # Analysis artifacts from other chapters anchor themselves with their OWN
@@ -721,6 +758,7 @@ def check_coverage(
         elif req_type in ANALYSIS_NODE_TYPES:
             has_source = has_source or any(
                 lnk["relation"] in ("threatens", "modifies") and lnk["from"] == req_id
+                and _counts_as_evidence(repo, lnk["to"])
                 for lnk in links
             )
             # Nor is anything supposed to IMPLEMENT them. An analysis artifact points
@@ -887,25 +925,20 @@ def check_coverage(
             "| ID | Type | Title | Status | Still referenced by |",
             "|----|-----|----------|--------|---------------------|",
         ]
-        dangling = 0
         for req in archived:
             req_id = req["id"]
-            referrers = sorted({
-                lnk["from"] for lnk in _find_links(repo, req_id)
-                if lnk["to"] == req_id and not is_archived(_find_req(repo, lnk["from"]))
-            })
-            if referrers:
-                dangling += 1
+            referrers = archived_referrers[req_id]
             shown = ", ".join(f"`{r}`" for r in referrers) if referrers else "—"
             lines.append(
                 f"| `{req_id}` | {req.get('type', '?')} | {req.get('title', '—')} "
                 f"| {req.get('status', '—')} | {shown} |")
         lines.append("")
-        if dangling:
+        if still_referenced:
             lines += [
-                f"> ⚠️ **{dangling} archived requirement(s) are still referenced by live "
-                f"ones.** Those links read as ordinary justification everywhere else — "
-                f"re-point them with `add_trace_link`, or archive what depends on them.",
+                f"> ⚠️ **{len(still_referenced)} archived requirement(s) are still "
+                f"referenced by live ones.** Those links read as ordinary justification "
+                f"everywhere else — re-point them with `add_trace_link`, or archive what "
+                f"depends on them.",
                 "",
             ]
 
@@ -916,11 +949,33 @@ def check_coverage(
         "",
     ]
 
+    # The verdict is built from what the body of this document actually found. It used
+    # to be able to say "Coverage is complete" over a warning printed six lines above
+    # it, and over a project whose every requirement had been archived — the empty-set
+    # cutoff at the top stopped firing once archived nodes were kept in the selection,
+    # and `fully_covered` is computed over the LIVE set, so "no orphans" was vacuously
+    # true where there was nothing to have an orphan.
+    actions = []
     if orphans_no_source:
-        lines.append(f"1. ⚠️ **Close out {len(orphans_no_source)} orphan requirement(s)** before prioritization (5.3) and approval (5.5).")
+        actions.append(f"⚠️ **Close out {len(orphans_no_source)} orphan requirement(s)** before prioritization (5.3) and approval (5.5).")
     if orphans_no_impl:
-        lines.append(f"2. 🔧 **Fill the gaps** in {len(orphans_no_impl)} requirement(s): add implementation and/or tests.")
-    if not orphans_no_source and not orphans_no_impl:
+        actions.append(f"🔧 **Fill the gaps** in {len(orphans_no_impl)} requirement(s): add implementation and/or tests.")
+    if still_referenced:
+        actions.append(
+            f"📦 **Re-point or archive the links still pointing at "
+            f"{len(still_referenced)} archived requirement(s):** "
+            + list_with_cap(still_referenced, formatter=lambda i: f"`{i}`")
+            + ". They are not evidence, so nothing above counts them as coverage.")
+
+    if actions:
+        lines += [f"{n}. {text}" for n, text in enumerate(actions, 1)]
+    elif not live:
+        lines.append(
+            f"ℹ️ Every requirement in this project is archived ({len(archived)} of "
+            f"{len(archived)}). There is nothing to prioritise (5.3) or approve (5.5), "
+            f"and this is not a statement that the traceability is in good order — "
+            f"revive what is still in scope with `update_requirement` (5.2).")
+    else:
         lines.append("✅ Coverage is complete. Traceability is ready for 5.3 (Prioritization) and 5.5 (Approval).")
 
     content = "\n".join(lines)

@@ -42,7 +42,7 @@ from skills.common import (
     is_planned_decision_maker, reg_norm,
     planned_party_status, party_aliases, PARTY_UNPLANNED, PARTY_UNBRIDGEABLE,
     parse_platform_date, deciding_package, superseding_packages, list_with_cap,
-    load_approval_history,
+    load_approval_history, approval_outcome,
 )
 
 mcp = FastMCP("BABOK_Requirements_Approve")
@@ -1421,7 +1421,20 @@ def check_approval_status(
             lines.append(f"- {reason}")
         lines.append("")
 
-    if can_baseline:
+    if fully_superseded:
+        # The verdict one line above says this round decides nothing. Inviting a
+        # baseline right under it is the document contradicting itself — and the
+        # invitation was the harmful half: following it produced a signed record over
+        # decisions a later round had already replaced.
+        governing = sorted(set(superseded_by.values()))
+        lines += [
+            "Nothing here is signed off from this round. The requirements have been "
+            "decided again by "
+            + list_with_cap(governing, formatter=lambda p: f"`{p}`")
+            + " — baseline that round instead, or open a new one if the position has "
+              "changed again.",
+        ]
+    elif can_baseline:
         lines += [
             "All mandatory conditions are satisfied. You can create the Requirements Baseline.",
             "",
@@ -1565,8 +1578,23 @@ def create_requirements_baseline(
                 })
 
     # Update approved requirement statuses in the 5.1 repository
+    #
+    # A requirement of this package may since have been decided AGAIN by a later round,
+    # and the later round governs — the same rule `approval_outcome` applies everywhere
+    # else. Re-deriving the outcome from this package alone let a round that no longer
+    # decides anything sign off a requirement the governing round had rejected: the
+    # record listed it as approved over the rejecting stakeholder's own name, and
+    # `status: approved` went into the 5.1 graph.
+    #
+    # This is NOT a gate. The baseline still gets created, and a requirement whose LATER
+    # round approved it is baselined by that later round exactly as before — refusing on
+    # decisions taken in other packages is the regression that would break re-submission
+    # after rework.
+    overtaken = superseding_packages(project_name, package_id, package)
     approved_reqs = []
     for rid in req_ids:
+        if rid in overtaken:
+            continue
         status = _compute_req_status(rid, package)
         node = _find_node(repo, rid)
         if node:
@@ -1668,6 +1696,22 @@ def create_requirements_baseline(
         version = node.get("version", "—") if node else "—"
         priority = node.get("priority", "—") if node else "—"
         record_lines.append(f"- ✅ `{rid}` {title} (v{version}, priority: {priority})")
+
+    # What this round is NOT entitled to sign off. Silence here would be the same defect
+    # one step later: the requirement would simply be missing from the record, and a
+    # reader comparing it against the package would find a requirement that went in and
+    # never came out.
+    if overtaken:
+        record_lines += ["", "---", "", "## Decided by a later round", "",
+                         "These requirements were in this package, but a later round "
+                         "decided them again, and the later round governs. This "
+                         "baseline does not sign them off:", ""]
+        for rid, later_pkg in sorted(overtaken.items()):
+            node = _find_node(repo, rid)
+            title = node.get("title", "—") if node else "—"
+            record_lines.append(
+                f"- 📦 `{rid}` {title} — decided by `{later_pkg}` "
+                f"(outcome there: **{approval_outcome(project_name, rid)}**)")
 
     # What THIS round overturned. A requirement rejected in an earlier round and
     # approved here is decided by this one (the settled "latest round governs" rule),
@@ -1892,15 +1936,35 @@ def create_requirements_baseline(
             "",
         ]
 
-    output_lines += [
-        "### Next steps",
-        "",
-        "1. Hand off the Approval Record to stakeholders via `prepare_communication_package` (4.4)",
-        "2. Hand off the list of approved requirements to development (Chapter 6)",
-        "3. Any changes to approved requirements — only via `open_cr` (5.4)",
-        "",
-        save_path,
-    ]
+    # The same warning the Approval Record carries. The analyst reads THIS string in the
+    # chat and does not always open the file, so the epilogue advising them to hand a
+    # list of approved requirements to development had to stop being fixed text: over a
+    # baseline holding none, step 2 is advice nobody can act on.
+    if not approved_reqs:
+        output_lines += [
+            "⚠️ **This baseline contains no approved requirements.** There is nothing to "
+            "hand on to development, and nothing here is a statement that the scope was "
+            "agreed.",
+            "",
+            "### Next steps",
+            "",
+            "1. Check what is missing with `check_approval_status` — it names what is "
+            "pending, rejected or conditional",
+            "2. Collect the decisions via `record_approval_decision`, then baseline a "
+            "new version",
+            "",
+            save_path,
+        ]
+    else:
+        output_lines += [
+            "### Next steps",
+            "",
+            "1. Hand off the Approval Record to stakeholders via `prepare_communication_package` (4.4)",
+            "2. Hand off the list of approved requirements to development (Chapter 6)",
+            "3. Any changes to approved requirements — only via `open_cr` (5.4)",
+            "",
+            save_path,
+        ]
 
     return "\n".join(output_lines)
 

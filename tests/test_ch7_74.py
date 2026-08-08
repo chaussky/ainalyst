@@ -3153,5 +3153,92 @@ class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):
                          "'1 requirement … every one of them archived' is not English")
 
 
+class TestAGapSectionSaysWhoAndWhat(BaseMCPTest):
+    """Collapsing runs of gaps into one entry made the critical section stop answering
+    its own question. Three separate untruths came out of one mechanism:
+
+      - the ids were read from `req_id`/`id` only, so every stakeholder gap — whose
+        keys are `stakeholder_name`/`stakeholder_id` — printed `?`. The names are the
+        entire content of "whose interests are uncovered";
+      - the count was captioned "requirement(s)" over a list of people;
+      - the shared sentence was taken from the FIRST member, and these messages embed
+        their subject's title, so all three use cases were described as the first one.
+
+    No gap type has an explanation that is genuinely shared: every message names its
+    own subject and its own specifics. So the length problem is solved with a CEILING
+    (the list is cut, the count never is) instead of a sentence that fits nobody.
+    """
+
+    P = "gap_render"
+
+    def _gaps(self, gaps):
+        return "\n".join(mod74._render_gap_section(gaps))
+
+    def test_a_stakeholder_gap_keeps_the_persons_name(self):
+        people = ["Anna Orlova", "Boris Petrov", "Clara Mendes", "Dmitri Sokolov"]
+        out = self._gaps([
+            {"type": "stakeholder_no_view", "stakeholder_id": "", "stakeholder_name": p,
+             "message": f"Stakeholder `{p}` has no recorded tie to any requirement: "
+                        f"no declared interest (7.4). Their interests may be uncovered "
+                        f"— record what you know with `declare_stakeholder_interest`."}
+            for p in people
+        ])
+        for person in people:
+            self.assertIn(person, out)
+        self.assertNotIn("?", out)
+        self.assertNotIn("requirement(s)", out,
+                         "these are people, not requirements:\n" + out)
+
+    def test_one_use_cases_title_is_not_told_about_the_others(self):
+        titles = ["Login flow", "Order refund", "Bulk upload"]
+        out = self._gaps([
+            {"type": "uc_without_bp", "req_id": f"UC-00{i}", "title": t,
+             "message": f"`UC-00{i}` — Use Case '{t}' is not linked to any Business "
+                        f"Process. The user interacts, but the process is not described."}
+            for i, t in enumerate(titles, 1)
+        ])
+        for title in titles:
+            self.assertIn(title, out,
+                          "each gap describes its own use case:\n" + out)
+
+    def test_a_long_run_is_cut_but_the_count_is_not(self):
+        """Invariant: the list is capped, the number never is."""
+        out = self._gaps([
+            {"type": "fr_without_scenario", "req_id": f"FR-{i:03d}",
+             "title": f"Feature {i}",
+             "message": f"`FR-{i:03d}` — FR 'Feature {i}' is not linked to a UC or US."}
+            for i in range(1, 26)
+        ])
+        self.assertIn("FR-001", out)
+        self.assertNotIn("FR-025", out, "a 25-item wall is what the ceiling is for")
+        self.assertIn("25", out, "the true total must survive the cut:\n" + out)
+
+    def test_a_short_run_is_left_whole(self):
+        out = self._gaps([
+            {"type": "uc_without_bp", "req_id": "UC-001", "title": "Login flow",
+             "message": "`UC-001` — Use Case 'Login flow' is not linked to any "
+                        "Business Process."},
+        ])
+        self.assertIn("UC-001", out)
+        self.assertIn("Login flow", out)
+
+    def test_the_document_shows_every_stakeholder_by_name(self):
+        """The same thing through the real tool, since the renderer is only reached
+        from there and the fixtures of this suite never had three of one kind."""
+        save_repo(make_repo(self.P, [make_req("FR-001", "functional", "Auto routing")]))
+        save_stakeholder_registry(self.P, [
+            {"name": "Anna Orlova", "role": "Head of Support"},
+            {"name": "Boris Petrov", "role": "Compliance Officer"},
+            {"name": "Clara Mendes", "role": "Warehouse Lead"},
+            {"name": "Dmitri Sokolov", "role": "CFO"},
+        ])
+        with patch.object(mod74, "save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            out = mod74.check_architecture_gaps(project_id=self.P)
+        critical = out.split("## 🔴 Critical", 1)[1].split("\n## ", 1)[0]
+        for person in ("Anna Orlova", "Boris Petrov", "Clara Mendes", "Dmitri Sokolov"):
+            self.assertIn(person, critical, f"{person} is missing from:\n{critical}")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -655,6 +655,121 @@ class TestASupersededRoundSaysSoItself(BaseMCPTest):
         self.assertNotIn("superseded", result.lower())
 
 
+class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
+    """The other direction of the same rule, and the one that reaches the graph.
+
+    The display fix taught `check_approval_status` to say "Superseded — this round no
+    longer decides anything". The very next paragraph of that same document still read
+    "All mandatory conditions are satisfied. You can create the Requirements Baseline",
+    and following it produced a signed Approval Record listing FR-001 as approved, over
+    Ivanov's name, while the round that governs has him rejecting it — and wrote
+    `status: approved` into the 5.1 graph.
+
+    The BASELINE GATE stays open on purpose: refusing here on decisions taken in OTHER
+    packages is precisely the regression that would make a legitimate re-submission
+    after rework impossible (pinned by test_the_latest_round_still_baselines_below).
+    What changes is that the record states the outcome the platform actually computes —
+    `approval_outcome` — instead of re-deriving a different one from a dead round.
+    """
+
+    def setUp(self):
+        super().setUp()
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(package_id="PKG-A", req_ids=["FR-001"])
+        _record(package_id="PKG-A", stakeholder="Ivanov", raci="accountable",
+                decision="approved",
+                req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
+        _open_package(package_id="PKG-B", req_ids=["FR-001"])
+        _record(package_id="PKG-B", stakeholder="Ivanov", raci="accountable",
+                decision="rejected", rejection_reason="security review failed",
+                req_decisions=[{"req_id": "FR-001", "decision": "rejected",
+                                "rejection_reason": "security review failed"}])
+
+    def _baseline_the_dead_round(self):
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            returned = create_requirements_baseline(PROJECT, "PKG-A", "1.0",
+                                                    decided_by="Ivanov")
+            record = mock_sa.call_args[0][0]
+        return returned, record
+
+    @staticmethod
+    def _approved_section(record):
+        return record.split("## Approved requirements", 1)[1].split("\n---", 1)[0]
+
+    def test_the_record_does_not_list_it_as_approved(self):
+        _returned, record = self._baseline_the_dead_round()
+        self.assertNotIn("`FR-001`", self._approved_section(record),
+                         "the governing round rejected it:\n" + record)
+
+    def test_the_record_names_the_round_that_governs(self):
+        _returned, record = self._baseline_the_dead_round()
+        self.assertIn("PKG-B", record,
+                      "the record must say which round decided instead")
+
+    def test_the_graph_does_not_record_it_as_approved(self):
+        self._baseline_the_dead_round()
+        node = [r for r in load_test_repo(PROJECT)["requirements"]
+                if r["id"] == "FR-001"][0]
+        self.assertNotEqual(node.get("status"), STATUS_APPROVED)
+
+    def test_the_dashboard_does_not_invite_a_baseline_it_would_disown(self):
+        out = check_approval_status(PROJECT, "PKG-A")
+        verdict = out.split("## 📦 Verdict", 1)[1]
+        self.assertNotIn("All mandatory conditions are satisfied", verdict,
+                         "the paragraph above says this round decides nothing:\n" + out)
+
+    def test_the_latest_round_still_baselines_what_it_approved(self):
+        """The closed decision, asserted from the baseline side: re-submission after
+        rework must keep working. If this test ever fails, the fix above has grown
+        into the regression it was written to avoid."""
+        _open_package(package_id="PKG-C", req_ids=["FR-001"])
+        _record(package_id="PKG-C", stakeholder="Ivanov", raci="accountable",
+                decision="approved",
+                req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            create_requirements_baseline(PROJECT, "PKG-C", "2.0", decided_by="Ivanov")
+            record = mock_sa.call_args[0][0]
+        self.assertIn("`FR-001`", self._approved_section(record))
+        node = [r for r in load_test_repo(PROJECT)["requirements"]
+                if r["id"] == "FR-001"][0]
+        self.assertEqual(node.get("status"), STATUS_APPROVED)
+
+
+class TestAnEmptyBaselineSaysTheSameThingInBothPlaces(BaseMCPTest):
+    """The Approval Record learned to warn that a baseline holding no approved
+    requirement is not a statement that the scope was agreed. The string the tool
+    RETURNS — the one the analyst reads in the chat, without opening the file — kept
+    the fixed three-step epilogue, whose step 2 is "hand off the list of approved
+    requirements to development" over a list of none."""
+
+    def setUp(self):
+        super().setUp()
+        _make_repo_with_verified(self.tmp_dir)
+        _open_package(package_id="APKG-009", req_ids=["FR-001"])
+
+    def test_the_returned_summary_does_not_send_an_empty_list_to_development(self):
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            returned = create_requirements_baseline(
+                PROJECT, "APKG-009", "0.1", decided_by="BA", force=True)
+        self.assertIn("**Requirements approved:** 0 of 1", returned)
+        self.assertNotIn("Hand off the list of approved requirements to development",
+                         returned)
+        self.assertIn("no approved requirements", returned.lower())
+
+    def test_a_baseline_that_did_approve_something_still_says_so(self):
+        _record(package_id="APKG-009", stakeholder="Ivanov", raci="accountable",
+                decision="approved",
+                req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
+        with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            returned = create_requirements_baseline(
+                PROJECT, "APKG-009", "1.0", decided_by="Ivanov")
+        self.assertIn("development", returned)
+
+
 class TestCheckApprovalStatus(BaseMCPTest):
 
     def setUp(self):

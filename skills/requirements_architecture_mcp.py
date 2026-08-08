@@ -1867,13 +1867,24 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     return gaps_critical, gaps_warning, gaps_info
 
 
-def _render_gap_section(gaps: list) -> list:
-    """Gap lines, with runs of the SAME kind of gap collapsed into one entry.
+GAP_LIST_CAP = 10
 
-    On 105 requirements the info section was 60 numbered items carrying one sentence
-    with a different id each — a document the reader scrolls past rather than reads.
-    Grouping keeps every id (under the shared ceiling) and every count: what shrinks is
-    the repetition, not the information.
+
+def _render_gap_section(gaps: list, cap: int = GAP_LIST_CAP) -> list:
+    """Gap lines, grouped by kind, with a CEILING on how many of each are listed.
+
+    On 105 requirements the info section was 60 numbered items — a document the reader
+    scrolls past rather than reads. The first answer to that was to collapse each run
+    into one sentence taken from its first member, and it could not be made true: no
+    gap type here has an explanation that is genuinely shared. Every message names its
+    own subject and its own specifics, so the collapsed entry described the first use
+    case and attributed it to all of them, captioned people as "requirement(s)", and
+    printed `?` for every gap whose id lives under `stakeholder_name` rather than
+    `req_id`.
+
+    A ceiling solves the same length problem without inventing a sentence that fits
+    nobody: each gap keeps its own message, the list is cut, and the count never is —
+    the remainder is stated (invariant: truncate the list, never the number).
     """
     out: list = []
     by_type: dict = {}
@@ -1881,19 +1892,16 @@ def _render_gap_section(gaps: list) -> list:
         by_type.setdefault(gap.get("type", "other"), []).append(gap)
 
     n = 0
-    for gap_type, group in by_type.items():
-        if len(group) < 3:
-            for gap in group:
-                n += 1
-                out += [f"**{n}.** {gap['message']}", ""]
-            continue
-        # One sentence for the group, then the ids it covers.
-        n += 1
-        sample = group[0]["message"]
-        # everything after the id prefix, so the shared explanation survives verbatim
-        shared = sample.split("— ", 1)[1] if "— " in sample else sample
-        ids = list_with_cap([g.get("req_id") or g.get("id") or "?" for g in group], cap=15)
-        out += [f"**{n}.** **{len(group)} requirement(s)** — {shared}", f"   {ids}", ""]
+    for _gap_type, group in by_type.items():
+        for gap in group[:cap]:
+            n += 1
+            out += [f"**{n}.** {gap['message']}", ""]
+        if len(group) > cap:
+            out += [
+                f"   _+{len(group) - cap} more of the same kind ({len(group)} in "
+                f"total). They are all in the architecture file._",
+                "",
+            ]
     return out
 
 
