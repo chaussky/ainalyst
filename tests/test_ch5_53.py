@@ -898,5 +898,139 @@ class TestSaveWritesWsjfScoreAndNamesPhantomIds(BaseMCPTest):
         self.assertIn("NOT saved", out)
 
 
+class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
+    """One condition — `not session["aggregated"]` — stood for three different states,
+    and the document described all three as the first one.
+
+    An empty aggregate means "nothing was WRITTEN". It does not mean "nothing was
+    COLLECTED": scores live in `stakeholder_scores` and reach `aggregated` only when
+    `run_aggregation` is called. Skipping that call is an ordinary omission, and the
+    report answered it by denying the scores exist — two sections above its own
+    "Stakeholders: 1" — then telling the analyst to enter them again.
+
+    The third state is a session already closed on disk. There the text announced
+    "The session is still OPEN" and advised `add_stakeholder_scores`, which the
+    platform refuses on a closed session: a document contradicting the disk and
+    handing out a step that cannot be taken.
+
+    What must NOT change: a session where nothing was ever collected still records
+    nothing, still says so, and still stays open (V-3/V-4, pinned by
+    test_an_empty_session_does_not_claim_it_wrote_priorities and
+    test_an_empty_session_is_not_closed_by_finalising_it).
+    """
+
+    def setUp(self):
+        super().setUp()
+        _setup_repo()
+
+    def _finalise(self, session):
+        with patch("skills.requirements_prioritize_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = ""
+            return mod53.save_prioritization_result(PROJECT, session)
+
+    def _prio_path(self):
+        safe = PROJECT.lower().replace(" ", "_")
+        return data_path(safe, f"{safe}_prioritization.json")
+
+    def _close_on_disk(self, session):
+        """The state a session finalised by the PREVIOUS version is left in: closed,
+        with an empty aggregate. Written directly because the current code refuses to
+        close such a session at all — which is the point of the fix that created it."""
+        path = self._prio_path()
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        closed = 0
+        for s in data["sessions"]:
+            if s["label"] == session:
+                s["status"] = "closed"
+                s["closed_at"] = "2026-08-01"
+                closed += 1
+        assert closed == 1, f"fixture closed {closed} sessions, not the one under test"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    # -- scores collected, aggregation skipped ------------------------------
+
+    def test_collected_scores_are_not_denied(self):
+        _start_session(session="wave-noagg")
+        _add_scores_moscow(session="wave-noagg", sh_id="SH-001", influence="High")
+        out = self._finalise("wave-noagg")
+
+        self.assertIn("Stakeholders: 1", out, "fixture did not collect anything")
+        self.assertNotIn("No scores were collected", out,
+                         "the scores are on disk and counted two sections below:\n" + out)
+
+    def test_the_missing_step_is_named(self):
+        """The gap is the aggregation, so that is the step the document must name."""
+        _start_session(session="wave-noagg2")
+        _add_scores_moscow(session="wave-noagg2", sh_id="SH-001", influence="High")
+        out = self._finalise("wave-noagg2")
+
+        self.assertIn("run_aggregation", out)
+        self.assertNotIn("Add scores with `add_stakeholder_scores`", out,
+                         "they are already entered; re-entering them is not the step")
+
+    def test_nothing_is_written_when_the_aggregate_is_empty(self):
+        """The diagnosis changes; the caution does not. No aggregate, no priorities."""
+        _start_session(session="wave-noagg3")
+        _add_scores_moscow(session="wave-noagg3", sh_id="SH-001", influence="High")
+        out = self._finalise("wave-noagg3")
+
+        self.assertNotIn("Priorities have been written", out)
+        safe = PROJECT.lower().replace(" ", "_")
+        with open(data_path(safe, f"{safe}_traceability_repo.json"), encoding="utf-8") as f:
+            repo = json.load(f)
+        self.assertFalse(any(r.get("priority") for r in repo["requirements"]),
+                         "an un-aggregated session wrote priorities to the graph")
+
+    def test_the_session_that_wrote_nothing_stays_open(self):
+        _start_session(session="wave-noagg4")
+        _add_scores_moscow(session="wave-noagg4", sh_id="SH-001", influence="High")
+        self._finalise("wave-noagg4")
+
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-noagg4")
+        self.assertNotIn("already closed", agg.lower(),
+                         "finalising before aggregating cost the analyst the session")
+
+    # -- session already closed on disk -------------------------------------
+
+    def test_a_closed_session_is_not_called_open(self):
+        _start_session(session="wave-legacy")
+        self._close_on_disk("wave-legacy")
+        out = self._finalise("wave-legacy")
+
+        self.assertNotIn("still OPEN", out,
+                         "the disk says closed:\n" + out)
+        self.assertNotIn("The session remains open", out,
+                         "the disk says closed:\n" + out)
+
+    def test_a_closed_session_is_not_told_to_add_scores(self):
+        """The platform answers `add_stakeholder_scores` on a closed session with
+        `❌ Session is already closed`. Advice the platform refuses is not advice."""
+        _start_session(session="wave-legacy2")
+        self._close_on_disk("wave-legacy2")
+        out = self._finalise("wave-legacy2")
+
+        self.assertNotIn("Add scores with `add_stakeholder_scores`", out, out)
+
+        with patch("skills.requirements_prioritize_mcp.save_artifact"):
+            refused = mod53.add_stakeholder_scores(
+                project_name=PROJECT, session_label="wave-legacy2",
+                stakeholder_id="SH-001", stakeholder_influence="High",
+                scores_json=json.dumps([{"req_id": "FR-001", "score": "Must"}]))
+        self.assertIn("closed", refused.lower(),
+                      "fixture is wrong: the platform accepted the advised step")
+
+    def test_a_closed_empty_session_is_sent_to_a_new_session(self):
+        """The only route left once the session is closed — the same one the
+        re-finalisation note already names."""
+        _start_session(session="wave-legacy3")
+        self._close_on_disk("wave-legacy3")
+        out = self._finalise("wave-legacy3")
+
+        self.assertIn("new prioritization session", out.lower())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1851,5 +1851,53 @@ class TestTheSpecFillsAGraphNodeThatWasCreatedEmpty(BaseMCPTest):
         self.assertEqual(node["owner"], "Sergey Bok")
 
 
+class TestTheNotFoundMessageDescribesTheSearchThatRan(BaseMCPTest):
+    """The wave removed the flat fallbacks and left the diagnostics describing them.
+
+    `_find_confirmed_artifact` globs `reports/<project_id>/4_3_*confirmed*.md` — the
+    project id is the FOLDER, and the filename does not carry it. The message still
+    announced `governance_plans/4_3_<project_id>_confirmed*.md`, a shape nothing looks
+    at any more. An analyst who follows it literally puts the file where the tool will
+    never look, and "the tool searched for" is a false statement about the tool.
+
+    So the message is built from the same pattern the search uses, and the test does
+    what the analyst would do: read the path out of the message, put a file there, and
+    require the tool to find it."""
+
+    P = "pattern_probe"
+
+    def _named_pattern(self, out):
+        """The path the message tells the analyst about."""
+        quoted = [seg for seg in out.split("`") if "4_3" in seg and seg.endswith(".md")]
+        self.assertEqual(len(quoted), 1, f"expected exactly one named path in:\n{out}")
+        return quoted[0]
+
+    def test_following_the_named_pattern_produces_a_file_the_tool_finds(self):
+        out = mod71.analyze_elicitation_context(self.P)
+        self.assertIn("not found", out)
+
+        pattern = self._named_pattern(out)
+        concrete = os.path.join(PROJECT_ROOT_TMP(), pattern.replace("*", "probe"))
+        os.makedirs(os.path.dirname(concrete), exist_ok=True)
+        with open(concrete, "w", encoding="utf-8") as f:
+            f.write("# 4.3 confirmed result\n\nBusiness objective: cut handling time.\n")
+
+        out2 = mod71.analyze_elicitation_context(self.P)
+        self.assertIn("File found", out2,
+                      f"the analyst followed the message and put the file at "
+                      f"{concrete}; the tool still does not see it")
+
+    def test_the_message_does_not_name_the_layout_that_was_removed(self):
+        out = mod71.analyze_elicitation_context(self.P)
+        self.assertNotIn(f"governance_plans/4_3_{self.P}", out,
+                         "the flat layout was dropped on 2026-08-03")
+
+
+def PROJECT_ROOT_TMP():
+    """Tests run chdir'd into a temp dir (BaseMCPTest); paths in the message are
+    relative to it, which is exactly how the analyst would read them."""
+    return os.getcwd()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

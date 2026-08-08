@@ -33,7 +33,8 @@ and identify candidates for reuse. And to do this **regularly**, not only when a
 
 ## When this skill is activated
 
-- A requirement's status has changed (confirmed → approved, approved → on_hold...)
+- A requirement's status has changed (confirmed → under_change, approved → on_hold...)
+  — every status except `approved`, which only 5.5 records (see below)
 - A requirement is outdated or replaced by another → needs to be marked deprecated/superseded
 - A CR has come in → versions of affected requirements need updating (after 5.4)
 - Before prioritization (5.3) → the priority and stability attributes need to be current
@@ -140,7 +141,9 @@ Full description of attributes: `references/lifecycle_guide.md` → "Requirement
 - `5.1 run_impact_analysis` → list of affected requirements for a CR
 - `5.3` → updated priorities
 - `5.4` → CR decision: which requirements change, which are deprecated
-- `5.5` → status: `approved` after formal sign-off
+- `5.5` → status: `approved` after formal sign-off — written by 5.5 itself
+  (`create_requirements_baseline`). Do not re-enter it here: `update_requirement`
+  refuses `approved` and answers with that route.
 
 **Where results go:**
 - `5.3` — current stability and priority for correct prioritization

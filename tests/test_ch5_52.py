@@ -705,5 +705,142 @@ class TestHandingOverOwnershipWarnsAboutTheArchitectureSide(BaseMCPTest):
         self.assertNotIn("declare_stakeholder_interest", result)
 
 
+class TestTheStalenessCountIsCountingStaleness(BaseMCPTest):
+    """`stale` was derived by looking for the substring "days" in the rendered issue
+    lines, so it counted whatever happened to mention days.
+
+    The wave added "Review date is 510 days in the future — the data is damaged,
+    staleness cannot be judged", and the recommendations under the same table
+    immediately reported "1 not updated in a while": one paragraph saying staleness
+    cannot be judged, another judging it. The draft-age line ("In draft status for N
+    days already") was swept up the same way, so a requirement reviewed TODAY could be
+    reported as not updated in a while.
+
+    The module already states the rule for exactly this three lines above
+    `missing_attributes`: carried as data, never recovered by re-parsing the rendered
+    line. The staleness flag now follows it."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_repo()
+
+    def _health(self):
+        with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod52.check_requirements_health(project_name=PROJECT)
+
+    def _set_dates(self, req_id, last_reviewed=None, added=None, status=None):
+        repo = load_test_repo(PROJECT)
+        for r in repo["requirements"]:
+            if r["id"] == req_id:
+                if last_reviewed is not None:
+                    r["last_reviewed"] = last_reviewed
+                if added is not None:
+                    r["added"] = added
+                if status is not None:
+                    r["status"] = status
+        save_test_repo(repo)
+
+    @staticmethod
+    def _days_ago(n):
+        return str(date.today() - timedelta(days=n))
+
+    @staticmethod
+    def _days_ahead(n):
+        return str(date.today() + timedelta(days=n))
+
+    def test_a_damaged_future_date_is_not_counted_as_stale(self):
+        self._set_dates("FR-001", last_reviewed=self._days_ahead(510))
+        out = self._health()
+
+        self.assertIn("in the future", out, "fixture did not reach the damaged-date branch")
+        self.assertNotIn("not updated in a while", out,
+                         "the same document says staleness cannot be judged:\n" + out)
+
+    def test_a_requirement_reviewed_today_is_not_stale_because_it_is_an_old_draft(self):
+        self._set_dates("FR-001", last_reviewed=self._days_ago(0),
+                        added=self._days_ago(100), status="draft")
+        out = self._health()
+
+        self.assertIn("In draft status", out, "fixture did not reach the draft-age branch")
+        self.assertNotIn("not updated in a while", out,
+                         "it was reviewed today:\n" + out)
+
+    def test_a_genuinely_stale_requirement_is_still_counted(self):
+        """The control: narrowing the count must not switch it off."""
+        self._set_dates("FR-001", last_reviewed=self._days_ago(90))
+        out = self._health()
+
+        self.assertIn("Not updated for 90 days", out)
+        self.assertIn("1 not updated in a while", out)
+
+
+class TestTheDocstringOffersOnlyStatusesTheToolAccepts(BaseMCPTest):
+    """A docstring is the contract the model reads when it picks arguments, so a value
+    listed there is a value that will be sent. Two directions had drifted apart:
+
+      - it advertised `approved`, which the tool now refuses outright (approval is a
+        5.5 decision, owner's ruling 2026-08-03) — an argument the platform offers and
+        then rejects;
+      - it named eight statuses while the vocabulary had grown to thirteen, so
+        `verified`, `validated`, `pending_approval`, `rejected` and `under_change`
+        were settable and undocumented.
+
+    The comment over `VALID_REQUIREMENT_STATUSES` claims the constant exists so the
+    docstring and the check "cannot drift apart". Nothing enforced that; these tests
+    do, in both directions and through the real tool.
+    """
+
+    def setUp(self):
+        super().setUp()
+        _setup_repo()
+
+    def _documented_statuses(self):
+        """The vocabulary as the docstring offers it: the pipe-separated run between
+        `new_status:` and the `Empty string` sentence."""
+        doc = mod52.update_requirement.__doc__
+        block = doc.split("new_status:", 1)[1].split("Empty string", 1)[0]
+        tokens = {t.strip(" \n|`") for chunk in block.split("\n") for t in chunk.split("|")}
+        tokens = {t for t in tokens if t and t.replace("_", "").isalpha()}
+        self.assertGreaterEqual(len(tokens), 5,
+                                f"the docstring's status list stopped parsing: {block!r}")
+        return tokens
+
+    def _set(self, status):
+        with patch("skills.requirements_maintain_mcp.save_artifact") as mock_sa:
+            mock_sa.return_value = "✅ Saved"
+            return mod52.update_requirement(
+                project_name=PROJECT, req_id="BR-001",
+                change_reason="vocabulary check", new_status=status)
+
+    def test_every_status_the_docstring_offers_is_accepted(self):
+        for status in sorted(self._documented_statuses()):
+            with self.subTest(status=status):
+                out = self._set(status)
+                self.assertNotIn("❌", out,
+                                 f"the docstring offers `{status}` and the tool refuses it:\n{out}")
+
+    def test_every_status_the_tool_accepts_is_documented(self):
+        documented = self._documented_statuses()
+        settable = mod52.VALID_REQUIREMENT_STATUSES - {mod52.STATUS_APPROVED_LITERAL}
+        self.assertEqual(settable - documented, set(),
+                         "settable statuses missing from the docstring")
+
+    def test_the_refusal_does_not_offer_approved_either(self):
+        """The same untruth had a second copy: the ❌ for an unknown status printed
+        `Allowed: ...` built from the raw vocabulary, `approved` included."""
+        out = self._set("banana")
+        self.assertIn("❌", out)
+        allowed = out.split("Allowed:", 1)[1].split("\n", 1)[0]
+        self.assertNotIn("approved", allowed,
+                         f"refused value offered as allowed: {allowed}")
+
+    def test_the_route_to_approval_is_still_named(self):
+        """Removing `approved` from the offer must not remove the ANSWER to it: the BA
+        asking for it still has to learn where approval actually happens."""
+        doc = mod52.update_requirement.__doc__
+        self.assertIn("5.5", doc)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

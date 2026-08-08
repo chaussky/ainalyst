@@ -1748,22 +1748,31 @@ def save_prioritization_result(
             "method": session["method"],
         })
 
-    # NOTHING was collected: no score reached the aggregate, so there is no result to
-    # write and nothing to finalise. Closing anyway cost the analyst the session —
-    # add_stakeholder_scores, run_aggregation and resolve_conflict all refuse on a
-    # closed one — in exchange for a document that recorded nothing. The production
-    # path in is one keystroke wide: mistype the score field, every score is rejected
-    # (finding V-4), then finalise.
+    # An empty aggregate means there is no result to write and nothing to finalise.
+    # Closing anyway cost the analyst the session — add_stakeholder_scores,
+    # run_aggregation and resolve_conflict all refuse on a closed one — in exchange
+    # for a document that recorded nothing. The production path in is one keystroke
+    # wide: mistype the score field, every score is rejected (finding V-4), then
+    # finalise.
     #
     # "Don't block — warn": the report is still produced, and it says plainly that
-    # nothing was collected. The session stays open so the work can continue.
-    nothing_collected = not session.get("aggregated")
+    # nothing was written. The session stays open so the work can continue.
+    #
+    # WHAT the report says, though, is a different question from what it DOES, and
+    # this one condition used to answer both. An empty aggregate is "nothing was
+    # WRITTEN"; it is not "nothing was COLLECTED". Scores live in `stakeholder_scores`
+    # and reach `aggregated` only when `run_aggregation` is called, so a skipped
+    # aggregation — an ordinary omission — was reported as an absence of scores, two
+    # sections above the document's own "Stakeholders: N", with advice to enter them
+    # again. The decision below is unchanged; only the diagnosis is now told apart.
+    nothing_aggregated = not session.get("aggregated")
+    scores_collected = bool(session.get("stakeholder_scores"))
 
-    if not already_closed and not nothing_collected:
+    if not already_closed and not nothing_aggregated:
         _save_repo(project_name, repo)
 
     # Close the session
-    if not nothing_collected:
+    if not nothing_aggregated:
         session["status"] = "closed"
         session["closed_at"] = str(date.today())
     _save_prio(project_name, prio_data)
@@ -1783,13 +1792,25 @@ def save_prioritization_result(
     if refinalise_note:
         lines += [refinalise_note, ""]
 
-    if nothing_collected:
-        lines += [
-            "⚠️ **No scores were collected in this session** — the aggregate is empty, "
-            "so nothing was written to the 5.1 repository and the counts below are not "
-            "a statement about the backlog. The session remains open.",
-            "",
-        ]
+    if nothing_aggregated:
+        # Said only where it is true: a session already closed on disk does not
+        # "remain open" because this document says so.
+        still_open = "" if already_closed else " The session remains open."
+        if scores_collected:
+            lines += [
+                "⚠️ **The scores collected here were never aggregated** — "
+                "`run_aggregation` has not been called for this session, so the "
+                "aggregate is empty, nothing was written to the 5.1 repository, and "
+                "the counts below are not a statement about the backlog." + still_open,
+                "",
+            ]
+        else:
+            lines += [
+                "⚠️ **No scores were collected in this session** — the aggregate is empty, "
+                "so nothing was written to the 5.1 repository and the counts below are not "
+                "a statement about the backlog." + still_open,
+                "",
+            ]
 
     # BABOK 3.3 element .3 reconciled against what actually happened. Appended BELOW
     # the header block on purpose: the two `lines.insert(7, ...)` calls further down
@@ -1894,14 +1915,36 @@ def save_prioritization_result(
     # with no scores at all, where the same document read "Requirements updated: 0"
     # and "Priorities have been written to the 5.1 repository".
     lines += ["---", "", "## Next steps", ""]
-    if nothing_collected:
-        lines += [
-            "- ⚠️ **No scores were collected in this session, so no priority was "
-            "written to the 5.1 repository.** Nothing above is a statement about the "
-            "backlog.",
-            "- The session is still OPEN. Add scores with `add_stakeholder_scores` "
-            "(the field is `score`), then `run_aggregation`, then finalise again.",
-        ]
+    if nothing_aggregated:
+        if scores_collected:
+            lines += [
+                "- ⚠️ **The scores collected here were never aggregated, so no priority "
+                "was written to the 5.1 repository.** Nothing above is a statement "
+                "about the backlog.",
+            ]
+        else:
+            lines += [
+                "- ⚠️ **No scores were collected in this session, so no priority was "
+                "written to the 5.1 repository.** Nothing above is a statement about the "
+                "backlog.",
+            ]
+        # The step to take next depends on the state the session is actually IN.
+        # A closed one cannot be continued at all: `add_stakeholder_scores` and
+        # `run_aggregation` both refuse on it, so naming either of them here would be
+        # advice the platform rejects the moment it is followed.
+        if already_closed:
+            lines.append(
+                "- The session is CLOSED and cannot be continued — "
+                "`add_stakeholder_scores` and `run_aggregation` both refuse on a closed "
+                "session. Open a new prioritization session to record priorities.")
+        elif scores_collected:
+            lines.append(
+                "- The session is still OPEN. The scores are already in it: run "
+                "`run_aggregation`, then finalise again.")
+        else:
+            lines.append(
+                "- The session is still OPEN. Add scores with `add_stakeholder_scores` "
+                "(the field is `score`), then `run_aggregation`, then finalise again.")
     elif already_closed:
         lines += [
             "- This report was regenerated from the stored result — the 5.1 repository "

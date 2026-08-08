@@ -271,6 +271,19 @@ def _save_spec(content: str, project_id: str, filename: str) -> str:
     return filepath
 
 
+def _confirmed_artifact_pattern(project_id: str) -> str:
+    """The ONE glob the 4.3 lookup runs — and the one its "not found" message quotes.
+
+    They used to be two independent strings, and the wave that removed the flat
+    fallbacks updated only the search: the message went on naming
+    `governance_plans/4_3_<project_id>_confirmed*.md`, a shape nothing looks at, so an
+    analyst who followed it put the file where the tool would never find it. A
+    statement about where the tool searched has to be derived from where it searched.
+    """
+    from skills.common import report_dir_for
+    return os.path.join(report_dir_for(project_id), "4_3_*confirmed*.md")
+
+
 def _find_confirmed_artifact(project_id: str):
     """ADR-023: finds the latest confirmed 4.3 artifact for project_id, or None.
 
@@ -288,8 +301,7 @@ def _find_confirmed_artifact(project_id: str):
     is why the caller used to receive a `project_scoped` flag. Both went with the legacy
     layout (owner's decision, 2026-08-03).
     """
-    from skills.common import report_dir_for
-    matches = glob.glob(os.path.join(report_dir_for(project_id), "4_3_*confirmed*.md"))
+    matches = glob.glob(_confirmed_artifact_pattern(project_id))
     if not matches:
         return None
     # latest by modification time (filenames carry a timestamp, but mtime is robust)
@@ -371,7 +383,8 @@ def analyze_elicitation_context(
         return (
             f"⚠️ 4.3 artifact not found for project `{project_id}`.\n\n"
             f"The tool searched for files matching the pattern:\n"
-            f"`governance_plans/4_3_{project_id.lower().replace(' ', '_')}_confirmed*.md`\n\n"
+            f"`{_confirmed_artifact_pattern(project_id)}`\n\n"
+            f"(the project id is the FOLDER; the file name does not carry it)\n\n"
             f"**Options:**\n"
             f"1. Make sure the 4.3 artifact was created via `save_confirmed_elicitation_result` (4.3)\n"
             f"2. Pass the content manually: `analyze_elicitation_context("

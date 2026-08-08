@@ -73,6 +73,12 @@ VALID_REQUIREMENT_STATUSES = {
     "verified", "validated", "pending_approval", "rejected", "under_change",
 } | ARCHIVED_REQUIREMENT_STATUSES
 
+# What this tool will actually SET. `approved` stays in the vocabulary above so that
+# asking for it is answered with the route to 5.5 rather than "unknown status" — but a
+# list captioned "Allowed" that names a value the very next guard refuses is the same
+# untruth as the docstring that used to advertise it. Offer only what is settable.
+SETTABLE_REQUIREMENT_STATUSES = VALID_REQUIREMENT_STATUSES - {STATUS_APPROVED_LITERAL}
+
 
 # ---------------------------------------------------------------------------
 # Utilities — shared with 5.1 (duplicated to avoid circular dependencies)
@@ -281,8 +287,12 @@ def update_requirement(
         req_id:          Requirement ID: BR-001, FR-007, etc.
         change_reason:   Reason for the change — required. Recorded in the history.
         new_status:      New status. Allowed values:
-                         draft | confirmed | approved | implemented |
+                         draft | confirmed | pending_approval | rejected |
+                         under_change | verified | validated | implemented |
                          on_hold | deprecated | superseded | retired
+                         `approved` is deliberately NOT among them: approval is a
+                         decision stakeholders make, and chapter 5.5 records it after
+                         checking its gates. Asking for it here returns that route.
                          Empty string — leave unchanged.
         new_version:     New version in major.minor format (1.1, 2.0).
                          Empty string — leave unchanged.
@@ -327,7 +337,8 @@ def update_requirement(
     if new_status and new_status not in VALID_REQUIREMENT_STATUSES:
         return (
             f"❌ Unknown status `{new_status}`.\n"
-            f"   Allowed: {', '.join(sorted(VALID_REQUIREMENT_STATUSES))}\n"
+            f"   Allowed: {', '.join(sorted(SETTABLE_REQUIREMENT_STATUSES))}\n"
+            f"   (`approved` is not among them — it is recorded by 5.5.)\n"
             f"   Status routes archiving and every chapter's filters, so an "
             f"unrecognised value leaves the requirement neither live nor archived."
         )
@@ -761,7 +772,12 @@ def check_requirements_health(
         elif minor >= VOLATILITY_WARNING_THRESHOLD:
             issues.append(f"🟡 Medium volatility (v{req.get('version')})")
 
-        # Stale
+        # Stale. The flag is set where the judgement is MADE — the two branches that
+        # actually judge a requirement out of date. The advice block used to recover it
+        # by looking for "days" in the rendered line, which also matched "510 days in
+        # the future" (a damaged date, explicitly NOT judged) and "in draft for 100
+        # days" (which says nothing about when it was last reviewed).
+        is_stale = False
         last_reviewed = req.get("last_reviewed") or req.get("added", "")
         if last_reviewed:
             days = _days_since(last_reviewed)
@@ -780,8 +796,10 @@ def check_requirements_health(
                 # The heavier branch must not read as LIGHTER than the softer one: it
                 # used to lose the call to action the >30 case carries.
                 issues.append(f"🟡 Not updated for {days} days — review it")
+                is_stale = True
             elif days > STALE_DAYS_WARNING:
                 issues.append(f"🟡 Not updated for {days} days — worth checking")
+                is_stale = True
 
         # Long in draft
         if req.get("status") == "draft":
@@ -815,6 +833,8 @@ def check_requirements_health(
             # and a reworded issue string would silently empty the advice block —
             # reinstating the very self-contradiction this audit was fixed to avoid.
             "missing_attributes": missing,
+            # Same rule as `missing_attributes` above, for the same reason.
+            "stale": is_stale,
         }
 
         if any("🔴" in i for i in issues):
@@ -925,7 +945,7 @@ def check_requirements_health(
         )
     if warnings:
         attr_gaps = [r for r in warnings if r["missing_attributes"]]
-        stale = sum(1 for r in warnings if "days" in " ".join(r["issues"]))
+        stale = sum(1 for r in warnings if r.get("stale"))
         if attr_gaps:
             if resolved:
                 # The counter used to look for the substring "owner", so a project on a
