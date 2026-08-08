@@ -36,7 +36,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     read_json_artifact, guard_artifact_errors, secondary_project_ids_error,
 )
@@ -127,8 +127,7 @@ def _load_assessment(project_id: str) -> dict:
 def _save_assessment(data: dict, project_id: str):
     os.makedirs(os.path.dirname(_assessment_path(project_id)), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(_assessment_path(project_id), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(_assessment_path(project_id), data)
 
 
 def _empty_assessment(project_id: str) -> dict:
@@ -238,8 +237,7 @@ def scope_risk_assessment(
     }
 
     os.makedirs(os.path.dirname(_scope_path(project_id)), exist_ok=True)
-    with open(_scope_path(project_id), "w", encoding="utf-8") as f:
-        json.dump(scope, f, ensure_ascii=False, indent=2)
+    write_json_artifact(_scope_path(project_id), scope)
 
     # Initialize an empty risk register
     assessment = _load_assessment(project_id)
@@ -1025,8 +1023,7 @@ def save_risk_assessment(
                         added_links += 1
 
             repo["updated"] = str(date.today())
-            with open(repo_path, "w", encoding="utf-8") as f:
-                json.dump(repo, f, ensure_ascii=False, indent=2)
+            write_json_artifact(repo_path, repo)
 
             traceability_notes.append(
                 f"✅ 5.1 traceability updated: +{added_nodes} risk nodes, +{added_links} threatens links"

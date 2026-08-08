@@ -41,7 +41,7 @@ from collections import deque
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     BUSINESS_NODE_TYPES, NON_REQUIREMENT_NODE_TYPES, stakeholder_registry_path,
     read_json_artifact, guard_artifact_errors, reg_norm, load_approval_history,
@@ -161,8 +161,7 @@ def _save_repo(repo: dict, project_id: str) -> None:
     path = _repo_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
     logger.info(f"Traceability repo saved by 7.4: {path}")
 
 
@@ -207,8 +206,7 @@ def _save_architecture(data: dict) -> None:
     path = _architecture_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
     logger.info(f"Architecture saved: {path}")
 
 

@@ -39,7 +39,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, pick_field,
                            unrecognized_records_error,
     read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
@@ -134,8 +134,7 @@ def _load_json(path: str) -> Optional[dict]:
 
 def _save_json(path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
 
 
 def _load_scope(project_id: str) -> Optional[dict]:

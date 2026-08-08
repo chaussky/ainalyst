@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import sys
 import logging
 from datetime import date, datetime
@@ -788,24 +789,223 @@ def read_json_artifact(path: str, what: str = "artifact") -> dict:
         raise CorruptArtifactError(
             f"❌ The {what} could not be read: `{path}`\n"
             f"   {type(exc).__name__}: {exc}\n"
-            f"   The file exists but is not valid JSON. Restore it from version "
-            f"control or a backup — no data has been changed by this call."
+            f"   The file exists but is not valid JSON. The last "
+            f"{HISTORY_GENERATIONS} versions are kept in "
+            f"`{os.path.join(BASE_DIR, HISTORY_DIRNAME)}` — copying the newest one "
+            f"back gives you the project as it stood BEFORE the most recent change, "
+            f"which is the one thing it cannot return. No data has been changed by "
+            f"this call."
         ) from exc
 
 
+# ---------------------------------------------------------------------------
+# Writing an artifact — the single place a stored JSON file is replaced
+# ---------------------------------------------------------------------------
+#
+# The mirror of read_json_artifact, and it closes the last of the four durability
+# classes. Thirty-two places used to write a project file with the same two lines:
+#
+#     with open(path, "w", encoding="utf-8") as f:
+#         json.dump(data, f, ensure_ascii=False, indent=2)
+#
+# `open(path, "w")` TRUNCATES before a single byte of the replacement exists. Every
+# one of those places was therefore a window in which the analyst's entire project —
+# the requirements graph, the approval decisions, the priorities — could be reduced
+# to a half-written file by an interruption nobody controls: Ctrl+C, a full disk, a
+# dead battery, an antivirus holding the handle. `os.replace` appeared nowhere in the
+# codebase, and no backup existed anywhere, while the message for a damaged artifact
+# already advised the analyst to "restore it" — advice nothing on disk could satisfy.
+#
+# Three guarantees, and they are deliberately not the same guarantee three times:
+#
+#   ATOMICITY protects against the write being cut short. The replacement is built
+#   under a temporary name in the SAME directory (same filesystem, so the rename is
+#   atomic) and moved into place in one step. The name points at one whole file or
+#   the other, never at a torn one.
+#
+#   GENERATIONS protect against what atomicity cannot even see: content that is
+#   perfectly written and WRONG. This is not hypothetical here — init_traceability_repo
+#   once destroyed the node type of every requirement it touched, atomically and with
+#   a ✅. A hand edit does the same. So the version being replaced is copied aside
+#   first, and the last HISTORY_GENERATIONS of them survive.
+#
+#   SHAPE stops the graph from being replaced by something that is not a graph.
+#   Validation on READ has existed for a while, which means a wrong-shaped write was
+#   detected only by the NEXT tool to open the file — after the good version was
+#   already gone. Refusing at the write is the only point where the previous version
+#   still exists to be kept.
+#
+# ArtifactShapeError descends from CorruptArtifactError on purpose: `except
+# CorruptArtifactError` occurs exactly once in the whole codebase — the tool boundary
+# below — so inheriting means the refusal reaches the analyst as the same readable ❌
+# line as every other artifact failure, and cannot escape as a protocol error.
+
+HISTORY_DIRNAME = ".history"
+
+# Owner's decision, 2026-08-08: five generations, in one flat directory. Flat is safe
+# because artifact names always carry their project prefix, so two projects cannot
+# evict each other's copies — pruning counts per artifact name, never per directory.
+HISTORY_GENERATIONS = 5
+
+# The one artifact with a cross-chapter shape contract: nine chapters write it and
+# the whole of Chapter 5 reads it as `requirements` (nodes) + `links` (edges).
+TRACEABILITY_REPO_FILENAME = "traceability_repo.json"
+
+
+class ArtifactShapeError(CorruptArtifactError):
+    """Content that would not survive being read back. `str(exc)` is BA-facing.
+
+    A subclass rather than a sibling because the analyst-facing event is identical to
+    a corrupt stored file — a JSON artifact this platform cannot work with — and the
+    tool boundary that already converts that one should convert this one too.
+    """
+
+
+def _refuse_write(path: str, problem: str) -> "ArtifactShapeError":
+    """Builds the refusal. The promise in the last line is the reason the check runs
+    BEFORE anything on disk is touched."""
+    return ArtifactShapeError(
+        f"❌ Refused to write `{path}`\n"
+        f"   {problem}\n"
+        f"   Nothing was written — the stored version of this file is unchanged.\n"
+        f"   This is a defect in the tool that produced the content, not in your data."
+    )
+
+
+def check_artifact_shape(path: str, data) -> None:
+    """Raises ArtifactShapeError if `data` cannot stand in for the artifact at `path`.
+
+    Deliberately minimal. This is a last line of defence against a tool handing over
+    a structure that would make the file unreadable to every other chapter — not a
+    schema validator, and not a place to grow per-chapter rules. Anything richer
+    belongs where the content is built, with the context to explain itself.
+    """
+    if not isinstance(data, dict):
+        raise _refuse_write(
+            path, f"The content is a {type(data).__name__}, not a JSON object.")
+
+    if os.path.basename(path).endswith(f"_{TRACEABILITY_REPO_FILENAME}"):
+        for key in ("requirements", "links"):
+            if key not in data:
+                raise _refuse_write(
+                    path,
+                    f"The requirements graph has no `{key}` key. A graph is "
+                    f"`requirements` (nodes) plus `links` (edges); writing it "
+                    f"without one would make the project unreadable to Chapter 5.")
+            if not isinstance(data[key], list):
+                raise _refuse_write(
+                    path,
+                    f"`{key}` is a {type(data[key]).__name__}, and the requirements "
+                    f"graph needs it to be a list.")
+
+
+def _keep_generation(path: str) -> None:
+    """Copies the version about to be replaced into governance_plans/.history/.
+
+    The copy is taken BEFORE the write, so the newest generation is the state as it
+    stood one change ago — never the state being written. That is the whole point:
+    the case generations exist for is content that was written perfectly and is
+    WRONG, and there the version you want is precisely the one that tool replaced.
+    Copying afterwards instead would make the newest generation a second copy of the
+    damage. The cost is that a file destroyed from outside restores to one change
+    ago, and `read_json_artifact` says so rather than letting the analyst discover it.
+
+    Failure here is logged and swallowed on purpose: a backup that cannot be taken is
+    a reason to warn, never a reason to refuse the analyst's actual work (the
+    platform's "don't block — warn" rule). The write that follows is still atomic.
+    """
+    if not os.path.isfile(path):
+        return  # creating a file replaces nothing, so there is nothing to keep
+
+    name = os.path.basename(path)
+    history = os.path.join(BASE_DIR, HISTORY_DIRNAME)
+    try:
+        os.makedirs(history, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        copy = os.path.join(history, f"{name}.{stamp}.json")
+        # Microsecond stamps do not collide in practice; when they do, the suffix
+        # sorts AFTER the bare stamp so "newest last" stays true for the pruning.
+        n = 0
+        while os.path.exists(copy):
+            n += 1
+            copy = os.path.join(history, f"{name}.{stamp}_{n}.json")
+
+        # The backup is a write, and it fails the same ways the original does. Build
+        # it under a `.part` name — which the `.json` filter below does not count —
+        # then move it into place. A half-copied generation would otherwise hold one
+        # of the five slots and stay silent until the day it is needed, and debris
+        # from a process killed outright would evict a real version.
+        partial = f"{copy}.part"
+        try:
+            shutil.copy2(path, partial)
+            os.replace(partial, copy)
+        except BaseException:
+            try:
+                os.remove(partial)
+            except OSError:
+                pass
+            raise
+
+        stem = f"{name}."
+        kept = sorted(f for f in os.listdir(history)
+                      if f.startswith(stem) and f.endswith(".json"))
+        for stale in kept[:-HISTORY_GENERATIONS]:
+            os.remove(os.path.join(history, stale))
+    except OSError as exc:
+        logger.warning(f"Could not keep a previous generation of {name}: {exc}")
+
+
+def write_json_artifact(path: str, data) -> str:
+    """Replaces a stored JSON artifact without ever leaving a torn file behind.
+
+    The only supported way to write a project file. Returns the path written.
+    """
+    check_artifact_shape(path, data)
+
+    # Serialise BEFORE touching the filesystem: content that cannot be encoded is a
+    # defect in the caller, and it must not cost the analyst the stored version.
+    text = json.dumps(data, ensure_ascii=False, indent=2)
+
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    _keep_generation(path)
+
+    # Same directory, therefore the same filesystem, therefore os.replace is atomic.
+    tmp = f"{path}.tmp{os.getpid()}"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())  # a rename is only atomic over bytes that exist
+        os.replace(tmp, path)
+    except BaseException:
+        # BaseException, not Exception: KeyboardInterrupt is the interruption this
+        # whole function exists for, and it must not leave debris either.
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+    return path
+
+
 def guard_artifact_errors(fn):
-    """Converts the two BA-facing failures into the ❌ string an MCP tool must return.
+    """Converts the BA-facing failures into the ❌ string an MCP tool must return.
 
     Applied at the tool boundary rather than at each of the ~32 load sites, so a new
-    tool cannot forget it. Only these two exceptions are caught — everything else
+    tool cannot forget it. Only these exceptions are caught — everything else
     propagates unchanged, because swallowing unknown errors is how a tool starts
     reporting success it did not achieve.
 
       CorruptArtifactError  — a stored artifact exists but cannot be parsed.
+      └ ArtifactShapeError  — a tool tried to store something that could not be read
+                              back. Caught by inheritance, deliberately.
       InvalidProjectIdError — the project_id cannot be used as a folder name.
 
-    Both share the contract that makes returning them safe: they are raised BEFORE
-    anything is written, so the ❌ answer is also a promise that nothing changed.
+    What makes returning them safe is that each is raised BEFORE the file it names is
+    touched, so the ❌ answer is also a promise about that file: it still holds what
+    it held. The first two say so in their own text, which is where the analyst reads
+    it — this decorator only carries the message out.
     """
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
@@ -1069,8 +1269,7 @@ def save_stakeholder_registry(project_id: str, registry: dict) -> bool:
     path = stakeholder_registry_path(project_id)
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(registry, f, ensure_ascii=False, indent=2)
+        write_json_artifact(path, registry)
         return True
     except OSError as e:
         logger.warning(f"Could not persist stakeholder registry JSON: {e}")

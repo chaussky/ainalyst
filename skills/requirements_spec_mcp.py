@@ -29,7 +29,7 @@ import glob
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     parse_json_str_list, BUSINESS_NODE_TYPES, SOLUTION_SCOPE_NODE_TYPE,
     read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
@@ -90,8 +90,7 @@ def _save_repo(repo: dict) -> None:
     path = _repo_path(repo["project"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
     logger.info(f"Repository 5.1 updated (7.1): {path}")
 
 

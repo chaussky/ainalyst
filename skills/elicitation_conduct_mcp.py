@@ -17,7 +17,7 @@ import os
 from datetime import date
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, data_path, normalize_project_id,
     parse_json_dict, parse_json_dict_list, parse_json_list,
     update_stakeholder_registry_file, guard_artifact_errors)
@@ -164,8 +164,7 @@ def _record_session_risks(project_name: str, session_date: str, stakeholder_role
 
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        write_json_artifact(path, data)
         return True
     except OSError as e:
         logger.warning(f"4.2 Could not persist elicitation results JSON: {e}")

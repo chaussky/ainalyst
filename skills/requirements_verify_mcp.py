@@ -29,7 +29,7 @@ import glob
 from datetime import date, datetime
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id, specs_dir,
     has_passed_verification, was_verification_forced, NON_REQUIREMENT_NODE_TYPES,
     approval_outcome, APPROVAL_OUTCOME_APPROVED, APPROVAL_OUTCOME_CONDITIONAL,
@@ -126,8 +126,7 @@ def _save_repo(repo: dict) -> None:
     path = _repo_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
     logger.info(f"Repository 5.1 updated (7.2): {path}")
 
 
@@ -167,8 +166,7 @@ def _save_issues(data: dict) -> None:
     path = _issues_path(data["project"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
     logger.info(f"Issues file updated (7.2): {path}")
 
 

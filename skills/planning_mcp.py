@@ -55,7 +55,7 @@ import os
 from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES,
     parse_json_list as _parse_json_list,
@@ -184,8 +184,7 @@ def _save_plan(data: dict, project_id: str):
     path = _plan_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
 
 
 def _empty_plan(project_id: str) -> dict:

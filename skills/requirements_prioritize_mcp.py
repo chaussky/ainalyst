@@ -26,7 +26,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
     read_json_artifact, guard_artifact_errors, parse_json_dict_list,
     load_ba_plan, planned_prioritization, reg_norm,
@@ -97,8 +97,7 @@ def _save_repo(project_name: str, repo: dict) -> None:
     path = _repo_path(project_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
 
 
 def _load_prio(project_name: str) -> dict:
@@ -114,8 +113,7 @@ def _load_prio(project_name: str) -> dict:
 def _save_prio(project_name: str, prio: dict) -> None:
     path = _prio_path(project_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(prio, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, prio)
 
 
 def _find_session(sessions: list, label: str) -> Optional[dict]:

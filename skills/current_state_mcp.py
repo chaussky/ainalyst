@@ -36,7 +36,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     read_json_artifact, guard_artifact_errors,
 )
@@ -110,8 +110,7 @@ def _load_scope(project_id: str) -> Optional[dict]:
 def _save_scope(data: dict) -> str:
     path = _scope_path(data["project_id"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
     logger.info(f"Analysis scope saved: {path}")
     return path
 
@@ -136,8 +135,7 @@ def _save_state(data: dict) -> str:
     path = _state_path(data["project_id"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
     logger.info(f"Current state data saved: {path}")
     return path
 
@@ -160,8 +158,7 @@ def _save_needs(data: dict) -> str:
     path = _needs_path(data["project_id"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
     logger.info(f"Business needs saved: {path}")
     return path
 
@@ -180,8 +177,7 @@ def _save_repo(repo: dict) -> None:
     path = _repo_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
     logger.info(f"Traceability repository updated from 6.1: {path}")
 
 

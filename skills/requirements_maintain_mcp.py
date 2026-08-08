@@ -26,7 +26,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, NON_REQUIREMENT_NODE_TYPES,
                            has_been_approved,
     read_json_artifact, guard_artifact_errors,
@@ -111,8 +111,7 @@ def _save_repo(repo: dict) -> str:
     path = _repo_path(repo["project"])
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
     logger.info(f"Repository updated (5.2): {path}")
     return path
 

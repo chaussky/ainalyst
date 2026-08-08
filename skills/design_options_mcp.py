@@ -34,7 +34,7 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     NON_REQUIREMENT_NODE_TYPES, MUST_PRIORITIES,
     read_json_artifact, guard_artifact_errors,
@@ -120,8 +120,7 @@ def _load_json(path: str, default: dict) -> dict:
 def _save_json(path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, data)
 
 
 def _load_repo(project_id: str) -> dict:
@@ -344,8 +343,7 @@ def set_change_strategy(
     }
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(strategy, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, strategy)
 
     # Update the reference in design_options if the file exists
     do_data = _load_design_options(project_id)

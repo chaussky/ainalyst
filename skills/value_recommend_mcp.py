@@ -32,7 +32,7 @@ import os
 from datetime import date
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     read_json_artifact, guard_artifact_errors,
 )
@@ -131,8 +131,7 @@ def _load_recommendation(project_id: str) -> dict:
 def _save_recommendation(data: dict) -> None:
     os.makedirs(os.path.dirname(_rec_path(data["project_id"])), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(_rec_path(data["project_id"]), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(_rec_path(data["project_id"]), data)
     logger.info(f"Recommendation saved: {_rec_path(data['project_id'])}")
 
 

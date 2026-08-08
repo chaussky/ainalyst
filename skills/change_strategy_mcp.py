@@ -39,7 +39,7 @@ import os
 from datetime import date
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (save_artifact, logger, DATA_DIR, data_path,
+from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR, data_path,
                            normalize_project_id, SOLUTION_SCOPE_NODE_TYPE,
     read_json_artifact, guard_artifact_errors, secondary_project_ids_error,
 )
@@ -169,8 +169,7 @@ def _load_strategy(project_id: str) -> dict:
 def _save_strategy(data: dict, project_id: str):
     os.makedirs(os.path.dirname(_strategy_path(project_id)), exist_ok=True)
     data["updated"] = str(date.today())
-    with open(_strategy_path(project_id), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json_artifact(_strategy_path(project_id), data)
 
 
 def _empty_strategy(project_id: str) -> dict:
@@ -515,8 +514,7 @@ def scope_change_strategy(
     }
 
     os.makedirs(os.path.dirname(_scope_path(project_id)), exist_ok=True)
-    with open(_scope_path(project_id), "w", encoding="utf-8") as f:
-        json.dump(scope, f, ensure_ascii=False, indent=2)
+    write_json_artifact(_scope_path(project_id), scope)
 
     strategy = _load_strategy(project_id)
     strategy["scope"] = scope
@@ -1512,8 +1510,7 @@ def save_change_strategy(
             traceability_notes = [n for n in traceability_notes if n]
 
             repo["updated"] = str(date.today())
-            with open(repo_path, "w", encoding="utf-8") as f:
-                json.dump(repo, f, ensure_ascii=False, indent=2)
+            write_json_artifact(repo_path, repo)
         else:
             traceability_notes.append(
                 f"⚠️ 5.1 traceability repository not found for '{repo_pid}' "

@@ -17,6 +17,9 @@ inputs/*
 # Project artifacts: data for specific BA projects, not part of the tool
 governance_plans/data/*
 governance_plans/reports/*
+# Previous generations of those same artifacts, kept by write_json_artifact so a
+# damaged file can be restored. Same content, same reason to stay out of the repo.
+governance_plans/.history/
 # Keep the folders themselves in the repository
 !governance_plans/data/.gitkeep
 !governance_plans/reports/.gitkeep

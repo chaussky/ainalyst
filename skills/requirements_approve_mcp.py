@@ -30,7 +30,7 @@ import os
 from datetime import date, datetime
 from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
-from skills.common import (
+from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     has_passed_verification, was_verification_forced, compute_approval_outcome,
     APPROVAL_HISTORY_FILENAME,
@@ -90,8 +90,7 @@ def _save_repo(project_name: str, repo: dict) -> None:
     path = _repo_path(project_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     repo["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(repo, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, repo)
 
 
 def _load_approval_history(project_name: str) -> dict:
@@ -108,8 +107,7 @@ def _save_approval_history(project_name: str, history: dict) -> None:
     path = _approval_history_path(project_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     history["updated"] = str(date.today())
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+    write_json_artifact(path, history)
 
 
 def _find_node(repo: dict, node_id: str) -> Optional[dict]:
