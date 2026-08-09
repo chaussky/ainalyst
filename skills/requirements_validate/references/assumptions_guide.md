@@ -150,7 +150,7 @@ Assumption — это пассивный риск. Он становится а�
 
 ## Нумерация и хранение
 
-Assumptions хранятся в `governance_plans/{project}_assumptions.json`.
+Assumptions хранятся в `governance_plans/data/{project}/{project}_assumptions.json`.
 
 **Структура одного assumption:**
 ```json

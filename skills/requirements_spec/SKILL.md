@@ -293,7 +293,7 @@ objectives» артефакта 4.3 или из группировки по ис
 
 ## Хранение артефактов
 
-Все артефакты сохраняются в: `governance_plans/{project_id}_specs/`
+Все артефакты сохраняются в: `governance_plans/data/{project_id}/specs/`
 
 ```
 governance_plans/crm_2024_specs/
@@ -313,7 +313,7 @@ governance_plans/crm_2024_specs/
 ## Автоматическая регистрация в 5.1
 
 Каждый созданный артефакт **автоматически** регистрируется в репозитории 5.1
-(файл `governance_plans/{project_id}_traceability_repo.json`) со статусом `draft`.
+(файл `governance_plans/data/{project_id}/{project_id}_traceability_repo.json`) со статусом `draft`.
 
 Ты можешь:
 - Сразу добавить связи через `add_trace_link` (5.1)
