@@ -248,5 +248,6 @@ when you need to save an artifact or get a structured output:
 | 3.5 Performance evaluation | `evaluate_ba_performance` |
 | Finalization | `save_ba_plan` |
 
-All tools take `project_id` as the first parameter. Artifacts are saved
-to `governance_plans/data/{project}_ba_plan.json` and `governance_plans/reports/`.
+All tools take `project_id` as the first parameter. Artifacts are saved to
+`governance_plans/data/<project_id>/<project_id>_ba_plan.json` and
+`governance_plans/reports/<project_id>/` — one folder per project.
