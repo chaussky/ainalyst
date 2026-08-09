@@ -359,7 +359,7 @@ class TestConfirmationFindings(BaseMCPTest):
         bg = next(r for r in repo["requirements"] if r["id"] == "BG-001")
         self.assertIn("priority", fr)          # a real requirement is prioritised
         self.assertNotIn("priority", bg)       # the business_goal node is NOT
-        self.assertIn("NOT requirements", out)  # and the report explains the skip
+        self.assertIn("НЕ являются требованиями", out)  # and the report explains the skip
 
 
 if __name__ == "__main__":

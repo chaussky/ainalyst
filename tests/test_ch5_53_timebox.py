@@ -120,21 +120,21 @@ class TestTimeboxSessionConfig(BaseMCPTest):
         out = start_timebox(capacity=20, method="MoSCoW")
         session = mod53._load_prio(PROJECT)["sessions"][0]
         self.assertIsNone(session["capacity"])
-        self.assertIn("ignored", out.lower())
+        self.assertIn("не учитывается", out.lower())
         self.assertIn("MoSCoW", out)
 
     def test_no_capacity_on_other_method_stays_silent(self):
         setup_timebox_repo()
         out = start_timebox(capacity=0, capacity_unit="", method="MoSCoW")
-        self.assertNotIn("ignored", out.lower())
+        self.assertNotIn("не учитывается", out.lower())
 
     def test_report_shows_capacity_and_cost_column(self):
         setup_timebox_repo()
         out = start_timebox(capacity=20, capacity_unit="story points")
         self.assertIn("**Capacity:** 20 story points", out)
-        self.assertIn("Cost, story points", out)
+        self.assertIn("Стоимость, story points", out)
         # Current priority is shown so the BA can see what the value fallback will use.
-        self.assertIn("Current priority", out)
+        self.assertIn("Текущий приоритет", out)
 
 
 def add_timebox_scores(project=PROJECT, session=SESSION, sh_id="DEV-TEAM",
@@ -462,8 +462,8 @@ class TestTimeboxAggregationReport(BaseMCPTest):
         out = self.run_agg()
         self.assertIn("**Box:**", out)
         self.assertIn("10 / 10 story points", out)
-        self.assertIn("in: 2", out)
-        self.assertIn("cut: 1", out)
+        self.assertIn("в коробке: 2", out)
+        self.assertIn("отрезано: 1", out)
 
     def test_report_names_the_skipped_over_requirement(self):
         add_timebox_scores(scores=[
@@ -474,7 +474,7 @@ class TestTimeboxAggregationReport(BaseMCPTest):
         out = self.run_agg()
         # `assertIn("FR-002", out)` alone is vacuous — it is a table row regardless.
         # The section has to name it and no one else, so read its bullet lines.
-        after_header = out.split("Skipped over")[1].split("\n", 1)[1]
+        after_header = out.split("Пропущены")[1].split("\n", 1)[1]
         bullets = []
         for line in after_header.splitlines():
             if line.startswith("**"):
@@ -490,8 +490,8 @@ class TestTimeboxAggregationReport(BaseMCPTest):
         """FR-002..FR-005 are in the repo and were never scored — they must be named."""
         add_timebox_scores(scores=[{"req_id": "FR-001", "cost": 5, "value": "Must"}])
         out = self.run_agg()
-        self.assertIn("Not estimated", out)
-        self.assertIn("not estimated: 4", out)
+        self.assertIn("Не оценено", out)
+        self.assertIn("не оценено: 4", out)
         for req_id in ("FR-002", "FR-003", "FR-004", "FR-005"):
             self.assertIn(req_id, out)
 
@@ -499,12 +499,12 @@ class TestTimeboxAggregationReport(BaseMCPTest):
         add_timebox_scores(sh_id="DEV-A", scores=[{"req_id": "FR-001", "cost": 3}])
         add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
         out = self.run_agg()
-        section = out.split("Estimates disagree")[1]
+        section = out.split("Оценки расходятся")[1]
         self.assertIn("FR-001", section)
         # The averaged cost must be the mean, and the spread the actual range —
         # asserting only that the section exists would survive either being wrong.
-        self.assertIn("spread 10", section)
-        self.assertIn("around 8", section)
+        self.assertIn("разброс 10", section)
+        self.assertIn("вокруг 8", section)
 
     def test_value_disagreement_is_a_conflict(self):
         add_timebox_scores(sh_id="SH-1", scores=[
@@ -636,7 +636,7 @@ class TestTimeboxConflictResolution(BaseMCPTest):
         """FR-004 has no cost, so no value can put it in the box. Say so."""
         out = self.resolve(req_id="FR-004", final_priority="Must")
         self.assertIn("FR-004", out)
-        self.assertIn("no cost estimate", out.lower())
+        self.assertIn("нет оценки стоимости", out.lower())
         self.assertIsNone(self.agg()["FR-004"]["priority"])
 
     def test_override_survives_a_later_reaggregation(self):
@@ -684,7 +684,7 @@ class TestTimeboxReportDetails(BaseMCPTest):
             {"req_id": "FR-002", "cost": 8, "value": "Should"},
         ])
         out = self.run_agg()
-        self.assertIn("| Value |", out)
+        self.assertIn("| Ценность |", out)
         # FR-002 is cut, so its outcome is Won't while its value stays Should —
         # both must appear on the row, not one on the row and one in a footnote.
         row = next(ln for ln in out.splitlines() if ln.startswith("| FR-002 |"))
@@ -699,7 +699,7 @@ class TestTimeboxReportDetails(BaseMCPTest):
         ])
         out = self.run_agg()
         note = next(ln for ln in out.splitlines()
-                    if ln.startswith("- `FR-002`") and "remaining capacity" in ln)
+                    if ln.startswith("- `FR-002`") and "остаток ёмкости" in ln)
         self.assertIn("1", note)          # remaining capacity at the skip
         self.assertNotIn("FR-003", note)
 
@@ -708,7 +708,7 @@ class TestTimeboxReportDetails(BaseMCPTest):
         add_timebox_scores(sh_id="DEV-B", scores=[{"req_id": "FR-001", "cost": 13}])
         out = self.run_agg()
         note = next(ln for ln in out.splitlines()
-                    if ln.startswith("- `FR-001`") and "spread" in ln)
+                    if ln.startswith("- `FR-001`") and "разброс" in ln)
         self.assertIn("10", note)         # 13 - 3
         self.assertIn("8", note)          # (13 + 3) / 2
 
@@ -747,9 +747,9 @@ class TestTimeboxReportDetails(BaseMCPTest):
             {"req_id": "FR-002", "cost": 2, "value": "Won't"},
         ])
         out = self.run_agg()
-        self.assertIn("Excluded by decision", out)
-        self.assertIn("cut: 0", out)      # nothing was cut BY CAPACITY
-        self.assertIn("excluded: 1", out)
+        self.assertIn("Исключены решением", out)
+        self.assertIn("отрезано: 0", out)      # nothing was cut BY CAPACITY
+        self.assertIn("исключено: 1", out)
 
     def test_off_backlog_score_is_named_and_kept_out_of_the_table(self):
         add_timebox_scores(scores=[
@@ -757,7 +757,7 @@ class TestTimeboxReportDetails(BaseMCPTest):
             {"req_id": "FR-01", "cost": 2, "value": "Must"},   # typo
         ])
         out = self.run_agg()
-        self.assertIn("not a requirement in this project", out.lower())
+        self.assertIn("не является требованием этого проекта", out.lower())
         self.assertIn("FR-01", out)
         # It must not appear as a table row with an empty priority.
         self.assertFalse(any(ln.startswith("| FR-01 |") for ln in out.splitlines()))
@@ -769,7 +769,7 @@ class TestTimeboxReportDetails(BaseMCPTest):
         prio["sessions"][0]["capacity"] = 0
         mod53._save_prio(PROJECT, prio)
         out = self.run_agg()
-        self.assertIn("no usable capacity", out)
+        self.assertIn("не записана пригодная ёмкость", out)
         self.assertIn("Box:", out)   # the box is still shown, so the 0/0 is explained
 
     def test_units_read_correctly_when_the_remainder_is_one(self):
@@ -782,10 +782,10 @@ class TestTimeboxReportDetails(BaseMCPTest):
         ])
         out = self.run_agg()
         note = next(ln for ln in out.splitlines()
-                    if ln.startswith("- `FR-002`") and "remaining capacity" in ln)
+                    if ln.startswith("- `FR-002`") and "остаток ёмкости" in ln)
         # Phrased as a labelled value, so a remainder of 1 reads correctly for any
         # unit — a free-form unit string cannot be pluralised.
-        self.assertIn("remaining capacity at that point: 1 story points", note)
+        self.assertIn("остаток ёмкости на тот момент: 1 story points", note)
 
 
 class TestTimeboxFinalisation(BaseMCPTest):
@@ -841,11 +841,11 @@ class TestTimeboxFinalisation(BaseMCPTest):
         out = self.finalise()
         self.assertIn("**Box:**", out)
         self.assertIn("story points", out)
-        self.assertIn("Not estimated", out)
+        self.assertIn("Не оценено", out)
 
     def test_final_report_counts_only_what_was_written(self):
         out = self.finalise()
-        self.assertIn("**Requirements updated:** 2", out)
+        self.assertIn("**Обновлено требований:** 2", out)
 
 
 class TestTimeboxWontSemantics(unittest.TestCase):
@@ -1019,7 +1019,7 @@ class TestPreExistingDefects(BaseMCPTest):
         priority_rows = [h for h in repo.get("history", [])
                          if h.get("action") == "priority_updated"]
         self.assertEqual(len(priority_rows), 1)
-        self.assertIn("already finalised", out)
+        self.assertIn("уже была завершена", out)
 
 
 class TestFinalReviewFindings(BaseMCPTest):
@@ -1066,7 +1066,7 @@ class TestFinalReviewFindings(BaseMCPTest):
         violations = self.session()["dependency_violations"]
         self.assertEqual(len(violations), 2)
         self.assertTrue(all(v.get("resolved") for v in violations), violations)
-        self.assertIn("All conflicts resolved", out)
+        self.assertIn("Все конфликты разрешены", out)
 
     def test_a_closed_session_cannot_be_re_aggregated(self):
         """Otherwise the artefact and the 5.1 graph tell different stories.
@@ -1081,14 +1081,14 @@ class TestFinalReviewFindings(BaseMCPTest):
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             out = mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
         self.assertIn("❌", out)
-        self.assertIn("closed", out.lower())
+        self.assertIn("закрыт", out.lower())
 
     def test_a_closed_session_cannot_have_conflicts_resolved(self):
         with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
             mod53.save_prioritization_result(PROJECT, SESSION)
         out = self.resolve("FR-001")
         self.assertIn("❌", out)
-        self.assertIn("closed", out.lower())
+        self.assertIn("закрыт", out.lower())
 
     def test_resolving_one_conflict_type_does_not_close_another(self):
         """A value override is per requirement; a resolution is per conflict."""
@@ -1109,13 +1109,13 @@ class TestFinalReviewFindings(BaseMCPTest):
     def test_wont_decision_on_an_uncosted_requirement_is_stated_once(self):
         """It was counted as excluded AND as unestimated, and the note contradicted both."""
         out = self.resolve("FR-004", final_priority="Won't")
-        self.assertNotIn("no cost estimate", out.lower())
+        self.assertNotIn("нет оценки стоимости", out.lower())
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             report = mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
-        self.assertIn("excluded: 1", report)
-        self.assertNotIn("not estimated: 3", report)   # FR-004 must not be counted twice
-        excluded_section = report.split("Excluded by decision")[1]
-        self.assertIn("FR-004", excluded_section.split("Not estimated")[0])
+        self.assertIn("исключено: 1", report)
+        self.assertNotIn("не оценено: 3", report)   # FR-004 must not be counted twice
+        excluded_section = report.split("Исключены решением")[1]
+        self.assertIn("FR-004", excluded_section.split("Не оценено")[0])
 
     def test_the_artefact_does_not_send_the_ba_to_a_refusal(self):
         """Finalising with open conflicts printed "record them via resolve_conflict".
@@ -1130,9 +1130,9 @@ class TestFinalReviewFindings(BaseMCPTest):
             mod53.run_aggregation(project_name=PROJECT, session_label=SESSION)
         with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
             out = mod53.save_prioritization_result(PROJECT, SESSION)
-        self.assertIn("Unresolved conflicts", out)
+        self.assertIn("Нерешённые конфликты", out)
         self.assertNotIn("via `resolve_conflict`", out)
-        self.assertIn("open a new prioritization session", out)
+        self.assertIn("откройте новую сессию приоритизации", out)
 
     def test_finalising_without_aggregating_says_so(self):
         other = "Never aggregated"
@@ -1142,7 +1142,7 @@ class TestFinalReviewFindings(BaseMCPTest):
                 capacity=40, capacity_unit="story points")
         with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
             out = mod53.save_prioritization_result(PROJECT, other)
-        self.assertNotIn("cut: 0", out)
+        self.assertNotIn("отрезано: 0", out)
         self.assertIn("run_aggregation", out)
 
 
@@ -1164,7 +1164,7 @@ class TestUnplacedArgumentIsOptIn(unittest.TestCase):
         violations = mod53._find_dependency_violations(
             self.repo, priorities, {"FR-004"})
         self.assertEqual(len(violations), 1)
-        self.assertEqual(violations[0]["dep_priority"], "not placed")
+        self.assertEqual(violations[0]["dep_priority"], "не размещено")
 
 
 if __name__ == "__main__":

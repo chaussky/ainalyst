@@ -482,15 +482,15 @@ class TestRunAggregation(BaseMCPTest):
         and behaved identically to Normal."""
         self._add_should_for_fr001()
         result = self._call(conflict_threshold="Strict")
-        self.assertIn("Stakeholder conflicts (1)", result)
-        self.assertNotIn("No conflicts found", result)
+        self.assertIn("Конфликты стейкхолдеров (1 шт.)", result)
+        self.assertNotIn("Конфликтов не обнаружено", result)
 
     def test_normal_threshold_ignores_one_category_spread(self):
         """Normal (spread >= 2) must NOT flag a one-category disagreement —
         guards the fix against over-reporting."""
         self._add_should_for_fr001()
         result = self._call(conflict_threshold="Normal")
-        self.assertIn("No conflicts found", result)
+        self.assertIn("Конфликтов не обнаружено", result)
 
     def test_detects_stakeholder_conflict(self):
         """Конфликт между стейкхолдерами обнаруживается."""
@@ -662,7 +662,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
                 stakeholder_influence="High",
                 scores_json=json.dumps([{"req_id": "FR-001", "priority": "Must"}]))
         self.assertNotIn("❌", result)
-        self.assertIn("Requirements scored:** 1", result)
+        self.assertIn("Требований оценено:** 1", result)
 
     def test_a_record_with_no_recognisable_score_names_the_field(self):
         _start_session(session="wave-nokey")
@@ -689,8 +689,8 @@ class TestSavePrioritizationResult(BaseMCPTest):
             result = mod53.save_prioritization_result(PROJECT, "wave-empty")
 
         self.assertNotIn("Priorities have been written", result)
-        self.assertIn("Requirements updated:** 0", result)
-        self.assertIn("no scores", result.lower())
+        self.assertIn("Обновлено требований:** 0", result)
+        self.assertIn("не собрано ни одной оценки", result.lower())
 
     def test_an_empty_session_is_not_closed_by_finalising_it(self):
         """Nothing was collected, so there is nothing to finalise. Closing anyway cost
@@ -705,7 +705,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         _add_scores_moscow(session="wave-empty2", sh_id="SH-001", influence="High")
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-empty2")
-        self.assertNotIn("already closed", agg.lower(),
+        self.assertNotIn("already закрыт", agg.lower(),
                          "the analyst lost the session by finalising an empty one")
 
     def test_save_result_works(self):
@@ -895,7 +895,7 @@ class TestSaveWritesWsjfScoreAndNamesPhantomIds(BaseMCPTest):
     def test_phantom_id_is_named_not_silently_dropped(self):
         out = self._wsjf_session()
         self.assertIn("FR-01", out)
-        self.assertIn("NOT saved", out)
+        self.assertIn("НЕ сохранены", out)
 
 
 class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
@@ -943,9 +943,9 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         for s in data["sessions"]:
             if s["label"] == session:
                 s["status"] = "closed"
-                s["closed_at"] = "2026-08-01"
+                s["закрыт_at"] = "2026-08-01"
                 closed += 1
-        assert closed == 1, f"fixture closed {closed} sessions, not the one under test"
+        assert closed == 1, f"fixture закрыт {closed} sessions, not the one under test"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -956,7 +956,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         _add_scores_moscow(session="wave-noagg", sh_id="SH-001", influence="High")
         out = self._finalise("wave-noagg")
 
-        self.assertIn("Stakeholders: 1", out, "fixture did not collect anything")
+        self.assertIn("Стейкхолдеров: 1", out, "fixture did not collect anything")
         self.assertNotIn("No scores were collected", out,
                          "the scores are on disk and counted two sections below:\n" + out)
 
@@ -990,7 +990,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
 
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-noagg4")
-        self.assertNotIn("already closed", agg.lower(),
+        self.assertNotIn("already закрыт", agg.lower(),
                          "finalising before aggregating cost the analyst the session")
 
     # -- session already closed on disk -------------------------------------
@@ -1001,9 +1001,9 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         out = self._finalise("wave-legacy")
 
         self.assertNotIn("still OPEN", out,
-                         "the disk says closed:\n" + out)
+                         "the disk says закрыт:\n" + out)
         self.assertNotIn("The session remains open", out,
-                         "the disk says closed:\n" + out)
+                         "the disk says закрыт:\n" + out)
 
     def test_a_closed_session_is_not_told_to_add_scores(self):
         """The platform answers `add_stakeholder_scores` on a closed session with
@@ -1019,7 +1019,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
                 project_name=PROJECT, session_label="wave-legacy2",
                 stakeholder_id="SH-001", stakeholder_influence="High",
                 scores_json=json.dumps([{"req_id": "FR-001", "score": "Must"}]))
-        self.assertIn("closed", refused.lower(),
+        self.assertIn("закрыт", refused.lower(),
                       "fixture is wrong: the platform accepted the advised step")
 
     def test_a_closed_empty_session_is_sent_to_a_new_session(self):
@@ -1029,7 +1029,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         self._close_on_disk("wave-legacy3")
         out = self._finalise("wave-legacy3")
 
-        self.assertIn("new prioritization session", out.lower())
+        self.assertIn("новую сессию приоритизации", out.lower())
 
 
 if __name__ == "__main__":

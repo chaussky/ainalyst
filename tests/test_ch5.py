@@ -669,7 +669,7 @@ class TestPrioritizeTools(BaseMCPTest):
         ])
         mod53.add_stakeholder_scores(self.P, "DEP1", "SH-001", "High", scores)
         result = mod53.run_aggregation(self.P, "DEP1")
-        self.assertIn("Violation", result)
+        self.assertIn("Нарушения зависимостей", result)
 
     def test_run_aggregation_must_inflation(self):
         self._prepare_repo()

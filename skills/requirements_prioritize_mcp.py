@@ -34,6 +34,8 @@ from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR,
     pick_field, unrecognized_records_error,
 )
 
+from skills.plural_ru import plural_ru
+
 mcp = FastMCP("BABOK_Requirements_Prioritize")
 
 REPO_FILENAME = "traceability_repo.json"
@@ -510,7 +512,7 @@ def _find_dependency_violations(repo: dict, priorities: dict,
                 "req_id": from_id,
                 "depends_on": to_id,
                 "req_priority": from_prio,
-                "dep_priority": "not placed",
+                "dep_priority": "не размещено",
             })
         elif from_prio and to_prio:
             if order.get(from_prio, 0) > order.get(to_prio, 0):
@@ -613,10 +615,10 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
         # An unreadable plan removes this whole section from a SIGNED report, leaving
         # output identical to a project that never planned an approach. That is the
         # one case where silence is a claim, so the document says it.
-        return ["## Planned approach (3.3)", "", plan_note, ""] if plan_note else []
+        return ["## Запланированный подход (3.3)", "", plan_note, ""] if plan_note else []
 
     method = session.get("method", "")
-    lines = ["## Planned approach (3.3)", ""]
+    lines = ["## Запланированный подход (3.3)", ""]
     if planned["technique"]:
         match = "✅" if planned["technique"] == method else "⚠️"
         lines.append(
@@ -625,7 +627,7 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
         # Said plainly rather than omitted: the three parts are independent, and a
         # block that silently skips the technique row reads as though one was planned
         # and matched.
-        lines.append("**Technique:** not planned in 3.3  ")
+        lines.append("**Техника:** в 3.3 не запланирована  ")
 
     if planned["criteria"]:
         lines.append(f"**Criteria:** {', '.join(planned['criteria'])}  ")
@@ -655,27 +657,29 @@ def _planned_approach_block(project_name: str, session: dict) -> list:
         # what it does not know.
         if unmatched:
             lines.append(
-                f"**Participation:** {len(scorers)} stakeholder(s) scored; the "
-                f"platform cannot tell which planned participants they are.  ")
+                f"**Участие:** оценки дали {len(scorers)} "
+                f"{plural_ru(len(scorers), 'стейкхолдер', 'стейкхолдера', 'стейкхолдеров')}; "
+                f"платформа не может определить, кто из запланированных участников это был.  ")
             lines.append(
-                f"- Could not be matched to the plan: {', '.join(unmatched)}  ")
+                f"- Сопоставить с планом не удалось: {', '.join(unmatched)}  ")
             lines.append(
-                "- 3.3 plans roles; a session records people. Build the stakeholder "
-                "registry (3.2 / 4.2) and the two can be reconciled.  ")
+                "- 3.3 планирует роли, а сессия записывает людей. Заведите реестр "
+                "стейкхолдеров (3.2 / 4.2) — и одно с другим сойдётся.  ")
         else:
-            lines.append(f"**Participation:** {len(scored)} of {len(planned_names)} "
-                         f"planned participants scored.  ")
+            lines.append(f"**Участие:** оценки дали {len(scored)} из "
+                         f"{len(planned_names)} запланированных участников.  ")
             if missing:
-                lines.append(f"- Did not score: {', '.join(missing)}  ")
+                lines.append(f"- Не оценивали: {', '.join(missing)}  ")
             # One person can legitimately hold two planned roles, and then one scorer
             # closes two rows. Stating the count without stating that is a claim about
             # how many PEOPLE took part that nobody made.
             if len(scored) > len(scorers):
                 lines.append(
-                    f"- Note: {len(scorers)} stakeholder(s) covered "
-                    f"{len(scored)} planned roles between them.  ")
+                    f"- Замечание: {len(scorers)} "
+                    f"{plural_ru(len(scorers), 'стейкхолдер закрыл', 'стейкхолдера закрыли', 'стейкхолдеров закрыли')} "
+                    f"вместе {len(scored)} запланированных ролей.  ")
         if extra:
-            lines.append(f"- Scored without being planned: {', '.join(extra)}  ")
+            lines.append(f"- Оценивали, не будучи запланированными: {', '.join(extra)}  ")
 
     lines.append("")
     return lines
@@ -711,21 +715,21 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
         # reachable through a session file edited or truncated on disk. Say so
         # rather than render a 0/0 box in which every requirement reads Won't.
         lines += [
-            "⚠️ This session has no usable capacity on record, so nothing could be "
-            "placed in the box. Open a new TimeBoxing session with a capacity > 0.",
+            "⚠️ У этой сессии не записана пригодная ёмкость, поэтому в коробку ничего "
+            "не поместилось. Откройте новую сессию TimeBoxing с capacity > 0.",
             "",
         ]
 
     lines += [
         f"**Box:** {_fmt_num(used)} / {_fmt_num(capacity)} {unit} ({pct}%) · "
-        f"in: {len(in_box)} · cut: {len(cut)} · excluded: {len(excluded)} · "
-        f"not estimated: {len(unestimated)}",
+        f"в коробке: {len(in_box)} · отрезано: {len(cut)} · исключено: {len(excluded)} · "
+        f"не оценено: {len(unestimated)}",
         "",
         # `Value` and `Priority` are different things here and both belong on the
         # row: a cut requirement keeps its value (Should) while its outcome is
         # Won't. Printing only the outcome, with the value appearing in a note
         # further down, put two labels for one requirement in one document.
-        f"| ID | In box | Value | Priority | Value source | Cost, {unit} | Cumulative |",
+        f"| ID | В коробке | Ценность | Приоритет | Источник ценности | Стоимость, {unit} | Накопительно |",
         "|-----|--------|-------|----------|--------------|------|------------|",
     ]
     for req_id in sorted(placed,
@@ -742,40 +746,40 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
 
     skipped = sorted(r for r, d in placed.items() if d.get("skipped_over"))
     if skipped:
-        lines += ["", "**Skipped over (cheaper requirements below them were taken):**", ""]
+        lines += ["", "**Пропущены (более дешёвые под ними всё же взяты):**", ""]
         for req_id in skipped:
             d = placed[req_id]
             # Phrased so it reads correctly for any unit and any remainder: a
             # free-form unit string ("story points", "USD") cannot be pluralised
             # reliably, and "1 story points were left" is in a stakeholder document.
             lines.append(f"- `{req_id}` ({d['value_label']}, {_fmt_num(d['cost'])} {unit}) "
-                         f"— remaining capacity at that point: "
+                         f"— остаток ёмкости на тот момент: "
                          f"{_fmt_num(d['remaining_at_skip'])} {unit}.")
 
     spread = sorted((r for r, d in placed.items() if d.get("cost_spread")),
                     key=lambda r: -placed[r]["cost_spread"])
     if spread:
-        lines += ["", "**Estimates disagree (spread averaged into the cost above):**", ""]
+        lines += ["", "**Оценки расходятся (разброс усреднён в стоимость выше):**", ""]
         for req_id in spread:
-            lines.append(f"- `{req_id}` — spread {_fmt_num(placed[req_id]['cost_spread'])} "
-                         f"{unit} around {_fmt_num(placed[req_id]['cost'])}.")
+            lines.append(f"- `{req_id}` — разброс {_fmt_num(placed[req_id]['cost_spread'])} "
+                         f"{unit} вокруг {_fmt_num(placed[req_id]['cost'])}.")
 
     if excluded:
-        lines += ["", "**Excluded by decision (Won't — no capacity spent on them):**", ""]
+        lines += ["", "**Исключены решением (Won't — ёмкость на них не тратилась):**", ""]
         for req_id in excluded:
-            lines.append(f"- `{req_id}` — scored Won't in this session, so it never "
-                         f"competed for a place.")
+            lines.append(f"- `{req_id}` — в этой сессии оценено как Won\'t, поэтому за "
+                         f"место в коробке не конкурировало.")
 
     if off_backlog:
-        lines += ["", "**⚠️ Scored, but not a requirement in this project "
-                  "(excluded from the box):**", ""]
+        lines += ["", "**⚠️ Оценено, но не является требованием этого проекта "
+                  "(в коробку не берётся):**", ""]
         for req_id in off_backlog:
             lines.append(f"- `{req_id}`")
         lines.append("")
-        lines.append("These ids match no requirement in the 5.1 repository — a typo "
-                     "(`FR-01` for `FR-001`), or a risk / objective / scope node that "
-                     "was scored by mistake. They spend none of the capacity. Fix the "
-                     "id and re-score, or the estimate is lost.")
+        lines.append("Этим id не соответствует ни одно требование в репозитории 5.1 — "
+                     "опечатка (`FR-01` вместо `FR-001`) либо узел риска / цели / границ "
+                     "решения, оценённый по ошибке. Ёмкость они не расходуют. Исправьте "
+                     "id и оцените заново, иначе оценка потеряется.")
 
     if cut:
         # The label this method writes for a capacity cut is read by other chapters
@@ -784,21 +788,21 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
         # stored Won't back as a decision, so the BA has to know the asymmetry.
         lines += [
             "",
-            "Requirements cut here are written to the requirements graph as `Won't` "
-            "— the same label an explicit \"not this time\" carries. Chapter 7.5 "
-            "reads it as out of scope and 5.4 flags change requests that touch it. "
-            "If a cut was only about this period's capacity, re-run the box when the "
-            "capacity changes rather than leaving the label to speak for itself.",
+            "Отрезанные здесь требования пишутся в граф требований как `Won\'t` — та же "
+            "метка, что и у явного «не в этот раз». Глава 7.5 читает её как «вне границ», "
+            "а 5.4 помечает затрагивающие их запросы на изменение. Если требование "
+            "отрезано лишь из-за ёмкости этого периода, перезапустите коробку при "
+            "изменении ёмкости, а не оставляйте метку говорить за себя.",
         ]
 
     if unestimated:
-        lines += ["", "**⚠️ Not estimated — not placed (no priority written):**", ""]
+        lines += ["", "**⚠️ Не оценено — не размещено (приоритет не пишется):**", ""]
         for req_id in unestimated:
             lines.append(f"- `{req_id}`")
         lines.append("")
-        lines.append("A requirement with no cost cannot be placed in a capacity box. "
-                     "Marking it Won't would be a conclusion drawn from missing data — "
-                     "add an estimate and re-run the aggregation.")
+        lines.append("Требование без стоимости нельзя положить в коробку ёмкости. "
+                     "Пометить его Won\'t значило бы сделать вывод из отсутствующих "
+                     "данных — добавьте оценку и повторите агрегацию.")
     return lines
 
 
@@ -870,9 +874,9 @@ def start_prioritization_session(
         except (TypeError, ValueError):
             capacity_value = 0.0
         if capacity_value <= 0:
-            return ("❌ Method TimeBoxing requires `capacity` > 0 — the size of the box: "
-                    "what the team can deliver in the period, or the fixed budget.\n"
-                    "Example: capacity=40, capacity_unit=\"story points\".")
+            return ("❌ Методу TimeBoxing нужен `capacity` > 0 — это размер коробки: "
+                    "то, что команда выдаёт за период, либо фиксированный бюджет.\n"
+                    "Пример: capacity=40, capacity_unit=\"story points\".")
         capacity_unit_value = capacity_unit.strip() or "units"
     else:
         capacity_value = None
@@ -881,8 +885,8 @@ def start_prioritization_session(
             # wsjf_scale and quadrant_mapping are dropped silently because they only
             # shape a report. A capacity is a promise about scope: dropped silently,
             # it leaves the BA believing a budget was applied when it never was.
-            capacity_note = (f"⚠️ `capacity` ignored: method is {method}. "
-                             f"A capacity limit only applies to TimeBoxing sessions.")
+            capacity_note = (f"⚠️ `capacity` не учитывается: метод — {method}. "
+                             f"Ограничение по ёмкости применимо только к сессиям TimeBoxing.")
 
     # Get requirements from the repository
     # Only requirements go to a prioritisation vote. Selecting by status alone offered
@@ -935,18 +939,18 @@ def start_prioritization_session(
     governance_note = plan_note if plan_note else ""
     if planned_technique and planned_technique != method:
         governance_note = ((governance_note + "\n\n" if governance_note else "") +
-            f"⚠️ This session uses **{method}**, but 3.3 plans the technique "
+            f"⚠️ Эта сессия использует **{method}**, а в 3.3 запланирована техника "
             f"**{planned_technique}**.\n"
-            f"   The session proceeds with {method} — `method` is your explicit "
-            f"choice and selects the whole aggregation algorithm. Re-plan 3.3 with "
-            f"`plan_ba_governance` if the plan is out of date.")
+            f"   Сессия продолжается с {method}: `method` — ваш явный выбор, и он "
+            f"определяет весь алгоритм агрегации. Если план устарел, перепланируйте 3.3 "
+            f"через `plan_ba_governance`.")
 
     # Build the report
     lines = [
         f"<!-- BABOK 5.3 — Prioritize Requirements, Проект: {project_name}, "
         f"Сессия: {session_label}, Метод: {method}, Дата: {date.today()} -->",
         "",
-        f"# Prioritization session: {session_label}",
+        f"# Сессия приоритизации: {session_label}",
         f"**Project:** {project_name}  ",
         f"**Method:** {method}  ",
     ]
@@ -989,10 +993,10 @@ def start_prioritization_session(
         for n in nodes:
             lines.append(f"| {n['id']} | {n.get('title','—')} | BV=?, TC=?, RR=?, JS=? |")
     elif method == "TimeBoxing":
-        lines.append("**Value ranking:** the `value` you supply in this session; "
-                     "where you supply none, the requirement's current priority below.")
+        lines.append("**Ранжирование по ценности:** `value`, который вы задаёте в этой "
+                     "сессии; там, где не задан, берётся текущий приоритет требования ниже.")
         lines.append("")
-        lines.append(f"| ID | Title | Current priority | Cost, {capacity_unit_value} | Stability |")
+        lines.append(f"| ID | Название | Текущий приоритет | Стоимость, {capacity_unit_value} | Стабильность |")
         lines.append("|-----|----------|-------------------|------|-----------|")
         for n in nodes:
             flag = _stability_flag(n)
@@ -1003,10 +1007,10 @@ def start_prioritization_session(
     else:  # ImpactEffort
         lines.append("**Маппинг квадрантов:**")
         for q, p in quadrant_mapping.items():
-            q_label = {"QuickWins": "Quick Wins (High Impact, Low Effort)",
-                       "BigBets": "Big Bets (High Impact, High Effort)",
-                       "FillIns": "Fill-ins (Low Impact, Low Effort)",
-                       "ThanklessTasks": "Thankless Tasks (Low Impact, High Effort)"}.get(q, q)
+            q_label = {"QuickWins": "Quick Wins (высокий эффект, малые усилия)",
+                       "BigBets": "Big Bets (высокий эффект, большие усилия)",
+                       "FillIns": "Fill-ins (низкий эффект, малые усилия)",
+                       "ThanklessTasks": "Thankless Tasks (низкий эффект, большие усилия)"}.get(q, q)
             lines.append(f"- {q_label} → **{p}**")
         lines.append("")
         lines.append("| ID | Название | Impact (Low/Medium/High) | Effort (Low/Medium/High) |")
@@ -1127,7 +1131,7 @@ def add_stakeholder_scores(
             # priorities they had written correctly.
             score = pick_field(item, "score", "priority", "moscow")
             if not rid:
-                return f"❌ Missing req_id in: {item}"
+                return f"❌ Не задан req_id в: {item}"
             if not score:
                 return unrecognized_records_error(
                     "scores_json", ("score", "priority", "moscow"),
@@ -1167,21 +1171,21 @@ def add_stakeholder_scores(
         for item in raw_scores:
             rid = pick_field(item, "req_id", "requirement_id", "id")
             if not rid:
-                return f"❌ Missing req_id in: {item}"
+                return f"❌ Не задан req_id в: {item}"
             if "cost" not in item:
-                return (f"❌ Missing `cost` for {rid}. TimeBoxing needs a size/cost "
-                        f"estimate for every requirement, in the session's capacity unit.")
+                return (f"❌ Не задан `cost` для {rid}. TimeBoxing требует оценку "
+                        f"размера/стоимости по каждому требованию, в единицах ёмкости сессии.")
             try:
                 cost = float(item["cost"])
             except (TypeError, ValueError):
-                return (f"❌ Invalid `cost` for {rid}: {item['cost']!r} is not a number.")
+                return (f"❌ Некорректный `cost` для {rid}: {item['cost']!r} — не число.")
             if cost < 0:
-                return f"❌ Invalid `cost` for {rid}: {_fmt_num(cost)} — must be ≥ 0."
+                return f"❌ Некорректный `cost` для {rid}: {_fmt_num(cost)} — должен быть ≥ 0."
             value = item.get("value")
             if value is not None and value not in valid_vals:
-                return (f"❌ Invalid `value` '{value}' for {rid}. "
-                        f"Allowed: Must / Should / Could / Won't — or omit it, and the "
-                        f"requirement's current priority is used instead.")
+                return (f"❌ Некорректный `value` '{value}' для {rid}. "
+                        f"Допустимо: Must / Should / Could / Won't — либо не задавайте его, "
+                        f"и тогда берётся текущий приоритет требования.")
             normalized[rid] = {"cost": cost, "value": value}
 
     # Whether this is a repeat has to be decided BEFORE the key is inserted: the
@@ -1199,8 +1203,8 @@ def add_stakeholder_scores(
 
     is_update = " (updated)" if is_repeat else ""
     lines = [
-        f"✅ Scores for stakeholder **{stakeholder_id}** ({stakeholder_influence} influence) "
-        f"saved{is_update}",
+        f"✅ Оценки стейкхолдера **{stakeholder_id}** (влияние: {stakeholder_influence}) "
+        f"сохранены{is_update}",
         "",
         f"**Проект:** {project_name}  ",
         f"**Сессия:** {session_label}  ",
@@ -1224,17 +1228,17 @@ def add_stakeholder_scores(
     if planned_party_status(project_name, planned_participants,
                             stakeholder_id) == PARTY_UNPLANNED:
         lines += [
-            f"⚠️ `{stakeholder_id}` is not among the participants planned in 3.3: "
+            f"⚠️ `{stakeholder_id}` нет среди участников, запланированных в 3.3: "
             f"{', '.join(planned_participants)}.",
-            "   The scores are recorded anyway — re-plan 3.3 with `plan_ba_governance` "
-            "if the participant list is out of date.",
+            "   Оценки всё равно записаны — если список участников устарел, "
+            "перепланируйте 3.3 через `plan_ba_governance`.",
             "",
         ]
     if plan_note:
         lines += [plan_note, ""]
 
     lines.append(
-        "Once all stakeholders have scored the requirements — call `run_aggregation`.")
+        "Когда все стейкхолдеры оценят требования — вызови `run_aggregation`.")
     return "\n".join(lines)
 
 
@@ -1271,9 +1275,8 @@ def run_aggregation(
     # add_stakeholder_scores already refuses on a closed session; this is the same
     # rule for the other two mutating tools.
     if session.get("status") == "closed":
-        return (f"❌ Session '{session_label}' is already closed and its result has "
-                f"been written to the 5.1 repository. Open a new session to "
-                f"re-prioritise.")
+        return (f"❌ Сессия '{session_label}' уже закрыта, и её результат записан в "
+                f"репозиторий 5.1. Чтобы переприоритизировать, откройте новую сессию.")
 
     if not session["stakeholder_scores"]:
         return "⚠️ Нет оценок стейкхолдеров. Сначала вызовите add_stakeholder_scores."
@@ -1416,9 +1419,11 @@ def run_aggregation(
             "",
             f"## 🟠 Must Inflation — {int(inflation['must_ratio']*100)}% требований в Must",
             "",
-            "Recommendation: re-run the session with method=\"TimeBoxing\" — set the "
-            "capacity the team can actually deliver, and the box decides what fits.",
-            "Ask the stakeholders: \"If we could only ship 40% — what would you pick?\"",
+            "Рекомендация: проведите сессию заново с method=\"TimeBoxing\" — задайте "
+            "ёмкость, которую команда действительно выдаёт, и пусть коробка решит, что "
+            "помещается.",
+            "Спросите стейкхолдеров: «Если бы мы могли выпустить только 40% — что бы вы "
+            "выбрали?»",
         ]
 
     # Конфликты
@@ -1449,7 +1454,7 @@ def run_aggregation(
         lines += [
             "---",
             "",
-            f"## ⚠️ Dependency Violations ({len(violations)} шт.)",
+            f"## ⚠️ Нарушения зависимостей ({len(violations)} шт.)",
             "",
             "Логические противоречия: требование с высоким приоритетом зависит от низкоприоритетного.",
             "",
@@ -1528,10 +1533,10 @@ def resolve_conflict(
     # resolved requirement could read "✂️ cut" and "Must" on the same row, and a
     # priority that the capacity does not support would reach the 5.1 graph.
     if session.get("status") == "closed":
-        return (f"❌ Session '{session_label}' is already closed and its result has "
-                f"been written to the 5.1 repository. A decision recorded now would "
-                f"appear in a regenerated report but never reach the graph. Open a "
-                f"new session to revise priorities.")
+        return (f"❌ Сессия '{session_label}' уже закрыта, и её результат записан в "
+                f"репозиторий 5.1. Записанное сейчас решение попало бы в "
+                f"перегенерированный отчёт, но до графа не дошло бы. Чтобы пересмотреть "
+                f"приоритеты, откройте новую сессию.")
 
     timebox_note = ""
     if session.get("method") == "TimeBoxing":
@@ -1572,10 +1577,10 @@ def resolve_conflict(
             # while the box is unchanged would be a confident answer about data the
             # BA never supplied.
             timebox_note = (
-                f"\n⚠️ `{req_id}` has no cost estimate in this session, so the box "
-                f"could not be refilled for it — the decision is recorded, but it "
-                f"takes effect only once an estimate is added and `run_aggregation` "
-                f"is called again.")
+                f"\n⚠️ У `{req_id}` в этой сессии нет оценки стоимости, поэтому коробку "
+                f"под него пересобрать не удалось — решение записано, но вступит в силу "
+                f"только после того, как оценка будет добавлена и `run_aggregation` "
+                f"вызван снова.")
     elif req_id in session["aggregated"]:
         if isinstance(session["aggregated"][req_id], dict):
             session["aggregated"][req_id]["priority"] = final_priority
@@ -1684,10 +1689,10 @@ def save_prioritization_result(
     refinalise_note = ""
     if already_closed:
         refinalise_note = (
-            f"⚠️ This session was already finalised on "
-            f"{session.get('closed_at', 'an earlier date')}. The report below was "
-            f"regenerated from the stored result; the 5.1 repository was NOT written "
-            f"to again. To change priorities, open a new session.")
+            f"⚠️ Эта сессия уже была завершена "
+            f"{session.get('closed_at', 'ранее')}. Отчёт ниже был "
+            f"перегенерирован из сохранённого результата; в репозиторий 5.1 повторно "
+            f"НИЧЕГО не писалось. Чтобы изменить приоритеты, откройте новую сессию.")
 
     # Update the 5.1 repository
     repo = _load_repo(project_name)
@@ -1793,20 +1798,20 @@ def save_prioritization_result(
     if nothing_aggregated:
         # Said only where it is true: a session already closed on disk does not
         # "remain open" because this document says so.
-        still_open = "" if already_closed else " The session remains open."
+        still_open = "" if already_closed else " Сессия остаётся открытой."
         if scores_collected:
             lines += [
-                "⚠️ **The scores collected here were never aggregated** — "
-                "`run_aggregation` has not been called for this session, so the "
-                "aggregate is empty, nothing was written to the 5.1 repository, and "
-                "the counts below are not a statement about the backlog." + still_open,
+                "⚠️ **Собранные здесь оценки так и не были агрегированы** — "
+                "`run_aggregation` для этой сессии не вызывался, поэтому агрегат пуст, "
+                "в репозиторий 5.1 ничего не записано, а цифры ниже ничего не утверждают "
+                "о бэклоге." + still_open,
                 "",
             ]
         else:
             lines += [
-                "⚠️ **No scores were collected in this session** — the aggregate is empty, "
-                "so nothing was written to the 5.1 repository and the counts below are not "
-                "a statement about the backlog." + still_open,
+                "⚠️ **В этой сессии не собрано ни одной оценки** — агрегат пуст, поэтому "
+                "в репозиторий 5.1 ничего не записано, а цифры ниже ничего не утверждают "
+                "о бэклоге." + still_open,
                 "",
             ]
 
@@ -1827,9 +1832,10 @@ def save_prioritization_result(
         lines.insert(7, "")
         lines.insert(
             7,
-            f"⚠️ **{len(not_found_ids)} scored id(s) match no repository node and "
-            f"were NOT saved:** {listed}. Check for typos (e.g. `FR-01` for "
-            f"`FR-001`) and re-score, or the priority is lost.",
+            f"⚠️ **Оценённых id, которым не соответствует ни один узел репозитория: "
+            f"{len(not_found_ids)} — они НЕ сохранены:** {listed}. Проверьте опечатки "
+            f"(например, `FR-01` вместо `FR-001`) и оцените заново, иначе приоритет "
+            f"потеряется.",
         )
 
     if not_req_ids:
@@ -1837,8 +1843,9 @@ def save_prioritization_result(
         lines.insert(7, "")
         lines.insert(
             7,
-            f"⚠️ **{len(not_req_ids)} scored id(s) are NOT requirements** (business goal / "
-            f"risk / change request / solution scope) and were NOT prioritised: {listed_nr}.",
+            f"⚠️ **Оценённых id, которые НЕ являются требованиями: {len(not_req_ids)}** "
+            f"(бизнес-цель / риск / запрос на изменение / границы решения) — приоритет им "
+            f"НЕ назначался: {listed_nr}.",
         )
 
     for prio_label in ["Must", "Should", "Could", "Won't"]:
@@ -1864,9 +1871,9 @@ def save_prioritization_result(
             # estimate, when in fact the backlog was never considered at all.
             lines += [
                 "## Box", "",
-                "⚠️ No box was built: `run_aggregation` was never called for this "
-                "session, so no requirement was weighed against the capacity. The "
-                "counts below are not a statement about the backlog.",
+                "⚠️ Коробка не построена: `run_aggregation` для этой сессии не вызывался, "
+                "поэтому ни одно требование не взвешивалось против ёмкости. Цифры ниже "
+                "ничего не утверждают о бэклоге.",
                 "",
             ]
         else:
@@ -1888,7 +1895,7 @@ def save_prioritization_result(
         "",
         f"- Стейкхолдеров: {len(session['stakeholder_scores'])}",
         f"- Конфликтов: {total_conflicts} (разрешено: {resolved_conflicts})",
-        f"- Dependency violations: {total_violations} (разрешено: {resolved_violations})",
+        f"- Нарушений зависимостей: {total_violations} (разрешено: {resolved_violations})",
         "",
     ]
 
@@ -1898,13 +1905,13 @@ def save_prioritization_result(
             "",
             "## ⚠️ Нерешённые конфликты",
             "",
-            f"Still unresolved: {len(open_conflicts)} conflict(s), {len(open_violations)} violation(s).",
+            f"Не разрешено: конфликтов — {len(open_conflicts)}, нарушений — {len(open_violations)}.",
             # This used to send the BA to `resolve_conflict`, which refuses on a
             # closed session — the document instructed a step the platform rejects.
-            "The result has been saved with these left open, and the session is now "
-            "closed. To settle them, open a new prioritization session: a decision "
-            "recorded against a closed one would appear in a regenerated report but "
-            "never reach the requirements graph.",
+            "Результат сохранён вместе с ними, и сессия теперь закрыта. Чтобы их "
+            "уладить, откройте новую сессию приоритизации: решение, записанное в "
+            "закрытую, попало бы в перегенерированный отчёт, но до графа требований "
+            "не дошло бы.",
             "",
         ]
 
@@ -1912,19 +1919,19 @@ def save_prioritization_result(
     # advised handing on results that do not exist — the sharpest case being a session
     # with no scores at all, where the same document read "Requirements updated: 0"
     # and "Priorities have been written to the 5.1 repository".
-    lines += ["---", "", "## Next steps", ""]
+    lines += ["---", "", "## Следующие шаги", ""]
     if nothing_aggregated:
         if scores_collected:
             lines += [
-                "- ⚠️ **The scores collected here were never aggregated, so no priority "
-                "was written to the 5.1 repository.** Nothing above is a statement "
-                "about the backlog.",
+                "- ⚠️ **Собранные здесь оценки так и не были агрегированы, поэтому в "
+                "репозиторий 5.1 не записан ни один приоритет.** Ничто выше не является "
+                "утверждением о бэклоге.",
             ]
         else:
             lines += [
-                "- ⚠️ **No scores were collected in this session, so no priority was "
-                "written to the 5.1 repository.** Nothing above is a statement about the "
-                "backlog.",
+                "- ⚠️ **В этой сессии не собрано ни одной оценки, поэтому в репозиторий "
+                "5.1 не записан ни один приоритет.** Ничто выше не является утверждением "
+                "о бэклоге.",
             ]
         # The step to take next depends on the state the session is actually IN.
         # A closed one cannot be continued at all: `add_stakeholder_scores` and
@@ -1932,29 +1939,29 @@ def save_prioritization_result(
         # advice the platform rejects the moment it is followed.
         if already_closed:
             lines.append(
-                "- The session is CLOSED and cannot be continued — "
-                "`add_stakeholder_scores` and `run_aggregation` both refuse on a closed "
-                "session. Open a new prioritization session to record priorities.")
+                "- Сессия ЗАКРЫТА и продолжена быть не может: `add_stakeholder_scores` и "
+                "`run_aggregation` на закрытой сессии отказывают. Чтобы записать "
+                "приоритеты, откройте новую сессию приоритизации.")
         elif scores_collected:
             lines.append(
-                "- The session is still OPEN. The scores are already in it: run "
-                "`run_aggregation`, then finalise again.")
+                "- Сессия ещё ОТКРЫТА. Оценки в ней уже есть: запустите "
+                "`run_aggregation` и завершите сессию снова.")
         else:
             lines.append(
-                "- The session is still OPEN. Add scores with `add_stakeholder_scores` "
-                "(the field is `score`), then `run_aggregation`, then finalise again.")
+                "- Сессия ещё ОТКРЫТА. Добавьте оценки через `add_stakeholder_scores` "
+                "(поле называется `score`), затем `run_aggregation`, затем завершите снова.")
     elif already_closed:
         lines += [
-            "- This report was regenerated from the stored result — the 5.1 repository "
-            "was not written to again.",
-            "- Results are available for 6.3 (Assess Risks)",
+            "- Этот отчёт перегенерирован из сохранённого результата — в репозиторий 5.1 "
+            "повторно ничего не писалось.",
+            "- Результаты доступны для 6.3 (Assess Risks)",
         ]
     else:
         lines += [
-            f"- Priorities have been written to the 5.1 repository "
-            f"({updated_count} requirement(s))",
-            "- Results are available for 6.3 (Assess Risks)",
-            "- If the context changes — run a new prioritization session",
+            f"- Приоритеты записаны в репозиторий 5.1 ({updated_count} "
+            f"{plural_ru(updated_count, 'требование', 'требования', 'требований')})",
+            "- Результаты доступны для 6.3 (Assess Risks)",
+            "- Если контекст изменится — проведите новую сессию приоритизации",
         ]
 
     content = "\n".join(lines)

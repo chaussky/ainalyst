@@ -1,22 +1,22 @@
 # Справочник: Методы приоритизации требований (BABOK 5.3)
 
-## Four methods — when to choose which
+## Четыре метода — какой когда выбирать
 
 | Метод | Лучше всего подходит | Требует от команды | Не подходит когда |
 |-------|---------------------|--------------------|-------------------|
-| **MoSCoW** | Agile, fixed deadline, well-understood scope | Stakeholder opinions only | Many dependencies, precise quantitative scoring needed |
-| **WSJF** | SAFe, product teams, competing backlogs | Cost estimates from developers | No effort estimates, team unfamiliar with the method |
-| **Impact/Effort** | Initial ranking, limited resources, visualization | Relative impact and effort estimates | Precise numeric calculation required |
-| **Time Boxing / Budgeting** | Fixed deadline or fixed budget; second pass after Must Inflation | A cost/size estimate per requirement + the capacity | Capacity genuinely unknown; scope cannot be cut |
+| **MoSCoW** | Agile, жёсткий срок, понятный объём | Только мнения стейкхолдеров | Много зависимостей, нужна точная количественная оценка |
+| **WSJF** | SAFe, продуктовые команды, конкурирующие бэклоги | Оценки стоимости от разработчиков | Оценок трудоёмкости нет, команда метод не знает |
+| **Impact/Effort** | Первичное ранжирование, ограниченные ресурсы, наглядность | Относительные оценки эффекта и усилий | Нужен точный числовой расчёт |
+| **Time Boxing / Budgeting** | Жёсткий срок или фиксированный бюджет; второй проход после Must Inflation | Оценка стоимости/размера по каждому требованию + ёмкость | Ёмкость реально неизвестна; объём резать нельзя |
 
-**Selection rule:**
-- No cost estimates → **MoSCoW** or **Impact/Effort**
-- Cost estimates available + Agile project → **WSJF**
-- Need to quickly rank 30+ requirements → **Impact/Effort** first, then MoSCoW for Must candidates
-- Complex Enterprise project with dependencies → **WSJF** + automatic dependency-violation check from 5.1
-- Fixed deadline or fixed budget → **Time Boxing/Budgeting**
-- Over 60% Must after a MoSCoW pass → **Time Boxing/Budgeting** as a second pass: the
-  capacity, not the stakeholders, does the cutting
+**Правило выбора:**
+- Оценок стоимости нет → **MoSCoW** или **Impact/Effort**
+- Оценки есть + проект Agile → **WSJF**
+- Надо быстро ранжировать 30+ требований → сначала **Impact/Effort**, затем MoSCoW по Must-кандидатам
+- Сложный Enterprise-проект с зависимостями → **WSJF** + автоматическая проверка нарушений зависимостей из 5.1
+- Жёсткий срок или фиксированный бюджет → **Time Boxing/Budgeting**
+- После прохода MoSCoW больше 60% Must → **Time Boxing/Budgeting** вторым проходом: режет
+  ёмкость, а не стейкхолдеры
 
 ---
 
@@ -179,77 +179,76 @@ LOW IMPACT
 
 ## Method 4 — Time Boxing / Budgeting
 
-BABOK 10.33.3 .3: prioritization "based on the allocation of a fixed resource".
-Time boxing uses the amount of work the team can deliver in a period; budgeting uses
-a fixed amount of money. The arithmetic is the same — only the unit differs.
+BABOK 10.33.3 .3: приоритизация «на основе распределения фиксированного ресурса».
+Time boxing берёт объём работ, который команда выдаёт за период; budgeting — фиксированную
+сумму денег. Арифметика одна и та же, различается только единица измерения.
 
-### What it needs
+### Что для него нужно
 
-| Input | Where it comes from |
+| Вход | Откуда берётся |
 |---|---|
-| `capacity` + `capacity_unit` | The BA, when opening the session |
-| `cost` per requirement | The team's estimate, supplied like any other score (e.g. as `stakeholder_id="DEV-TEAM"`) |
-| `value` per requirement | Optional. Given → used; omitted → the requirement's current priority in the 5.1 graph |
+| `capacity` + `capacity_unit` | От BA при открытии сессии |
+| `cost` по требованию | Оценка команды, подаётся как любая другая оценка (например, `stakeholder_id="DEV-TEAM"`) |
+| `value` по требованию | Необязателен. Задан → используется; опущен → берётся текущий приоритет требования в графе 5.1 |
 
-`cost` is averaged across whoever supplied it **without** influence weighting — a size
-estimate is a fact about the work, not an opinion. Where estimates disagree, the report
-prints the spread instead of hiding it inside the average.
+`cost` усредняется по всем, кто его дал, **без** взвешивания по влиянию: оценка размера —
+это факт о работе, а не мнение. Там, где оценки расходятся, отчёт печатает разброс, а не
+прячет его внутри среднего.
 
-### How the box is filled
+### Как наполняется коробка
 
-1. Requirements are ordered by value (Must → Should → Could → Won't), then cheapest
-   first, then by id.
-2. They are added while `cumulative + cost <= capacity`.
-3. A requirement that does not fit is skipped, and **cheaper ones below it are still
-   considered** — the report names every requirement that was skipped over, so the
-   trade-off is visible rather than silent.
+1. Требования упорядочиваются по ценности (Must → Should → Could → Won't), затем по
+   дешевизне, затем по id.
+2. Они добавляются, пока `накопленное + cost <= capacity`.
+3. Требование, которое не влезло, пропускается, а **более дешёвые под ним всё равно
+   рассматриваются** — отчёт называет каждое пропущенное требование, чтобы компромисс был
+   виден, а не молчалив.
 
-The box covers the **whole backlog**, not only what was scored: a requirement nobody
-estimated is named explicitly rather than quietly missing from the document.
+Коробка охватывает **весь бэклог**, а не только оценённое: требование, которое никто не
+оценил, называется явно, а не пропадает из документа молча.
 
-### What the result means
+### Что означает результат
 
-- **In the box** — the requirement keeps its own value label (a `Could` in the box
-  stays `Could`: it was committed, but it is the bottom of the value order).
-- **Cut** — `Won't`, in the literal MoSCoW sense of "won't have **this time**".
-- **Not estimated** — no priority is written at all. A requirement with no cost
-  cannot be placed in a capacity box, and calling it `Won't` would be a conclusion
-  drawn from missing data.
+- **В коробке** — требование сохраняет собственную метку ценности (`Could` в коробке
+  остаётся `Could`: его взяли в работу, но по ценности оно внизу).
+- **Отрезано** — `Won't`, ровно в том смысле MoSCoW, что «не в **этот** раз».
+- **Не оценено** — приоритет не пишется вовсе. Требование без стоимости нельзя положить
+  в коробку ёмкости, а назвать его `Won't` значило бы сделать вывод из отсутствующих данных.
 
 ### Dependencies
 
-A requirement in the box that depends on a cut one makes the box infeasible. The
-platform flags it as a dependency violation and leaves the decision to the BA — raise
-the prerequisite's value, drop the dependent requirement, or decompose it. It does
-**not** quietly pull prerequisites in: that would rewrite the value order the
-stakeholders agreed, and the signed artefact would not show it.
+Требование в коробке, которое зависит от отрезанного, делает коробку невыполнимой.
+Платформа помечает это как нарушение зависимости и оставляет решение за BA — поднять
+ценность предпосылки, убрать зависимое требование или декомпозировать его. Она **не**
+затягивает предпосылки молча: это переписало бы порядок ценности, о котором договорились
+стейкхолдеры, а подписанный артефакт этого бы не показал.
 
-### Common mistakes
+### Типичные ошибки
 
-- **Capacity taken from a plan instead of from history.** Use what the team actually
-  delivered, not what was promised.
-- **Costs from one optimistic voice.** Where estimates differ, the report prints the
-  spread — a 3-vs-13 disagreement is a conversation, not an average.
-- **Treating the box as a commitment for all time.** It is one period. Re-run it.
+- **Ёмкость взята из плана, а не из истории.** Берите то, что команда реально выдала,
+  а не то, что обещали.
+- **Стоимости от одного оптимиста.** Там, где оценки расходятся, отчёт печатает разброс:
+  спор «3 против 13» — это разговор, а не среднее.
+- **Коробка воспринимается как обязательство навсегда.** Это один период. Запустите заново.
 
 ---
 
-## Eight BABOK factors — mapping to the methods
+## Восемь факторов BABOK — как они ложатся на методы
 
-| BABOK factor | MoSCoW | WSJF | Impact/Effort | Time Boxing |
+| Фактор BABOK | MoSCoW | WSJF | Impact/Effort | Time Boxing |
 |-------------|--------|------|---------------|-------------|
-| Benefit | ✅ Business Value | ✅ BV component | ✅ Impact | ✅ the value ranking |
-| Penalty | ✅ Must if the penalty is critical | ✅ RR/OE component | ✅ Impact | ⬜ via the value ranking only |
-| Cost | ⬜ not accounted for | ✅ Job Size | ✅ Effort | ✅ **the fixed resource itself** |
-| Risk | ⬜ partially | ✅ RR/OE component | ⬜ partially via Impact | ⬜ |
-| Dependencies | ⚠️ needs manual check | ⚠️ needs manual check | ⚠️ needs manual check | ⚠️ needs manual check |
-| Time sensitivity | ⬜ not accounted for | ✅ TC component | ⬜ not accounted for | ✅ the period is the constraint |
+| Выгода | ✅ Business Value | ✅ составляющая BV | ✅ Impact | ✅ ранжирование по ценности |
+| Санкция | ✅ Must, если санкция критична | ✅ составляющая RR/OE | ✅ Impact | ⬜ только через ранжирование по ценности |
+| Стоимость | ⬜ не учитывается | ✅ Job Size | ✅ Effort | ✅ **сам фиксированный ресурс** |
+| Риск | ⬜ частично | ✅ составляющая RR/OE | ⬜ частично через Impact | ⬜ |
+| Зависимости | ⚠️ нужна ручная проверка | ⚠️ нужна ручная проверка | ⚠️ нужна ручная проверка | ⚠️ нужна ручная проверка |
+| Чувствительность ко времени | ⬜ не учитывается | ✅ составляющая TC | ⬜ не учитывается | ✅ ограничением служит период |
 | Stability | ⬜ | ⬜ | ⬜ | ⬜ |
-| Regulatory compliance | ✅ Must by default | ✅ high CoD | ✅ Must via mapping | ✅ Must by default |
+| Соответствие регуляторике | ✅ Must по умолчанию | ✅ высокий CoD | ✅ Must через маппинг | ✅ Must по умолчанию |
 
-**Conclusion:** dependencies and stability are not automatically accounted for by any of the methods.
-That is exactly why the platform integrates 5.3 with the 5.1 repository and the 5.2 attributes:
-dependencies and stability are checked **before** and **after** the priority calculation.
+**Вывод:** зависимости и стабильность не учитываются автоматически ни одним из методов.
+Именно поэтому платформа связывает 5.3 с репозиторием 5.1 и атрибутами 5.2: зависимости и
+стабильность проверяются **до** и **после** расчёта приоритетов.
 
 ---
 

@@ -61,7 +61,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 ---
 
-## Four methods — quick cheat sheet
+## Четыре метода — короткая шпаргалка
 
 ### MoSCoW
 `Must` / `Should` / `Could` / `Won't` — категориальная расстановка.
@@ -79,12 +79,12 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 Подробнее: `references/methods_guide.md` → «Метод 3»
 
 ### Time Boxing / Budgeting
-A fixed resource — team throughput for the period, or a fixed budget — decides the
-scope. Requirements are filled into the box by value until the capacity runs out;
-what does not fit becomes `Won't` (MoSCoW's "won't have **this time**").
-Needs a capacity and a cost estimate per requirement. Value is taken from this
-session if stakeholders score it, otherwise from the requirement's current priority.
-Details: `references/methods_guide.md` → "Method 4"
+Объём решает фиксированный ресурс — пропускная способность команды за период либо
+фиксированный бюджет. Требования укладываются в коробку по ценности, пока ёмкость не
+кончится; что не влезло — становится `Won't` (в MoSCoW это «не в **этот** раз»).
+Нужны ёмкость и оценка стоимости по каждому требованию. Ценность берётся из этой
+сессии, если стейкхолдеры её оценили, иначе — из текущего приоритета требования.
+Подробнее: `references/methods_guide.md` → «Метод 4»
 
 ---
 
@@ -94,18 +94,18 @@ Details: `references/methods_guide.md` → "Method 4"
 
 **Когда:** начало новой сессии (первичная или повторная приоритизация).
 
-Algorithm:
-1. Determine the context: which iteration? which requirement scope?
-2. Choose a method (if not already chosen):
-   - No cost estimates → MoSCoW or Impact/Effort
-   - Estimates available + Agile project → WSJF
-   - Fixed deadline or fixed budget, scope must be cut to fit → TimeBoxing
-   - Already prioritized and hit Must Inflation → TimeBoxing as a second pass
-3. For WSJF: choose a scale (Fibonacci or 1–10) and set a reference requirement
-4. For Impact/Effort: configure the quadrant mapping
-5. For TimeBoxing: set `capacity` (what the team delivers in the period, or the budget)
-   and `capacity_unit` ("story points" / "person-days" / "USD")
-5. Call `start_prioritization_session`
+Алгоритм:
+1. Определи контекст: какая итерация? какой объём требований?
+2. Выбери метод (если он ещё не выбран):
+   - Оценок стоимости нет → MoSCoW или Impact/Effort
+   - Оценки есть + проект Agile → WSJF
+   - Жёсткий срок или фиксированный бюджет, объём надо резать → TimeBoxing
+   - Уже приоритизировано и словили Must Inflation → TimeBoxing вторым проходом
+3. Для WSJF: выбери шкалу (Fibonacci или 1–10) и задай эталонное требование
+4. Для Impact/Effort: настрой маппинг квадрантов
+5. Для TimeBoxing: задай `capacity` (что команда выдаёт за период, либо бюджет)
+   и `capacity_unit` («story points» / «человеко-дни» / «USD»)
+5. Вызови `start_prioritization_session`
 
 Результат: список требований готовых к оценке.
 ⚠️ Нестабильные требования (stability = Volatile) — помечаются автоматически.
@@ -116,13 +116,13 @@ Algorithm:
 **Когда:** после открытия сессии, для каждого стейкхолдера отдельно.
 
 Algorithm:
-1. Score with each stakeholder (from the 4.2 registry) individually
-2. For MoSCoW: each requirement → Must/Should/Could/Won't
-3. For WSJF: score BV, TC, RR for each requirement (JS — from developers)
-4. For Impact/Effort: score Impact and Effort for each requirement
-5. For TimeBoxing: `cost` for each requirement (from the team, in the capacity unit);
-   `value` is optional — omit it and the requirement's current priority is used
-6. Call `add_stakeholder_scores` for each stakeholder
+1. Оценивай с каждым стейкхолдером (из реестра 4.2) по отдельности
+2. Для MoSCoW: каждое требование → Must/Should/Could/Won't
+3. Для WSJF: оцени BV, TC, RR по каждому требованию (JS — от разработчиков)
+4. Для Impact/Effort: оцени Impact и Effort по каждому требованию
+5. Для TimeBoxing: `cost` по каждому требованию (от команды, в единицах ёмкости);
+   `value` необязателен — без него берётся текущий приоритет требования
+6. Вызови `add_stakeholder_scores` для каждого стейкхолдера
 
 > 📌 Важно: BA вызывает `add_stakeholder_scores` по одному разу на стейкхолдера.
 > Оценки накапливаются в снапшоте сессии, агрегация — только в Режиме C.
@@ -143,11 +143,11 @@ Algorithm:
 
 Справка по тактикам конфликтов: `references/conflict_resolution.md`
 
-> 📌 If >60% of requirements are Must, that's a sign of Must Inflation.
-> Recommendation: run a follow-up session with `method="TimeBoxing"` — set the capacity
-> the team can actually deliver, and let the box decide what fits.
-> (A TimeBoxing session does not raise this warning itself: there the Must share
-> follows the capacity, not stakeholder discipline.)
+> 📌 Если Must больше 60% требований — это признак Must Inflation.
+> Рекомендация: проведи повторную сессию с `method="TimeBoxing"` — задай ёмкость,
+> которую команда действительно выдаёт, и пусть коробка решит, что помещается.
+> (Сама сессия TimeBoxing это предупреждение не поднимает: там доля Must следует
+> из ёмкости, а не из дисциплины стейкхолдеров.)
 
 ### Режим D — Разрешить конфликт
 
@@ -157,7 +157,7 @@ Algorithm:
 1. Определить тип конфликта:
    - Межстейкхолдерский (расхождение оценок)
    - Dependency violation (Must зависит от Won't)
-   - Priority inflation (>60% Must)
+   - Инфляция приоритетов (>60% Must)
 2. Применить тактику (см. `references/conflict_resolution.md`)
 3. Вызвать `resolve_conflict` — зафиксировать решение и rationale
 4. Критические конфликты (Must vs Won't, High/High influence) → связать с Decision Log (4.5)
@@ -167,7 +167,7 @@ Algorithm:
 **Когда:** все конфликты разрешены, приоритеты согласованы.
 
 Algorithm:
-1. Verify that all conflicts are marked resolved
+1. Убедись, что все конфликты помечены как решённые
 2. Call `save_prioritization_result`
 3. The tool:
    - Writes the `priority` field into the 5.1 repository
