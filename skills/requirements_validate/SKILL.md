@@ -145,7 +145,7 @@ log_assumption(
 )
 ```
 
-**Risk levels:**
+**Уровни риска:**
 - `high` → предупреждение при `mark_req_validated` пока не закрыто
 - `medium` → фиксируется, не блокирует
 - `low` → низкий риск, информационная запись
@@ -194,12 +194,12 @@ mark_req_validated(
 )
 ```
 
-**Three preconditions — warnings, not blockers:**
-1. Req status = `verified` (from 7.2)
-2. No open high-risk assumptions for this req
-3. Traced to a business goal
+**Три предусловия — предупреждения, а не блокировки:**
+1. Статус req = `verified` (из 7.2)
+2. Нет открытых допущений высокого риска по этому req
+3. Есть трассировка на бизнес-цель
 
-**Lifecycle:** `draft → verified (7.2) → validated (7.3)`
+**Жизненный цикл:** `draft → verified (7.2) → validated (7.3)`
 
 ---
 
@@ -213,7 +213,7 @@ get_validation_report(project_id = "crm_upgrade")
 
 **Что содержит:**
 - % validated из общего числа req
-- Coverage matrix (BG → req)
+- Матрица покрытия (BG → req)
 - Список orphan req без трассировки
 - Открытые assumptions по risk_level
 - % req с success_criteria
