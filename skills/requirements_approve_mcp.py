@@ -281,9 +281,9 @@ def _baseline_gate(package: dict) -> dict:
         # instead of recording an undifferentiated "forced".
         "forceable": [
             name for name, present in (
-                ("pending approvals", bool(pending_reqs)),
-                ("overdue conditions", bool(overdue_conditions)),
-                (f"approval below {MIN_APPROVED_PCT}%", low_approval),
+                ("незакрытые согласования", bool(pending_reqs)),
+                ("просроченные условия", bool(overdue_conditions)),
+                (f"согласовано меньше {MIN_APPROVED_PCT}%", low_approval),
             ) if present
         ],
     }
@@ -394,33 +394,33 @@ def _resolve_approach(project_name: str, approach: str) -> tuple:
     here would change behaviour well beyond this feature.
     """
     if approach:
-        return approach, "stated in this call", ""
+        return approach, "указан в этом вызове", ""
     plan, note = load_ba_plan(project_name)
     label = _plan_approach_label(plan)
     ceremony = _CEREMONY_BY_APPROACH.get(label.strip())
     if ceremony:
         return (ceremony,
-                f"from the 3.1 BA plan — approach: {label} (formal sign-off)", "")
+                f"из плана BA (3.1) — подход: {label} (формальное подписание)", "")
     form = planned_timing_form(plan)
     if form:
         return (_FORM_TO_APPROACH[form],
-                f"from the 3.1 BA plan — timing form: {form}", "")
+                f"из плана BA (3.1) — форма тайминга: {form}", "")
     derived = approach_to_timing_form(label)
     if derived:
         return (_FORM_TO_APPROACH[derived],
-                f"from the 3.1 BA plan — approach: {label}", "")
-    reason = (f"the 3.1 approach `{label}` sits between predictive and adaptive"
-              if label else "the 3.1 BA plan does not state it")
+                f"из плана BA (3.1) — подход: {label}", "")
+    reason = (f"подход 3.1 `{label}` находится между predictive и adaptive"
+              if label else "план BA (3.1) его не задаёт")
     error = (
-        f"❌ The methodology for this package could not be determined — {reason}.\n"
+        f"❌ Не удалось определить методологию для этого пакета — {reason}.\n"
         + (f"  {note}\n" if note else "")
-        + f"  Two ways to fix it:\n"
-        f"    • pass `approach=\"predictive\"` or `approach=\"agile\"` here, or\n"
-        f"    • record it once in 3.1 with `plan_ba_activities("
-        f"timing_form=\"phases\"|\"iterations\")` — every package then takes it from "
-        f"the plan.\n"
-        f"  It is not guessed: this value is printed on the package that goes out "
-        f"for signature."
+        + f"  Два способа это исправить:\n"
+        f"    • передать `approach=\"predictive\"` или `approach=\"agile\"` здесь, либо\n"
+        f"    • один раз записать это в 3.1 через `plan_ba_activities("
+        f"timing_form=\"phases\"|\"iterations\")` — тогда каждый пакет будет брать "
+        f"значение из плана.\n"
+        f"  Оно не угадывается: это значение печатается на пакете, который уходит "
+        f"на подпись."
     )
     return "", "", error
 
@@ -445,11 +445,11 @@ def _governance_block(project_name: str) -> tuple:
 
     parts = []
     if days:
-        parts.append(f"within {days} business days of receiving this package")
+        parts.append(f"в течение {days} рабочих дней с момента получения пакета")
     if timing_note:
         parts.append(timing_note)
-    deadline = (f"Response deadline: {'; '.join(parts)} "
-                f"(per the 3.3 governance plan)." if parts else "")
+    deadline = (f"Срок ответа: {'; '.join(parts)} "
+                f"(по плану governance 3.3)." if parts else "")
 
     lines = []
     # The template's approval sentence NAMES ROLES ("Requires sign-off from Sponsor +
@@ -462,11 +462,11 @@ def _governance_block(project_name: str) -> tuple:
     show_process = bool(process) and (process_source == "declared in 3.3"
                                       or not approvers)
     if approvers or show_process:
-        lines = ["---", "", "## Approval authority (3.3)", ""]
+        lines = ["---", "", "## Полномочия на согласование (3.3)", ""]
         if approvers:
-            lines.append(f"**Approvers:** {', '.join(approvers)}  ")
+            lines.append(f"**Согласующие:** {', '.join(approvers)}  ")
         if show_process:
-            lines.append(f"**Process:** {process} *({process_source})*  ")
+            lines.append(f"**Процесс:** {process} *({process_source})*  ")
         lines.append("")
     if note:
         lines = ["", note, ""] + lines
