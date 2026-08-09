@@ -1592,8 +1592,8 @@ class TestGapCoverage(BaseMCPTest):
             {"name": "B", "gap_source": "6.2:policies"}]), PROJECT))
         self.assertIn("Объявлено покрытым: `technology`, `policies`", lines)
         self.assertNotIn("Cannot be checked", lines)
-        self.assertNotIn("Claimed but absent", lines)
-        self.assertNotIn("Deliberately left unaddressed", lines)
+        self.assertNotIn("Заявлено, но в анализе 6.2 отсутствует", lines)
+        self.assertNotIn("Сознательно оставлено без внимания", lines)
         self.assertNotIn("НЕ ОБЪЯВЛЯЕТ покрытие для", lines)
 
 
@@ -1871,13 +1871,13 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
                       "`business_needs`, `external`", lines)
         self.assertIn("(1 из 2 проанализированных)", lines)
         self.assertNotIn("coverage of: `business_needs`", lines)
-        self.assertNotIn("`external`,", lines.split("Context elements")[0])
+        self.assertNotIn("`external`,", lines.split("Контекстные элементы")[0])
 
     def test_the_context_line_is_absent_when_the_analysis_carries_none(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}],
             gaps=("technology", "policies")), PROJECT))
-        self.assertNotIn("Context elements", lines)
+        self.assertNotIn("Контекстные элементы", lines)
 
     def test_an_EXPLICIT_declaration_pulls_a_context_element_back_into_the_count(self):
         """The analyst knows the project better than the platform's default list."""
@@ -1894,7 +1894,7 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
             [{"name": "A", "gap_source": "6.2:external"}],
             gaps=("external", "technology")), PROJECT))
         self.assertIn("Объявлено покрытым: `external` (1 из 2 проанализированных)", lines)
-        self.assertNotIn("Context elements", lines)
+        self.assertNotIn("Контекстные элементы", lines)
 
     def test_architecture_and_assets_are_capabilities_and_stay_in_the_denominator(self):
         cov = _gap_coverage(self._strategy([], gaps=("architecture", "assets")))
@@ -1946,7 +1946,7 @@ class TestTheBlockOnlyJudgesWhatTheDocumentShows(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "Dropped", "gap_source": "6.2:assets", "in_scope": False}]),
             PROJECT))
-        self.assertNotIn("Claimed but absent", lines)
+        self.assertNotIn("Заявлено, но в анализе 6.2 отсутствует", lines)
 
     def test_IN_SCOPE_capabilities_are_still_counted_by_both_lines(self):
         """The positive companion: the fix must narrow the count to in-scope, not
@@ -2075,7 +2075,7 @@ class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
         out = define_solution_scope(PROJECT, self._cap("6.2:Technology"))
         self.assertIn("✅", out)
         self.assertIn("Объявлено покрытым: `technology` (1 из 2 проанализированных)", out)
-        self.assertNotIn("Claimed but absent", out)
+        self.assertNotIn("Заявлено, но в анализе 6.2 отсутствует", out)
         self.assertNotIn("НЕ ОБЪЯВЛЯЕТ покрытие для: `technology`", out)
 
     def test_the_document_sub_line_matches_a_capitalised_element_too(self):

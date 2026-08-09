@@ -505,7 +505,7 @@ def _resolve_artifact(project_id: str, selector: str):
 
     if not matches:
         return None, (
-            f"❌ В проекте `{project_id}` ничего не подходит под `{selector}`.\n\n"
+            f"❌ Под `{selector}` в проекте `{project_id}` ничего не подходит.\n\n"
             + _artifact_listing(project_id)
         )
 
