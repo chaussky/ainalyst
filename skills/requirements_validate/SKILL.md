@@ -1,185 +1,184 @@
 ---
 name: requirements_validate
 description: >
-  Skill BABOK 7.3 — Validate Requirements. Use this skill when the BA wants to
-  check that the requirements are truly needed by the business: aligned with
-  business goals, create value, do not contradict strategy, and are accepted
-  by stakeholders.
-  Triggers: "validate requirements", "does the business need this",
-  "goal alignment", "business value", "are these the right requirements", "acceptance".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 7.3 — Валидация требований. Используй этот скилл когда BA хочет
+  проверить что требования действительно нужны бизнесу: соответствуют бизнес-целям,
+  создают ценность, не противоречат стратегии и приняты стейкхолдерами.
+  Триггеры: «валидация требований», «validate requirements», «нужно ли это бизнесу»,
+  «соответствие целям», «business value», «правильные ли требования», «acceptance».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL.md — BABOK 7.3 Validate Requirements
 
-## What this task is about
+## Суть задачи
 
-**Validation** answers the question: **"Did we write the right requirements?"**
+**Валидация** отвечает на вопрос: **«Правильные ли требования мы написали?»**
 
-Distinction from verification (7.2):
-- **7.2 Verify** → "Are the requirements written correctly?" (quality of wording)
-- **7.3 Validate** → "Do we need these requirements?" (value to the business)
+Отличие от верификации (7.2):
+- **7.2 Verify** → «Правильно ли написаны требования?» (качество формулировок)
+- **7.3 Validate** → «Нужны ли нам эти требования?» (ценность для бизнеса)
 
-A requirement can be perfectly worded — atomic, unambiguous, testable — but useless to the business. Validation is what catches that.
+Требование может быть идеально сформулировано — атомарным, однозначным, тестируемым — но бесполезным для бизнеса. Валидация ловит именно это.
 
-**Key principle:** 7.3 is an iterative task. It can be invoked multiple times at different stages of the project, unlike 7.2 (a one-time pass).
-
----
-
-## Three axes of validation (BABOK)
-
-### Axis 1: Value
-Does the requirement bring benefit to stakeholders?
-- Every req should trace back to a business goal (BG)
-- An orphan req without traceability is a candidate for removal or decomposition
-
-### Axis 2: Alignment with the future state
-Does the req help achieve the Future State described in the business context?
-- `check_business_alignment` checks this automatically (BFS + title-matching)
-- The coverage matrix shows which BGs are not covered by any req
-
-### Axis 3: Assumptions and risks
-Have assumptions been identified, and are the related risks managed?
-- Every contestable assumption must be logged via `log_assumption`
-- High-risk assumptions block validation (warning in `mark_req_validated`)
+**Ключевой принцип:** 7.3 — итерационная задача. Она может вызываться несколько раз на разных стадиях проекта, в отличие от 7.2 (разовый прогон).
 
 ---
 
-## Pipeline (steps in order)
+## Три оси валидации (BABOK)
+
+### Ось 1: Ценность
+Приносит ли требование выгоду стейкхолдерам?
+- Каждое req должно трассироваться к бизнес-цели (BG)
+- Orphan req без трассировки — кандидат на удаление или декомпозицию
+
+### Ось 2: Соответствие будущему состоянию
+Помогает ли req достичь Future State, описанного в бизнес-контексте?
+- `check_business_alignment` проверяет это автоматически (BFS + title-matching)
+- Coverage matrix показывает какие BG не покрыты ни одним req
+
+### Ось 3: Предположения и риски
+Выявлены ли assumptions, управляются ли связанные риски?
+- Каждое спорное допущение должно быть зафиксировано через `log_assumption`
+- High-risk assumptions блокируют валидацию (предупреждение в `mark_req_validated`)
+
+---
+
+## Pipeline (шаги по порядку)
 
 ```
-1. set_business_context        ← once, at the start of validation
-2. check_business_alignment    ← check all verified req
-3. set_success_criteria        ← [optional] for critical req
-4. log_assumption               ← [as you go] when an assumption surfaces
-5. resolve_assumption           ← [as you go] after confirming/refuting
-6. mark_req_validated           ← move verified → validated
-7. get_validation_report        ← summary report
+1. set_business_context        ← один раз в начале валидации
+2. check_business_alignment    ← проверить все verified req
+3. set_success_criteria        ← [необязательно] для критичных req
+4. log_assumption              ← [по мере работы] при выявлении допущений
+5. resolve_assumption          ← [по мере работы] после подтверждения/опровержения
+6. mark_req_validated          ← перевести verified → validated
+7. get_validation_report       ← сводный отчёт
 ```
 
 ---
 
-## MCP tools
+## Инструменты MCP
 
 ### 1. `set_business_context`
 
-**When:** once, at the start of work on validating the project.
+**Когда:** один раз в начале работы над валидацией проекта.
 
 ```
 set_business_context(
   project_id = "crm_upgrade",
   business_goals_json = '[
-    {"id":"BG-001","title":"Reduce request processing time","kpi":"from 24h to 4h"},
-    {"id":"BG-002","title":"Increase NPS","kpi":"from 45 to 65"}
+    {"id":"BG-001","title":"Снизить время обработки заявок","kpi":"с 24ч до 4ч"},
+    {"id":"BG-002","title":"Увеличить NPS","kpi":"с 45 до 65"}
   ]',
-  future_state = "Operators handle requests in a single window, prioritization is automated",
-  solution_scope = "In scope: CRM module, integration with 1C. Out of scope: mobile app"
+  future_state = "Операторы обрабатывают заявки в едином окне, автоматизирована приоритизация",
+  solution_scope = "Входит: модуль CRM, интеграция с 1С. Не входит: мобильное приложение"
 )
 ```
 
-Data is stored in `{project}_business_context.json`. The business context is synced with tasks 6.1/6.2.
+Данные хранятся в `{project}_business_context.json`. Бизнес-контекст синхронизирован с задачами 6.1/6.2.
 
 ---
 
 ### 2. `check_business_alignment`
 
-**When:** after creating the business context, before `mark_req_validated`.
+**Когда:** после создания бизнес-контекста, перед `mark_req_validated`.
 
 ```
 check_business_alignment(project_id = "crm_upgrade")
-# Checks all verified req
+# Проверяет все verified req
 
 check_business_alignment(
   project_id = "crm_upgrade",
   req_ids = '["US-001", "FR-005", "UC-002"]'
 )
-# Checks specific req
+# Проверяет конкретные req
 ```
 
-**What it checks:**
-- BFS traversal of the 5.1 graph: is a node of type `business` reachable from the req?
-- Title-matching against the BGs from business_context
-- Returns: aligned / orphan for each req
-- Coverage matrix: which BGs are not covered
+**Что проверяет:**
+- BFS-обход графа 5.1: достижим ли узел типа `business` из req?
+- Title-matching с BG из business_context
+- Возвращает: aligned / orphan по каждому req
+- Coverage matrix: какие BG не покрыты
 
-**Interpretation:**
-- `aligned` (bfs) → traced through the 5.1 graph — the best outcome
-- `aligned` (title-match) → keyword match — worth adding an explicit link in 5.1
-- `orphan` → neither BFS nor title-match → requirement without a business justification
+**Интерпретация:**
+- `aligned` (bfs) → трассировка через граф 5.1 — наилучший результат
+- `aligned` (title-match) → совпадение по ключевым словам — стоит добавить явную связь в 5.1
+- `orphan` → нет ни BFS, ни title-match → требование без бизнес-обоснования
 
 ---
 
 ### 3. `set_success_criteria`
 
-**When:** optional — for critical req where it matters to measure the outcome.
+**Когда:** необязательно — для критичных req где важно измерить результат.
 
 ```
 set_success_criteria(
   project_id = "crm_upgrade",
   req_id = "FR-001",
   criteria_json = '{
-    "baseline": "Assignment time: 45 min manually",
-    "target": "Assignment time: ≤ 30 sec automatically",
-    "measurement_method": "Average time in the monitoring system over 1 week",
+    "baseline": "Время распределения: 45 мин вручную",
+    "target": "Время распределения: ≤ 30 сек автоматически",
+    "measurement_method": "Среднее время в системе мониторинга за 1 неделю",
     "kpi_ref": "BG-001"
   }'
 )
 ```
 
-**Tip:** the tool automatically shows the KPI from the linked business goal as a reference point.
+**Подсказка:** инструмент автоматически покажет KPI из связанной бизнес-цели как ориентир.
 
-**Link to 8.1:** the success_criteria data from 7.3 becomes input for Measure Solution Performance.
+**Связь с 8.1:** данные success_criteria из 7.3 станут входными для Measure Solution Performance.
 
 ---
 
 ### 4. `log_assumption`
 
-**When:** whenever a contestable assumption is discovered while working on validation.
+**Когда:** при обнаружении спорного допущения в любой момент работы над валидацией.
 
 ```
 log_assumption(
   project_id = "crm_upgrade",
-  description = "We assume operators are willing to switch to the new interface without extensive training",
+  description = "Предполагаем, что операторы готовы перейти на новый интерфейс без длительного обучения",
   req_ids = '["US-005", "US-006"]',
   risk_level = "high",
-  assigned_to = "A. Petrova"
+  assigned_to = "Петрова А."
 )
 ```
 
 **Risk levels:**
-- `high` → warning at `mark_req_validated` while still open
-- `medium` → logged, does not block
-- `low` → low risk, informational record
+- `high` → предупреждение при `mark_req_validated` пока не закрыто
+- `medium` → фиксируется, не блокирует
+- `low` → низкий риск, информационная запись
 
 ---
 
 ### 5. `resolve_assumption`
 
-**When:** after confirming or refuting an assumption (interview, test, research).
+**Когда:** после подтверждения или опровержения допущения (интервью, тест, исследование).
 
 ```
 resolve_assumption(
   project_id = "crm_upgrade",
   assumption_id = "AS-001",
   resolution = "confirmed",
-  resolution_note = "Ran a pilot with 3 operators — the switch went smoothly within 2 hours"
+  resolution_note = "Проведён пилот с 3 операторами — переход прошёл без проблем за 2 часа"
 )
 
 resolve_assumption(
   project_id = "crm_upgrade",
   assumption_id = "AS-002",
   resolution = "refuted",
-  resolution_note = "Integration with the legacy system is not possible without a data migration"
+  resolution_note = "Интеграция с legacy-системой невозможна без миграции данных"
 )
 ```
 
-**On `refuted`:** the tool produces a list of related req for re-examination. A new round of elicitation (4.1–4.3) may be needed.
+**При `refuted`:** инструмент выдаёт список связанных req для пересмотра. Возможно нужен новый раунд выявления (4.1–4.3).
 
 ---
 
 ### 6. `mark_req_validated`
 
-**When:** a req is ready — verified, no high-risk assumptions, and traced to a BG.
+**Когда:** req готов — verified, нет high-risk assumptions, есть трассировка к BG.
 
 ```
 mark_req_validated(
@@ -187,7 +186,7 @@ mark_req_validated(
   req_ids = '["US-001", "FR-001", "FR-002"]'
 )
 
-# Override when warnings are present:
+# Override при наличии предупреждений:
 mark_req_validated(
   project_id = "crm_upgrade",
   req_ids = '["US-007"]',
@@ -206,70 +205,70 @@ mark_req_validated(
 
 ### 7. `get_validation_report`
 
-**When:** at the end of validation work, to hand off to 7.5.
+**Когда:** в конце работы над валидацией, для передачи в 7.5.
 
 ```
 get_validation_report(project_id = "crm_upgrade")
 ```
 
-**What it contains:**
-- % validated out of total req
+**Что содержит:**
+- % validated из общего числа req
 - Coverage matrix (BG → req)
-- List of orphan req without traceability
-- Open assumptions by risk_level
-- % of req with success_criteria
-- Readiness verdict for 7.5
+- Список orphan req без трассировки
+- Открытые assumptions по risk_level
+- % req с success_criteria
+- Вердикт готовности к 7.5
 
 ---
 
-## Typical workflow
+## Типичный рабочий сценарий
 
-### Start of the project
-1. Verify the requirements (7.2)
-2. Call `set_business_context` — enter the business goals from the customer
+### Начало проекта
+1. Верифицируй требования (7.2)
+2. Вызови `set_business_context` — введи бизнес-цели от заказчика
 
-### Main body of work
-3. `check_business_alignment` — find orphan req and gaps in BGs
-4. For orphan req: add traceability via 5.1 (`add_trace_link`) or exclude the req
-5. `log_assumption` — log contestable assumptions as they are discovered
-6. Verify assumptions through work: interviews, pilots, analysis → `resolve_assumption`
+### Основная работа
+3. `check_business_alignment` — найди orphan req и пробелы в BG
+4. Для orphan req: добавь трассировку через 5.1 (`add_trace_link`) или исключи req
+5. `log_assumption` — зафиксируй спорные допущения при обнаружении
+6. Проверяй допущения в работе: интервью, пилот, анализ → `resolve_assumption`
 
-### Finalization
-7. `mark_req_validated` for ready req
-8. `get_validation_report` → report to hand off to 7.5
+### Финализация
+7. `mark_req_validated` для готовых req
+8. `get_validation_report` → отчёт для передачи в 7.5
 
 ---
 
-## Files created by task 7.3
+## Файлы, которые создаёт задача 7.3
 
-| File | Contains |
+| Файл | Содержит |
 |------|----------|
-| `{project}_business_context.json` | Business goals, Future State, scope |
-| `{project}_assumptions.json` | Assumption registry AS-001/AS-002/... |
-| `{project}_traceability_repo.json` | Updated validated statuses in 5.1 |
-| `7_3_business_alignment_*.md` | Alignment report |
-| `7_3_validation_report_*.md` | Final report → 7.5 |
+| `{project}_business_context.json` | Бизнес-цели, Future State, скоуп |
+| `{project}_assumptions.json` | Реестр предположений AS-001/AS-002/... |
+| `{project}_traceability_repo.json` | Обновлённые статусы validated в 5.1 |
+| `7_3_business_alignment_*.md` | Отчёт по выравниванию |
+| `7_3_validation_report_*.md` | Финальный отчёт → 7.5 |
 
 ---
 
-## Links to other tasks
+## Связи с другими задачами
 
-| From | What comes in |
+| Откуда | Что приходит |
 |--------|-------------|
-| 5.1 | Traceability graph — BFS traversal for check_business_alignment |
-| 7.2 | `verified` status — precondition for mark_req_validated |
+| 5.1 | Граф трассировки — BFS-обход для check_business_alignment |
+| 7.2 | Статус `verified` — предусловие для mark_req_validated |
 
-| To | What we hand off |
+| Куда | Что передаём |
 |------|-------------|
-| 7.5 | Validation Report — basis for Design Options |
-| 8.1 | success_criteria from 7.3 — for measuring outcomes |
+| 7.5 | Validation Report — основа для Design Options |
+| 8.1 | success_criteria из 7.3 — для измерения результата |
 
 ---
 
-## Detailed methodology and techniques
+## Детальная методология и техники
 
-- Three axes of validation, BABOK techniques, error patterns →
+- Три оси валидации, техники BABOK, паттерны ошибок →
   `references/validation_guide.md`
 
-- Working with assumptions, risk classification, assumption patterns in IT →
+- Работа с предположениями, классификация рисков, паттерны assumptions в IT →
   `references/assumptions_guide.md`

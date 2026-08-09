@@ -1,63 +1,63 @@
-# Risk Assessment Guide — BABOK Chapter 6.3
+# Risk Assessment Guide — Глава 6.3 BABOK
 
-A reference guide for identifying, assessing, and planning response measures for risks.
-Read it when you need details on a specific assessment step.
+Справочник по идентификации, оценке и планированию ответных мер на риски.
+Читай когда нужны детали по конкретному шагу оценки.
 
 ---
 
-## 1. Risk categories (BABOK 6.3)
+## 1. Категории рисков (BABOK 6.3)
 
-| Category | Description | Examples |
+| Категория | Описание | Примеры |
 |-----------|----------|---------|
-| `strategic` | Risks to achieving strategic objectives | Competitors launched a similar offering first; strategy changed mid-project |
-| `operational` | Risks of disrupting operational processes | Key staff leave the project; changes to business processes cause disruptions |
-| `financial` | Financial risks: budget, ROI, cost | Budget cut by 30%; OPEX grows more than planned |
-| `technical` | Technical implementation risks | Integration with the legacy system is harder than expected; tech stack is outdated |
-| `regulatory` | Regulatory and compliance risks | Legal requirements changed; new GDPR regulation; industry standard |
-| `people` | People: skills, change, culture | Low user adoption; BA team is understaffed; hidden resistance |
-| `external` | External factors: market, environment, force majeure | Vendor goes bankrupt; exchange rate shifts; pandemic |
+| `strategic` | Риски достижения стратегических целей | Конкуренты вышли с аналогом раньше; стратегия изменилась в ходе проекта |
+| `operational` | Риски нарушения операционных процессов | Ключевые сотрудники покидают проект; изменение бизнес-процессов вызывает сбои |
+| `financial` | Финансовые риски: бюджет, ROI, стоимость | Бюджет срезан на 30%; OPEX вырастет сильнее, чем планировалось |
+| `technical` | Риски технической реализации | Интеграция с legacy-системой сложнее ожидаемого; технический стек устарел |
+| `regulatory` | Регуляторные и compliance-риски | Требования закона изменились; новый GDPR-регламент; отраслевой стандарт |
+| `people` | Люди: навыки, изменения, культура | Низкая adoption у пользователей; команда BA недостаточна; скрытое сопротивление |
+| `external` | Внешние факторы: рынок, экология, форс-мажор | Вендор банкротится; изменение курса валют; пандемия |
 
-**Classification rule:** if a risk fits multiple categories — choose the one its **root cause** originates from.
+**Правило классификации:** если риск подходит нескольким категориям — выбирай ту, от которой исходит **первопричина**.
 
 ---
 
-## 2. Likelihood rating scale
+## 2. Шкала оценки вероятности (Likelihood)
 
-| Score | Level | Probability | Indicators |
+| Балл | Уровень | Вероятность | Признаки |
 |------|---------|-------------|----------|
-| 1 | Very Low | < 10% | Theoretically possible, no historical precedent |
-| 2 | Low | 10–30% | Rarely occurred in similar projects |
-| 3 | Medium | 30–60% | Occurs in roughly half of similar projects |
-| 4 | High | 60–80% | Common outcome without special measures |
-| 5 | Very High | > 80% | Almost inevitable under current conditions |
+| 1 | Very Low | < 10% | Теоретически возможно, исторических прецедентов нет |
+| 2 | Low | 10–30% | Редко случалось в похожих проектах |
+| 3 | Medium | 30–60% | Случается примерно в половине похожих проектов |
+| 4 | High | 60–80% | Обычный результат без специальных мер |
+| 5 | Very High | > 80% | Почти неизбежно при текущих условиях |
 
-**How to calibrate:**
-- Use historical data from similar projects in the organization
-- Rely on stakeholder estimates (especially risk owners)
-- Consider context from 6.1 (root causes) and 6.2 (gaps, constraints)
+**Как калибровать:**
+- Используй исторические данные из похожих проектов организации
+- Опирайся на оценки стейкхолдеров (особенно владельцев риска)
+- Учитывай контекст из 6.1 (корневые причины) и 6.2 (gap, ограничения)
 
 ---
 
-## 3. Impact rating scale
+## 3. Шкала оценки воздействия (Impact)
 
-| Score | Level | Description | Impact examples |
+| Балл | Уровень | Описание | Примеры воздействия |
 |------|---------|----------|---------------------|
-| 1 | Negligible | Minimal, virtually no effect | Minor delay of a single step |
-| 2 | Minor | Small, locally resolvable | Sprint delay; extra budget < 5% |
-| 3 | Moderate | Noticeable, requires plan adjustment | Milestone delay of 2–4 weeks; budget +10–20% |
-| 4 | Major | Substantial, threatens project objectives | Failure of a key business objective; budget +30–50% |
-| 5 | Critical | Catastrophic, project/program is at risk | Complete shutdown; loss of license; legal liability |
+| 1 | Negligible | Минимальное, практически нет эффекта | Незначительная задержка одного шага |
+| 2 | Minor | Небольшое, локально устранимо | Задержка спринта; дополнительный бюджет < 5% |
+| 3 | Moderate | Заметное, требует коррекции плана | Задержка milestone 2–4 недели; бюджет +10–20% |
+| 4 | Major | Существенное, под угрозой цели проекта | Срыв ключевой бизнес-цели; бюджет +30–50% |
+| 5 | Critical | Катастрофическое, проект/программа под угрозой | Полная остановка; потеря лицензии; юридическая ответственность |
 
-**Impact dimensions (choose the most critical one):**
-- **Time:** delivery delay
-- **Cost:** budget overrun
-- **Scope:** degradation of capabilities/features
-- **Quality:** technical debt, defects
-- **Reputation:** stakeholder trust, brand
+**Измерения воздействия (выбирай наиболее критичное):**
+- **Время:** задержка поставки
+- **Стоимость:** перерасход бюджета
+- **Скоуп:** деградация возможностей/функций
+- **Качество:** технический долг, дефекты
+- **Репутация:** доверие стейкхолдеров, бренд
 
 ---
 
-## 4. Risk Matrix
+## 4. Матрица рисков (Risk Matrix)
 
 ```
 Impact →
@@ -69,155 +69,155 @@ Impact →
      |  1  |  2  |  3  |  4  |  5  ← Likelihood
 ```
 
-### Risk zones
+### Зоны риска
 
-| Zone | Score | Color | Default action |
+| Зона | Score | Цвет | Действие по умолчанию |
 |------|-------|------|----------------------|
-| Low | 1–5 | 🟢 Green | Accept or monitor |
-| Medium | 6–14 | 🟡 Yellow | Develop a mitigation plan |
-| High | 15–25 | 🔴 Red | Urgent response, escalation |
+| Low | 1–5 | 🟢 Зелёный | Принять или мониторить |
+| Medium | 6–14 | 🟡 Жёлтый | Разработать план снижения |
+| High | 15–25 | 🔴 Красный | Срочное реагирование, эскалация |
 
-**Default High boundary = 15** (score ≥ 15 = High risk).
-The BA can override the threshold via `set_risk_tolerance`.
+**Граница High по умолчанию = 15** (score ≥ 15 = High risk).
+BA может переопределить порог через `set_risk_tolerance`.
 
 ---
 
-## 5. Risk sources for identification
+## 5. Источники рисков для идентификации
 
-When working with `import_risks_from_context`, the platform automatically scans:
+При работе с `import_risks_from_context` платформа автоматически сканирует:
 
-| Source | Artifact | What is extracted |
+| Источник | Артефакт | Что извлекаем |
 |----------|----------|---------------|
-| 6.2 — constraints | `{project}_future_state.json` → `constraints[]` | Constraints with category+description → risk drafts |
-| 6.2 — gap analysis | `{project}_gap_analysis.json` → `gaps[]` | Gaps with complexity=high → highly complex transitions |
-| 6.1 — root causes | `{project}_current_state.json` → `rca` | root_causes with severity → unresolved causes |
-| 6.1 — business needs | `{project}_business_needs.json` | Needs with priority=high → risks of non-fulfillment |
-| 4.2 — interviews | `{project}_elicitation_results.json` → `risks_mentioned[]` | Risks mentioned by stakeholders |
+| 6.2 — ограничения | `{project}_future_state.json` → `constraints[]` | Ограничения с category+description → черновики рисков |
+| 6.2 — gap-анализ | `{project}_gap_analysis.json` → `gaps[]` | Gaps с complexity=high → высокосложные переходы |
+| 6.1 — корневые причины | `{project}_current_state.json` → `rca` | root_causes с severity → нерешённые причины |
+| 6.1 — бизнес-потребности | `{project}_business_needs.json` | Потребности с priority=high → риски нереализации |
+| 4.2 — интервью | `{project}_elicitation_results.json` → `risks_mentioned[]` | Риски, упомянутые стейкхолдерами |
 
-**Graceful degradation:** if an artifact is missing — the source is skipped with a warning, not an error.
-
----
-
-## 6. Response Strategies
-
-### Accept
-**When:** the risk is Low, or mitigating it costs more than the potential damage.
-**Action:** record it, monitor it. No active measures.
-**Example:** "If a key team member is out sick for 1 day — we'll accept the delay."
-
-### Mitigate
-**When:** the risk is Medium or High, and there are concrete mitigation measures available.
-**Action:** develop a plan: what to do, who's responsible, by when.
-**Goal:** reduce likelihood OR impact (ideally both).
-**Example:** "We'll run an integration prototype in Sprint 0 to reduce the chance of surprises."
-
-### Transfer
-**When:** the risk can be shifted to a third party (vendor, insurer, partner).
-**Action:** contract with a penalty clause; insurance; SLA; outsourcing the risky module.
-**Example:** "We transfer the compliance risk to the vendor through a contractual guarantee."
-
-### Avoid
-**When:** the risk is Critical, and mitigation is impossible or too costly.
-**Action:** change the scope, technology, approach, or drop the component.
-**Example:** "We're removing the legacy system integration from v1.0 — it'll move to v2."
+**Graceful degradation:** если артефакт отсутствует — источник пропускается с предупреждением, не ошибкой.
 
 ---
 
-## 7. Common risk patterns by initiative type
+## 6. Ответные стратегии (Response Strategies)
+
+### Accept (Принять)
+**Когда:** риск Low или его снижение дороже потенциального ущерба.
+**Действие:** зафиксировать, мониторить. Никаких активных мер.
+**Пример:** "Если ключевой сотрудник заболеет на 1 день — примем задержку."
+
+### Mitigate (Снизить)
+**Когда:** риск Medium или High, есть конкретные меры снижения.
+**Действие:** разработать план: что делаем, кто отвечает, к какому сроку.
+**Цель:** снизить likelihood ИЛИ impact (идеально — оба).
+**Пример:** "Проводим прототипирование интеграции в Sprint 0, чтобы снизить вероятность сюрпризов."
+
+### Transfer (Передать)
+**Когда:** риск можно переложить на третью сторону (вендор, страховщик, партнёр).
+**Действие:** контракт с penalty clause; страхование; SLA; аутсорсинг рискованного модуля.
+**Пример:** "Передаём риск compliance вендору через contractual guarantee."
+
+### Avoid (Избежать)
+**Когда:** риск Critical, mitigation невозможен или слишком дорог.
+**Действие:** изменить скоуп, технологию, подход или отказаться от компонента.
+**Пример:** "Убираем интеграцию с legacy-системой из v1.0 — перенесём в v2."
+
+---
+
+## 7. Типичные паттерны рисков по типу инициативы
 
 ### Process Improvement
-- Staff resistance to change (people, likelihood 3–4)
-- Underestimating training time (people/financial)
-- Performance degradation during the transition period (operational)
+- Сопротивление персонала изменениям (people, likelihood 3–4)
+- Недооценка временных затрат на обучение (people/financial)
+- Деградация производительности в переходный период (operational)
 
 ### New System / Digital Transformation
-- Integration complexity with legacy systems (technical, likelihood 3–4)
-- Data migration: loss or corruption (technical/operational)
-- Low adoption among end users (people)
-- Budget overrun due to hidden requirements (financial)
+- Интеграционные сложности с legacy (technical, likelihood 3–4)
+- Миграция данных: потеря или искажение (technical/operational)
+- Низкая adoption у конечных пользователей (people)
+- Бюджетный перерасход из-за скрытых требований (financial)
 
 ### Regulatory / Compliance
-- Regulator changes requirements after kickoff (regulatory, likelihood 2–3)
-- Lack of expertise in the new standard (people)
-- Fines for delayed implementation (regulatory/financial)
+- Регулятор изменил требования после старта (regulatory, likelihood 2–3)
+- Нехватка экспертизы по новому стандарту (people)
+- Штрафы за задержку внедрения (regulatory/financial)
 
 ### Cost Reduction
-- Service quality decline during optimization (operational)
-- Loss of key staff during restructuring (people)
-- Hidden dependencies in the optimized process (technical/operational)
+- Снижение качества сервиса при оптимизации (operational)
+- Потеря ключевых сотрудников при реструктуризации (people)
+- Скрытые зависимости оптимизируемого процесса (technical/operational)
 
 ---
 
-## 8. Wording a risk
+## 8. Формулировка риска
 
-**Standard:** "If [condition/trigger], then [consequence]"
+**Стандарт:** «Если [условие/триггер], то [последствие]»
 
-**Good wording:**
-- ✅ "If the ERP system integration turns out harder than the prototype showed, then the delivery date will slip by 4–6 weeks"
-- ✅ "If key business users don't complete training before go-live, then the adoption rate will be below 50% in the first 3 months"
+**Хорошая формулировка:**
+- ✅ «Если интеграция с ERP-системой окажется сложнее, чем показал прототип, то срок поставки сдвинется на 4–6 недель»
+- ✅ «Если ключевые бизнес-пользователи не пройдут обучение до go-live, то adoption rate будет ниже 50% в первые 3 месяца»
 
-**Bad wording:**
-- ❌ "Integration risk" (no condition or consequence)
-- ❌ "Delays are possible" (no specifics)
-- ❌ "Users won't use the system" (no trigger)
+**Плохая формулировка:**
+- ❌ «Риск интеграции» (нет условия и последствия)
+- ❌ «Возможны задержки» (нет конкретики)
+- ❌ «Пользователи не будут использовать систему» (нет триггера)
 
 ---
 
-## 9. Risk card structure (`add_risk` fields)
+## 9. Структура карточки риска (поля `add_risk`)
 
-| Field | Type | Required | Description |
+| Поле | Тип | Обязательность | Описание |
 |------|-----|----------------|----------|
 | `category` | Literal | ✅ | strategic/operational/financial/technical/regulatory/people/external |
 | `source` | Literal | ✅ | change/current_state/future_state/requirement/stakeholder/assumption/constraint |
-| `description` | str | ✅ | Format: "If X, then Y" |
-| `likelihood` | int 1–5 | ✅ | Per the scale in section 2 |
-| `likelihood_rationale` | str | 📋 | Rationale for the estimate |
-| `impact` | int 1–5 | ✅ | Per the scale in section 3 |
-| `impact_rationale` | str | 📋 | Rationale for the estimate |
+| `description` | str | ✅ | Формат: «Если X, то Y» |
+| `likelihood` | int 1–5 | ✅ | По шкале раздела 2 |
+| `likelihood_rationale` | str | 📋 | Обоснование оценки |
+| `impact` | int 1–5 | ✅ | По шкале раздела 3 |
+| `impact_rationale` | str | 📋 | Обоснование оценки |
 | `time_horizon` | Literal | 📋 | immediate/short_term/medium_term/long_term |
 | `response_strategy` | Literal | ✅ | accept/mitigate/transfer/avoid |
-| `mitigation_plan` | str | if mitigate | Concrete action plan |
-| `owner` | str | 📋 | stakeholder_id from the 3.2 registry |
-| `linked_bn` | str | 📋 | Business need ID (BN-xxx) |
-| `linked_bg` | str | 📋 | Business goal ID (BG-xxx) |
-| `linked_req` | str | 📋 | Requirement ID (FR-xxx, BR-xxx...) |
+| `mitigation_plan` | str | при mitigate | Конкретный план действий |
+| `owner` | str | 📋 | stakeholder_id из реестра 3.2 |
+| `linked_bn` | str | 📋 | ID бизнес-потребности (BN-xxx) |
+| `linked_bg` | str | 📋 | ID бизнес-цели (BG-xxx) |
+| `linked_req` | str | 📋 | ID требования (FR-xxx, BR-xxx...) |
 
-`risk_id` and `risk_score` are computed automatically.
+`risk_id` и `risk_score` вычисляются автоматически.
 
 ---
 
-## 10. Interpreting `run_risk_matrix` results
+## 10. Интерпретация результатов `run_risk_matrix`
 
-After calling `run_risk_matrix`, look at:
+После вызова `run_risk_matrix` смотри на:
 
 **`cumulative_profile`:**
-- `high_risks_count` — risks with score ≥ max_acceptable_score
-- `above_threshold` — same as high_risks_count (for compatibility)
-- `total_score` — sum of all scores (the overall "weight" of the risk profile)
-- `avg_score` — average score
+- `high_risks_count` — риски с score ≥ max_acceptable_score
+- `above_threshold` — то же что high_risks_count (для совместимости)
+- `total_score` — сумма всех score (общая «тяжесть» рискового профиля)
+- `avg_score` — средний score
 
-**Signals for the BA:**
-- `high_risks_count = 0` → clean profile, can proceed
-- `high_risks_count ≥ 1 and ≤ 2` → proceed_with_mitigation
-- `high_risks_count ≥ 3` → serious conversation with the sponsor needed
-- `total_score > 100` → high cumulative load even with few high risks
+**Сигналы для BA:**
+- `high_risks_count = 0` → профиль чистый, можно proceed
+- `high_risks_count ≥ 1 и ≤ 2` → proceed_with_mitigation
+- `high_risks_count ≥ 3` → серьёзный разговор со спонсором
+- `total_score > 100` → высокая суммарная нагрузка даже при малом числе high-рисков
 
 ---
 
-## 11. Pipeline for task 6.3
+## 11. Pipeline задачи 6.3
 
 ```
-scope_risk_assessment          # fix the scope: type, depth, sources
+scope_risk_assessment          # зафиксировать скоуп: тип, глубина, источники
         ↓
-import_risks_from_context      # auto-import drafts from 6.1, 6.2, 4.2
+import_risks_from_context      # автоимпорт черновиков из 6.1, 6.2, 4.2
         ↓
-add_risk × N                   # add risks (drafts + new ones)
+add_risk × N                   # добавить риски (черновики + новые)
         ↓
 set_risk_tolerance             # tolerance level + max_acceptable_score
         ↓
-run_risk_matrix                # matrix with zones, cumulative profile
+run_risk_matrix                # матрица с зонами, cumulative profile
         ↓
-generate_recommendation        # recommendation type + narrative (Claude writes it)
+generate_recommendation        # тип рекомендации + narrative (Claude пишет)
         ↓
-save_risk_assessment           # Markdown report + JSON + opt. push to 5.1
+save_risk_assessment           # Markdown отчёт + JSON + опц. push в 5.1
 ```

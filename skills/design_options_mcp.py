@@ -23,10 +23,10 @@ Reads:  {project}_traceability_repo.json (5.1) — dependency graph and prioriti
         {project}_change_strategy.json (6.4 surrogate) — constraints (optional)
 Writes: {project}_design_options.json
         {project}_change_strategy.json
-        7_5_design_options_*.md (via save_artifact)
-Output: Design Options Report → 7.6 (Analyze Value and Recommend Solution)
+        7_5_design_options_*.md (через save_artifact)
+Выход: Design Options Report → 7.6 (Analyze Value and Recommend Solution)
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -48,17 +48,17 @@ CHANGE_STRATEGY_FILENAME = "change_strategy.json"
 CONTEXT_FILENAME = "business_context.json"
 ARCHITECTURE_FILENAME = "architecture.json"
 
-# Valid values
+# Допустимые значения
 VALID_APPROACHES = {"build", "buy", "hybrid"}
 VALID_CHANGE_TYPES = {"technology", "process", "organizational", "hybrid"}
 VALID_VERSIONS = {"v1", "v2", "out_of_scope"}
 VALID_OPPORTUNITY_TYPES = {"efficiency", "information_access", "new_capability"}
 
-# Mapping of MoSCoW/WSJF priorities to versions (ADR-041)
+# Маппинг MoSCoW/WSJF приоритетов на версии (ADR-041)
 PRIORITY_TO_VERSION = {
     "Must": "v1",
     "High": "v1",
-    "Should": "v1",   # Should → v1, but the BA can override to v2
+    "Should": "v1",   # Should → v1, но BA может переопределить на v2
     "Medium": "v2",
     "Could": "v2",
     "Low": "v2",
@@ -73,16 +73,16 @@ PRIORITY_TO_VERSION = {
 
 # Default comparison criteria
 DEFAULT_CRITERIA = [
-    {"id": "cost", "label": "Implementation cost", "weight": "high"},
-    {"id": "speed", "label": "Launch speed (time-to-market)", "weight": "high"},
-    {"id": "risk", "label": "Total risk", "weight": "medium"},
-    {"id": "req_coverage", "label": "Must requirements coverage", "weight": "high"},
-    {"id": "flexibility", "label": "Flexibility (changes after launch)", "weight": "medium"},
+    {"id": "cost", "label": "Стоимость реализации", "weight": "high"},
+    {"id": "speed", "label": "Скорость запуска (time-to-market)", "weight": "high"},
+    {"id": "risk", "label": "Совокупный риск", "weight": "medium"},
+    {"id": "req_coverage", "label": "Покрытие Must-требований", "weight": "high"},
+    {"id": "flexibility", "label": "Гибкость (изменения после запуска)", "weight": "medium"},
 ]
 
 
 # ---------------------------------------------------------------------------
-# Utilities — paths and file loading
+# Утилиты — пути и загрузка файлов
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -143,7 +143,7 @@ def _load_design_options(project_id: str) -> dict:
 def _save_design_options(data: dict) -> None:
     project_id = data["project_id"]
     _save_json(_design_options_path(project_id), data)
-    logger.info(f"Design options saved: {_design_options_path(project_id)}")
+    logger.info(f"Design options сохранены: {_design_options_path(project_id)}")
 
 
 def _load_change_strategy(project_id: str) -> Optional[dict]:
@@ -215,7 +215,7 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 
 
 def _get_depends_links(repo: dict) -> list:
-    """Returns a list of (from, to) for links of type depends."""
+    """Возвращает список (from, to) для связей типа depends."""
     return [
         (link["from"], link["to"])
         for link in repo.get("links", [])
@@ -224,7 +224,7 @@ def _get_depends_links(repo: dict) -> list:
 
 
 # ---------------------------------------------------------------------------
-# 7.5.1 — set_change_strategy (surrogate for 6.4, ADR-039)
+# 7.5.1 — set_change_strategy (суррогат 6.4, ADR-039)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -243,8 +243,8 @@ def set_change_strategy(
     (Strategy Analysis) is implemented; task 6.4 writes the SAME file with a richer
     contract, and a real 6.4 contract is never clobbered (see the guard below).
 
-    The Change Strategy defines the strategic context for Design Options:
-    what kind of change is happening, what is in scope, which constraints apply.
+    Change Strategy определяет стратегический контекст для Design Options:
+    какой тип изменения происходит, что входит в скоуп, какие ограничения действуют.
 
     Args:
         project_id:  Project identifier.
@@ -282,7 +282,7 @@ def set_change_strategy(
         notes:       Additional notes (optional).
 
     Returns:
-        Confirmation with the saved change strategy.
+        Подтверждение с сохранённой стратегией изменения.
     """
     logger.info(f"set_change_strategy: project_id='{project_id}', change_type='{change_type}'")
 
@@ -320,13 +320,13 @@ def set_change_strategy(
         )
 
     if not scope.strip():
-        return "❌ scope cannot be empty — describe what's in and out of the change scope."
+        return "❌ scope не может быть пустым — опиши что входит и что не входит в скоуп изменения."
 
     if not constraints.strip():
-        return "❌ constraints cannot be empty — specify at least one key constraint."
+        return "❌ constraints не может быть пустым — укажи хотя бы одно ключевое ограничение."
 
     if not timeline.strip():
-        return "❌ timeline cannot be empty — specify a timeline or phases."
+        return "❌ timeline не может быть пустым — укажи временные рамки или фазы."
 
     path = _change_strategy_path(project_id)
     is_update = os.path.exists(path)
@@ -345,30 +345,30 @@ def set_change_strategy(
     os.makedirs(os.path.dirname(path), exist_ok=True)
     write_json_artifact(path, strategy)
 
-    # Update the reference in design_options if the file exists
+    # Обновляем ссылку в design_options если файл существует
     do_data = _load_design_options(project_id)
     do_data["change_strategy_ref"] = path
     _save_design_options(do_data)
 
-    action = "updated" if is_update else "recorded"
+    action = "обновлена" if is_update else "зафиксирована"
 
     lines = [
-        f"✅ Change Strategy **{action}** — project `{project_id}`",
+        f"✅ Change Strategy **{action}** — проект `{project_id}`",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Change type | `{change_type}` |",
-        f"| Date | {date.today()} |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Тип изменения | `{change_type}` |",
+        f"| Дата | {date.today()} |",
         "",
-        f"**Scope:** {scope}",
+        f"**Скоуп:** {scope}",
         "",
-        f"**Constraints:** {constraints}",
+        f"**Ограничения:** {constraints}",
         "",
-        f"**Timeline:** {timeline}",
+        f"**Временные рамки:** {timeline}",
     ]
 
     if notes:
-        lines += ["", f"**Notes:** {notes}"]
+        lines += ["", f"**Примечания:** {notes}"]
 
     lines += [
         "",
@@ -377,8 +377,8 @@ def set_change_strategy(
         "",
         "---",
         "",
-        "**Next step:**",
-        f"`create_design_option(project_id='{project_id}', option_id='OPT-001', ...)` — create the first design option.",
+        "**Следующий шаг:**",
+        f"`create_design_option(project_id='{project_id}', option_id='OPT-001', ...)` — создай первый вариант дизайна.",
     ]
 
     return "\n".join(lines)
@@ -406,36 +406,36 @@ def create_design_option(
     options accumulate in {project}_design_options.json.
     Idempotent by option_id: calling again updates the existing option.
 
-    It's recommended to create 2–3 options for comparison:
-    usually Build (custom development), Buy (off-the-shelf) and Hybrid (a mix).
+    Рекомендуется создавать 2–3 варианта для сравнения:
+    обычно Build (разработка), Buy (готовое решение) и Hybrid (комбинация).
 
     Args:
-        project_id:      Project identifier.
-        option_id:       Unique option ID: OPT-001, OPT-002, OPT-003.
-        title:           Option title: "Build our own system", "Salesforce CRM".
-        approach:        Approach: build | buy | hybrid.
-                         build — build from scratch.
-                         buy — off-the-shelf solution / SaaS.
-                         hybrid — a mix of custom and off-the-shelf.
-        components_json: JSON list of solution components.
-                         Example: '["Backend API", "Web UI", "PostgreSQL", "Integration layer"]'
-        improvement_opportunities_json: JSON list of business improvement opportunities.
-                         Each item: {"type": "efficiency|information_access|new_capability", "description": "..."}
-                         Example: '[{"type": "efficiency", "description": "Automated report generation"}]'
-        effectiveness_measures_json: JSON list of solution effectiveness measures.
-                         Example: '["Reduce request processing time from 2 h to 15 min", "NPS > 8"]'
-        notes:           Additional notes on the option (optional).
-        vendor_notes:    Vendor assessment — for buy/hybrid approaches (optional).
-                         Include: vendor name, cost, constraints, references.
+        project_id:      Идентификатор проекта.
+        option_id:       Уникальный ID варианта: OPT-001, OPT-002, OPT-003.
+        title:           Название варианта: «Разработка собственной системы», «Salesforce CRM».
+        approach:        Подход: build | buy | hybrid.
+                         build — разработка с нуля.
+                         buy — готовое решение / SaaS.
+                         hybrid — комбинация своего и готового.
+        components_json: JSON-список компонентов решения.
+                         Пример: '["Backend API", "Web UI", "PostgreSQL", "Интеграционный слой"]'
+        improvement_opportunities_json: JSON-список возможностей улучшения бизнеса.
+                         Каждый элемент: {"type": "efficiency|information_access|new_capability", "description": "..."}
+                         Пример: '[{"type": "efficiency", "description": "Автоматическое формирование отчётов"}]'
+        effectiveness_measures_json: JSON-список метрик эффективности решения.
+                         Пример: '["Снижение времени обработки заявки с 2 ч до 15 мин", "NPS > 8"]'
+        notes:           Дополнительные заметки по варианту (необязательно).
+        vendor_notes:    Оценка вендора — для подходов buy/hybrid (необязательно).
+                         Включи: название вендора, стоимость, ограничения, референсы.
 
     Returns:
-        Confirmation of the created/updated design option.
+        Подтверждение создания/обновления варианта дизайна.
     """
     logger.info(f"create_design_option: project_id='{project_id}', option_id='{option_id}'")
 
-    # Validation
+    # Валидация
     if not option_id.strip():
-        return "❌ option_id cannot be empty. Use the format: OPT-001, OPT-002."
+        return "❌ option_id не может быть пустым. Используй формат: OPT-001, OPT-002."
 
     if approach not in VALID_APPROACHES:
         return (
@@ -444,33 +444,33 @@ def create_design_option(
         )
 
     if not title.strip():
-        return "❌ title cannot be empty — provide an option title."
+        return "❌ title не может быть пустым — укажи название варианта."
 
-    # Parse components
+    # Парсинг components
     try:
         components = json.loads(components_json)
         if not isinstance(components, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
         if not components:
-            raise ValueError("The components list must not be empty")
+            raise ValueError("Список компонентов не должен быть пустым")
     except (json.JSONDecodeError, ValueError) as e:
         return (
             f"❌ Failed to parse components_json: {e}\n\n"
             f"Expected a non-empty JSON list: '[\"Backend API\", \"Web UI\"]'"
         )
 
-    # Parse improvement_opportunities
+    # Парсинг improvement_opportunities
     try:
         opportunities = json.loads(improvement_opportunities_json)
         if not isinstance(opportunities, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
             f"❌ Failed to parse improvement_opportunities_json: {e}\n\n"
             f"Expected a JSON list: '[{{\"type\": \"efficiency\", \"description\": \"...\"}}]'"
         )
 
-    # Validate opportunity types
+    # Валидация типов opportunities
     invalid_types = [
         o.get("type", "") for o in opportunities
         if isinstance(o, dict) and o.get("type", "") not in VALID_OPPORTUNITY_TYPES
@@ -481,18 +481,18 @@ def create_design_option(
             f"Valid types: {', '.join(sorted(VALID_OPPORTUNITY_TYPES))}"
         )
 
-    # Parse effectiveness_measures
+    # Парсинг effectiveness_measures
     try:
         measures = json.loads(effectiveness_measures_json)
         if not isinstance(measures, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
             f"❌ Failed to parse effectiveness_measures_json: {e}\n\n"
             f"Expected a JSON list: '[\"Reduce processing time by 40%\"]'"
         )
 
-    # Warning: vendor_notes is recommended for buy/hybrid
+    # Предупреждение: vendor_notes рекомендуется для buy/hybrid
     vendor_warning = ""
     if approach in ("buy", "hybrid") and not vendor_notes.strip():
         vendor_warning = (
@@ -500,7 +500,7 @@ def create_design_option(
             "— specify the vendor, cost, constraints, references."
         ).format(approach=approach)
 
-    # Load and update
+    # Загружаем и обновляем
     do_data = _load_design_options(project_id)
     existing_idx = next((i for i, o in enumerate(do_data["options"]) if o["option_id"] == option_id), -1)
     is_update = existing_idx >= 0
@@ -525,34 +525,34 @@ def create_design_option(
 
     _save_design_options(do_data)
 
-    action = "updated" if is_update else "created"
+    action = "обновлён" if is_update else "создан"
     total_options = len(do_data["options"])
 
     lines = [
-        f"✅ Design option **{action}**: `{option_id}`",
+        f"✅ Вариант дизайна **{action}**: `{option_id}`",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
+        f"| Поле | Значение |",
+        f"|------|----------|",
         f"| ID | `{option_id}` |",
-        f"| Title | {title} |",
-        f"| Approach | `{approach}` |",
-        f"| Components | {len(components)} |",
-        f"| Improvement opportunities | {len(opportunities)} |",
-        f"| Effectiveness measures | {len(measures)} |",
-        f"| Total options in file | {total_options} |",
+        f"| Название | {title} |",
+        f"| Подход | `{approach}` |",
+        f"| Компоненты | {len(components)} |",
+        f"| Возможности улучшения | {len(opportunities)} |",
+        f"| Метрики эффективности | {len(measures)} |",
+        f"| Всего вариантов в файле | {total_options} |",
         "",
-        "**Components:**",
+        "**Компоненты:**",
     ]
 
     for c in components:
         lines.append(f"- {c}")
 
     if opportunities:
-        lines += ["", "**Business improvement opportunities:**", ""]
+        lines += ["", "**Возможности улучшения бизнеса:**", ""]
         type_icons = {
-            "efficiency": "⚡ Efficiency",
-            "information_access": "📊 Information access",
-            "new_capability": "🚀 New capability",
+            "efficiency": "⚡ Эффективность",
+            "information_access": "📊 Доступ к информации",
+            "new_capability": "🚀 Новая возможность",
         }
         for opp in opportunities:
             t = opp.get("type", "")
@@ -560,12 +560,12 @@ def create_design_option(
             lines.append(f"- **{label}:** {opp.get('description', '')}")
 
     if measures:
-        lines += ["", "**Effectiveness measures:**"]
+        lines += ["", "**Метрики эффективности:**"]
         for m in measures:
             lines.append(f"- {m}")
 
     if vendor_notes:
-        lines += ["", f"**Vendor:** {vendor_notes}"]
+        lines += ["", f"**Вендор:** {vendor_notes}"]
 
     if vendor_warning:
         lines.append(vendor_warning)
@@ -574,16 +574,16 @@ def create_design_option(
         "",
         "---",
         "",
-        "**Next steps:**",
+        "**Следующие шаги:**",
     ]
 
     if total_options < 2:
         lines.append(
-            f"`create_design_option(project_id='{project_id}', option_id='OPT-{total_options + 1:03d}', ...)` — create another option for comparison."
+            f"`create_design_option(project_id='{project_id}', option_id='OPT-{total_options + 1:03d}', ...)` — создай ещё вариант для сравнения."
         )
     else:
         lines.append(
-            f"`allocate_requirements(project_id='{project_id}', option_id='{option_id}', auto_suggest=True)` — allocate req across versions."
+            f"`allocate_requirements(project_id='{project_id}', option_id='{option_id}', auto_suggest=True)` — распредели req по версиям."
         )
 
     return "\n".join(lines)
@@ -606,34 +606,34 @@ def allocate_requirements(
     reads priorities from the 5.1 repository, proposes an allocation,
     the BA confirms it or passes overrides via assignments_json.
 
-    Versions: v1 (MVP) / v2 (next phase) / out_of_scope (out of the project).
+    Версии: v1 (MVP) / v2 (следующая фаза) / out_of_scope (вне проекта).
 
-    auto_suggest algorithm (simple version):
+    Алгоритм auto_suggest (простой вариант):
       Must/High → v1
-      Should → v1 (the BA can override to v2)
+      Should → v1 (BA может переопределить на v2)
       Could/Medium → v2
       Won't/Low → out_of_scope
-      No priority → warning, the BA decides manually
+      Без приоритета → предупреждение, BA решает вручную
 
-    After confirmation — checks depends conflicts in the 5.1 graph:
-    if req A (v1) depends on req B (v2) — a warning.
+    После утверждения — проверяет depends-конфликты в графе 5.1:
+    если req A (v1) depends от req B (v2) — предупреждение.
 
     Args:
-        project_id:       Project identifier.
-        option_id:        Design option ID (from create_design_option).
-        assignments_json: JSON list of manual assignments (override auto_suggest).
-                          Format: '[{"req_id": "FR-001", "version": "v1", "rationale": "..."}]'
-                          Versions: v1 | v2 | out_of_scope.
-                          Pass only the req you want to override.
-        auto_suggest:     True — first propose an allocation by priority (recommended).
-                          False — only record assignments_json without auto-suggestion.
+        project_id:       Идентификатор проекта.
+        option_id:        ID варианта дизайна (из create_design_option).
+        assignments_json: JSON-список ручных назначений (переопределяют auto_suggest).
+                          Формат: '[{"req_id": "FR-001", "version": "v1", "rationale": "..."}]'
+                          Версии: v1 | v2 | out_of_scope.
+                          Передавай только те req, которые хочешь переопределить.
+        auto_suggest:     True — сначала предложить распределение по приоритетам (рекомендуется).
+                          False — только записать assignments_json без авто-предложения.
 
     Returns:
-        An allocation map with the proposal / result + warnings about depends conflicts.
+        Allocation map с предложением / результатом + предупреждения о depends-конфликтах.
     """
     logger.info(f"allocate_requirements: project_id='{project_id}', option_id='{option_id}'")
 
-    # Check option_id
+    # Проверяем option_id
     do_data = _load_design_options(project_id)
     option = next((o for o in do_data["options"] if o["option_id"] == option_id), None)
     if option is None:
@@ -643,11 +643,11 @@ def allocate_requirements(
             f"First call `create_design_option`."
         )
 
-    # Parse assignments
+    # Парсинг assignments
     try:
         assignments_list = json.loads(assignments_json) if assignments_json.strip() else []
         if not isinstance(assignments_list, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
             f"❌ Failed to parse assignments_json: {e}\n\n"
@@ -655,7 +655,7 @@ def allocate_requirements(
             f"Or pass an empty list '[]' to use auto_suggest only."
         )
 
-    # Validate assignments
+    # Валидация assignments
     invalid_versions = [
         a.get("version", "") for a in assignments_list
         if isinstance(a, dict) and a.get("version", "") not in VALID_VERSIONS
@@ -672,7 +672,7 @@ def allocate_requirements(
         if isinstance(a, dict) and "req_id" in a and "version" in a
     }
 
-    # Load the 5.1 repository
+    # Загружаем репозиторий 5.1
     repo = _load_repo(project_id)
     # Role filter from common.py: the hand-written set {business, test,
     # change_request} predated the 6.1/6.2/6.3/6.4 node types, so goals, needs,
@@ -690,18 +690,18 @@ def allocate_requirements(
         )
 
     lines = [
-        f"<!-- BABOK 7.5 — Allocation | Project: {project_id} | Option: {option_id} | {date.today()} -->",
+        f"<!-- BABOK 7.5 — Allocation | Проект: {project_id} | Вариант: {option_id} | {date.today()} -->",
         "",
-        f"# 📦 Requirements allocation — {option_id}: {option['title']}",
+        f"# 📦 Allocation требований — {option_id}: {option['title']}",
         "",
-        f"**Project:** {project_id}  ",
-        f"**Option:** {option_id} — {option['title']} (`{option['approach']}`)  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_id}  ",
+        f"**Вариант:** {option_id} — {option['title']} (`{option['approach']}`)  ",
+        f"**Дата:** {date.today()}",
         "",
     ]
 
     # ------------------------------------------------------------------
-    # auto_suggest: propose allocation by priority
+    # auto_suggest: предлагаем распределение по приоритетам
     # ------------------------------------------------------------------
 
     no_priority_reqs = []
@@ -712,7 +712,7 @@ def allocate_requirements(
             req_id = req["id"]
             priority = req.get("priority", "")
 
-            # Manual override takes precedence
+            # Ручное переопределение имеет приоритет
             if req_id in assignments_map:
                 suggested[req_id] = {
                     "version": assignments_map[req_id]["version"],
@@ -721,7 +721,7 @@ def allocate_requirements(
                 }
                 continue
 
-            # Auto suggestion by priority
+            # Авто-предложение по приоритету
             if priority and priority in PRIORITY_TO_VERSION:
                 suggested[req_id] = {
                     "version": PRIORITY_TO_VERSION[priority],
@@ -732,7 +732,7 @@ def allocate_requirements(
                 no_priority_reqs.append(req)
 
     else:
-        # Manual assignments only
+        # Только ручные назначения
         for req_id, data in assignments_map.items():
             suggested[req_id] = {
                 "version": data["version"],
@@ -741,7 +741,7 @@ def allocate_requirements(
             }
 
     # ------------------------------------------------------------------
-    # Build the allocation map
+    # Формируем allocation map
     # ------------------------------------------------------------------
 
     allocation_map: dict = {}
@@ -753,7 +753,7 @@ def allocate_requirements(
             "source": data["source"],
         }
 
-    # Per-version statistics
+    # Статистика по версиям
     version_counts: dict = {"v1": [], "v2": [], "out_of_scope": []}
     auto_count = 0
     manual_count = 0
@@ -767,30 +767,30 @@ def allocate_requirements(
             manual_count += 1
 
     lines += [
-        "## Allocation summary",
+        "## Сводка распределения",
         "",
-        f"| Version | Req count |",
-        f"|---------|-----------|",
+        f"| Версия | Количество req |",
+        f"|--------|---------------|",
         f"| v1 (MVP) | {len(version_counts['v1'])} |",
         f"| v2 (Phase 2) | {len(version_counts['v2'])} |",
         f"| out_of_scope | {len(version_counts['out_of_scope'])} |",
-        f"| ⚠️ Without priority | {len(no_priority_reqs)} |",
-        f"| **Total** | **{len(allocation_map) + len(no_priority_reqs)}** |",
+        f"| ⚠️ Без приоритета | {len(no_priority_reqs)} |",
+        f"| **Всего** | **{len(allocation_map) + len(no_priority_reqs)}** |",
         "",
-        f"_Auto-allocated: {auto_count}, manual override: {manual_count}_",
+        f"_Авто-распределено: {auto_count}, ручное переопределение: {manual_count}_",
         "",
     ]
 
-    # Per-version tables
-    for version_key, version_label in [("v1", "v1 — MVP"), ("v2", "v2 — Phase 2"), ("out_of_scope", "out_of_scope — out of project")]:
+    # Таблицы по версиям
+    for version_key, version_label in [("v1", "v1 — MVP"), ("v2", "v2 — Phase 2"), ("out_of_scope", "out_of_scope — вне проекта")]:
         ids_in_version = version_counts[version_key]
         if not ids_in_version:
             continue
         lines += [
             f"## 📌 {version_label} ({len(ids_in_version)} req)",
             "",
-            "| ID | Type | Title | Priority | Source | Rationale |",
-            "|----|------|-------|----------|--------|-----------|",
+            "| ID | Тип | Название | Приоритет | Источник | Обоснование |",
+            "|----|-----|----------|-----------|----------|-------------|",
         ]
         for req_id in ids_in_version:
             req = next((r for r in all_reqs if r["id"] == req_id), None)
@@ -800,29 +800,29 @@ def allocate_requirements(
                 req_type = req.get("type", "?")
                 source = allocation_map[req_id]["source"]
                 rationale = allocation_map[req_id]["rationale"][:60]
-                source_icon = "✋ manual" if source == "manual" else "🤖 auto"
+                source_icon = "✋ ручн." if source == "manual" else "🤖 авто"
                 lines.append(
                     f"| `{req_id}` | {req_type} | {title_short} | {prio} | {source_icon} | {rationale} |"
                 )
         lines.append("")
 
-    # Req without priority
+    # Req без приоритета
     if no_priority_reqs:
         lines += [
-            "## ⚠️ Requirements without priority",
+            "## ⚠️ Требования без приоритета",
             "",
-            "> These req were not prioritized in task 5.3.",
-            "> The BA must manually assign their version via `assignments_json`.",
+            "> Эти req не были приоритизированы в задаче 5.3.",
+            "> BA должен вручную назначить их версию через `assignments_json`.",
             "",
-            "| ID | Type | Title |",
-            "|----|------|-------|",
+            "| ID | Тип | Название |",
+            "|----|-----|---------|",
         ]
         for req in no_priority_reqs:
             lines.append(f"| `{req['id']}` | {req.get('type', '?')} | {req.get('title', '')[:60]} |")
         lines.append("")
 
     # ------------------------------------------------------------------
-    # Check depends conflicts
+    # Проверка depends-конфликтов
     # ------------------------------------------------------------------
 
     depends_links = _get_depends_links(repo)
@@ -833,12 +833,12 @@ def allocate_requirements(
         to_alloc = allocation_map.get(to_id)
 
         if from_alloc is None or to_alloc is None:
-            continue  # req not in allocation — skip
+            continue  # req не в allocation — пропускаем
 
         from_v = from_alloc["version"]
         to_v = to_alloc["version"]
 
-        # Conflict: req A (v1) depends on req B (v2 or out_of_scope)
+        # Конфликт: req A (v1) depends req B (v2 или out_of_scope)
         version_order = {"v1": 1, "v2": 2, "out_of_scope": 3}
         if version_order.get(from_v, 0) < version_order.get(to_v, 0):
             from_req = _find_req(repo, from_id)
@@ -854,14 +854,14 @@ def allocate_requirements(
 
     if conflicts:
         lines += [
-            "## ⚠️ Conflicts in depends dependencies",
+            "## ⚠️ Конфликты depends-зависимостей",
             "",
-            "> The following req have a conflict: req A (v1) depends on req B (v2/out_of_scope).",
-            "> This means v1 cannot be implemented without B.",
-            "> **Recommended:** move B to v1 or revisit the dependency in 5.1.",
+            "> Следующие req имеют конфликт: req A (v1) depends req B (v2/out_of_scope).",
+            "> Это значит v1 не может быть реализован без B.",
+            "> **Рекомендуется:** переместить B в v1 или пересмотреть зависимость в 5.1.",
             "",
-            "| Req A (earlier) | Version | depends | Req B (dependency) | Version |",
-            "|-----------------|---------|---------|--------------------|---------|",
+            "| Req A (раньше) | Версия | depends | Req B (зависимость) | Версия |",
+            "|----------------|--------|---------|---------------------|--------|",
         ]
         for c in conflicts:
             lines.append(
@@ -870,22 +870,22 @@ def allocate_requirements(
             )
         lines += [
             "",
-            f"_Total conflicts: {len(conflicts)}_",
+            f"_Всего конфликтов: {len(conflicts)}_",
             "",
         ]
     else:
         lines += [
-            "## ✅ Dependency conflicts",
+            "## ✅ Конфликты зависимостей",
             "",
-            "No depends-dependency violations between versions were found.",
+            "Нарушений depends-зависимостей между версиями не обнаружено.",
             "",
         ]
 
     # ------------------------------------------------------------------
-    # Save allocation to design_options.json
+    # Сохраняем allocation в design_options.json
     # ------------------------------------------------------------------
 
-    # Update only req from the current allocation (don't overwrite other options)
+    # Обновляем только req из текущего allocation (не перетираем другие варианты)
     for req_id, data in allocation_map.items():
         do_data["allocation"][req_id] = data
 
@@ -894,25 +894,25 @@ def allocate_requirements(
     lines += [
         "---",
         "",
-        f"Allocation for option `{option_id}` saved to `{_safe(project_id)}_design_options.json`.",
+        f"Allocation для варианта `{option_id}` сохранён в `{_safe(project_id)}_design_options.json`.",
         "",
-        "**Next steps:**",
+        "**Следующие шаги:**",
     ]
 
     if no_priority_reqs:
         lines.append(
-            f"1. Assign req without priority manually: pass `assignments_json` with a version choice."
+            f"1. Назначь req без приоритета вручную: передай `assignments_json` с вариантом версии."
         )
 
     if conflicts:
         lines.append(
-            f"{'2' if no_priority_reqs else '1'}. Resolve {len(conflicts)} depends conflict(s): "
-            "move dependencies into the same version or revisit the links in 5.1."
+            f"{'2' if no_priority_reqs else '1'}. Разреши {len(conflicts)} depends-конфликт(ов): "
+            "перемести зависимости в ту же версию или пересмотри связи в 5.1."
         )
 
     lines.append(
         f"{'3' if (no_priority_reqs and conflicts) else '2' if (no_priority_reqs or conflicts) else '1'}. "
-        f"`compare_design_options(project_id='{project_id}')` — compare options after allocation."
+        f"`compare_design_options(project_id='{project_id}')` — сравни варианты после allocation."
     )
 
     return "\n".join(lines)
@@ -929,23 +929,23 @@ def compare_design_options(
     criteria_json: str = "[]",
 ) -> str:
     """
-    BABOK 7.5 — Builds a comparison matrix of all design options against criteria.
-    Reads all options from {project}_design_options.json.
+    BABOK 7.5 — Строит сравнительную матрицу всех вариантов дизайна по критериям.
+    Читает все варианты из {project}_design_options.json.
 
-    Default comparison criteria: cost, speed, risk, req coverage, flexibility.
-    The BA can add custom criteria via criteria_json.
+    Дефолтные критерии сравнения: стоимость, скорость, риски, покрытие req, гибкость.
+    BA может дополнить кастомными критериями через criteria_json.
 
-    Must requirements coverage is computed automatically from allocation data.
+    Покрытие Must-требований рассчитывается автоматически по данным allocation.
 
     Args:
-        project_id:    Project identifier.
-        criteria_json: JSON list of custom comparison criteria (added to the defaults).
-                       Format: '[{"id": "vendor_support", "label": "Vendor support", "weight": "medium"}]'
-                       The default criteria are always included.
-                       Pass '[]' to use only the default criteria.
+        project_id:    Идентификатор проекта.
+        criteria_json: JSON-список кастомных критериев сравнения (дополняет дефолтные).
+                       Формат: '[{"id": "vendor_support", "label": "Поддержка вендора", "weight": "medium"}]'
+                       Дефолтные критерии всегда включаются.
+                       Передай '[]' для использования только дефолтных критериев.
 
     Returns:
-        A Comparison Document: comparison matrix for stakeholders.
+        Comparison Document: сравнительная матрица для стейкхолдеров.
     """
     logger.info(f"compare_design_options: project_id='{project_id}'")
 
@@ -964,11 +964,11 @@ def compare_design_options(
             f"Current options: {len(options)}. Create one more via `create_design_option`."
         )
 
-    # Parse custom criteria
+    # Парсинг кастомных критериев
     try:
         custom_criteria = json.loads(criteria_json) if criteria_json.strip() else []
         if not isinstance(custom_criteria, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
             f"❌ Failed to parse criteria_json: {e}\n\n"
@@ -977,7 +977,7 @@ def compare_design_options(
 
     all_criteria = DEFAULT_CRITERIA + custom_criteria
 
-    # Compute req_coverage automatically
+    # Рассчитываем req_coverage автоматически
     repo = _load_repo(project_id)
     all_reqs = [r for r in repo.get("requirements", []) if r.get("priority") in MUST_PRIORITIES]
     must_count = len(all_reqs)
@@ -986,7 +986,7 @@ def compare_design_options(
     allocation = do_data.get("allocation", {})
 
     def _calc_coverage(option_id: str) -> str:
-        """Computes the % of Must-req in v1 for an option."""
+        """Рассчитывает % Must-req в v1 для варианта."""
         if must_count == 0:
             return "N/A"
         v1_must = sum(
@@ -999,24 +999,24 @@ def compare_design_options(
         return f"{pct}% ({v1_must}/{must_count})"
 
     lines = [
-        f"<!-- BABOK 7.5 — Design Options Comparison | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.5 — Design Options Comparison | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 📊 Design options comparison — {project_id}",
+        f"# 📊 Сравнение вариантов дизайна — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Options:** {len(options)}  ",
-        f"**Criteria:** {len(all_criteria)} ({len(DEFAULT_CRITERIA)} default + {len(custom_criteria)} custom)",
+        f"**Дата:** {date.today()}  ",
+        f"**Вариантов:** {len(options)}  ",
+        f"**Критериев:** {len(all_criteria)} ({len(DEFAULT_CRITERIA)} дефолтных + {len(custom_criteria)} кастомных)",
         "",
         "---",
         "",
     ]
 
-    # Brief description of the options
+    # Краткое описание вариантов
     lines += [
-        "## Design options",
+        "## Варианты дизайна",
         "",
-        "| ID | Title | Approach | Components | Improvement opportunities |",
-        "|----|-------|----------|------------|---------------------------|",
+        "| ID | Название | Подход | Компоненты | Возможности улучшения |",
+        "|----|----------|--------|-----------|----------------------|",
     ]
 
     for opt in options:
@@ -1030,21 +1030,21 @@ def compare_design_options(
 
     lines += ["", "---", ""]
 
-    # Comparison matrix
+    # Сравнительная матрица
     weight_icons = {"high": "🔴", "medium": "🟡", "low": "🟢"}
 
-    # Table header
+    # Заголовок таблицы
     opt_headers = " | ".join(f"`{o['option_id']}`" for o in options)
     sep_cols = " | ".join(["---"] * len(options))
 
     lines += [
-        "## Comparison matrix",
+        "## Сравнительная матрица",
         "",
-        "> ⚠️ **Req coverage** is computed automatically from allocation data.",
-        "> The other criteria are the BA's qualitative assessment. Fill in the matrix for your project.",
+        "> ⚠️ **Покрытие req** рассчитано автоматически по данным allocation.",
+        "> Остальные критерии — качественная оценка BA. Заполни матрицу по своему проекту.",
         "",
-        f"| Criterion | Weight | {opt_headers} |",
-        f"|-----------|--------|{sep_cols}|",
+        f"| Критерий | Вес | {opt_headers} |",
+        f"|----------|-----|{sep_cols}|",
     ]
 
     for crit in all_criteria:
@@ -1058,22 +1058,22 @@ def compare_design_options(
             if crit_id == "req_coverage":
                 cells.append(_calc_coverage(opt["option_id"]))
             else:
-                cells.append("_—_")  # the BA fills this in manually
+                cells.append("_—_")  # BA заполняет вручную
 
         cells_str = " | ".join(cells)
         lines.append(f"| {crit_label} | {weight_icon} {weight} | {cells_str} |")
 
     lines += [
         "",
-        "> **How to read:** 🔴 high — key criterion, 🟡 medium — important, 🟢 low — nice to have.",
+        "> **Как читать:** 🔴 high — ключевой критерий, 🟡 medium — важный, 🟢 low — желательный.",
         "",
         "---",
         "",
     ]
 
-    # Details per option
+    # Детали по каждому варианту
     lines += [
-        "## Option details",
+        "## Детали вариантов",
         "",
     ]
 
@@ -1083,25 +1083,25 @@ def compare_design_options(
         lines += [
             f"### {icon} {opt['option_id']} — {opt['title']}",
             "",
-            f"**Approach:** `{opt.get('approach', '?')}`  ",
-            f"**Created:** {opt.get('created', '—')}",
+            f"**Подход:** `{opt.get('approach', '?')}`  ",
+            f"**Создан:** {opt.get('created', '—')}",
             "",
         ]
 
         components = opt.get("components", [])
         if components:
-            lines.append("**Components:**")
+            lines.append("**Компоненты:**")
             for c in components:
                 lines.append(f"- {c}")
             lines.append("")
 
         opportunities = opt.get("improvement_opportunities", [])
         if opportunities:
-            lines.append("**Business improvement opportunities:**")
+            lines.append("**Возможности улучшения бизнеса:**")
             type_labels = {
-                "efficiency": "⚡ Efficiency",
-                "information_access": "📊 Information access",
-                "new_capability": "🚀 New capability",
+                "efficiency": "⚡ Эффективность",
+                "information_access": "📊 Доступ к информации",
+                "new_capability": "🚀 Новая возможность",
             }
             for opp in opportunities:
                 t = opp.get("type", "")
@@ -1111,18 +1111,18 @@ def compare_design_options(
 
         measures = opt.get("effectiveness_measures", [])
         if measures:
-            lines.append("**Effectiveness measures:**")
+            lines.append("**Метрики эффективности:**")
             for m in measures:
                 lines.append(f"- {m}")
             lines.append("")
 
         if opt.get("vendor_notes"):
-            lines += [f"**Vendor:** {opt['vendor_notes']}", ""]
+            lines += [f"**Вендор:** {opt['vendor_notes']}", ""]
 
         if opt.get("notes"):
-            lines += [f"**Notes:** {opt['notes']}", ""]
+            lines += [f"**Примечания:** {opt['notes']}", ""]
 
-        # Allocation summary for the option
+        # Allocation summary для варианта
         v1_ids = [rid for rid, d in allocation.items() if d.get("option_id") == opt["option_id"] and d.get("version") == "v1"]
         v2_ids = [rid for rid, d in allocation.items() if d.get("option_id") == opt["option_id"] and d.get("version") == "v2"]
         oos_ids = [rid for rid, d in allocation.items() if d.get("option_id") == opt["option_id"] and d.get("version") == "out_of_scope"]
@@ -1130,24 +1130,24 @@ def compare_design_options(
 
         lines += [
             f"**Allocation:** v1: {len(v1_ids)} req | v2: {len(v2_ids)} req | out_of_scope: {len(oos_ids)} req  ",
-            f"**Must coverage:** {coverage_str}",
+            f"**Покрытие Must:** {coverage_str}",
             "",
         ]
 
     lines += [
         "---",
         "",
-        "## Artifact handoff",
+        "## Передача артефакта",
         "",
-        "| Direction | Purpose |",
-        "|-----------|---------|",
-        "| → **4.4** Communicate | Presentation for stakeholders: fill in the matrix with assessments |",
-        "| → **7.5** `save_design_options_report` | Final report with a recommendation |",
+        "| Направление | Назначение |",
+        "|-------------|-----------|",
+        "| → **4.4** Communicate | Presentation для стейкхолдеров: заполни матрицу оценками |",
+        "| → **7.5** `save_design_options_report` | Финальный отчёт с рекомендацией |",
         "",
         "---",
         "",
-        "**Next step:**",
-        f"`save_design_options_report(project_id='{project_id}', recommended_option_id='OPT-XXX')` — save the final Design Options Report.",
+        "**Следующий шаг:**",
+        f"`save_design_options_report(project_id='{project_id}', recommended_option_id='OPT-XXX')` — сохрани финальный Design Options Report.",
     ]
 
     return "\n".join(lines)
@@ -1165,22 +1165,22 @@ def save_design_options_report(
     notes: str = "",
 ) -> str:
     """
-    BABOK 7.5 — Generates the final Design Options Report.
-    Saves it via save_artifact (prefix 7_5_design_options).
-    Handed off to 7.6 (Analyze Value and Recommend Solution).
+    BABOK 7.5 — Генерирует финальный Design Options Report.
+    Сохраняет через save_artifact (префикс 7_5_design_options).
+    Передаётся в 7.6 (Analyze Value and Recommend Solution).
 
-    Includes: all design options, allocation map, improvement opportunities,
-    context (change_strategy, business_context, architecture),
-    an optional preliminary BA recommendation.
+    Включает: все варианты дизайна, allocation map, improvement opportunities,
+    контекст (change_strategy, business_context, architecture),
+    опциональную предварительную рекомендацию BA.
 
     Args:
-        project_id:              Project identifier.
-        recommended_option_id:   Optional ID of the recommended option (e.g., 'OPT-002').
-                                 This is the BA's preliminary conclusion — the final recommendation is in 7.6.
-        notes:                   Additional notes for the report (optional).
+        project_id:              Идентификатор проекта.
+        recommended_option_id:   Опциональный ID рекомендуемого варианта (например, 'OPT-002').
+                                 Это предварительный вывод BA — финальная рекомендация в 7.6.
+        notes:                   Дополнительные заметки к отчёту (необязательно).
 
     Returns:
-        The Design Options Report in Markdown + a confirmation of saving via save_artifact.
+        Design Options Report в Markdown + подтверждение сохранения через save_artifact.
     """
     logger.info(f"save_design_options_report: project_id='{project_id}'")
 
@@ -1193,7 +1193,7 @@ def save_design_options_report(
             f"Create options via `create_design_option` before generating the report."
         )
 
-    # Validate recommended_option_id
+    # Валидация recommended_option_id
     if recommended_option_id:
         option_ids = [o["option_id"] for o in options]
         if recommended_option_id not in option_ids:
@@ -1202,7 +1202,7 @@ def save_design_options_report(
                 f"Existing options: {', '.join(option_ids)}"
             )
 
-    # Load context
+    # Загружаем контекст
     strategy = _load_change_strategy(project_id)
     ctx = _load_context(project_id)
     arch = _load_architecture(project_id)
@@ -1227,31 +1227,31 @@ def save_design_options_report(
         return (v1_must, len(must_reqs), f"{pct}%")
 
     # ------------------------------------------------------------------
-    # Generate the Design Options Report
+    # Генерируем Design Options Report
     # ------------------------------------------------------------------
 
     doc_lines = [
-        f"<!-- BABOK 7.5 — Design Options Report | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.5 — Design Options Report | Проект: {project_id} | {date.today()} -->",
         "",
         f"# 🎨 Design Options Report",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Project | {project_id} |",
-        f"| Date | {date.today()} |",
-        f"| Design options | {len(options)} |",
-        f"| Allocated req | {len(allocation)} |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Проект | {project_id} |",
+        f"| Дата | {date.today()} |",
+        f"| Вариантов дизайна | {len(options)} |",
+        f"| Распределено req | {len(allocation)} |",
     ]
 
     if recommended_option_id:
         rec_opt = next((o for o in options if o["option_id"] == recommended_option_id), None)
         rec_title = rec_opt["title"] if rec_opt else recommended_option_id
-        doc_lines.append(f"| ⭐ Preliminary recommendation | `{recommended_option_id}` — {rec_title} |")
+        doc_lines.append(f"| ⭐ Предварительная рекомендация | `{recommended_option_id}` — {rec_title} |")
 
     doc_lines += [""]
 
     if notes:
-        doc_lines += [f"**Notes:** {notes}", ""]
+        doc_lines += [f"**Примечания:** {notes}", ""]
 
     doc_lines += ["---", ""]
 
@@ -1273,7 +1273,7 @@ def save_design_options_report(
         ]
     else:
         doc_lines += [
-            "> ℹ️ **Change Strategy is not set.** For a complete report it's recommended to call `set_change_strategy`.",
+            "> ℹ️ **Change Strategy не задана.** Для полноты отчёта рекомендуется вызвать `set_change_strategy`.",
             "",
         ]
 
@@ -1282,16 +1282,16 @@ def save_design_options_report(
         goals = ctx.get("business_goals", [])
         future_state = ctx.get("future_state", "")
         doc_lines += [
-            "## Business context (7.3)",
+            "## Бизнес-контекст (7.3)",
             "",
         ]
         if future_state:
             doc_lines += [f"**Future State:** {future_state}", ""]
         if goals:
             doc_lines += [
-                "**Business goals:**",
+                "**Бизнес-цели:**",
                 "",
-                "| ID | Goal |",
+                "| ID | Цель |",
                 "|----|------|",
             ]
             for g in goals[:10]:
@@ -1304,24 +1304,24 @@ def save_design_options_report(
         critical_count = len(gaps.get("critical", []))
         warning_count = len(gaps.get("warning", []))
         doc_lines += [
-            "## Architecture context (7.4)",
+            "## Архитектурный контекст (7.4)",
             "",
             f"| Viewpoints | Critical gaps | Warning gaps |",
-            f"|------------|---------------|--------------|",
+            f"|------------|--------------|-------------|",
             f"| {len(arch.get('viewpoints', {}))} | {critical_count} | {warning_count} |",
             "",
         ]
         if critical_count > 0:
             doc_lines += [
-                "> ⚠️ **There are critical architecture gaps.** It's recommended to resolve them before 7.6.",
+                "> ⚠️ **Есть критические архитектурные разрывы.** Рекомендуется устранить перед 7.6.",
                 "",
             ]
 
-    # Design options
+    # Варианты дизайна
     doc_lines += [
         "---",
         "",
-        "## Design options",
+        "## Варианты дизайна",
         "",
     ]
 
@@ -1330,7 +1330,7 @@ def save_design_options_report(
     for opt in options:
         opt_id = opt["option_id"]
         is_recommended = opt_id == recommended_option_id
-        rec_marker = " ⭐ **RECOMMENDED**" if is_recommended else ""
+        rec_marker = " ⭐ **РЕКОМЕНДУЕТСЯ**" if is_recommended else ""
         approach_label = approach_icons.get(opt.get("approach", ""), opt.get("approach", ""))
 
         v1_count = sum(1 for d in allocation.values() if d.get("option_id") == opt_id and d.get("version") == "v1")
@@ -1341,10 +1341,10 @@ def save_design_options_report(
         doc_lines += [
             f"### {opt_id} — {opt['title']}{rec_marker}",
             "",
-            f"| Field | Value |",
-            f"|-------|-------|",
-            f"| Approach | {approach_label} |",
-            f"| Must-req coverage (v1) | {coverage_pct} |",
+            f"| Поле | Значение |",
+            f"|------|----------|",
+            f"| Подход | {approach_label} |",
+            f"| Покрытие Must-req (v1) | {coverage_pct} |",
             f"| Allocation: v1 | {v1_count} req |",
             f"| Allocation: v2 | {v2_count} req |",
             f"| Allocation: out_of_scope | {oos_count} req |",
@@ -1353,7 +1353,7 @@ def save_design_options_report(
 
         components = opt.get("components", [])
         if components:
-            doc_lines.append("**Solution components:**")
+            doc_lines.append("**Компоненты решения:**")
             for c in components:
                 doc_lines.append(f"- {c}")
             doc_lines.append("")
@@ -1361,11 +1361,11 @@ def save_design_options_report(
         opportunities = opt.get("improvement_opportunities", [])
         if opportunities:
             type_labels = {
-                "efficiency": "⚡ Efficiency",
-                "information_access": "📊 Information access",
-                "new_capability": "🚀 New capability",
+                "efficiency": "⚡ Эффективность",
+                "information_access": "📊 Доступ к информации",
+                "new_capability": "🚀 Новая возможность",
             }
-            doc_lines.append("**Business improvement opportunities:**")
+            doc_lines.append("**Возможности улучшения бизнеса:**")
             for opp in opportunities:
                 t = opp.get("type", "")
                 label = type_labels.get(t, t)
@@ -1374,25 +1374,25 @@ def save_design_options_report(
 
         measures = opt.get("effectiveness_measures", [])
         if measures:
-            doc_lines.append("**Effectiveness measures:**")
+            doc_lines.append("**Метрики эффективности:**")
             for m in measures:
                 doc_lines.append(f"- {m}")
             doc_lines.append("")
 
         if opt.get("vendor_notes"):
-            doc_lines += [f"**Vendor:** {opt['vendor_notes']}", ""]
+            doc_lines += [f"**Вендор:** {opt['vendor_notes']}", ""]
 
         if opt.get("notes"):
-            doc_lines += [f"**Notes:** {opt['notes']}", ""]
+            doc_lines += [f"**Примечания:** {opt['notes']}", ""]
 
     # Allocation summary
     doc_lines += [
         "---",
         "",
-        "## Allocation Map summary",
+        "## Сводная Allocation Map",
         "",
-        "| ID | Type | Title | Priority | Version | Option | Rationale |",
-        "|----|------|-------|----------|---------|--------|-----------|",
+        "| ID | Тип | Название | Приоритет | Версия | Вариант | Обоснование |",
+        "|----|-----|---------|-----------|--------|---------|-------------|",
     ]
 
     for req_id, alloc_data in allocation.items():
@@ -1406,86 +1406,86 @@ def save_design_options_report(
 
     doc_lines += [""]
 
-    # Recommendation
+    # Рекомендация
     if recommended_option_id:
         rec_opt = next((o for o in options if o["option_id"] == recommended_option_id), None)
         doc_lines += [
             "---",
             "",
-            "## ⭐ BA preliminary recommendation",
+            "## ⭐ Предварительная рекомендация BA",
             "",
-            f"**Recommended option:** `{recommended_option_id}` — {rec_opt['title'] if rec_opt else ''}",
+            f"**Рекомендуемый вариант:** `{recommended_option_id}` — {rec_opt['title'] if rec_opt else ''}",
             "",
         ]
         if notes:
-            doc_lines += [f"**Rationale:** {notes}", ""]
+            doc_lines += [f"**Обоснование:** {notes}", ""]
 
         doc_lines += [
-            "> ⚠️ **This is the BA's preliminary conclusion.** The final recommendation and value assessment —",
-            "> in task 7.6 (Analyze Value and Recommend Solution).",
+            "> ⚠️ **Это предварительный вывод BA.** Финальная рекомендация и оценка ценности —",
+            "> в задаче 7.6 (Analyze Value and Recommend Solution).",
             "",
         ]
 
     doc_lines += [
         "---",
         "",
-        "## Artifact handoff",
+        "## Передача артефакта",
         "",
-        "| Direction | Purpose |",
-        "|-----------|---------|",
-        "| → **7.6** Analyze Value | Assess the value of each option and give a final recommendation |",
-        "| → **4.4** Communicate | Communicate the options to stakeholders |",
+        "| Направление | Назначение |",
+        "|-------------|-----------|",
+        "| → **7.6** Analyze Value | Оценить ценность каждого варианта и дать финальную рекомендацию |",
+        "| → **4.4** Communicate | Коммуникация вариантов со стейкхолдерами |",
     ]
 
     content = "\n".join(doc_lines)
 
-    # Save via save_artifact
+    # Сохраняем через save_artifact
     save_artifact(content, prefix="7_5_design_options", project_id=project_id)
 
-    # Response to the user
+    # Ответ пользователю
     result_lines = [
-        f"✅ Design Options Report saved — **{project_id}**",
+        f"✅ Design Options Report сохранён — **{project_id}**",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Design options | {len(options)} |",
-        f"| Allocated req | {len(allocation)} |",
-        f"| Date | {date.today()} |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Вариантов дизайна | {len(options)} |",
+        f"| Распределено req | {len(allocation)} |",
+        f"| Дата | {date.today()} |",
     ]
 
     if recommended_option_id:
         rec_opt = next((o for o in options if o["option_id"] == recommended_option_id), None)
         result_lines.append(
-            f"| ⭐ Recommendation | `{recommended_option_id}` — {rec_opt['title'] if rec_opt else ''} |"
+            f"| ⭐ Рекомендация | `{recommended_option_id}` — {rec_opt['title'] if rec_opt else ''} |"
         )
 
     result_lines += [
         "",
-        "Design Options Report saved via `save_artifact` (prefix: `7_5_design_options`).",
+        "Design Options Report сохранён через `save_artifact` (префикс: `7_5_design_options`).",
         "",
     ]
 
-    # Warnings
+    # Предупреждения
     if not strategy:
         result_lines += [
-            "> ⚠️ **Change Strategy is not set.** For completeness `set_change_strategy` is recommended.",
+            "> ⚠️ **Change Strategy не задана.** Для полноты рекомендуется `set_change_strategy`.",
             "",
         ]
 
     unallocated = [r["id"] for r in all_reqs if r["id"] not in allocation]
     if unallocated:
         result_lines += [
-            f"> ⚠️ **{len(unallocated)} req are not allocated to versions.** "
-            f"Run `allocate_requirements` to complete the allocation.",
+            f"> ⚠️ **{len(unallocated)} req не распределены по версиям.** "
+            f"Запусти `allocate_requirements` для полноты allocation.",
             "",
         ]
 
     result_lines += [
         "---",
         "",
-        "**Next steps:**",
-        "- → **7.6** `analyze_value_and_recommend` — assess the value of options and give a final recommendation",
-        "- → **4.4** `prepare_communication_package` — prepare a communication package for stakeholders",
+        "**Следующие шаги:**",
+        "- → **7.6** `analyze_value_and_recommend` — оценить ценность вариантов и дать финальную рекомендацию",
+        "- → **4.4** `prepare_communication_package` — подготовить коммуникационный пакет для стейкхолдеров",
     ]
 
     return "\n".join(result_lines)

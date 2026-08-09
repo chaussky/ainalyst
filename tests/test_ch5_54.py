@@ -1,27 +1,27 @@
 """
-tests/test_ch5_54.py — Tests for task 5.4 Assess Requirements Changes
+tests/test_ch5_54.py — Тесты для задачи 5.4 Assess Requirements Changes
 
-Coverage:
-  Unit tests for the utilities:
+Покрытие:
+  Unit-тесты утилит:
     - _repo_path, _find_node, _find_links
-    - _bfs_impact: isolated node, chain, several link types
-    - _calc_score: boundary values, all combinations
-    - _score_verdict: all thresholds
-    - _get_version_minor: version formats
+    - _bfs_impact: изолированный узел, цепочка, несколько типов связей
+    - _calc_score: граничные значения, все комбинации
+    - _score_verdict: все пороги
+    - _get_version_minor: форматы версий
 
-  Integration tests for the MCP:
-    - open_cr: successful registration, duplicate, missing requirements
-    - run_cr_impact: BFS traversal, modifies links, Impact/Schedule auto-computation,
-                     volatile requirements, priority conflicts, no BR trace
-    - score_cr: all formula verdicts, regulatory CR, ba_notes
-    - resolve_cr: Approved (under_change), Rejected (no changes),
+  Интеграционные тесты MCP:
+    - open_cr: успешная регистрация, дубликат, отсутствующие требования
+    - run_cr_impact: BFS-обход, modifies-связи, Impact/Schedule авто-расчёт,
+                     волатильные требования, конфликты приоритетов, нет BR-трассировки
+    - score_cr: все вердикты формулы, регуляторный CR, ba_notes
+    - resolve_cr: Approved (under_change), Rejected (без изменений),
                   Deferred, Approved_with_Modification,
-                  a regulatory CR cannot be Rejected, Decision Record is generated
+                  регуляторный CR нельзя Reject, Decision Record генерируется
 
-  Integration pipeline:
-    - full happy path: open → impact → score → resolve (Approved)
-    - full path: open → impact → score → resolve (Rejected)
-    - a repeated resolve is not possible without a score
+  Интеграционный pipeline:
+    - полный happy path: open → impact → score → resolve (Approved)
+    - полный path: open → impact → score → resolve (Rejected)
+    - повторный resolve невозможен без score
 """
 
 import json
@@ -40,7 +40,7 @@ import skills.requirements_assess_changes_mcp as mod54
 
 
 # ---------------------------------------------------------------------------
-# Unit tests for the utilities (no filesystem)
+# Unit-тесты утилит (без файловой системы)
 # ---------------------------------------------------------------------------
 
 class TestUtils(unittest.TestCase):
@@ -74,7 +74,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(links), 0)
 
     def test_find_links_no_modifies_leakage(self):
-        """modifies links should be detected correctly via _find_links."""
+        """modifies-связи должны корректно обнаруживаться через _find_links."""
         repo = make_test_repo()
         repo["links"].append({
             "from": "CR-001", "to": "FR-001", "relation": "modifies"
@@ -103,7 +103,7 @@ class TestBfsImpact(unittest.TestCase):
         self.assertEqual(len(affected), 0)
 
     def test_bfs_does_not_follow_modifies(self):
-        """BFS must not recursively traverse modifies links."""
+        """BFS не должен рекурсивно обходить modifies-связи."""
         repo = make_test_repo()
         repo["requirements"].append({
             "id": "CR-001", "type": "change_request", "title": "CR",
@@ -155,7 +155,7 @@ class TestCalcScore(unittest.TestCase):
         self.assertIsInstance(score, float)
 
     def test_formula_weights(self):
-        """Benefit has the largest weight (×2.0)."""
+        """Benefit имеет наибольший вес (×2.0)."""
         score_high_benefit = mod54._calc_score(3, 2, 2, 2, 2)
         score_low_benefit = mod54._calc_score(1, 2, 2, 2, 2)
         self.assertGreater(score_high_benefit, score_low_benefit)
@@ -199,7 +199,7 @@ class TestGetVersionMinor(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — open_cr
+# Интеграционные тесты — open_cr
 # ---------------------------------------------------------------------------
 
 class TestOpenCR(BaseMCPTest):
@@ -215,15 +215,15 @@ class TestOpenCR(BaseMCPTest):
         result = mod54.open_cr(
             project_name=self.P,
             cr_id="CR-001",
-            title="Add PDF export",
-            description="Users want to export reports to PDF",
+            title="Добавить экспорт в PDF",
+            description="Пользователи хотят экспортировать отчёты в PDF",
             initiator="Product Owner",
             cr_type="new_requirement",
             formality="standard",
             target_req_ids_json='["FR-001"]',
         )
         self.assertIn("CR-001", result)
-        self.assertIn("registered", result.lower())
+        self.assertIn("зарегистрирован", result.lower())
 
     def test_open_cr_creates_node_in_repo(self):
         self._setup_repo()
@@ -252,7 +252,7 @@ class TestOpenCR(BaseMCPTest):
         )
         mod54.open_cr(**kwargs)
         result = mod54.open_cr(**kwargs)
-        self.assertIn("already exists", result)
+        self.assertIn("уже существует", result)
 
     def test_open_cr_missing_target_req(self):
         self._setup_repo()
@@ -266,15 +266,15 @@ class TestOpenCR(BaseMCPTest):
             formality="standard",
             target_req_ids_json='["XX-999"]',
         )
-        self.assertIn("not found", result)
+        self.assertIn("не найден", result)
 
     def test_open_cr_regulatory_sets_urgency_critical(self):
         self._setup_repo()
         mod54.open_cr(
             project_name=self.P,
             cr_id="CR-REG",
-            title="GDPR compliance",
-            description="A regulatory change",
+            title="Соответствие GDPR",
+            description="Регуляторное изменение",
             initiator="Legal",
             cr_type="change_existing",
             formality="high",
@@ -335,7 +335,7 @@ class TestOpenCR(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — run_cr_impact
+# Интеграционные тесты — run_cr_impact
 # ---------------------------------------------------------------------------
 
 class TestRunCRImpact(BaseMCPTest):
@@ -359,7 +359,7 @@ class TestRunCRImpact(BaseMCPTest):
     def test_run_cr_impact_success(self):
         self._setup_and_open()
         result = mod54.run_cr_impact(self.P, "CR-001")
-        self.assertIn("Impact analysis", result)
+        self.assertIn("Анализ влияния", result)
 
     def test_the_headline_count_matches_the_list_below_it(self):
         """V-2 — a direct hit on "a number that does not match the list under it".
@@ -384,7 +384,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertEqual(modifies[0]["to"], "FR-001")
 
     def test_run_cr_impact_no_duplicate_modifies(self):
-        """A repeated call doesn't create duplicate modifies links."""
+        """Повторный вызов не создаёт дублирующих modifies-связей."""
         self._setup_and_open()
         mod54.run_cr_impact(self.P, "CR-001")
         mod54.run_cr_impact(self.P, "CR-001")
@@ -403,7 +403,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("schedule_auto", cr["impact_analysis"])
 
     def test_run_cr_impact_bfs_finds_downstream(self):
-        """FR-001 → derives → BR-001 and verifies → TC-001 should be found."""
+        """FR-001 → derives → BR-001 и verifies → TC-001 должны быть найдены."""
         self._setup_and_open()
         mod54.run_cr_impact(self.P, "CR-001")
         repo = load_test_repo(self.P)
@@ -413,7 +413,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("TC-001", affected_ids)
 
     def test_run_cr_impact_isolated_req_low_impact(self):
-        """FR-002 is isolated — Impact should be Low."""
+        """FR-002 изолирован — Impact должен быть Low."""
         repo = make_test_repo(self.P)
         save_test_repo(repo)
         mod54.open_cr(
@@ -451,9 +451,9 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertEqual(cr["impact_analysis"]["schedule_auto"], "High")
 
     def test_run_cr_impact_volatile_req_warning(self):
-        """A requirement with version 1.3+ should end up in volatile_req_ids."""
+        """Требование с версией 1.3+ должно попасть в volatile_req_ids."""
         repo = make_test_repo(self.P)
-        # Make FR-002 volatile
+        # Делаем FR-002 волатильным
         for r in repo["requirements"]:
             if r["id"] == "FR-002":
                 r["version"] = "1.3"
@@ -474,7 +474,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("FR-002", cr["impact_analysis"]["volatile_req_ids"])
 
     def test_run_cr_impact_priority_conflict_wont(self):
-        """A requirement with priority Won't should end up in priority_conflicts."""
+        """Требование с приоритетом Won't должно попасть в priority_conflicts."""
         repo = make_test_repo(self.P)
         for r in repo["requirements"]:
             if r["id"] == "FR-002":
@@ -496,7 +496,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("FR-002", cr["impact_analysis"]["priority_conflicts"])
 
     def test_run_cr_impact_no_br_trace_detected(self):
-        """FR-002 is not linked to a BR via derives — should end up in no_br_trace."""
+        """FR-002 не связан с BR через derives — должен попасть в no_br_trace."""
         repo = make_test_repo(self.P)
         save_test_repo(repo)
         mod54.open_cr(
@@ -515,7 +515,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("FR-002", cr["impact_analysis"]["no_br_trace"])
 
     def test_run_cr_impact_br_traced_not_in_no_br(self):
-        """FR-001 is linked to BR-001 via derives — should not end up in no_br_trace."""
+        """FR-001 связан с BR-001 через derives — не должен попасть в no_br_trace."""
         repo = make_test_repo(self.P)
         save_test_repo(repo)
         mod54.open_cr(
@@ -540,7 +540,7 @@ class TestRunCRImpact(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_run_cr_impact_wrong_type_fails(self):
-        """_find_node exists, but it is not a CR."""
+        """_find_node существует, но это не CR."""
         repo = make_test_repo(self.P)
         save_test_repo(repo)
         result = mod54.run_cr_impact(self.P, "FR-001")
@@ -548,7 +548,7 @@ class TestRunCRImpact(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — score_cr
+# Интеграционные тесты — score_cr
 # ---------------------------------------------------------------------------
 
 class TestScoreCR(BaseMCPTest):
@@ -591,12 +591,12 @@ class TestScoreCR(BaseMCPTest):
         self.assertIn("Approve", result)
 
     def test_score_cr_reject_verdict(self):
-        self._setup_open_impact(target='["FR-002"]')  # isolated → Impact Low
+        self._setup_open_impact(target='["FR-002"]')  # изолированный → Impact Low
         result = mod54.score_cr(self.P, "CR-001", "Low", "High", "Normal")
         self.assertIn("Reject", result)
 
     def test_score_cr_regulatory_cant_reject(self):
-        """A regulatory CR with a low score should become Defer, not Reject."""
+        """Регуляторный CR с низким скором должен стать Defer, не Reject."""
         self._setup_open_impact(target='["FR-002"]', regulatory=True)
         result = mod54.score_cr(self.P, "CR-001", "Low", "High", "Normal")
         self.assertNotIn("❌ Reject", result)
@@ -605,8 +605,8 @@ class TestScoreCR(BaseMCPTest):
     def test_score_cr_ba_notes_included(self):
         self._setup_open_impact()
         result = mod54.score_cr(self.P, "CR-001", "Medium", "Medium", "High",
-                                ba_notes="Strategically important for Q3")
-        self.assertIn("Strategically important for Q3", result)
+                                ba_notes="Стратегически важно для Q3")
+        self.assertIn("Стратегически важно для Q3", result)
 
     def test_score_cr_without_impact_fails(self):
         repo = make_test_repo(self.P)
@@ -621,12 +621,12 @@ class TestScoreCR(BaseMCPTest):
             formality="standard",
             target_req_ids_json='["FR-001"]',
         )
-        # Intentionally do not call run_cr_impact
+        # Намеренно не вызываем run_cr_impact
         result = mod54.score_cr(self.P, "CR-NOIMPA", "High", "Low", "High")
         self.assertIn("❌", result)
 
     def test_score_cr_urgency_override(self):
-        """urgency can be overridden in score_cr."""
+        """urgency можно переопределить в score_cr."""
         self._setup_open_impact()
         mod54.score_cr(self.P, "CR-001", "High", "Low", "Critical")
         repo = load_test_repo(self.P)
@@ -635,7 +635,7 @@ class TestScoreCR(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — resolve_cr
+# Интеграционные тесты — resolve_cr
 # ---------------------------------------------------------------------------
 
 class TestResolveCR(BaseMCPTest):
@@ -665,10 +665,10 @@ class TestResolveCR(BaseMCPTest):
         self._setup_full_pipeline()
         mod54.resolve_cr(
             self.P, "CR-001", "Approved",
-            decided_by="Sponsor", rationale="High value"
+            decided_by="Sponsor", rationale="Высокая ценность"
         )
         repo = load_test_repo(self.P)
-        # FR-001 and the affected ones should be under_change
+        # FR-001 и затронутые должны быть under_change
         fr = mod54._find_node(repo, "FR-001")
         self.assertEqual(fr["status"], "under_change")
 
@@ -686,7 +686,7 @@ class TestResolveCR(BaseMCPTest):
         self._setup_full_pipeline()
         mod54.resolve_cr(
             self.P, "CR-001", "Rejected",
-            decided_by="Sponsor", rationale="Not justified"
+            decided_by="Sponsor", rationale="Не обосновано"
         )
         repo = load_test_repo(self.P)
         fr = mod54._find_node(repo, "FR-001")
@@ -696,7 +696,7 @@ class TestResolveCR(BaseMCPTest):
         self._setup_full_pipeline()
         mod54.resolve_cr(
             self.P, "CR-001", "Deferred",
-            decided_by="PO", rationale="Next sprint"
+            decided_by="PO", rationale="Следующий спринт"
         )
         repo = load_test_repo(self.P)
         fr = mod54._find_node(repo, "FR-001")
@@ -706,8 +706,8 @@ class TestResolveCR(BaseMCPTest):
         self._setup_full_pipeline()
         result = mod54.resolve_cr(
             self.P, "CR-001", "Approved_with_Modification",
-            decided_by="Sponsor", rationale="Partially",
-            modification_notes="PDF export only, no Excel"
+            decided_by="Sponsor", rationale="Частично",
+            modification_notes="Только экспорт в PDF, без Excel"
         )
         self.assertIn("Modification", result)
         repo = load_test_repo(self.P)
@@ -719,10 +719,10 @@ class TestResolveCR(BaseMCPTest):
                                   regulatory=True)
         result = mod54.resolve_cr(
             self.P, "CR-001", "Rejected",
-            decided_by="Sponsor", rationale="Too expensive"
+            decided_by="Sponsor", rationale="Дорого"
         )
         self.assertIn("❌", result)
-        self.assertIn("regulatory", result.lower())
+        self.assertIn("регуляторный", result.lower())
 
     def test_resolve_without_score_fails(self):
         repo = make_test_repo(self.P)
@@ -738,7 +738,7 @@ class TestResolveCR(BaseMCPTest):
             target_req_ids_json='["FR-001"]',
         )
         mod54.run_cr_impact(self.P, "CR-NOSCORE")
-        # Intentionally skip score_cr
+        # Намеренно пропускаем score_cr
         result = mod54.resolve_cr(
             self.P, "CR-NOSCORE", "Approved",
             decided_by="Sponsor", rationale="OK"
@@ -749,14 +749,14 @@ class TestResolveCR(BaseMCPTest):
         self._setup_full_pipeline()
         mod54.resolve_cr(
             self.P, "CR-001", "Approved",
-            decided_by="Sponsor", rationale="High value"
+            decided_by="Sponsor", rationale="Ценность высокая"
         )
         repo = load_test_repo(self.P)
         cr = mod54._find_node(repo, "CR-001")
         decision = cr.get("decision", {})
         self.assertEqual(decision.get("verdict"), "Approved")
         self.assertEqual(decision.get("decided_by"), "Sponsor")
-        self.assertIn("value", decision.get("rationale", ""))
+        self.assertIn("Ценность", decision.get("rationale", ""))
 
     def test_resolve_history_recorded(self):
         self._setup_full_pipeline()
@@ -776,8 +776,8 @@ class TestResolveCR(BaseMCPTest):
             self.P, "CR-001", "Approved",
             decided_by="Sponsor", rationale="OK"
         )
-        # save_artifact is mocked in conftest — we check it was called (its result is present)
-        self.assertIn("Saved", result)
+        # save_artifact мокирован в conftest — проверяем что он вызван (результат присутствует)
+        self.assertIn("Сохранено", result)
 
     def test_resolve_unknown_cr_fails(self):
         repo = make_test_repo(self.P)
@@ -790,7 +790,7 @@ class TestResolveCR(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration pipeline — full happy path
+# Интеграционный pipeline — полный happy path
 # ---------------------------------------------------------------------------
 
 class TestFullPipeline(BaseMCPTest):
@@ -802,14 +802,14 @@ class TestFullPipeline(BaseMCPTest):
         save_test_repo(repo)
 
     def test_full_pipeline_approved(self):
-        """open → impact → score → resolve(Approved): a full cycle without errors."""
+        """open → impact → score → resolve(Approved): полный цикл без ошибок."""
         self._init_repo()
 
         r1 = mod54.open_cr(
             project_name=self.P,
             cr_id="CR-001",
-            title="PDF export",
-            description="Users request PDF export of reports",
+            title="Экспорт в PDF",
+            description="Пользователи запрашивают PDF-экспорт отчётов",
             initiator="Product Owner",
             cr_type="new_requirement",
             formality="standard",
@@ -827,33 +827,33 @@ class TestFullPipeline(BaseMCPTest):
         r4 = mod54.resolve_cr(
             self.P, "CR-001", "Approved",
             decided_by="Sponsor",
-            rationale="The CR is fully justified, value confirmed"
+            rationale="CR полностью обоснован, ценность подтверждена"
         )
         self.assertNotIn("❌", r4)
 
-        # Final check of the repository state
+        # Финальная проверка состояния репозитория
         repo = load_test_repo(self.P)
         cr = mod54._find_node(repo, "CR-001")
         self.assertIn("approved", cr["status"])
 
-        # the modifies link is created
+        # modifies-связь создана
         modifies = [l for l in repo["links"]
                     if l["from"] == "CR-001" and l["relation"] == "modifies"]
         self.assertEqual(len(modifies), 1)
 
-        # the affected requirements are under change
+        # Затронутые требования под_изменением
         fr = mod54._find_node(repo, "FR-001")
         self.assertEqual(fr["status"], "under_change")
 
     def test_full_pipeline_rejected(self):
-        """open → impact → score → resolve(Rejected): requirements are not touched."""
+        """open → impact → score → resolve(Rejected): требования не трогаются."""
         self._init_repo()
 
         mod54.open_cr(
             project_name=self.P,
             cr_id="CR-REJ",
-            title="Low-priority CR",
-            description="A cosmetic change",
+            title="Низкоприоритетный CR",
+            description="Косметическое изменение",
             initiator="User",
             cr_type="change_existing",
             formality="standard",
@@ -865,7 +865,7 @@ class TestFullPipeline(BaseMCPTest):
         mod54.resolve_cr(
             self.P, "CR-REJ", "Rejected",
             decided_by="PO",
-            rationale="Not justified by business value"
+            rationale="Не обосновано бизнес-ценностью"
         )
 
         repo = load_test_repo(self.P)
@@ -876,7 +876,7 @@ class TestFullPipeline(BaseMCPTest):
         self.assertNotEqual(fr2["status"], "under_change")
 
     def test_multiple_cr_independent(self):
-        """Two CRs in one project don't interfere with each other."""
+        """Два CR в одном проекте не мешают друг другу."""
         self._init_repo()
 
         for cr_id, target in [("CR-A", '["FR-001"]'), ("CR-B", '["FR-002"]')]:

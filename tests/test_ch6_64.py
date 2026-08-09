@@ -1,16 +1,16 @@
 """
-tests/test_ch6_64.py — Tests for task 6.4 (Define Change Strategy)
+tests/test_ch6_64.py — Тесты задачи 6.4 (Define Change Strategy)
 
-Coverage:
-  - scope_change_strategy          (14 tests)
-  - define_solution_scope          (15 tests)
-  - assess_enterprise_readiness    (15 tests)
-  - add_strategy_option            (14 tests)
-  - compare_strategy_options       (16 tests)
-  - define_transition_states       (13 tests)
-  - save_change_strategy           (15 tests)
-  - Integration pipeline tests     (10 tests)
-Total: ~112 tests
+Покрытие:
+  - scope_change_strategy          (14 тестов)
+  - define_solution_scope          (15 тестов)
+  - assess_enterprise_readiness    (15 тестов)
+  - add_strategy_option            (14 тестов)
+  - compare_strategy_options       (16 тестов)
+  - define_transition_states       (13 тестов)
+  - save_change_strategy           (15 тестов)
+  - Интеграционные pipeline-тесты  (10 тестов)
+Итого: ~112 тестов
 """
 
 import json
@@ -43,7 +43,7 @@ from skills.change_strategy_mcp import (
 )
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Хелперы
 # ---------------------------------------------------------------------------
 
 PROJECT = "test_project_64"
@@ -84,16 +84,16 @@ def _make_readiness(project_id: str = PROJECT, **kwargs):
 
 def _make_scope_def(project_id: str = PROJECT, **kwargs):
     caps = [
-        {"name": "CRM System", "category": "technology", "description": "New CRM",
+        {"name": "CRM система", "category": "technology", "description": "Новая CRM",
          "gap_severity": "high", "gap_source": "6.2:gap_analysis", "in_scope": True},
-        {"name": "Staff Training", "category": "people", "description": "Training sessions",
+        {"name": "Обучение персонала", "category": "people", "description": "Тренинги",
          "gap_severity": "medium", "gap_source": "manual", "in_scope": True},
     ]
     params = dict(
         project_id=project_id,
         capabilities_json=json.dumps(caps),
-        explicitly_excluded='["Mobile Application"]',
-        scope_summary="CRM implementation with staff training.",
+        explicitly_excluded='["Мобильное приложение"]',
+        scope_summary="Внедрение CRM с обучением персонала.",
     )
     params.update(kwargs)
     return define_solution_scope(**params)
@@ -102,12 +102,12 @@ def _make_scope_def(project_id: str = PROJECT, **kwargs):
 def _add_option(project_id: str = PROJECT, **kwargs):
     params = dict(
         project_id=project_id,
-        name="Phased CRM Replacement",
+        name="Поэтапная замена CRM",
         strategy_type="phased",
         investment_level="medium",
         timeline_months=12,
-        pros='["Manageable risk", "Early value delivery"]',
-        cons='["Extended co-existence period"]',
+        pros='["Управляемый риск", "Ранняя ценность"]',
+        cons='["Длительный период co-existence"]',
         linked_risks='["RK-001"]',
         risk_impact="mitigates",
     )
@@ -116,12 +116,12 @@ def _add_option(project_id: str = PROJECT, **kwargs):
 
 
 def _setup_full_pipeline(project_id: str = PROJECT) -> dict:
-    """Creates a fully populated change strategy for final-step tests."""
+    """Создаёт полностью заполненную стратегию для тестов финальных шагов."""
     _make_scope(project_id)
     _make_scope_def(project_id)
     _make_readiness(project_id)
-    _add_option(project_id, name="Phased Implementation", strategy_type="phased")
-    _add_option(project_id, name="Big Bang Launch", strategy_type="big_bang",
+    _add_option(project_id, name="Поэтапное внедрение", strategy_type="phased")
+    _add_option(project_id, name="Быстрый запуск", strategy_type="big_bang",
                 investment_level="high", timeline_months=4)
 
     # compare
@@ -136,34 +136,34 @@ def _setup_full_pipeline(project_id: str = PROJECT) -> dict:
     compare_strategy_options(
         project_id=project_id,
         scores_json=json.dumps(scores),
-        opportunity_cost="We forgo fast ROI in favor of manageable risk.",
+        opportunity_cost="Отказываемся от быстрого ROI в пользу управляемого риска.",
     )
 
     define_transition_states(
         project_id=project_id,
         phase_number=1,
-        phase_name="Basic CRM",
+        phase_name="Базовый CRM",
         duration_months=4,
-        capabilities_delivered='["CRM System"]',
+        capabilities_delivered='["CRM система"]',
         gaps_closed='["gap_crm_data"]',
         risks_remaining='["RK-002"]',
-        value_realizable="Operators can see customer history",
+        value_realizable="Операторы видят историю клиента",
     )
     define_transition_states(
         project_id=project_id,
         phase_number=2,
-        phase_name="Analytics",
+        phase_name="Аналитика",
         duration_months=5,
-        capabilities_delivered='["Analytics"]',
+        capabilities_delivered='["Аналитика"]',
         gaps_closed='["gap_reporting"]',
         risks_remaining='[]',
-        value_realizable="60% reduction in manual reporting",
+        value_realizable="Сокращение ручной отчётности на 60%",
     )
     return _load_strategy(project_id)
 
 
 # ---------------------------------------------------------------------------
-# Utilities (unit)
+# Утилиты (unit)
 # ---------------------------------------------------------------------------
 
 class TestUtils(BaseMCPTest):
@@ -247,8 +247,8 @@ class TestScopeChangeStrategy(BaseMCPTest):
 
     def test_graceful_degradation_missing_artifacts(self):
         result = _make_scope(source_project_ids='["nonexistent_project"]')
-        self.assertIn("✅", result)  # does not crash
-        self.assertIn("⚠️", result)  # warning present
+        self.assertIn("✅", result)  # не падает
+        self.assertIn("⚠️", result)  # предупреждение
 
     def test_autoimport_from_6_1(self):
         """Test import of business_needs from 6.1 (REAL 6.1 structure)."""
@@ -283,10 +283,10 @@ class TestScopeChangeStrategy(BaseMCPTest):
         self.assertEqual(bgs[0]["title"], "NPS growth by 15%")
 
     def test_autoimport_from_6_3(self):
-        """Test import of risks from 6.3."""
+        """Тест импорта рисков из 6.3."""
         risk_data = {
             "risks": [
-                {"risk_id": "RK-001", "description": "Integration risk",
+                {"risk_id": "RK-001", "description": "Риск интеграции",
                  "status": "identified", "zone": "high", "risk_score": 16,
                  "response_strategy": "mitigate"}
             ]
@@ -303,16 +303,16 @@ class TestScopeChangeStrategy(BaseMCPTest):
 
     def test_do_nothing_not_duplicated_on_second_call(self):
         _make_scope()
-        _make_scope()  # second call
+        _make_scope()  # второй вызов
         strategy = _load_strategy()
         do_nothing_count = sum(1 for o in strategy["change_strategy"]["options"]
                                if o["option_id"] == DO_NOTHING_OPTION_ID)
         self.assertEqual(do_nothing_count, 1)
 
     def test_ba_notes_saved(self):
-        _make_scope(ba_notes="Regulatory deadline — Q2 2025")
+        _make_scope(ba_notes="Регуляторный дедлайн — Q2 2025")
         strategy = _load_strategy()
-        self.assertEqual(strategy["scope"]["ba_notes"], "Regulatory deadline — Q2 2025")
+        self.assertEqual(strategy["scope"]["ba_notes"], "Регуляторный дедлайн — Q2 2025")
 
 
 def _write_gap_file(project_id: str = PROJECT, gaps=None):
@@ -515,12 +515,12 @@ class TestDefineSolutionScope(BaseMCPTest):
         _make_scope_def()
         strategy = _load_strategy()
         excluded = strategy["solution_scope"]["explicitly_excluded"]
-        self.assertIn("Mobile Application", excluded)
+        self.assertIn("Мобильное приложение", excluded)
 
     def test_scope_summary_saved(self):
-        _make_scope_def(scope_summary="Project X — CRM Replacement")
+        _make_scope_def(scope_summary="Проект X — замена CRM")
         strategy = _load_strategy()
-        self.assertEqual(strategy["solution_scope"]["scope_summary"], "Project X — CRM Replacement")
+        self.assertEqual(strategy["solution_scope"]["scope_summary"], "Проект X — замена CRM")
 
     def test_invalid_json(self):
         result = define_solution_scope(PROJECT, capabilities_json="not-json")
@@ -655,10 +655,10 @@ class TestAssessEnterpriseReadiness(BaseMCPTest):
         self.assertAlmostEqual(strategy["enterprise_readiness"]["readiness_score"], 4.0)
 
     def test_rationale_saved(self):
-        _make_readiness(leadership_rationale="Sponsor personally attends meetings")
+        _make_readiness(leadership_rationale="Спонсор лично присутствует на встречах")
         strategy = _load_strategy()
         dims = strategy["enterprise_readiness"]["dimensions"]
-        self.assertEqual(dims["leadership_commitment"]["rationale"], "Sponsor personally attends meetings")
+        self.assertEqual(dims["leadership_commitment"]["rationale"], "Спонсор лично присутствует на встречах")
 
     def test_6_dimensions_all_present(self):
         _make_readiness()
@@ -729,7 +729,7 @@ class TestAddStrategyOption(BaseMCPTest):
 
     def test_option_id_increments(self):
         _add_option()
-        _add_option(name="Second Option", strategy_type="big_bang")
+        _add_option(name="Второй вариант", strategy_type="big_bang")
         strategy = _load_strategy()
         ids = [o["option_id"] for o in strategy["change_strategy"]["options"]
                if o["strategy_type"] != "do_nothing"]
@@ -775,7 +775,7 @@ class TestAddStrategyOption(BaseMCPTest):
         self.assertIsNotNone(do_nothing)
 
     def test_pros_cons_saved(self):
-        _add_option(pros='["Fast", "Cheap"]', cons='["Risky"]')
+        _add_option(pros='["Быстро", "Дёшево"]', cons='["Рискованно"]')
         strategy = _load_strategy()
         opt = next(o for o in strategy["change_strategy"]["options"]
                    if o["option_id"] == "OPT-001")
@@ -829,7 +829,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="We forgo fast ROI.",
+            opportunity_cost="Отказываемся от быстрого ROI.",
         )
         self.assertIn("✅", result)
 
@@ -837,7 +837,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         self.assertIsNotNone(strategy["change_strategy"]["selected_option_id"])
@@ -846,7 +846,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         rejected = strategy["change_strategy"]["rejected_alternatives"]
@@ -856,10 +856,10 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Forgoing fast ROI — the price of stability.",
+            opportunity_cost="Отказ от быстрого ROI — цена стабильности.",
         )
         strategy = _load_strategy()
-        self.assertIn("fast ROI", strategy["change_strategy"]["opportunity_cost"])
+        self.assertIn("быстрого ROI", strategy["change_strategy"]["opportunity_cost"])
 
     def test_empty_opportunity_cost_rejected(self):
         result = compare_strategy_options(
@@ -873,7 +873,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json="not-json",
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         self.assertIn("❌", result)
 
@@ -883,7 +883,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
             weights_json=json.dumps(wrong_weights),
         )
         self.assertIn("❌", result)
@@ -892,7 +892,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         selected_id = strategy["change_strategy"]["selected_option_id"]
@@ -904,7 +904,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         selected_id = strategy["change_strategy"]["selected_option_id"]
@@ -917,7 +917,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         for opt in strategy["change_strategy"]["options"]:
@@ -925,8 +925,8 @@ class TestCompareStrategyOptions(BaseMCPTest):
                 self.assertIsNotNone(opt["weighted_score"])
 
     def test_custom_criteria_accepted(self):
-        custom = {"regulatory_compliance": {"weight": 5, "description": "Compliance"}}
-        # Adjust default weights so sum = 100
+        custom = {"regulatory_compliance": {"weight": 5, "description": "Соответствие"}}
+        # Корректируем дефолтные веса чтобы сумма = 100
         weights = {"alignment_to_goals": 20, "risk_mitigation": 20, "cost": 20,
                    "time_to_value": 15, "org_readiness_fit": 10, "feasibility": 10}
         scores_with_custom = self._default_scores()
@@ -935,20 +935,20 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(scores_with_custom),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
             weights_json=json.dumps(weights),
             custom_criteria_json=json.dumps(custom),
         )
         self.assertIn("✅", result)
 
     def test_no_options_returns_warning(self):
-        # Recreate without adding options
+        # Пересоздаём без добавления опций
         empty_proj = "empty_64"
         _make_scope(project_id=empty_proj)
         result = compare_strategy_options(
             project_id=empty_proj,
             scores_json='{}',
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         self.assertIn("⚠️", result)
 
@@ -956,7 +956,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         self.assertIn("criteria_weights_used", strategy["change_strategy"])
@@ -965,22 +965,22 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
-        self.assertIn("Criterion", result)
-        self.assertIn("TOTAL", result)
+        self.assertIn("Критерий", result)
+        self.assertIn("ИТОГО", result)
 
     def test_compared_on_date_saved(self):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(self._default_scores()),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         strategy = _load_strategy()
         self.assertEqual(strategy["change_strategy"]["compared_on"], TODAY)
 
     def test_do_nothing_auto_scored_if_missing(self):
-        """do_nothing without explicit scores — should receive minimum scores."""
+        """do_nothing без явных оценок — должен получить минимальные score."""
         scores_no_do_nothing = {
             "OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 4, "cost": 3,
                         "time_to_value": 3, "org_readiness_fit": 3, "feasibility": 4},
@@ -988,7 +988,7 @@ class TestCompareStrategyOptions(BaseMCPTest):
         result = compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(scores_no_do_nothing),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         self.assertIn("✅", result)
 
@@ -1007,12 +1007,12 @@ class TestDefineTransitionStates(BaseMCPTest):
         params = dict(
             project_id=PROJECT,
             phase_number=phase_number,
-            phase_name=f"Phase {phase_number}",
+            phase_name=f"Фаза {phase_number}",
             duration_months=4,
-            capabilities_delivered='["CRM System"]',
+            capabilities_delivered='["CRM система"]',
             gaps_closed='["gap_crm_data"]',
             risks_remaining='["RK-002"]',
-            value_realizable="Operators can see customer history",
+            value_realizable="Операторы видят историю клиента",
         )
         params.update(kwargs)
         return define_transition_states(**params)
@@ -1028,24 +1028,24 @@ class TestDefineTransitionStates(BaseMCPTest):
 
     def test_multiple_phases(self):
         self._make_phase(1)
-        self._make_phase(2, phase_name="Analytics Phase")
+        self._make_phase(2, phase_name="Фаза аналитики")
         strategy = _load_strategy()
         self.assertEqual(len(strategy["transition_states"]), 2)
 
     def test_phases_sorted(self):
-        self._make_phase(2, phase_name="Second")
-        self._make_phase(1, phase_name="First")
+        self._make_phase(2, phase_name="Вторая")
+        self._make_phase(1, phase_name="Первая")
         strategy = _load_strategy()
         phases = strategy["transition_states"]
         self.assertEqual(phases[0]["phase"], 1)
         self.assertEqual(phases[1]["phase"], 2)
 
     def test_phase_overwrites_same_number(self):
-        self._make_phase(1, phase_name="Initial")
-        self._make_phase(1, phase_name="Updated")
+        self._make_phase(1, phase_name="Первоначальное")
+        self._make_phase(1, phase_name="Обновлённое")
         strategy = _load_strategy()
         self.assertEqual(len(strategy["transition_states"]), 1)
-        self.assertEqual(strategy["transition_states"][0]["name"], "Updated")
+        self.assertEqual(strategy["transition_states"][0]["name"], "Обновлённое")
 
     def test_invalid_phase_number(self):
         result = self._make_phase(phase_number=0)
@@ -1095,7 +1095,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
     def test_full_pipeline_success(self):
         _setup_full_pipeline()
         with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             result = save_change_strategy(project_id=PROJECT)
         self.assertIn("✅", result)
 
@@ -1118,7 +1118,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
     def test_save_artifact_called(self):
         _setup_full_pipeline()
         with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             save_change_strategy(project_id=PROJECT)
             mock_sa.assert_called_once()
 
@@ -1161,38 +1161,38 @@ class TestSaveChangeStrategy(BaseMCPTest):
         compare_strategy_options(
             project_id=PROJECT,
             scores_json=json.dumps(scores),
-            opportunity_cost="Test",
+            opportunity_cost="Тест",
         )
         result = save_change_strategy(project_id=PROJECT)
         self.assertIn("⚠️", result)
 
     def test_push_to_traceability_no_repo(self):
-        """push_to_traceability=True without a repository — graceful degradation."""
+        """push_to_traceability=True без репозитория — graceful degradation."""
         _setup_full_pipeline()
         with patch("skills.change_strategy_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅"
             result = save_change_strategy(project_id=PROJECT, push_to_traceability=True)
         self.assertIn("⚠️", result)
-        self.assertIn("traceability repository", result.lower())
+        self.assertIn("репозиторий трассировки", result.lower())
 
     def test_push_to_traceability_with_repo(self):
-        """push_to_traceability=True with an existing repository."""
+        """push_to_traceability=True с существующим репозиторием."""
         _setup_full_pipeline()
 
-        # Create a traceability repository with BG-001
+        # Создаём репозиторий трассировки с BG-001
         repo = {
             "project_id": PROJECT,
-            "requirements": [{"id": "BG-001", "type": "business_goal", "title": "NPS Growth"}],
+            "requirements": [{"id": "BG-001", "type": "business_goal", "title": "Рост NPS"}],
             "links": [],
         }
         repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
         with open(repo_path, "w", encoding="utf-8") as f:
             json.dump(repo, f)
 
-        # Add BG to imported_context for satisfies links
+        # Добавляем BG в imported_context для связей satisfies
         strategy = _load_strategy()
         strategy["imported_context"]["business_goals"] = [
-            {"id": "BG-001", "title": "NPS Growth", "source_project": PROJECT}
+            {"id": "BG-001", "title": "Рост NPS", "source_project": PROJECT}
         ]
         from skills.change_strategy_mcp import _save_strategy
         _save_strategy(strategy, PROJECT)
@@ -1203,7 +1203,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
 
         self.assertIn("SOL-001", result)
 
-        # Verify the node was added to the repository
+        # Проверяем что узел добавлен в репозиторий
         with open(repo_path, encoding="utf-8") as f:
             updated_repo = json.load(f)
         # `solution_scope`, not `solution`: the latter is the BABOK requirement class
@@ -1222,7 +1222,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
                 return "✅"
             mock_sa.side_effect = capture
             save_change_strategy(project_id=PROJECT)
-        self.assertIn("Phased Implementation", md_content_captured.get("content", ""))
+        self.assertIn("Поэтапное внедрение", md_content_captured.get("content", ""))
 
     def test_markdown_contains_capabilities(self):
         _setup_full_pipeline()
@@ -1233,7 +1233,7 @@ class TestSaveChangeStrategy(BaseMCPTest):
                 return "✅"
             mock_sa.side_effect = capture
             save_change_strategy(project_id=PROJECT)
-        self.assertIn("CRM System", md_content_captured.get("content", ""))
+        self.assertIn("CRM система", md_content_captured.get("content", ""))
 
     def test_output_contains_json_path(self):
         _setup_full_pipeline()
@@ -1243,11 +1243,11 @@ class TestSaveChangeStrategy(BaseMCPTest):
         self.assertIn("change_strategy.json", result)
 
     def test_sol_not_duplicated_on_second_push(self):
-        """SOL-001 is not duplicated on a second push."""
+        """SOL-001 не дублируется при повторном push."""
         _setup_full_pipeline()
         repo = {
             "project_id": PROJECT,
-            "requirements": [{"id": "BG-001", "type": "business_goal", "title": "Test"}],
+            "requirements": [{"id": "BG-001", "type": "business_goal", "title": "Тест"}],
             "links": [],
         }
         repo_path = data_file(_safe(PROJECT), "traceability_repo.json")
@@ -1266,16 +1266,16 @@ class TestSaveChangeStrategy(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration pipeline tests
+# Интеграционные pipeline-тесты
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_runs(self):
-        """Full 7-step pipeline completes without errors."""
+        """Полный пайплайн 7 шагов без ошибок."""
         result = _setup_full_pipeline()
         self.assertEqual(result["status"], "finalized") if "status" in result else None
-        # Verify all sections are populated
+        # Проверяем что все секции заполнены
         strategy = _load_strategy()
         self.assertTrue(len(strategy["solution_scope"]["capabilities"]) > 0)
         self.assertIsNotNone(strategy["enterprise_readiness"])
@@ -1283,7 +1283,7 @@ class TestPipeline(BaseMCPTest):
         self.assertTrue(len(strategy["transition_states"]) > 0)
 
     def test_json_structure_complete(self):
-        """JSON contract contains all key sections (ADR-083)."""
+        """JSON-контракт содержит все ключевые секции (ADR-083)."""
         _setup_full_pipeline()
         strategy = _load_strategy()
         self.assertIn("solution_scope", strategy)
@@ -1299,10 +1299,10 @@ class TestPipeline(BaseMCPTest):
     def test_change_strategy_has_options(self):
         _setup_full_pipeline()
         strategy = _load_strategy()
-        self.assertTrue(len(strategy["change_strategy"]["options"]) >= 3)  # OPT-000 + 2 real
+        self.assertTrue(len(strategy["change_strategy"]["options"]) >= 3)  # OPT-000 + 2 реальных
 
     def test_selected_option_is_real_not_do_nothing(self):
-        """Winner must not be do_nothing when scores are set correctly."""
+        """Winner не должен быть do_nothing при правильных оценках."""
         _setup_full_pipeline()
         strategy = _load_strategy()
         selected = strategy["change_strategy"]["selected_option_id"]
@@ -1315,18 +1315,18 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(phases, sorted(phases))
 
     def test_total_duration_correct(self):
-        """Total phase duration is correct."""
+        """Суммарная длительность фаз корректна."""
         _setup_full_pipeline()
         strategy = _load_strategy()
         total = sum(s["duration_months"] for s in strategy["transition_states"])
-        self.assertEqual(total, 9)  # 4 + 5 from _setup_full_pipeline
+        self.assertEqual(total, 9)  # 4 + 5 из _setup_full_pipeline
 
     def test_imported_context_preserved(self):
-        """imported_context is not overwritten in later steps."""
+        """imported_context не затирается на поздних шагах."""
         _make_scope(
             source_project_ids="[]",
         )
-        # Manually insert context
+        # Вручную вставляем контекст
         strategy = _load_strategy()
         strategy["imported_context"]["business_goals"] = [
             {"id": "BG-001", "title": "Test goal"}
@@ -1334,12 +1334,12 @@ class TestPipeline(BaseMCPTest):
         from skills.change_strategy_mcp import _save_strategy
         _save_strategy(strategy, PROJECT)
 
-        _make_scope_def()  # must not overwrite imported_context
+        _make_scope_def()  # не должен затирать imported_context
         strategy = _load_strategy()
         self.assertTrue(len(strategy["imported_context"]["business_goals"]) > 0)
 
     def test_different_projects_isolated(self):
-        """Two projects do not affect each other."""
+        """Два проекта не влияют друг на друга."""
         proj_a = "proj_a_64"
         proj_b = "proj_b_64"
         _make_scope(project_id=proj_a, time_horizon_months=6)

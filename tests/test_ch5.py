@@ -1,5 +1,5 @@
 """
-tests/test_ch5.py — Tests for Chapter 5 (5.1 Trace and 5.2 Maintain)
+tests/test_ch5.py — Тесты для Главы 5 (5.1 Трассировка и 5.2 Поддержание)
 """
 
 import json
@@ -11,7 +11,7 @@ from datetime import date, timedelta
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-# Mocks are applied via conftest on import
+# Моки применяются через conftest при импорте
 from tests.conftest import BaseMCPTest, make_test_repo, save_test_repo, load_test_repo, list_data_files
 from skills.common import DATA_DIR, data_path
 
@@ -20,7 +20,7 @@ import skills.requirements_maintain_mcp as mod52
 
 
 # ---------------------------------------------------------------------------
-# 5.1 — Utilities (pure functions, no filesystem)
+# 5.1 — Утилиты (чистые функции, без файловой системы)
 # ---------------------------------------------------------------------------
 
 class TestTraceabilityUtils(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestTraceabilityUtils(unittest.TestCase):
         for name in ["test_project", "crm_2024", "bank_online"]:
             self.assertEqual(
                 mod51._repo_path(name), mod52._repo_path(name),
-                f"Paths differ for: {name}"
+                f"Пути различаются для: {name}"
             )
 
     def test_find_req_existing(self):
@@ -56,7 +56,7 @@ class TestTraceabilityUtils(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 5.1 — MCP tools (with filesystem)
+# 5.1 — MCP-инструменты (с файловой системой)
 # ---------------------------------------------------------------------------
 
 class TestTraceabilityMCP(BaseMCPTest):
@@ -65,9 +65,9 @@ class TestTraceabilityMCP(BaseMCPTest):
 
     def _init(self):
         return mod51.init_traceability_repo(self.P, "Standard", json.dumps([
-            {"id": "BR-001", "type": "business", "title": "BR", "version": "1.0", "status": "confirmed"},
-            {"id": "FR-001", "type": "solution", "title": "FR", "version": "1.0", "status": "confirmed"},
-            {"id": "FR-DEP", "type": "solution", "title": "Deprecated", "version": "1.0", "status": "deprecated"},
+            {"id": "BR-001", "type": "business", "title": "БТ", "version": "1.0", "status": "confirmed"},
+            {"id": "FR-001", "type": "solution", "title": "ФТ", "version": "1.0", "status": "confirmed"},
+            {"id": "FR-DEP", "type": "solution", "title": "Устар.", "version": "1.0", "status": "deprecated"},
         ]))
 
     def test_init_creates_json_file(self):
@@ -86,7 +86,7 @@ class TestTraceabilityMCP(BaseMCPTest):
     def test_init_deduplication(self):
         self._init()
         mod51.init_traceability_repo(self.P, "Standard", json.dumps([
-            {"id": "BR-001", "type": "business", "title": "New title", "version": "1.1", "status": "confirmed"}
+            {"id": "BR-001", "type": "business", "title": "Новое название", "version": "1.1", "status": "confirmed"}
         ]))
         repo = load_test_repo(self.P)
         count = sum(1 for r in repo["requirements"] if r["id"] == "BR-001")
@@ -94,7 +94,7 @@ class TestTraceabilityMCP(BaseMCPTest):
 
     def test_add_link_creates_entry(self):
         self._init()
-        mod51.add_trace_link(self.P, "FR-001", "BR-001", "derives", "test")
+        mod51.add_trace_link(self.P, "FR-001", "BR-001", "derives", "тест")
         repo = load_test_repo(self.P)
         self.assertTrue(any(
             l["from"] == "FR-001" and l["to"] == "BR-001" and l["relation"] == "derives"
@@ -123,31 +123,31 @@ class TestTraceabilityMCP(BaseMCPTest):
     def test_add_link_remove_nonexistent(self):
         self._init()
         result = mod51.add_trace_link(self.P, "XX-001", "YY-001", "derives", "", remove=True)
-        self.assertIn("not found", result)
+        self.assertIn("не найдена", result)
 
     def test_impact_finds_affected(self):
         self._init()
         mod51.add_trace_link(self.P, "FR-001", "BR-001", "derives", "")
-        result = mod51.run_impact_analysis(self.P, "BR-001", "Change")
+        result = mod51.run_impact_analysis(self.P, "BR-001", "Изменение")
         self.assertIn("FR-001", result)
 
     def test_impact_unknown_req(self):
         self._init()
-        result = mod51.run_impact_analysis(self.P, "XX-999", "Test")
-        self.assertIn("not found", result)
+        result = mod51.run_impact_analysis(self.P, "XX-999", "Тест")
+        self.assertIn("не найдено", result)
 
     def test_coverage_excludes_deprecated(self):
         self._init()
         result = mod51.check_coverage(self.P)
-        if "No source" in result:
-            idx = result.find("No source")
+        if "Нет источника" in result:
+            idx = result.find("Нет источника")
             section = result[idx:idx + 600]
             self.assertNotIn("FR-DEP", section)
 
     def test_coverage_fr001_orphan_without_link(self):
         self._init()
         result = mod51.check_coverage(self.P)
-        self.assertIn("FR-001", result)  # orphan — no derives upward
+        self.assertIn("FR-001", result)  # orphan — нет derives вверх
 
     def test_export_contains_active_requirements(self):
         self._init()
@@ -163,7 +163,7 @@ class TestTraceabilityMCP(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# 5.2 — Utilities
+# 5.2 — Утилиты
 # ---------------------------------------------------------------------------
 
 class TestMaintainUtils(unittest.TestCase):
@@ -187,7 +187,7 @@ class TestMaintainUtils(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 5.2 — MCP tools
+# 5.2 — MCP-инструменты
 # ---------------------------------------------------------------------------
 
 class TestMaintainMCP(BaseMCPTest):
@@ -212,7 +212,7 @@ class TestMaintainMCP(BaseMCPTest):
 
     def test_update_auto_volatility(self):
         self._prepare()
-        mod52.update_requirement(self.P, "FR-001", "Many changes", new_version="1.4")
+        mod52.update_requirement(self.P, "FR-001", "Много изменений", new_version="1.4")
         repo = load_test_repo(self.P)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
         self.assertEqual(fr001.get("stability"), "Volatile")
@@ -224,33 +224,33 @@ class TestMaintainMCP(BaseMCPTest):
 
     def test_update_no_changes(self):
         self._prepare()
-        result = mod52.update_requirement(self.P, "FR-001", "Check")
-        self.assertIn("No changes", result)
+        result = mod52.update_requirement(self.P, "FR-001", "Проверка")
+        self.assertIn("Нет изменений", result)
 
     def test_deprecate_sets_status(self):
         self._prepare()
-        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Outdated")
+        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Устарело")
         repo = load_test_repo(self.P)
         fr002 = next(r for r in repo["requirements"] if r["id"] == "FR-002")
         self.assertEqual(fr002["status"], "deprecated")
 
     def test_deprecate_preserves_record(self):
         self._prepare()
-        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Test")
+        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Тест")
         repo = load_test_repo(self.P)
         self.assertIn("FR-002", [r["id"] for r in repo["requirements"]])
 
     def test_deprecate_superseded_requires_superseded_by(self):
         self._prepare()
         result = mod52.deprecate_requirements(
-            self.P, json.dumps(["FR-001"]), "superseded", "Replaced", superseded_by=""
+            self.P, json.dumps(["FR-001"]), "superseded", "Заменено", superseded_by=""
         )
         self.assertIn("❌", result)
 
     def test_deprecate_superseded_ok_with_superseded_by(self):
         self._prepare()
         mod52.deprecate_requirements(
-            self.P, json.dumps(["FR-002"]), "superseded", "Replaced", superseded_by="FR-010"
+            self.P, json.dumps(["FR-002"]), "superseded", "Заменено", superseded_by="FR-010"
         )
         repo = load_test_repo(self.P)
         fr002 = next(r for r in repo["requirements"] if r["id"] == "FR-002")
@@ -268,7 +268,7 @@ class TestMaintainMCP(BaseMCPTest):
 
     def test_health_excludes_deprecated(self):
         self._prepare()
-        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Test")
+        mod52.deprecate_requirements(self.P, json.dumps(["FR-002"]), "deprecated", "Тест")
         result = mod52.check_requirements_health(self.P)
         self.assertNotIn("FR-002", result)
 
@@ -281,7 +281,7 @@ class TestMaintainMCP(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration 5.1 + 5.2
+# Интеграция 5.1 + 5.2
 # ---------------------------------------------------------------------------
 
 class TestIntegration51_52(BaseMCPTest):
@@ -290,7 +290,7 @@ class TestIntegration51_52(BaseMCPTest):
 
     def test_one_file_two_modules(self):
         mod51.init_traceability_repo(self.P, "Standard", json.dumps([
-            {"id": "FR-001", "type": "solution", "title": "Test",
+            {"id": "FR-001", "type": "solution", "title": "Тест",
              "version": "1.0", "status": "confirmed"}
         ]))
         mod52.update_requirement(self.P, "FR-001", "Integration", new_status="implemented")
@@ -302,11 +302,11 @@ class TestIntegration51_52(BaseMCPTest):
 
     def test_history_from_both_modules(self):
         mod51.init_traceability_repo(self.P, "Standard", json.dumps([
-            {"id": "FR-001", "type": "solution", "title": "Test",
+            {"id": "FR-001", "type": "solution", "title": "Тест",
              "version": "1.0", "status": "draft"}
         ]))
         mod51.add_trace_link(self.P, "FR-001", "BR-001", "derives", "")
-        mod52.update_requirement(self.P, "FR-001", "Test", new_status="confirmed")
+        mod52.update_requirement(self.P, "FR-001", "Тест", new_status="confirmed")
         repo = load_test_repo(self.P)
         actions = [h["action"] for h in repo["history"]]
         self.assertIn("link_added", actions)
@@ -314,15 +314,15 @@ class TestIntegration51_52(BaseMCPTest):
 
     def test_deprecated_by_52_excluded_from_51_coverage(self):
         mod51.init_traceability_repo(self.P, "Standard", json.dumps([
-            {"id": "BR-001", "type": "business", "title": "BR", "version": "1.0", "status": "confirmed"},
-            {"id": "FR-001", "type": "solution", "title": "FR", "version": "1.0", "status": "confirmed"},
-            {"id": "FR-OLD", "type": "solution", "title": "Old", "version": "1.0", "status": "confirmed"},
+            {"id": "BR-001", "type": "business", "title": "БТ", "version": "1.0", "status": "confirmed"},
+            {"id": "FR-001", "type": "solution", "title": "ФТ", "version": "1.0", "status": "confirmed"},
+            {"id": "FR-OLD", "type": "solution", "title": "Старое", "version": "1.0", "status": "confirmed"},
         ]))
         mod51.add_trace_link(self.P, "FR-001", "BR-001", "derives", "")
-        mod52.deprecate_requirements(self.P, json.dumps(["FR-OLD"]), "deprecated", "Outdated")
+        mod52.deprecate_requirements(self.P, json.dumps(["FR-OLD"]), "deprecated", "Устарело")
         result = mod51.check_coverage(self.P)
-        if "No source" in result:
-            idx = result.find("No source")
+        if "Нет источника" in result:
+            idx = result.find("Нет источника")
             section = result[idx:idx + 800]
             self.assertNotIn("FR-OLD", section)
 
@@ -339,25 +339,25 @@ import skills.requirements_prioritize_mcp as mod53
 
 
 def make_prio_repo(project_name: str = "prio_test") -> dict:
-    """A test repository compatible with the 5.1/5.2 format."""
+    """Тестовый репозиторий совместимый с 5.1/5.2 форматом."""
     return {
         "project": project_name,
         "formality_level": "Standard",
         "created": str(date.today()),
         "updated": str(date.today()),
         "requirements": [
-            {"id": "FR-001", "type": "solution", "title": "Authorization",
+            {"id": "FR-001", "type": "solution", "title": "Авторизация",
              "version": "1.0", "status": "confirmed", "priority": None},
-            {"id": "FR-002", "type": "solution", "title": "User account",
+            {"id": "FR-002", "type": "solution", "title": "Личный кабинет",
              "version": "1.0", "status": "confirmed", "priority": None},
-            {"id": "FR-003", "type": "solution", "title": "Reports",
+            {"id": "FR-003", "type": "solution", "title": "Отчёты",
              "version": "1.4", "status": "confirmed", "priority": None},  # volatile
-            {"id": "BR-001", "type": "business", "title": "Reduce processing time",
+            {"id": "BR-001", "type": "business", "title": "Снизить время обработки",
              "version": "1.0", "status": "confirmed", "priority": None},
         ],
         "links": [
             {"from": "FR-002", "to": "FR-001", "relation": "depends",
-             "rationale": "The account requires authorization", "added": str(date.today())},
+             "rationale": "ЛК требует авторизацию", "added": str(date.today())},
         ],
         "history": [],
     }
@@ -379,7 +379,7 @@ def load_prio_file(project_name: str) -> dict:
 
 
 class TestPrioritizeUtils(unittest.TestCase):
-    """Tests for the pure 5.3 utilities."""
+    """Тесты чистых утилит 5.3."""
 
     def test_minor_version_normal(self):
         self.assertEqual(mod53._minor_version("1.3"), 3)
@@ -416,14 +416,14 @@ class TestPrioritizeUtils(unittest.TestCase):
         self.assertEqual(result["FR-001"]["priority"], "Must")
 
     def test_aggregate_moscow_conflict_resolves_by_weight(self):
-        # High influence says Must, Low — Won't → Must should win
+        # High influence говорит Must, Low — Won't → Must должен победить
         scores = {
             "SH-001": {"FR-001": "Must"},   # High weight=3
             "SH-002": {"FR-001": "Won't"},  # Low weight=1
         }
         influence = {"SH-001": "High", "SH-002": "Low"}
         result = mod53._aggregate_moscow(scores, influence)
-        # Weighted: (4*3 + 1*1) / 4 = 13/4 = 3.25 → Should (≥2.5)
+        # Взвешенный: (4*3 + 1*1) / 4 = 13/4 = 3.25 → Should (≥2.5)
         self.assertIn(result["FR-001"]["priority"], ["Must", "Should"])
 
     def test_aggregate_wsjf_calculates_score(self):
@@ -485,7 +485,7 @@ class TestPrioritizeUtils(unittest.TestCase):
             "TC-001": {"priority": "Must"},
             "FR-001": {"priority": "Won't"},
         }
-        # verifies is not a dependency — no violation should arise
+        # verifies не является dependency — violation не должен возникать
         self.assertEqual(len(mod53._find_dependency_violations(repo, priorities)), 0)
 
     def test_detect_stakeholder_conflicts_critical(self):
@@ -525,7 +525,7 @@ class TestPrioritizeUtils(unittest.TestCase):
 
 
 class TestPrioritizeTools(BaseMCPTest):
-    """Integration tests for the 5.3 MCP tools."""
+    """Интеграционные тесты MCP-инструментов 5.3."""
 
     P = "prio_test"
 
@@ -544,19 +544,19 @@ class TestPrioritizeTools(BaseMCPTest):
     def test_start_session_no_repo_warns(self):
         result = mod53.start_prioritization_session(
             "nonexistent_project", "Test", "MoSCoW")
-        self.assertIn("has no requirements", result)
+        self.assertIn("не содержит требований", result)
 
     def test_start_session_duplicate_label(self):
         self._prepare_repo()
         mod53.start_prioritization_session(self.P, "Sprint 1", "MoSCoW")
         result = mod53.start_prioritization_session(self.P, "Sprint 1", "MoSCoW")
-        self.assertIn("already exists", result)
+        self.assertIn("уже существует", result)
 
     def test_start_session_flags_volatile_requirement(self):
         self._prepare_repo()
         result = mod53.start_prioritization_session(
             self.P, "Vol Test", "MoSCoW")
-        # FR-003 has version 1.4 — should be flagged
+        # FR-003 имеет версию 1.4 — должен быть отмечен
         self.assertIn("FR-003", result)
 
     def test_start_session_wsjf_shows_scale(self):
@@ -594,7 +594,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.start_prioritization_session(self.P, "S1", "MoSCoW")
         bad = json.dumps([{"req_id": "FR-001", "score": "High"}])
         result = mod53.add_stakeholder_scores(self.P, "S1", "SH-001", "High", bad)
-        self.assertIn("Invalid value", result)
+        self.assertIn("Недопустимое значение", result)
 
     def test_add_scores_two_stakeholders_both_saved(self):
         self._prepare_repo()
@@ -617,7 +617,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.add_stakeholder_scores(self.P, "S3", "SH-001", "High", s2)
         prio = load_prio_file(self.P)
         session = prio["sessions"][0]
-        # The second call should overwrite
+        # Второй вызов должен перезаписать
         self.assertEqual(session["stakeholder_scores"]["SH-001"]["FR-001"], "Should")
 
     def test_add_scores_wsjf_format(self):
@@ -628,7 +628,7 @@ class TestPrioritizeTools(BaseMCPTest):
         ])
         result = mod53.add_stakeholder_scores(
             self.P, "WSJF1", "SH-001", "High", scores)
-        self.assertNotIn("Error", result)
+        self.assertNotIn("Ошибка", result)
         prio = load_prio_file(self.P)
         saved = prio["sessions"][0]["stakeholder_scores"]["SH-001"]["FR-001"]
         self.assertEqual(saved["bv"], 8.0)
@@ -654,12 +654,12 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.add_stakeholder_scores(self.P, "CONF1", "SH-001", "High", s1)
         mod53.add_stakeholder_scores(self.P, "CONF1", "SH-002", "Low", s2)
         result = mod53.run_aggregation(self.P, "CONF1")
-        self.assertIn("Conflict", result)
+        self.assertIn("Конфликт", result)
         self.assertIn("FR-001", result)
 
     def test_run_aggregation_detects_dependency_violation(self):
         self._prepare_repo()
-        # FR-002 depends on FR-001 (from make_prio_repo)
+        # FR-002 depends on FR-001 (из make_prio_repo)
         mod53.start_prioritization_session(self.P, "DEP1", "MoSCoW")
         # FR-002 = Must, FR-001 = Won't → violation
         scores = json.dumps([
@@ -700,7 +700,7 @@ class TestPrioritizeTools(BaseMCPTest):
         self._prepare_repo()
         mod53.start_prioritization_session(self.P, "EMPTY", "MoSCoW")
         result = mod53.run_aggregation(self.P, "EMPTY")
-        self.assertIn("No stakeholder scores", result)
+        self.assertIn("Нет оценок", result)
 
     def test_resolve_conflict_marks_resolved(self):
         self._prepare_repo()
@@ -712,8 +712,8 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.run_aggregation(self.P, "RES1")
         result = mod53.resolve_conflict(
             self.P, "RES1", "FR-001", "stakeholder_conflict",
-            "Must", "Agreed with the sponsor", "Sponsor")
-        self.assertIn("resolved", result)
+            "Must", "Согласовано со спонсором", "Sponsor")
+        self.assertIn("разрешён", result)
         prio = load_prio_file(self.P)
         session = prio["sessions"][0]
         conflict = next((c for c in session["conflicts"]
@@ -729,7 +729,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.run_aggregation(self.P, "RES2")
         mod53.resolve_conflict(
             self.P, "RES2", "FR-001", "stakeholder_conflict",
-            "Must", "PM decision", "PM")
+            "Must", "Решение PM", "PM")
         prio = load_prio_file(self.P)
         session = prio["sessions"][0]
         self.assertEqual(
@@ -747,7 +747,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.add_stakeholder_scores(self.P, "SAVE1", "SH-001", "High", scores)
         mod53.run_aggregation(self.P, "SAVE1")
         mod53.save_prioritization_result(self.P, "SAVE1")
-        # Read the 5.1 repository directly
+        # Читаем репозиторий 5.1 напрямую
         safe = self.P.lower().replace(" ", "_")
         repo_path = data_path(safe, f"{safe}_traceability_repo.json")
         with open(repo_path) as f:
@@ -781,18 +781,18 @@ class TestPrioritizeTools(BaseMCPTest):
 
     def test_snapshot_appended_second_session(self):
         self._prepare_repo()
-        # First session
+        # Первая сессия
         mod53.start_prioritization_session(self.P, "S-A", "MoSCoW")
         s = json.dumps([{"req_id": "FR-001", "score": "Must"}])
         mod53.add_stakeholder_scores(self.P, "S-A", "SH-001", "High", s)
         mod53.run_aggregation(self.P, "S-A")
         mod53.save_prioritization_result(self.P, "S-A")
-        # Second session
+        # Вторая сессия
         mod53.start_prioritization_session(self.P, "S-B", "MoSCoW")
         mod53.add_stakeholder_scores(self.P, "S-B", "SH-001", "High", s)
         mod53.run_aggregation(self.P, "S-B")
         mod53.save_prioritization_result(self.P, "S-B")
-        # Both sessions must exist
+        # Обе сессии должны существовать
         prio = load_prio_file(self.P)
         labels = [sess["label"] for sess in prio["sessions"]]
         self.assertIn("S-A", labels)
@@ -807,11 +807,11 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.run_aggregation(self.P, "CLOSED")
         mod53.save_prioritization_result(self.P, "CLOSED")
         result = mod53.add_stakeholder_scores(self.P, "CLOSED", "SH-002", "Low", s)
-        self.assertIn("already closed", result)
+        self.assertIn("закрыта", result)
 
     def test_impact_effort_custom_mapping_applied(self):
         self._prepare_repo()
-        # Big Bets → Must (a non-standard mapping)
+        # Big Bets → Must (нестандартный маппинг)
         custom = json.dumps({"BigBets": "Must"})
         mod53.start_prioritization_session(
             self.P, "IE2", "ImpactEffort", quadrant_mapping_json=custom)

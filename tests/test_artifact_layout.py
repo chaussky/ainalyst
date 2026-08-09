@@ -1,5 +1,5 @@
 """
-tests/test_artifact_layout.py — artifact layout in project subfolders (issue #1).
+tests/test_artifact_layout.py — раскладка артефактов по подкаталогам проекта (issue #1).
 
 Covers:
   - safe normalization of project_id (protection against path traversal);
@@ -13,7 +13,7 @@ import shutil
 import tempfile
 import unittest
 
-import tests.conftest  # noqa: F401  — applies the sys.modules mocks before importing the project
+import tests.conftest  # noqa: F401  — применяет моки sys.modules до импорта проекта
 import skills.common as common
 
 
@@ -92,13 +92,13 @@ class TestSaveArtifact(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self._cwd = os.getcwd()
         os.chdir(self.tmp)
-        # conftest mocked common.save_artifact — restore the real one via reload
+        # conftest замокал common.save_artifact — восстановим реальную через reload
         importlib.reload(common)
 
     def tearDown(self):
         os.chdir(self._cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
-        importlib.reload(common)  # restore the module state (conftest mocks)
+        importlib.reload(common)  # вернуть состояние модуля (моки conftest)
 
     def test_with_project_id_nests(self):
         common.save_artifact("# hi", "6_1_current_state_crm", project_id="crm")

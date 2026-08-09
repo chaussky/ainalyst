@@ -1,189 +1,189 @@
-# Scenario B — Cross-analysis of multiple interviews
+# Сценарий B — Кросс-анализ нескольких интервью
 
-Use this when the BA provides results from two or more elicitation sessions.
-This may be: different stakeholders on the same topic, or a repeat interview
-with the same stakeholder after new information was received.
-
----
-
-## Input data
-
-The BA provides:
-- Two or more artifacts from Scenario A (already structured)
-- Or raw transcripts of multiple sessions
-
-If raw transcripts are provided — first process each one using the algorithm
-from `single_interview.md`, then perform the cross-analysis.
+Используй когда BA передаёт результаты двух и более сессий выявления.
+Это может быть: разные стейкхолдеры по одной теме, или повторное интервью
+с тем же стейкхолдером после получения новой информации.
 
 ---
 
-## Cross-analysis algorithm
+## Входные данные
 
-### Step 1 — Stakeholder map and growth map
+BA передаёт:
+- Два и более артефакта из Сценария A (уже структурированные)
+- Или сырые транскрипты нескольких сессий
 
-**1a. Summary table of known stakeholders**
+Если переданы сырые транскрипты — сначала обработай каждый по алгоритму
+из `single_interview.md`, затем выполняй кросс-анализ.
 
-| Stakeholder | Role | Influence | Interest | Attitude | Covered by elicitation |
+---
+
+## Алгоритм кросс-анализа
+
+### Шаг 1 — Карта стейкхолдеров и карта роста
+
+**1a. Сводная таблица известных стейкхолдеров**
+
+| Стейкхолдер | Роль | Влияние | Интерес | Отношение | Охвачен выявлением |
 | :--- | :--- | :---: | :---: | :--- | :---: |
-| | | | | | Yes / No |
+| | | | | | Да / Нет |
 
-Identify: who is a Key Player, who is a potential Blocker, where there are unexpected allies.
+Выдели: кто Key Player, кто потенциальный Blocker, где неожиданные союзники.
 
-**1b. Stakeholder registry growth map**
+**1b. Карта роста реестра стейкхолдеров**
 
-The stakeholder registry grows in a chain — each new stakeholder leads to the next.
-Visualize how we found them:
+Реестр стейкхолдеров растёт по цепочке — каждый новый открывает следующих.
+Визуализируй как мы их находили:
 
 ```
-Sponsor (known from the start)
-  └── Head of Department X (mentioned by the Sponsor)
-        └── Process Manager Y (mentioned by Head of Department X)
-        └── Legal department representative (mentioned by Head of Department X)
-  └── IT Director (mentioned by the Sponsor)
-        └── System architect (mentioned by the IT Director)
+Спонсор (известен изначально)
+  └── Руководитель отдела X (упомянут Спонсором)
+        └── Менеджер процесса Y (упомянут Руководителем X)
+        └── Представитель юридического отдела (упомянут Руководителем X)
+  └── IT-директор (упомянут Спонсором)
+        └── Архитектор системы (упомянут IT-директором)
 ```
 
-For each stakeholder not yet covered by elicitation, specify:
+Для каждого не охваченного выявлением стейкхолдера укажи:
 
-| Stakeholder | Source (via whom) | Why important | Priority | Status |
+| Стейкхолдер | Источник (через кого) | Почему важен | Приоритет | Статус |
 | :--- | :--- | :--- | :---: | :--- |
-| | | | Urgent / As planned | Not covered / Planned |
+| | | | Срочно / По плану | Не охвачен / В плане |
 
-**1c. Registry blind spots**
+**1c. Белые пятна реестра**
 
-Explicitly indicate who was mentioned in interviews but is still not covered by
-elicitation, and why this is a risk to the project.
+Явно укажи: кто упоминался в интервью но до сих пор не охвачен выявлением,
+и почему это риск для проекта.
 
-Use `update_stakeholder_registry` to update the live registry.
-
----
-
-### Step 2 — Contradictions between stakeholders
-
-This is the central step of the cross-analysis.
-
-Look across three levels:
-
-**Level 1 — Factual contradictions**
-Stakeholder A claims X, stakeholder B claims not-X.
-
-```
-Topic: [what the contradiction is about]
-Position A ([role]): [statement]
-Position B ([role]): [statement]
-Criticality: High / Medium / Low
-Hypothesis: [why the positions diverge — different context? conflict of interest?]
-How to resolve: [who to involve, what to clarify, is a workshop needed]
-```
-
-**Level 2 — Priority contradictions**
-Stakeholders agree on WHAT is needed but disagree on WHAT is more important.
-
-```
-Topic: [feature / requirement]
-Priority for A ([role]): High
-Priority for B ([role]): Low
-Impact on the project: [what happens if not aligned]
-Recommendation: [escalate to a workshop / escalate to the sponsor / ...]
-```
-
-**Level 3 — Coverage gaps**
-Stakeholder A talked about topic X, stakeholder B did not raise this topic.
-This is not necessarily a contradiction — but a signal that the topic needs to be checked.
-
-```
-Topic: [what only one stakeholder mentioned]
-Mentioned by: [who]
-Not mentioned by: [who — and this is odd, because...]
-Action: [ask the second stakeholder]
-```
+Используй `update_stakeholder_registry` для обновления живого реестра.
 
 ---
 
-### Step 3 — Consolidated requirements register
+### Шаг 2 — Противоречия между стейкхолдерами
 
-Merge requirements from all interviews into a single register.
-Deduplicate: the same requirement may be phrased differently by different stakeholders.
+Это центральный шаг кросс-анализа.
 
-| ID | Requirement | Sources | Priority | Status | Note |
+Ищи по трём уровням:
+
+**Уровень 1 — Фактические противоречия**
+Стейкхолдер А утверждает X, стейкхолдер Б утверждает не-X.
+
+```
+Тема: [о чём противоречие]
+Позиция А ([роль]): [формулировка]
+Позиция Б ([роль]): [формулировка]
+Критичность: Высокая / Средняя / Низкая
+Гипотеза: [почему позиции расходятся — разный контекст? конфликт интересов?]
+Как разрешить: [кого привлечь, что уточнить, нужен ли воркшоп]
+```
+
+**Уровень 2 — Приоритетные противоречия**
+Стейкхолдеры согласны ЧТО нужно, но расходятся в том, ЧТО важнее.
+
+```
+Тема: [функция / требование]
+Приоритет у А ([роль]): High
+Приоритет у Б ([роль]): Low
+Влияние на проект: [что будет если не согласовать]
+Рекомендация: [вынести на воркшоп / эскалировать спонсору / ...]
+```
+
+**Уровень 3 — Пробелы покрытия**
+Стейкхолдер А рассказал о теме X, стейкхолдер Б эту тему не затронул.
+Это не обязательно противоречие — но сигнал что тему нужно проверить.
+
+```
+Тема: [что упомянул только один стейкхолдер]
+Упомянул: [кто]
+Не упомянул: [кто — и это странно, потому что...]
+Действие: [спросить у второго стейкхолдера]
+```
+
+---
+
+### Шаг 3 — Сводный реестр требований
+
+Объедини требования из всех интервью в единый реестр.
+Дедуплицируй: одно требование может быть сформулировано по-разному разными стейкхолдерами.
+
+| ID | Требование | Источники | Приоритет | Статус | Примечание |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FR-001 | | Stakeholder A, B | High | Agreed | |
-| FR-002 | | Stakeholder A only | Medium | Needs confirmation | |
-| FR-003 | | Stakeholder A vs B | — | Contradiction | Different phrasing |
+| FR-001 | | Стейкхолдер А, Б | High | Согласовано | |
+| FR-002 | | Только стейкхолдер А | Medium | Требует подтверждения | |
+| FR-003 | | Стейкхолдер А vs Б | — | Противоречие | Разные формулировки |
 
-Statuses:
-- **Agreed** — mentioned by multiple stakeholders without contradictions
-- **Needs confirmation** — only one source
-- **Contradiction** — conflict between stakeholders
-- **In question** — implicit, needs clarification
-
----
-
-### Step 4 — Political map
-
-Sometimes contradictions between stakeholders are not technical but political.
-
-Signs:
-- One stakeholder clearly avoids mentioning another, even though they should
-- One stakeholder describes another's area of responsibility differently
-- Different versions of "who makes the decision"
-- Someone is actively pushing a specific solution (rather than a problem)
-
-```
-Observation: [what was noticed]
-Parties involved: [who]
-Risk to the project: [how this could affect it]
-BA recommendation: [how to work with this dynamic]
-```
+Статусы:
+- **Согласовано** — упомянуто несколькими стейкхолдерами без противоречий
+- **Требует подтверждения** — только один источник
+- **Противоречие** — конфликт между стейкхолдерами
+- **Под вопросом** — неявное, требует уточнения
 
 ---
 
-### Step 5 — Re-elicitation plan
+### Шаг 4 — Политическая карта
 
-Based on the cross-analysis, build a concrete plan:
+Иногда противоречия между стейкхолдерами — не технические, а политические.
+
+Признаки:
+- Один стейкхолдер явно не упоминает другого, хотя должен
+- Один стейкхолдер описывает зону ответственности другого иначе
+- Разные версии того "кто принимает решение"
+- Кто-то активно продвигает конкретное решение (а не проблему)
 
 ```
-## Re-elicitation Plan
+Наблюдение: [что заметили]
+Вовлечённые стороны: [кто]
+Риск для проекта: [как это может повлиять]
+Рекомендация BA: [как работать с этой динамикой]
+```
 
-### Critical questions (an answer is needed before continuing work)
-1. Topic: [what]
-   From whom: [stakeholder / role]
-   Specific question: [wording]
-   Why critical: [consequences if not clarified]
+---
 
-### Medium-priority questions
+### Шаг 5 — План довыявления
+
+По итогам кросс-анализа сформируй конкретный план:
+
+```
+## План довыявления
+
+### Критичные вопросы (нужен ответ до продолжения работы)
+1. Тема: [что]
+   У кого: [стейкхолдер / роль]
+   Конкретный вопрос: [формулировка]
+   Почему критично: [последствия если не уточнить]
+
+### Вопросы среднего приоритета
 ...
 
-### Recommended formats
-- [topic X] → follow-up interview with [whom]
-- [topic Y] → workshop with [whom + whom], because alignment is needed
-- [topic Z] → document analysis [which documents]
+### Рекомендуемые форматы
+- [тема X] → повторное интервью с [кем]
+- [тема Y] → воркшоп с [кем + кем], потому что нужно согласование
+- [тема Z] → анализ документов [каких]
 ```
 
 ---
 
-## Final cross-analysis report format
+## Формат финального отчёта кросс-анализа
 
 ```markdown
-# Elicitation Results Cross-Analysis
-**Stakeholders:** [list]
-**Elicitation period:** [dates]
-**Status:** Unconfirmed results (→ passed to 4.3)
+# Кросс-анализ результатов выявления
+**Стейкхолдеры:** [список]
+**Период выявления:** [даты]
+**Статус:** Неподтверждённые результаты (→ передаётся в 4.3)
 
-## 1. Stakeholder map
-[summary table]
+## 1. Карта стейкхолдеров
+[сводная таблица]
 
-## 2. Contradictions
-### 2.1 Factual contradictions
-### 2.2 Priority contradictions
-### 2.3 Coverage gaps
+## 2. Противоречия
+### 2.1 Фактические противоречия
+### 2.2 Приоритетные противоречия
+### 2.3 Пробелы покрытия
 
-## 3. Consolidated requirements register
-[table]
+## 3. Сводный реестр требований
+[таблица]
 
-## 4. Political map
-[observations and risks]
+## 4. Политическая карта
+[наблюдения и риски]
 
-## 5. Re-elicitation plan
-[specific questions, formats, priorities]
+## 5. План довыявления
+[конкретные вопросы, форматы, приоритеты]
 ```

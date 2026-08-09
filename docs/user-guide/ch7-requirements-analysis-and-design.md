@@ -2,237 +2,237 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
-# Chapter 7: Requirements Analysis and Design Definition
+# Глава 7 — Requirements Analysis and Design Definition
 
 ---
 
-## Overview of Chapter 7
+## Общая характеристика Главы 7
 
-BABOK Chapter 7, "Requirements Analysis and Design Definition," is the shift from strategy to specifics. Chapter 6 answered the questions "why are we changing" and "what is the strategy." Chapter 7 answers the question: **what exactly are we building, how is it organized, is it written correctly, does the business actually need it, how will we implement it, and is it worth doing at all.**
+Глава 7 BABOK — «Requirements Analysis and Design Definition» — это переход от стратегии к конкретике. Если Глава 6 ответила на вопросы «почему меняемся» и «какова стратегия», то Глава 7 отвечает на вопрос: **что именно разрабатываем, как это организовано, правильно ли написано, нужно ли бизнесу, как будем реализовывать и стоит ли это делать вообще.**
 
-The six tasks of Chapter 7 form a single logical flow:
+Шесть задач Главы 7 выстраиваются в единую логику:
 
 ```
-7.1 Specification   →   7.2 Verification (written correctly?)
+7.1 Спецификация   →   7.2 Верификация (правильно написано?)
         ↓                        ↓
-7.4 Architecture    →   7.3 Validation (does the business need it?)
+7.4 Архитектура    →   7.3 Валидация (нужно бизнесу?)
         ↓
-7.5 Design Options   →   7.6 Value Assessment and Recommendation
+7.5 Варианты дизайна   →   7.6 Оценка ценности и рекомендация
 ```
 
-This is the most "productive" chapter of the project: this is where requirements are actually created (User Stories, functional requirements, business rules, data models, business processes). This is where they get checked for quality and value. And this is where the final recommendation to the sponsor takes shape: which implementation option to choose and why.
+Это самая «производящая» глава проекта: именно здесь появляются требования — User Stories, функциональные требования, бизнес-правила, модели данных, бизнес-процессы. Именно здесь они проверяются на качество и ценность. И именно здесь формируется финальная рекомендация спонсору: какой вариант реализации выбрать и почему.
 
-**Why this chapter often gets done poorly.** BAs frequently reduce Chapter 7 to a single action: writing a list of functional requirements in an Excel table. Verification gets skipped: "it's obvious anyway." Validation gets skipped: "the customer said what they want." Requirements architecture never gets built: "we'll figure it out as we go." As a result, developers receive a list of features with no context, no priorities, no explanation of "why," full of contradictions and gaps, and the project starts stalling as early as the first sprint.
+**Почему эту главу часто делают плохо.** BA нередко сводит Главу 7 к одному действию: написать список функциональных требований в таблице Excel. Верификация не проводится — «и так понятно». Валидация не проводится — «заказчик сам сказал что хочет». Архитектура требований не строится — «разберёмся по ходу». В результате разработчики получают список функций без контекста, без приоритетов, без объяснения «зачем», с противоречиями и пробелами — и проект начинает буксовать уже на первом спринте.
 
-**Project phase.** Chapter 7 runs in the `design` phase. If you haven't switched the phase yet, ask AInalyst or run `python phase.py design`.
-
----
-
-## Task 7.1: Specify and Model Requirements (Specification and Modeling)
-
-### Summary
-
-The BA translates the confirmed elicitation results from Chapter 4 into formal specifications: User Stories, functional requirements, business rules, data models (ERD), and business process descriptions (BPMN). Every artifact created is automatically registered in the traceability repository (5.1) and becomes part of the project's living requirements registry.
-
-### BA pain points
-
-**"Requirements live in my head, not in a document."** The BA ran 15 interviews and understood everything, then started "transferring" that knowledge to developers in meetings. A month later, different team members have different understandings of the same requirement. There's no single source of truth.
-
-**"One big list of FRs."** Everything is written as "The system shall..." in a single table: business processes, rules, user scenarios, and technical constraints, all mixed together. Different stakeholders read this list and see different things. Nobody sees the full picture.
-
-**"Requirements are written vaguely."** "The system shall process requests quickly," "the interface must be user-friendly," "security must be ensured": these phrasings can't be tested or evaluated. The developer interprets them one way, QA another, the customer yet another.
-
-**"There's no traceability."** A requirement is written, but nobody knows where it came from or why. When the sponsor asks, "why do we even need FR-047?", the BA can't answer. When a stakeholder suggests, "let's drop this one," there's no way to quickly see what depends on it.
-
-**"There's no coverage check."** The BA has written 50 requirements and thinks the job is done. But three of six business goals aren't covered by a single requirement, simply because it got forgotten in the flow of work.
-
-### What we built
-
-**Elicitation context analysis as a starting point.** The first step is `analyze_elicitation_context`: the platform reads the 4.3 artifacts (confirmed elicitation results) and proposes a list of candidate requirements with a recommended type and priority. The BA doesn't start from a blank page: they see a structured list of starting points based on what was already captured in Chapter 4.
-
-**Six artifact types, each for its own purpose.** The platform supports a full range of notations:
-- **User Story**: a user scenario in the format "As a [role], I want [action], so that [benefit]," with Acceptance Criteria
-- **Functional Requirement (FR)**: system behavior in the format "The system shall..."
-- **Non-Functional Requirement (NFR)**: quality constraints such as performance, security, and accessibility
-- **Business Rule (BR)**: domain rules the system must follow
-- **Business Process (BP)**: a BPMN process model with an auto-generated Activity Diagram (.puml)
-- **Data Dictionary + ERD**: a description of entities and their relationships with an auto-generated diagram
-
-**Automatic registration in traceability.** Every artifact created immediately appears in the 5.1 repository with `draft` status. Traceability to business goals is built into the creation process: the BA specifies linked goals when creating a requirement rather than adding them later as a separate effort.
-
-**Coverage matrix at the end.** `build_coverage_matrix` shows which business goals are covered by requirements and which aren't. Green means covered, red means zero requirements, yellow means more than 10 requirements (possible over-engineering). The BA sees gaps clearly, before moving on to the next task.
-
-### Value for the BA
-
-**From "I understood everything" to "everything is captured."** Knowledge that lives only in the BA's head is a risk. The platform turns that knowledge into structured artifacts with traceability and history. A new team member joining a month later sees the full context: where the requirement came from, why, and who the source is.
-
-**Different artifacts for different audiences.** The customer reads the User Story and understands it. The developer reads the FR and understands it. The lawyer reads the BR and understands it. This isn't one document "for everyone": it's the right artifact type for the right stakeholder. The platform helps choose the type instead of leaving the BA to guess.
-
-**Auto-generated diagrams without extra tools.** Business Process and ERD artifacts generate PlantUML diagrams automatically. The BA doesn't open Visio or draw anything by hand: they describe the logic in text, and the platform generates the visualization. This saves time and reduces the chance of the document and the diagram drifting apart.
-
-**Business goal coverage as a completeness criterion.** "Done" no longer means "I wrote everything I could remember"; it means "every business goal is covered by requirements." The coverage matrix gives an objective answer to the question of readiness.
-
-### How to use it: an example
-
-Continuing the contract-approval project. Elicitation (Chapter 4) is complete, and Chapter 6 is done.
-
-*"Analyze the elicitation context for the contract-approval project."*
-
-The platform reads the 4.3 artifacts and proposes: 3 User Stories (approval roles), 7 FRs (statuses, notifications, integration), 2 BRs (escalation rules), 1 BP (approval process), 1 ERD (contract structure).
-
-*"Create a User Story: as an Approver, I want to receive a notification about a new contract awaiting approval, so that I don't miss the deadline. AC: the notification arrives within 5 minutes of assignment; it contains a link to the contract and the deadline."*
-
-US-001 is created, registered in 5.1, and linked to BG-001.
-
-*"Check business goal coverage."*
-
-BG-001 is covered by 4 requirements. BG-002 (status transparency) has none. The BA creates additional requirements.
+**Фаза проекта.** Глава 7 выполняется в фазе `design`. Если вы ещё не переключили фазу — попросите AIналитика или запустите `python phase.py design`.
 
 ---
 
-## Task 7.2: Verify Requirements (Requirements Verification)
+## Задача 7.1 — Specify and Model Requirements (Спецификация и моделирование)
 
-### Summary
+### Краткое описание
 
-The BA checks the requirements that have been written for quality of wording: atomicity, clarity, testability, completeness, and consistency. This is a check of "was it written correctly," not "is this the right requirement" (that's Task 7.3).
+BA переводит подтверждённые результаты выявления из Главы 4 в формальные спецификации: User Stories, функциональные требования, бизнес-правила, модели данных (ERD), описания бизнес-процессов (BPMN). Каждый созданный артефакт автоматически регистрируется в трассировочном репозитории (5.1) и становится частью живого реестра требований проекта.
 
-Verification is professional quality control before requirements go to developers and testers. A wording error caught here takes minutes to fix. The same error caught during development takes days.
+### Боли и проблемы BA
 
-### BA pain points
+**«Требования в голове, а не в документе».** BA провёл 15 интервью, всё понял — и начал «передавать» знания разработчикам на встречах. Через месяц у разных членов команды разное понимание одного и того же требования. Нет единого источника правды.
 
-**"It's obvious anyway."** The most common reason to skip verification. But "obvious to the BA" and "obvious to the developer" are two different things. "The system must respond quickly": the BA means seconds, the developer means "well, it shouldn't hang." The first bug triggers a round of "what did you actually mean."
+**«Один большой список FR».** Всё записано как «Система должна...» в одну таблицу: и бизнес-процессы, и правила, и пользовательские сценарии, и технические ограничения — вперемешку. Разные стейкхолдеры читают этот список и видят разное. Никто не видит целостной картины.
 
-**Untestable requirements.** "The system must ensure a high level of security": what does that mean? How would a tester verify it? There's no way. Requirements like this create an illusion of a complete spec without adding real value.
+**«Требования написаны размыто».** «Система должна быстро обрабатывать запросы», «должна быть удобным интерфейс», «необходимо обеспечить безопасность» — эти формулировки нельзя протестировать, нельзя оценить. Разработчик интерпретирует их по-своему, QA — по-своему, заказчик — ещё иначе.
 
-**"One requirement, three functions."** "The system shall accept requests, process them, and send notifications" is really three separate requirements in one. The developer doesn't know how to track them, and the tester doesn't know how to verify them individually.
+**«Трассировки нет».** Требование написано, но никто не знает откуда оно взялось и зачем. Когда спонсор спрашивает «а зачем нам FR-047?» — BA не может ответить. Когда стейкхолдер предлагает «давайте уберём вот это» — нет способа быстро понять что за этим тянется.
 
-**Divergence between models.** The BA created an ERD with 8 entities and separately described a business process with a different set of entities. Nobody notices the mismatch until a developer asks "what maps to what."
+**«Нет проверки покрытия».**  BA написал 50 требований и думает что готово. Но три из шести бизнес-целей не покрыты ни одним требованием — просто потому что в потоке работы об этом забыли.
 
-**"Requirements are agreed" without any real agreement.** One stakeholder said "the system must support Excel," another said "no Excel, API only." Both requirements got written down, and nobody noticed the contradiction.
+### Что мы реализовали
 
-### What we built
+**Анализ контекста выявления как стартовая точка.** Первый шаг — `analyze_elicitation_context`: платформа читает артефакты 4.3 (подтверждённые результаты выявления) и предлагает список требований-кандидатов с рекомендуемым типом и приоритетом. BA не начинает с чистого листа — видит структурированный список отправных точек на основе того, что уже было зафиксировано в Главе 4.
 
-**Automatic checks against BABOK's 9 characteristics.** `check_req_quality` analyzes all project requirements (or a selected list) across two groups:
-- **Group A (automatic):** atomicity (no "and," "as well as," "or"), unambiguity (no "quickly," "conveniently," "as appropriate"), testability (a concrete criterion exists), prioritization, conciseness
-- **Group B (structural):** consistency (no conflicting statuses in 5.1), completeness (a source_artifact and traceability exist)
+**Шесть типов артефактов — каждый для своей цели.** Платформа поддерживает полный спектр нотаций:
+- **User Story** — пользовательский сценарий в формате «Как [роль], я хочу [действие], чтобы [выгода]» с Acceptance Criteria
+- **Functional Requirement (FR)** — системное поведение в формате «Система должна...»
+- **Non-Functional Requirement (NFR)** — ограничения на качество: производительность, безопасность, доступность
+- **Business Rule (BR)** — правила предметной области, которым система должна следовать
+- **Business Process (BP)** — BPMN-модель процесса с автогенерацией Activity Diagram (.puml)
+- **Data Dictionary + ERD** — описание сущностей и их связей с автогенерацией диаграммы
 
-The result is a concrete list of problems: which requirement, which characteristic was violated, severity (blocker / major / minor), and how to fix it.
+**Автоматическая регистрация в трассировке.** Каждый созданный артефакт немедленно появляется в репозитории 5.1 со статусом `draft`. Трассировка к бизнес-целям встраивается в процесс создания — BA указывает linked goals при создании требования, а не добавляет их потом отдельным усилием.
 
-**Verification issue tracker.** Every problem found is logged as a Verification Issue (VI-xxx) with a type, severity, and owner. The BA doesn't hold the list of fixes in their head: all open and closed issues are stored in the system. Once fixed, an issue is closed with notes describing exactly what was corrected.
+**Матрица покрытия в конце.** `build_coverage_matrix` показывает: какие бизнес-цели покрыты требованиями, а какие нет. Зелёный — покрыто, красный — ни одного требования, жёлтый — более 10 требований (возможный over-engineering). BA видит пробелы явно, до того как перейдёт к следующей задаче.
 
-**Model consistency checks.** `check_model_consistency` cross-checks the 7.1 artifacts against each other: entities in the Data Dictionary vs. the ERD, Use Cases vs. the UC diagram, business process participants vs. actors. Discrepancies are surfaced automatically: the BA doesn't have to hold several documents in their head and hunt for mismatches manually.
+### Ценности для BA
 
-**The `verified` status as an explicit gate.** A requirement with blocker issues cannot get `verified` status without an explicit BA decision. This is a barrier: you can't "forget" about a critical problem and move on. Once all blockers are resolved, `mark_req_verified` moves the requirement to the next status.
+**От «я всё понял» к «всё зафиксировано».** Знание, которое живёт в голове BA, — это риск. Платформа превращает это знание в структурированные артефакты с трассировкой и историей. Новый участник команды, пришедший через месяц, видит полный контекст: откуда требование, зачем, кто источник.
 
-**A Verification Report handed off to 5.5 and 7.3.** The final report contains: the percentage of verified requirements, top issue types, a list of remaining blocker issues, and a verdict on readiness for approval. This is a ready-made document; there's no need to prepare a separate summary.
+**Разные артефакты для разных аудиторий.** User Story читает заказчик — он понимает. FR читает разработчик — он понимает. BR читает юрист — он понимает. Это не один документ «для всех» — это правильный тип артефакта для правильного стейкхолдера. Платформа помогает выбрать тип, а не оставляет BA угадывать.
 
-### Value for the BA
+**Автодиаграммы без инструментов.** Business Process и ERD генерируют PlantUML-диаграммы автоматически. BA не открывает Visio, не рисует вручную — описывает логику текстом, платформа генерирует визуализацию. Это экономит время и снижает вероятность расхождения между документом и диаграммой.
 
-**Errors are caught before development, not during it.** Replacing "quickly" with "within 2 seconds under a load of up to 500 users" takes a minute in 7.2. The same fix midway through a sprint means a discussion, a re-estimate, and possibly rework of the architecture. The cost of fixing an error grows exponentially with every stage; the platform helps catch it at the cheapest one.
+**Покрытие бизнес-целей как критерий завершённости.** «Готово» теперь означает не «я написал всё что вспомнил», а «все бизнес-цели покрыты требованиями». Матрица покрытия даёт объективный ответ на вопрос о готовности.
 
-**Testers work from clear criteria.** A verified requirement contains a measurable criterion. That's not just tidiness, it's a direct time saving for QA: fewer "what did you mean" questions, fewer test cases written on a guess, fewer disputed bugs over "is this a feature or a defect."
+### Как пользоваться: пример
 
-**A professional stance in front of stakeholders.** When the BA hands over a Verification Report with 94% verified and a list of closed issues, that's a demonstration of a mature process. Not "we wrote the requirements," but "we wrote the requirements and checked them against BABOK's 9 criteria, with documented results."
+Продолжение проекта contract-approval. Выявление (Глава 4) завершено, Глава 6 выполнена.
 
-### How to use it: an example
+*«Проанализируй контекст выявления для проекта contract-approval.»*
 
-*"Check the quality of all requirements for the contract-approval project."*
+Платформа читает 4.3-артефакты и предлагает: 3 User Story (согласующие роли), 7 FR (статусы, уведомления, интеграция), 2 BR (правила эскалации), 1 BP (процесс согласования), 1 ERD (структура договоров).
 
-Result: US-003, missing_ac (blocker); FR-007, the word "promptly" (ambiguity, major); FR-012, two actions in one requirement (not_atomic, major).
+*«Создай User Story: как Согласующий, хочу получать уведомление о новом договоре на согласовании, чтобы не пропустить дедлайн. AC: уведомление приходит в течение 5 минут после назначения; содержит ссылку на договор и дедлайн.»*
 
-*"Log an issue for US-003: no Acceptance Criteria, blocker."*
+US-001 создана, зарегистрирована в 5.1, привязана к BG-001.
 
-VI-001 created.
+*«Проверь покрытие бизнес-целей.»*
 
-*"US-003 has been fixed: 3 AC added: the notification arrives within 5 minutes, contains a link and the deadline, and is logged if email is unavailable."*
-
-*"Close VI-001."* The resolution note is recorded.
-
-*"Check model consistency."* The ERD and Data Dictionary are in sync, no discrepancies.
-
-*"Verify all the fixed requirements and generate a report."*
-
-Verification Report: 48/50 verified, 2 minor issues still open, verdict: ready for validation.
+BG-001 покрыта 4 требованиями. BG-002 (прозрачность статусов) — ни одного. BA создаёт дополнительные требования.
 
 ---
 
-## Task 7.3: Validate Requirements (Requirements Validation)
+## Задача 7.2 — Verify Requirements (Верификация требований)
 
-### Summary
+### Краткое описание
 
-The BA checks not the quality of wording (that's 7.2), but the substantive correctness: does the business actually need these requirements, do they align with the business goals and the future state from Chapter 6, and have the key assumptions been identified. This is an iterative task; it can be run several times at different stages of the project.
+BA проверяет написанные требования на качество формулировок: атомарность, однозначность, тестируемость, полноту, согласованность. Это проверка «правильно ли написано», а не «правильное ли это требование» — для последнего есть задача 7.3.
 
-### BA pain points
+Верификация — это профессиональный контроль качества до того, как требования уйдут к разработчикам и тестировщикам. Ошибку в формулировке, найденную здесь, исправить стоит минут. Ту же ошибку, найденную в разработке — дни.
 
-**"The customer asked for it, so it's needed."** A requirement made it into the spec because someone asked for it. But does it align with the project's business goals? Sometimes stakeholders ask for what they want, not what the business needs. The distinction matters.
+### Боли и проблемы BA
 
-**"Orphan requirements."** Midway through the project, the BA discovers that 15% of requirements don't trace to any business goal. Where did they come from? Why are they there? Should they be removed? But someone wrote them, and now it feels risky to take them out.
+**«И так понятно».** Самая частая причина пропустить верификацию. Но «понятно BA» и «понятно разработчику» — разные вещи. «Система должна быстро отвечать» — BA имеет в виду секунды, разработчик — «ну, не висеть». При первом же баге начинается выяснение «что вы имели в виду».
 
-**Implicit assumptions that blow up at the end.** "We assumed the ERP integration was possible through an API," and it turns out the ERP doesn't support an API. Nobody logged or validated that assumption. Now 30% of requirements need to be rewritten.
+**Нетестируемые требования.** «Система должна обеспечивать высокий уровень безопасности» — что это значит? Как тестировщик проверит это требование? Никак. Такие требования создают иллюзию полноты спецификации, не добавляя реальной ценности.
 
-**"The business context exists only in the BA's head."** The BA knows the project's business goals, but they're never written down anywhere as a benchmark for checking requirements against. Every check is "I remember we wanted something like that."
+**«Одно требование — три функции».** «Система должна принимать заявки, обрабатывать их и отправлять уведомления» — это три разных требования в одном. Разработчику непонятно как их трекать, тестировщику — как проверять по отдельности.
 
-### What we built
+**Расхождение между моделями.** BA создал ERD с 8 сущностями и отдельно описал бизнес-процесс с другим набором сущностей. Расхождение никто не замечает — пока разработчик не спрашивает «что есть что».
 
-**Business context as an explicit benchmark.** `set_business_context` captures the business goals (with KPIs), a description of the future state, and the solution scope in one place. If Tasks 6.1 and 6.2 are complete, this data is pre-filled automatically from their artifacts: the BA doesn't re-enter the same data by hand. This context becomes the benchmark for all subsequent validation.
+**«Требования согласованы» без реального согласования.** Один стейкхолдер сказал «система должна поддерживать Excel», другой — «никакого Excel, только API». Оба требования записаны, противоречие никто не заметил.
 
-**Automatic business goal alignment check.** `check_business_alignment` runs a BFS traversal of the 5.1 traceability graph and checks: is a `business_goal` node reachable from each verified requirement? Requirements with no traceability to a business goal are flagged explicitly, and the BA decides: is this a gap in traceability, or is the requirement genuinely unnecessary?
+### Что мы реализовали
 
-**Assumption log with explicit status.** `log_assumption` records each assumption: what's being assumed, on what basis, and how risky it is. High-risk assumptions (`high_risk`) trigger a warning when trying to move a requirement to `validated` status. This pushes the BA to validate them before moving on to the next stage, rather than forgetting about them.
+**Автоматическая проверка по 9 характеристикам BABOK.** `check_req_quality` анализирует все требования проекта (или выбранный список) по двум группам:
+- **Группа A (автоматически):** атомарность (нет «и», «а также», «или»), однозначность (нет «быстро», «удобно», «надлежащим образом»), тестируемость (есть конкретный критерий), приоритизированность, краткость
+- **Группа B (по структуре):** согласованность (нет конфликтов статусов в 5.1), полнота (есть source_artifact и трассировка)
 
-**Three axes of validation.** The platform structures validation around three questions: (1) Value, does the requirement deliver a benefit to stakeholders? (2) Alignment with the future state, does it help achieve the to-be from 6.2? (3) Assumptions, have hidden assumptions been identified, and are they being managed?
+Результат — конкретный список проблем с указанием: какое требование, какая характеристика нарушена, severity (blocker / major / minor), как исправить.
 
-**A Validation Report as the output for 5.5.** The final report is a business goal coverage matrix, a list of orphan requirements, and the status of assumptions. A ready-made document to hand off for approval in Task 5.5.
+**Трекер проблем верификации.** Каждая найденная проблема фиксируется как Verification Issue (VI-xxx) с типом, severity и ответственным. BA не держит список правок в голове — все открытые и закрытые issues хранятся в системе. После исправления issue закрывается с notes о том что именно было исправлено.
 
-### Value for the BA
+**Проверка согласованности моделей.** `check_model_consistency` сравнивает артефакты из 7.1 между собой: сущности в Data Dictionary vs ERD, Use Cases vs UC-диаграмма, участники бизнес-процесса vs акторы. Расхождения выявляются автоматически — BA не держит несколько документов в голове и не ищет расхождения вручную.
 
-**"Unnecessary" requirements are caught before development.** A requirement with no traceability to a business goal is a candidate for removal or clarification. Finding 8 such requirements in 7.3 saves development resources. Finding them after release means answering "why did we even build this?" with an unpleasant answer.
+**Статус `verified` как явный переход.** Требование с blocker-issues не может получить статус `verified` без явного решения BA. Это барьер: нельзя «забыть» про критичную проблему и двигаться дальше. После устранения всех блокеров — `mark_req_verified` переводит требование в следующий статус.
 
-**Assumptions get managed, not just accumulated.** The assumption log isn't a formality. It's a list of "bombs" that could go off later. The platform makes them visible and trackable. A high-risk assumption logged and validated at the 7.3 stage doesn't turn into a crisis during development.
+**Verification Report для передачи в 5.5 и 7.3.** Итоговый отчёт содержит: процент верифицированных требований, топ-проблемы по типам, список оставшихся blocker-issues, вердикт о готовности к согласованию. Это готовый документ — не нужно готовить отдельную сводку.
 
-**Continuity with Chapter 6, without duplication.** A BA who conscientiously completed 6.1 and 6.2 gets a pre-filled business context automatically. The data is reused, not re-entered by hand. This reduces the risk of the strategic document and the validation criteria drifting apart.
+### Ценности для BA
 
-### How to use it: an example
+**Ошибки найдены до разработки, а не во время.** Замена «быстро» на «в течение 2 секунд при нагрузке до 500 пользователей» занимает минуту в 7.2. Та же правка в середине спринта — это обсуждение, переоценка, возможно переработка архитектуры. Стоимость исправления ошибки растёт экспоненциально с каждым этапом — платформа помогает найти её на самом дешёвом.
 
-*"Set the business context for contract-approval."*
+**Тестировщик работает с чёткими критериями.** Верифицированное требование содержит измеримый критерий. Это не просто аккуратность — это прямая экономия времени QA: меньше вопросов «что вы имели в виду», меньше тест-кейсов написанных «от фонаря», меньше спорных багов «это фича или дефект».
 
-If 6.1/6.2 are complete, the platform pre-fills: BG-001 (cut the cycle from 14 to 3 days), the future state (a unified status registry, automatic notifications), the scope (status module plus ERP integration, excluding electronic signature).
+**Профессиональная позиция перед стейкхолдерами.** Когда BA передаёт Verification Report с 94% verified и списком закрытых issues — это демонстрация зрелого процесса. Не «мы написали требования», а «мы написали требования и проверили их по 9 критериям BABOK с документированными результатами».
 
-*"Check whether all verified requirements align with the business goals."*
+### Как пользоваться: пример
 
-Result: 46 of 48 trace to BG-001 or BG-002. FR-031 and FR-032 are orphan requirements.
+*«Проверь качество всех требований по проекту contract-approval.»*
 
-*"FR-031 and FR-032 are mobile app requirements. They're out of scope. Mark them as out_of_scope."*
+Результат: US-003 — missing_ac (blocker), FR-007 — слово «оперативно» (ambiguity, major), FR-012 — два действия в одном требовании (not_atomic, major).
 
-*"Log an assumption: we're assuming the ERP supports a REST API. Risk: high, needs to be checked with the IT architect before development starts."*
+*«Зафиксируй issue по US-003: нет Acceptance Criteria, blocker.»*
 
-ASM-001 is created with a validation priority.
+VI-001 создан.
 
-*"Generate the Validation Report."* Ready to hand off to 5.5.
+*«US-003 исправлена: добавлено 3 AC — уведомление приходит в течение 5 минут, содержит ссылку и дедлайн, при недоступности email фиксируется в логе.»*
+
+*«Закрой VI-001.»* — resolution_note зафиксирована.
+
+*«Проверь согласованность моделей.»* — ERD и Data Dictionary синхронизированы, расхождений нет.
+
+*«Верифицируй все исправленные требования и сгенерируй отчёт.»*
+
+Verification Report: 48/50 verified, 2 minor-issues открыты, вердикт — готово к валидации.
 
 ---
 
-## Task 7.4: Define Requirements Architecture (Requirements Architecture)
+## Задача 7.3 — Validate Requirements (Валидация требований)
 
-### Summary
+### Краткое описание
 
-The BA organizes requirements into a coherent structure, an architecture: defining the viewpoints of different stakeholders, grouping requirements into the corresponding views, and identifying structural gaps. The result is an Architecture Document, which is handed off to 7.5 as an input artifact and to 4.4 for communication with the team.
+BA проверяет не качество формулировок (это 7.2), а содержательную правильность: нужны ли эти требования бизнесу, соответствуют ли они бизнес-целям и будущему состоянию из Главы 6, выявлены ли ключевые допущения. Это итерационная задача — она может запускаться несколько раз на разных стадиях проекта.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"Every stakeholder sees something different."** The customer wants to see business processes, the developer wants functional requirements, the data architect wants data models, the CISO wants security requirements. If all 80 requirements are dumped into a single table, everyone wastes time hunting for "their" section and risks missing something important.
+**«Заказчик сказал — значит нужно».** Требование попало в спецификацию потому что кто-то его попросил. Но соответствует ли оно бизнес-целям проекта? Иногда стейкхолдеры просят то, что хотят, а не то, что нужно бизнесу. Различие критично.
 
-**"Nobody sees the whole picture."** The requirements are written, but it's unclear how they form a coherent system. There's no answer to: are all user roles covered by scenarios? Does every component have NFRs? Where are the gaps?
+**«Orphan requirements».** В середине проекта BA обнаруживает, что 15% требований не трассируются ни к одной бизнес-цели. Откуда они? Зачем? Исключить? Но кто-то же их написал, и теперь страшно убирать.
 
-**"The architect gets requirements with no context."** A technical architect who needs to design the system receives a list of 60 FRs and has to work out the structure themselves. That's their time, their risk of misunderstanding something, and, indirectly, the project's time and money.
+**Неявные допущения, которые взрываются в конце.** «Мы предполагали, что интеграция с ERP возможна через API» — оказывается, ERP не поддерживает API. Это допущение никто не зафиксировал и не валидировал. Теперь 30% требований нужно переписывать.
 
-### What we built
+**«Бизнес-контекст существует в голове BA».** BA знает бизнес-цели проекта, но нигде они не зафиксированы как эталон для проверки требований. Каждая проверка — это «помню что мы хотели чего-то похожего».
 
-**Automatic mapping by artifact type.** `analyze_requirements_architecture` reads the 5.1 repository and automatically distributes requirements across standard viewpoints: User Stories and Use Cases go to "Users and Interaction"; FR/NFR go to "Functionality"; BP goes to "Business Processes"; DD/ERD go to "Data"; BR goes to "Business Rules." This happens without any BA involvement: the platform builds the picture from what was already created in 7.1.
+### Что мы реализовали
 
-**Custom viewpoints for specific contexts.** `add_custom_viewpoint` lets the BA add a viewpoint that isn't in the standard set: "Security and Access" for banks, "Audit and Compliance" for regulated projects, "Data Migration" for legacy-system replacement projects. The BA specifies which requirements belong to it, and the platform includes them in the architecture.
+**Бизнес-контекст как явный эталон.** `set_business_context` фиксирует бизнес-цели (с KPI), описание будущего состояния и скоуп решения в одном месте. Если задачи 6.1 и 6.2 выполнены — данные предзаполняются автоматически из их артефактов: BA не переносит одни и те же данные вручную. Этот контекст становится эталоном для всей последующей валидации.
+
+**Автоматическая проверка соответствия бизнес-целям.** `check_business_alignment` запускает BFS-обход графа трассировки 5.1 и проверяет: достижим ли из каждого верифицированного требования узел типа `business_goal`? Требования без трассировки к бизнес-целям помечаются явно — BA принимает решение: это пробел в трассировке или реально «лишнее» требование.
+
+**Реестр допущений с явным статусом.** `log_assumption` фиксирует каждое предположение: что предполагается, на каком основании, насколько рискованно. Допущения с высоким риском — `high_risk` — являются предупреждением при попытке перевести требование в статус `validated`. Это побуждает BA валидировать их до перехода к следующему этапу, а не забыть.
+
+**Три оси проверки.** Платформа структурирует валидацию по трём вопросам: (1) Ценность — приносит ли требование выгоду стейкхолдерам? (2) Соответствие будущему состоянию — помогает ли оно достичь to-be из 6.2? (3) Допущения — выявлены ли скрытые предположения и управляются ли они?
+
+**Validation Report как выход для 5.5.** Итоговый отчёт — матрица покрытия бизнес-целей, список orphan req, статус допущений. Готовый документ для передачи на согласование в задачу 5.5.
+
+### Ценности для BA
+
+**«Лишние» требования выявлены до разработки.** Требование без трассировки к бизнес-цели — это кандидат на удаление или уточнение. Найти 8 таких требований в 7.3 — экономия ресурсов разработки. Найти их после релиза — вопрос «зачем мы это сделали?» с неприятным ответом.
+
+**Допущения управляются, а не накапливаются.** Реестр допущений — это не формальность. Это список «бомб», которые могут взорваться в конце. Платформа делает их видимыми и отслеживаемыми. High-risk допущение, зафиксированное и валидированное на этапе 7.3, не превращается в кризис в фазе разработки.
+
+**Связность с Главой 6 без дублирования.** BA, который добросовестно выполнил 6.1 и 6.2, получает предзаполненный бизнес-контекст автоматически. Данные переиспользуются — не переносятся вручную. Это снижает риск расхождения между стратегическим документом и критериями валидации.
+
+### Как пользоваться: пример
+
+*«Установи бизнес-контекст для contract-approval.»*
+
+Если 6.1/6.2 выполнены — платформа предзаполняет: BG-001 (сократить цикл с 14 до 3 дней), будущее состояние (единый реестр статусов, автоуведомления), скоуп (модуль статусов + ERP-интеграция, без электронной подписи).
+
+*«Проверь соответствие всех верифицированных требований бизнес-целям.»*
+
+Результат: 46 из 48 трассируются к BG-001 или BG-002. FR-031 и FR-032 — orphan requirements.
+
+*«FR-031 и FR-032 — это требования к мобильному приложению. Они вне скоупа. Пометь как out_of_scope.»*
+
+*«Зафикисируй допущение: предполагаем что ERP поддерживает REST API. Риск — high, нужно проверить с IT-архитектором до старта разработки.»*
+
+ASM-001 создано с приоритетом валидации.
+
+*«Сгенерируй Validation Report.»* — готов к передаче в 5.5.
+
+---
+
+## Задача 7.4 — Define Requirements Architecture (Архитектура требований)
+
+### Краткое описание
+
+BA организует требования в целостную структуру — архитектуру: определяет точки зрения (viewpoints) разных стейкхолдеров, группирует требования в соответствующие представления (views), выявляет структурные разрывы. Результат — Architecture Document, который передаётся в 7.5 как входной артефакт и в 4.4 для коммуникации с командой.
+
+### Боли и проблемы BA
+
+**«Каждый стейкхолдер видит разное».** Заказчик хочет видеть бизнес-процессы, разработчик — функциональные требования, архитектор данных — модели данных, CISO — требования безопасности. Если все 80 требований свалены в одну таблицу, каждый тратит время на поиск «своего» и рискует потерять важное.
+
+**«Никто не видит целостную картину».** Требования написаны — но непонятно как они образуют систему. Нет ответа: покрыты ли все пользовательские роли сценариями? Есть ли NFR к каждому компоненту? Где разрывы?
+
+**«Архитектор получает требования без контекста».** Технический архитектор, которому нужно проектировать систему, получает список из 60 FR и должен сам разбираться в структуре. Это его время, его риск ошибиться в понимании — и косвенно время и деньги проекта.
+
+### Что мы реализовали
+
+**Автоматический маппинг по типам артефактов.** `analyze_requirements_architecture` читает репозиторий 5.1 и автоматически распределяет требования по стандартным точкам зрения: User Stories и Use Cases → «Пользователи и взаимодействие»; FR/NFR → «Функциональность»; BP → «Бизнес-процессы»; DD/ERD → «Данные»; BR → «Бизнес-правила». Это происходит без участия BA — платформа формирует картину из того, что уже создано в 7.1.
+
+**Кастомные viewpoints для специфических контекстов.** `add_custom_viewpoint` позволяет добавить точку зрения, которой нет в стандартном наборе: «Безопасность и доступ» для банков, «Аудит и compliance» для регуляторных проектов, «Миграция данных» для проектов замены legacy-систем. BA указывает какие именно требования входят — платформа включает их в архитектуру.
 
 **Whose interests a requirement touches — stated, not guessed.** `declare_stakeholder_interest` records that a stakeholder's interests are affected by specific requirements. This is deliberately a different thing from two facts the platform already holds: the `owner` field (7.1) says who is answerable for the *wording* of a requirement, and the RACI role (5.5) says who decided on an *approval package*. The BA does not re-enter those — the platform reads them as evidence and says where each tie came from. Repeat calls merge, so nothing an earlier call recorded is ever silently erased; withdrawing a declaration takes an explicit `remove`. If the field was hand-edited into a shape that cannot be merged into — an object instead of a list of declarations — the tool says which requirement it replaced and keeps the discarded value in the repository history, so "silently" stays true in the one case where a replacement really does happen. The `note` you write is printed in the Architecture Document under the requirement it belongs to.
 
@@ -246,162 +246,162 @@ The stakeholder verdict rests on recorded facts — a declared interest, ownersh
 
 **A versioned architecture snapshot.** `save_architecture_snapshot` captures the current state of the architecture with a version number and a comment. The history of snapshots is preserved, so you can see how the requirements architecture evolved over the course of the project. The gap block inside the document is recomputed as the snapshot is written, so it cannot contradict the concerns section printed a few lines above it — the workflow deliberately puts "declare the interests you know" between the gap check and the snapshot.
 
-### Value for the BA
+### Ценности для BA
 
-**Every stakeholder gets "their" slice.** The Architecture Document is organized by viewpoint. The customer opens the "Business Processes" section and sees only what they need. The architect opens "Functionality" and "Data." This reduces the cognitive load of reading and lowers the risk that an important requirement gets missed by the stakeholder who needs it.
+**Каждый стейкхолдер получает «свой» срез.** Architecture Document организован по точкам зрения. Заказчик открывает раздел «Бизнес-процессы» и видит только то, что ему нужно. Архитектор открывает «Функциональность» и «Данные». Это снижает когнитивную нагрузку на чтение и снижает риск что важное требование будет упущено нужным стейкхолдером.
 
 **Structural gaps are found before design.** Discovering that the "Financial Controller" role exists in the stakeholder registry but has no recorded tie to a single requirement takes minutes to resolve in 7.4 — either the tie exists and simply was never stated, in which case you declare it, or it genuinely does not, in which case a requirement is missing. Discovering the same thing in 7.5, while building design options, means rework and lost time.
 
-**An input artifact for design.** The Architecture Document is exactly what a technical architect needs to start work on design options (7.5): a structured picture instead of a chaotic list. The BA saves the team time and reduces the number of clarifying questions.
+**Входной артефакт для проектирования.** Architecture Document — это именно то, что нужно техническому архитектору для начала работы над дизайн-опциями (7.5). Структурированная картина вместо хаотичного списка. BA экономит время команды и снижает количество уточняющих вопросов.
 
-### How to use it: an example
+### Как пользоваться: пример
 
-*"Analyze the requirements architecture for contract-approval."*
+*«Проанализируй архитектуру требований для contract-approval.»*
 
-The platform builds the picture: 4 viewpoints, 48 requirements distributed. Warning: BG-002 isn't covered by the "Data" viewpoint.
+Платформа строит картину: 4 viewpoints, 48 требований распределены. Предупреждение: BG-002 не покрыта viewpoint «Данные».
 
-*"Add a custom viewpoint 'ERP Integration': NFR-004, FR-019, FR-020, FR-021. Stakeholder: IT architect."*
+*«Добавь кастомный viewpoint "Интеграция с ERP": NFR-004, FR-019, FR-020, FR-021. Стейкхолдер — IT-архитектор.»*
 
-*"Check for gaps."*
+*«Проверь разрывы.»*
 
-Critical: the "Financial Controller" stakeholder is in the 3.2 registry, but has no US/UC at all. Warning: NFR-008 isn't linked to any FR.
+Critical: стейкхолдер «Финансовый контролёр» в реестре 3.2, но ни одного US/UC. Warning: NFR-008 не привязан ни к одному FR.
 
-*"Save snapshot v1.0."* The Architecture Document is saved and ready to hand off to 7.5.
-
----
-
-## Task 7.5: Define Design Options (Design Options)
-
-### Summary
-
-The BA forms and compares implementation options for the solution: build from scratch (Build), buy an off-the-shelf product (Buy), or combine the two (Hybrid). For each option, requirements are allocated across versions (v1 / v2 / out_of_scope), and the options are compared using weighted criteria. The result is a Design Options Report, handed off to 7.6 for the final recommendation.
-
-### BA pain points
-
-**"Only one option."** "We decided from the start that we'd Build, why consider anything else?" The result: no alternatives analysis, no comparison, no rationale for the choice. If something goes wrong later, there's no documented answer to "did you consider other options?"
-
-**"Everything goes into the first version."** The BA puts 100% of the requirements into the MVP. As a result, the first release slips, the budget overruns, and the team is overloaded. Prioritizing requirements by version, "what's necessary" rather than "what would be nice," is one of the most painful conversations to have with the customer.
-
-**"Dependencies aren't checked."** The BA decided FR-010 goes into v2, but FR-010 is a dependency for FR-003, which is in v1. As a result, the developer can't implement FR-003 without FR-010. This surfaces in Sprint 2 and forces a plan revision.
-
-**"Selection criteria are personal opinion."** "I think Buy is better, it's cheaper and faster." Why exactly Buy? Unclear. The counterpart says, "I think Build is more flexible." The conversation turns into an exchange of opinions with no data behind it.
-
-### What we built
-
-**Three approaches with explicit trade-offs.** For each option (Build / Buy / Hybrid), the BA describes the components, improvement opportunities, and success metrics. The platform structures the description of each option using the same template, so all three options are comparable on the same dimensions.
-
-**Automatic allocation of requirements to versions.** `allocate_requirements`, in `auto_suggest=True` mode, reads priorities from the 5.1 repository: Must goes to v1, Should goes to v1/v2, Could goes to v2, Won't goes to out_of_scope. The BA gets a proposal, reviews it, and overrides specific requirements as needed. This isn't an automatic decision; it's an automatically prepared starting point for the conversation.
-
-**Automatic dependency checking.** Once the allocation is approved, the platform runs a BFS over the dependency graph: if requirement A in v1 depends on requirement B in v2, that's a warning. The BA sees the conflict clearly and decides: move B to v1, or reconsider the dependency.
-
-**A comparison matrix with configurable criteria.** `compare_design_options` builds a comparison across standard criteria: cost, speed, risk, requirement coverage, flexibility. The BA can add custom criteria, for example "alignment with the company's vendor policy" or "ability to roll out in phases." The result is a comparison table with a rationale for stakeholders.
-
-### Value for the BA
-
-**A justified choice, not "we just decided."** The comparison matrix is a document for stakeholders. When the director asks "why Hybrid?", the BA opens the Design Options Report: here are the three options, here are the criteria, here are the scores, here's why Hybrid wins on the balance of coverage and flexibility given this budget. It's a data-driven conversation.
-
-**v1 that's actually achievable.** Auto-suggest based on priorities from 5.3, plus dependency checking, protects against an overloaded MVP. The BA comes to the development team with an allocation where v1 contains only the Must items plus verified dependencies. Fewer unpleasant surprises in Sprint 1.
-
-**The Design Options Report as a bridge to 7.6.** The document contains all the data needed for value assessment: options, components, requirement coverage by version, potential improvements. The BA doesn't have to prepare a separate document for the next step; it already exists.
-
-### How to use it: an example
-
-*"Create three design options for contract-approval. OPT-001: Build, an in-house module. OPT-002: Buy, the off-the-shelf DocuWare SaaS solution. OPT-003: Hybrid, an open-source BPM engine plus a custom notification module."*
-
-Three options are created with components and improvement opportunities.
-
-*"For each option, allocate requirements across versions using auto-suggest."*
-
-Auto-suggest: 28 requirements to v1, 14 to v2, 6 to out_of_scope. Dependency check: FR-019 (v2) is a dependency for FR-015 (v1), a warning.
-
-*"Move FR-019 to v1 for all options. Accept the rest."*
-
-*"Compare the options."*
-
-Matrix: OPT-003 (Hybrid) wins on coverage and flexibility, OPT-002 (Buy) wins on speed, OPT-001 (Build) wins on customizability. The BA documents a preliminary position: "Recommending OPT-003, to be finalized in 7.6."
+*«Зафиксируй снапшот v1.0.»* — Architecture Document сохранён, готов к передаче в 7.5.
 
 ---
 
-## Task 7.6: Analyze Potential Value and Recommend Solution (Value Assessment and Recommendation)
+## Задача 7.5 — Define Design Options (Варианты дизайна)
 
-### Summary
+### Краткое описание
 
-The BA assesses the potential value of each design option (benefits, costs, risks), compares them, and formulates an official recommendation to the sponsor. This is the final task of Chapter 7. The result is a Recommendation Document, handed off to the sponsor for a decision and to Chapter 8 as the baseline for measuring the outcome achieved.
+BA формирует и сравнивает варианты реализации решения: разработать с нуля (Build), купить готовое (Buy) или комбинировать (Hybrid). Для каждого варианта распределяет требования по версиям (v1 / v2 / out_of_scope) и сравнивает варианты по взвешенным критериям. Результат — Design Options Report, который передаётся в 7.6 для финальной рекомендации.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"The recommendation is a personal opinion."** "I think this option is better" isn't a professional stance for a document going to a sponsor with a multi-million-dollar budget. No data, no methodology, no rationale.
+**«Единственный вариант».** «Мы сразу решили что будем делать Build — зачем рассматривать другое?» В результате нет анализа альтернатив, нет сравнения, нет обоснования выбора. Если что-то пойдёт не так — нет документального ответа на вопрос «а вы рассматривали другие варианты?»
 
-**"Benefits are listed, not calculated."** "Option A will give us: faster processes, fewer errors, higher satisfaction." That's a wish list, not a value analysis. How much is each benefit worth? How confident are we in it?
+**«Всё в первой версии».** BA включает 100% требований в MVP. В результате первый релиз задерживается, бюджет выходит за рамки, команда перегружена. Приоритизация требований по версиям — не «что хотелось бы» а «что необходимо» — один из самых болезненных разговоров с заказчиком.
 
-**"There are no success metrics."** The decision is made, the project launches. A year later the sponsor asks: "did we achieve what we wanted?" There's no answer, because nobody defined what would count as success before the work began.
+**«Зависимости не проверяются».** BA решил, что FR-010 пойдёт в v2, но FR-010 является зависимостью для FR-003, которая в v1. В итоге разработчик не может реализовать FR-003 без FR-010. Это обнаруживается в Sprint 2 — и приводит к пересмотру плана.
 
-**"`no_action` never gets considered."** If no option delivers enough value, the right recommendation might be "do nothing" or "revisit the analysis." But the BA has no tool for reaching that conclusion, so the recommendation is always "do something."
+**«Критерии выбора — личное мнение».** «Я думаю, лучше Buy — дешевле и быстрее». Почему именно Buy? Непонятно. Оппонент говорит «я думаю Build — гибче». Разговор переходит в обмен мнениями без данных.
 
-### What we built
+### Что мы реализовали
 
-**A structured assessment based on a formula.** `add_value_assessment`, for each option, gathers: benefit types (financial, operational, strategic, human) with magnitude and confidence ratings; costs (implementation, operational); and a risk profile (pulled automatically from 6.3, if that file exists). `compare_value` calculates a Value Score using the formula: `Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0`. This isn't a "black box": the BA sees every component of the score.
+**Три подхода с явными trade-offs.** Для каждого варианта (Build / Buy / Hybrid) BA описывает компоненты, возможности для улучшения и метрики успеха. Платформа структурирует описание вариантов по единому шаблону — все три варианта сопоставимы по одним и тем же измерениям.
 
-**Four legitimate recommendation outcomes.** The platform supports every possible conclusion: `recommend_option` (one option is clearly the best), `recommend_parallel` (two options are implemented in parallel), `recommend_reanalyze` (none of them fit, a new analysis is needed), `no_action` (benefits are lower than costs, don't proceed). The BA isn't backed into a corner of "you have to recommend something."
+**Автоматическое распределение требований по версиям.** `allocate_requirements` в режиме `auto_suggest=True` читает приоритеты из репозитория 5.1: Must → v1, Should → v1/v2, Could → v2, Won't → out_of_scope. BA получает предложение — проверяет его, вносит переопределения для конкретных требований. Это не автоматическое решение, это автоматически подготовленная отправная точка для разговора.
 
-**Success metrics as a mandatory element.** For a `recommend_option` or `recommend_parallel` recommendation, success_metrics are required. This isn't a formality: it's the baseline for Chapter 8. "NPS above 65 by December," "processing time under 3 days within 6 months": concrete, measurable success criteria, set before development begins.
+**Проверка зависимостей автоматически.** После утверждения allocation платформа запускает BFS по графу зависимостей: если req A в v1 зависит от req B в v2 — это предупреждение. BA видит конфликт явно и принимает решение: передвинуть B в v1 или пересмотреть зависимость.
 
-**A pre-flight check before finalizing.** `check_value_readiness` (optional) checks the completeness of the assessments: are all options assessed, is the business context in place, is the data correct. This is a safety check before the document goes to the sponsor.
+**Матрица сравнения вариантов с настраиваемыми критериями.** `compare_design_options` строит сравнение по стандартным критериям: стоимость, скорость, риски, покрытие требований, гибкость. BA может добавить кастомные критерии: например, «соответствие вендорской политике компании» или «возможность поэтапного внедрения». Результат — сравнительная таблица с обоснованием для стейкхолдеров.
 
-**Recommendation Document, a professional output artifact.** `save_recommendation` generates a document with: an executive summary for the sponsor, an assessment of each option, a Value Score matrix, the rationale for the recommendation, and the list of success metrics. This is a ready-made document for presentation.
+### Ценности для BA
 
-### Value for the BA
+**Обоснованный выбор, а не «мы так решили».** Сравнительная матрица — это документ для стейкхолдеров. Когда директор спрашивает «почему Hybrid?» — BA открывает Design Options Report: вот три варианта, вот критерии, вот оценки, вот почему Hybrid выигрывает по соотношению покрытия и гибкости при данном бюджете. Это разговор с данными.
 
-**A recommendation to the sponsor backed by data, not opinion.** The Recommendation Document is a structured argument: here are the three options, here's how we assessed them, here's the formula, here's the winner with a Value Score of 8.4 against 6.1 and 4.7, and here's why. The sponsor makes the decision with a clear understanding of the rationale. The BA is protected if something goes wrong later.
+**v1 — реально реализуемая версия.** Auto_suggest на основе приоритетов из 5.3 + проверка зависимостей — это защита от перегруженного MVP. BA приходит к команде разработки с allocation, где v1 содержит только Must + проверенные зависимости. Меньше неприятных сюрпризов в Sprint 1.
 
-**Success metrics protect the project's outcome.** When the sponsor asks a year later, "did we achieve the goal?", the BA opens the Recommendation Document: the success metrics were "processing time under 3 days" and "NPS above 65." The facts: 2.8 days and NPS 68. The project succeeded against its defined criteria. That's an objective assessment, not a subjective "it seems better now."
+**Design Options Report как мост к 7.6.** Документ содержит все данные которые нужны для оценки ценности: варианты, компоненты, покрытие требований по версиям, potential improvements. BA не готовит отдельный документ для следующего шага — он уже создан.
 
-**Seamless handoff to Chapter 8.** The Recommendation Document with success metrics is a precise input artifact for the Solution Evaluation tasks (Chapter 8). There's no need to reconstruct "what were we actually trying to achieve": it's on record, dated and versioned.
+### Как пользоваться: пример
 
-**A professional closing act for Chapter 7.** A BA who works through the full path, 7.1 through 7.2, 7.3, 7.4, 7.5, and 7.6, arrives at the sponsor's desk with a complete package: requirements specified, verified, validated, organized into an architecture, implementation options compared, value calculated, recommendation justified. This isn't just a list of requirements; it's a complete analytical work product.
+*«Создай три варианта дизайна для contract-approval. OPT-001: Build — собственная разработка модуля. OPT-002: Buy — готовое SaaS-решение DocuWare. OPT-003: Hybrid — open-source BPM + кастомный модуль уведомлений.»*
 
-### How to use it: an example
+Три варианта созданы с компонентами и improvement opportunities.
 
-*"Assess the value of all three options for contract-approval."*
+*«Для каждого варианта распредели требования по версиям, используй автопредложение.»*
 
-OPT-003 (Hybrid): benefits, operational (reduced processing time, fewer errors, confidence 0.8), strategic (scaling flexibility, confidence 0.6); costs, moderate; risks pulled from 6.3 (2 High risks, but mitigation plans are in place).
+Auto_suggest: 28 req → v1, 14 → v2, 6 → out_of_scope. Проверка зависимостей: FR-019 (v2) является зависимостью для FR-015 (v1) — предупреждение.
 
-*"Compare the options."*
+*«FR-019 перенеси в v1 для всех вариантов. Остальное принимаю.»*
+
+*«Сравни варианты.»*
+
+Матрица: OPT-003 (Hybrid) выигрывает по покрытию и гибкости, OPT-002 (Buy) — по скорости, OPT-001 (Build) — по кастомизируемости. BA документирует предварительную позицию: «Рекомендую OPT-003 с финализацией в 7.6».
+
+---
+
+## Задача 7.6 — Analyze Potential Value and Recommend Solution (Оценка ценности и рекомендация)
+
+### Краткое описание
+
+BA оценивает потенциальную ценность каждого варианта дизайна — выгоды, затраты, риски — сравнивает их и формирует официальную рекомендацию спонсору. Это финальная задача Главы 7. Результат — Recommendation Document, который передаётся спонсору для принятия решения и в Главу 8 как baseline для оценки достигнутого результата.
+
+### Боли и проблемы BA
+
+**«Рекомендация — личное мнение».** «Я считаю что этот вариант лучше» — это не профессиональная позиция для документа, который идёт к спонсору с бюджетом в несколько миллионов. Нет данных, нет методологии, нет обоснования.
+
+**«Выгоды не считаются — только перечисляются».** «Вариант A даст нам: ускорение процессов, снижение ошибок, повышение удовлетворённости». Это список желаний, не анализ ценности. Сколько стоит каждая выгода? Насколько мы в ней уверены?
+
+**«Нет success metrics».** Решение принято, проект запущен. Через год спонсор спрашивает: «Мы добились того чего хотели?» Нет ответа — потому что никто не зафиксировал что именно считается успехом до начала работ.
+
+**«no_action не рассматривается».** Если ни один вариант не даёт достаточной ценности — правильная рекомендация может быть «не делать ничего» или «пересмотреть анализ». Но у BA нет инструмента для этого вывода, поэтому рекомендация всегда «делать что-нибудь».
+
+### Что мы реализовали
+
+**Структурированная оценка по формуле.** `add_value_assessment` для каждого варианта собирает: типы выгод (финансовые, операционные, стратегические, человеческие) с оценкой magnitude и confidence; затраты (внедрение, операционные); рисковый профиль (читается из 6.3 автоматически, если файл есть). `compare_value` считает Value Score по формуле: `Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0`. Это не «чёрный ящик» — BA видит каждую составляющую.
+
+**Четыре легитимных исхода рекомендации.** Платформа поддерживает все возможные выводы: `recommend_option` (один вариант явно лучше), `recommend_parallel` (два варианта реализуются параллельно), `recommend_reanalyze` (ни один не подходит — нужен новый анализ), `no_action` (выгоды меньше затрат — не делаем). BA не загнан в угол «нужно что-то рекомендовать».
+
+**Success metrics как обязательный элемент.** Для рекомендации типа `recommend_option` или `recommend_parallel` — success_metrics обязательны. Это не формальность: это baseline для Главы 8. «NPS > 65 к декабрю», «Время обработки < 3 дней через 6 месяцев» — конкретные измеримые критерии успеха, зафиксированные до начала разработки.
+
+**Pre-flight проверка перед финализацией.** `check_value_readiness` (опционально) проверяет полноту оценок: все ли варианты оценены, есть ли бизнес-контекст, корректны ли данные. Это страховка перед тем как документ уйдёт к спонсору.
+
+**Recommendation Document — профессиональный выходной артефакт.** `save_recommendation` генерирует документ с: резюме для спонсора, оценкой каждого варианта, Value Score матрицей, обоснованием рекомендации и списком success metrics. Это готовый документ для презентации.
+
+### Ценности для BA
+
+**Рекомендация спонсору с данными, а не с мнением.** Recommendation Document — это структурированный аргумент: вот три варианта, вот как мы их оценивали, вот формула, вот winner с Value Score 8.4 против 6.1 и 4.7, вот почему. Спонсор принимает решение с пониманием обоснования. BA защищён, если что-то пойдёт не так.
+
+**Success metrics = защита результата проекта.** Когда через год спонсор спрашивает «мы достигли цели?» — BA открывает Recommendation Document: success metrics были «время обработки < 3 дней» и «NPS > 65». Факт: 2.8 дней и NPS 68. Проект успешен по зафиксированным критериям. Это объективная оценка, а не субъективное «кажется, стало лучше».
+
+**Передача в Главу 8 без потерь.** Recommendation Document с success metrics — это точный входной артефакт для задач Solution Evaluation (Глава 8). Не нужно вспоминать «что же мы хотели достичь» — это зафиксировано в документе с датой и версией.
+
+**Профессиональный завершающий акт Главы 7.** BA, который проходит весь путь 7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6, приходит к спонсору с полным пакетом: требования специфицированы, верифицированы, валидированы, организованы в архитектуру, варианты реализации сравнены, ценность рассчитана, рекомендация обоснована. Это не просто список требований — это полноценный аналитический продукт.
+
+### Как пользоваться: пример
+
+*«Оцени ценность всех трёх вариантов для contract-approval.»*
+
+OPT-003 (Hybrid): выгоды — операционные (сокращение времени, снижение ошибок, confidence 0.8), стратегические (гибкость масштабирования, confidence 0.6); затраты — средние; риски подтягиваются из 6.3 (2 High-риска, но mitigation-планы есть).
+
+*«Сравни варианты.»*
 
 Value Score: OPT-003 → 8.4, OPT-002 → 6.1, OPT-001 → 5.3. Winner: OPT-003.
 
-*"Generate the final recommendation: recommend_option, OPT-003. Success metrics: approval cycle time under 3 business days within 6 months, adoption rate above 85% within 3 months."*
+*«Сформируй финальную рекомендацию: recommend_option, OPT-003. Success metrics: время согласования < 3 рабочих дней через 6 месяцев, adoption rate > 85% через 3 месяца.»*
 
-Recommendation Document saved. The project is ready for Chapter 8 (Solution Evaluation) and for handing the decision off to development.
+Recommendation Document сохранён. Проект готов к Главе 8 (Solution Evaluation) и к передаче решения в разработку.
 
 ---
 
-## Final synthesis for Chapter 7
+## Финальный синтез по Главе 7
 
-**Chapter 7 is the project's productive chapter.** If Chapter 6 provides the strategic rationale, Chapter 7 is where the BA's intellectual product actually gets created: structured, verified, validated requirements, with an architecture, implementation options, and a justified recommendation. This is what the business analysis profession exists for.
+**Глава 7 — это производящая глава проекта.** Если Глава 6 даёт стратегическое обоснование, то именно в Главе 7 создаётся интеллектуальный продукт BA: структурированные, верифицированные, валидированные требования с архитектурой, вариантами реализации и обоснованной рекомендацией. Это то, ради чего существует профессия бизнес-аналитика.
 
-**Every task in Chapter 7 eliminates a specific class of risk:**
+**Каждая задача Главы 7 устраняет конкретный класс рисков:**
 
-- 7.1 eliminates the risk of "requirements existing only in someone's head": it creates a single source of truth
-- 7.2 eliminates the risk of "untestable, vague wording": it verifies quality
-- 7.3 eliminates the risk of "unnecessary requirements with no value": it checks alignment with business goals
-- 7.4 eliminates the risk of "nobody seeing the whole picture": it organizes requirements for every audience
-- 7.5 eliminates the risk of "an overloaded MVP with unnoticed dependencies": it structures the options
-- 7.6 eliminates the risk of "no success criteria": it locks in success metrics before development starts
+- 7.1 устраняет риск «требования только в голове» — создаёт единый источник правды
+- 7.2 устраняет риск «нетестируемые и размытые формулировки» — верифицирует качество
+- 7.3 устраняет риск «лишние требования без ценности» — проверяет соответствие бизнес-целям
+- 7.4 устраняет риск «никто не видит целостную картину» — организует требования для всех аудиторий
+- 7.5 устраняет риск «перегруженный MVP и незамеченные зависимости» — структурирует варианты
+- 7.6 устраняет риск «нет критериев успеха» — фиксирует success metrics до начала разработки
 
-**The Chapter 7 artifact chain**, after a full run through:
+**Цепочка артефактов Главы 7** после полного прохождения:
 
 ```
 reports/
-  7_2_verification_report_{project}.md    ← requirements quality, issues
-  7_3_validation_report_{project}.md      ← business goal alignment, assumptions
-  7_4_architecture_{project}.md           ← viewpoints, gaps, snapshot
-  7_5_design_options_{project}.md         ← options, allocation, comparison
-  7_6_recommendation_{project}.md         ← value, recommendation, success metrics
+  7_2_verification_report_{project}.md    ← качество требований, issues
+  7_3_validation_report_{project}.md      ← соответствие бизнес-целям, допущения
+  7_4_architecture_{project}.md           ← viewpoints, разрывы, снапшот
+  7_5_design_options_{project}.md         ← варианты, allocation, сравнение
+  7_6_recommendation_{project}.md         ← ценность, рекомендация, success metrics
 ```
 
-Requirement specifications (US, FR, NFR, BR, BP, ERD) are stored in `governance_plans/{project}_specs/` and are available as living artifacts, not a static document.
+Спецификации требований (US, FR, NFR, BR, BP, ERD) хранятся в `governance_plans/{project}_specs/` и доступны как живые артефакты, а не как статичный документ.
 
-**The BA's responsibility in Chapter 7** is focused on analytical decisions: what actually constitutes a requirement, which assumptions are critical, how to allocate requirements across versions, which implementation option to recommend. AInalyst handles everything technical: storage, traceability, dependency checking, diagram generation, Value Score calculation, and document formatting.
+**Ответственность BA в Главе 7** сосредоточена на аналитических решениях: что именно является требованием, какие допущения критичны, как распределить требования по версиям, какой вариант реализации рекомендовать. Всё техническое: хранение, трассировка, проверка зависимостей, генерация диаграмм, расчёт Value Score, форматирование документов — берёт на себя AIналитик.
 
-**Practical outcome:** a BA who has gone through Chapter 7 on the platform hands development not a 60-row Excel table, but a structured package: traceable, verified requirements; a justified implementation choice; and defined success criteria. This is professional work that saves the whole team time and increases the odds that the project achieves its goals.
+**Практический результат:** BA, прошедший Главу 7 через платформу, передаёт в разработку не таблицу в Excel с 60 строками, а структурированный пакет: трассируемые верифицированные требования, обоснованный выбор варианта реализации, зафиксированные критерии успеха. Это профессиональная работа, которая экономит время всей команды и повышает вероятность что проект достигнет своих целей.

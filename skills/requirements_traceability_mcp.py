@@ -1,24 +1,24 @@
 """
 BABOK 5.1 — Trace Requirements
-MCP tools for managing requirements traceability.
+MCP-инструменты для управления трассировкой требований.
 
-Tools:
-  - init_traceability_repo    — create/reinitialize the traceability repository
-  - add_trace_link            — add or remove a link between artifacts
-  - run_impact_analysis       — impact analysis: what a requirement change will affect
-  - check_coverage            — coverage audit: orphan requirements, implementation gaps
-  - export_traceability_matrix — generate a Markdown matrix from the repository
+Инструменты:
+  - init_traceability_repo    — создать/переинициализировать репозиторий трассировки
+  - add_trace_link            — добавить или удалить связь между артефактами
+  - run_impact_analysis       — анализ влияния: что затронет изменение требования
+  - check_coverage            — аудит покрытия: orphan-требования, дыры в реализации
+  - export_traceability_matrix — сгенерировать Markdown-матрицу из репозитория
 
-Storage: JSON repository (edge-list graph) + Markdown on request.
+Хранение: JSON-репозиторий (граф в формате edge list) + Markdown по запросу.
 
-Integration:
-  In:  4.3 artifacts (save_confirmed_elicitation_result),
-       4.2 artifacts for CRs (save_cr_elicitation_analysis)
-  Out: run_impact_analysis → used in 5.4
-       export_traceability_matrix → used in 5.5
-       check_coverage → used in 5.3, 5.5
+Интеграция:
+  Вход: артефакты 4.3 (save_confirmed_elicitation_result),
+        артефакты 4.2 при CR (save_cr_elicitation_analysis)
+  Выход: run_impact_analysis → используется в 5.4
+         export_traceability_matrix → используется в 5.5
+         check_coverage → используется в 5.3, 5.5
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -52,17 +52,17 @@ BEHAVIORAL_REQ_TYPES = {
 
 
 # ---------------------------------------------------------------------------
-# Repository utilities
+# Утилиты работы с репозиторием
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
-    """Returns the path to the project's JSON repository file."""
+    """Возвращает путь к JSON-файлу репозитория для проекта."""
     safe_name = normalize_project_id(project_name)
     return data_path(project_name, f"{safe_name}_{REPO_FILENAME}")
 
 
 def _load_repo(project_name: str) -> dict:
-    """Loads the repository from JSON. Returns an empty structure if it doesn't exist."""
+    """Загружает репозиторий из JSON. Возвращает пустую структуру если не существует."""
     path = _repo_path(project_name)
     if os.path.exists(path):
         # Raises CorruptArtifactError, converted to a ❌ line by guard_artifact_errors
@@ -81,7 +81,7 @@ def _load_repo(project_name: str) -> dict:
 
 
 def _save_repo(repo: dict) -> str:
-    """Saves the repository to JSON. Returns the path."""
+    """Сохраняет репозиторий в JSON. Возвращает путь."""
     project_name = repo["project"]
     path = _repo_path(project_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -92,7 +92,7 @@ def _save_repo(repo: dict) -> str:
 
 
 def _find_req(repo: dict, req_id: str) -> Optional[dict]:
-    """Finds a requirement by ID."""
+    """Находит требование по ID."""
     for r in repo["requirements"]:
         if r["id"] == req_id:
             return r
@@ -116,13 +116,13 @@ def _counts_as_evidence(repo: dict, node_id: str) -> bool:
 
 
 def _find_links(repo: dict, req_id: str) -> list:
-    """Returns all links where req_id appears as from or to."""
+    """Возвращает все связи где req_id фигурирует как from или to."""
     return [lnk for lnk in repo["links"]
             if lnk["from"] == req_id or lnk["to"] == req_id]
 
 
 # ---------------------------------------------------------------------------
-# 5.1.1 — Initialize the traceability repository
+# 5.1.1 — Инициализация репозитория трассировки
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -133,33 +133,33 @@ def init_traceability_repo(
     requirements_json: str,
 ) -> str:
     """
-    BABOK 5.1 — Creates or reinitializes the requirements traceability repository.
-    Called once at project start, or when the first batch of requirements is added.
+    BABOK 5.1 — Создаёт или переинициализирует репозиторий трассировки требований.
+    Вызывается один раз при старте проекта или при добавлении первой партии требований.
 
     Args:
-        project_name:        Project name (must match across all 5.x tools).
-        formality_level:     Formality level:
-                             - Lite     — derives chain only. Agile, small projects.
-                             - Standard — derives + verifies. Most projects.
-                             - Full     — all 4 link types + rationale required. Regulated domains.
-        requirements_json:   Initial list of requirements. Format:
+        project_name:        Название проекта (должно совпадать во всех инструментах 5.x).
+        formality_level:     Уровень формальности:
+                             - Lite     — только derives-цепочка. Agile, небольшие проекты.
+                             - Standard — derives + verifies. Большинство проектов.
+                             - Full     — все 4 типа связей + rationale обязателен. Regulated domains.
+        requirements_json:   Начальный список требований. Формат:
                              [
                                {
                                  "id": "BR-001",
                                  "type": "business",
-                                 "title": "Reduce application processing time to 5 minutes",
+                                 "title": "Снизить время обработки заявки до 5 минут",
                                  "version": "1.0",
                                  "status": "confirmed",
                                  "source_artifact": "governance_plans/4_3_..._confirmed.md"
                                }
                              ]
-                             Allowed type: business | stakeholder | solution | transition | test | component
-                             Allowed status: draft | confirmed | approved | deprecated
+                             Допустимые type: business | stakeholder | solution | transition | test | component
+                             Допустимые status: draft | confirmed | approved | deprecated
 
     Returns:
-        Repository-creation report + requirements statistics.
+        Отчёт о создании репозитория + статистика по требованиям.
     """
-    logger.info(f"init_traceability_repo: {project_name}, level: {formality_level}")
+    logger.info(f"init_traceability_repo: {project_name}, уровень: {formality_level}")
 
     # Shape, not just syntax. The elements are used as objects a few lines down, so a
     # list of bare ids — the most likely mistake, since neighbouring parameters
@@ -170,11 +170,11 @@ def init_traceability_repo(
     if shape_error:
         return shape_error
 
-    # Load the existing repository (if any) — don't wipe out links
+    # Загружаем существующий репозиторий (если есть) — не затираем links
     repo = _load_repo(project_name)
     repo["formality_level"] = formality_level
 
-    # Add requirements (deduplicated by id)
+    # Добавляем требования (дедупликация по id)
     existing_ids = {r["id"] for r in repo["requirements"]}
     added = []
     updated = []
@@ -219,31 +219,31 @@ def init_traceability_repo(
 
     repo_path = _save_repo(repo)
 
-    # Stats by type
+    # Статистика по типам
     type_counts: dict = {}
     for r in repo["requirements"]:
         t = r.get("type", "unknown")
         type_counts[t] = type_counts.get(t, 0) + 1
 
-    # Build the report
+    # Формируем отчёт
     lines = [
-        f"<!-- BABOK 5.1 — Requirements Traceability | Project: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.1 — Трассировка требований | Проект: {project_name} | {date.today()} -->",
         "",
-        f"# 📐 Traceability repository initialized",
+        f"# 📐 Репозиторий трассировки инициализирован",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Formality level:** {formality_level}  ",
-        f"**Repository file:** `{repo_path}`  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_name}  ",
+        f"**Уровень формальности:** {formality_level}  ",
+        f"**Файл репозитория:** `{repo_path}`  ",
+        f"**Дата:** {date.today()}",
         "",
-        "## Requirements statistics",
+        "## Статистика требований",
         "",
-        f"- **Total:** {len(repo['requirements'])}",
-        f"- **Added now:** {len(added)}",
-        f"- **Updated:** {len(updated)}",
-        f"- **Links in repository:** {len(repo['links'])}",
+        f"- **Всего:** {len(repo['requirements'])}",
+        f"- **Добавлено сейчас:** {len(added)}",
+        f"- **Обновлено:** {len(updated)}",
+        f"- **Связей в репозитории:** {len(repo['links'])}",
         "",
-        "### By type:",
+        "### По типам:",
     ]
 
     type_labels = {
@@ -261,46 +261,46 @@ def init_traceability_repo(
 
     lines += [
         "",
-        "## Formality level — what gets traced",
+        "## Уровень формальности — что трассируем",
         "",
     ]
 
     if formality_level == "Lite":
         lines += [
-            "| Link type | Status |",
+            "| Тип связи | Статус |",
             "|-----------|--------|",
-            "| `derives` (vertical hierarchy) | ✅ Required |",
-            "| `depends` (horizontal dependencies) | — Not required |",
-            "| `satisfies` (component implements) | — Not required |",
-            "| `verifies` (test verifies) | — Not required |",
+            "| `derives` (вертикальная иерархия) | ✅ Обязательно |",
+            "| `depends` (горизонтальные зависимости) | — Не требуется |",
+            "| `satisfies` (компонент реализует) | — Не требуется |",
+            "| `verifies` (тест проверяет) | — Не требуется |",
             "",
-            "> **Lite** suits Agile projects and small teams.",
+            "> **Lite** подходит для Agile-проектов и небольших команд.",
         ]
     elif formality_level == "Standard":
         lines += [
-            "| Link type | Status |",
+            "| Тип связи | Статус |",
             "|-----------|--------|",
-            "| `derives` (vertical hierarchy) | ✅ Required |",
-            "| `depends` (horizontal dependencies) | 🟡 Optional |",
-            "| `satisfies` (component implements) | 🟡 Optional |",
-            "| `verifies` (test verifies) | ✅ Required |",
+            "| `derives` (вертикальная иерархия) | ✅ Обязательно |",
+            "| `depends` (горизонтальные зависимости) | 🟡 Опционально |",
+            "| `satisfies` (компонент реализует) | 🟡 Опционально |",
+            "| `verifies` (тест проверяет) | ✅ Обязательно |",
             "",
-            "> **Standard** — the optimal balance for most projects.",
+            "> **Standard** — оптимальный баланс для большинства проектов.",
         ]
     else:  # Full
         lines += [
-            "| Link type | Status |",
+            "| Тип связи | Статус |",
             "|-----------|--------|",
-            "| `derives` (vertical hierarchy) | ✅ Required |",
-            "| `depends` (horizontal dependencies) | ✅ Required |",
-            "| `satisfies` (component implements) | ✅ Required |",
-            "| `verifies` (test verifies) | ✅ Required |",
+            "| `derives` (вертикальная иерархия) | ✅ Обязательно |",
+            "| `depends` (горизонтальные зависимости) | ✅ Обязательно |",
+            "| `satisfies` (компонент реализует) | ✅ Обязательно |",
+            "| `verifies` (тест проверяет) | ✅ Обязательно |",
             "",
-            "> **Full** — all links + `rationale` required. Regulated domains, compliance.",
+            "> **Full** — все связи + `rationale` обязателен. Regulated domains, compliance.",
         ]
 
     if added:
-        lines += ["", "## Requirements added", ""]
+        lines += ["", "## Добавленные требования", ""]
         for req in repo["requirements"]:
             if req["id"] in added:
                 lines.append(f"- `{req['id']}` v{req.get('version','1.0')} [{req.get('status','draft')}] — {req.get('title','')}")
@@ -308,17 +308,17 @@ def init_traceability_repo(
     lines += [
         "",
         "---",
-        "**Next step:** add links between requirements via `add_trace_link`",
-        f"or run a coverage audit via `check_coverage`.",
+        "**Следующий шаг:** добавить связи между требованиями через `add_trace_link`",
+        f"или запустить аудит покрытия через `check_coverage`.",
     ]
 
     content = "\n".join(lines)
     save_artifact(content, prefix="5_1_traceability_init", project_id=project_name)
-    return content + f"\n\n✅ Repository saved: `{repo_path}`"
+    return content + f"\n\n✅ Репозиторий сохранён: `{repo_path}`"
 
 
 # ---------------------------------------------------------------------------
-# 5.1.2 — Add / remove a link between artifacts
+# 5.1.2 — Добавление / удаление связи между артефактами
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -337,7 +337,7 @@ def add_trace_link(
     remove: bool = False,
 ) -> str:
     """
-    BABOK 5.1 — Adds or removes a link between two artifacts in the repository.
+    BABOK 5.1 — Добавляет или удаляет связь между двумя артефактами в репозитории.
 
     Link semantics:
       - derives:   from derives from to (top-down hierarchy: BR → SR → FR)
@@ -348,23 +348,23 @@ def add_trace_link(
                     the name follows the SysML/DOORS convention)
 
     Args:
-        project_name:  Project name.
-        from_id:       Source artifact ID (BR-001, FR-007, TC-042, COMP-Auth).
-        to_id:         Target artifact ID.
-        relation:      Relation type: derives | depends | satisfies | verifies
-        rationale:     Link rationale. Required in detail for Full.
-                       Can be brief or an empty string for Lite/Standard.
-        remove:        If True — remove the existing link instead of adding it.
+        project_name:  Название проекта.
+        from_id:       ID артефакта-источника (BR-001, FR-007, TC-042, COMP-Auth).
+        to_id:         ID артефакта-цели.
+        relation:      Тип отношения: derives | depends | satisfies | verifies
+        rationale:     Обоснование связи. В Full — обязательно подробное.
+                       В Lite/Standard — можно кратко или пустую строку.
+        remove:        Если True — удалить существующую связь вместо добавления.
 
     Returns:
-        Operation confirmation + the artifact's current link state.
+        Подтверждение операции + текущее состояние связей артефакта.
     """
     logger.info(f"add_trace_link: {from_id} --[{relation}]--> {to_id}, remove={remove}")
 
     repo = _load_repo(project_name)
 
     if remove:
-        # Remove the link
+        # Удаляем связь
         before = len(repo["links"])
         repo["links"] = [
             lnk for lnk in repo["links"]
@@ -372,8 +372,8 @@ def add_trace_link(
         ]
         after = len(repo["links"])
         if before == after:
-            return f"⚠️ Link `{from_id} --[{relation}]--> {to_id}` not found in the repository."
-        # Record in history
+            return f"⚠️ Связь `{from_id} --[{relation}]--> {to_id}` не найдена в репозитории."
+        # Пишем в историю
         repo["history"].append({
             "action": "link_removed",
             "from": from_id,
@@ -382,12 +382,12 @@ def add_trace_link(
             "date": str(date.today()),
         })
         _save_repo(repo)
-        return f"✅ Link `{from_id} --[{relation}]--> {to_id}` removed from the repository."
+        return f"✅ Связь `{from_id} --[{relation}]--> {to_id}` удалена из репозитория."
 
-    # Check for a duplicate
+    # Проверяем дубликат
     for lnk in repo["links"]:
         if lnk["from"] == from_id and lnk["to"] == to_id and lnk["relation"] == relation:
-            return f"ℹ️ Link `{from_id} --[{relation}]--> {to_id}` already exists."
+            return f"ℹ️ Связь `{from_id} --[{relation}]--> {to_id}` уже существует."
 
     # Warn about ends that are not repository nodes — but still write the edge.
     # External artifact ids (COMP-Auth, a Jira ticket) are legitimate targets, so a
@@ -417,7 +417,7 @@ def add_trace_link(
     }
     repo["links"].append(new_link)
 
-    # Record in history
+    # Пишем в историю
     repo["history"].append({
         "action": "link_added",
         "from": from_id,
@@ -428,7 +428,7 @@ def add_trace_link(
 
     _save_repo(repo)
 
-    # Show all current links for both nodes
+    # Показываем все текущие связи обоих узлов
     from_links = _find_links(repo, from_id)
     to_links = _find_links(repo, to_id)
 
@@ -444,7 +444,7 @@ def add_trace_link(
         dangling_note,
         f"**Rationale:** {rationale or '—'}",
         "",
-        f"### Current links for `{from_id}`:",
+        f"### Текущие связи `{from_id}`:",
     ]
     if from_links:
         for lnk in from_links:
@@ -452,13 +452,13 @@ def add_trace_link(
             direction = f"`{lnk['from']}` {icon}[{lnk['relation']}]→ `{lnk['to']}`"
             lines.append(f"- {direction}")
     else:
-        lines.append("- (no links)")
+        lines.append("- (нет связей)")
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 5.1.3 — Change impact analysis
+# 5.1.3 — Анализ влияния изменения
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -470,20 +470,20 @@ def run_impact_analysis(
     depth: Literal["direct", "full"] = "full",
 ) -> str:
     """
-    BABOK 5.1 — Impact analysis: traverses the link graph and returns all affected artifacts.
+    BABOK 5.1 — Анализ влияния: обходит граф связей и возвращает все затронутые артефакты.
 
-    This is a technical operation — a graph traversal. The expert "take it / don't take it"
-    judgment and prioritizing the consequences is task 5.4.
+    Это техническая операция — обход графа. Экспертная оценка «брать/не брать»
+    и приоритизация последствий — задача 5.4.
 
     Args:
-        project_name:        Project name.
-        changed_req_id:      ID of the requirement being changed / removed.
-        change_description:  Brief description of the change (for the report).
-        depth:               - direct: direct links only (1 level)
-                             - full:   full traversal in both directions (recommended)
+        project_name:        Название проекта.
+        changed_req_id:      ID изменяемого / удаляемого требования.
+        change_description:  Краткое описание изменения (для отчёта).
+        depth:               - direct: только прямые связи (1 уровень)
+                             - full:   полный обход в обе стороны (рекомендуется)
 
     Returns:
-        Report: what's affected, link types, recommended actions for 5.4.
+        Отчёт: что затронуто, типы связей, рекомендуемые действия для 5.4.
     """
     logger.info(f"run_impact_analysis: {changed_req_id}, depth={depth}")
 
@@ -492,11 +492,11 @@ def run_impact_analysis(
 
     if not req:
         return (
-            f"⚠️ Requirement `{changed_req_id}` not found in the `{project_name}` project repository.\n"
-            f"Check the ID, or initialize the repository via `init_traceability_repo`."
+            f"⚠️ Требование `{changed_req_id}` не найдено в репозитории проекта `{project_name}`.\n"
+            f"Проверьте ID или инициализируйте репозиторий через `init_traceability_repo`."
         )
 
-    # BFS graph traversal
+    # BFS обход графа
     visited = set()
     queue = [changed_req_id]
     affected: list[dict] = []
@@ -516,7 +516,7 @@ def run_impact_analysis(
             direction = "downstream" if lnk["from"] == current_id else "upstream"
             affected.append({
                 "id": neighbor_id,
-                "title": neighbor_req.get("title", "—") if neighbor_req else "external artifact",
+                "title": neighbor_req.get("title", "—") if neighbor_req else "внешний артефакт",
                 "type": neighbor_req.get("type", "unknown") if neighbor_req else "external",
                 "relation": lnk["relation"],
                 "direction": direction,
@@ -540,7 +540,7 @@ def run_impact_analysis(
             if depth == "full" and neighbor_id not in visited and not neighbor_is_business:
                 queue.append(neighbor_id)
 
-    # Deduplicate by id (keep the first occurrence)
+    # Деduplication по id (оставляем первое вхождение)
     seen_ids: set = set()
     unique_affected = []
     for item in affected:
@@ -574,26 +574,26 @@ def run_impact_analysis(
             rel, (f"🔗 Linked via `{rel}`", "Review the relationship"))
 
     lines = [
-        f"<!-- BABOK 5.1 — Impact Analysis | Project: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.1 — Анализ влияния | Проект: {project_name} | {date.today()} -->",
         "",
-        f"# 🔍 Change impact analysis",
+        f"# 🔍 Анализ влияния изменения",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Requirement being changed:** `{changed_req_id}` — {req.get('title', '')}  ",
-        f"**Change description:** {change_description}  ",
-        f"**Traversal mode:** {depth}  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_name}  ",
+        f"**Изменяемое требование:** `{changed_req_id}` — {req.get('title', '')}  ",
+        f"**Описание изменения:** {change_description}  ",
+        f"**Режим обхода:** {depth}  ",
+        f"**Дата:** {date.today()}",
         "",
-        f"## Result: **{len(unique_affected)}** artifacts affected",
+        f"## Итог: затронуто **{len(unique_affected)}** артефактов",
         "",
     ]
 
     if not unique_affected:
         lines += [
-            "No links to other artifacts were found.",
+            "Связей с другими артефактами не найдено.",
             "",
-            "> ℹ️ Either the requirement is isolated, or traceability hasn't been populated yet.",
-            "> Recommend checking via `check_coverage`.",
+            "> ℹ️ Либо требование изолированное, либо трассировка ещё не заполнена.",
+            "> Рекомендуется проверить через `check_coverage`.",
         ]
     else:
         for rel, (label, action) in rel_labels.items():
@@ -602,13 +602,13 @@ def run_impact_analysis(
                 continue
             lines += [
                 f"### {label} ({len(items)})",
-                f"> **Action:** {action}",
+                f"> **Действие:** {action}",
                 "",
-                "| ID | Type | Title | Status | Via |",
+                "| ID | Тип | Название | Статус | Через |",
                 "|----|-----|----------|--------|-------|",
             ]
             for item in items:
-                via = f"`{item['via']}`" if item["via"] != changed_req_id else "direct"
+                via = f"`{item['via']}`" if item["via"] != changed_req_id else "напрямую"
                 lines.append(
                     f"| `{item['id']}` | {item['type']} | {item['title']} | {item['status']} | {via} |"
                 )
@@ -617,15 +617,15 @@ def run_impact_analysis(
     lines += [
         "---",
         "",
-        "## Hand off to 5.4 for expert evaluation",
+        "## Передать в 5.4 для экспертной оценки",
         "",
-        "This report is a technical map of affected artifacts.",
-        "Task **5.4** adds the expert decision:",
+        "Этот отчёт — техническая карта затронутых артефактов.",
+        "Задача **5.4** добавляет экспертное решение:",
         "",
-        "- Is this change worth taking?",
-        "- What's the cost (time, resources, risks)?",
-        "- What gets deferred to the backlog?",
-        "- Is formal sign-off required (5.5)?",
+        "- Стоит ли брать это изменение?",
+        "- Какова цена (время, ресурсы, риски)?",
+        "- Что откладывается в backlog?",
+        "- Нужно ли формальное согласование (5.5)?",
     ]
 
     content = "\n".join(lines)
@@ -634,7 +634,7 @@ def run_impact_analysis(
 
 
 # ---------------------------------------------------------------------------
-# 5.1.4 — Coverage audit
+# 5.1.4 — Аудит покрытия
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -644,7 +644,7 @@ def check_coverage(
     filter_type: str = "",
 ) -> str:
     """
-    BABOK 5.1 — Traceability coverage audit. Finds orphan requirements and gaps.
+    BABOK 5.1 — Аудит покрытия трассировки. Находит orphan-требования и дыры.
 
     What it looks for:
       🔴 Orphan with no source — no derives/satisfies link upward (no business justification)
@@ -653,12 +653,12 @@ def check_coverage(
       🟢 Full coverage         — has source + implementation + test
 
     Args:
-        project_name:  Project name.
-        filter_type:   Filter by requirement type: business | stakeholder | solution | transition
-                       Empty string — check all.
+        project_name:  Название проекта.
+        filter_type:   Фильтр по типу требований: business | stakeholder | solution | transition
+                       Пустая строка — проверить все.
 
     Returns:
-        Coverage report per requirement with recommendations.
+        Отчёт о покрытии по каждому требованию с рекомендациями.
     """
     logger.info(f"check_coverage: {project_name}, filter_type={filter_type!r}")
 
@@ -778,7 +778,7 @@ def check_coverage(
             issues.append("no_source")
         if not has_impl:
             issues.append("no_impl")
-        # Test is checked only for Standard and Full
+        # Тест проверяем только в Standard и Full
         if formality in ("Standard", "Full") and not has_test:
             # A test is expected from BEHAVIORAL requirement types. The original
             # rule knew only the classes `solution` / `transition` — the vocabulary
@@ -831,18 +831,18 @@ def check_coverage(
     })
 
     lines = [
-        f"<!-- BABOK 5.1 — Coverage Audit | Project: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.1 — Аудит покрытия | Проект: {project_name} | {date.today()} -->",
         "",
-        f"# 📊 Traceability coverage audit",
+        f"# 📊 Аудит покрытия трассировки",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Formality level:** {formality}  ",
-        f"**Filter:** {filter_type or 'all requirements'}  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_name}  ",
+        f"**Уровень формальности:** {formality}  ",
+        f"**Фильтр:** {filter_type or 'все требования'}  ",
+        f"**Дата:** {date.today()}",
         "",
-        "## Summary",
+        "## Сводка",
         "",
-        f"| Status | Count | % |",
+        f"| Статус | Количество | % |",
         f"|--------|------------|---|",
         f"| 🟢 Full coverage | {len(fully_covered)} | {covered_pct}% |",
         f"| 🔴 No source (orphan) | {len(orphans_no_source)} | {round(len(orphans_no_source)/total*100) if total else 0}% |",
@@ -862,12 +862,12 @@ def check_coverage(
 
     if orphans_no_source:
         lines += [
-            "## 🔴 Requirements with no source (orphan)",
+            "## 🔴 Требования без источника (orphan)",
             "",
             "> **Diagnosis:** no `derives` or `satisfies` link upward. Unknown which business need or objective it came from.",
             "> **Action:** find a business justification via `add_trace_link`, or freeze it.",
             "",
-            "| ID | Type | Title | Status |",
+            "| ID | Тип | Название | Статус |",
             "|----|-----|----------|--------|",
         ]
         for r in orphans_no_source:
@@ -876,18 +876,18 @@ def check_coverage(
 
     if orphans_no_impl:
         lines += [
-            "## 🟡 Requirements with coverage gaps",
+            "## 🟡 Требования с пробелами в покрытии",
             "",
-            "| ID | Type | Title | Status | Issue |",
+            "| ID | Тип | Название | Статус | Проблема |",
             "|----|-----|----------|--------|----------|",
         ]
         for r in orphans_no_impl:
             issues = r.get("issues", [])
             problem_parts = []
             if "no_impl" in issues:
-                problem_parts.append("no implementation")
+                problem_parts.append("нет реализации")
             if "no_test" in issues:
-                problem_parts.append("no test")
+                problem_parts.append("нет теста")
             problem = ", ".join(problem_parts)
             lines.append(f"| `{r['id']}` | {r['type']} | {r['title']} | {r['status']} | {problem} |")
         lines.append("")
@@ -902,7 +902,7 @@ def check_coverage(
         lines += [
             "## 🟢 Fully covered items",
             "",
-            "| ID | Type | Title | Links |",
+            "| ID | Тип | Название | Связей |",
             "|----|-----|----------|--------|",
         ]
         for r in fully_covered:
@@ -944,7 +944,7 @@ def check_coverage(
     lines += [
         "---",
         "",
-        "## Recommendations",
+        "## Рекомендации",
         "",
     ]
 
@@ -983,7 +983,7 @@ def check_coverage(
 
 
 # ---------------------------------------------------------------------------
-# 5.1.5 — Export the traceability matrix to Markdown
+# 5.1.5 — Экспорт матрицы трассировки в Markdown
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -995,20 +995,20 @@ def export_traceability_matrix(
     filter_type: str = "",
 ) -> str:
     """
-    BABOK 5.1 — Generates a Markdown traceability matrix from the JSON repository.
-    Used for handing off to stakeholders, for review, and in the 5.5 approval package.
+    BABOK 5.1 — Генерирует Markdown-матрицу трассировки из JSON-репозитория.
+    Используется для передачи стейкхолдерам, на ревью, в пакет утверждения 5.5.
 
     Args:
-        project_name:      Project name.
-        filter_relation:   Filter by link type: derives | depends | satisfies | verifies
-                           Empty string — all links.
-        filter_status:     Filter by requirement status: draft | confirmed | approved | deprecated
-                           Empty string — all statuses.
-        filter_type:       Filter by requirement type: business | stakeholder | solution | transition
-                           Empty string — all types.
+        project_name:      Название проекта.
+        filter_relation:   Фильтр по типу связи: derives | depends | satisfies | verifies
+                           Пустая строка — все связи.
+        filter_status:     Фильтр по статусу требования: draft | confirmed | approved | deprecated
+                           Пустая строка — все статусы.
+        filter_type:       Фильтр по типу требования: business | stakeholder | solution | transition
+                           Пустая строка — все типы.
 
     Returns:
-        Markdown traceability matrix. Also saved as an artifact.
+        Markdown-матрица трассировки. Также сохраняется как артефакт.
     """
     logger.info(f"export_traceability_matrix: {project_name}, rel={filter_relation}, status={filter_status}")
 
@@ -1054,7 +1054,7 @@ def export_traceability_matrix(
     links = repo["links"]
     if filter_relation:
         links = [lnk for lnk in links if lnk["relation"] == filter_relation]
-    # Only show links where at least one end is among the filtered requirements
+    # Показываем только связи где хотя бы один конец в отфильтрованных требованиях
     if filter_type or filter_status:
         links = [lnk for lnk in links if lnk["from"] in req_ids or lnk["to"] in req_ids]
 
@@ -1100,21 +1100,21 @@ def export_traceability_matrix(
     render_order += sorted(present_types - set(type_order))
 
     lines = [
-        f"<!-- BABOK 5.1 — Traceability Matrix | Project: {project_name} | {date.today()} -->",
+        f"<!-- BABOK 5.1 — Матрица трассировки | Проект: {project_name} | {date.today()} -->",
         "",
-        f"# 🗺️ Requirements traceability matrix",
+        f"# 🗺️ Матрица трассировки требований",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Formality level:** {repo.get('formality_level', 'Standard')}  ",
-        f"**Filters:** type={filter_type or 'all'}, status={filter_status or 'all'}, links={filter_relation or 'all'}  ",
-        f"**Generated on:** {date.today()}",
+        f"**Проект:** {project_name}  ",
+        f"**Уровень формальности:** {repo.get('formality_level', 'Standard')}  ",
+        f"**Фильтры:** тип={filter_type or 'все'}, статус={filter_status or 'все'}, связи={filter_relation or 'все'}  ",
+        f"**Дата генерации:** {date.today()}",
         "",
-        f"**Total requirements:** {len(requirements)} | **Links:** {len(links)}",
+        f"**Итого требований:** {len(requirements)} | **Связей:** {len(links)}",
         "",
     ]
 
-    # Section: requirements by type
-    lines.append("## Requirements")
+    # Секция: требования по типам
+    lines.append("## Требования")
     lines.append("")
 
     for req_type in render_order:
@@ -1126,7 +1126,7 @@ def export_traceability_matrix(
         lines += [
             f"### {label}",
             "",
-            "| ID | v | Title | Status | Source |",
+            "| ID | v | Название | Статус | Источник |",
             "|----|---|----------|--------|----------|",
         ]
         for r in sorted(type_reqs, key=lambda x: x["id"]):
@@ -1138,11 +1138,11 @@ def export_traceability_matrix(
             )
         lines.append("")
 
-    # Section: links
+    # Секция: связи
     lines += [
-        "## Traceability links",
+        "## Связи трассировки",
         "",
-        "| From | Link type | To | Rationale | Added |",
+        "| От | Тип связи | К | Обоснование | Добавлено |",
         "|----|-----------|---|-------------|-----------|",
     ]
 
@@ -1160,13 +1160,13 @@ def export_traceability_matrix(
         lines.append(f"| {src} | {rel} | {dst} | {rationale} | {added} |")
 
     if not links:
-        lines.append("| — | — | — | No links yet | — |")
+        lines.append("| — | — | — | Связей пока нет | — |")
 
     lines += [
         "",
         "---",
-        f"*Generated: {datetime.now().strftime('%d.%m.%Y %H:%M')}*  ",
-        f"*Repository: `{_repo_path(project_name)}`*",
+        f"*Сгенерировано: {datetime.now().strftime('%d.%m.%Y %H:%M')}*  ",
+        f"*Репозиторий: `{_repo_path(project_name)}`*",
     ]
 
     content = "\n".join(lines)

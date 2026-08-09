@@ -1,4 +1,4 @@
-# Rules for working with artifacts
+# Правила работы с артефактами
 
 ## Folder structure
 - `governance_plans/data/` — JSON files. The BA doesn't go here. This is internal data for the MCP.
@@ -6,20 +6,20 @@
 - `governance_plans/.history/` — the last 5 versions of every `data/` file, kept automatically
   on each write. Never point the BA here for results; it exists only for recovery.
 
-## What to show the BA
-After saving an artifact, always report:
-- The file name in reports/ (if it's a .md)
-- Briefly: what it contains and who it can be sent to
+## Что показывать BA
+После сохранения артефакта всегда сообщай:
+- Имя файла в reports/ (если это .md)
+- Коротко: что в нём содержится и кому его можно отправить
 
-## Format of the artifact message
-✅ Artifact saved: `reports/FILE_NAME.md`
-This is: [what it contains — 1 line]
-Can be passed to: [whom — stakeholder, developer, sponsor]
+## Формат сообщения об артефакте
+✅ Артефакт сохранён: `reports/ИМЯ_ФАЙЛА.md`
+Это: [что содержит — 1 строка]
+Можно передать: [кому — стейкхолдер, разработчик, спонсор]
 
-## Artifacts are official documents
-Everything saved through the MCP is an official project artifact,
-not a draft. They are used in later BABOK tasks.
-Remind the BA of this if they treat them carelessly.
+## Артефакты — официальные документы
+Всё что сохраняется через MCP — это официальные артефакты проекта,
+не черновики. Они используются в последующих задачах BABOK.
+Напоминай BA об этом если он относится к ним легкомысленно.
 
 ## Never delete data
 Deprecated requirements are marked via deprecate_requirements,

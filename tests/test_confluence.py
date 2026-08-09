@@ -1,15 +1,15 @@
 """
-tests/test_confluence.py — Tests for integrations/confluence_mcp.py
+tests/test_confluence.py — Тесты для integrations/confluence_mcp.py
 
-We test only the pure functions (without a real Confluence API):
+Тестируем только чистые функции (без реального Confluence API):
   - _markdown_to_confluence_storage: Markdown → Confluence Storage Format
-  - _confluence_storage_to_text: Storage Format → readable text
-  - _extract_requirements_heuristic: extracting requirements by ID patterns
-  - _default_space_key: reading from env vars
-  - Configuration: handling of missing env vars
+  - _confluence_storage_to_text: Storage Format → читаемый текст
+  - _extract_requirements_heuristic: извлечение требований по ID-паттернам
+  - _default_space_key: чтение из env vars
+  - Конфигурация: обработка отсутствующих env vars
 
-MCP tools (push, pull, sync, list) require a real Confluence —
-they are tested manually or via atlassian-python-api mocks.
+MCP-инструменты (push, pull, sync, list) требуют реального Confluence —
+тестируются вручную или через моки atlassian-python-api.
 """
 
 import os
@@ -22,7 +22,7 @@ from datetime import date
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-# Mocks must be installed BEFORE importing any of our modules
+# Моки должны быть установлены ДО любого импорта наших модулей
 from tests.conftest import setup_mocks, BaseMCPTest
 setup_mocks()
 
@@ -30,7 +30,7 @@ import skills.integrations.confluence_mcp as confluence_mod
 
 
 def _load_confluence_utils():
-    """Returns a dict with the utilities from the already-imported confluence_mcp."""
+    """Возвращает dict с утилитами из уже импортированного confluence_mcp."""
     return {
         "_markdown_to_confluence_storage": confluence_mod._markdown_to_confluence_storage,
         "_confluence_storage_to_text": confluence_mod._confluence_storage_to_text,
@@ -41,7 +41,7 @@ def _load_confluence_utils():
 
 
 class TestMarkdownConversion(unittest.TestCase):
-    """Tests for the Markdown → Confluence Storage Format conversion."""
+    """Тесты конвертации Markdown → Confluence Storage Format."""
 
     @classmethod
     def setUpClass(cls):
@@ -51,36 +51,36 @@ class TestMarkdownConversion(unittest.TestCase):
         return self.ns["_markdown_to_confluence_storage"](md)
 
     def test_removes_html_comments(self):
-        result = self.convert("<!-- BABOK 5.1 | Project: Test -->\n# Heading")
+        result = self.convert("<!-- BABOK 5.1 | Проект: Test -->\n# Заголовок")
         self.assertNotIn("<!--", result)
         self.assertNotIn("BABOK 5.1", result)
 
     def test_converts_headers(self):
-        """Markdown headers are present in the output in one form or another."""
+        """Заголовки Markdown присутствуют в выводе в том или ином виде."""
         result = self.convert("# H1\n## H2\n### H3")
-        # In a real environment this will be <h1>, in tests with a mock — the text is preserved
+        # В реальном окружении будет <h1>, в тестах с моком — текст сохраняется
         self.assertIn("H1", result)
         self.assertIn("H2", result)
 
     def test_converts_bold(self):
-        """Bold text is preserved in the output (conversion depends on whether markdown2 is present)."""
-        result = self.convert("Text **bold** end")
-        # The content must be present in the output either way
-        self.assertIn("bold", result)
+        """Жирный текст сохраняется в выводе (конвертация зависит от наличия markdown2)."""
+        result = self.convert("Текст **жирный** конец")
+        # Контент должен присутствовать в выводе в любом случае
+        self.assertIn("жирный", result)
 
     def test_empty_input(self):
         self.assertEqual(self.convert("").strip(), "")
 
     def test_only_comment_returns_empty(self):
-        self.assertEqual(self.convert("<!-- comment -->").strip(), "")
+        self.assertEqual(self.convert("<!-- комментарий -->").strip(), "")
 
     def test_table_preserved(self):
-        result = self.convert("| ID | Title |\n|-----|-------|\n| FR-001 | Test |")
+        result = self.convert("| ID | Название |\n|-----|----------|\n| FR-001 | Тест |")
         self.assertIn("FR-001", result)
 
 
 class TestStorageToText(unittest.TestCase):
-    """Tests for the Confluence Storage Format → text conversion."""
+    """Тесты конвертации Confluence Storage Format → текст."""
 
     @classmethod
     def setUpClass(cls):
@@ -88,21 +88,21 @@ class TestStorageToText(unittest.TestCase):
         cls._convert = staticmethod(cls.ns["_confluence_storage_to_text"])
 
     def test_strips_html_tags(self):
-        html = "<h1>Heading</h1><p>Paragraph</p>"
+        html = "<h1>Заголовок</h1><p>Параграф</p>"
         result = TestStorageToText._convert(html)
         self.assertNotIn("<h1>", result)
         self.assertNotIn("<p>", result)
-        self.assertIn("Heading", result)
-        self.assertIn("Paragraph", result)
+        self.assertIn("Заголовок", result)
+        self.assertIn("Параграф", result)
 
     def test_preserves_content(self):
-        html = "<p>FR-001 — Automated request distribution</p>"
+        html = "<p>FR-001 — Автоматическое распределение заявок</p>"
         result = TestStorageToText._convert(html)
         self.assertIn("FR-001", result)
-        self.assertIn("request", result)
+        self.assertIn("заявок", result)
 
     def test_table_cells_extracted(self):
-        html = "<table><tr><td>BR-001</td><td>Business requirement</td></tr></table>"
+        html = "<table><tr><td>BR-001</td><td>Бизнес-требование</td></tr></table>"
         result = TestStorageToText._convert(html)
         self.assertIn("BR-001", result)
 
@@ -112,7 +112,7 @@ class TestStorageToText(unittest.TestCase):
 
 
 class TestExtractRequirements(unittest.TestCase):
-    """Tests for the heuristic extraction of requirements from text."""
+    """Тесты эвристического извлечения требований из текста."""
 
     @classmethod
     def setUpClass(cls):
@@ -120,20 +120,20 @@ class TestExtractRequirements(unittest.TestCase):
         cls.extract = cls.ns["_extract_requirements_heuristic"]
 
     def test_extracts_fr_ids(self):
-        text = "FR-001 — User authentication\nFR-002 — Role management"
+        text = "FR-001 — Авторизация пользователей\nFR-002 — Управление ролями"
         reqs = TestExtractRequirements.extract(text, "http://confluence/page")
         ids = [r["id"] for r in reqs]
         self.assertIn("FR-001", ids)
         self.assertIn("FR-002", ids)
 
     def test_extracts_br_ids(self):
-        text = "BR-001 Reduce processing time"
+        text = "BR-001 Снизить время обработки"
         reqs = TestExtractRequirements.extract(text, "")
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0]["type"], "business")
 
     def test_extracts_mixed_ids(self):
-        text = "BR-001 business\nSR-002 stakeholder\nFR-003 solution\nNFR-001 non-functional"
+        text = "BR-001 бизнес\nSR-002 стейкхолдер\nFR-003 решение\nNFR-001 нефункциональное"
         reqs = TestExtractRequirements.extract(text, "")
         types = {r["id"]: r["type"] for r in reqs}
         self.assertEqual(types.get("BR-001"), "business")
@@ -142,7 +142,7 @@ class TestExtractRequirements(unittest.TestCase):
         self.assertEqual(types.get("NFR-001"), "solution")
 
     def test_no_duplicates(self):
-        text = "FR-001 first mention\nFR-001 second mention"
+        text = "FR-001 первое упоминание\nFR-001 второе упоминание"
         reqs = TestExtractRequirements.extract(text, "")
         self.assertEqual(sum(1 for r in reqs if r["id"] == "FR-001"), 1)
 
@@ -150,55 +150,55 @@ class TestExtractRequirements(unittest.TestCase):
         self.assertEqual(TestExtractRequirements.extract("", ""), [])
 
     def test_no_ids_in_text(self):
-        self.assertEqual(TestExtractRequirements.extract("Plain text without requirements.", ""), [])
+        self.assertEqual(TestExtractRequirements.extract("Обычный текст без требований.", ""), [])
 
     def test_source_url_in_result(self):
         url = "https://confluence.company.com/wiki/spaces/BA/pages/12345"
-        reqs = TestExtractRequirements.extract("FR-001 Test", url)
+        reqs = TestExtractRequirements.extract("FR-001 Тест", url)
         self.assertEqual(reqs[0]["source_artifact"], url)
 
     def test_default_status_is_draft(self):
-        reqs = TestExtractRequirements.extract("FR-001 Requirement\nBR-001 Business", "")
+        reqs = TestExtractRequirements.extract("FR-001 Требование\nBR-001 Бизнес", "")
         for r in reqs:
             self.assertEqual(r["status"], "draft")
 
     def test_default_version_is_1_0(self):
-        reqs = TestExtractRequirements.extract("FR-001 Requirement", "")
+        reqs = TestExtractRequirements.extract("FR-001 Требование", "")
         self.assertEqual(reqs[0]["version"], "1.0")
 
     def test_underscore_id_normalized(self):
-        reqs = TestExtractRequirements.extract("FR_001 Requirement", "")
+        reqs = TestExtractRequirements.extract("FR_001 Требование", "")
         if reqs:
             self.assertNotIn("_", reqs[0]["id"])
 
     def test_case_insensitive(self):
-        reqs = TestExtractRequirements.extract("fr-001 requirement in lowercase", "")
+        reqs = TestExtractRequirements.extract("fr-001 требование в нижнем регистре", "")
         if reqs:
             self.assertEqual(reqs[0]["id"], "FR-001")
 
 
 class TestConfluenceConfig(unittest.TestCase):
-    """Tests for configuration via env vars."""
+    """Тесты конфигурации через env vars."""
 
     @classmethod
     def setUpClass(cls):
         cls.ns = _load_confluence_utils()
 
     def test_default_space_key_from_env(self):
-        """_default_space_key reads from CONFLUENCE_SPACE_KEY."""
+        """_default_space_key читает из CONFLUENCE_SPACE_KEY."""
         with patch.dict(os.environ, {"CONFLUENCE_SPACE_KEY": "MYSPACE"}):
             result = self.ns["_default_space_key"]()
             self.assertEqual(result, "MYSPACE")
 
     def test_default_space_key_empty_without_env(self):
-        """_default_space_key returns an empty string if the env var is not set."""
+        """_default_space_key возвращает пустую строку если env не задан."""
         env = {k: v for k, v in os.environ.items() if k != "CONFLUENCE_SPACE_KEY"}
         with patch.dict(os.environ, env, clear=True):
             result = self.ns["_default_space_key"]()
             self.assertEqual(result, "")
 
     def test_get_client_no_url(self):
-        """_get_confluence_client without CONFLUENCE_URL → error with a hint."""
+        """_get_confluence_client без CONFLUENCE_URL → ошибка с подсказкой."""
         env = {k: v for k, v in os.environ.items()
                if k not in ("CONFLUENCE_URL", "CONFLUENCE_API_TOKEN")}
         with patch.dict(os.environ, env, clear=True):
@@ -207,7 +207,7 @@ class TestConfluenceConfig(unittest.TestCase):
             self.assertIn("CONFLUENCE_URL", error)
 
     def test_get_client_no_token(self):
-        """_get_confluence_client without CONFLUENCE_API_TOKEN → error with a hint."""
+        """_get_confluence_client без CONFLUENCE_API_TOKEN → ошибка с подсказкой."""
         env = {k: v for k, v in os.environ.items() if k != "CONFLUENCE_API_TOKEN"}
         env["CONFLUENCE_URL"] = "https://test.atlassian.net"
         with patch.dict(os.environ, env, clear=True):
@@ -216,14 +216,14 @@ class TestConfluenceConfig(unittest.TestCase):
             self.assertIn("CONFLUENCE_API_TOKEN", error)
 
     def test_export_hook_local_only_without_config(self):
-        """_export_hook in 5.2 without env vars → local_only without an error."""
+        """_export_hook в 5.2 без env vars → local_only без ошибки."""
         import skills.requirements_maintain_mcp as maintain_mod
         from unittest.mock import patch
         env = {k: v for k, v in os.environ.items()
                if k not in ("CONFLUENCE_URL", "CONFLUENCE_API_TOKEN")}
         with patch.dict(os.environ, env, clear=True):
             result = maintain_mod._export_hook(
-                "requirement_update", "# Test", {"project_name": "Test"}
+                "requirement_update", "# Тест", {"project_name": "Test"}
             )
             self.assertEqual(result.get("status"), "local_only")
 
@@ -233,7 +233,7 @@ if __name__ == "__main__":
 
 
 # ===========================================================================
-# MCP tool tests (with a mocked atlassian Confluence client)
+# Тесты MCP-инструментов (с моком atlassian Confluence client)
 # ===========================================================================
 
 CLOUD_BASE = "https://test.atlassian.net/wiki"
@@ -254,7 +254,7 @@ def _make_mock_confluence(page_exists=True, page_title="Test", page_id="12345"):
         "version": {"number": 3, "when": "2026-03-30T10:00:00Z"},
         "body": {
             "storage": {
-                "value": f"<p>FR-001 — Authentication</p><p>BR-001 — Business goal</p>"
+                "value": f"<p>FR-001 — Авторизация</p><p>BR-001 — Бизнес-цель</p>"
             }
         },
         "_links": {"webui": f"/spaces/BA/pages/{page_id}"},
@@ -303,36 +303,36 @@ VALID_ENV = {
 
 
 class TestPushToConfluence(BaseMCPTest):
-    """Tests for MCP 1 — push_to_confluence."""
+    """Тесты MCP 1 — push_to_confluence."""
 
     def _call(self, **kwargs):
         defaults = {
-            "content_markdown": "# Report\n\nFR-001 — Authentication",
-            "page_title": "Test page",
+            "content_markdown": "# Отчёт\n\nFR-001 — Авторизация",
+            "page_title": "Тест страница",
             "space_key": "BA",
         }
         return confluence_mod.push_to_confluence(**{**defaults, **kwargs})
 
     def test_creates_new_page(self):
-        """Creates a new page if it doesn't exist."""
+        """Создаёт новую страницу если она не существует."""
         mock_client = _make_mock_confluence(page_exists=False)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
         self.assertIn("✅", result)
-        self.assertIn("created", result)
+        self.assertIn("создана", result)
         mock_client.create_page.assert_called_once()
 
     def test_updates_existing_page(self):
-        """Updates the page if it exists and update_if_exists=True."""
+        """Обновляет страницу если она существует и update_if_exists=True."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call(update_if_exists=True)
         self.assertIn("✅", result)
-        self.assertIn("updated", result)
+        self.assertIn("обновлена", result)
         mock_client.update_page.assert_called_once()
 
     def test_search_hit_shape_is_normalized(self):
@@ -353,7 +353,7 @@ class TestPushToConfluence(BaseMCPTest):
         self.assertEqual(mock_client.update_page.call_args.kwargs["page_id"], "999")
 
     def test_no_update_if_exists_false(self):
-        """Returns a warning if update_if_exists=False and the page exists."""
+        """Возвращает предупреждение если update_if_exists=False и страница есть."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -363,7 +363,7 @@ class TestPushToConfluence(BaseMCPTest):
         mock_client.update_page.assert_not_called()
 
     def test_no_space_key_returns_error(self):
-        """Without space_key and CONFLUENCE_SPACE_KEY → error."""
+        """Без space_key и CONFLUENCE_SPACE_KEY → ошибка."""
         env = {k: v for k, v in VALID_ENV.items() if k != "CONFLUENCE_SPACE_KEY"}
         mock_client = _make_mock_confluence()
         with patch.dict(os.environ, env, clear=True), \
@@ -374,7 +374,7 @@ class TestPushToConfluence(BaseMCPTest):
         self.assertIn("space_key", result)
 
     def test_uses_env_space_key_when_not_provided(self):
-        """Uses CONFLUENCE_SPACE_KEY from env if space_key is empty."""
+        """Использует CONFLUENCE_SPACE_KEY из env если space_key пустой."""
         mock_client = _make_mock_confluence(page_exists=False)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -383,15 +383,15 @@ class TestPushToConfluence(BaseMCPTest):
         self.assertIn("✅", result)
 
     def test_client_error_propagated(self):
-        """An error from _get_confluence_client → returned as text."""
+        """Ошибка от _get_confluence_client → возвращается как текст."""
         with patch("skills.integrations.confluence_mcp._get_confluence_client",
-                   return_value=(None, "❌ No CONFLUENCE_URL")):
+                   return_value=(None, "❌ Нет CONFLUENCE_URL")):
             result = self._call()
         self.assertIn("❌", result)
         self.assertIn("CONFLUENCE_URL", result)
 
     def test_result_contains_url(self):
-        """The result contains the page URL."""
+        """Результат содержит URL страницы."""
         mock_client = _make_mock_confluence(page_exists=False)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -401,34 +401,34 @@ class TestPushToConfluence(BaseMCPTest):
         self.assertIn("atlassian.net", result)
 
     def test_with_parent_page(self):
-        """Creates a page under a parent page."""
+        """Создаёт страницу с родительской страницей."""
         mock_client = _make_mock_confluence(page_exists=False)
-        # First get_page_by_title call — searching for the parent; second — searching for the page itself
+        # Первый вызов get_page_by_title — поиск родителя; второй — поиск самой страницы
         mock_client.get_page_by_title.side_effect = [
-            {"id": "PARENT-ID", "title": "Parent"},  # parent found
+            {"id": "PARENT-ID", "title": "Родитель"},  # parent found
             None,  # main page not found
         ]
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
-            result = self._call(parent_page_title="Parent")
+            result = self._call(parent_page_title="Родитель")
         self.assertIn("✅", result)
         call_kwargs = mock_client.create_page.call_args
         self.assertEqual(call_kwargs.kwargs.get("parent_id") or call_kwargs[1].get("parent_id"), "PARENT-ID")
 
     def test_parent_not_found_returns_error(self):
-        """If the parent page is not found → error."""
+        """Если родительская страница не найдена → ошибка."""
         mock_client = _make_mock_confluence(page_exists=False)
         mock_client.get_page_by_title.return_value = None
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
-            result = self._call(parent_page_title="Nonexistent parent")
+            result = self._call(parent_page_title="Несуществующий родитель")
         self.assertIn("❌", result)
-        self.assertIn("not found", result)
+        self.assertIn("не найдена", result)
 
     def test_confluence_exception_handled(self):
-        """An exception from the atlassian API → a clear error message."""
+        """Исключение от atlassian API → понятное сообщение об ошибке."""
         mock_client = _make_mock_confluence(page_exists=False)
         mock_client.create_page.side_effect = Exception("Connection timeout")
         with patch.dict(os.environ, VALID_ENV), \
@@ -440,18 +440,18 @@ class TestPushToConfluence(BaseMCPTest):
 
 
 class TestPullFromConfluence(BaseMCPTest):
-    """Tests for MCP 2 — pull_from_confluence."""
+    """Тесты MCP 2 — pull_from_confluence."""
 
     def _call(self, **kwargs):
         defaults = {
-            "page_title": "Project requirements",
+            "page_title": "Требования проекта",
             "space_key": "BA",
             "project_name": "test_project",
         }
         return confluence_mod.pull_from_confluence(**{**defaults, **kwargs})
 
     def test_extracts_requirements_from_page(self):
-        """Extracts requirements from a page with FR/BR IDs."""
+        """Извлекает требования из страницы с FR/BR ID."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -461,7 +461,7 @@ class TestPullFromConfluence(BaseMCPTest):
         self.assertIn("BR-001", result)
 
     def test_page_not_found_returns_error(self):
-        """Page not found → message with a hint."""
+        """Страница не найдена → сообщение с подсказкой."""
         mock_client = _make_mock_confluence(page_exists=False)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -471,7 +471,7 @@ class TestPullFromConfluence(BaseMCPTest):
         self.assertIn("list_space_pages", result)
 
     def test_result_contains_json_block(self):
-        """The result contains a JSON block to pass to init_traceability_repo."""
+        """Результат содержит JSON-блок для передачи в init_traceability_repo."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -481,64 +481,64 @@ class TestPullFromConfluence(BaseMCPTest):
         self.assertIn("init_traceability_repo", result)
 
     def test_uses_page_title_as_project_name_if_empty(self):
-        """If project_name is empty — uses page_title."""
-        mock_client = _make_mock_confluence(page_exists=True, page_title="My project")
+        """Если project_name пустой — использует page_title."""
+        mock_client = _make_mock_confluence(page_exists=True, page_title="Мой проект")
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
-            result = self._call(page_title="My project", project_name="")
-        self.assertIn("My project", result)
+            result = self._call(page_title="Мой проект", project_name="")
+        self.assertIn("Мой проект", result)
 
     def test_client_error_returned(self):
         with patch("skills.integrations.confluence_mcp._get_confluence_client",
-                   return_value=(None, "❌ No CONFLUENCE_API_TOKEN")):
+                   return_value=(None, "❌ Нет CONFLUENCE_API_TOKEN")):
             result = self._call()
         self.assertIn("❌", result)
 
     def test_result_contains_page_version(self):
-        """The result shows the version and the page's modification date."""
+        """Результат показывает версию и дату изменения страницы."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
-        self.assertIn("Version", result)
-        self.assertIn("3", result)  # version from the stub
+        self.assertIn("Версия", result)
+        self.assertIn("3", result)  # версия из стаба
 
     def test_requirement_count_shown(self):
-        """The result shows the number of extracted requirements."""
+        """Результат показывает количество извлечённых требований."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
-        self.assertIn("Requirements extracted", result)
+        self.assertIn("Извлечено требований", result)
 
 
 class TestSyncPage(BaseMCPTest):
-    """Tests for MCP 3 — sync_page."""
+    """Тесты MCP 3 — sync_page."""
 
     def _call(self, **kwargs):
         defaults = {
-            "page_title": "Live report",
-            "new_content_markdown": "# Updated content\n\nFR-001 — Authentication v2",
+            "page_title": "Живой отчёт",
+            "new_content_markdown": "# Обновлённый контент\n\nFR-001 — Авторизация v2",
             "space_key": "BA",
         }
         return confluence_mod.sync_page(**{**defaults, **kwargs})
 
     def test_updates_existing_page(self):
-        """Updates the page and shows the before/after versions."""
+        """Обновляет страницу и показывает версии до/после."""
         mock_client = _make_mock_confluence(page_exists=True)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
         self.assertIn("✅", result)
-        self.assertIn("→", result)  # version before → after
+        self.assertIn("→", result)  # версия до → после
         mock_client.update_page.assert_called_once()
 
     def test_page_not_found_no_create(self):
-        """Page not found, create_if_missing=False → error with a hint."""
+        """Страница не найдена, create_if_missing=False → ошибка с подсказкой."""
         mock_client = _make_mock_confluence(page_exists=False)
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -548,7 +548,7 @@ class TestSyncPage(BaseMCPTest):
         self.assertIn("create_if_missing=True", result)
 
     def test_page_not_found_create_if_missing(self):
-        """Page not found, create_if_missing=True → calls push_to_confluence."""
+        """Страница не найдена, create_if_missing=True → вызывает push_to_confluence."""
         mock_client = _make_mock_confluence(page_exists=False)
         mock_client.create_page.return_value = {
             "id": "NEW-ID",
@@ -571,7 +571,7 @@ class TestSyncPage(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_update_exception_handled(self):
-        """An exception while updating → a clear message."""
+        """Исключение при обновлении → понятное сообщение."""
         mock_client = _make_mock_confluence(page_exists=True)
         mock_client.update_page.side_effect = Exception("Permission denied")
         with patch.dict(os.environ, VALID_ENV), \
@@ -583,42 +583,42 @@ class TestSyncPage(BaseMCPTest):
 
     def test_client_error_returned(self):
         with patch("skills.integrations.confluence_mcp._get_confluence_client",
-                   return_value=(None, "❌ No config")):
+                   return_value=(None, "❌ Нет конфига")):
             result = self._call()
         self.assertIn("❌", result)
 
 
 class TestListSpacePages(BaseMCPTest):
-    """Tests for MCP 4 — list_space_pages."""
+    """Тесты MCP 4 — list_space_pages."""
 
     def _call(self, **kwargs):
         defaults = {"space_key": "BA"}
         return confluence_mod.list_space_pages(**{**defaults, **kwargs})
 
     def test_returns_page_list(self):
-        """Returns the list of pages in a space."""
+        """Возвращает список страниц пространства."""
         mock_client = _make_mock_confluence()
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
-        self.assertIn("Requirements FR", result)
-        self.assertIn("Requirements BR", result)
-        self.assertIn("Architecture", result)
+        self.assertIn("Требования FR", result)
+        self.assertIn("Требования BR", result)
+        self.assertIn("Архитектура", result)
 
     def test_filter_by_search_title(self):
-        """Filters pages by search_title."""
+        """Фильтрует страницы по search_title."""
         mock_client = _make_mock_confluence()
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
-            result = self._call(search_title="Requirements")
-        self.assertIn("Requirements FR", result)
-        self.assertIn("Requirements BR", result)
-        self.assertNotIn("Architecture", result)
+            result = self._call(search_title="Требования")
+        self.assertIn("Требования FR", result)
+        self.assertIn("Требования BR", result)
+        self.assertNotIn("Архитектура", result)
 
     def test_no_pages_returns_info(self):
-        """Empty space → informational message."""
+        """Пустое пространство → информационное сообщение."""
         mock_client = _make_mock_confluence()
         mock_client.get_all_pages_from_space.return_value = []
         with patch.dict(os.environ, VALID_ENV), \
@@ -628,7 +628,7 @@ class TestListSpacePages(BaseMCPTest):
         self.assertIn("ℹ️", result)
 
     def test_result_contains_pull_hint(self):
-        """The result contains a hint on using pull_from_confluence."""
+        """Результат содержит подсказку по использованию pull_from_confluence."""
         mock_client = _make_mock_confluence()
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
@@ -657,7 +657,7 @@ class TestListSpacePages(BaseMCPTest):
 
     def test_client_error_returned(self):
         with patch("skills.integrations.confluence_mcp._get_confluence_client",
-                   return_value=(None, "❌ No config")):
+                   return_value=(None, "❌ Нет конфига")):
             result = self._call()
         self.assertIn("❌", result)
 
@@ -1024,12 +1024,12 @@ class TestExportPageTitles(BaseMCPTest):
 
 
 class TestExportArtifactToConfluence(BaseMCPTest):
-    """Tests for the export_artifact_to_confluence helper (_export_hook)."""
+    """Тесты вспомогательной функции export_artifact_to_confluence (_export_hook)."""
 
     def _call(self, **kwargs):
         defaults = {
-            "content_markdown": "# Report\n\nFR-001 — Authentication",
-            "page_title": "Artifact 5.2",
+            "content_markdown": "# Отчёт\n\nFR-001 — Авторизация",
+            "page_title": "Артефакт 5.2",
             "space_key": "BA",
         }
         return confluence_mod.export_artifact_to_confluence(**{**defaults, **kwargs})
@@ -1053,7 +1053,7 @@ class TestExportArtifactToConfluence(BaseMCPTest):
 
     def test_returns_error_dict_on_client_failure(self):
         with patch("skills.integrations.confluence_mcp._get_confluence_client",
-                   return_value=(None, "❌ No token")):
+                   return_value=(None, "❌ Нет токена")):
             result = self._call()
         self.assertEqual(result["status"], "error")
         self.assertIn("message", result)

@@ -1,32 +1,32 @@
-# inputs/: Input materials for analysis
+# inputs/ — Входные материалы для анализа
 
-This is where the BA drops any files that need to be processed as part of business analysis.
+Сюда BA кладёт любые файлы, которые нужно обработать в рамках бизнес-анализа.
 
-## What you can put here
+## Что можно сюда класть
 
-- **Interview transcripts**: records of conversations with stakeholders
-- **Workshop and facilitated-session transcripts**: results of group meetings
-- **Business rules and policies**: the company's internal policies
-- **Regulatory and regulator requirements**: external constraints
-- **Technical specifications**: existing documentation for the systems
-- **Survey and questionnaire results**: answers from forms
-- **Other documents**: any source that contains requirements or context
+- **Транскрипты интервью** — записи разговоров со стейкхолдерами
+- **Транскрипты воркшопов и фасилитационных сессий** — результаты групповых встреч
+- **Бизнес-правила и регламенты** — внутренние политики компании
+- **Нормативные требования и требования регуляторов** — внешние ограничения
+- **Технические спецификации** — существующая документация по системам
+- **Результаты опросов и анкетирований** — ответы из форм
+- **Прочие документы** — любые источники, содержащие требования или контекст
 
-## Supported formats
+## Поддерживаемые форматы
 
 `.txt`, `.md`, `.pdf`, `.docx`
 
-## How to use
+## Как использовать
 
-Put a file in this folder and tell Claude:
+Положите файл в эту папку и скажите Claude:
 
-> "Process this material: inputs/FILENAME"
+> «Обработай материал: inputs/ИМЯ_ФАЙЛА»
 
-Or in the context of a specific BABOK task:
+Или в контексте конкретной задачи BABOK:
 
-> "Run task 4.2 based on the file inputs/workshop_results.txt"
+> «Запусти задачу 4.2 на основе файла inputs/workshop_results.txt»
 
-## Note
+## Примечание
 
-This folder is not committed to Git (excluded via .gitignore); the files may contain
-confidential data. The folder structure is preserved via `.gitkeep`.
+Папка не коммитится в Git (исключена через .gitignore) — файлы могут содержать
+конфиденциальные данные. Структура папки сохраняется через `.gitkeep`.

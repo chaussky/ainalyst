@@ -1,61 +1,61 @@
 ---
 name: risk_assessment
 description: >
-  BABOK 6.3 skill — Assess Risks. Use this skill when the BA wants to collect,
-  structure, and assess project risks: run a risk matrix, determine tolerance,
-  define response strategies, and produce a recommendation for the sponsor.
-  Triggers: "assess risks", "risk assessment", "risk matrix", "project risks",
-  "likelihood and impact", "risk register", "risk tolerance".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 6.3 — Оценка рисков. Используй этот скилл когда BA хочет собрать,
+  структурировать и оценить риски проекта: провести risk matrix, определить tolerance,
+  задать стратегии реагирования и сформировать рекомендацию для спонсора.
+  Триггеры: «оценка рисков», «assess risks», «risk matrix», «риски проекта»,
+  «вероятность и impact», «risk register», «толерантность к риску», «risk assessment».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
-# SKILL: 6.3 — Assess Risks
+# SKILL: 6.3 — Assess Risks (Оценка рисков)
 
-**BABOK chapter:** 6 — Strategy Analysis  
-**Task:** 6.3 Assess Risks  
-**MCP server:** `skills/risk_assessment_mcp.py`
+**Глава BABOK:** 6 — Strategy Analysis  
+**Задача:** 6.3 Assess Risks  
+**MCP-сервер:** `skills/risk_assessment_mcp.py`
 
 ---
 
-## What this task is about
+## Зачем эта задача
 
-Risks are uncertainty that **threatens business objectives**.
-The goal of 6.3: identify risks, assess them semi-quantitatively (likelihood × impact),
-plan response measures, and give the sponsor a justified recommendation:
+Риски — это неопределённость, которая **угрожает бизнес-целям**.
+Цель 6.3: идентифицировать риски, оценить их полуколичественно (likelihood × impact),
+спланировать ответные меры и дать спонсору обоснованную рекомендацию:
 proceed / proceed with mitigation / do not proceed.
 
-**Key inputs:**
-- 6.1 `{project}_current_state.json` — root causes, business needs
-- 6.2 `{project}_future_state.json` — constraints, gap analysis
-- 4.2 elicitation results — risks mentioned by stakeholders
-- Stakeholder registry 3.2 — for owner assignment
+**Ключевые входы:**
+- 6.1 `{project}_current_state.json` — корневые причины, бизнес-потребности
+- 6.2 `{project}_future_state.json` — ограничения, gap-анализ
+- 4.2 результаты выявления — риски, упомянутые стейкхолдерами
+- Реестр стейкхолдеров 3.2 — для назначения owner
 
-**Key outputs:**
-- `{project}_risk_assessment.json` — full risk register (→ 6.4)
-- `{project}_risk_assessment_report.md` — report for the sponsor
+**Ключевые выходы:**
+- `{project}_risk_assessment.json` — полный реестр рисков (→ 6.4)
+- `{project}_risk_assessment_report.md` — отчёт для спонсора
 
 ---
 
-## When to read references
+## Когда читать references
 
-| Situation | Read |
+| Ситуация | Читай |
 |----------|-------|
-| Need help categorizing or wording a risk | `references/risk_assessment_guide.md` |
-| Unsure how to assess likelihood/impact | `references/risk_assessment_guide.md` §2–3 |
-| Sponsor didn't set tolerance explicitly | `references/risk_tolerance_guide.md` §5 |
-| Need industry benchmarks | `references/risk_tolerance_guide.md` §4 |
-| Unsure what the `run_risk_matrix` result means | `references/risk_assessment_guide.md` §10 |
+| Нужна помощь с категоризацией или формулировкой риска | `references/risk_assessment_guide.md` |
+| Непонятно как оценить likelihood/impact | `references/risk_assessment_guide.md` §2–3 |
+| Спонсор не задал tolerance явно | `references/risk_tolerance_guide.md` §5 |
+| Нужны отраслевые ориентиры | `references/risk_tolerance_guide.md` §4 |
+| Непонятно что значит результат `run_risk_matrix` | `references/risk_assessment_guide.md` §10 |
 
 ---
 
-## Pipeline — 7 steps
+## Pipeline — 7 шагов
 
 ```
 scope_risk_assessment
       ↓
-import_risks_from_context      ← optional, but recommended
+import_risks_from_context      ← опциональный, но рекомендуемый
       ↓
-add_risk × N                   ← main loop, repeat as many times as you have risks
+add_risk × N                   ← основной цикл, повторяй столько раз сколько рисков
       ↓
 set_risk_tolerance
       ↓
@@ -68,123 +68,123 @@ save_risk_assessment
 
 ---
 
-## Step 1 — `scope_risk_assessment`
+## Шаг 1 — `scope_risk_assessment`
 
-**What it does:** fixes the scope: initiative type, analysis depth,
-risk sources, link to projects 6.1/6.2.
+**Что делает:** фиксирует скоуп: тип инициативы, глубина анализа,
+источники рисков, связь с проектами 6.1/6.2.
 
-**Parameters:**
-- `project_id` — same as in 6.1/6.2
+**Параметры:**
+- `project_id` — тот же что в 6.1/6.2
 - `initiative_type` — process_improvement / new_system / regulatory / cost_reduction / market_opportunity / other
-- `analysis_depth` — quick (High only) / standard (H+M) / comprehensive (all)
-- `source_project_ids` — list of project_id from 6.1/6.2 for auto-import (optional)
-- `ba_notes` — additional context
+- `analysis_depth` — quick (только High) / standard (H+M) / comprehensive (все)
+- `source_project_ids` — список project_id из 6.1/6.2 для автоимпорта (опционально)
+- `ba_notes` — дополнительный контекст
 
-**Questions for the BA before calling:**
-> 1. What type of initiative (see initiative_type)?
-> 2. How deep should the analysis be? (quick = an hour of work, comprehensive = half a day)
-> 3. Are there already completed 6.1 or 6.2 artifacts for this project?
+**Вопросы BA перед вызовом:**
+> 1. Какой тип инициативы (см. initiative_type)?
+> 2. Насколько глубоким должен быть анализ? (quick = час работы, comprehensive = полдня)
+> 3. Есть ли уже заполненные артефакты 6.1 или 6.2 для этого проекта?
 
 ---
 
-## Step 2 — `import_risks_from_context` (recommended)
+## Шаг 2 — `import_risks_from_context` (рекомендуется)
 
-**What it does:** scans the 6.1, 6.2, 4.2 artifacts and proposes risk drafts.
-Drafts have status `draft` — the BA decides which to confirm via `add_risk`.
+**Что делает:** сканирует артефакты 6.1, 6.2, 4.2 и предлагает черновики рисков.
+Черновики имеют статус `draft` — BA решает какие подтверждать через `add_risk`.
 
-**Parameters:**
+**Параметры:**
 - `project_id`
-- `source_project_ids` — list of project_id to scan
+- `source_project_ids` — список project_id для сканирования
 
-**What to do with the result:**
-The tool returns a list of drafts. For each draft:
-- Want to add it → call `add_risk` with the draft's data (adjusting as needed)
-- Not relevant → just skip it
+**Что делать с результатом:**
+Инструмент вернёт список черновиков. Для каждого черновика:
+- Хочешь добавить → вызови `add_risk` с данными черновика (возможно скорректировав)
+- Не релевантен → просто пропусти
 
-**Graceful degradation:** if the 6.1/6.2 artifacts aren't found — continue without them.
+**Graceful degradation:** если артефакты 6.1/6.2 не найдены — продолжаем без них.
 
 ---
 
-## Step 3 — `add_risk` (repeat for each risk)
+## Шаг 3 — `add_risk` (повтори для каждого риска)
 
-**What it does:** adds a risk to the register. Automatically:
-- Assigns `risk_id` (RK-001, RK-002...)
-- Computes `risk_score = likelihood × impact`
-- Sets `status = identified`
+**Что делает:** добавляет риск в реестр. Автоматически:
+- Присваивает `risk_id` (RK-001, RK-002...)
+- Вычисляет `risk_score = likelihood × impact`
+- Устанавливает `status = identified`
 
-**Required parameters:**
+**Обязательные параметры:**
 - `project_id`
 - `category` — strategic / operational / financial / technical / regulatory / people / external
 - `source` — change / current_state / future_state / requirement / stakeholder / assumption / constraint
-- `description` — format "If X, then Y"
-- `likelihood` — 1–5 (see references/risk_assessment_guide.md §2)
-- `impact` — 1–5 (see references/risk_assessment_guide.md §3)
+- `description` — формат «Если X, то Y»
+- `likelihood` — 1–5 (см. references/risk_assessment_guide.md §2)
+- `impact` — 1–5 (см. references/risk_assessment_guide.md §3)
 - `response_strategy` — accept / mitigate / transfer / avoid
 
-**Recommended parameters:**
-- `likelihood_rationale` — rationale for the likelihood estimate
-- `impact_rationale` — rationale for the impact estimate
-- `mitigation_plan` — required if strategy=mitigate
-- `owner` — stakeholder_id from the 3.2 registry
+**Рекомендуемые параметры:**
+- `likelihood_rationale` — обоснование оценки вероятности
+- `impact_rationale` — обоснование оценки воздействия
+- `mitigation_plan` — обязателен если strategy=mitigate
+- `owner` — stakeholder_id из реестра 3.2
 
-**Wording rule:** "If [trigger/condition], then [consequence]"
-Bad: "Integration risk". Good: "If the legacy system's API doesn't support the required methods, then integration will take 6 weeks longer".
+**Правило формулировки:** «Если [триггер/условие], то [последствие]»
+Плохо: «Риск интеграции». Хорошо: «Если API legacy-системы не поддерживает нужные методы, то интеграция займёт на 6 недель больше».
 
-**How many risks are enough?**
+**Сколько рисков достаточно?**
 
-| Depth | Minimum risks |
+| Глубина | Минимум рисков |
 |---------|---------------|
 | quick | 3–5 |
 | standard | 7–15 |
 | comprehensive | 15–30 |
 
-Quality matters more than quantity — 7 well-defined risks beat 25 vague ones.
+Качество важнее количества — лучше 7 хороших рисков чем 25 расплывчатых.
 
 ---
 
-## Step 4 — `set_risk_tolerance`
+## Шаг 4 — `set_risk_tolerance`
 
-**What it does:** sets the tolerance level and the numeric threshold for High risks.
+**Что делает:** задаёт tolerance level и числовой порог High-рисков.
 
-**Parameters:**
+**Параметры:**
 - `project_id`
 - `tolerance_level` — risk_averse / neutral / risk_seeking
-- `max_acceptable_score` — score ≥ this = High risk (default: 15)
-- `organization_context` — context (industry, type)
-- `sponsor_risk_appetite` — sponsor's position (text)
+- `max_acceptable_score` — score ≥ этого = High risk (default: 15)
+- `organization_context` — контекст (отрасль, тип)
+- `sponsor_risk_appetite` — позиция спонсора (текст)
 
-**If the sponsor didn't set tolerance explicitly:** use the questions from
-`references/risk_tolerance_guide.md` §5 to determine it.
+**Если спонсор не задал tolerance явно:** используй вопросы из
+`references/risk_tolerance_guide.md` §5 для определения.
 
-**Quick guideline:**
-- Bank / public sector / pharma → `risk_averse`, threshold 10–12
-- Commercial company, standard project → `neutral`, threshold 15
-- Startup / digital transformation → `risk_seeking`, threshold 18–20
-
----
-
-## Step 5 — `run_risk_matrix`
-
-**What it does:** classifies risks into zones (Low/Medium/High),
-builds the cumulative profile, prepares data for the recommendation.
-
-**Parameters:** only `project_id`
-
-**Reading the result:**
-- `high_risks_count` — number of risks above the threshold
-- `total_score` — total "severity"
-- `zones` — list of risks with zones 🟢🟡🔴
-
-**After calling:** be sure to discuss the top 3 High risks with the BA before the next step.
+**Быстрый ориентир:**
+- Банк / госсектор / фармацевтика → `risk_averse`, порог 10–12
+- Коммерческая компания, стандартный проект → `neutral`, порог 15
+- Стартап / digital-трансформация → `risk_seeking`, порог 18–20
 
 ---
 
-## Step 6 — `generate_recommendation`
+## Шаг 5 — `run_risk_matrix`
 
-**What it does:** deterministic logic determines the recommendation type,
-Claude writes the narrative rationale (2–4 sentences with concrete data).
+**Что делает:** классифицирует риски по зонам (Low/Medium/High),
+строит cumulative profile, готовит данные для рекомендации.
 
-**Parameters:**
+**Параметры:** только `project_id`
+
+**Читай результат:**
+- `high_risks_count` — количество рисков выше порога
+- `total_score` — суммарная «тяжесть»
+- `zones` — список рисков с зонами 🟢🟡🔴
+
+**После вызова:** обязательно обсуди с BA топ-3 High-риска перед следующим шагом.
+
+---
+
+## Шаг 6 — `generate_recommendation`
+
+**Что делает:** детерминированная логика определяет тип рекомендации,
+Claude пишет narrative rationale (2–4 предложения с конкретными данными).
+
+**Параметры:**
 - `project_id`
 - `potential_value_summary` — brief description of the expected value from 6.2
   (if 6.2 is filled in, it's pulled automatically)
@@ -195,9 +195,9 @@ Claude writes the narrative rationale (2–4 sentences with concrete data).
   false precision. So the call is yours. (The precise numeric version of this trade-off
   lives in 7.6, which scores value against a risk penalty.)
 
-**Recommendation types:**
+**Типы рекомендаций:**
 
-| Type | When |
+| Тип | Когда |
 |-----|-------|
 | `do_not_proceed` | Critical risks with no possible mitigation — outranks everything |
 | `seek_higher_value` | You passed `value_vs_risk="risk_exceeds_value"`: risks are manageable, but they outweigh the value |
@@ -207,64 +207,64 @@ Claude writes the narrative rationale (2–4 sentences with concrete data).
 > If High risks are present and you do not pass `value_vs_risk`, the type is decided by
 > the risk logic alone and the tool reminds you to state the trade-off.
 
-**Your job (Claude):** write 2–4 sentences of rationale with concrete numbers.
-For example: "Of 12 identified risks, 3 are in the High zone (score 15–20).
-The most critical is the integration risk (RK-007, score 20): a Sprint 0 prototyping
-effort is recommended before development starts. If the mitigation plans are executed,
-the cumulative profile drops from 94 to ~55 — the project can proceed."
+**Твоя задача (Claude):** написать 2–4 предложения rationale с конкретными цифрами.
+Например: «Из 12 идентифицированных рисков 3 находятся в High-зоне (score 15–20).
+Наиболее критичен риск интеграции (RK-007, score 20): рекомендуется провести прототипирование
+в Sprint 0 до старта разработки. При выполнении mitigation-планов суммарный профиль
+снижается с 94 до ~55 — проект может идти вперёд.»
 
 ---
 
-## Step 7 — `save_risk_assessment`
+## Шаг 7 — `save_risk_assessment`
 
-**What it does:**
-- Saves `{project}_risk_assessment.json` to DATA_DIR (input for 6.4)
-- Generates a Markdown report via `save_artifact()`
-- Optionally: registers risks in the 5.1 repository as `risk`-type nodes
+**Что делает:**
+- Сохраняет `{project}_risk_assessment.json` в DATA_DIR (вход для 6.4)
+- Генерирует Markdown-отчёт через `save_artifact()`
+- Опционально: регистрирует риски в репозитории 5.1 как узлы типа `risk`
 
-**Parameters:**
+**Параметры:**
 - `project_id`
-- `push_to_traceability` — True if you're maintaining 5.1 traceability (default: False)
-- `traceability_project_id` — project_id of the 5.1 repository (if different)
+- `push_to_traceability` — True если ведёшь трассировку 5.1 (default: False)
+- `traceability_project_id` — project_id репозитория 5.1 (если отличается)
 
-**When push_to_traceability=True:**
-- Each RK-xxx is registered as a `risk` node in the 5.1 repository
-- `threatens`-type links are created: RK-001 threatens BN-001, etc.
+**Когда push_to_traceability=True:**
+- Каждый RK-xxx регистрируется как узел `risk` в репозитории 5.1
+- Создаются связи типа `threatens`: RK-001 threatens BN-001 и т.д.
 
-**After saving — tell the BA:**
-1. Path to the JSON (for 6.4 Define Change Strategy)
-2. Path to the Markdown report (for the sponsor)
-3. Top 3 priority risks for immediate action
-
----
-
-## Quick answers to common BA questions
-
-**"How many risks do I need to find?"**
-Enough to cover the main threats to the project's objectives. Quick = 3–5,
-standard = 7–15. Fewer risks with clear mitigation plans beat more vague ones.
-
-**"How do I choose between mitigate and avoid?"**
-Avoid — if the risk is Critical (impact=5) and mitigation is technically impossible or
-costs more than the potential benefit. Otherwise — mitigate with a concrete plan.
-
-**"Do I need to fill in 6.1 and 6.2 before 6.3?"**
-No, 6.3 works independently. But if 6.1/6.2 are filled in — `import_risks_from_context`
-saves time and helps avoid missing obvious risks.
-
-**"What do I do if the sponsor says 'we have no risks'?"**
-Use `import_risks_from_context` — the 6.1/6.2 artifacts almost always contain
-hidden risks in the constraints and gap analysis. Show them the concrete drafts.
+**После сохранения — сообщи BA:**
+1. Путь к JSON (для 6.4 Define Change Strategy)
+2. Путь к Markdown-отчёту (для спонсора)
+3. Топ-3 приоритетных риска для немедленного действия
 
 ---
 
-## Relationship to other tasks
+## Быстрые ответы на типичные вопросы BA
 
-| Task | Relationship |
+**«Сколько рисков нужно найти?»**
+Достаточно чтобы покрыть основные угрозы целям проекта. Quick = 3–5,
+standard = 7–15. Лучше меньше но с чёткими mitigation-планами.
+
+**«Как выбрать между mitigate и avoid?»**
+Avoid — если риск Critical (impact=5) и mitigation технически невозможен или
+дороже потенциальной выгоды. В остальных случаях — mitigate с конкретным планом.
+
+**«Нужно ли заполнять 6.1 и 6.2 перед 6.3?»**
+Нет, 6.3 работает независимо. Но если 6.1/6.2 заполнены — `import_risks_from_context`
+сэкономит время и не даст пропустить очевидные риски.
+
+**«Что делать если спонсор говорит "у нас нет рисков"?»**
+Используй `import_risks_from_context` — артефакты 6.1/6.2 почти всегда содержат
+скрытые риски в ограничениях и gap-анализе. Покажи конкретные черновики.
+
+---
+
+## Связь с другими задачами
+
+| Задача | Связь |
 |--------|-------|
-| ← 6.1 | RCA and business needs → risk sources |
-| ← 6.2 | Constraints and gaps → risk drafts |
-| ← 4.2 | stakeholders' risks_mentioned → drafts |
-| → 6.4 | `{project}_risk_assessment.json` → input for Define Change Strategy |
-| → 7.6 | Risk profile is factored into the value assessment of options |
-| → 5.1 | push_to_traceability=True → risk nodes + threatens links |
+| ← 6.1 | RCA и бизнес-потребности → источники рисков |
+| ← 6.2 | Ограничения и gaps → черновики рисков |
+| ← 4.2 | risks_mentioned стейкхолдеров → черновики |
+| → 6.4 | `{project}_risk_assessment.json` → вход Define Change Strategy |
+| → 7.6 | Рисковый профиль учитывается при оценке ценности вариантов |
+| → 5.1 | push_to_traceability=True → узлы risk + связи threatens |

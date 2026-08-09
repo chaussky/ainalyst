@@ -1,124 +1,124 @@
-# Reference Guide: Potential Value in 6.2 (BABOK)
+# Справочник: Потенциальная ценность в 6.2 (BABOK)
 
-## Why assess value in 6.2
+## Зачем оценивать ценность в 6.2
 
-At the 6.2 stage, we don't yet have a specific solution — only a desired future state.
-That's why the assessment is **qualitative**: a structured list of benefits with types and weights.
+На этапе 6.2 у нас ещё нет конкретного решения — только желаемое будущее состояние.
+Поэтому оценка **качественная**: структурированный список выгод с типами и весами.
 
-**Distinguishing 6.2 vs 7.6:**
-- **6.2** — "is it worth moving toward this future state" → qualitative, no formula
-- **7.6** — "which solution to choose and how beneficial it is" → quantitative, with a formula
+**Разграничение 6.2 vs 7.6:**
+- **6.2** — «стоит ли двигаться в это будущее состояние» → качественно, без формулы
+- **7.6** — «какое решение выбрать и насколько оно выгодно» → количественно, с формулой
 
-Data from 6.2 becomes context for 7.6: the BA doesn't start from scratch, but refines
-an already-structured vision of value.
+Данные из 6.2 становятся контекстом для 7.6: BA не начинает с нуля, а уточняет
+уже структурированное видение ценности.
 
 ---
 
-## Benefit types
+## Типы выгод
 
-| Type | What belongs here | Examples |
+| Тип | Что сюда входит | Примеры |
 |-----|----------------|---------|
-| `financial` | Direct financial effect — savings, revenue | Lower operating costs, revenue growth, reduced losses |
-| `operational` | Improved operational efficiency | Faster processes, fewer errors, higher productivity |
-| `strategic` | Strategic positioning | New markets, competitive advantages, flexibility |
-| `compliance` | Meeting requirements | Fulfilling regulatory requirements, reducing penalty risk |
+| `financial` | Прямой финансовый эффект — экономия, доход | Снижение операционных затрат, рост выручки, сокращение потерь |
+| `operational` | Улучшение операционной эффективности | Ускорение процессов, снижение ошибок, рост производительности |
+| `strategic` | Стратегическое позиционирование | Новые рынки, конкурентные преимущества, гибкость |
+| `compliance` | Соответствие требованиям | Выполнение регуляторных требований, снижение штрафных рисков |
 
 ---
 
-## Magnitude (scale of the benefit)
+## Magnitude (масштаб выгоды)
 
-| Value | When to use |
+| Значение | Когда использовать |
 |----------|-------------------|
-| `high` | Transformational effect — fundamentally changes metrics or positioning |
-| `medium` | Substantial improvement — noticeable but not revolutionary effect |
-| `low` | Minor improvement — "nice to have," not critical |
+| `high` | Трансформационный эффект — кардинально меняет метрики или позицию |
+| `medium` | Существенное улучшение — заметный, но не революционный эффект |
+| `low` | Минорное улучшение — «приятно иметь», не критично |
 
-**Tip:** if the BA can't tell high from medium, ask for an order of magnitude.
-Savings of $5K vs. $5M are different magnitudes, even without an exact calculation.
+**Совет:** если BA не может отличить high от medium — попроси назвать порядок цифр.
+Экономия 500 тыс. vs 50 млн — разные magnitude, даже без точного расчёта.
 
 ---
 
-## Confidence (confidence the benefit will be realized)
+## Confidence (уверенность в реализации выгоды)
 
-| Value | When to use |
+| Значение | Когда использовать |
 |----------|-------------------|
-| `high` | The benefit is confirmed by data, experts, or precedent |
-| `medium` | Logically justified, but no direct evidence |
-| `low` | An assumption based on intuition or analogy |
+| `high` | Выгода подтверждена данными, экспертами или прецедентами |
+| `medium` | Логически обоснована, но нет прямых доказательств |
+| `low` | Предположение, основанное на интуиции или аналогиях |
 
-**Important:** low confidence isn't a reason to ignore the benefit.
-It's a signal to the BA that more elicitation/research is needed.
+**Важно:** низкая уверенность — не причина игнорировать выгоду.
+Это сигнал для BA что нужно больше выявления/исследования.
 
 ---
 
-## Structure of a single benefit (benefits_json)
+## Структура одной выгоды (benefits_json)
 
 ```json
 {
-  "benefit_title": "Reduced request processing time",
+  "benefit_title": "Сокращение времени обработки заявок",
   "benefit_type": "operational",
   "magnitude": "high",
   "confidence": "medium",
-  "description": "Reducing from 8 to 2 hours will free up ~40% of department resources and allow processing 3x more requests without new hires",
+  "description": "Сокращение с 8 до 2 часов высвободит ~40% ресурсов отдела и позволит обрабатывать в 3 раза больше заявок без найма",
   "linked_business_needs": ["BN-001"],
   "linked_goals": ["BG-001"]
 }
 ```
 
-Minimum required fields: `benefit_title`, `benefit_type`, `magnitude`, `confidence`.
-The rest are recommended — they make the benefit well-supported.
+Минимально необходимые поля: `benefit_title`, `benefit_type`, `magnitude`, `confidence`.
+Остальные — рекомендованы, делают выгоду аргументированной.
 
 ---
 
-## Investment level (investment_level)
+## Уровень инвестиций (investment_level)
 
-A qualitative assessment of the scale of investment — without exact figures.
+Качественная оценка масштаба вложений — без точных цифр.
 
-| Value | Guideline |
+| Значение | Ориентир |
 |----------|---------|
-| `low` | Minor configuration changes, training, process adaptation without development |
-| `medium` | Moderate development or procurement, team changes, 3–12 months |
-| `high` | Transformational project, major development or implementation, 12+ months |
-| `unknown` | Cannot be assessed yet — more information needed |
+| `low` | Небольшие изменения конфигурации, обучение, адаптация процессов без разработки |
+| `medium` | Умеренная разработка или закупка, командные изменения, 3–12 месяцев |
+| `high` | Трансформационный проект, крупная разработка или внедрение, 12+ месяцев |
+| `unknown` | Пока невозможно оценить — нужно больше информации |
 
 ---
 
-## How to read the value assessment during the completeness check
+## Как читать value assessment при проверке полноты
 
-`check_future_state_completeness` checks whether a value assessment exists.
-What's enough for a "green" status:
-- At least one benefit in the benefits list
-- `investment_level` is specified (even `unknown`)
+`check_future_state_completeness` проверяет факт наличия value assessment.
+Чего достаточно для "зелёного" статуса:
+- Хотя бы одна выгода в списке benefits
+- Указан investment_level (даже `unknown`)
 
-The quality of the assessment is up to the BA. The tool doesn't block, it only informs.
-
----
-
-## How 6.2 data is used in 7.6
-
-`add_value_assessment` in 7.6, when `{project}_future_state.json` exists, reads the
-`potential_value.benefits` section as pre-fill context. The BA sees already-structured benefits
-and refines them quantitatively.
-
-If there's no 6.2 data, 7.6 works as usual (graceful degradation).
+Качество оценки — на усмотрение BA. Инструмент не блокирует, только информирует.
 
 ---
 
-## Common BA mistakes when assessing value
+## Как данные 6.2 используются в 7.6
 
-### "Marked everything as high / high"
-Symptom: overconfidence. If everything has high magnitude and confidence,
-the assessment is likely overly optimistic and unsupported.
-Help the BA ask themselves: "What's this backed up by?"
+`add_value_assessment` в 7.6 при наличии `{project}_future_state.json` читает секцию
+`potential_value.benefits` как pre-fill контекст. BA видит уже структурированные выгоды
+и уточняет их количественно.
 
-### "No link between benefits and BNs"
-If a benefit isn't linked to a business need from 6.1, it's unclear why it matters at all.
-Either it's a "fantasy," or the BN set from 6.1 is incomplete.
+Если данных 6.2 нет — 7.6 работает как обычно (graceful degradation).
 
-### "Only financial benefits"
-Organizations often forget operational and strategic benefits.
-Ask: "What will change in how the team works?", "What new opportunities will open up?"
+---
 
-### "No value_summary"
-A summary assessment is important for communicating with the sponsor:
-"High potential value at a medium investment level — an attractive profile."
+## Типичные ошибки BA при оценке ценности
+
+### «Всё написал как high / high»
+Симптом: overconfidence. Если всё с высоким магнитудом и уверенностью —
+скорее всего оценка оптимистичная и не аргументированная.
+Помоги BA задать себе вопрос: «Чем это подтверждается?»
+
+### «Нет связи выгод с BN»
+Если выгода не привязана к бизнес-потребности из 6.1 — непонятно зачем она вообще.
+Либо это «фантазия», либо BN из 6.1 неполный.
+
+### «Только финансовые выгоды»
+Организации часто забывают операционные и стратегические выгоды.
+Спроси: «Что изменится в работе команды?», «Какие возможности откроются?»
+
+### «Нет value_summary»
+Суммарная оценка важна для коммуникации со спонсором:
+«Высокая потенциальная ценность при среднем уровне инвестиций — привлекательный профиль».

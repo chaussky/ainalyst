@@ -1,51 +1,51 @@
 # Value Assessment Guide — BABOK 7.6
 
-## What this task is about
+## Суть задачи
 
-Task 7.6 (Analyze Potential Value and Recommend Solution) is the final synthesizing
-task of Chapter 7. The BA assesses the potential value of each design option (from 7.5)
-and gives a formal recommendation to the sponsor.
+Задача 7.6 (Analyze Potential Value and Recommend Solution) — финальная синтезирующая
+задача Главы 7. BA оценивает потенциальную ценность каждого варианта дизайна (из 7.5)
+и даёт официальную рекомендацию спонсору.
 
-**Core formula:** Value = Benefits − Costs − Risks
+**Главная формула:** Ценность = Выгоды − Затраты − Риски
 
 ---
 
-## Four legitimate outcomes per BABOK
+## Четыре легитимных исхода по BABOK
 
-| Type | When to apply |
+| Тип | Когда применять |
 |-----|----------------|
-| `recommend_option` | One option clearly outperforms the others on Value Score and aligns with strategy |
-| `recommend_parallel` | Two options are implemented in parallel (pilot + main development, A/B) |
-| `recommend_reanalyze` | No option satisfies the requirements — a new round of analysis is needed |
-| `no_action` | Benefits do not exceed costs and risks; the change is not justified |
+| `recommend_option` | Один вариант явно превосходит остальные по Value Score и соответствует стратегии |
+| `recommend_parallel` | Два варианта реализуются параллельно (пилот + основная разработка, A/B) |
+| `recommend_reanalyze` | Ни один вариант не удовлетворяет требованиям — нужен новый раунд анализа |
+| `no_action` | Выгоды не превышают затраты и риски; изменение не оправдано |
 
-> ⚠️ A mature BA always considers all four outcomes, including "do nothing."
-> `no_action` is not a failure — it's honest analysis.
+> ⚠️ Зрелый BA всегда рассматривает все четыре исхода, включая "ничего не делать".
+> `no_action` — это не провал, а честная аналитика.
 
 ---
 
-## Benefit types
+## Типы выгод
 
-| Type | Description | Examples |
+| Тип | Описание | Примеры |
 |-----|----------|---------|
-| `financial` | Direct monetary effect | Cost reduction, revenue growth |
-| `operational` | Process efficiency | Faster processing, fewer errors |
-| `strategic` | Strategic positioning | Entering a new market, competitive advantage |
-| `regulatory` | Compliance | Reduced regulatory risk, GDPR compliance |
-| `user_experience` | User experience | Satisfaction, Net Promoter Score |
+| `financial` | Прямой денежный эффект | Снижение затрат, рост выручки |
+| `operational` | Эффективность процессов | Ускорение обработки, снижение ошибок |
+| `strategic` | Стратегический позиционирование | Выход на новый рынок, конкурентное преимущество |
+| `regulatory` | Соответствие требованиям | Снижение регуляторных рисков, соответствие GDPR |
+| `user_experience` | Опыт пользователей | Удовлетворённость, Net Promoter Score |
 
 ---
 
-## Cost types
+## Типы затрат
 
-| Category | Description |
+| Категория | Описание |
 |-----------|----------|
-| `development` | Development and rollout |
-| `acquisition` | Purchasing licenses, equipment |
-| `maintenance` | Support and upkeep |
-| `operations` | Operating expenses |
-| `resources` | Hiring, staff training |
-| `opportunity` | Opportunity costs |
+| `development` | Разработка и внедрение |
+| `acquisition` | Покупка лицензий, оборудования |
+| `maintenance` | Поддержка и сопровождение |
+| `operations` | Операционные расходы |
+| `resources` | Найм, обучение персонала |
+| `opportunity` | Альтернативные издержки |
 
 ---
 
@@ -56,37 +56,37 @@ Value Score = (Benefits_Score × 2.0) + (Alignment_Score × 1.5)
             - (Cost_Score × 1.5) - (Risk_Penalty × 1.0)
 ```
 
-### Mapping qualitative ratings
+### Маппинг качественных оценок
 
 **Benefits (magnitude × confidence):**
 - magnitude: Low=1 / Medium=2 / High=3
 - confidence: Low=0.5 / Medium=1.0 / High=1.5
-- Benefits_Score = weighted average (magnitude × confidence) across all benefits
+- Benefits_Score = среднее взвешенное (magnitude × confidence) по всем выгодам
 
 **Costs:**
 - magnitude: Low=1 / Medium=2 / High=3
-- Cost_Score = average magnitude across all cost_items of all components
+- Cost_Score = среднее magnitude по всем cost_items всех компонентов
 
 **Alignment:**
-- Alignment_Score = share of business goals from 7.3 supported by the option's improvement_opportunities
-- Range: 0.0–1.0
+- Alignment_Score = доля бизнес-целей из 7.3, поддерживаемых improvement_opportunities варианта
+- Диапазон: 0.0–1.0
 
 **Risks:**
 - risk_level: Low=0 / Medium=1 / High=2 / Critical=3
-- Risk_Penalty = maximum risk_level among all risks of the option
+- Risk_Penalty = максимальный risk_level среди всех рисков варианта
 
-### Interpretation thresholds (informational, non-blocking)
+### Пороги интерпретации (информационные, не блокирующие)
 
-| Score | Interpretation |
+| Score | Интерпретация |
 |-------|--------------|
-| ≥ 8.0 | ✅ Strong recommendation |
-| 5.0–7.9 | 🟡 Conditional recommendation |
-| 2.0–4.9 | ⚠️ Needs reconsideration |
-| < 2.0 | ❌ Not recommended |
+| ≥ 8.0 | ✅ Сильная рекомендация |
+| 5.0–7.9 | 🟡 Условная рекомендация |
+| 2.0–4.9 | ⚠️ Требует пересмотра |
+| < 2.0 | ❌ Не рекомендуется |
 
 ---
 
-## 7.6 Pipeline
+## Пайплайн 7.6
 
 ```
 add_value_assessment(OPT-001) →
@@ -97,57 +97,57 @@ compare_value() →
 save_recommendation()
 ```
 
-### Step 1: add_value_assessment
-Called separately for each option. Idempotent on option_id.
-Reads risks.json if it exists (from task 6.3).
+### Шаг 1: add_value_assessment
+Вызывается отдельно для каждого варианта. Идемпотентен по option_id.
+Читает risks.json если существует (из задачи 6.3).
 
-### Step 2: compare_value
-Automatic Value Score matrix. Determines the winner by formula.
-The result is saved into the `comparison` section of the recommendation.json file.
+### Шаг 2: compare_value
+Автоматическая Value Score матрица. Определяет winner по формуле.
+Результат сохраняется в секцию `comparison` файла recommendation.json.
 
-### Step 3: check_value_readiness (optional)
-Pre-flight check: are all options assessed, is there a comparison, are critical gaps accounted for.
-Informational only — does not block.
+### Шаг 3: check_value_readiness (опционально)
+Pre-flight проверка: все ли варианты оценены, есть ли сравнение, учтены ли critical gaps.
+Только информирует — не блокирует.
 
-### Step 4: save_recommendation
-Final Recommendation Document. Required parameter `recommendation_type`.
-`success_metrics` become the baseline for Chapter 8.
+### Шаг 4: save_recommendation
+Финальный Recommendation Document. Обязательный параметр `recommendation_type`.
+`success_metrics` становятся baseline для Главы 8.
 
 ---
 
-## Integrations (all optional, graceful degradation)
+## Интеграции (все опциональны, graceful degradation)
 
-| Source | File | What it reads |
+| Источник | Файл | Что читает |
 |----------|------|-----------|
-| 7.5 Design Options | `{project}_design_options.json` | List of options, improvement_opportunities |
-| 7.3 Business Context | `{project}_business_context.json` | business_goals for Alignment_Score |
-| 7.4 Architecture | `{project}_architecture.json` | critical gaps for check_value_readiness |
-| 5.1 Traceability | `{project}_traceability_repo.json` | Requirement statistics (optional) |
-| 6.3 Risk Assessment | `{project}_risks.json` | Risks (read if it exists) |
+| 7.5 Design Options | `{project}_design_options.json` | Список вариантов, improvement_opportunities |
+| 7.3 Business Context | `{project}_business_context.json` | business_goals для Alignment_Score |
+| 7.4 Architecture | `{project}_architecture.json` | critical gaps для check_value_readiness |
+| 5.1 Traceability | `{project}_traceability_repo.json` | Статистика req (опционально) |
+| 6.3 Risk Assessment | `{project}_risks.json` | Риски (читается если существует) |
 
 ---
 
-## Output artifacts
+## Выходные артефакты
 
-| File | Purpose |
+| Файл | Назначение |
 |------|-----------|
-| `{project}_recommendation.json` | Machine-readable store: assessments + comparison + recommendation |
-| `7_6_recommendation_*.md` | Final Recommendation Document for the sponsor |
+| `{project}_recommendation.json` | Машиночитаемое хранилище: assessments + comparison + recommendation |
+| `7_6_recommendation_*.md` | Финальный Recommendation Document для спонсора |
 
-### Where the Recommendation Document goes next
+### Куда передаётся Recommendation Document
 
-| Direction | Purpose |
+| Направление | Цель |
 |------------|------|
-| → **6.4** Define Change Strategy | Final recommendation as an input artifact for the strategy |
-| → **Chapter 8** Solution Evaluation | `success_metrics` become the baseline for evaluation |
-| → **4.4** Communicate | Communicating the decision to stakeholders |
+| → **6.4** Define Change Strategy | Финальная рекомендация как входной артефакт стратегии |
+| → **Глава 8** Solution Evaluation | `success_metrics` становятся baseline для оценки |
+| → **4.4** Communicate | Коммуникация решения стейкхолдерам |
 
 ---
 
-## Common BA mistakes
+## Типичные ошибки BA
 
-1. **Assessing only financial benefits** — operational and strategic benefits are often more important
-2. **Ignoring `no_action`** — sometimes the best decision is to implement nothing
-3. **Not documenting confidence** — "we're 50% confident in this benefit" is important to convey to the sponsor
-4. **Skipping risks** — absence of risks in the assessment means an incomplete analysis, not zero risk
-5. **Not specifying success_metrics** — without a baseline, it's impossible to evaluate the outcome in Chapter 8
+1. **Оценивать только финансовые выгоды** — операционные и стратегические выгоды часто важнее
+2. **Игнорировать `no_action`** — иногда лучшее решение — не внедрять ничего
+3. **Не документировать confidence** — "мы уверены на 50% в выгоде" важно передать спонсору
+4. **Пропускать риски** — отсутствие рисков в оценке = неполный анализ, не нулевые риски
+5. **Не указывать success_metrics** — без baseline невозможно оценить результат в Главе 8

@@ -1,10 +1,10 @@
 """
-tests/test_ch4_44.py — Tests for Chapter 4.4: Communicate Business Analysis Information
-MCP file: skills/elicitation_communicate_mcp.py
-Tools: prepare_communication_package, log_communication, check_communication_schedule
+tests/test_ch4_44.py — Тесты для Главы 4.4: Communicate Business Analysis Information
+MCP-файл: skills/elicitation_communicate_mcp.py
+Инструменты: prepare_communication_package, log_communication, check_communication_schedule
 
-Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
-save_artifact is patched via patch() per ADR-068.
+Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
+save_artifact патчится через patch() по правилу ADR-068.
 """
 
 import json
@@ -23,44 +23,44 @@ import skills.elicitation_communicate_mcp as mod44
 
 
 # ---------------------------------------------------------------------------
-# Helper data
+# Вспомогательные данные
 # ---------------------------------------------------------------------------
 
 AUDIENCE_BUSINESS = json.dumps({
-    "name": "Ivan Ivanov",
-    "role": "Sales Director",
+    "name": "Иван Иванов",
+    "role": "Директор по продажам",
     "influence": "High",
     "interest": "High",
     "preferred_detail_level": "Executive summary",
-    "preferred_format": "Email + Presentation",
+    "preferred_format": "Email + Презентация",
 })
 
 AUDIENCE_DEVELOPER = json.dumps({
-    "name": "Petr Sidorov",
+    "name": "Пётр Сидоров",
     "role": "Backend Developer",
     "influence": "Low",
     "interest": "High",
-    "preferred_detail_level": "Full technical specification",
+    "preferred_detail_level": "Полная техническая спецификация",
     "preferred_format": "Confluence + Jira",
 })
 
 AUDIENCE_ARCHITECT = json.dumps({
-    "name": "Sergey Krasnov",
-    "role": "Architect",
+    "name": "Сергей Краснов",
+    "role": "Архитектор",
     "influence": "High",
     "interest": "Medium",
-    "preferred_detail_level": "Architectural decisions and constraints",
+    "preferred_detail_level": "Архитектурные решения и ограничения",
     "preferred_format": "Confluence",
 })
 
 KEY_MESSAGES = json.dumps([
     {
-        "message": "Integration with 1C agreed — REST API, batch every 15 min",
-        "why_it_matters": "A key technical decision of the project",
+        "message": "Интеграция с 1С согласована — REST API, батч 15 мин",
+        "why_it_matters": "Ключевое техническое решение проекта",
     },
     {
-        "message": "Launch is planned for 2025-06-01",
-        "why_it_matters": "The deadline is not shifting",
+        "message": "Запуск запланирован на 01.06.2025",
+        "why_it_matters": "Дедлайн не сдвигается",
     },
 ])
 
@@ -72,131 +72,131 @@ COMM_PACKAGE_PATH = "governance_plans/reports/4_4_package_crm_upgrade.md"
 # ---------------------------------------------------------------------------
 
 class TestPrepareCommunicationPackage(BaseMCPTest):
-    """Tests for 4.4: prepare_communication_package."""
+    """Тесты для 4.4: prepare_communication_package."""
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
             "source_artifact_path": "governance_plans/reports/4_3_confirmed_crm_upgrade.md",
-            "audience_role": "Business Sponsor",
+            "audience_role": "Бизнес-заказчик",
             "audience_profile_json": AUDIENCE_BUSINESS,
-            "adapted_content": "The CRM requirements are approved. Integration with 1C agreed. Launch 2025-06-01.",
+            "adapted_content": "Требования к CRM утверждены. Интеграция с 1С согласована. Запуск 01.06.2025.",
             "key_messages_json": KEY_MESSAGES,
-            "recommended_format": "Formal Document",
+            "recommended_format": "Формальный документ",
             "recommended_channel": "Email",
             "open_questions": "",
             "ba_notes": "",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod44.prepare_communication_package(**kwargs)
 
-    # --- happy path across all audiences ---
+    # --- happy path по всем аудиториям ---
 
     def test_audience_business(self):
-        """Audience: Business Sponsor."""
+        """Аудитория: Бизнес-заказчик."""
         result = self._call(
-            audience_role="Business Sponsor",
+            audience_role="Бизнес-заказчик",
             audience_profile_json=AUDIENCE_BUSINESS,
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_manager(self):
-        """Audience: Manager."""
+        """Аудитория: Руководитель."""
         result = self._call(
-            audience_role="Manager",
+            audience_role="Руководитель",
             audience_profile_json=AUDIENCE_BUSINESS,
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_developer(self):
-        """Audience: Developer."""
+        """Аудитория: Разработчик."""
         result = self._call(
-            audience_role="Developer",
+            audience_role="Разработчик",
             audience_profile_json=AUDIENCE_DEVELOPER,
-            adapted_content="FR-001: REST API /orders/sync, batch every 15 minutes. Endpoint: POST /api/v1/1c/sync",
-            recommended_format="Informal Document",
-            recommended_channel="Confluence / Document",
+            adapted_content="FR-001: REST API /orders/sync, батч каждые 15 минут. Endpoint: POST /api/v1/1c/sync",
+            recommended_format="Неформальный документ",
+            recommended_channel="Confluence / документ",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_architect(self):
-        """Audience: Architect / Tech Lead."""
+        """Аудитория: Архитектор / Техлид."""
         result = self._call(
-            audience_role="Architect / Tech Lead",
+            audience_role="Архитектор / Техлид",
             audience_profile_json=AUDIENCE_ARCHITECT,
-            adapted_content="Integration via REST API. Constraint: 1C v8.3+. Batch every 15 min.",
-            recommended_format="Formal Document",
+            adapted_content="Интеграция через REST API. Ограничение: 1С v8.3+. Батч каждые 15 мин.",
+            recommended_format="Формальный документ",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_audience_tester(self):
-        """Audience: Tester."""
+        """Аудитория: Тестировщик."""
         result = self._call(
-            audience_role="Tester",
-            adapted_content="FR-001 AC: synchronization without errors within 15 min. NFR-001 AC: P95 < 2s at 100 users.",
-            recommended_format="Formal Document",
+            audience_role="Тестировщик",
+            adapted_content="FR-001 AC: синхронизация без ошибок за 15 мин. NFR-001 AC: P95 < 2с при 100 пользователях.",
+            recommended_format="Формальный документ",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- happy path across all formats ---
+    # --- happy path по всем форматам ---
 
     def test_format_presentation(self):
-        """Format: Presentation."""
-        result = self._call(recommended_format="Presentation")
+        """Формат: Презентация."""
+        result = self._call(recommended_format="Презентация")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_format_email(self):
-        """Format: Email."""
+        """Формат: Email."""
         result = self._call(recommended_format="Email")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_format_one_on_one(self):
-        """Format: 1-on-1 Meeting."""
-        result = self._call(recommended_format="1-on-1 Meeting")
+        """Формат: Встреча 1-на-1."""
+        result = self._call(recommended_format="Встреча 1-на-1")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_format_group_meeting(self):
-        """Format: Group Meeting."""
-        result = self._call(recommended_format="Group Meeting")
+        """Формат: Групповая встреча."""
+        result = self._call(recommended_format="Групповая встреча")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     # --- edge cases ---
 
     def test_with_open_questions(self):
-        """There are open questions."""
+        """Есть открытые вопросы."""
         result = self._call(
-            open_questions="Should NFRs be included in the Executive Summary for the director?",
-            ba_notes="The director is technically savvy — NFRs can be mentioned briefly",
+            open_questions="Нужно ли включать NFR в Executive Summary для директора?",
+            ba_notes="Директор технически подкован — можно упомянуть NFR кратко",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_empty_key_messages(self):
-        """No key messages."""
+        """Нет ключевых сообщений."""
         result = self._call(key_messages_json=json.dumps([]))
         self.assertIsInstance(result, str)
 
     def test_save_artifact_called(self):
-        """save_artifact is called exactly once."""
+        """save_artifact вызывается ровно один раз."""
         with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             mod44.prepare_communication_package(
                 project_name="crm_upgrade",
                 source_artifact_path="governance_plans/reports/4_3.md",
-                audience_role="Business Sponsor",
+                audience_role="Бизнес-заказчик",
                 audience_profile_json=AUDIENCE_BUSINESS,
-                adapted_content="Requirements summary",
+                adapted_content="Резюме требований",
                 key_messages_json=KEY_MESSAGES,
                 recommended_format="Email",
                 recommended_channel="Email",
@@ -208,17 +208,17 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
     # --- error cases ---
 
     def test_invalid_audience_profile_json(self):
-        """Invalid profile JSON → error."""
+        """Невалидный JSON профиля → ошибка."""
         result = self._call(audience_profile_json="{bad json}")
         self.assertIn("❌", result)
 
     def test_invalid_key_messages_json(self):
-        """Invalid key-messages JSON → error."""
+        """Невалидный JSON ключевых сообщений → ошибка."""
         result = self._call(key_messages_json="not json")
         self.assertIn("❌", result)
 
     def test_returns_string(self):
-        """Always returns a string."""
+        """Всегда возвращает строку."""
         self.assertIsInstance(self._call(), str)
 
 
@@ -227,90 +227,90 @@ class TestPrepareCommunicationPackage(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestLogCommunication(BaseMCPTest):
-    """Tests for 4.4: log_communication."""
+    """Тесты для 4.4: log_communication."""
 
     PARTICIPANTS = json.dumps([
-        {"name": "Ivan Ivanov", "role": "Sales Director"},
-        {"name": "Anna BA", "role": "Business Analyst"},
+        {"name": "Иван Иванов", "role": "Директор по продажам"},
+        {"name": "Анна BA", "role": "Бизнес-аналитик"},
     ])
 
     ACTION_ITEMS = json.dumps([
-        {"task": "Sign the requirements minutes", "owner": "Ivan Ivanov", "due": "2025-03-20"},
+        {"task": "Подписать протокол требований", "owner": "Иван Иванов", "due": "2025-03-20"},
     ])
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
             "communication_package_path": COMM_PACKAGE_PATH,
-            "audience_role": "Business Sponsor",
+            "audience_role": "Бизнес-заказчик",
             "communication_date": "2025-03-19",
             "channel_used": "Email",
             "participants_json": self.PARTICIPANTS,
-            "understanding_status": "Understood and Agreed",
-            "feedback_summary": "Approved the requirements, asked to clarify the deployment timeline",
+            "understanding_status": "Понял и согласен",
+            "feedback_summary": "Одобрил требования, попросил уточнить сроки развёртывания",
             "action_items_json": self.ACTION_ITEMS,
             "needs_followup": False,
             "followup_deadline": "",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod44.log_communication(**kwargs)
 
-    # --- happy path across all channels ---
+    # --- happy path по всем каналам ---
 
     def test_channel_email(self):
-        """Channel: Email."""
+        """Канал: Email."""
         result = self._call(channel_used="Email")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_one_on_one(self):
-        """Channel: 1-on-1 Meeting."""
-        result = self._call(channel_used="1-on-1 Meeting")
+        """Канал: Встреча 1-на-1."""
+        result = self._call(channel_used="Встреча 1-на-1")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_group_meeting(self):
-        """Channel: Group Meeting."""
-        result = self._call(channel_used="Group Meeting")
+        """Канал: Групповая встреча."""
+        result = self._call(channel_used="Групповая встреча")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_messenger(self):
-        """Channel: Messenger."""
-        result = self._call(channel_used="Messenger")
+        """Канал: Мессенджер."""
+        result = self._call(channel_used="Мессенджер")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_confluence(self):
-        """Channel: Confluence / Document."""
-        result = self._call(channel_used="Confluence / Document")
+        """Канал: Confluence / документ."""
+        result = self._call(channel_used="Confluence / документ")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_channel_other(self):
-        """Channel: Other."""
-        result = self._call(channel_used="Other")
+        """Канал: Другое."""
+        result = self._call(channel_used="Другое")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
-    # --- happy path across all understanding statuses ---
+    # --- happy path по всем статусам понимания ---
 
     def test_status_understood_agreed(self):
-        result = self._call(understanding_status="Understood and Agreed")
+        result = self._call(understanding_status="Понял и согласен")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_status_partial(self):
-        result = self._call(understanding_status="Partially Understood")
+        result = self._call(understanding_status="Понял частично")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_status_not_understood(self):
-        """Status: Not Understood → followup needed."""
+        """Статус: Не понял → нужен followup."""
         result = self._call(
-            understanding_status="Not Understood — Needs Repeat",
+            understanding_status="Не понял — нужен повтор",
             needs_followup=True,
             followup_deadline="2025-03-22",
         )
@@ -319,7 +319,7 @@ class TestLogCommunication(BaseMCPTest):
 
     def test_status_no_response(self):
         result = self._call(
-            understanding_status="No Response",
+            understanding_status="Нет ответа",
             needs_followup=True,
             followup_deadline="2025-03-21",
         )
@@ -327,10 +327,10 @@ class TestLogCommunication(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_status_disagreed(self):
-        """Status: Disagreed — escalation."""
+        """Статус: Не согласен — эскалация."""
         result = self._call(
-            understanding_status="Disagreed",
-            feedback_summary="Thinks integration with 1C is not needed — manual entry is enough",
+            understanding_status="Не согласен",
+            feedback_summary="Считает что интеграция с 1С не нужна — достаточно ручного ввода",
             needs_followup=True,
             followup_deadline="2025-03-20",
         )
@@ -340,13 +340,13 @@ class TestLogCommunication(BaseMCPTest):
     # --- edge cases ---
 
     def test_empty_action_items(self):
-        """No action items."""
+        """Нет action items."""
         result = self._call(action_items_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_followup_needed_with_deadline(self):
-        """needs_followup=True with a deadline."""
+        """needs_followup=True с дедлайном."""
         result = self._call(needs_followup=True, followup_deadline="2025-03-25")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
@@ -370,18 +370,18 @@ class TestLogCommunication(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestCheckCommunicationSchedule(BaseMCPTest):
-    """Tests for 4.4: check_communication_schedule."""
+    """Тесты для 4.4: check_communication_schedule."""
 
     STAKEHOLDERS = [
         {
-            "name": "Ivan Ivanov",
-            "role": "Sales Director",
+            "name": "Иван Иванов",
+            "role": "Директор по продажам",
             "influence": "High",
             "comm_frequency": "Weekly",
             "comm_triggers": ["Major decision", "Milestone", "Risk identified"],
         },
         {
-            "name": "Petr Sidorov",
+            "name": "Пётр Сидоров",
             "role": "Backend Developer",
             "influence": "Low",
             "comm_frequency": "Bi-weekly",
@@ -391,15 +391,15 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
 
     COMM_LOG = [
         {
-            "stakeholder_name": "Ivan Ivanov",
+            "stakeholder_name": "Иван Иванов",
             "date": "2025-03-10",
             "channel": "Email",
             "needs_followup": False,
         },
         {
-            "stakeholder_name": "Petr Sidorov",
+            "stakeholder_name": "Пётр Сидоров",
             "date": "2025-03-15",
-            "channel": "Confluence / Document",
+            "channel": "Confluence / документ",
             "needs_followup": False,
         },
     ]
@@ -414,55 +414,55 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_communicate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod44.check_communication_schedule(**kwargs)
 
     def test_no_triggered_events(self):
-        """A scheduled check with no trigger events."""
+        """Плановая проверка без событий-триггеров."""
         result = self._call()
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_with_milestone_trigger(self):
-        """There is a trigger event: Milestone."""
+        """Есть событие-триггер: Milestone."""
         result = self._call(
             triggered_events_json=json.dumps([
-                {"event_type": "Milestone", "description": "Requirements approved and signed"}
+                {"event_type": "Milestone", "description": "Требования утверждены и подписаны"}
             ])
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_with_risk_trigger(self):
-        """There is a trigger event: Risk identified."""
+        """Есть событие-триггер: Risk identified."""
         result = self._call(
             triggered_events_json=json.dumps([
                 {"event_type": "Risk identified",
-                 "description": "The 1C vendor announced an API change in v8.4"}
+                 "description": "Вендор 1С уведомил о смене API в v8.4"}
             ])
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_multiple_triggers(self):
-        """Several trigger events."""
+        """Несколько событий-триггеров."""
         result = self._call(
             triggered_events_json=json.dumps([
-                {"event_type": "Milestone", "description": "Requirements approved"},
-                {"event_type": "Major decision", "description": "Integration architecture chosen"},
+                {"event_type": "Milestone", "description": "Требования утверждены"},
+                {"event_type": "Major decision", "description": "Выбрана архитектура интеграции"},
             ])
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_empty_comm_log(self):
-        """No communication history (a new project)."""
+        """Нет истории коммуникаций (новый проект)."""
         result = self._call(communication_log_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_single_stakeholder(self):
-        """Only one stakeholder."""
+        """Только один стейкхолдер."""
         result = self._call(
             stakeholders_json=json.dumps([self.STAKEHOLDERS[0]])
         )

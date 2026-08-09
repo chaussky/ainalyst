@@ -1,37 +1,37 @@
 ---
 name: requirements_maintain
 description: >
-  BABOK 5.2 skill — Maintain Requirements. Use this skill when the BA wants to
-  update requirement attributes, deprecate outdated requirements, check the
-  health of the registry, or find candidates for reuse in a new project.
-  Triggers: "update requirement," "maintain requirements," "deprecate,"
-  "requirements health," "reuse."
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 5.2 — Поддержка требований. Используй этот скилл когда BA хочет
+  обновить атрибуты требования, депрекировать устаревшие требования, проверить
+  здоровье реестра или найти кандидатов на повторное использование в новом проекте.
+  Триггеры: «обновить требование», «maintain requirements», «депрекировать»,
+  «здоровье требований», «requirements health», «reuse», «повторное использование».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: BABOK 5.2 — Maintain Requirements
-**Task:** keep requirements and their attributes current throughout the requirements life cycle.
-**MCP server:** `requirements_maintain_mcp.py`
+**Задача:** поддержание актуальности требований и их атрибутов на протяжении жизненного цикла.
+**MCP-сервер:** `requirements_maintain_mcp.py`
 **Reference:** `references/lifecycle_guide.md`
 
 ---
 
-## What this task is about
+## Суть задачи
 
-5.1 built the link graph. 5.2 keeps that graph — and the requirements themselves — from going stale.
+5.1 построил граф связей. 5.2 — не даёт этому графу и самим требованиям протухнуть.
 
-Requirements live, change, and age. The BA's job is to act as the registry's
-"caretaker": update statuses, versions, and attributes, flag what's outdated,
-and identify candidates for reuse. And to do this **regularly**, not only when a CR comes in.
+Требования живут, меняются, стареют. Задача BA — быть «смотрителем» реестра:
+обновлять статусы, версии, атрибуты, помечать устаревшее, выявлять кандидатов
+на повторное использование. И делать это **регулярно**, не только при CR.
 
-**Three elements per BABOK:**
-1. **Maintaining content** — the requirement stays correct and current
-2. **Maintaining attributes** — metadata stays current even if the content hasn't changed
-3. **Reuse** — requirements are accessible and understandable for other initiatives
+**Три элемента по BABOK:**
+1. **Поддержание содержания** — требование остаётся корректным и актуальным
+2. **Поддержание атрибутов** — метаданные актуальны даже если содержание не менялось
+3. **Повторное использование** — требования доступны и понятны для других инициатив
 
 ---
 
-## When this skill is activated
+## Когда активируется этот скилл
 
 - A requirement's status has changed (confirmed → under_change, approved → on_hold...)
   — every status except `approved`, which only 5.5 records (see below)
@@ -44,88 +44,87 @@ and identify candidates for reuse. And to do this **regularly**, not only when a
 
 ---
 
-## Four operating modes
+## Четыре режима работы
 
-### Mode A — Updating a requirement or its attributes
+### Режим A — Обновление требования или атрибутов
 
-**When:** status, priority, owner, wording, or any other attribute has changed.
+**Когда:** изменился статус, приоритет, owner, формулировка, или любой атрибут.
 
-Algorithm:
-1. Determine what changed: content or just an attribute?
-2. If content → new version (1.0 → 1.1 or 2.0)
-3. If only an attribute (status, priority) → the version does not change
-4. Call `update_requirement` — updates the attributes and logs the change in the history
-5. If the change came from a CR → first run `run_impact_analysis` (5.1)
+Алгоритм:
+1. Определить что изменилось: содержание или только атрибут?
+2. Если содержание → новая версия (1.0 → 1.1 или 2.0)
+3. Если только атрибут (статус, приоритет) → версия не меняется
+4. Вызвать `update_requirement` — обновит атрибуты, запишет в историю
+5. Если изменение пришло из CR → предварительно выполнить `run_impact_analysis` (5.1)
 
-> 📌 Versioning rule:
-> Minor (1.0→1.1): wording clarification, change to acceptance criteria
-> Major (1.0→2.0): change in substance, merging or splitting requirements
-> More detail: `references/lifecycle_guide.md` → "Versioning"
+> 📌 Правило версионности:
+> Minor (1.0→1.1): уточнение формулировки, изменение критериев приёмки
+> Major (1.0→2.0): изменение сути, слияние или разделение требований
+> Подробнее: `references/lifecycle_guide.md` → «Версионность»
 
-### Mode B — Deprecation (obsolescence/replacement)
+### Режим B — Deprecation (устаревание/замена)
 
-**When:** the requirement is no longer relevant, or has been replaced by another.
+**Когда:** требование больше не актуально, или заменено другим.
 
-Algorithm:
-1. Determine the reason: outdated on its own? Replaced by another? Removed by a CR?
-2. Choose the correct final status:
-   - `deprecated` — outdated, no replacement
-   - `superseded` — replaced by another requirement (specify which one)
-   - `retired` — project closed, requirement goes to the archive
-3. Call `deprecate_requirements` — marks it and logs the reason in the history
-4. Check in 5.1 whether there are active links to the deprecated requirement
+Алгоритм:
+1. Определить причину: устарело само по себе? Заменено другим? CR его убрал?
+2. Выбрать правильный финальный статус:
+   - `deprecated` — устарело, нет замены
+   - `superseded` — заменено другим требованием (указать чем)
+   - `retired` — проект завершён, требование в архив
+3. Вызвать `deprecate_requirements` — пометит и запишет причину в историю
+4. Проверить в 5.1: нет ли активных связей с deprecated требованием
 
-> ⚠️ A deprecated requirement is not deleted from the repository — only marked.
-> The history must be preserved for audit and traceability.
+> ⚠️ Deprecated требование не удаляется из репозитория — только помечается.
+> История должна быть сохранена для аудита и трассировки.
 
-### Mode C — Registry health audit
+### Режим C — Аудит здоровья реестра
 
-**When:** before 5.3 (prioritization), before 5.5 (approval), regularly once per sprint/stage.
+**Когда:** перед 5.3 (приоритизация), перед 5.5 (утверждение), регулярно раз в спринт/этап.
 
-Algorithm:
-1. Call `check_requirements_health`
-2. Interpret the results:
-   - 🔴 High volatility → find the root cause with the stakeholder
-   - 🟡 Not updated in a long time → check currency with the owner
-   - 🟡 Stuck in draft for a long time → either confirm it or freeze it
-   - 🟢 Healthy requirements → ready for the next step
-3. For each issue, make a decision: update, freeze, or deprecate
+Алгоритм:
+1. Вызвать `check_requirements_health`
+2. Интерпретировать результаты:
+   - 🔴 Высокая волатильность → выяснить первопричину у стейкхолдера
+   - 🟡 Давно не обновлялись → проверить актуальность у owner
+   - 🟡 Долго в draft → либо подтвердить, либо заморозить
+   - 🟢 Здоровые требования → готовы к следующему шагу
+3. По каждой проблеме принять решение: обновить, заморозить, deprecated
 
-### Mode D — Reuse
+### Режим D — Повторное использование
 
-**When:** a new initiative is starting, or the BA is looking for existing requirements.
+**Когда:** начинается новая инициатива, или BA ищет готовые требования.
 
-Algorithm:
-1. Call `find_reusable_requirements` with a filter by type or topic
-2. For each candidate, check:
-   - Worded without ties to a specific system/department?
-   - Status `approved` or `implemented`?
-   - Low volatility (version ≤ 1.1)?
-3. Stakeholders review the selected requirements before including them in the new initiative
-4. When including it → create a new record with `source` pointing to the original
+Алгоритм:
+1. Вызвать `find_reusable_requirements` с фильтром по типу или теме
+2. Для каждого кандидата проверить:
+   - Сформулировано без привязки к конкретной системе/подразделению?
+   - Статус `approved` или `implemented`?
+   - Низкая волатильность (версия ≤ 1.1)?
+3. Стейкхолдеры проверяют отобранные требования перед включением в новую инициативу
+4. При включении → создать новую запись с `source` указывающим на оригинал
 
-> 📌 The higher the level of abstraction, the better suited for reuse.
-> The requirement "The user must be able to log in" → enterprise level.
-> "Login button in SAP module X" → only this initiative.
+> 📌 Чем выше уровень абстракции — тем лучше для reuse.
+> Требование «Пользователь должен авторизоваться» → enterprise-уровень.
+> «Кнопка входа в SAP модуле X» → только эта инициатива.
 
 ---
 
+## Атрибуты требования — минимальный набор
 
-## Requirement attributes — minimum set
-
-| Attribute | Required | Who fills it in | When it changes |
+| Атрибут | Обязателен | Кто заполняет | Когда меняется |
 |---------|------------|---------------|----------------|
-| `status` | Always | BA | At every transition |
-| `version` | Always | BA | When content changes |
-| `source` | Always | BA | Once, at creation |
-| `priority` | Standard+ | BA (after 5.3) | During prioritization and CR |
-| `owner` | Standard+ | BA | On assignment/handover |
-| `stability` | Standard+ | BA / automatic | Recalculated by version |
-| `reuse_candidate` | Standard+ | BA | On identification or audit |
-| `reuse_scope` | Full | BA | When tagging for reuse |
-| `complexity` | Full | BA | During initial analysis |
+| `status` | Всегда | BA | При каждом переходе |
+| `version` | Всегда | BA | При изменении содержания |
+| `source` | Всегда | BA | Один раз при создании |
+| `priority` | Standard+ | BA (после 5.3) | При приоритизации и CR |
+| `owner` | Standard+ | BA | При назначении/смене |
+| `stability` | Standard+ | BA / автоматически | Пересчитывается по версиям |
+| `reuse_candidate` | Standard+ | BA | При выявлении или аудите |
+| `reuse_scope` | Full | BA | При маркировке reuse |
+| `complexity` | Full | BA | При первичном анализе |
 
-Full description of attributes: `references/lifecycle_guide.md` → "Requirement attributes"
+Полное описание атрибутов: `references/lifecycle_guide.md` → «Атрибуты требования»
 
 > The preset is chosen in **3.4** (`plan_information_management(attributes_preset=...)`),
 > and `check_requirements_health` audits exactly that set. Without a 3.4 plan the audit
@@ -134,7 +133,7 @@ Full description of attributes: `references/lifecycle_guide.md` → "Requirement
 
 ---
 
-## Integration with other tasks
+## Интеграция с другими задачами
 
 **Where updates come from:**
 - `4.3` → status: `confirmed` (after the BA's internal review)
@@ -145,39 +144,39 @@ Full description of attributes: `references/lifecycle_guide.md` → "Requirement
   (`create_requirements_baseline`). Do not re-enter it here: `update_requirement`
   refuses `approved` and answers with that route.
 
-**Where results go:**
-- `5.3` — current stability and priority for correct prioritization
-- `5.5` — clean registry for the approval package
-- `6.x` — reuse candidates for User Stories and Use Cases
-- `Confluence` — via the export hook (once `integrations/confluence_mcp.py` is connected)
+**Куда уходят результаты:**
+- `5.3` — актуальные stability и priority для правильной приоритизации
+- `5.5` — чистый реестр для пакета согласования
+- `6.x` — reuse-кандидаты для User Stories и Use Cases
+- `Confluence` — через хук экспорта (после подключения `integrations/confluence_mcp.py`)
 
 ---
 
-## Hooks for external stores
+## Хуки для внешних хранилищ
 
-After every requirement update, the MCP server calls the export hook.
-Until `integrations/confluence_mcp.py` is connected, the hook returns `local_only`.
-Once connected, it automatically syncs with Confluence.
+После каждого обновления требований MCP вызывает хук экспорта.
+Пока `integrations/confluence_mcp.py` не подключён — хук возвращает `local_only`.
+После подключения — автоматически синхронизирует с Confluence.
 
-Connecting the integration requires no changes to 5.2 — only adding the module.
+Подключение интеграции не требует изменений в 5.2 — только добавить модуль.
 
 ---
 
-## MCP tools
+## MCP-инструменты
 
-| Tool | Mode | When to call |
+| Инструмент | Режим | Когда вызывать |
 |------------|-------|----------------|
-| `update_requirement` | A | Status, version, or attributes changed |
-| `deprecate_requirements` | B | Requirement is outdated or replaced |
-| `check_requirements_health` | C | Audit before 5.3, 5.5, after a series of CRs |
-| `find_reusable_requirements` | D | New initiative, searching for existing requirements |
+| `update_requirement` | A | Изменился статус, версия, атрибуты |
+| `deprecate_requirements` | B | Требование устарело или заменено |
+| `check_requirements_health` | C | Аудит перед 5.3, 5.5, после серии CR |
+| `find_reusable_requirements` | D | Новая инициатива, поиск готовых требований |
 
 ---
 
-## What 5.2 does NOT do
+## Чего 5.2 НЕ делает
 
-- **Does not prioritize** — that's 5.3 (but it maintains the `priority` attribute)
-- **Does not assess CRs** — that's 5.4 (but it updates requirements based on the outcome)
-- **Does not give formal approval** — that's 5.5 (but it prepares the registry for approval)
-- **Does not build** the link graph — that's 5.1 (but it works with the same repository)
-- **Does not publish** to Confluence directly — that's `integrations/confluence_mcp.py`
+- **Не приоритизирует** — это 5.3 (но поддерживает атрибут `priority`)
+- **Не оценивает CR** — это 5.4 (но обновляет требования по результату)
+- **Не утверждает** формально — это 5.5 (но готовит реестр к утверждению)
+- **Не строит граф** связей — это 5.1 (но работает с тем же репозиторием)
+- **Не публикует** в Confluence напрямую — это `integrations/confluence_mcp.py`

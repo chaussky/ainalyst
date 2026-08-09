@@ -2,66 +2,66 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
 ---
 
-# Chapter 3: Business Analysis Planning and Monitoring
+# Глава 3 — Business Analysis Planning and Monitoring
 
-## Overview of Chapter 3
+## Общая характеристика Главы 3
 
-Chapter 3 of BABOK, "Business Analysis Planning and Monitoring," is the foundation the entire project is built on. This is where you find the answers to the questions that matter most before you start working with requirements: exactly how we work, with whom, under what rules, where we store everything we create, and how we know we're moving in the right direction.
+Глава 3 BABOK — «Business Analysis Planning and Monitoring» — это фундамент, на котором строится весь проект. Именно здесь находятся ответы на вопросы, которые важно прояснить ещё до того, как вы начнёте работать с требованиями: как именно мы работаем, с кем, по каким правилам, где храним всё созданное и как понимаем, что движемся в нужном направлении.
 
-Without Chapter 3, everything else turns into chaos: the BA doesn't understand why they're documenting things at all, stakeholders expect different outcomes, requirement changes get made with no control, and conflicts between participants go unnoticed until it's too late.
+Без Главы 3 всё остальное превращается в хаос: BA не понимает, зачем вообще документирует, стейкхолдеры ждут разного результата, изменения требований вносятся бесконтрольно, а конфликты между участниками никто не замечает заранее.
 
-In practice, most BAs either skip this chapter or do it "from memory": intuitively, without writing anything down. This is exactly where the platform delivers the biggest relative gain: it structures what usually stays informal.
+На практике большинство BA эту главу либо пропускают, либо выполняют «по памяти» — интуитивно, без фиксации. Именно здесь платформа даёт наибольший относительный прирост: она структурирует то, что обычно остаётся неформализованным.
 
 ---
 
-## Task 3.1: Plan BA Approach (Choosing an Approach)
+## Задача 3.1 — Plan BA Approach (Выбор подхода)
 
-### Summary
+### Краткое описание
 
-The BA determines the project's working methodology: Waterfall, Agile, or Hybrid. This is the first strategic decision, and it affects everything that follows: how requirements are elicited, how changes are approved, and how detailed the documentation needs to be.
+BA определяет методологию работы на проекте: Waterfall, Agile или Hybrid. Это первое стратегическое решение — и оно влияет на всё, что будет дальше: как выявляются требования, как утверждаются изменения, насколько детальна документация.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"Always Agile, because that's what everyone says"** is probably the most common mistake. The BA picks a methodology by default without considering the specific project's characteristics. The result: a regulated fintech project runs with no documentation, while a small internal IT tool ends up with a monstrous Waterfall process and mountains of artifacts.
+**«Всегда Agile, потому что все так говорят»** — пожалуй, самая частая ошибка. BA выбирает методологию по умолчанию, не задумываясь о характеристиках конкретного проекта. В результате на регуляторном финтех-проекте работают без документации, а на небольшом ИТ-инструменте выстраивают монструозный Waterfall с тоннами артефактов.
 
-**No justification.** Even if the BA chose correctly, the decision is recorded nowhere. A month later the sponsor asks, "Why are we working this way?" and the BA can't answer with data.
+**Нет обоснования** — даже если BA выбрал правильно, решение нигде не зафиксировано. Через месяц спонсор спрашивает «а почему мы так работаем?» — и BA не может ответить с данными.
 
-**Regulatory context gets ignored.** Compliance requirements (banking regulation, GDPR, ISO) call for a certain level of formality. A purely Agile approach on such projects creates audit risk, and the BA simply doesn't think about it at the start.
+**Регуляторный контекст игнорируется** — compliance-требования (банковское регулирование, GDPR, ISO) предполагают определённый уровень формальности. Чисто Agile-подход в таких проектах создаёт риски аудита, а BA об этом просто не думает на старте.
 
-**The methodology gets chosen once and forgotten.** Then, midway through the project, it turns out the approach doesn't fit the context, and the team is forced to restructure on the fly at great cost.
+**Методология выбирается один раз и забывается** — а потом в середине проекта выясняется, что подход не работает для данного контекста, и команда вынуждена перестраиваться на ходу с большими потерями.
 
-### What we built
+### Что мы реализовали
 
-**Approach selection matrix.** The platform analyzes two parameters: the expected frequency of requirement changes and the level of uncertainty. Based on their combination (a 9-cell matrix), it recommends one of the three approaches along with a set of BABOK techniques.
+**Матрица выбора подхода** — платформа анализирует два параметра: ожидаемую частоту изменений требований и уровень неопределённости. На основе их комбинации (9 ячеек матрицы) она рекомендует один из трёх подходов вместе с набором техник BABOK.
 
-**Regulatory override.** If the project has regulatory requirements, the platform automatically adjusts the recommendation: pure Agile turns into Hybrid with compliance gates. This guards against a methodology mistake in an audit context.
+**Regulatory override** — если проект имеет регуляторные требования, платформа автоматически корректирует рекомендацию: чистый Agile превращается в Hybrid с compliance-gates. Это защита от методологической ошибки в контексте аудита.
 
-**Recording the decision with context.** The recommended approach, the parameters that led to it, and the BA's notes are all saved to `ba_plan.json`. This is a living artifact: it carries forward down the chain (into Task 5.5 for governance context).
+**Фиксация решения с контекстом** — рекомендованный подход, параметры, которые к нему привели, и заметки BA сохраняются в `ba_plan.json`. Это живой артефакт — он передаётся дальше по цепочке (в задачу 5.5 для governance-контекста).
 
-**BABOK techniques for the approach.** The platform immediately recommends specific techniques that match the chosen methodology. The BA doesn't have to search for what to apply; they get a ready-made list.
+**Техники BABOK к подходу** — платформа сразу рекомендует конкретные техники, соответствующие выбранной методологии. BA не ищет что применять — он получает готовый список.
 
-### Value for the BA
+### Ценности для BA
 
-- **Saves time and reduces cognitive load.** The methodology decision that a BA usually makes intuitively in 5 minutes (or copies from the last project) now surfaces through three questions and gets a structured rationale. The whole conversation takes 3 to 5 minutes with AInalyst.
-- **A defensible position with stakeholders.** When the sponsor asks, "Why Hybrid and not Agile?" the BA opens the artifact and shows: here's the change frequency (High), here's the uncertainty (High), here's the regulatory context, and here's why it's Hybrid. The decision was made with data, not "because that's how it's done."
-- **Insurance against methodology mistakes.** The platform won't let you just write "Agile" on a regulated project without explanation: the regulatory override raises the question automatically. This reduces the risk of an expensive methodology reversal midway through the project.
-- **Consistency with the rest of the platform.** The chosen approach affects how other tasks behave: in Chapter 5, the level of governance formality will align with it; in Chapter 7, the approach to specification (User Stories vs. formal requirements) will follow the same decision.
+- **Экономия времени и снижение когнитивной нагрузки.** Методологическое решение, которое обычно BA принимает интуитивно за 5 минут (или копирует с прошлого проекта), теперь выносится на поверхность через три вопроса и получает структурированное обоснование. Весь разговор занимает 3–5 минут в диалоге с AIналитиком.
+- **Защищаемая позиция перед стейкхолдерами.** Когда спонсор спрашивает «почему Hybrid, а не Agile?» — BA открывает артефакт и показывает: вот частота изменений High, вот неопределённость High, вот регуляторный контекст, вот почему это Hybrid. Решение принято с данными, а не «так принято».
+- **Страховка от методологических ошибок.** Платформа не позволит просто написать «Agile» в регуляторном проекте без объяснений — regulatory override поднимает этот вопрос автоматически. Это снижает риск дорогостоящего разворота методологии в середине проекта.
+- **Связность с остальной платформой.** Выбранный подход влияет на поведение других задач: в Главе 5 уровень формальности governance будет согласован с ним, в Главе 7 подход к спецификации (User Stories vs. формальные требования) будет следовать тому же решению.
 
-### How to use it: an example
+### Как пользоваться: пример
 
-A BA starts a new project: an internal request portal for a bank's HR department.
+BA начинает новый проект — внутренний портал заявок для HR-отдела в банке.
 
-They simply describe the situation to AInalyst:
+Он просто описывает ситуацию AIналитику:
 
-> *"New project: an HR portal for a bank. Requirements are still fuzzy, HR doesn't know exactly what they want. Whether there are regulatory constraints is unclear, need to check with compliance."*
+> *«Новый проект — HR-портал для банка. Требования ещё размытые, HR не знает точно что хочет. Есть ли регуляторные ограничения — неясно, нужно уточнить у комплаенса.»*
 
-AInalyst asks two clarifying questions about change frequency and uncertainty. The BA answers. AInalyst recommends Hybrid with specific techniques and explains why. The BA says "agreed, save it," and the decision is recorded.
+AIналитик задаёт два уточняющих вопроса о частоте изменений и неопределённости. BA отвечает. AIналитик рекомендует Hybrid с конкретными техниками и объясняет почему. BA говорит «согласен, сохрани» — и решение зафиксировано.
 
-> The BA didn't pick parameters by hand, didn't open a spreadsheet, didn't have to memorize commands. They just described the context and got a well-reasoned decision.
+> BA не выбирал параметры вручную, не открывал таблицу, не запоминал команды. Просто описал контекст — получил обоснованное решение.
 
 ### Optional step 3.1b: Plan BA Activities and Timing
 
@@ -92,46 +92,46 @@ work period that covers elicitation, with its planned effort, right in the sessi
 
 ---
 
-## Task 3.2: Plan Stakeholder Engagement (Stakeholder Map)
+## Задача 3.2 — Plan Stakeholder Engagement (Карта стейкхолдеров)
 
-### Summary
+### Краткое описание
 
-The BA builds a registry of all project participants, determines their influence and interest, and assigns communication strategies and an engagement schedule. This is a "living document": it starts with one or two names and grows organically as the project moves forward.
+BA составляет реестр всех участников проекта, определяет их влияние и интерес, назначает стратегии коммуникации и расписание взаимодействия. Это «живой документ» — он начинается с 1–2 имён и органично растёт по ходу проекта.
 
-### BA pain points
+### Боли и проблемы BA
 
-**The stakeholder registry is a "dead" document.** The BA creates a table at the start of the project, files it away, and never opens it again. Two months later it still has 4 outdated rows, even though there are really 12 stakeholders by now.
+**Реестр стейкхолдеров — «мёртвый» документ.** BA создаёт таблицу в начале проекта, кладёт в папку и больше не открывает. Через два месяца там 4 устаревших строки, хотя реальных стейкхолдеров уже 12.
 
 **The communication strategy lives in someone's head.** The BA remembers "write to James once a week, Rachel only on request," but nothing is written down. If the BA changes or gets sick, all of that information simply gets lost.
 
-**Conflicts of interest go unnoticed in advance.** The BA doesn't realize two key stakeholders have opposing goals until an open conflict breaks out, and by then it's a matter of firefighting instead of managed facilitation.
+**Конфликт интересов не виден заранее.** BA не замечает, что два ключевых стейкхолдера имеют противоположные цели, пока не появляется открытый конфликт — и тогда уже приходится гасить пожар вместо управляемой фасилитации.
 
-**Blockers get discovered too late.** A stakeholder with high influence and a negative attitude toward the project is a manageable situation if you catch it at the start. If you catch it a week before sign-off, it's already a disaster.
+**Блокеры обнаруживаются поздно.** Стейкхолдер с высоким влиянием и негативным отношением к проекту — это управляемая ситуация, если обнаружить её на старте. Если обнаружить за неделю до согласования — это уже катастрофа.
 
-**Nobody knows "who else to invite."** The BA talks to the people they already know. Every interview surfaces new participants, but nobody tracks the connections between them.
+**Не знают «кого ещё позвать».** BA общается с теми, кого знает. Каждое интервью открывает новых участников, но связи между ними никто не отслеживает.
 
-### What we built
+### Что мы реализовали
 
-**Power/Interest matrix with automatic classification.** The BA enters each stakeholder's influence and interest, and the platform automatically determines their quadrant (Key Players / Context Setters / Subjects / Crowd) and assigns a communication strategy with a recommended frequency.
+**Power/Interest матрица с автоматической классификацией** — BA вводит влияние и интерес каждого стейкхолдера, платформа автоматически определяет квадрант (Key Players / Context Setters / Subjects / Crowd) и назначает стратегию коммуникации с рекомендуемой частотой.
 
-**A living registry.** The registry isn't a static document. Task 4.2 (interview analysis) updates it via `update_stakeholder_registry`. Every time a stakeholder mentions a new participant, that person gets added to the registry with a note about the source.
+**Живой реестр** — реестр не статичный документ. Задача 4.2 (анализ интервью) обновляет его через `update_stakeholder_registry`. Каждый раз, когда стейкхолдер называет нового участника, — он попадает в реестр с пометкой об источнике.
 
-**Blocker detection.** The platform automatically flags stakeholders with `attitude=Blocker` and lists them separately. This is a signal: this person needs special attention right now.
+**Детекция блокеров** — платформа автоматически флагует стейкхолдеров с `attitude=Blocker` и выводит их отдельно. Это сигнал: данный человек требует особого внимания прямо сейчас.
 
-**Communication schedule.** The frequency and triggers for each stakeholder are recorded here and used by Task 4.4 to check who hasn't been contacted in a while and whose trigger has fired.
+**Расписание коммуникации** — частота и триггеры для каждого стейкхолдера фиксируются здесь и используются задачей 4.4 для проверки: кому давно не писали, у кого сработал триггер.
 
-**Integration with Task 4.5.** A change in attitude (was Champion, became Neutral) is recorded via `update_engagement_status` with a history: what it was, what it became, and what's planned.
+**Интеграция с задачей 4.5** — изменение attitude (был Champion, стал Neutral) фиксируется через `update_engagement_status` с историей: что было, что стало, что планируется.
 
-### Value for the BA
+### Ценности для BA
 
 - **The stakeholder registry finally lives.** This is probably the hardest artifact to maintain in BA practice. The platform builds its update into the workflow: after every interview, AInalyst offers to add the participants who were mentioned. The registry grows organically instead of requiring a separate effort to "refresh the table."
 - **Nothing gets lost when a project changes hands.** The new BA opens the registry and sees who's involved, how to treat them, when they last talked, and whether there were engagement issues. All the context that usually lives in one person's head is documented.
 - **Early detection of engagement risk.** When James stops answering emails, it gets logged as a 🟡 signal, and the platform suggests possible reasons and tactics. The BA reacts proactively, before the problem becomes critical.
 - **The communication schedule removes the nagging worry of "did I forget to write to someone."** Task 4.4 checks the schedule and produces a prioritized list of who to write to today. The BA doesn't have to keep it in their head.
 
-### How to use it: an example
+### Как пользоваться: пример
 
-At the start of the project, the BA knows only two people. They tell AInalyst:
+На старте проекта BA знает только двух человек. Он говорит AIналитику:
 
 > *"Stakeholders: Patricia, CFO, very influential, very interested, supports the project. Michael, head of IT, high influence, medium interest, skeptical."*
 
@@ -145,27 +145,27 @@ And Diane gets added to the registry with a note about the source.
 
 ---
 
-## Task 3.3: Plan BA Governance (Decision-Making Rules)
+## Задача 3.3 — Plan BA Governance (Правила принятия решений)
 
-### Summary
+### Краткое описание
 
-The BA sets the "rules of the game" for the project: who makes the final decisions on requirements, how change requests get handled, how conflicts get resolved, and where to escalate if something goes wrong.
+BA устанавливает «правила игры» для проекта: кто принимает финальные решения по требованиям, как обрабатываются запросы на изменение, как разрешаются конфликты, куда эскалировать если что-то пошло не так.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"Who actually makes decisions here?"** is the question a BA ends up asking midway through the project, when the first serious CR lands. It turns out the Product Owner has no authority, the sponsor has no time, and the developers have already started doing things their own way.
+**«А кто вообще принимает решения здесь?»** — вопрос, который BA задаёт в середине проекта, когда прилетает первый серьёзный CR. Выясняется, что у Product Owner нет полномочий, у спонсора нет времени, а разработчики уже начали делать по-своему.
 
-**Scope creep with no governance.** Without a documented CR process, every stakeholder wish turns into a requirement. The BA can't say "no" without a formal procedure. As a result, scope creeps, the team gets frustrated, and deadlines slip.
+**Scope creep без governance** — без зафиксированного процесса CR любое пожелание стейкхолдера превращается в требование. BA не может сказать «нет» без формальной процедуры. В результате скоуп расползается, команда злится, дедлайны срываются.
 
-**"Remember, we agreed that..."** Undocumented agreements create fertile ground for conflict. Three months later, everyone remembers it differently, and the BA has no document to point to.
+**«Помнишь, мы договорились что...»** — отсутствие зафиксированных договорённостей создаёт почву для конфликтов. Через три месяца каждый помнит по-своему. BA не может сослаться на документ.
 
-**Different projects need different levels of formality.** A small internal project and a mission-critical system for 500 users need very different processes. The BA applies the same template to everything, either excessively formal or riskily light.
+**Разный уровень формальности для разных проектов** — маленький внутренний проект и критичная система для 500 пользователей требуют очень разных процессов. BA применяет один шаблон для всех — либо избыточно формально, либо рискованно легко.
 
-### What we built
+### Что мы реализовали
 
-**Governance templates by criticality level.** The platform offers three levels (High/Medium/Low) with ready-made processes: change control, who approves, the review cycle, the escalation chain. The BA doesn't build it from scratch; they pick the right template and adapt it to the specifics.
+**Шаблоны governance по уровням критичности** — платформа предлагает три уровня (High/Medium/Low) с готовыми процессами: контроль изменений, кто согласовывает, цикл ревью, цепочка эскалации. BA не придумывает с нуля — выбирает подходящий шаблон и дополняет под специфику.
 
-**Recording decision-makers.** It's explicitly recorded who signs off on requirements and CRs. This feeds directly into Task 5.4 (assess CR): the Decision Record goes to that specific person, not an abstract "sponsor."
+**Фиксация лиц принятия решений** — явно зафиксировано, кто именно подписывает требования и CR. Это прямой вход для задачи 5.4 (оценка CR): Decision Record уходит именно этому человеку, не абстрактному «спонсору».
 
 **Planning how requirements will be prioritized.** Who takes part, by which technique, against which criteria. Task 5.3 then runs the session and reconciles it against the plan.
 
@@ -177,91 +177,91 @@ The BA sets the "rules of the game" for the project: who makes the final decisio
 
 **Governance decision archive.** Everything recorded in Task 3.3 lives in `ba_plan.json` and is available at any time. To the question "how did we agree to handle changes?" the answer is in a single file.
 
-### Value for the BA
+### Ценности для BA
 
 - **The BA gets "cover" for saying no.** When yet another change request shows up, the BA can say: "Under our process, this is a CR that needs to be submitted in this format and approved by James." That's not a refusal, it's a process. Professional scope protection.
 - **The first CR doesn't turn into a crisis.** If governance isn't documented, the first serious change request causes chaos: nobody knows who decides, how to assess impact, or whether already-completed work needs to be redone. When governance is in place, it's just a routine procedure.
 - **The level of formality matches the context.** A small internal tool doesn't get buried in bureaucracy. A mission-critical system gets the right level of control. The platform helps find that balance instead of forcing a single standard.
 - **The rules don't quietly go stale.** A plan nobody reads drifts away from the project within a month, and nobody notices until an audit. Here, the moment a CR is resolved by someone outside the planned authority or a prioritization session runs with a different technique, the BA sees it — in the delivered document, not in a JSON file.
 
-### How to use it: an example
+### Как пользоваться: пример
 
-The BA says:
+BA говорит:
 
 > *"This is a critical project: an order management system for 300 users. Decisions are made by Victor (CEO), Susan (Product Owner), and me as Lead BA."*
 
-AInalyst suggests the High-criticality template: a formal CR process with a CAB, weekly review, and escalation from BA to PM to Steering Committee. The BA can accept it as-is or adjust it. One phrase saves it.
+AIналитик предлагает шаблон High-критичности: формальный CR с CAB, еженедельный ревью, эскалация BA → PM → Steering Committee. BA может принять как есть или скорректировать. Сохраняется одной фразой.
 
 ---
 
-## Task 3.4: Plan Information Management
+## Задача 3.4 — Plan Information Management (Управление информацией)
 
-### Summary
+### Краткое описание
 
-The BA determines where and how project requirements and artifacts are stored, who has access, and how detailed the traceability needs to be. This is a kind of "architectural" agreement, and it affects how easy Chapter 5 work will be later on.
+BA определяет, где и как хранятся требования и артефакты проекта, кто имеет доступ, насколько детальна трассировка. Это своего рода «архитектурный» договор — он влияет на то, насколько легко потом работать с Главой 5.
 
-### BA pain points
+### Боли и проблемы BA
 
-**Requirements are "everywhere and nowhere."** Some live in Confluence, some in email, some in Jira, some in a developer's head. When you need to find the current version of a requirement, nobody knows where it is.
+**Требования «везде и нигде».** Часть в Confluence, часть в email, часть в Jira, часть в голове разработчика. Когда нужно найти актуальную версию требования — никто не знает, где она.
 
-**Traceability done "however's convenient."** Nobody agreed in advance how detailed the link tracking should be. The BA ends up building a full graph from business goals to test cases, and the team doesn't understand why it's needed and doesn't maintain it.
+**Трассировка «как будет удобно».** Никто не договорился заранее, насколько детально отслеживать связи. В итоге BA строит полный граф от бизнес-целей до тест-кейсов, а команда не понимает зачем это нужно и не поддерживает.
 
-**Access is unstructured.** Developers accidentally edit requirements. Stakeholders don't know where to find the current version. Everyone goes to the BA in person, and the BA becomes a bottleneck.
+**Доступ неструктурирован.** Разработчики случайно редактируют требования. Стейкхолдеры не знают, где смотреть актуальную версию. Все ходят к BA лично — он превращается в узкое место.
 
-**Confluence is set up "later."** Integration with corporate systems gets postponed and, in the end, never happens. The BA duplicates artifacts by hand.
+**Confluence настроен «потом».** Интеграция с корпоративными системами откладывается и в итоге так и не настраивается. BA дублирует артефакты вручную.
 
-### What we built
+### Что мы реализовали
 
-**A traceability agreement with three levels.** Lite (sources only), Standard (FRs + test cases), Full (the complete chain from business goals to code). The BA picks a level once, and the platform maintains traceability accordingly throughout Chapter 5.
+**Договор о трассировке с тремя уровнями** — Lite (только источники), Standard (FR + тест-кейсы), Full (полная цепочка бизнес-цели → код). BA выбирает уровень один раз, и платформа ведёт трассировку в соответствии с ним на протяжении всей Главы 5.
 
-**A registry of storage tools.** It records where each type of artifact is stored. Not just "Confluence," but specifically: "Confluence: final specifications; Jira: tasks and CRs; local repository: the traceability JSON graph."
+**Реестр инструментов хранения** — зафиксировано, где хранятся какие типы артефактов. Не просто «Confluence», а конкретно: «Confluence — финальные спецификации; Jira — задачи и CR; локальный репозиторий — JSON-граф трассировки».
 
-**Access rules.** It's explicitly recorded who reads, who edits, and who approves.
+**Правила доступа** — явно зафиксировано, кто читает, кто редактирует, кто согласовывает.
 
-**Confluence integration.** Set up once via environment variables. After that, every requirement update in Task 5.2 automatically syncs to Confluence. The BA doesn't have to think about it anymore.
+**Интеграция с Confluence** — настраивается один раз через переменные окружения. После этого каждое обновление требования в задаче 5.2 автоматически синхронизируется с Confluence. BA больше не думает об этом.
 
 **Three more decisions that other chapters act on, not just record.** The BA can also plan the level of detail each audience gets, the scope and repository for reuse, and which requirement attributes this project maintains (Minimum / Standard / Full). These aren't filed away: Task 4.4 states the planned level of detail in every communication package it builds, and Task 5.2 ranks reuse candidates by the planned scope and audits exactly the planned attribute set. A project that skips this planning has nothing read from it: 4.4 stays silent about detail levels, and 5.2 starts its reuse search at `initiative` and audits `owner` only. (Two repairs that shipped with the feature do reach every project, plan or no plan: the health report's action list is numbered from 1 instead of opening at 2, and the reuse report no longer calls its ranking bonus a minimum.)
 
 ### Value for the BA
 
-- **"Where's the current version?" is no longer a question.** There's one documented source of truth. Everyone knows where to look.
-- **The traceability level is agreed on before work starts.** This prevents the mid-project conflict where the BA builds a full graph and the PM says "that's overkill," or the reverse, where auditors demand traceability that nobody kept.
-- **Confluence stops being manual work.** If the integration is set up, a requirement update publishes automatically. The BA doesn't copy artifacts by hand between systems.
+- **«Где актуальная версия?» — больше не вопрос.** Один зафиксированный источник правды. Все знают, куда смотреть.
+- **Уровень трассировки согласован до начала работы.** Это предотвращает конфликт в середине проекта, когда BA построил полный граф, а PM говорит «это избыточно». Или наоборот — когда аудиторы требуют трассировку, которую никто не вёл.
+- **Confluence перестаёт быть ручной работой.** Если настроена интеграция — обновление требования автоматически публикуется. BA не копирует артефакты вручную между системами.
 
 ---
 
-## Task 3.5: Evaluate BA Performance
+## Задача 3.5 — Evaluate BA Performance (Оценка эффективности BA)
 
-### Summary
+### Краткое описание
 
-The BA assesses the current state of business analysis practice on the team or in the organization, identifies problem areas, and puts together a concrete improvement plan. This task is optional; it's needed when there are clear problems or when onboarding onto a new project.
+BA оценивает текущее состояние практики бизнес-анализа в команде или организации, выявляет проблемные зоны и составляет конкретный план улучшений. Задача опциональная — она нужна, когда есть явные проблемы или при онбординге на новый проект.
 
-### BA pain points
+### Боли и проблемы BA
 
-**Symptoms are visible, causes aren't.** "Developers keep asking clarifying questions" is a symptom. The cause might be insufficiently detailed requirements, missing acceptance criteria, or requirements changing mid-sprint. Without a structured view, the BA treats symptoms instead of causes.
+**Симптомы видны, причины — нет.** «Разработчики постоянно переспрашивают» — это симптом. Причина может быть в недостаточной детальности требований, или в отсутствии acceptance criteria, или в том, что требования меняются уже в спринте. Без структурированного взгляда BA лечит симптомы, а не причины.
 
-**No metrics, no conversation.** The BA can't make the case for investing in practice improvements without data. "I feel like quality has improved" isn't an argument. "Defect Rate dropped from 15% to 5%" is.
+**Нет метрик — нет разговора.** BA не может аргументировать инвестиции в улучшение практики, если нет данных. «Мне кажется, что качество улучшилось» — не аргумент. «Defect Rate снизился с 15% до 5%» — аргумент.
 
-**Standard problems have standard solutions, but you have to remember them.** The BA knows what to do about scope creep or missing templates, but that takes time and mental effort, especially when onboarding onto a new project.
+**Стандартные проблемы — стандартные решения, но их нужно вспомнить.** BA знает, что делать со scope creep или с отсутствием шаблонов — но на это нужно время и когнитивный ресурс. Особенно при онбординге на новый проект.
 
-### What we built
+### Что мы реализовали
 
-**A problem-to-recommendation library.** The BA describes problems in free form, and the platform matches them against a database of known situations and gives concrete recommendations. "Scope creep" leads to "Strengthen governance: formalize the CR process via Task 5.4." "No metrics" leads to a list of metrics with instructions on how to calculate them.
+**Библиотека проблем → рекомендации** — BA называет проблемы в свободной форме, платформа сопоставляет их с базой известных ситуаций и даёт конкретные рекомендации. «Scope creep» → «Усилить Governance: формализовать процесс CR через 5.4». «Нет метрик» → список метрик с описанием, как считать.
 
-**Recording metrics with a baseline and a target.** Not just "improve," but "Defect Rate: from 15% to 5%." This is the basis for measuring improvement later.
+**Фиксация метрик с baseline и target** — не просто «улучшить», а «Defect Rate: с 15% до 5%». Это основа для последующего измерения улучшений.
 
-**Links to other tasks.** The problems identified often call for strengthening specific platform tasks. The platform points to exactly where: "weak traceability leads to setting up Task 5.1," "scope creep leads to strengthening Task 5.4."
+**Связь с остальными задачами** — выявленные проблемы часто требуют усиления конкретных задач платформы. Платформа указывает, куда именно: «слабая трассировка → настроить 5.1», «scope creep → усилить 5.4».
 
-### Value for the BA
+### Ценности для BA
 
-- **Structured onboarding onto a new project.** A BA joins a project with an existing team. They describe what they see: "no templates, slow approvals, weak traceability," and get an improvement plan with priorities and concrete steps.
-- **A case to make to leadership.** "We need to introduce a formal CR process," backed by data on current losses and target metrics, is a completely different conversation with the sponsor than a bare request.
-- **Personal reflection for an experienced BA.** Useful not just for onboarding, but also after a project wraps up: what worked, what didn't, what to improve next time.
+- **Структурированный онбординг на новый проект.** BA пришёл на проект с существующей командой. Он называет что видит: «нет шаблонов, долгое согласование, слабая трассировка» — и получает план улучшений с приоритетами и конкретными шагами.
+- **Аргументация для руководства.** «Нам нужно ввести формальный CR-процесс» с данными о текущих потерях и целевыми метриками — это совсем другой разговор со спонсором, чем просто запрос.
+- **Личная рефлексия для опытного BA.** Полезно не только при онбординге, но и после завершённого проекта: что работало, что нет, что улучшить в следующий раз.
 
 ---
 
-## Final synthesis for Chapter 3
+## Финальный синтез по Главе 3
 
-**The overall value of Chapter 3 for the BA is the shift from "I work on instinct" to "we have a foundation."** Chapter 3 artifacts don't just document the initial decisions; they get used throughout the entire project: the stakeholder registry keeps growing through the end of Chapter 4, governance operates in every Chapter 5 task, and the information architecture determines how Confluence receives its data.
+**Общая ценность Главы 3 для BA — это переход от «я работаю по наитию» к «у нас есть фундамент».** Артефакты Главы 3 не только документируют начальные решения — они используются на протяжении всего проекта: реестр стейкхолдеров растёт до конца Главы 4, governance работает в каждой задаче Главы 5, информационная архитектура определяет, как Confluence получает данные.
 
-**The BA's technical burden in Chapter 3 is minimal.** There's no need to memorize a single command. Just describe the project context, answer AInalyst's 2 to 3 clarifying questions, and say "save it." All the technical work, choosing parameters, creating the JSON, saving artifacts, is handled by AInalyst. The BA gets finished documents in `governance_plans/reports/`.
+**Ответственность BA в Главе 3 минимальна технически.** Не нужно помнить ни одной команды. Нужно: описать контекст проекта, ответить на 2–3 уточняющих вопроса AIналитика, сказать «сохрани». Вся техническая работа — выбор параметров, создание JSON, сохранение артефактов — выполняется AIналитиком. BA получает готовые документы в `governance_plans/reports/`.

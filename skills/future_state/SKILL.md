@@ -1,257 +1,257 @@
 ---
 name: future_state
 description: >
-  BABOK 6.2 skill — Define Future State (to-be). Use this skill when the BA wants
-  to describe the target business state, set SMART objectives with KPIs, run a
-  gap analysis, or capture constraints and potential value of the change.
-  Triggers: "future state", "to-be", "objectives", "gap analysis",
-  "constraints", "potential value", "SMART objectives", "define future state".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 6.2 — Определение будущего состояния (to-be). Используй этот скилл когда
+  BA хочет описать целевое состояние бизнеса, поставить SMART-цели с KPI, провести
+  gap-анализ или зафиксировать ограничения и потенциальную ценность изменения.
+  Триггеры: «будущее состояние», «future state», «to-be», «цели», «gap-анализ»,
+  «ограничения», «потенциальная ценность», «SMART-цели», «define future state».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: Define Future State (BABOK 6.2)
 
-## When to read this skill
+## Когда читать этот скилл
 
-Read this file when:
-- The BA says "we need to describe the target state," "how it should be," "future state"
-- The BA wants to set business objectives with KPIs
-- The BA is running a gap analysis or describing the gap between as-is and to-be
-- The request contains: "future state," "to-be," "objectives," "gap analysis,"
-  "constraints," "potential value," "SMART objectives"
+Читай этот файл когда:
+- BA говорит «нужно описать целевое состояние», «как должно быть», «будущее состояние»
+- BA хочет поставить бизнес-цели с KPI
+- BA проводит gap-анализ или описывает разрыв между as-is и to-be
+- Запрос содержит: «будущее состояние», «future state», «to-be», «цели», «gap-анализ»,
+  «ограничения», «потенциальная ценность», «SMART-цели»
 
-## What this task is about
+## Что это за задача
 
-BABOK 6.2 — Define Future State — describes where the organization is heading.
+BABOK 6.2 — Define Future State — описывает куда движется организация.
 
-**Two key outputs:**
-1. **Future state description** — 8 "how it should be" elements + SMART objectives with KPIs
-2. **Gap analysis** — a structured comparison of the current and future states (input for 6.4)
+**Два ключевых выхода:**
+1. **Описание будущего состояния** — 8 элементов «как должно быть» + SMART-цели с KPI
+2. **Gap-анализ** — структурированное сравнение текущего и будущего состояний (вход для 6.4)
 
-**Why this matters:**
-- Without a future state, there's no basis for evaluating design options in 7.5
-- SMART objectives with KPIs give a baseline for measuring success in Chapter 8
-- The gap analysis is a direct input for 6.4: the change strategy is built on an explicit gap
-- Potential value in 6.2 is context for the detailed calculation in 7.6
+**Почему это важно:**
+- Без будущего состояния нет основания оценивать дизайн-опции в 7.5
+- SMART-цели с KPI дают baseline для измерения успеха в Главе 8
+- Gap-анализ — прямой вход для 6.4: стратегия изменений строится на явном разрыве
+- Потенциальная ценность в 6.2 — контекст для детального расчёта в 7.6
 
 ---
 
-## MCP tools (7)
+## MCP-инструменты (7 шт.)
 
-| Tool | When to call |
+| Инструмент | Когда вызывать |
 |------------|----------------|
-| `scope_future_state` | First step — analysis contract, what we're describing |
-| `capture_future_state_element` | For each element in scope (iteratively) |
-| `define_goals_and_objectives` | For each business objective with KPIs (SMART validation) |
-| `capture_constraints` | For each constraint, by category |
-| `run_gap_analysis` | After filling in all elements — an explicit artifact |
-| `assess_potential_value` | Structured benefit assessment (input data for 7.6) |
-| `check_future_state_completeness` | Before finalizing — coverage check |
-| `save_future_state` | Final step — Markdown report + handoff to 7.3 |
+| `scope_future_state` | Первый шаг — контракт анализа, что описываем |
+| `capture_future_state_element` | Для каждого элемента из скоупа (итеративно) |
+| `define_goals_and_objectives` | Для каждой бизнес-цели с KPI (SMART-валидация) |
+| `capture_constraints` | Для каждого ограничения по категории |
+| `run_gap_analysis` | После заполнения всех элементов — явный артефакт |
+| `assess_potential_value` | Структурированная оценка выгод (входные данные для 7.6) |
+| `check_future_state_completeness` | Перед финализацией — coverage check |
+| `save_future_state` | Финальный шаг — Markdown-отчёт + проброс в 7.3 |
 
-> Note: `save_future_state` is the 8th call in the pipeline, but it's counted as
-> part of the task's 7 core tools in the platform's tool listing.
-
----
-
-## Workflow
-
-### Step 1 — Scope (mandatory first)
-
-Call `scope_future_state`. An explicit contract: what we're analyzing, at what depth.
-
-**Questions for the BA:**
-- Same elements as in 6.1, or expanding the scope? → elements_in_scope
-- Level of detail: a strategic-level pass or deep elaboration? → analysis_depth
-- Are there already known objectives from the sponsor? → known_goals
-
-If 6.1 exists — the system automatically reads the current state scope as context.
-This is the recommended starting point: the same elements, but now looking at "how it should be."
+> Примечание: `save_future_state` — 8-й вызов в pipeline, но в списке инструментов
+> платформы считается как часть 7 основных инструментов задачи.
 
 ---
 
-### Step 2 — Capturing data by element (iterative)
+## Алгоритм работы
 
-Call `capture_future_state_element` for each element.
+### Шаг 1 — Скоуп (обязательно первым)
 
-**Order of work:**
-1. Start with `business_needs` — which needs will be satisfied
-2. Then `capabilities` — new / improved processes
-3. Then `technology` — the target technology stack
-4. As needed: `org_structure`, `policies`, `architecture`, `assets`, `external`
+Вызов `scope_future_state`. Явный контракт: что анализируем, какая глубина.
 
-**UX pattern "past alongside future":**
-If 6.1 data exists, the tool automatically shows the element's current state alongside.
-Use this: the BA describes not "what to add" but "how it should ultimately be."
+**Вопросы BA:**
+- Те же элементы что в 6.1 или расширяем? → elements_in_scope
+- Уровень детализации: стратегический срез или глубокая проработка? → analysis_depth
+- Есть ли уже известные цели от спонсора? → known_goals
 
-**Sign of a quality description:**
-- Outcome-focused, not focused on the implementation process
-- Has target metrics (`target_metrics`)
-- Traced to a BN from 6.1 (`linked_business_needs`)
-- Doesn't duplicate the current state
-
-**Sign of a poor description:**
-- "There will be a CRM system" — that's a solution, not a future state
-- "Everything will be better" — no specifics
-- Describes the implementation process rather than the target state
-
-For more on the 8 elements, read `references/future_state_guide.md`
+При наличии 6.1 — система автоматически читает скоуп текущего состояния как контекст.
+Это рекомендованная отправная точка: те же элементы, но смотрим на «как должно быть».
 
 ---
 
-### Step 3 — Business objectives and KPIs
+### Шаг 2 — Сбор данных по элементам (итеративно)
 
-Call `define_goals_and_objectives` for each business objective.
+Вызов `capture_future_state_element` для каждого элемента.
+
+**Порядок работы:**
+1. Начинай с `business_needs` — какие потребности будут удовлетворены
+2. Потом `capabilities` — новые / улучшенные процессы
+3. Потом `technology` — целевой технологический стек
+4. По необходимости: `org_structure`, `policies`, `architecture`, `assets`, `external`
+
+**UX-паттерн «прошлое рядом с будущим»:**
+Если есть данные 6.1, инструмент автоматически покажет текущее состояние элемента рядом.
+Используй это: BA описывает не «что добавить», а «как должно быть в итоге».
+
+**Признак качественного описания:**
+- Ориентировано на результат, не на процесс внедрения
+- Есть целевые метрики (`target_metrics`)
+- Трассировано к BN из 6.1 (`linked_business_needs`)
+- Не дублирует текущее состояние
+
+**Признак плохого описания:**
+- «Будет CRM-система» — это решение, не будущее состояние
+- «Всё будет лучше» — нет конкретики
+- Описывает процесс внедрения, а не целевое состояние
+
+Подробнее о 8 элементах: читай `references/future_state_guide.md`
+
+---
+
+### Шаг 3 — Бизнес-цели и KPI
+
+Вызов `define_goals_and_objectives` для каждой бизнес-цели.
 
 **SMART validation (more detail: `references/future_state_guide.md`):**
 - The tool checks the criteria and suggests improvements
 - Each objective is linked to a BN from 6.1 → traceability `BN → BG → FR`
 - The objective is registered as a `business_goal` node in the 5.1 repository
 
-**Structure of `objectives_json`:**
+**Структура `objectives_json`:**
 ```json
 [
   {
-    "title": "Reduce request processing time",
-    "metric": "Processing time (hours)",
-    "baseline": "8 hours",
-    "target": "2 hours",
+    "title": "Сократить время обработки заявок",
+    "metric": "Время обработки (часы)",
+    "baseline": "8 часов",
+    "target": "2 часа",
     "deadline": "2025-12-31"
   }
 ]
 ```
 
-An objective without a measurable KPI isn't an objective. Help the BA find a metric.
+Цель без измеримого KPI — не цель. Помоги BA найти метрику.
 
 ---
 
-### Step 4 — Constraints
+### Шаг 4 — Ограничения
 
-Call `capture_constraints` for each constraint.
+Вызов `capture_constraints` для каждого ограничения.
 
-**Types:** `budget | time | technology | policy | resources | compliance | other`
+**Типы:** `budget | time | technology | policy | resources | compliance | other`
 
-**Why capture them explicitly:**
-- In 7.5, design options are developed within the constraints
-- Assumed constraints (`assumed`) need to be validated — they may turn out to be myths
-- Unknown constraints = project risks
-
----
-
-### Step 5 — Gap analysis (a separate, explicit tool)
-
-Call `run_gap_analysis`.
-
-**Important:** the gap analysis is a thinking tool, not a mechanical step.
-The BA should run it deliberately after filling in all the elements.
-
-Without 6.1 data: `current_description = null` — the gap is formulated based on future only.
-With 6.1 data: the current and future states are automatically compared element by element.
-
-The result (`{project}_gap_analysis.json`) is a **mandatory input for 6.4**.
-
-Change types: `new | improve | eliminate | replace`
-Complexity assessment: `low | medium | high`
-
-For more detail: `references/future_state_guide.md` → "Gap analysis" section
+**Зачем фиксировать явно:**
+- В 7.5 дизайн-опции разрабатываются в рамках ограничений
+- Предполагаемые ограничения (`assumed`) нужно валидировать — могут оказаться мифами
+- Неизвестные ограничения = риски проекта
 
 ---
 
-### Step 6 — Potential value
+### Шаг 5 — Gap-анализ (отдельный явный инструмент)
 
-Call `assess_potential_value`.
+Вызов `run_gap_analysis`.
 
-A qualitative assessment, without a formula. A structured list of benefits.
-This is **context for 7.6**, not a replacement for it.
+**Важно:** gap-анализ — инструмент мышления, не технический шаг.
+BA должен запустить его осознанно после заполнения всех элементов.
 
-**Parameters:**
-- `benefits_json` — a JSON list of benefits (type + magnitude + confidence + linkage)
-- `investment_level` — a qualitative assessment of the investment level
-- `value_summary` — a summary statement for communicating with the sponsor
+Без данных 6.1: `current_description = null` — gap формулируется только по future.
+С данными 6.1: автоматически сравнивается текущее и будущее состояние по элементам.
 
-For more on benefit types, magnitude, confidence: read `references/value_guide.md`
+Результат (`{project}_gap_analysis.json`) — **обязательный вход для 6.4**.
 
----
+Типы изменений: `new | improve | eliminate | replace`
+Оценка сложности: `low | medium | high`
 
-### Step 7 — Completeness check
-
-Call `check_future_state_completeness` before finalizing.
-
-What it checks:
-- Are all in-scope elements filled in?
-- Is there at least one objective with a KPI?
-- Are BNs linked to objectives (if 6.1 exists)?
-- Is there at least one constraint?
-- Has the gap analysis been run?
-- Is there a potential value assessment?
-
-These are warnings, not blockers. The analyst decides whether to proceed.
+Подробнее: `references/future_state_guide.md` → раздел «Gap-анализ»
 
 ---
 
-### Step 8 — Finalization
+### Шаг 6 — Потенциальная ценность
 
-Call `save_future_state`.
+Вызов `assess_potential_value`.
 
-**Parameter `push_to_business_context`:**
-- `false` (default) — only saves the 6.2 report
-- `true` — prepares data for handoff to 7.3. The BA then calls:
+Качественная оценка, без формулы. Структурированный список выгод.
+Это **контекст для 7.6**, не замена ему.
+
+**Параметры:**
+- `benefits_json` — JSON-список выгод (тип + magnitude + confidence + привязка)
+- `investment_level` — качественная оценка уровня вложений
+- `value_summary` — суммарный тезис для коммуникации со спонсором
+
+Подробнее о типах выгод, magnitude, confidence: читай `references/value_guide.md`
+
+---
+
+### Шаг 7 — Проверка полноты
+
+Вызов `check_future_state_completeness` перед финализацией.
+
+Что проверяет:
+- Все ли скоупированные элементы заполнены?
+- Есть ли хотя бы одна цель с KPI?
+- Привязаны ли BN к целям (если 6.1 есть)?
+- Есть ли хотя бы одно ограничение?
+- Запущен ли gap-анализ?
+- Есть ли оценка потенциальной ценности?
+
+Это предупреждения, не блокировки. Аналитик принимает решение идти дальше.
+
+---
+
+### Шаг 8 — Финализация
+
+Вызов `save_future_state`.
+
+**Параметр `push_to_business_context`:**
+- `false` (по умолчанию) — только сохраняет отчёт 6.2
+- `true` — готовит данные для передачи в 7.3. BA затем вызывает:
   `set_business_context(from_strategy_project_id="project_id", ...)`
   and the data from the 6.2 objectives will pre-fill the business context for requirements validation
 
 ---
 
-## Integration with other tasks
+## Интеграция с другими задачами
 
 ### Input: 6.1 → 6.2 (optional)
 
-6.1 is **not required** for 6.2 to work — graceful degradation.
-If 6.1 exists, the following is read automatically:
-- `{project}_current_state_scope.json` → context for the 6.2 scope
-- `{project}_business_needs.json` → BNs for tracing objectives
-- `{project}_current_state.json` → current state for the gap analysis
+6.1 **не является обязательным** для работы 6.2 — graceful degradation.
+При наличии 6.1 — автоматически читается:
+- `{project}_current_state_scope.json` → контекст для скоупа 6.2
+- `{project}_business_needs.json` → BN для трассировки целей
+- `{project}_current_state.json` → текущее состояние для gap-анализа
 
-### Output: 6.2 → 5.1 (objective traceability)
+### Выход: 6.2 → 5.1 (трассировка целей)
 
 BG-xxx nodes are registered in the 5.1 repository with type `business_goal`.
 End-to-end chain: `BN-001 → derives → BG-001 → satisfies → FR-001 → verifies → TC-001`
 
-### Output: 6.2 → 6.4 (change strategy)
+### Выход: 6.2 → 6.4 (стратегия изменений)
 
-`{project}_gap_analysis.json` is a mandatory input for 6.4.
-The change strategy is built on the explicit list of gaps and their types.
+`{project}_gap_analysis.json` — обязательный вход для 6.4.
+Стратегия изменений строится на явном перечне gaps и их типов.
 
-### Output: 6.2 → 7.3 (business context)
+### Выход: 6.2 → 7.3 (бизнес-контекст)
 
 `set_business_context` in 7.3 accepts `from_strategy_project_id`.
 When passed, it pre-fills business objectives and future_state from 6.1 + 6.2 data.
 The older parameter `from_current_state_project_id` is deprecated but still works.
 
-### Output: 6.2 → 7.6 (potential value)
+### Выход: 6.2 → 7.6 (потенциальная ценность)
 
-`add_value_assessment` in 7.6, when 6.2 exists, reads benefits as pre-fill context.
-The BA refines the qualitative assessments quantitatively — not starting from scratch.
+`add_value_assessment` в 7.6 при наличии 6.2 читает benefits как pre-fill контекст.
+BA уточняет качественные оценки количественно — не начинает с нуля.
 
 ---
 
-## 6.2 artifacts
+## Артефакты 6.2
 
-| File | Purpose |
+| Файл | Назначение |
 |------|------------|
-| `{project}_future_state_scope.json` | Contract: what we're analyzing |
-| `{project}_future_state.json` | Elements, objectives, constraints, value, status |
-| `{project}_future_state_goals.json` | Objectives and KPIs (+ registration in 5.1) |
-| `{project}_gap_analysis.json` | Gap analysis — input for 6.4 |
-| `6_2_future_state_{project}.md` | Human-readable report (REPORTS_DIR) |
+| `{project}_future_state_scope.json` | Контракт: что анализируем |
+| `{project}_future_state.json` | Элементы, цели, ограничения, ценность, статус |
+| `{project}_future_state_goals.json` | Цели и KPI (+ регистрация в 5.1) |
+| `{project}_gap_analysis.json` | Gap-анализ — вход для 6.4 |
+| `6_2_future_state_{project}.md` | Читаемый отчёт (REPORTS_DIR) |
 
 ---
 
-## Reference files
+## Reference-файлы
 
-Read when you need detail:
+Читай когда нужны детали:
 
-- **`references/future_state_guide.md`** — detailed description of the 8 elements, SMART criteria,
-  gap analysis change types, constraint types and statuses, UX patterns
+- **`references/future_state_guide.md`** — подробное описание 8 элементов, SMART-критерии,
+  типы изменений gap-анализа, типы и статусы ограничений, UX-паттерны
 
-- **`references/value_guide.md`** — benefit types, magnitude/confidence, investment_level,
-  benefits_json structure, common BA mistakes when assessing value
+- **`references/value_guide.md`** — типы выгод, magnitude/confidence, investment_level,
+  структура benefits_json, типичные ошибки BA при оценке ценности

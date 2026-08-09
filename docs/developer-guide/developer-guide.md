@@ -1,19 +1,19 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
 ---
 
-# Developer Guide
+# Руководство разработчика
 
-_Version: v1 / Date: April 2026_
+_Версия: v1 / Дата: апрель 2026_
 
-This document describes the architecture of the AInalyst platform under the hood: how the components are built, how they interact, and how to add a new server or skill. To understand **how to use** the platform, see the user guide (`1-introduction.md` and the `ch*` files).
+Этот документ описывает архитектуру платформы AIналитик «под капотом»: как устроены компоненты, как они взаимодействуют, как добавить новый сервер или скилл. Для понимания того, **как пользоваться** платформой — смотрите пользовательскую инструкцию (`1-introduction.md` и `ch*` файлы).
 
 ---
 
-## Table of Contents
+## Содержание
 
 1. [Platform Architecture](#1-platform-architecture)
 2. [Phase System and `phase.py`](#2-phase-system-and-phasepy)
@@ -29,95 +29,95 @@ This document describes the architecture of the AInalyst platform under the hood
 
 ---
 
-## 1. Platform Architecture
+## 1. Архитектура платформы
 
-### The Three Layers
+### Три слоя
 
-The platform consists of three layers that work together on every BA request:
+Платформа состоит из трёх слоёв, которые работают вместе при каждом запросе BA:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Claude Code                                        │
-│  The agent. Reads CLAUDE.md and SKILL.md, runs      │
-│  the phases, calls MCP tools, and guides the BA     │
-│  through the process.                                │
+│  Агент. Читает CLAUDE.md и SKILL.md, управляет      │
+│  фазами, вызывает MCP-инструменты, ведёт BA         │
+│  по процессу.                                       │
 └──────────────────────┬──────────────────────────────┘
-                       │ calls
+                       │ вызывает
 ┌──────────────────────▼──────────────────────────────┐
 │  Skills (SKILL.md + references/)                    │
-│  21 specialized knowledge modules. Each one          │
-│  "knows" one BABOK task: methodology, algorithm,    │
-│  templates, links to MCP tools.                     │
+│  21 специализированный модуль знаний. Каждый        │
+│  «знает» одну задачу BABOK: методологию, алгоритм,  │
+│  шаблоны, ссылки на MCP-инструменты.                │
 └──────────────────────┬──────────────────────────────┘
-                       │ instructs to call
+                       │ инструктирует вызывать
 ┌──────────────────────▼──────────────────────────────┐
 │  MCP servers (22 x *_mcp.py)                         │
 │  114 tools. Perform the analytical                   │
 │  operations: build requirement graphs, analyze       │
 │  transcripts, save artifacts.                        │
 └──────────────────────┬──────────────────────────────┘
-                       │ writes
+                       │ пишет
 ┌──────────────────────▼──────────────────────────────┐
-│  governance_plans/data/    : JSON (machine-readable) │
-│  governance_plans/reports/ : Markdown (for humans)   │
+│  governance_plans/data/    — JSON (машиночитаемые)  │
+│  governance_plans/reports/ — Markdown (для людей)   │
 └─────────────────────────────────────────────────────┘
 ```
 
-### The Flow of a Single Request
+### Поток одного запроса
 
-When the BA writes something like "prepare an elicitation plan for the interview with the CFO," here is what happens:
+Когда BA пишет что-то вроде «подготовь план выявления для интервью с финдиром», происходит следующее:
 
-1. **Claude Code** reads `CLAUDE.md`, the system prompt that describes its role and working principles
-2. Based on the triggers in `CLAUDE.md`, it identifies the task: this is **4.1 Prepare for Elicitation**
-3. It reads `skills/elicitation_prep/SKILL.md` for the methodology and algorithm
-4. It asks clarifying questions (meeting type, stakeholder, goal)
-5. It calls the MCP tool `save_elicitation_plan` from `elicitation_mcp.py`
-6. The tool saves the artifact to `governance_plans/reports/` via `common.py`
-7. Claude Code reports the result to the BA and suggests the next step
+1. **Claude Code** читает `CLAUDE.md` — системный промпт, описывающий роль и принципы работы
+2. По триггерам в `CLAUDE.md` определяет задачу: это **4.1 Подготовка к выявлению**
+3. Читает `skills/elicitation_prep/SKILL.md` — методологию и алгоритм
+4. Задаёт уточняющие вопросы (тип встречи, стейкхолдер, цель)
+5. Вызывает MCP-инструмент `save_elicitation_plan` из `elicitation_mcp.py`
+6. Инструмент через `common.py` сохраняет артефакт в `governance_plans/reports/`
+7. Claude Code сообщает BA о результате и предлагает следующий шаг
 
-### Key Files
+### Ключевые файлы
 
-| File / folder | Role |
+| Файл / папка | Роль |
 |---|---|
-| `CLAUDE.md` | The system prompt for Claude Code: role, phases, task triggers, principles |
-| `phase.py` | The `.mcp.json` generator. Manages the active phase. |
-| `skills/common.py` | The single source of truth: constants, matrices, `save_artifact`, folder paths |
-| `skills/*_mcp.py` | 22 MCP servers, one per BABOK task |
-| `skills/integrations/confluence_mcp.py` | Part of BASE_SERVER for Confluence, included in every phase |
-| `skills/*/SKILL.md` | Contextual instructions for Claude Code (methodology + algorithm) |
-| `skills/*/references/*.md` | Detailed reference material, read only when the SKILL.md algorithm calls for it |
-| `governance_plans/data/` | JSON artifacts: the requirements graph, prioritization results, and so on |
-| `governance_plans/reports/` | Markdown artifacts: plans, minutes, recommendations |
-| `inputs/` | The BA's input materials: transcripts, documents, regulations |
-| `.claude/` | Claude Code hooks, rules, and settings |
-| `.mcp.json` | Generated by `phase.py`. In `.gitignore`, since paths are machine-specific |
+| `CLAUDE.md` | Системный промпт для Claude Code: роль, фазы, триггеры по задачам, принципы |
+| `phase.py` | Генератор `.mcp.json`. Управляет активной фазой. |
+| `skills/common.py` | Единый источник истины: константы, матрицы, `save_artifact`, пути к папкам |
+| `skills/*_mcp.py` | 22 MCP-сервера, по одному на задачу BABOK |
+| `skills/integrations/confluence_mcp.py` | BASE_SERVER — Confluence, включён во все фазы |
+| `skills/*/SKILL.md` | Контекстные инструкции для Claude Code (методология + алгоритм) |
+| `skills/*/references/*.md` | Детальные справочники — читаются только по алгоритму SKILL.md |
+| `governance_plans/data/` | JSON-артефакты: граф требований, результаты приоритизации и т.д. |
+| `governance_plans/reports/` | Markdown-артефакты: планы, протоколы, рекомендации |
+| `inputs/` | Входные материалы BA: транскрипты, документы, регламенты |
+| `.claude/` | Хуки, правила и настройки Claude Code |
+| `.mcp.json` | Генерируется `phase.py`. В `.gitignore` — пути специфичны для машины |
 
 ---
 
-## 2. Phase System and `phase.py`
+## 2. Система фаз и `phase.py`
 
-### The Problem and the Solution
+### Проблема и решение
 
-LLMs have a limited context window. Loading all 22 MCP servers at once takes up a large part of it and degrades the quality of the work. The platform solves this through an **active phase**: at any given moment, only the servers for the needed BABOK chapter are loaded.
+У LLM есть ограниченное контекстное окно. Загрузка всех 22 MCP-серверов одновременно занимает значительную его часть и деградирует качество работы. Платформа решает это через **активную фазу**: в каждый момент загружены только серверы нужной главы BABOK.
 
-`phase.py` manages this: it reads the required set of servers → generates `.mcp.json` with absolute paths → writes the active phase name to `.ainalyst_phase`.
+`phase.py` управляет этим: читает нужный набор серверов → генерирует `.mcp.json` с абсолютными путями → записывает имя активной фазы в `.ainalyst_phase`.
 
-### Phases
+### Фазы
 
-| Phase name | Command | BABOK chapters | MCP servers (besides BASE) |
+| Имя фазы | Команда | Главы BABOK | MCP-серверы (кроме BASE) |
 |---|---|---|---|
-| `planning` | `python phase.py planning` | 3 | only BASE |
-| `elicitation` | `python phase.py elicitation` | 4.1-4.5 | 5 servers |
-| `lifecycle` | `python phase.py lifecycle` | 5.1-5.5 | 5 servers |
-| `analysis` | `python phase.py analysis` | 6.1-6.4 | 4 servers |
-| `design` | `python phase.py design` | 7.1-7.6 | 6 servers |
-| `full` | `python phase.py full` | All chapters | 20 servers |
+| `planning` | `python phase.py planning` | 3 | — только BASE |
+| `elicitation` | `python phase.py elicitation` | 4.1–4.5 | 5 серверов |
+| `lifecycle` | `python phase.py lifecycle` | 5.1–5.5 | 5 серверов |
+| `analysis` | `python phase.py analysis` | 6.1–6.4 | 4 сервера |
+| `design` | `python phase.py design` | 7.1–7.6 | 6 серверов |
+| `full` | `python phase.py full` | Все главы | 20 серверов |
 
-Without arguments, `python phase.py` shows the current active phase and hints for each one.
+Без аргументов `python phase.py` показывает текущую активную фазу и подсказки по каждой.
 
 ### BASE_SERVER
 
-Two servers are present in **every** phase:
+Два сервера присутствуют во **всех** фазах:
 
 ```python
 BASE_SERVER = {
@@ -129,7 +129,7 @@ BASE_SERVER = {
 - `planning_mcp.py`: lightweight (7 tools), always needed for `project_id` and the stakeholder registry
 - `confluence_mcp.py`: 5 tools, starts up without `.env`. An error occurs only when a tool is called, if the keys are not filled in
 
-### How `phase.py` Generates Paths
+### Как `phase.py` генерирует пути
 
 ```python
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -138,54 +138,55 @@ def _server(script: str) -> dict:
     return {"command": "python", "args": [str(PROJECT_ROOT / script)]}
 ```
 
-`Path(__file__).resolve().parent` is the absolute path to the folder that contains `phase.py`. This makes `.mcp.json` portable at the script level: the path is computed at the moment `phase.py` runs on a specific machine. That is why `.mcp.json` is in `.gitignore`: the file is specific to each developer's machine.
+`Path(__file__).resolve().parent` — абсолютный путь к папке где лежит `phase.py`. Это делает `.mcp.json` переносимым на уровне скрипта: путь вычисляется в момент запуска `phase.py` на конкретной машине. Поэтому `.mcp.json` в `.gitignore` — файл специфичен для каждой машины разработчика.
 
-### The Phase-Switch Life Cycle
+### Жизненный цикл смены фазы
 
 ```bash
-python phase.py design     # 1. Writes .ainalyst_phase, generates .mcp.json
-# Claude Code: /restart    # 2. Reloads the MCP servers from the new .mcp.json
+python phase.py design     # 1. Записывает .ainalyst_phase, генерирует .mcp.json
+# Claude Code: /restart    # 2. Перезагружает MCP-серверы из нового .mcp.json
 ```
 
-After `/restart`, Claude Code loads the new set of servers and works with the tools for the needed chapter.
+После `/restart` Claude Code загружает новый набор серверов — и работает с инструментами нужной главы.
 
-### Reading the Current Phase
+### Чтение текущей фазы
 
-`phase.py` with no arguments reads `.ainalyst_phase` and prints what is currently active. The `.ainalyst_phase` file is also in `.gitignore`: it is specific to the developer's current session.
+`phase.py` без аргументов читает `.ainalyst_phase` и выводит что сейчас активно. Файл `.ainalyst_phase` тоже в `.gitignore` — он специфичен для текущей сессии разработчика.
 
 ---
 
-## 3. `common.py`: The Single Source of Truth
+## 3. `common.py` — единый источник истины
 
-The file `skills/common.py` is the central utility module. Every MCP server imports its constants and functions from it. This guarantees that business logic is never duplicated.
+Файл `skills/common.py` — центральный служебный модуль. Все MCP-серверы импортируют из него константы и функции. Это гарантирует что бизнес-логика не дублируется.
 
-### Artifact Paths
+### Пути к артефактам
 
 ```python
 BASE_DIR    = "governance_plans"
-DATA_DIR    = os.path.join(BASE_DIR, "data")     # JSON: machine-readable data
-REPORTS_DIR = os.path.join(BASE_DIR, "reports")  # Markdown: documents for humans
+DATA_DIR    = os.path.join(BASE_DIR, "data")     # JSON: машиночитаемые данные
+REPORTS_DIR = os.path.join(BASE_DIR, "reports")  # Markdown: документы для людей
 ```
 
-The paths are relative: MCP servers always run from the project root via Claude Code.
+Пути относительные — MCP-серверы всегда запускаются из корня проекта через Claude Code.
 
-### Layout by Project Subfolder (issue #1)
+### Раскладка по подкаталогам проекта (issue #1)
 
-Artifacts are laid out by project subfolder so that multiple projects and teams do not turn `governance_plans/` into a dumping ground:
+Артефакты раскладываются по подпапке проекта, чтобы несколько проектов/команд не
+превращали `governance_plans/` в свалку:
 
 ```
 governance_plans/
 ├── data/<project_id>/<project_id>_traceability_repo.json   # JSON
-│   └── specs/                                               # 7.1 specs
+│   └── specs/                                               # спеки 7.1
 └── reports/<project_id>/6_1_current_state_<project_id>_<ts>.md  # Markdown
 ```
 
-The central helpers in `common.py` (the single source for the path):
+Центральные хелперы в `common.py` (единственный источник пути):
 
 ```python
 def normalize_project_id(project_id: str) -> str:
-    """Safe project name for the directory: lower/trim, separators and '..' → '_',
-    whitelist [a-z0-9_-]. Protects against path traversal."""
+    """Безопасное имя проекта для каталога: lower/trim, разделители и '..' → '_',
+    whitelist [a-z0-9_-]. Защита от path traversal."""
 
 def data_dir_for(project_id) -> str:    # governance_plans/data/<safe_pid>/
 def report_dir_for(project_id) -> str:  # governance_plans/reports/<safe_pid>/
@@ -252,7 +253,7 @@ Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)
 
 ```python
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
-    """Saves a Markdown artifact to reports/ (or reports/<project_id>/) and returns the path."""
+    """Сохраняет Markdown-артефакт в reports/ (или reports/<project_id>/) и возвращает путь."""
     _ensure_dirs()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{prefix}_{timestamp}.md"
@@ -262,19 +263,19 @@ def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -
     filepath = os.path.join(out_dir, filename)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
-    return f"\n\n✅ Artifact saved: `{filepath}`"
+    return f"\n\n✅ Артефакт сохранен: `{filepath}`"
 ```
 
-A few important consequences:
-- `governance_plans/data/` and `governance_plans/reports/` **are created automatically**. No manual `mkdir` is needed: the folders already exist in the repository with `.gitkeep`, and if they happen to be missing, `_ensure_dirs()` creates them itself.
-- `save_artifact` writes **only to `reports/`** (Markdown). Each server writes JSON files directly to `DATA_DIR` through its own logic, but it **builds the path via `data_path`**.
-- The timestamp in the file name guarantees uniqueness: `{prefix}_20260402_143022.md`
+Несколько важных следствий:
+- `governance_plans/data/` и `governance_plans/reports/` **создаются автоматически**. Ручной `mkdir` не нужен — папки уже есть в репозитории с `.gitkeep`, а при их случайном отсутствии `_ensure_dirs()` создаст их сама.
+- `save_artifact` пишет **только в `reports/`** (Markdown). JSON-файлы каждый сервер пишет напрямую в `DATA_DIR` через собственную логику, но **путь строит через `data_path`**.
+- Временна́я метка в имени файла обеспечивает уникальность: `{prefix}_20260402_143022.md`
 
-### Matrices: the Single Source of Truth
+### Матрицы — единственный источник истины
 
-Three dictionaries describe the platform's key business logic and are imported by every server that needs them:
+Три словаря описывают ключевую бизнес-логику платформы и импортируются всеми серверами, которым они нужны:
 
-**`APPROACH_MATRIX`**: selects the methodology (Predictive / Hybrid / Agile) by the level of change and uncertainty:
+**`APPROACH_MATRIX`** — выбор методологии (Predictive / Hybrid / Agile) по уровню изменений и неопределённости:
 
 ```python
 APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
@@ -290,28 +291,28 @@ APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
 }
 ```
 
-**`REGULATORY_OVERRIDE`**: adjusts the methodology when regulatory requirements apply:
+**`REGULATORY_OVERRIDE`** — корректировка методологии при регуляторных требованиях:
 
 ```python
 REGULATORY_OVERRIDE: dict[str, str] = {
     "Adaptive (Agile)": "Hybrid (Agile + compliance gates)",
-    "Hybrid":           "Hybrid (with strengthened governance)",
+    "Hybrid":           "Hybrid (с усиленным Governance)",
 }
 ```
 
-**`QUADRANT_STRATEGIES`**: stakeholder engagement strategies by the influence x interest matrix:
+**`QUADRANT_STRATEGIES`** — стратегии вовлечения стейкхолдеров по матрице «влияние × интерес»:
 
 ```python
 QUADRANT_STRATEGIES: dict[tuple[str, str], tuple[str, str, str]] = {
-    ("High", "High"):     ("Key Players",     "Manage Closely: ...", "Weekly"),
-    ("High", "Medium"):   ("Context Setters", "Keep Satisfied: ...", "At milestones"),
+    ("High", "High"):     ("Key Players",     "Manage Closely — ...", "Еженедельно"),
+    ("High", "Medium"):   ("Context Setters", "Keep Satisfied — ...", "При вехах"),
     # ...
 }
 ```
 
-> **Rule:** if you need to change the logic for selecting a methodology or an engagement strategy, change it only here, in `common.py`. Not separately in each `*_mcp.py`.
+> **Правило:** при необходимости изменить логику выбора методологии или стратегии вовлечения — менять только здесь, в `common.py`. Не в каждом `*_mcp.py` отдельно.
 
-### The `Stakeholder` Model
+### Модель `Stakeholder`
 
 ```python
 class Stakeholder(BaseModel):
@@ -321,22 +322,22 @@ class Stakeholder(BaseModel):
     attitude:  Optional[str] = Field("Neutral")
 ```
 
-Used in `planning_mcp.py` to type the input data for the stakeholder registry.
+Используется в `planning_mcp.py` для типизации входных данных реестра стейкхолдеров.
 
 ---
 
-## 4. MCP Server Architecture
+## 4. Архитектура MCP-серверов
 
-### The Server Pattern
+### Паттерн сервера
 
-Each `*_mcp.py` is a self-contained MCP server. The minimal structure:
+Каждый `*_mcp.py` — самодостаточный MCP-сервер. Минимальная структура:
 
 ```python
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3.
 from fastmcp import FastMCP
 from skills.common import save_artifact, DATA_DIR, REPORTS_DIR
 
-mcp = FastMCP("babok-ch4-41")   # server name, matches phase.py
+mcp = FastMCP("babok-ch4-41")   # имя сервера — как в phase.py
 
 @mcp.tool()
 def save_elicitation_plan(
@@ -344,8 +345,8 @@ def save_elicitation_plan(
     stakeholder: str,
     # ...
 ) -> str:
-    """Save the elicitation plan."""
-    # business logic
+    """Сохранить план выявления."""
+    # бизнес-логика
     content = _build_markdown(...)
     return save_artifact(content, f"elicitation_plan_{project_id}_{stakeholder}")
 
@@ -353,19 +354,19 @@ if __name__ == "__main__":
     mcp.run()
 ```
 
-Key principles:
-- **One file, one server**, each with its own `FastMCP` instance
-- **Started via `mcp.run()`** inside `if __name__ == "__main__"`: the standard pattern for Claude Code
-- **All matrices and constants come from `common.py`**; do not duplicate them in each file
-- **The copyright line** on the first line of every file: do not touch it when editing
+Ключевые принципы:
+- **Один файл — один сервер** с собственным экземпляром `FastMCP`
+- **Запуск через `mcp.run()`** в `if __name__ == "__main__"` — стандартный паттерн для Claude Code
+- **Все матрицы и константы — из `common.py`**, не дублировать в каждом файле
+- **Copyright-строка** в первой строке каждого файла — не трогать при правках
 
-### Why `planning_mcp.py` Is a Monolith
+### Почему `planning_mcp.py` — монолит
 
 Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 7 tools make a lightweight monolith, which is architecturally justified.
 
-### All 22 MCP Servers
+### Все 22 MCP-сервера
 
-| Server (key in `.mcp.json`) | File | BABOK ch. | Tools |
+| Сервер (ключ в `.mcp.json`) | Файл | Гл. BABOK | Инструментов |
 |---|---|---|---|
 | `babok-ch3` | `planning_mcp.py` | 3 | 7 |
 | `babok-confluence` | `integrations/confluence_mcp.py` | - | 5 |
@@ -392,39 +393,39 @@ Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4
 
 **Total: 22 servers, 114 tools.**
 
-### FastMCP Technical Constraints
+### Технические ограничения FastMCP
 
-**1. `Field(..., pattern=...)` is not supported.**
+**1. `Field(..., pattern=...)` не поддерживается.**
 
-FastMCP does not pass validation for pydantic fields with `pattern`. Use `Literal` instead:
+FastMCP не проходит валидацию pydantic-полей с `pattern`. Используй `Literal`:
 
 ```python
-# ❌ Does not work in FastMCP
+# ❌ Не работает в FastMCP
 status: str = Field(..., pattern="^(Draft|Active|Approved)$")
 
-# ✅ Works
+# ✅ Работает
 from typing import Literal
 status: Literal["Draft", "Active", "Approved"]
 ```
 
-**2. Complex nested structures go through a JSON string.**
+**2. Сложные вложенные структуры — через JSON-строку.**
 
-If a tool accepts a list of objects or a nested dictionary, pass them as a JSON string and parse it inside the function:
+Если инструмент принимает список объектов или вложенный словарь, передавай их как JSON-строку с парсингом внутри функции:
 
 ```python
 @mcp.tool()
 def register_requirements(project_id: str, requirements_json: str) -> str:
     """
-    requirements_json: a JSON string shaped like
+    requirements_json: JSON-строка вида
     [{"id": "REQ-001", "text": "...", "type": "functional"}]
     """
     requirements = json.loads(requirements_json)
-    # from here on, work with the Python object
+    # дальше работаем с Python-объектом
 ```
 
-### The Central Requirements Graph
+### Центральный граф требований
 
-The file `{project_id}_traceability_repo.json` in `governance_plans/data/` is the key artifact for Chapter 5. It uses the edge list format:
+Файл `{project_id}_traceability_repo.json` в `governance_plans/data/` — ключевой артефакт Главы 5. Формат edge list:
 
 ```json
 {
@@ -437,104 +438,104 @@ The file `{project_id}_traceability_repo.json` in `governance_plans/data/` is th
 }
 ```
 
-Link types (`relation`): `derives`, `depends`, `satisfies`, `verifies`, `modifies`.
+Типы связей (`relation`): `derives`, `depends`, `satisfies`, `verifies`, `modifies`.
 
-> **Critical:** the keys are exactly `requirements` (nodes) and `links` (edges); the link-type field is `relation`. Not `nodes`/`edges`, not `type`. This is the format every Chapter 5 tool expects for BFS traversal and impact analysis.
-
----
+> **Критично:** ключи именно `requirements` (узлы) и `links` (рёбра), поле типа связи — `relation`. Не `nodes`/`edges`, не `type`. Это формат который ожидают все инструменты Главы 5 при BFS-обходе и impact analysis.
 
 ---
 
-## 5. Skill Structure (SKILL.md)
+---
 
-### Why Skills Are Needed
+## 5. Структура скиллов (SKILL.md)
 
-MCP servers perform operations, but they do not know the **methodology**: when to call a tool, in what order, what to ask the BA before calling it. Skills fill that role: contextual instructions for Claude Code.
+### Зачем нужны скиллы
 
-A skill is not code. It is a Markdown file that Claude Code reads before starting a BABOK task and whose algorithm it follows.
+MCP-серверы выполняют операции, но не знают **методологию**: когда вызывать инструмент, в каком порядке, что спросить у BA перед вызовом. Эту роль выполняют скиллы — контекстные инструкции для Claude Code.
 
-### The Progressive Disclosure Principle
+Скилл — это не код. Это Markdown-файл, который Claude Code читает перед началом задачи BABOK и следует его алгоритму.
 
-Every skill implements two levels of detail:
+### Принцип progressive disclosure
+
+Каждый скилл реализует два уровня детализации:
 
 ```
 skills/
 └── elicitation_conduct/
-    ├── SKILL.md            ← lightweight context (4-12 KB), always read
+    ├── SKILL.md            ← лёгкий контекст (4–12 КБ), всегда читается
     └── references/
-        ├── single_interview.md    ← detailed reference (~13 KB)
-        ├── multi_interview.md     ← read only per the algorithm
+        ├── single_interview.md    ← детальный справочник (~13 КБ)
+        ├── multi_interview.md     ← читается только по алгоритму
         └── change_request_elicitation.md
 ```
 
-- **`SKILL.md`**: methodology, working algorithm, templates, links to tools. Read by Claude Code at the start of every task.
-- **`references/*.md`**: detailed reference material (RCA guides, prioritization methods, quality criteria, and so on). Read only when the SKILL.md algorithm explicitly says "read references/X.md."
+- **`SKILL.md`** — методология, алгоритм работы, шаблоны, ссылки на инструменты. Читается Claude Code в начале каждой задачи.
+- **`references/*.md`** — детальные справочники (гайды по RCA, методы приоритизации, критерии качества и т.д.). Читаются только когда алгоритм SKILL.md явно указывает «прочитай references/X.md».
 
-This reduces the load on the context window: the detailed reference for the fishbone method is not needed on every step, only when the BA is actually doing RCA.
+Это снижает загрузку контекстного окна: детальный справочник по методу fishbone не нужен на каждом шаге, только когда BA реально делает RCA.
 
-### The Structure of SKILL.md
+### Структура SKILL.md
 
-Every `SKILL.md` starts with YAML front matter:
+Каждый `SKILL.md` начинается с YAML front-matter:
 
 ```yaml
 ---
 name: elicitation_conduct
 description: >
-  BABOK 4.2 skill: Conduct Elicitation. Triggers: "here's the interview transcript",
-  "analyze the interview", "compare two interviews" ...
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 4.2 — Проведение выявления. Триггеры: "вот транскрипт интервью",
+  "проанализируй интервью", "сравни два интервью" ...
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3."
 ---
 ```
 
-The `description` field with its triggers is what Claude Code uses to determine which skill is needed right now. Writing the triggers precisely and completely matters for correct matching.
+Поле `description` с триггерами — это то, по чему Claude Code определяет какой скилл нужен сейчас. Писать триггеры точно и полно — важно для правильного срабатывания.
 
-After the front matter comes free-form Markdown content:
+После front-matter — содержимое в свободном Markdown:
 
-- Claude's role in this task (one sentence)
-- The step-by-step algorithm
-- Decision tables / matrices (if needed)
-- MCP tools: which one to call, when, with what parameters
-- Links to references with a condition: "if the BA chose the fishbone method, read `references/rca_guide.md`"
+- Роль Claude в этой задаче (одна фраза)
+- Пошаговый алгоритм
+- Таблицы / матрицы решений (если нужны)
+- MCP-инструменты: какой вызывать, когда, с какими параметрами
+- Ссылки на references с условием: «если BA выбрал метод fishbone — прочитай `references/rca_guide.md`»
 
-### All 21 Skills
+### Все 21 скилл
 
-| BABOK task | Path to SKILL.md |
+| Задача BABOK | Путь к SKILL.md |
 |---|---|
-| Chapter 3 (all tasks) | `skills/planning_prep/SKILL.md` |
-| 4.1 Prepare for Elicitation | `skills/elicitation_prep/SKILL.md` |
-| 4.2 Conduct Elicitation | `skills/elicitation_conduct/SKILL.md` |
-| 4.3 Confirm Elicitation Results | `skills/elicitation_confirm/SKILL.md` |
-| 4.4 Communicate Business Analysis Information | `skills/elicitation_communicate/SKILL.md` |
-| 4.5 Manage Stakeholder Collaboration | `skills/elicitation_collaborate/SKILL.md` |
-| 5.1 Trace Requirements | `skills/requirements_traceability/SKILL.md` |
-| 5.2 Maintain Requirements | `skills/requirements_maintain/SKILL.md` |
-| 5.3 Prioritize Requirements | `skills/requirements_prioritize/SKILL.md` |
-| 5.4 Assess Requirements Changes (CR) | `skills/requirements_assess_changes/SKILL.md` |
-| 5.5 Approve Requirements | `skills/requirements_approve/SKILL.md` |
-| 6.1 Analyze Current State | `skills/current_state/SKILL.md` |
-| 6.2 Define Future State | `skills/future_state/SKILL.md` |
-| 6.3 Assess Risks | `skills/risk_assessment/SKILL.md` |
-| 6.4 Define Change Strategy | `skills/change_strategy/SKILL.md` |
-| 7.1 Specify and Model Requirements | `skills/requirements_spec/SKILL.md` |
-| 7.2 Verify Requirements | `skills/requirements_verify/SKILL.md` |
-| 7.3 Validate Requirements | `skills/requirements_validate/SKILL.md` |
-| 7.4 Define Requirements Architecture | `skills/requirements_architecture/SKILL.md` |
-| 7.5 Define Design Options | `skills/design_options/SKILL.md` |
-| 7.6 Analyze Potential Value and Recommend Solution | `skills/value_recommend/SKILL.md` |
+| Глава 3 (все задачи) | `skills/planning_prep/SKILL.md` |
+| 4.1 Подготовка к выявлению | `skills/elicitation_prep/SKILL.md` |
+| 4.2 Проведение выявления | `skills/elicitation_conduct/SKILL.md` |
+| 4.3 Подтверждение результатов | `skills/elicitation_confirm/SKILL.md` |
+| 4.4 Коммуникация результатов | `skills/elicitation_communicate/SKILL.md` |
+| 4.5 Управление сотрудничеством | `skills/elicitation_collaborate/SKILL.md` |
+| 5.1 Трассировка требований | `skills/requirements_traceability/SKILL.md` |
+| 5.2 Поддержка требований | `skills/requirements_maintain/SKILL.md` |
+| 5.3 Приоритизация | `skills/requirements_prioritize/SKILL.md` |
+| 5.4 Оценка изменений (CR) | `skills/requirements_assess_changes/SKILL.md` |
+| 5.5 Утверждение требований | `skills/requirements_approve/SKILL.md` |
+| 6.1 Анализ текущего состояния | `skills/current_state/SKILL.md` |
+| 6.2 Определение будущего состояния | `skills/future_state/SKILL.md` |
+| 6.3 Оценка рисков | `skills/risk_assessment/SKILL.md` |
+| 6.4 Стратегия изменения | `skills/change_strategy/SKILL.md` |
+| 7.1 Спецификация требований | `skills/requirements_spec/SKILL.md` |
+| 7.2 Верификация требований | `skills/requirements_verify/SKILL.md` |
+| 7.3 Валидация требований | `skills/requirements_validate/SKILL.md` |
+| 7.4 Архитектура требований | `skills/requirements_architecture/SKILL.md` |
+| 7.5 Варианты дизайна | `skills/design_options/SKILL.md` |
+| 7.6 Оценка ценности и рекомендация | `skills/value_recommend/SKILL.md` |
 
-### How to Add a New Skill
+### Как добавить новый скилл
 
-1. Create the folder `skills/{task_name}/`
-2. Create `SKILL.md` with YAML front matter (name, description with triggers, project, copyright)
-3. Optionally, create `skills/{task_name}/references/` with detailed reference material
-4. Add a link to the skill in `CLAUDE.md` (the "Skills, read before every task" table)
+1. Создать папку `skills/{task_name}/`
+2. Создать `SKILL.md` с YAML front-matter (name, description с триггерами, project, copyright)
+3. Опционально — создать `skills/{task_name}/references/` с детальными справочниками
+4. Добавить ссылку на скилл в `CLAUDE.md` (таблица «Скиллы — читай перед каждой задачей»)
 
 ---
 
-## 6. Artifact Storage
+## 6. Хранилище артефактов
 
-### Folder Structure
+### Структура папок
 
 One folder per project — see "Layout by Project Subfolder" in section 3 for the resolver and the `project_id` contract.
 
@@ -558,7 +559,7 @@ governance_plans/
     └── <project_id>_traceability_repo.json.20260809_004512_118430.json
 ```
 
-**Separation rule:** JSON → `data/`, Markdown → `reports/`. This is fixed in `common.py` through the `DATA_DIR` and `REPORTS_DIR` constants and reflected in `.gitignore`.
+**Правило разделения:** JSON → `data/`, Markdown → `reports/`. Это зафиксировано в `common.py` через константы `DATA_DIR` и `REPORTS_DIR` и отражено в `.gitignore`.
 
 **`.history/` is written only by `write_json_artifact`** (section 3). It is flat and holds the last `HISTORY_GENERATIONS` (5) versions of each artifact, named `<artifact>.<YYYYmmdd_HHMMSS_ffffff>.json`. Nothing reads it back automatically: restoring is a deliberate act, because the platform cannot know whether the current file is damaged or simply new.
 
@@ -574,25 +575,37 @@ governance_plans/.history/
 
 The folder contents are ignored by Git: artifacts are specific to a given BA's project and should not end up in the repository. `.history/` holds the same content one version back, so it is ignored for the same reason. The folders themselves are kept via `.gitkeep`.
 
-`_ensure_dirs()` in `common.py` creates `data/` and `reports/` automatically on the first call to `save_artifact`. The folders are already present in the repository with `.gitkeep`, so no manual `mkdir` is needed.
+`_ensure_dirs()` в `common.py` создаёт `data/` и `reports/` автоматически при первом вызове `save_artifact`. Папки уже присутствуют в репозитории с `.gitkeep` — ручной `mkdir` не нужен.
 
 ### `inputs/`
 
 ```
 inputs/
-├── README.md       ← instructions for the BA on what to put here
+├── README.md       ← инструкция для BA что сюда класть
 ├── interview_ivanov_21mar.txt
 ├── workshop_results.pdf
 └── regulations_v3.docx
 ```
 
-The BA drops input materials here before processing. The contents are in `.gitignore`. Claude Code reads the files directly by path: it is enough for the BA to name the file in conversation.
+BA кладёт сюда входные материалы перед обработкой. Содержимое в `.gitignore`. Claude Code читает файлы напрямую по пути — BA достаточно назвать имя файла в разговоре.
 
-Supported formats: `.txt`, `.md`, `.pdf`, `.docx`
+Поддерживаемые форматы: `.txt`, `.md`, `.pdf`, `.docx`
 
-### Three Storage Tiers
+### Экспорт PDF
 
-| Tier | Where | Status |
+```bash
+python export_pdf.py stakeholder_plan.md           # один файл
+python export_pdf.py --all                         # все .md из reports/ (спросит перед перезаписью)
+python export_pdf.py --all --force                 # без подтверждения
+```
+
+PDF создаётся рядом с `.md`-файлом в `governance_plans/reports/`. В Git не попадает.
+
+Зависимость: `reportlab`. Устанавливается вместе с `requirements.txt`.
+
+### Три уровня хранения
+
+| Уровень | Где | Статус |
 |---|---|---|
 | 1 (local) | `governance_plans/` on the BA's machine | ✅ Implemented |
 | 2 (team) | Confluence (via `confluence_mcp.py`) | ✅ Implemented |
@@ -603,17 +616,17 @@ Tier 3 answers "give me back what this tool just replaced" and nothing more: fiv
 
 ---
 
-## 7. Confluence Integration
+## 7. Интеграция с Confluence
 
-### Architecture
+### Архитектура
 
-`skills/integrations/confluence_mcp.py` is part of `BASE_SERVER` and **loads automatically in every phase**. It is not an optional plugin; it is part of the base configuration.
+`skills/integrations/confluence_mcp.py` — входит в `BASE_SERVER` и **загружается во всех фазах автоматически**. Это не опциональный плагин, а часть базовой конфигурации.
 
-The server starts without errors even when `.env` is not filled in, thanks to a graceful fallback. A connection error occurs only at the moment a specific tool is called, when the server tries to reach the Confluence API.
+Сервер стартует без ошибок даже при незаполненном `.env` — graceful fallback. Ошибка подключения возникает только в момент вызова конкретного инструмента, когда сервер пытается обратиться к Confluence API.
 
 ### 5 Tools
 
-| Tool | What it does |
+| Инструмент | Что делает |
 |---|---|
 | `publish_artifact_to_confluence` | Publishes an artifact **already saved** to `reports/` — the document is read from disk, so its text never has to be passed in |
 | `push_to_confluence` | Publishes Markdown passed as text — for ad-hoc content that is not a stored artifact |
@@ -625,7 +638,7 @@ Use `publish_artifact_to_confluence` whenever the content is the output of a BAB
 
 ### Configuration via `.env`
 
-Copy `.env.example` → `.env` and fill in one of the two options:
+Скопировать `.env.example` → `.env` и заполнить один из двух вариантов:
 
 **Confluence Cloud:**
 ```env
@@ -643,80 +656,80 @@ CONFLUENCE_PASSWORD=your_password
 CONFLUENCE_SPACE_KEY=BA
 ```
 
-`CONFLUENCE_SPACE_KEY` is the default space. It can be overridden on each tool call via the `space_key` parameter.
+`CONFLUENCE_SPACE_KEY` — пространство по умолчанию. Можно переопределить при каждом вызове инструмента через параметр `space_key`.
 
-### A Typical Usage Scenario
+### Типичный сценарий использования
 
-After an artifact is created in `governance_plans/reports/`, the BA can publish it to Confluence with a single command to Claude Code:
+После создания артефакта в `governance_plans/reports/` BA может опубликовать его в Confluence одной командой Claude Code:
 
-> "Publish the stakeholder plan to Confluence, space BA"
+> «Опубликуй план стейкхолдеров в Confluence, пространство BA»
 
-Claude Code calls `push_to_confluence`. The Markdown is converted to Confluence Storage Format via `_markdown_to_confluence_storage()` and published as a page.
+Claude Code вызывает `push_to_confluence` — Markdown конвертируется в Confluence Storage Format через `_markdown_to_confluence_storage()` и публикуется как страница.
 
 ---
 
-## 8. Testing
+## 8. Тестирование
 
-### Running Tests
+### Запуск
 
 ```bash
 python3 -m unittest discover
 ```
 
-No pip, no external dependencies: every external package is mocked in `conftest.py`. Tests run in a clean Python environment.
+Без pip, без внешних зависимостей — все внешние пакеты замоканы в `conftest.py`. Тесты запускаются в чистом Python-окружении.
 
-### `conftest.py` and Mocks
+### `conftest.py` и моки
 
-`conftest.py` mocks all external dependencies before the MCP servers are imported:
+`conftest.py` мокает все внешние зависимости до импорта MCP-серверов:
 
 ```python
-# Mocked: fastmcp, pydantic, mcp, atlassian, markdown2
+# Мокаются: fastmcp, pydantic, mcp, atlassian, markdown2
 sys.modules["fastmcp"] = MagicMock()
 sys.modules["pydantic"] = MagicMock()
 # ...
 ```
 
-This makes it possible to run tests without installing `mcp[cli]`, `fastmcp`, `atlassian-python-api`, and other runtime dependencies.
+Это позволяет запускать тесты без установки `mcp[cli]`, `fastmcp`, `atlassian-python-api` и других runtime-зависимостей.
 
 ### `BaseMCPTest`
 
-The base class for every test in the platform:
+Базовый класс для всех тестов платформы:
 
 ```python
 class BaseMCPTest(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.original_dir = os.getcwd()
-        os.chdir(self.test_dir)          # each test is isolated in a tmpdir
+        os.chdir(self.test_dir)          # каждый тест изолирован в tmpdir
 
     def tearDown(self):
         os.chdir(self.original_dir)
         shutil.rmtree(self.test_dir)
 ```
 
-Every test runs in its own temporary directory, so artifacts do not clutter the working folder or affect each other.
+Каждый тест работает в своём временном каталоге — артефакты не засоряют рабочую папку и не влияют друг на друга.
 
 ### `patch` Instead of a Global Mock
 
 ```python
-# ✅ Correct: patch save_artifact in the specific module
+# ✅ Правильно — патчим save_artifact в конкретном модуле
 @patch("skills.elicitation_mcp.save_artifact")
 def test_save_plan(self, mock_save):
-    mock_save.return_value = "✅ Artifact saved"
+    mock_save.return_value = "✅ Артефакт сохранен"
     result = save_elicitation_plan(project_id="test", ...)
     mock_save.assert_called_once()
 
-# ❌ Wrong: a global mock breaks other tests
+# ❌ Неправильно — глобальный мок ломает другие тесты
 @patch("skills.common.save_artifact")
 ```
 
-You need to patch in the namespace of the module that uses the function, not where it is defined.
+Патчить нужно в пространстве имён того модуля, который использует функцию, а не там где она определена.
 
-### Test Structure
+### Структура тестов
 
-Every BABOK chapter and task has its own file:
+Каждая глава и задача BABOK имеет отдельный файл:
 
-| File | Covers |
+| Файл | Покрывает |
 |---|---|
 | `tests/test_ch3_ch4.py` | Chapter 4 (Chapter 3 is tested through `planning_mcp.py`) |
 | `tests/test_ch4_41.py` … `test_ch4_45.py` | Tasks 4.1-4.5 tested separately |
@@ -731,22 +744,22 @@ Several tasks have a second file for a property that cuts across the task — fo
 
 **Coverage:** run `python -m pytest -q` — the count is printed at the end. It is deliberately not repeated here: a number written into prose is wrong the day after the next test is added, and this guide has already carried a stale one.
 
-### How to Add a Test for a New Tool
+### Как добавить тест для нового инструмента
 
 ```python
 from tests.conftest import BaseMCPTest
 from unittest.mock import patch
-from skills.my_new_mcp import my_new_tool   # import after the mocks in conftest
+from skills.my_new_mcp import my_new_tool   # импорт после моков в conftest
 
 class TestMyNewTool(BaseMCPTest):
 
     def setUp(self):
         super().setUp()
-        # additional setup if needed
+        # дополнительная настройка если нужна
 
     @patch("skills.my_new_mcp.save_artifact")
     def test_basic_call(self, mock_save):
-        mock_save.return_value = "✅ Artifact saved"
+        mock_save.return_value = "✅ Артефакт сохранен"
         result = my_new_tool(project_id="test_proj", param="value")
         self.assertIn("test_proj", result)
         mock_save.assert_called_once()
@@ -754,14 +767,14 @@ class TestMyNewTool(BaseMCPTest):
 
 ---
 
-## 9. Development Environment
+## 9. Среда разработки
 
-### Requirements
+### Требования
 
-- Python 3.10 or higher
-- pip (included with the standard Python distribution)
+- Python 3.10 или выше
+- pip (входит в стандартную поставку Python)
 
-### Installing Dependencies
+### Установка зависимостей
 
 ```bash
 pip install -r requirements.txt
@@ -773,35 +786,36 @@ pip install -r requirements.txt
 mcp[cli]==1.6.0
 fastmcp==2.3.3
 pydantic==2.11.1
-atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC integration
-markdown2==2.5.3               # Markdown → HTML for Confluence storage format
+atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC интеграция
+markdown2==2.5.3               # Markdown → HTML для Confluence storage format
+reportlab==4.2.5               # PDF-экспорт отчётов
 ```
 
-The versions are pinned deliberately: floating constraints (`>=`) allow breaking changes on update. When changing versions, check compatibility by hand.
+Версии зафиксированы намеренно — плавающие ограничения (`>=`) допускают breaking-изменения при обновлении. При изменении версий — проверять совместимость вручную.
 
-### First Run
+### Первый запуск
 
 ```bash
 git clone <url>
 cd ainalyst
 pip install -r requirements.txt
 cp .env.example .env
-# Fill in .env: Confluence API keys (if you need the integration)
+# Заполнить .env — Confluence API-ключи (если нужна интеграция)
 python phase.py planning
-# Open the project in Claude Code
+# Открыть проект в Claude Code
 ```
 
-After these steps, `.mcp.json` is generated with the correct absolute paths for the current machine. When the project is opened, Claude Code will load the MCP servers for the `planning` phase.
+После этих шагов `.mcp.json` сгенерирован с правильными абсолютными путями для текущей машины. Claude Code при открытии проекта загрузит MCP-серверы фазы `planning`.
 
-### Why `.mcp.json` Is Not in the Repository
+### Почему `.mcp.json` не в репозитории
 
-`.mcp.json` contains absolute paths specific to the developer's machine. A hardcoded path like `/home/claude/ainalyst/` would break Claude Code for anyone who clones the repository into a different directory (DAMAGE_REPORT_v26, Problem 2). The file is added to `.gitignore`: it is generated by `phase.py` on first run.
+`.mcp.json` содержит абсолютные пути, специфичные для машины разработчика. Захардкоженный путь `/home/claude/ainalyst/` сломает Claude Code у любого, кто клонирует репозиторий в другую директорию (DAMAGE_REPORT_v26, Проблема 2). Файл добавлен в `.gitignore` — он генерируется `phase.py` при первом запуске.
 
-`.ainalyst_phase` is in `.gitignore` for the same reason: the file stores the name of the current active phase and is specific to the developer's session.
+Аналогично в `.gitignore` попадает `.ainalyst_phase` — файл хранит имя текущей активной фазы и специфичен для сессии разработчика.
 
-### Configuring `.env`
+### Настройка `.env`
 
-Copy `.env.example` → `.env`. There are two variants, depending on the type of Confluence:
+Скопировать `.env.example` → `.env`. Два варианта в зависимости от типа Confluence:
 
 **Confluence Cloud:**
 ```env
@@ -819,60 +833,60 @@ CONFLUENCE_PASSWORD=your_password
 CONFLUENCE_SPACE_KEY=BA
 ```
 
-If `.env` is not filled in, the platform still works fully except for the Confluence tools. The `confluence_mcp.py` MCP server starts without errors; a connection error occurs only when a specific tool is called.
+Если `.env` не заполнен — платформа работает в полном объёме кроме Confluence-инструментов. MCP-сервер `confluence_mcp.py` стартует без ошибок, ошибка подключения возникает только в момент вызова конкретного инструмента.
 
-### `.claude/`: Claude Code Integration
+### `.claude/` — интеграция с Claude Code
 
 ```
 .claude/
-├── settings.json        ← Claude Code permissions and settings
+├── settings.json        ← разрешения и настройки Claude Code
 ├── hooks/
-│   ├── session_start.sh ← runs at the start of a session
-│   └── post_tool_use.sh ← runs after every tool call
+│   ├── session_start.sh ← запускается при старте сессии
+│   └── post_tool_use.sh ← запускается после каждого вызова инструмента
 └── rules/
-    ├── artifacts.md     ← rules for working with artifacts
-    └── babok_process.md ← rules for following the BABOK process
+    ├── artifacts.md     ← правила работы с артефактами
+    └── babok_process.md ← правила соблюдения BABOK-процесса
 ```
 
-**`settings.json`** declares the hooks and binds them to Claude Code events (`SessionStart`, `PostToolUse`). Register any new hook here.
+**`settings.json`** объявляет хуки и привязывает их к событиям Claude Code (`SessionStart`, `PostToolUse`). При добавлении нового хука — регистрировать здесь.
 
-**`session_start.sh`** runs at the start of every session. It prints into Claude Code's context:
-- the list of active projects (based on the JSON files in `governance_plans/data/`)
-- the last 5 artifacts from `governance_plans/reports/`
-- the list of input materials in `inputs/` ready for processing
-- hints about commands (voice mode, plan mode, PDF export)
+**`session_start.sh`** — запускается в начале каждой сессии. Выводит в контекст Claude Code:
+- список активных проектов (по JSON-файлам в `governance_plans/data/`)
+- последние 5 артефактов из `governance_plans/reports/`
+- список входных материалов в `inputs/`, готовых к обработке
+- подсказки по командам (голосовой режим, плановый режим, экспорт PDF)
 
 It uses `find` instead of `ls *.{ext}`, a fix. Previously, bash brace expansion produced an error if there were no files of one of the types.
 
-**`post_tool_use.sh`** runs after every MCP tool call. If the tool saved an `.md` file to `governance_plans/reports/`, it prints a notification with the file name and the command to view it.
+**`post_tool_use.sh`** — запускается после каждого вызова MCP-инструмента. Если инструмент сохранил `.md`-файл в `governance_plans/reports/` — выводит уведомление с именем файла и командой для просмотра.
 
-**`rules/`** holds behavior rules that Claude Code follows while it works. `artifacts.md` describes how to name and save artifacts; `babok_process.md` covers the rules for following the BABOK methodology in the dialogue with the BA.
+**`rules/`** — правила поведения Claude Code, которые он учитывает при работе. `artifacts.md` описывает как именовать и сохранять артефакты; `babok_process.md` — правила следования BABOK-методологии в диалоге с BA.
 
-### Switching Phases During Development
+### Смена фазы в процессе разработки
 
 ```bash
-python phase.py design     # 1. Generates a new .mcp.json
-# In Claude Code: /restart # 2. Reloads the MCP servers
+python phase.py design     # 1. Генерирует новый .mcp.json
+# В Claude Code: /restart  # 2. Перезагружает MCP-серверы
 ```
 
-A phase switch does not take effect without `/restart`: Claude Code keeps the servers loaded until an explicit reload.
+Смена фазы без `/restart` не применяется — Claude Code держит серверы загруженными до явной перезагрузки.
 
 ---
 
-## 10. Adding a New MCP Server
+## 10. Добавление нового MCP-сервера
 
-### Checklist (6 Steps)
+### Чеклист (6 шагов)
 
-**Step 1: Create the MCP Server**
+**Шаг 1 — Создать MCP-сервер**
 
-The file `skills/{chapter}_{task}_mcp.py`. The minimal template:
+Файл `skills/{chapter}_{task}_mcp.py`. Минимальный шаблон:
 
 ```python
 # Copyright (c) 2026 Anatoly Chaussky. All rights reserved.
 # Licensed under the AInalyst Commercial License (see COMMERCIAL_LICENSE.md).
 """
-AInalyst, BABOK Chapter X.Y: [Task name]
-MCP server for Claude Code.
+AInalyst — BABOK Глава X.Y: [Название задачи]
+MCP-сервер для Claude Code.
 """
 
 from fastmcp import FastMCP
@@ -887,11 +901,11 @@ def my_new_tool(
     param: str,
 ) -> str:
     """
-    [Tool description for Claude Code].
+    [Описание инструмента для Claude Code].
 
-    Returns the path to the saved artifact.
+    Возвращает путь к сохранённому артефакту.
     """
-    content = f"# Result\n\nproject_id: {project_id}\n"
+    content = f"# Результат\n\nproject_id: {project_id}\n"
     return save_artifact(content, f"{project_id}_my_prefix")
 
 
@@ -899,70 +913,70 @@ if __name__ == "__main__":
     mcp.run()
 ```
 
-Requirements:
-- **The copyright line** at the top of the file: do not touch it when editing
-- `FastMCP` with a unique server name (`babok-chX-XY`)
-- `save_artifact` from `common.py`: do not write files directly
-- All matrices and constants live in `common.py`; do not duplicate them in the server
+Требования:
+- **Copyright-строка** в начале файла — не трогать при правках
+- `FastMCP` с уникальным именем сервера (`babok-chX-XY`)
+- `save_artifact` из `common.py` — не писать файлы напрямую
+- Все матрицы и константы — в `common.py`, не дублировать в сервере
 
-**Step 2: Create the Skill**
+**Шаг 2 — Создать скилл**
 
 ```
 skills/{task}/
-├── SKILL.md          ← always. Methodology, algorithm, links to the MCP
-└── references/       ← optional. Detailed reference material
+├── SKILL.md          ← всегда. Методология, алгоритм, ссылки на MCP
+└── references/       ← опционально. Детальные справочники
     ├── guide.md
     └── templates.md
 ```
 
-The structure of `SKILL.md` (at minimum):
+Структура `SKILL.md` (минимум):
 
 ```markdown
-# [BABOK task name]
+# [Название задачи BABOK]
 
-## What this is
-[One sentence: the essence of the task]
+## Что это
+[Одна фраза — суть задачи]
 
-## When to use it
-[Triggers: when the BA requests this task]
+## Когда применять
+[Триггеры — когда BA запрашивает эту задачу]
 
-## Algorithm
-1. [Step 1]
-2. [Step 2]
-3. Call `my_new_tool(project_id=..., param=...)`
+## Алгоритм
+1. [Шаг 1]
+2. [Шаг 2]
+3. Вызвать `my_new_tool(project_id=..., param=...)`
 
-## MCP tools
-| Tool | When |
+## MCP-инструменты
+| Инструмент | Когда |
 |---|---|
-| `my_new_tool` | [condition] |
+| `my_new_tool` | [условие] |
 
-## References
-- `references/guide.md`: read when [condition]
+## Справочники
+- `references/guide.md` — читать когда [условие]
 ```
 
-**Step 3: Register in `phase.py`**
+**Шаг 3 — Зарегистрировать в `phase.py`**
 
-Add the server to the needed phase:
+Добавить сервер в нужную фазу:
 
 ```python
 "analysis": {
     "servers": {
         **BASE_SERVER,
         "babok-ch6-61": _server("skills/current_state_mcp.py"),
-        "babok-chX-XY": _server("skills/my_new_mcp.py"),   # ← add here
+        "babok-chX-XY": _server("skills/my_new_mcp.py"),   # ← добавить здесь
     }
 },
 ```
 
-If the server is needed in every phase, add it to `BASE_SERVER`. But that is rare: `BASE_SERVER` currently holds only 2 servers (`planning_mcp.py` and `confluence_mcp.py`).
+Если сервер нужен во всех фазах — добавить в `BASE_SERVER`. Но это редкий случай: в `BASE_SERVER` сейчас только 2 сервера (`planning_mcp.py` и `confluence_mcp.py`).
 
-**Step 4: Update `CLAUDE.md`**
+**Шаг 4 — Обновить `CLAUDE.md`**
 
-Add the tool to the server table and spell out the triggers: when Claude Code should call this tool. `CLAUDE.md` is the agent's system prompt; it is what determines Claude Code's behavior when the BA makes a request.
+Добавить инструмент в таблицу серверов и прописать триггеры — когда Claude Code должен вызывать этот инструмент. `CLAUDE.md` — системный промпт агента, именно он определяет поведение Claude Code при запросах BA.
 
-**Step 5: Write Tests**
+**Шаг 5 — Написать тесты**
 
-The file `tests/test_chX_XY.py`:
+Файл `tests/test_chX_XY.py`:
 
 ```python
 # Copyright (c) 2026 Anatoly Chaussky. All rights reserved.
@@ -985,7 +999,7 @@ class TestMyNewTool(BaseMCPTest):
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.my_new_mcp.save_artifact") as mock_save:
-            mock_save.return_value = "✅ Artifact saved"
+            mock_save.return_value = "✅ Артефакт сохранен"
             result = mod.my_new_tool(**kwargs)
             return result, mock_save
 
@@ -1001,24 +1015,24 @@ class TestMyNewTool(BaseMCPTest):
 
 The `_call(**overrides)` pattern is mandatory. `{**defaults, **overrides}` is semantically correct and does not fail when a key that already exists is passed in.
 
-**Step 6: Run the Tests**
+**Шаг 6 — Запустить тесты**
 
 ```bash
 python3 -m unittest discover
 ```
 
-All 1636+ tests must be green after adding the new server.
+Все 1636+ тестов должны быть зелёными после добавления нового сервера.
 
-### Naming Requirements
+### Требования к именованию
 
-| Entity | Pattern | Example |
+| Сущность | Паттерн | Пример |
 |---|---|---|
-| MCP file | `skills/{chapter}_{task}_mcp.py` | `skills/risk_assessment_mcp.py` |
-| FastMCP name | `babok-chX-XY` | `babok-ch6-63` |
-| Skill folder | `skills/{task}/` | `skills/risk_assessment/` |
-| Test file | `tests/test_chX_XY.py` | `tests/test_ch6_63.py` |
-| JSON artifact | `{project_id}_{prefix}.json` | `crm_bank_risk_register.json` |
-| MD artifact | `{X_Y}_{description}_{project}.md` | `6_3_risk_assessment_crm_bank.md` |
+| MCP-файл | `skills/{chapter}_{task}_mcp.py` | `skills/risk_assessment_mcp.py` |
+| FastMCP имя | `babok-chX-XY` | `babok-ch6-63` |
+| Скилл-папка | `skills/{task}/` | `skills/risk_assessment/` |
+| Тест-файл | `tests/test_chX_XY.py` | `tests/test_ch6_63.py` |
+| JSON-артефакт | `{project_id}_{prefix}.json` | `crm_bank_risk_register.json` |
+| MD-артефакт | `{X_Y}_{description}_{project}.md` | `6_3_risk_assessment_crm_bank.md` |
 
 ---
 
@@ -1042,13 +1056,13 @@ The accepted cost: a file destroyed from outside restores to one change ago. Tha
 
 **Removal of `main.py`** (Session 45, April 2, 2026)
 
-`main.py` was a legacy wrapper that re-exported functions from `planning_mcp.py`. It was removed: it created confusion about the entry point, and "backward compatibility" was meaningless since there was no public API. Chapter 3 is now served exclusively by `skills/planning_mcp.py`.
+`main.py` был легаси-обёрткой, реэкспортировавшей функции из `planning_mcp.py`. Удалён: создавал путаницу по точке входа, «обратная совместимость» была бессмысленна (нет публичного API). Глава 3 обслуживается исключительно `skills/planning_mcp.py`.
 
 ---
 
 **Removal of `planning.py`** (Session 46, April 2, 2026, REVIEW_v26)
 
-`planning.py` was a "pure" utility module for Chapter 3's business logic, with no MCP wrapper. It was used only in `tests/test_ch3_ch4.py`. It duplicated `_classify_stakeholder` from `planning_mcp.py` with a different signature (it took a `Stakeholder` object instead of two strings). It was removed: `tests/test_ch3_ch4.py` was rewritten to test `planning_mcp.py` directly through `BaseMCPTest`. Chapter 3's architecture is now aligned with the other chapters.
+`planning.py` был «чистым» утилитным модулем бизнес-логики Главы 3 без MCP-обёртки. Использовался только в `tests/test_ch3_ch4.py`. Дублировал `_classify_stakeholder` из `planning_mcp.py` с другой сигнатурой (принимала объект `Stakeholder` вместо двух строк). Удалён: `tests/test_ch3_ch4.py` переписан под прямое тестирование `planning_mcp.py` через `BaseMCPTest`. Архитектура Главы 3 приведена в соответствие с остальными главами.
 
 ---
 
@@ -1060,31 +1074,31 @@ The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1
 
 **Signature Mismatches While Writing Chapter 5 Tests** (Session 38, March 29, 2026)
 
-While writing `test_ch5_51.py` through `test_ch5_53.py`, mismatches turned up between the expected and the actual tool signatures. This is recorded as a pattern: tests are written against the code's real signatures, not against the documentation. When refactoring tools, update the tests at the same time as the code.
+При написании `test_ch5_51.py`–`test_ch5_53.py` обнаружены расхождения между ожидаемыми и фактическими сигнатурами инструментов. Зафиксировано как паттерн: тесты пишутся по реальным сигнатурам кода, не по документации. При рефакторинге инструментов — обновлять тесты одновременно с кодом.
 
 ---
 
 **The `_call(**overrides)` Pattern in Test Classes** (Session 39)
 
-`dict(key=val, **overrides)` fails with a `TypeError` when a key already present in `dict()` is passed again. The mandatory pattern for every `_call(**overrides)` is `{**defaults, **overrides}`. `overrides` wins, so there are no conflicts. Recorded in `conftest.py` as a comment.
+`dict(key=val, **overrides)` падает с `TypeError` при передаче ключа уже присутствующего в `dict()`. Обязательный паттерн для всех `_call(**overrides)`: `{**defaults, **overrides}`. `overrides` побеждает — конфликтов нет. Зафиксировано в `conftest.py` как комментарий.
 
 ---
 
 **`patch` Instead of a Global Mock** (early sessions)
 
-When testing MCP servers, patch in the namespace of the module that uses the function: `@patch("skills.my_mcp.save_artifact")`, not `@patch("skills.common.save_artifact")`. A global mock on `common.save_artifact` breaks other tests run in parallel or in the same discover pass.
+При тестировании MCP-серверов патчить нужно в пространстве имён того модуля, который использует функцию: `@patch("skills.my_mcp.save_artifact")`, а не `@patch("skills.common.save_artifact")`. Глобальный мок `common.save_artifact` ломает другие тесты, запущенные параллельно или в одном discover-проходе.
 
 ---
 
 **Claude-in-Claude** (status: 📋 Design)
 
-A series of decisions about the architecture of the Claude-in-Claude feature: calling a nested Claude agent from an MCP tool for complex analytical operations. The only functional block of the platform still open. Left for the last stage of development.
+Серия решений по архитектуре функции Claude-in-Claude — вызов вложенного Claude-агента из MCP-инструмента для сложных аналитических операций. Единственный незакрытый функциональный блок платформы. Оставлен на последнюю очередь разработки.
 
 ---
 
-### Open Technical Debt
+### Открытый технический долг
 
-| # | Problem | Severity | Status |
+| # | Проблема | Критичность | Статус |
 |---|---|---|---|
 | 1 | Claude-in-Claude | 🔴 Functional | Last in line |
 | 2 | Storage tier 3 (Git versioning of artifacts) | 🔵 Architecture | Not implemented |
@@ -1092,7 +1106,7 @@ A series of decisions about the architecture of the Claude-in-Claude feature: ca
 | 4 | Platform update strategy without losing project data | 🔵 Architecture | Needs design |
 | 5 | `_classify_stakeholder` with two signatures was removed, but no general signature check was done after the refactor | 📋 QA | After publication |
 
-**Storage tier 3 (Git versioning)**: `governance_plans/` artifacts are ignored by Git by default (`.gitignore`). The plan was to keep a change history and an audit trail through Git. Implementation options: a separate branch for project data, a separate repository, or `git add -f` to explicitly include artifacts. No decision has been made; implementation is on hold.
+**Уровень 3 хранилища (Git-версионирование)** — артефакты `governance_plans/` игнорируются Git по умолчанию (`.gitignore`). Планировалась возможность вести историю изменений и аудит через Git. Варианты реализации: отдельная ветка под данные проекта, отдельный репозиторий, `git add -f` для явного включения артефактов. Решение не принято, реализация отложена.
 
 **Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This is still open.
 

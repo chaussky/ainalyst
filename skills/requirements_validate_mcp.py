@@ -54,7 +54,7 @@ NON_REQUIREMENT_TYPES = NON_REQUIREMENT_NODE_TYPES
 
 
 # ---------------------------------------------------------------------------
-# Utilities — paths and file loading
+# Утилиты — пути и загрузка файлов
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -150,7 +150,7 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# BFS search of traceability to business objectives (ADR-030)
+# BFS-поиск трассировки к бизнес-целям (ADR-030)
 # ---------------------------------------------------------------------------
 
 # Relations that mean "the source serves the target". Reaching an objective over
@@ -240,11 +240,11 @@ def set_business_context(
     sets the business context by hand so 7.3 can run standalone. Chapter 6
     (Strategy Analysis) is implemented; 6.1/6.2 populate the same file automatically when run.
 
-    ⚠️ Call once at the start of validation work. On update — a warning.
+    ⚠️ Вызывать один раз в начале работы над валидацией. При обновлении — предупреждение.
 
     Args:
-        project_id:          Project identifier.
-        business_goals_json: JSON list of business objectives:
+        project_id:          Идентификатор проекта.
+        business_goals_json: JSON-список бизнес-целей:
                              '[{"id":"BG-001","title":"...","description":"...","kpi":"..."}]'.
                              id must start with BG-.
         future_state:        Description of the desired future state (Free State).
@@ -256,11 +256,11 @@ def set_business_context(
                                  scope. Replaces from_current_state_project_id.
 
     Returns:
-        Confirmation with a short summary of the business context.
+        Подтверждение с кратким саммари бизнес-контекста.
     """
     logger.info(f"set_business_context: project_id=\'{project_id}\'")
 
-    # ADR-065: the new parameter from_strategy_project_id reads 6.1 + 6.2
+    # ADR-065: новый параметр from_strategy_project_id читает 6.1 + 6.2
     prefill_status = ""
     if from_strategy_project_id.strip():
         # normalize_project_id, NOT the legacy lower/replace: the 6.1/6.2
@@ -281,7 +281,7 @@ def set_business_context(
         try:
             prefill_parts = []
 
-            # Prefill business_goals from the 6.2 BG objectives
+            # Предзаполняем business_goals из BG-целей 6.2
             if os.path.exists(fs_goals_path) and (not business_goals_json.strip() or business_goals_json.strip() == "[]"):
                 with open(fs_goals_path, "r", encoding="utf-8") as f_g:
                     goals_data = json.load(f_g)
@@ -300,9 +300,9 @@ def set_business_context(
                         for g in bg_list
                     ]
                     business_goals_json = json.dumps(auto_goals, ensure_ascii=False)
-                    prefill_parts.append(f"✅ Business objectives prefilled from 6.2 ({len(auto_goals)} BG objectives)")
+                    prefill_parts.append(f"✅ Бизнес-цели предзаполнены из 6.2 ({len(auto_goals)} BG-целей)")
 
-            # Prefill future_state from the 6.2 description
+            # Предзаполняем future_state из описания 6.2
             if os.path.exists(fs_state_path) and not future_state.strip():
                 with open(fs_state_path, "r", encoding="utf-8") as f_s:
                     fs_data = json.load(f_s)
@@ -312,20 +312,20 @@ def set_business_context(
                     if v.get("description")
                 ]
                 if elem_descs:
-                    future_state = "Future state: " + "; ".join(elem_descs[:3])
-                    prefill_parts.append("✅ future_state prefilled from the 6.2 elements")
+                    future_state = "Будущее состояние: " + "; ".join(elem_descs[:3])
+                    prefill_parts.append("✅ future_state предзаполнен из элементов 6.2")
 
-            # Prefill solution_scope from the 6.2 scope
+            # Предзаполняем solution_scope из скоупа 6.2
             if os.path.exists(fs_scope_path) and not solution_scope.strip():
                 with open(fs_scope_path, "r", encoding="utf-8") as f_sc:
                     scope_data_62 = json.load(f_sc)
                 elements = scope_data_62.get("elements_in_scope", [])
                 initiative = scope_data_62.get("initiative_type", "")
                 if elements:
-                    solution_scope = f"Scope elements: {', '.join(elements)}. Type: {initiative}."
-                    prefill_parts.append("✅ solution_scope prefilled from the 6.2 scope")
+                    solution_scope = f"Элементы скоупа: {', '.join(elements)}. Тип: {initiative}."
+                    prefill_parts.append("✅ solution_scope предзаполнен из скоупа 6.2")
 
-            # Fallback: if objectives are not filled yet — try from 6.1 BN
+            # Fallback: если цели ещё не заполнены — пробуем из 6.1 BN
             if (not business_goals_json.strip() or business_goals_json.strip() == "[]") and os.path.exists(cs_needs_path):
                 with open(cs_needs_path, "r", encoding="utf-8") as f_n:
                     needs_data = json.load(f_n)
@@ -348,17 +348,17 @@ def set_business_context(
                         for idx_n, need in enumerate(needs_list, 1)
                     ]
                     business_goals_json = json.dumps(auto_goals, ensure_ascii=False)
-                    prefill_parts.append(f"✅ Business objectives prefilled from 6.1 BN ({len(auto_goals)} items)")
+                    prefill_parts.append(f"✅ Бизнес-цели предзаполнены из 6.1 BN ({len(auto_goals)} шт.)")
 
             if prefill_parts:
                 prefill_status = "\n\n## Auto-fill from 6.1+6.2\n\n" + "\n".join(prefill_parts)
             else:
-                prefill_status = f"\n\n⚠️ Data for 6.1/6.2 for project `{from_strategy_project_id}` not found."
+                prefill_status = f"\n\n⚠️ Данные 6.1/6.2 для проекта `{from_strategy_project_id}` не найдены."
 
         except (json.JSONDecodeError, KeyError, IOError) as e:
-            prefill_status = f"\n\n⚠️ Could not read 6.1/6.2 data: {e}."
+            prefill_status = f"\n\n⚠️ Не удалось прочитать данные 6.1/6.2: {e}."
 
-    # ADR-055: prefill from 6.1 if from_current_state_project_id is passed (deprecated)
+    # ADR-055: предзаполнение из 6.1 если передан from_current_state_project_id (deprecated)
     elif from_current_state_project_id.strip():
         prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id`."
         # Raw id to data_path, normalised value only in the file name — see the note
@@ -404,39 +404,39 @@ def set_business_context(
                     problems = scope_data.get("known_problems", "")
                     if elements:
                         solution_scope = (
-                            "The analysis covers the elements: " + ", ".join(elements) + ". "
-                            "Initiative type: " + str(initiative) + ". "
-                            "Context: " + str(problems[:200])
+                            "Анализ охватывает элементы: " + ", ".join(elements) + ". "
+                            "Тип инициативы: " + str(initiative) + ". "
+                            "Контекст: " + str(problems[:200])
                         )
 
             except (json.JSONDecodeError, KeyError, IOError) as e:
-                prefill_status += f"\n\n⚠️ Could not read 6.1 data: {e}."
+                prefill_status += f"\n\n⚠️ Не удалось прочитать данные 6.1: {e}."
         else:
             prefill_status += (
-                f"\n\n⚠️ The 6.1 business-needs file not found: `{needs_path}`.\n"
-                f"Complete task 6.1 for project `{from_current_state_project_id}`."
+                f"\n\n⚠️ Файл бизнес-потребностей 6.1 не найден: `{needs_path}`.\n"
+                f"Завершите задачу 6.1 для проекта `{from_current_state_project_id}`."
             )
 
-    # ADR-055: prefill from 6.1 (old block placeholder removed)
+    # ADR-055: предзаполнение из 6.1 (old block placeholder removed)
     try:
         goals = json.loads(business_goals_json)
         if not isinstance(goals, list) or not goals:
-            raise ValueError("The list must not be empty")
+            raise ValueError("Список не должен быть пустым")
         for g in goals:
             if not isinstance(g, dict) or "id" not in g or "title" not in g:
-                raise ValueError("Each objective must contain the fields 'id' and 'title'")
+                raise ValueError("Каждая цель должна содержать поля 'id' и 'title'")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Error parsing business_goals_json: {e}\n\n"
-            f"Expected a JSON list: "
-            f'\'[{{"id":"BG-001","title":"Reduce processing time","description":"...","kpi":"..."}}]\''
+            f"❌ Ошибка парсинга business_goals_json: {e}\n\n"
+            f"Ожидается JSON-список: "
+            f'\'[{{"id":"BG-001","title":"Снизить время обработки","description":"...","kpi":"..."}}]\''
         )
 
     if not future_state.strip():
-        return "❌ future_state cannot be empty — describe the desired future state."
+        return "❌ future_state не может быть пустым — опиши желаемое будущее состояние."
 
     if not solution_scope.strip():
-        return "❌ solution_scope cannot be empty — describe the solution boundaries."
+        return "❌ solution_scope не может быть пустым — опиши границы решения."
 
     existing = _load_context(project_id)
     is_update = existing is not None
@@ -454,13 +454,13 @@ def set_business_context(
     _save_context(data)
 
     lines = [
-        f"{'⚠️ Business context UPDATED' if is_update else '✅ Business context created'} — **{project_id}**",
+        f"{'⚠️ Бизнес-контекст ОБНОВЛЁН' if is_update else '✅ Бизнес-контекст создан'} — **{project_id}**",
         "",
         f"> ℹ️ **Business context set by hand in 7.3** — Chapter 6 (6.1/6.2) populates this file automatically when run",
         "",
-        f"**Date:** {date.today()}",
+        f"**Дата:** {date.today()}",
         "",
-        f"## Business objectives ({len(goals)})",
+        f"## Бизнес-цели ({len(goals)})",
         "",
     ]
 
@@ -472,11 +472,11 @@ def set_business_context(
 
     lines += [
         "",
-        f"## Future state",
+        f"## Будущее состояние",
         "",
         future_state[:200] + ("..." if len(future_state) > 200 else ""),
         "",
-        f"## Solution boundaries",
+        f"## Границы решения",
         "",
         solution_scope[:200] + ("..." if len(solution_scope) > 200 else ""),
     ]
@@ -484,7 +484,7 @@ def set_business_context(
     if potential_value:
         lines += [
             "",
-            f"## Potential value",
+            f"## Потенциальная ценность",
             "",
             potential_value[:200] + ("..." if len(potential_value) > 200 else ""),
         ]
@@ -493,8 +493,8 @@ def set_business_context(
         "",
         "---",
         "",
-        "**Next step:**",
-        f"`check_business_alignment(project_id='{project_id}')` — check req traceability to BG",
+        "**Следующий шаг:**",
+        f"`check_business_alignment(project_id='{project_id}')` — проверить трассировку req к BG",
     ]
 
     if prefill_status:
@@ -513,28 +513,28 @@ def check_business_alignment(
     req_ids: str = "",
 ) -> str:
     """
-    BABOK 7.3 — Checks traceability of requirements to business objectives.
-    Methods: BFS search over 'business'-type nodes in repository 5.1 +
-            title matching against BG-xxx from business_context.json.
+    BABOK 7.3 — Проверяет трассировку требований к бизнес-целям.
+    Методы: BFS-поиск по узлам типа 'business' в репозитории 5.1 +
+            title-matching с BG-xxx из business_context.json.
 
     business objectives are taken from {project}_business_context.json.
 
     Args:
-        project_id: Project identifier.
-        req_ids:    JSON list of IDs to check: '["US-001", "FR-001"]'.
-                    If empty — checks all verified reqs of the project.
+        project_id: Идентификатор проекта.
+        req_ids:    JSON-список ID для проверки: '["US-001", "FR-001"]'.
+                    Если пустой — проверяет все verified req проекта.
 
     Returns:
-        Coverage matrix: aligned / orphan / needs_review per req.
-        Additionally: which BG are not covered by any req.
+        Coverage matrix: aligned / orphan / needs_review по каждому req.
+        Дополнительно: какие BG не покрыты ни одним req.
     """
     logger.info(f"check_business_alignment: project_id='{project_id}', req_ids='{req_ids}'")
 
     ctx = _load_context(project_id)
     if ctx is None:
         return (
-            f"❌ Business context for project `{project_id}` not found.\n\n"
-            f"First call: `set_business_context(project_id='{project_id}', ...)`"
+            f"❌ Бизнес-контекст для проекта `{project_id}` не найден.\n\n"
+            f"Сначала вызови: `set_business_context(project_id='{project_id}', ...)`"
         )
 
     repo = _load_repo(project_id)
@@ -542,18 +542,18 @@ def check_business_alignment(
 
     if not all_reqs:
         return (
-            f"⚠️ Repository 5.1 for project `{project_id}` is empty or not found.\n\n"
-            f"Make sure requirements were created via the 7.1 tools."
+            f"⚠️ Репозиторий 5.1 для проекта `{project_id}` пуст или не найден.\n\n"
+            f"Убедись что требования созданы через инструменты 7.1."
         )
 
-    # Filter
+    # Фильтрация
     if req_ids.strip():
         try:
             ids_to_check = json.loads(req_ids)
             if not isinstance(ids_to_check, list):
                 raise ValueError
         except (json.JSONDecodeError, ValueError):
-            return f"❌ Error parsing req_ids: expected a JSON list, e.g.: '[\"US-001\", \"FR-001\"]'"
+            return f"❌ Ошибка парсинга req_ids: ожидается JSON-список, например: '[\"US-001\", \"FR-001\"]'"
         reqs_to_check = [r for r in all_reqs if r["id"] in ids_to_check]
         not_found = [i for i in ids_to_check if i not in {r["id"] for r in all_reqs}]
     else:
@@ -571,21 +571,21 @@ def check_business_alignment(
 
     if not reqs_to_check:
         return (
-            f"ℹ️ No verified/validated requirements to check in project `{project_id}`.\n\n"
-            f"Verify requirements via the 7.2 tools (`mark_req_verified`) "
-            f"before validation."
+            f"ℹ️ Нет verified/validated требований для проверки в проекте `{project_id}`.\n\n"
+            f"Верифицируй требования через инструменты 7.2 (`mark_req_verified`) "
+            f"перед валидацией."
         )
 
     goals = ctx.get("business_goals", [])
     goal_ids = {g["id"] for g in goals}
     goals_by_id = {g["id"]: g for g in goals}
 
-    # Check each req
+    # Проверяем каждый req
     aligned_reqs = []
     orphan_reqs = []
     needs_review_reqs = []
 
-    # For the coverage matrix: which BG are covered
+    # Для coverage matrix: какие BG покрыты
     covered_goals: set = set()
 
     for req in reqs_to_check:
@@ -632,25 +632,25 @@ def check_business_alignment(
                 "type": req_type,
             })
 
-    # BG without coverage
+    # BG без покрытия
     uncovered_goals = [g for g in goals if g["id"] not in covered_goals]
 
-    # Build the report
+    # Формируем отчёт
     total = len(aligned_reqs) + len(orphan_reqs) + len(needs_review_reqs)
     aligned_pct = round(len(aligned_reqs) / total * 100, 1) if total > 0 else 0.0
 
     lines = [
-        f"<!-- BABOK 7.3 — Business Alignment | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.3 — Business Alignment | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 🎯 Alignment with business objectives — {project_id}",
+        f"# 🎯 Выравнивание с бизнес-целями — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Reqs checked:** {total}  ",
-        f"**Business objectives:** {len(goals)}",
+        f"**Дата:** {date.today()}  ",
+        f"**Проверено req:** {total}  ",
+        f"**Бизнес-целей:** {len(goals)}",
         "",
-        "## Summary",
+        "## Сводка",
         "",
-        "| Status | Count |",
+        "| Статус | Количество |",
         "|--------|-----------|",
         f"| ✅ Aligned (traced to BG in the graph) | {len(aligned_reqs)} ({aligned_pct}%) |",
         f"| ⚠️ Title match only (verify & link) | {len(needs_review_reqs)} |",
@@ -660,15 +660,15 @@ def check_business_alignment(
 
     if not_found:
         lines += [
-            f"⚠️ Not found in the repository: {', '.join(f'`{i}`' for i in not_found)}",
+            f"⚠️ Не найдены в репозитории: {', '.join(f'`{i}`' for i in not_found)}",
             "",
         ]
 
     # Coverage matrix
     lines += [
-        "## Coverage Matrix — Business objectives",
+        "## Coverage Matrix — Бизнес-цели",
         "",
-        "| BG ID | Title | Req coverage |",
+        "| BG ID | Название | Покрытие req |",
         "|-------|----------|-------------|",
     ]
     for g in goals:
@@ -677,14 +677,14 @@ def check_business_alignment(
         covering_reqs = [r["req_id"] for r in aligned_reqs if g["id"] in r["aligned_goals"]]
         req_list = ", ".join(f"`{r}`" for r in covering_reqs[:5])
         if len(covering_reqs) > 5:
-            req_list += f" +{len(covering_reqs)-5} more"
+            req_list += f" +{len(covering_reqs)-5} ещё"
         lines.append(f"| `{g['id']}` | {g['title']} | {icon} {req_list or '—'} |")
     lines.append("")
 
     # Aligned req
     if aligned_reqs:
         lines += [
-            "## ✅ Aligned requirements",
+            "## ✅ Выровненные требования",
             "",
         ]
         for r in aligned_reqs:
@@ -710,23 +710,23 @@ def check_business_alignment(
     # Orphan req
     if orphan_reqs:
         lines += [
-            "## ❌ Requirements without traceability to business objectives (Orphans)",
+            "## ❌ Требования без трассировки к бизнес-целям (Orphans)",
             "",
-            "> These requirements are not linked to any business objective.",
-            "> They may be redundant or traceability via 5.1 is needed.",
+            "> Эти требования не связаны ни с одной бизнес-целью.",
+            "> Возможно они избыточны или необходима трассировка через 5.1.",
             "",
         ]
         for r in orphan_reqs:
             lines.append(f"- `{r['req_id']}` ({r['type']}) — {r['title']}")
         lines.append("")
 
-    # Uncovered BG
+    # Непокрытые BG
     if uncovered_goals:
         lines += [
-            "## ⚠️ Business objectives without req coverage",
+            "## ⚠️ Бизнес-цели без покрытия req",
             "",
-            "> These business objectives are not covered by any verified requirement.",
-            "> Additional requirements may be needed.",
+            "> Эти бизнес-цели не покрыты ни одним верифицированным требованием.",
+            "> Возможно нужны дополнительные требования.",
             "",
         ]
         for g in uncovered_goals:
@@ -736,19 +736,19 @@ def check_business_alignment(
     lines += [
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
     ]
 
     if orphan_reqs:
-        lines.append("1. For each Orphan: check whether the req is needed and add traceability via 5.1 "
-                     "(`add_trace_link`) or remove it as redundant.")
+        lines.append("1. Для каждого Orphan: проверь необходимость req и добавь трассировку через 5.1 "
+                     "(`add_trace_link`) или удали как избыточное.")
     if uncovered_goals:
-        lines.append("2. For uncovered BG: create the missing reqs via the 7.1 tools.")
+        lines.append("2. Для непокрытых BG: создай недостающие req через инструменты 7.1.")
     lines += [
-        "3. Record assumptions: `log_assumption(project_id=...)` for risky assumptions.",
-        "4. Set success criteria: `set_success_criteria(project_id=...)` for critical reqs.",
-        f"5. After resolving the problems: `mark_req_validated(project_id='{project_id}', req_ids='[...]')`",
+        "3. Зафиксируй предположения: `log_assumption(project_id=...)` для рисковых допущений.",
+        "4. Задай критерии успеха: `set_success_criteria(project_id=...)` для критичных req.",
+        f"5. После устранения проблем: `mark_req_validated(project_id='{project_id}', req_ids='[...]')`",
     ]
 
     content = "\n".join(lines)
@@ -771,35 +771,35 @@ def set_success_criteria(
     BABOK 7.3 — Attaches a measurable success criterion to a requirement.
     An optional pipeline step. Recommended for critical reqs.
 
-    The data is written to the success_criteria field of the req node in repository 5.1.
-    Link to 8.1 (Measure Solution Performance): this data becomes the input.
+    Данные пишутся в поле success_criteria узла req в репозитории 5.1.
+    Связь с 8.1 (Measure Solution Performance): эти данные станут входными.
 
     Args:
-        project_id:    Project identifier.
-        req_id:        Requirement ID (US-001, FR-003, etc.).
-        criteria_json: JSON with the criteria:
+        project_id:    Идентификатор проекта.
+        req_id:        ID требования (US-001, FR-003 и т.д.).
+        criteria_json: JSON с критериями:
                        '{"baseline":"...", "target":"...",
                          "measurement_method":"...", "kpi_ref":"BG-001"}'.
 
     Returns:
-        Confirmation + a KPI hint from the linked business objective.
+        Подтверждение + подсказка KPI из связанной бизнес-цели.
     """
     logger.info(f"set_success_criteria: project_id='{project_id}', req_id='{req_id}'")
 
     try:
         criteria = json.loads(criteria_json)
         if not isinstance(criteria, dict):
-            raise ValueError("Expected a JSON object")
+            raise ValueError("Ожидается JSON-объект")
         required_fields = {"baseline", "target", "measurement_method"}
         missing = required_fields - set(criteria.keys())
         if missing:
-            raise ValueError(f"Missing required fields: {', '.join(sorted(missing))}")
+            raise ValueError(f"Отсутствуют обязательные поля: {', '.join(sorted(missing))}")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Error parsing criteria_json: {e}\n\n"
-            f"Expected: "
-            f'\'{{\"baseline\":\"current metric\",\"target\":\"target metric\","'
-            f'"measurement_method\":\"how we measure\",\"kpi_ref\":\"BG-001\"}}\''
+            f"❌ Ошибка парсинга criteria_json: {e}\n\n"
+            f"Ожидается: "
+            f'\'{{\"baseline\":\"текущий показатель\",\"target\":\"целевой показатель\","'
+            f'"measurement_method\":\"как измеряем\",\"kpi_ref\":\"BG-001\"}}\''
         )
 
     repo = _load_repo(project_id)
@@ -807,11 +807,11 @@ def set_success_criteria(
 
     if not req:
         return (
-            f"❌ Requirement `{req_id}` not found in repository 5.1 of project `{project_id}`.\n"
-            f"Available reqs: {', '.join(r['id'] for r in repo.get('requirements', [])[:10])}"
+            f"❌ Требование `{req_id}` не найдено в репозитории 5.1 проекта `{project_id}`.\n"
+            f"Доступные req: {', '.join(r['id'] for r in repo.get('requirements', [])[:10])}"
         )
 
-    # KPI hint from the linked business objective
+    # Подсказка KPI из связанной бизнес-цели
     kpi_hint = ""
     kpi_ref = criteria.get("kpi_ref", "")
     if kpi_ref:
@@ -821,9 +821,9 @@ def set_success_criteria(
             if kpi_ref in goals_by_id:
                 goal = goals_by_id[kpi_ref]
                 if goal.get("kpi"):
-                    kpi_hint = f"\n💡 KPI of business objective `{kpi_ref}`: {goal['kpi']}"
+                    kpi_hint = f"\n💡 KPI бизнес-цели `{kpi_ref}`: {goal['kpi']}"
 
-    # Write into the req
+    # Пишем в req
     req["success_criteria"] = {
         "baseline": criteria.get("baseline", ""),
         "target": criteria.get("target", ""),
@@ -842,16 +842,16 @@ def set_success_criteria(
     _save_repo(repo)
 
     lines = [
-        f"✅ Success criterion attached to **{req_id}**",
+        f"✅ Критерий успеха привязан к **{req_id}**",
         "",
-        f"| Field | Value |",
+        f"| Поле | Значение |",
         f"|------|----------|",
-        f"| Requirement | `{req_id}` — {req.get('title', '')} |",
+        f"| Требование | `{req_id}` — {req.get('title', '')} |",
         f"| Baseline | {criteria['baseline']} |",
         f"| Target | {criteria['target']} |",
-        f"| Measurement method | {criteria['measurement_method']} |",
+        f"| Метод измерения | {criteria['measurement_method']} |",
         f"| KPI ref | {kpi_ref or '—'} |",
-        f"| Date | {date.today()} |",
+        f"| Дата | {date.today()} |",
     ]
 
     if kpi_hint:
@@ -862,10 +862,10 @@ def set_success_criteria(
         "",
         "---",
         "",
-        f"**Link to 8.1:** the success_criteria from 7.3 become the input for "
-        f"Measure Solution Performance (Chapter 8).",
+        f"**Связь с 8.1:** success_criteria из 7.3 станут входными данными для "
+        f"Measure Solution Performance (Глава 8).",
         "",
-        f"Continue: `mark_req_validated` or add criteria for other reqs.",
+        f"Продолжи: `mark_req_validated` или добавь критерии для других req.",
     ]
 
     return "\n".join(lines)
@@ -889,26 +889,26 @@ def log_assumption(
     stored in {project}_assumptions.json, numbering AS-001/AS-002/...
 
     Args:
-        project_id:  Project identifier.
-        description: Text of the assumption.
-        req_ids:     JSON list of linked reqs: '["US-001", "FR-003"]'.
-        risk_level:  Risk level: high | medium | low.
-        assigned_to: Whom it is assigned to for confirmation. Empty by default.
+        project_id:  Идентификатор проекта.
+        description: Текст предположения.
+        req_ids:     JSON-список связанных req: '["US-001", "FR-003"]'.
+        risk_level:  Уровень риска: high | medium | low.
+        assigned_to: Кому назначено для подтверждения. По умолчанию пусто.
 
     Returns:
-        Confirmation with the ID of the created assumption.
+        Подтверждение с ID созданного предположения.
     """
     logger.info(f"log_assumption: project_id='{project_id}', risk_level='{risk_level}'")
 
     valid_risk_levels = {"high", "medium", "low"}
     if risk_level not in valid_risk_levels:
         return (
-            f"❌ Invalid risk_level: '{risk_level}'.\n"
-            f"Allowed values: high | medium | low"
+            f"❌ Недопустимый risk_level: '{risk_level}'.\n"
+            f"Допустимые значения: high | medium | low"
         )
 
     if not description.strip():
-        return "❌ description cannot be empty — describe the assumption."
+        return "❌ description не может быть пустым — опиши предположение."
 
     try:
         req_ids_list = json.loads(req_ids)
@@ -916,8 +916,8 @@ def log_assumption(
             raise ValueError
     except (json.JSONDecodeError, ValueError):
         return (
-            f"❌ Error parsing req_ids: expected a JSON list, "
-            f"e.g.: '[\"US-001\", \"FR-001\"]'"
+            f"❌ Ошибка парсинга req_ids: ожидается JSON-список, "
+            f"например: '[\"US-001\", \"FR-001\"]'"
         )
 
     data = _load_assumptions(project_id)
@@ -935,7 +935,7 @@ def log_assumption(
         "resolution_note": "",
     }
 
-    # Update statistics
+    # Обновляем статистику
     _update_assumption_stats(data)
     _save_assumptions(data)
 
@@ -943,33 +943,33 @@ def log_assumption(
     icon = risk_icons.get(risk_level, "")
 
     lines = [
-        f"✅ Assumption recorded: **{assumption_id}**",
+        f"✅ Предположение зафиксировано: **{assumption_id}**",
         "",
-        f"| Field | Value |",
+        f"| Поле | Значение |",
         f"|------|----------|",
         f"| ID | `{assumption_id}` |",
         f"| Risk level | {icon} {risk_level} |",
-        f"| Linked reqs | {', '.join(f'`{r}`' for r in req_ids_list) or '—'} |",
-        f"| Assigned to | {assigned_to or '—'} |",
-        f"| Status | open |",
-        f"| Date | {date.today()} |",
+        f"| Связанные req | {', '.join(f'`{r}`' for r in req_ids_list) or '—'} |",
+        f"| Назначено | {assigned_to or '—'} |",
+        f"| Статус | open |",
+        f"| Дата | {date.today()} |",
         "",
-        f"**Description:** {description}",
+        f"**Описание:** {description}",
     ]
 
     if risk_level == "high":
         lines += [
             "",
-            f"> 🔴 **High risk assumption:** `mark_req_validated` will issue a warning "
-            f"for reqs {', '.join(f'`{r}`' for r in req_ids_list)} "
-            f"while this assumption remains open.",
+            f"> 🔴 **High risk assumption:** `mark_req_validated` выдаст предупреждение "
+            f"для req {', '.join(f'`{r}`' for r in req_ids_list)} "
+            f"пока это предположение остаётся открытым.",
         ]
 
     lines += [
         "",
         "---",
         "",
-        f"**Next step:** confirm or refute the assumption:",
+        f"**Следующий шаг:** подтверди или опровергни предположение:",
         f"`resolve_assumption(project_id='{project_id}', assumption_id='{assumption_id}', "
         f"resolution='confirmed|refuted', resolution_note='...')`",
     ]
@@ -978,7 +978,7 @@ def log_assumption(
 
 
 def _update_assumption_stats(data: dict) -> None:
-    """Recomputes the assumptions statistics."""
+    """Пересчитывает статистику assumptions."""
     all_assum = list(data["assumptions"].values())
     data["stats"]["open"] = sum(1 for a in all_assum if a["status"] == "open")
     data["stats"]["confirmed"] = sum(1 for a in all_assum if a["status"] == "confirmed")
@@ -1002,40 +1002,40 @@ def resolve_assumption(
     on refuted — a warning about the linked reqs.
 
     Args:
-        project_id:      Project identifier.
-        assumption_id:   Assumption ID: AS-001, AS-002, etc.
+        project_id:      Идентификатор проекта.
+        assumption_id:   ID предположения: AS-001, AS-002 и т.д.
         resolution:      confirmed | refuted
-        resolution_note: Exactly what confirmed or refuted the assumption.
+        resolution_note: Что именно подтвердило или опровергло предположение.
 
     Returns:
-        Confirmation of closure. On refuted — the list of reqs to revisit.
+        Подтверждение закрытия. При refuted — список req для пересмотра.
     """
     logger.info(f"resolve_assumption: project_id='{project_id}', assumption_id='{assumption_id}'")
 
     valid_resolutions = {"confirmed", "refuted"}
     if resolution not in valid_resolutions:
         return (
-            f"❌ Invalid resolution: '{resolution}'.\n"
-            f"Allowed values: confirmed | refuted"
+            f"❌ Недопустимый resolution: '{resolution}'.\n"
+            f"Допустимые значения: confirmed | refuted"
         )
 
     if not resolution_note.strip():
-        return "❌ resolution_note cannot be empty — describe exactly what confirmed/refuted it."
+        return "❌ resolution_note не может быть пустым — опиши что именно подтвердило/опровергло."
 
     data = _load_assumptions(project_id)
 
     if assumption_id not in data["assumptions"]:
         open_list = [k for k, v in data["assumptions"].items() if v["status"] == "open"]
         return (
-            f"❌ Assumption `{assumption_id}` not found in project `{project_id}`.\n"
-            f"Open: {', '.join(open_list) or 'none'}"
+            f"❌ Предположение `{assumption_id}` не найдено в проекте `{project_id}`.\n"
+            f"Открытые: {', '.join(open_list) or 'нет'}"
         )
 
     assumption = data["assumptions"][assumption_id]
 
     if assumption["status"] != "open":
         return (
-            f"ℹ️ Assumption `{assumption_id}` is already closed "
+            f"ℹ️ Предположение `{assumption_id}` уже закрыто "
             f"({assumption['status']}, {assumption.get('resolved_at', '?')}).\n"
             f"Resolution: {assumption.get('resolution_note', '—')}"
         )
@@ -1051,13 +1051,13 @@ def resolve_assumption(
 
     icon = "✅" if resolution == "confirmed" else "❌"
     lines = [
-        f"{icon} Assumption **{assumption_id}** closed as **{resolution}**.",
+        f"{icon} Предположение **{assumption_id}** закрыто как **{resolution}**.",
         "",
-        f"| Field | Value |",
+        f"| Поле | Значение |",
         f"|------|----------|",
         f"| ID | `{assumption_id}` |",
         f"| Resolution | {resolution} |",
-        f"| Closed date | {date.today()} |",
+        f"| Дата закрытия | {date.today()} |",
         "",
         f"**Resolution note:** {resolution_note}",
         "",
@@ -1067,21 +1067,21 @@ def resolve_assumption(
 
     if resolution == "refuted":
         lines += [
-            "## ⚠️ Assumption refuted",
+            "## ⚠️ Предположение опровергнуто",
             "",
-            "The linked requirements need to be revisited:",
+            "Связанные требования нужно пересмотреть:",
             "",
         ]
         for req_id in req_ids_affected:
-            lines.append(f"- `{req_id}` — check relevance in light of the refuted assumption")
+            lines.append(f"- `{req_id}` — проверь актуальность в свете опровержения предположения")
         lines += [
             "",
-            "> Rework of the requirements or a new round of elicitation (4.1–4.3) may be needed.",
+            "> Возможно требуется переработка требований или новый раунд выявления (4.1–4.3).",
         ]
     else:
         lines += [
-            f"✅ Assumption confirmed. Requirements {', '.join(f'`{r}`' for r in req_ids_affected)} "
-            f"remain relevant.",
+            f"✅ Предположение подтверждено. Требования {', '.join(f'`{r}`' for r in req_ids_affected)} "
+            f"остаются актуальными.",
         ]
 
     return "\n".join(lines)
@@ -1102,18 +1102,18 @@ def mark_req_validated(
     BABOK 7.3 — Sets the 'validated' status in repository 5.1.
     Preconditions: warnings, not hard blocks.
 
-    Checks:
-      (1) req status = verified (from 7.2)
-      (2) no open high-risk assumptions for the req in {project}_assumptions.json
-      (3) traceability to a business objective exists (BFS or title matching)
+    Проверяет:
+      (1) статус req = verified (из 7.2)
+      (2) нет open high-risk assumptions по req в {project}_assumptions.json
+      (3) есть трассировка к бизнес-цели (BFS или title-matching)
 
     Args:
-        project_id: Project identifier.
-        req_ids:    JSON list of IDs: '["US-001", "FR-001"]'.
-        force:      True — set validated even with warnings (override).
+        project_id: Идентификатор проекта.
+        req_ids:    JSON-список ID: '["US-001", "FR-001"]'.
+        force:      True — установить validated даже при предупреждениях (override).
 
     Returns:
-        A result per req: validated / warning.
+        Результат по каждому req: validated / предупреждение.
     """
     logger.info(f"mark_req_validated: project_id='{project_id}', req_ids='{req_ids}'")
 
@@ -1122,7 +1122,7 @@ def mark_req_validated(
         if not isinstance(ids_list, list) or not ids_list:
             raise ValueError
     except (json.JSONDecodeError, ValueError):
-        return "❌ req_ids must be a non-empty JSON list: '[\"US-001\", \"FR-001\"]'"
+        return "❌ req_ids должен быть непустым JSON-списком: '[\"US-001\", \"FR-001\"]'"
 
     repo = _load_repo(project_id)
     data_assum = _load_assumptions(project_id)
@@ -1141,7 +1141,7 @@ def mark_req_validated(
             results.append({
                 "req_id": req_id,
                 "outcome": "not_found",
-                "message": f"❌ `{req_id}` — not found in repository 5.1",
+                "message": f"❌ `{req_id}` — не найден в репозитории 5.1",
                 "warnings": [],
             })
             not_found_count += 1
@@ -1158,11 +1158,11 @@ def mark_req_validated(
         current_status = req.get("status", "draft")
         if not has_passed_verification(repo, req_id) and current_status != "validated":
             warnings.append(
-                f"Status '{current_status}' (expected 'verified'). "
-                f"Verify the req via the 7.2 tools before validation."
+                f"Статус '{current_status}' (ожидается 'verified'). "
+                f"Верифицируй req через инструменты 7.2 перед валидацией."
             )
 
-        # Precondition 2: open high-risk assumptions
+        # Предусловие 2: open high-risk assumptions
         open_high_risk = [
             a for a in data_assum["assumptions"].values()
             if a["status"] == "open"
@@ -1172,11 +1172,11 @@ def mark_req_validated(
         if open_high_risk:
             ids_str = ", ".join(f"`{a['assumption_id']}`" for a in open_high_risk)
             warnings.append(
-                f"There are open high-risk assumptions for this req: {ids_str}. "
-                f"Close them via `resolve_assumption` or use force=True."
+                f"Есть открытые high-risk assumptions по этому req: {ids_str}. "
+                f"Закрой их через `resolve_assumption` или используй force=True."
             )
 
-        # Precondition 3: traceability to a business objective
+        # Предусловие 3: трассировка к бизнес-цели
         if goals:
             bfs_nodes = _bfs_to_business(repo, req_id)
             bfs_goal_ids = {n["id"] for n in bfs_nodes if n["id"] in goal_ids}
@@ -1185,17 +1185,17 @@ def mark_req_validated(
             # "no traceability" warning.
             if not bfs_goal_ids:
                 warnings.append(
-                    f"No traceability to business objectives. "
-                    f"Check `check_business_alignment` or add links in 5.1."
+                    f"Нет трассировки к бизнес-целям. "
+                    f"Проверь `check_business_alignment` или добавь связи в 5.1."
                 )
 
-        # Make the decision
+        # Принимаем решение
         if warnings and not force:
             warned_count += 1
             results.append({
                 "req_id": req_id,
                 "outcome": "warned",
-                "message": f"⚠️ `{req_id}` — warnings (not updated)",
+                "message": f"⚠️ `{req_id}` — предупреждения (не обновлён)",
                 "warnings": warnings,
             })
         else:
@@ -1217,7 +1217,7 @@ def mark_req_validated(
             results.append({
                 "req_id": req_id,
                 "outcome": outcome,
-                "message": f"✅ `{req_id}` — validated (was: {old_status})"
+                "message": f"✅ `{req_id}` — validated (было: {old_status})"
                            + (" [force override]" if force and warnings else ""),
                 "warnings": warnings if force else [],
             })
@@ -1226,15 +1226,15 @@ def mark_req_validated(
         _save_repo(repo)
 
     lines = [
-        f"# Validation result — {project_id}",
+        f"# Результат валидации — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Processed:** {len(ids_list)} requirements  ",
+        f"**Дата:** {date.today()}  ",
+        f"**Обработано:** {len(ids_list)} требований  ",
         f"**Validated:** ✅ {validated_count}  ",
-        f"**With warnings (not updated):** ⚠️ {warned_count}  ",
-        f"**Not found:** ❌ {not_found_count}",
+        f"**С предупреждениями (не обновлено):** ⚠️ {warned_count}  ",
+        f"**Не найдено:** ❌ {not_found_count}",
         "",
-        "## Details",
+        "## Детали",
         "",
     ]
 
@@ -1248,9 +1248,9 @@ def mark_req_validated(
             "",
             "---",
             "",
-            f"⚠️ {warned_count} reqs were not updated due to warnings.",
-            "Resolve the warnings or call again with `force=True` to override.",
-            f"Example: `mark_req_validated(project_id='{project_id}', "
+            f"⚠️ {warned_count} req не обновлены из-за предупреждений.",
+            "Устрани предупреждения или вызови повторно с `force=True` для override.",
+            f"Пример: `mark_req_validated(project_id='{project_id}', "
             f"req_ids='{req_ids}', force=True)`",
         ]
 
@@ -1259,8 +1259,8 @@ def mark_req_validated(
             "",
             "---",
             "",
-            f"✅ The `validated` status is set in repository 5.1.",
-            f"Next step: `get_validation_report(project_id='{project_id}')` for the summary report.",
+            f"✅ Статус `validated` установлен в репозитории 5.1.",
+            f"Следующий шаг: `get_validation_report(project_id='{project_id}')` для сводного отчёта.",
         ]
 
     return "\n".join(lines)
@@ -1276,23 +1276,23 @@ def get_validation_report(
     project_id: str,
 ) -> str:
     """
-    BABOK 7.3 — Generates a summary report on project validation.
+    BABOK 7.3 — Генерирует сводный отчёт по валидации проекта.
 
-    Contains:
-      - % validated out of verified
-      - Coverage matrix (BG -> req)
-      - List of "orphans" without traceability to objectives
-      - Open assumptions by risk_level
-      - % of reqs with success_criteria
-      - Verdict on readiness for 7.5 (Design Options)
+    Содержит:
+      - % validated из verified
+      - Coverage matrix (BG → req)
+      - Список «сирот» без трассировки к целям
+      - Открытые assumptions по risk_level
+      - % req с success_criteria
+      - Вердикт готовности к 7.5 (Design Options)
 
-    Saves Markdown via save_artifact.
+    Сохраняет Markdown через save_artifact.
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        Validation Report in Markdown.
+        Validation Report в Markdown.
     """
     logger.info(f"get_validation_report: project_id='{project_id}'")
 
@@ -1301,14 +1301,14 @@ def get_validation_report(
 
     if not all_reqs:
         return (
-            f"⚠️ No active requirements in the repository for project `{project_id}`.\n"
-            f"Create requirements via the 7.1 tools before validation."
+            f"⚠️ Нет активных требований в репозитории проекта `{project_id}`.\n"
+            f"Создай требования через инструменты 7.1 перед валидацией."
         )
 
     ctx = _load_context(project_id)
     data_assum = _load_assumptions(project_id)
 
-    # Statistics by requirements
+    # Статистика по требованиям
     skip_statuses = {"deprecated", "superseded", "retired"}
     active_reqs = [
         r for r in all_reqs
@@ -1319,8 +1319,8 @@ def get_validation_report(
 
     if total == 0:
         return (
-            f"⚠️ No active requirements of a suitable type in project `{project_id}`.\n"
-            f"Check that requirements were created via the 7.1 tools."
+            f"⚠️ Нет активных требований подходящего типа в проекте `{project_id}`.\n"
+            f"Проверь что требования созданы через инструменты 7.1."
         )
 
     # Validation is a durable fact in history, not the mutable status: 5.5 (approved),
@@ -1334,7 +1334,7 @@ def get_validation_report(
     validated_pct = round(len(validated) / total * 100, 1) if total > 0 else 0.0
     criteria_pct = round(len(with_criteria) / total * 100, 1) if total > 0 else 0.0
 
-    # Assumptions statistics
+    # Статистика assumptions
     all_assum = list(data_assum["assumptions"].values())
     open_assum = [a for a in all_assum if a["status"] == "open"]
     open_high = [a for a in open_assum if a.get("risk_level") == "high"]
@@ -1372,57 +1372,57 @@ def get_validation_report(
         and len(open_high) == 0
         and len(orphan_reqs) == 0
     )
-    ready_label = "✅ Ready for 7.5 Design Options" if ready else "❌ Not ready for 7.5"
+    ready_label = "✅ Готово к 7.5 Design Options" if ready else "❌ Не готово к 7.5"
 
-    # Build the report
+    # Формируем отчёт
     lines = [
-        f"<!-- BABOK 7.3 — Validation Report | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.3 — Validation Report | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 📋 Requirements validation report",
+        f"# 📋 Отчёт валидации требований",
         "",
-        f"**Project:** {project_id}  ",
-        f"**Report date:** {date.today()}  ",
-        f"**Readiness:** {ready_label}",
+        f"**Проект:** {project_id}  ",
+        f"**Дата отчёта:** {date.today()}  ",
+        f"**Готовность:** {ready_label}",
         "",
         "---",
         "",
-        "## Requirements summary",
+        "## Сводка по требованиям",
         "",
-        "| Metric | Value |",
+        "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Total active reqs | {total} |",
+        f"| Всего активных req | {total} |",
         f"| ✅ Validated | {len(validated)} ({validated_pct}%) |",
-        f"| 🔍 Verified (not yet validated) | {len(verified_only)} |",
-        f"| 📐 With success_criteria | {len(with_criteria)} ({criteria_pct}%) |",
+        f"| 🔍 Verified (ещё не validated) | {len(verified_only)} |",
+        f"| 📐 С success_criteria | {len(with_criteria)} ({criteria_pct}%) |",
         "",
     ]
 
-    # Progress bar
+    # Прогресс-бар
     filled = int(validated_pct / 10)
     bar = "█" * filled + "░" * (10 - filled)
-    lines.append(f"**Validation progress:** `[{bar}]` {validated_pct}%")
+    lines.append(f"**Прогресс валидации:** `[{bar}]` {validated_pct}%")
     lines.append("")
 
     # Assumptions
     lines += [
-        "## Assumptions summary",
+        "## Сводка по предположениям",
         "",
-        "| Metric | Value |",
+        "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Total assumptions | {len(all_assum)} |",
-        f"| 🔴 Open high-risk | {len(open_high)} |",
-        f"| 🟡 Open medium-risk | {len(open_medium)} |",
-        f"| 🟢 Open low-risk | {len(open_low)} |",
-        f"| ✅ Closed | {len([a for a in all_assum if a['status'] != 'open'])} |",
+        f"| Всего assumptions | {len(all_assum)} |",
+        f"| 🔴 Открытых high-risk | {len(open_high)} |",
+        f"| 🟡 Открытых medium-risk | {len(open_medium)} |",
+        f"| 🟢 Открытых low-risk | {len(open_low)} |",
+        f"| ✅ Закрытых | {len([a for a in all_assum if a['status'] != 'open'])} |",
         "",
     ]
 
     # Coverage matrix
     if goals:
         lines += [
-            "## Coverage Matrix — Business objectives",
+            "## Coverage Matrix — Бизнес-цели",
             "",
-            "| BG ID | Title | Covered? | Req |",
+            "| BG ID | Название | Покрыто? | Req |",
             "|-------|----------|---------|-----|",
         ]
         for g in goals:
@@ -1444,19 +1444,19 @@ def get_validation_report(
     # Orphan req
     if orphan_reqs:
         lines += [
-            "## ❌ Reqs without traceability to business objectives",
+            "## ❌ Req без трассировки к бизнес-целям",
             "",
-            "> Reconsider whether these requirements are needed.",
+            "> Пересмотри необходимость этих требований.",
             "",
         ]
         for r in orphan_reqs:
             lines.append(f"- `{r['id']}` ({r.get('type','')}) — {r.get('title','')}")
         lines.append("")
 
-    # Uncovered BG
+    # Непокрытые BG
     if uncovered_goals:
         lines += [
-            "## ⚠️ Business objectives without coverage",
+            "## ⚠️ Бизнес-цели без покрытия",
             "",
         ]
         for g in uncovered_goals:
@@ -1466,9 +1466,9 @@ def get_validation_report(
     # Open high-risk assumptions
     if open_high:
         lines += [
-            "## 🔴 Open High-Risk Assumptions",
+            "## 🔴 Открытые High-Risk Assumptions",
             "",
-            "| AS ID | Description | Req | Assigned |",
+            "| AS ID | Описание | Req | Назначено |",
             "|-------|----------|-----|-----------|",
         ]
         for a in open_high:
@@ -1484,17 +1484,17 @@ def get_validation_report(
         lines += [
             "## 📐 Criteria Success Coverage",
             "",
-            f"**{len(with_criteria)}/{total} reqs** ({criteria_pct}%) have success_criteria.",
+            f"**{len(with_criteria)}/{total} req** ({criteria_pct}%) имеют success_criteria.",
             "",
         ]
         if criteria_pct < 50:
-            lines.append("⚠️ Fewer than 50% of reqs have success_criteria — add criteria for critical reqs via `set_success_criteria`.")
+            lines.append("⚠️ Менее 50% req имеют success_criteria — добавь критерии для критичных req через `set_success_criteria`.")
         lines.append("")
 
-    # Validated reqs by type
+    # Validated req по типам
     if validated:
         lines += [
-            "## ✅ Validated requirements",
+            "## ✅ Validated требования",
             "",
         ]
         by_type: dict = {}
@@ -1505,23 +1505,23 @@ def get_validation_report(
             lines.append(f"**{req_type}:** {', '.join(f'`{i}`' for i in sorted(ids))}")
         lines.append("")
 
-    # Verdict
+    # Вердикт
     lines += [
         "---",
         "",
-        "## Verdict and next steps",
+        "## Вердикт и следующие шаги",
         "",
     ]
 
     if ready:
         lines += [
-            "### ✅ Ready for 7.5 Design Options",
+            "### ✅ Готово к 7.5 Design Options",
             "",
-            f"- **{len(validated)}** reqs in status `validated` are ready for solution-design work.",
-            f"- No open high-risk assumptions.",
-            f"- All reqs trace to business objectives.",
+            f"- **{len(validated)}** req в статусе `validated` готовы к работе над дизайном решения.",
+            f"- Нет открытых high-risk assumptions.",
+            f"- Все req трассируются к бизнес-целям.",
             "",
-            "**Hand this report to 7.5:** proceed to defining design options.",
+            "**Передай этот отчёт в 7.5:** приступай к определению вариантов дизайна.",
         ]
     else:
         reasons = []
@@ -1529,25 +1529,25 @@ def get_validation_report(
             reasons.append("⚠️ Business context not set — alignment to objectives is unchecked. "
                            "Call `set_business_context` (or run 6.1/6.2), then re-run.")
         if validated_pct < 80:
-            reasons.append(f"📊 Only {validated_pct}% of reqs validated (recommended ≥ 80%)")
+            reasons.append(f"📊 Validated только {validated_pct}% req (рекомендуется ≥ 80%)")
         if open_high:
-            reasons.append(f"🔴 {len(open_high)} open high-risk assumptions")
+            reasons.append(f"🔴 {len(open_high)} открытых high-risk assumptions")
         if orphan_reqs:
-            reasons.append(f"❌ {len(orphan_reqs)} reqs without traceability to business objectives")
+            reasons.append(f"❌ {len(orphan_reqs)} req без трассировки к бизнес-целям")
 
         lines += [
-            "### ❌ Not ready for 7.5",
+            "### ❌ Не готово к 7.5",
             "",
         ]
         for r in reasons:
             lines.append(f"- {r}")
         lines += [
             "",
-            "**Actions:**",
-            "1. Close high-risk assumptions via `resolve_assumption`.",
-            "2. Fix orphan reqs — add traceability or remove redundant ones.",
-            f"3. Validate the remaining reqs via `mark_req_validated`.",
-            f"4. Re-run `get_validation_report` for the updated status.",
+            "**Действия:**",
+            "1. Закрой high-risk assumptions через `resolve_assumption`.",
+            "2. Исправь orphan req — добавь трассировку или удали избыточные.",
+            f"3. Validate оставшиеся req через `mark_req_validated`.",
+            f"4. Повтори `get_validation_report` для обновлённого статуса.",
         ]
 
     content = "\n".join(lines)

@@ -1,120 +1,119 @@
 ---
 name: elicitation_prep
 description: >
-  BABOK 4.1 skill — Prepare for Elicitation. Use this skill whenever a business analyst
-  is preparing to engage with stakeholders: planning an interview, workshop, survey,
-  or any other form of requirements gathering. Triggers: "prepare for an interview",
-  "draft questions", "plan a workshop", "create a survey", "prepare for elicitation",
-  "who should I talk to", "how to gather requirements", "survey stakeholders".
-  The skill guides the BA step by step: objectives → stakeholders → elicitation
-  technique → questions → artifact.
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 4.1 — Подготовка к выявлению требований. Используй этот скилл всегда, 
+  когда бизнес-аналитик готовится к взаимодействию со стейкхолдерами: планирует интервью, 
+  воркшоп, анкетирование или любую другую форму сбора требований. Триггеры: "подготовиться 
+  к интервью", "составить вопросы", "спланировать воркшоп", "сделать анкету", "подготовка 
+  к выявлению", "с кем поговорить", "как собрать требования", "опрос стейкхолдеров".
+  Скилл ведёт BA пошагово: цели → стейкхолдеры → форма выявления → вопросы → артефакт.
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 
-# BABOK 4.1 — Prepare for Elicitation
+# BABOK 4.1 — Подготовка к выявлению
 
-Your role is to help the business analyst prepare thoroughly for requirements elicitation.
-Guide the user step by step. Don't overload them with questions — ask one block at a time
-and move on only once you've gotten an answer.
-
----
-
-## Step-by-step preparation process
-
-### Step 1 — Elicitation objectives
-
-First of all, clarify: **why** is this elicitation being conducted?
-
-Ask the user this question if they haven't specified the context:
-> "What exactly do you want to learn or confirm by the end of this session?"
-
-Help formulate the objectives using this format:
-```
-By the end of elicitation we must understand / confirm / obtain:
-1. [specific outcome]
-2. [specific outcome]
-```
-
-A sign of a good objective is that it's verifiable: after the session, you either got the answer or you didn't.
+Твоя роль — помочь бизнес-аналитику качественно подготовиться к выявлению требований.
+Веди пользователя пошагово. Не перегружай вопросами — задавай по одному блоку за раз
+и двигайся дальше только когда получил ответ.
 
 ---
 
-### Step 2 — Identify stakeholders
+## Пошаговый процесс подготовки
 
-Help build a list of participants. Ask:
-- Who owns the process / problem?
-- Who will use the outcome?
-- Who could block or accelerate the change?
-- Who has subject-matter expertise?
+### Шаг 1 — Цели выявления
 
-For each stakeholder, record:
+Прежде всего уточни: **зачем** проводится это выявление?
 
-| Stakeholder | Role | Influence | Interest | What we want to learn |
+Задай пользователю этот вопрос, если он не указал контекст:
+> "Что именно ты хочешь узнать или подтвердить по итогам этой сессии?"
+
+Помоги сформулировать цели по формату:
+```
+По итогам выявления мы должны понять / подтвердить / получить:
+1. [конкретный результат]
+2. [конкретный результат]
+```
+
+Признак хорошей цели — её можно проверить: после сессии либо получили ответ, либо нет.
+
+---
+
+### Шаг 2 — Определение стейкхолдеров
+
+Помоги составить список участников. Задай вопросы:
+- Кто владеет процессом / проблемой?
+- Кто будет пользоваться результатом?
+- Кто может заблокировать или ускорить изменение?
+- Кто обладает экспертизой в предметной области?
+
+Для каждого стейкхолдера зафиксируй:
+
+| Стейкхолдер | Роль | Влияние | Интерес | Что хотим узнать |
 | :--- | :--- | :--- | :--- | :--- |
-| Name / title | Sponsor / Expert / User | High/Med/Low | High/Med/Low | Specific question |
+| Имя / должность | Спонсор / Эксперт / Пользователь | High/Med/Low | High/Med/Low | Конкретный вопрос |
 
-If there are many stakeholders — suggest grouping them and choosing an elicitation
-technique for each group (move to Step 3).
-
----
-
-### Step 3 — Choose the elicitation technique
-
-Based on the context, help choose the appropriate technique.
-Read `references/techniques.md` for a detailed description of each technique.
-
-**Quick selection logic:**
-
-```
-One stakeholder, need depth              → Interview
-Many stakeholders, standard data         → Survey
-Need alignment across groups             → Workshop
-Need ideas without constraints           → Brainstorming
-Documents / legacy system exist          → Document analysis
-Need to understand the real as-is work  → Observation
-Requirements are vague, need visuals     → Prototyping
-```
-
-After choosing the technique — move to Step 4 to prepare the questions.
+Если стейкхолдеров много — предложи сгруппировать их и выбрать форму выявления
+под каждую группу (переход к Шагу 3).
 
 ---
 
-### Step 4 — Prepare the questions
+### Шаг 3 — Выбор формы выявления
 
-Depending on the chosen technique, read the corresponding section:
+На основе контекста помоги выбрать подходящую технику.
+Читай `references/techniques.md` для детального описания каждой техники.
 
-- **Interview** → `references/techniques.md` section "Interview"
-- **Survey** → `references/techniques.md` section "Survey"
-- **Workshop** → `references/techniques.md` section "Workshop"
-- **Other techniques** → `references/techniques.md`
+**Быстрая логика выбора:**
+
+```
+Один стейкхолдер, нужна глубина          → Интервью
+Много стейкхолдеров, стандартные данные  → Анкетирование
+Нужно согласование между группами        → Воркшоп
+Нужны идеи без ограничений               → Мозговой штурм
+Есть документы / legacy-система          → Анализ документов
+Нужно понять реальную работу "как есть"  → Наблюдение
+Требования размыты, нужна визуализация   → Прототипирование
+```
+
+После выбора техники — переходи к Шагу 4 для подготовки вопросов.
 
 ---
 
-### Step 5 — Final artifact
+### Шаг 4 — Подготовка вопросов
 
-Based on Steps 1–4, produce an **Elicitation Plan** and offer to save it via MCP.
+В зависимости от выбранной техники читай соответствующий раздел:
 
-Plan structure:
+- **Интервью** → `references/techniques.md` раздел "Интервью"
+- **Анкетирование** → `references/techniques.md` раздел "Анкетирование"  
+- **Воркшоп** → `references/techniques.md` раздел "Воркшоп"
+- **Остальные техники** → `references/techniques.md`
+
+---
+
+### Шаг 5 — Финальный артефакт
+
+По итогам шагов 1–4 сформируй **План выявления** и предложи сохранить его через MCP.
+
+Структура плана:
 ```
-## Requirements Elicitation Plan
-**Project:** [name]
-**Date prepared:** [date]
+## План выявления требований
+**Проект:** [название]
+**Дата подготовки:** [дата]
 
-### Objectives
-[from Step 1]
+### Цели
+[из Шага 1]
 
-### Stakeholders
-[table from Step 2]
+### Стейкхолдеры
+[таблица из Шага 2]
 
-### Elicitation technique
-[technique + rationale for choice]
+### Форма выявления
+[техника + обоснование выбора]
 
-### Questions / Agenda
-[from Step 4]
+### Вопросы / Повестка
+[из Шага 4]
 
-### Expected outcomes
-[what we'll get as a result]
+### Ожидаемые результаты
+[что получим на выходе]
 ```
 
 To save the plan, use the MCP tool `save_elicitation_plan`.

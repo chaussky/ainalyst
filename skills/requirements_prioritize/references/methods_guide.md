@@ -1,8 +1,8 @@
-# Reference: Requirement Prioritization Methods (BABOK 5.3)
+# Справочник: Методы приоритизации требований (BABOK 5.3)
 
 ## Four methods — when to choose which
 
-| Method | Best fit | Requires from the team | Not suitable when |
+| Метод | Лучше всего подходит | Требует от команды | Не подходит когда |
 |-------|---------------------|--------------------|-------------------|
 | **MoSCoW** | Agile, fixed deadline, well-understood scope | Stakeholder opinions only | Many dependencies, precise quantitative scoring needed |
 | **WSJF** | SAFe, product teams, competing backlogs | Cost estimates from developers | No effort estimates, team unfamiliar with the method |
@@ -20,49 +20,49 @@
 
 ---
 
-## Method 1 — MoSCoW
+## Метод 1 — MoSCoW
 
-### Four categories
+### Четыре категории
 
-| Category | Meaning | Typical share of the project |
+| Категория | Смысл | Типичная доля в проекте |
 |-----------|-------|------------------------|
-| **Must** | Without this, the project has no point. Failure if missing. | ≤ 60% |
-| **Should** | High value, but can be shipped without it in the first version | 20–30% |
-| **Could** | Desirable, implemented if time and budget remain | 10–20% |
-| **Won't** | Deliberately excluded from the current iteration (not "never") | any amount |
+| **Must** | Без этого проект не имеет смысла. Провал при отсутствии. | ≤ 60% |
+| **Should** | Высокая ценность, но можно выпустить без в первой версии | 20–30% |
+| **Could** | Желательно, реализуется если остаётся время и бюджет | 10–20% |
+| **Won't** | Сознательно исключаем из текущей итерации (не «никогда») | любое количество |
 
-### Scoring scale
-The BA enters one of: `Must` / `Should` / `Could` / `Won't` — per requirement, per stakeholder.
+### Шкала оценки
+BA вводит одно из: `Must` / `Should` / `Could` / `Won't` — по каждому требованию, для каждого стейкхолдера.
 
-### Aggregation across multiple stakeholders
+### Агрегация при нескольких стейкхолдерах
 
-**Default rule (weighted voting by influence):**
+**Правило по умолчанию (взвешенное голосование по influence):**
 
 ```
-Weighted score = Σ (stakeholder_score × influence_weight)
-Weight: High = 3, Medium = 2, Low = 1
+Взвешенная оценка = Σ (оценка_стейкхолдера × вес_influence)
+Вес: High = 3, Medium = 2, Low = 1
 ```
 
-Numeric mapping of scores: Must=4, Should=3, Could=2, Won't=1
+Маппинг числовых оценок: Must=4, Should=3, Could=2, Won't=1
 
-Final threshold:
+Итоговый порог:
 - ≥ 3.5 → **Must**
 - ≥ 2.5 → **Should**
 - ≥ 1.5 → **Could**
 - < 1.5 → **Won't**
 
-### Common mistakes
+### Типичные ошибки
 
-- 🔴 **Must inflation** — more than 60% of requirements are Must → the session isn't working, needs re-facilitation
-- 🔴 **Must depends on Won't** → logical contradiction, detected automatically via 5.1
-- 🟡 **"Won't" interpreted as "never"** → it's important to explain to stakeholders: Won't = "not in this iteration"
-- 🟡 **Empty Could category** → suspicious, usually means Should and Won't haven't been properly separated
+- 🔴 **Must inflation** — более 60% требований в Must → сессия не работает, нужна повторная фасилитация
+- 🔴 **Must зависит от Won't** → логическое противоречие, автоматически детектируется через 5.1
+- 🟡 **«Won't» понят как «никогда»** → важно объяснить стейкхолдерам: Won't = «не в этой итерации»
+- 🟡 **Пустая категория Could** → подозрительно, обычно означает что Should и Won't не разграничены
 
 ---
 
-## Method 2 — WSJF (Weighted Shortest Job First)
+## Метод 2 — WSJF (Weighted Shortest Job First)
 
-### Formula
+### Формула
 
 ```
 WSJF = Cost of Delay ÷ Job Size
@@ -70,110 +70,110 @@ WSJF = Cost of Delay ÷ Job Size
 Cost of Delay (CoD) = Business Value + Time Criticality + Risk Reduction / Opportunity Enablement
 ```
 
-**Principle:** do first whatever delivers the most value in the least time.
+**Принцип:** делаем сначала то, что приносит максимальную ценность за минимальное время.
 
-### Four components
+### Четыре компонента
 
-| Component | What is scored | Typical question for the stakeholder |
+| Компонент | Что оценивается | Типичный вопрос стейкхолдеру |
 |-----------|----------------|------------------------------|
-| **Business Value (BV)** | Value to the business once implemented | "How valuable is this to your goals?" |
-| **Time Criticality (TC)** | How much value decays over time | "What happens if we do this a quarter later?" |
-| **Risk Reduction / OE** | Reduces risk or enables opportunities | "Does this block other initiatives?" |
-| **Job Size (JS)** | Effort to implement (from developers) | Provided by the delivery team |
+| **Business Value (BV)** | Ценность для бизнеса при реализации | «Насколько это ценно для ваших целей?» |
+| **Time Criticality (TC)** | Насколько ценность падает со временем | «Что будет если мы сделаем это на квартал позже?» |
+| **Risk Reduction / OE** | Снижает риск или открывает возможности | «Это блокирует другие инициативы?» |
+| **Job Size (JS)** | Усилия на реализацию (от разработчиков) | Предоставляет команда реализации |
 
-### Scales (two options — chosen before the session)
+### Шкалы (два варианта — выбирается перед сессией)
 
-**Fibonacci (recommended for experienced teams — as in SAFe):**
-`1, 2, 3, 5, 8, 13` — relative estimates, not absolute.
-Key step: first pick a reference requirement = 3 (average), then score the rest relative to it.
+**Fibonacci (рекомендуется для опытных команд — как в SAFe):**
+`1, 2, 3, 5, 8, 13` — относительные оценки, не абсолютные.
+Ключевое: сначала выбирается эталонное требование = 3 (среднее), остальные оцениваются относительно него.
 
-**Linear (1–10) — simpler for new teams:**
-`1` = minimal, `10` = maximal.
-Drawback: people gravitate toward mid-range scores (5–7), losing differentiation.
+**Линейная (1–10) — проще для новых команд:**
+`1` = минимально, `10` = максимально.
+Минус: люди тяготеют к средним оценкам (5–7), теряется дифференциация.
 
-### Interpreting the result
+### Интерпретация результата
 
 ```
-WSJF > 5.0  → 🔴 High priority — do immediately
-WSJF 2.0–5.0 → 🟡 Medium priority
-WSJF < 2.0  → 🟢 Low priority — do when resources free up
+WSJF > 5.0  → 🔴 Высокий приоритет — делать немедленно
+WSJF 2.0–5.0 → 🟡 Средний приоритет
+WSJF < 2.0  → 🟢 Низкий приоритет — делать когда освободятся ресурсы
 ```
 
-*The thresholds are approximate — the relative ranking within the requirement set matters more.*
+*Пороги условные — важнее относительное ранжирование внутри набора требований.*
 
-### Example calculation
+### Пример расчёта
 
-| Requirement | BV | TC | RR/OE | CoD | JS | WSJF |
+| Требование | BV | TC | RR/OE | CoD | JS | WSJF |
 |------------|----|----|-------|-----|----|------|
 | FR-001 | 8 | 5 | 3 | 16 | 3 | **5.3** |
 | FR-002 | 5 | 2 | 1 | 8 | 5 | **1.6** |
 | FR-003 | 13 | 8 | 5 | 26 | 8 | **3.3** |
 
-Order: FR-001 → FR-003 → FR-002
+Порядок: FR-001 → FR-003 → FR-002
 
-### Common mistakes
+### Типичные ошибки
 
-- 🔴 **Small Job Size automatically means high WSJF** — must verify: a "small" requirement may actually be large
-- 🟡 **Job Size set by the BA, not by developers** — effort estimates should come from the delivery team
-- 🟡 **All CoD scores are identical** — stakeholders didn't differentiate, a follow-up session is needed
+- 🔴 **Маленький Job Size = автоматически высокий WSJF** — нужно проверять: может «маленькое» требование реально крупное
+- 🟡 **Job Size от BA, не от разработчиков** — оценки усилий должна давать команда реализации
+- 🟡 **Все CoD одинаковые** — стейкхолдеры не дифференцировали, нужна повторная сессия
 
 ---
 
-## Method 3 — Impact/Effort Matrix
+## Метод 3 — Impact/Effort Matrix
 
-### Four quadrants (default names)
+### Четыре квадранта (названия по умолчанию)
 
 ```
 HIGH IMPACT
     │
     │  Big Bets          Quick Wins
-    │  (high impact,     (high impact,
-    │   high effort)      low effort)
+    │  (высокий impact,  (высокий impact,
+    │   высокий effort)   низкий effort)
     │
     ├───────────────────────────────── EFFORT
     │
     │  Thankless Tasks   Fill-ins
-    │  (low impact,      (low impact,
-    │   high effort)      low effort)
+    │  (низкий impact,   (низкий impact,
+    │   высокий effort)   низкий effort)
     │
 LOW IMPACT
          HIGH EFFORT      LOW EFFORT
 ```
 
-### Scoring scale
+### Шкала оценки
 
-**Impact** (value/influence): `Low` / `Medium` / `High`
-**Effort** (effort/complexity): `Low` / `Medium` / `High`
+**Impact** (ценность/влияние): `Low` / `Medium` / `High`
+**Effort** (усилия/сложность): `Low` / `Medium` / `High`
 
-### Quadrant → priority mapping (configured by the BA before the session)
+### Маппинг квадрантов → приоритет (настраивается BA перед сессией)
 
-**Default mapping (recommended as a starting point):**
+**Дефолтный маппинг (рекомендуется как отправная точка):**
 
-| Quadrant | Impact | Effort | Default MoSCoW priority |
+| Квадрант | Impact | Effort | Дефолтный приоритет MoSCoW |
 |----------|--------|--------|---------------------------|
 | Quick Wins | High | Low | Must |
 | Big Bets | High | High | Should |
 | Fill-ins | Low | Low | Could |
 | Thankless Tasks | Low | High | Won't |
 
-**Configurable mapping:** the BA can change any mapping before the session.
-For example, on a regulatory project, Big Bets → Must (despite the high effort).
+**Настраиваемый маппинг:** BA может изменить любое соответствие перед сессией.
+Например, в регуляторном проекте Big Bets → Must (несмотря на высокий effort).
 
-### Interpreting Medium values
+### Интерпретация при Medium
 
-If impact = Medium or effort = Medium, the requirement falls into a "gray zone."
+Если impact = Medium или effort = Medium — требование попадает в «серую зону».
 
-Default rule:
-- Medium/Low → treated as High/Low for prioritization
-- Medium/High → treated as Low/High
-- Medium/Medium → Must/Should at the BA's discretion (flagged separately)
+Правило по умолчанию:
+- Medium/Low → как High/Low для приоритизации
+- Medium/High → как Low/High
+- Medium/Medium → Must/Should на усмотрение BA (флагируется отдельно)
 
-### When to use it as the primary method
+### Когда использовать как основной метод
 
-- The team isn't used to numeric scoring
-- Need to quickly rank 30+ requirements in a workshop
-- Visualization for stakeholders (the matrix is intuitive)
-- As an initial filter before a more precise MoSCoW/WSJF pass
+- Команда не привыкла к числовым оценкам
+- Нужно быстро расставить 30+ требований на воркшопе
+- Визуализация для стейкхолдеров (матрица наглядна)
+- Как первичный фильтр перед более точным MoSCoW/WSJF
 
 ---
 
@@ -253,12 +253,12 @@ dependencies and stability are checked **before** and **after** the priority cal
 
 ---
 
-## Combined approach
+## Комбинированный подход
 
-For large projects, a two-stage prioritization is recommended:
+Для крупных проектов рекомендуется двухэтапная приоритизация:
 
-**Stage 1 (fast):** Impact/Effort → filter out Thankless Tasks, surface Quick Wins
+**Этап 1 (быстрый):** Impact/Effort → отсеять Thankless Tasks, выделить Quick Wins
 
-**Stage 2 (precise):** MoSCoW or WSJF → prioritize the remainder in detail (excluding Stage 1's Won't items)
+**Этап 2 (точный):** MoSCoW или WSJF → детально приоритизировать оставшиеся (исключая Won't из этапа 1)
 
-This reduces the number of requirements needing detailed analysis by 20–30%.
+Это сокращает число требований для детального анализа на 20–30%.

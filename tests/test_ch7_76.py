@@ -1,53 +1,53 @@
 """
-tests/test_ch7_76.py — Tests for Chapter 7, task 7.6 (Analyze Value and Recommend Solution)
+tests/test_ch7_76.py — Тесты для Главы 7, задача 7.6 (Analyze Value and Recommend Solution)
 
-Coverage (75 tests):
-  - Utilities: _safe, _rec_path, _design_options_path, _load_recommendation,
-               _save_recommendation, _load_design_options, _load_context,
-               _load_architecture, _load_risks
+Покрытие (75 тестов):
+  - Утилиты: _safe, _rec_path, _design_options_path, _load_recommendation,
+             _save_recommendation, _load_design_options, _load_context,
+             _load_architecture, _load_risks
 
-  - _calc_benefits_score: empty list, one item, several, magnitude/confidence mapping
-  - _calc_cost_score: empty, components without items, several items, mapping
-  - _calc_alignment_score: no context, empty goals, match/no match
-  - _calc_risk_penalty: empty, Low/Medium/High/Critical
-  - _calc_value_score: happy path, zero values
+  - _calc_benefits_score: пустой список, один элемент, несколько, маппинг magnitude/confidence
+  - _calc_cost_score: пустой, компоненты без items, несколько items, маппинг
+  - _calc_alignment_score: без context, пустые goals, совпадение/несовпадение
+  - _calc_risk_penalty: пустой, Low/Medium/High/Critical
+  - _calc_value_score: happy path, нулевые значения
 
   - add_value_assessment:
     empty option_id, invalid benefit type, invalid magnitude, invalid confidence,
     invalid costs_json (not dict), missing components key, invalid cost_category, invalid cost_magnitude,
     invalid risks_json, invalid risk_level,
     happy path create, happy path update (idempotent),
-    graceful degradation without design_options (option_meta=None),
-    graceful degradation without context (alignment=0),
-    graceful degradation without risks file (risks_source=none),
-    graceful degradation with risks file from 6.3 (risks_source=6.3_file),
-    accumulation of several options
+    graceful degradation без design_options (option_meta=None),
+    graceful degradation без context (alignment=0),
+    graceful degradation без risks file (risks_source=none),
+    graceful degradation с risks file из 6.3 (risks_source=6.3_file),
+    накопление нескольких вариантов
 
   - compare_value:
-    no assessments → warning,
-    one option → success ranking,
-    two options → correct ranking,
-    winner determined correctly,
-    comparison saved to file,
-    without business_context (alignment=0),
-    with business_context (alignment > 0)
+    нет assessments → warning,
+    один вариант → success ranking,
+    два варианта → correct ranking,
+    winner определён верно,
+    comparison сохранён в файл,
+    без business_context (alignment=0),
+    с business_context (alignment > 0)
 
   - check_value_readiness:
-    no design_options → critical issue,
-    no options → critical issue,
-    not all options assessed → critical issue,
-    compare_value not called → critical issue,
-    empty benefits → warning,
-    empty cost_items → warning,
+    нет design_options → critical issue,
+    нет вариантов → critical issue,
+    не все варианты оценены → critical issue,
+    compare_value не вызван → critical issue,
+    пустые benefits → warning,
+    пустые cost_items → warning,
     critical arch gaps → warning,
-    empty allocation → info,
-    all good → status OK
+    пустой allocation → info,
+    всё готово → статус OK
 
   - save_recommendation:
     invalid recommendation_type,
     empty rationale,
-    recommend_option without recommended_option_id → error,
-    recommend_option with unknown option_id → error,
+    recommend_option без recommended_option_id → error,
+    recommend_option с неизвестным option_id → error,
     invalid parallel_option_ids_json,
     invalid success_metrics_json,
     invalid risks_acknowledged_json,
@@ -56,13 +56,13 @@ Coverage (75 tests):
     recommend_reanalyze happy path,
     no_action happy path,
     idempotent update,
-    without success_metrics → warning in the text,
-    graceful degradation without architecture,
-    graceful degradation without design_options (no validation of option_id),
-    save_artifact called,
-    success_metrics saved
+    без success_metrics → предупреждение в тексте,
+    graceful degradation без architecture,
+    graceful degradation без design_options (no validation of option_id),
+    save_artifact вызван,
+    success_metrics сохранены
 
-  - Pipeline: full happy path:
+  - Pipeline: полный happy path:
     add×2 → compare → check_readiness → save_recommendation(recommend_option)
 """
 
@@ -84,12 +84,12 @@ from skills.common import data_path, normalize_project_id
 
 
 # ---------------------------------------------------------------------------
-# Helper functions
+# Вспомогательные функции
 # ---------------------------------------------------------------------------
 
 def make_benefit(
     btype="operational",
-    description="Speed up processing",
+    description="Ускорение обработки",
     magnitude="High",
     tangibility="tangible",
     confidence="High",
@@ -103,7 +103,7 @@ def make_benefit(
     }
 
 
-def make_cost_item(category="development", description="Backend development", magnitude="High"):
+def make_cost_item(category="development", description="Разработка backend", magnitude="High"):
     return {"category": category, "description": description, "magnitude": magnitude}
 
 
@@ -120,7 +120,7 @@ def make_costs(components=None, opportunity_cost=""):
 
 def make_risk(
     risk_id="RSK-001",
-    description="Development delay",
+    description="Задержка разработки",
     probability="Medium",
     impact="High",
     risk_level="High",
@@ -144,16 +144,16 @@ def make_design_options(project_id="test_proj", options=None):
     }
 
 
-def make_option(option_id="OPT-001", title="Build option", approach="build", opportunities=None):
+def make_option(option_id="OPT-001", title="Вариант Build", approach="build", opportunities=None):
     return {
         "option_id": option_id,
         "title": title,
         "approach": approach,
         "components": ["Backend", "Frontend"],
         "improvement_opportunities": opportunities or [
-            {"type": "efficiency", "description": "Automate request processing"}
+            {"type": "efficiency", "description": "Автоматизация обработки заявок"}
         ],
-        "effectiveness_measures": ["Reduce time by 40%"],
+        "effectiveness_measures": ["Снижение времени на 40%"],
         "notes": "",
         "vendor_notes": "",
         "created": str(date.today()),
@@ -165,10 +165,10 @@ def make_context(project_id="test_proj", goals=None):
     return {
         "project_id": project_id,
         "business_goals": goals if goals is not None else [
-            {"id": "G-001", "title": "Speed up request processing"},
-            {"id": "G-002", "title": "Reduce employee errors"},
+            {"id": "G-001", "title": "Ускорить обработку заявок"},
+            {"id": "G-002", "title": "Снизить ошибки сотрудников"},
         ],
-        "future_state": "Fully automated processing",
+        "future_state": "Полностью автоматизированная обработка",
         "created": str(date.today()),
     }
 
@@ -205,7 +205,7 @@ def load_rec_file(project_id: str, tmp_dir: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Utility tests
+# Тесты утилит
 # ---------------------------------------------------------------------------
 
 class TestUtils(BaseMCPTest):
@@ -259,7 +259,7 @@ class TestUtils(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Math utility tests
+# Тесты математических утилит
 # ---------------------------------------------------------------------------
 
 class TestMath(BaseMCPTest):
@@ -316,21 +316,21 @@ class TestMath(BaseMCPTest):
 
     def test_alignment_score_match(self):
         option = make_option(opportunities=[
-            {"type": "efficiency", "description": "Speed up request processing"}
+            {"type": "efficiency", "description": "Ускорение обработки заявок"}
         ])
-        ctx = make_context(goals=[{"id": "G-001", "title": "Speed up request processing"}])
-        # "request" is present in the opportunities description
+        ctx = make_context(goals=[{"id": "G-001", "title": "Ускорить обработку заявок"}])
+        # "заявок" есть в opportunities description
         score = mod76._calc_alignment_score(option, ctx)
         self.assertGreater(score, 0.0)
 
     def test_alignment_score_no_match(self):
         option = make_option(opportunities=[
-            {"type": "efficiency", "description": "Completely different description with no matches"}
+            {"type": "efficiency", "description": "Полностью другое описание без совпадений"}
         ])
-        ctx = make_context(goals=[{"id": "G-001", "title": "Speed up request processing"}])
-        # no matches for words longer than 3 characters
+        ctx = make_context(goals=[{"id": "G-001", "title": "Ускорить обработку заявок"}])
+        # нет совпадений по словам длиннее 3 символов
         score = mod76._calc_alignment_score(option, ctx)
-        # May be 0 or small — depends on the heuristic
+        # Может быть 0 или небольшой — зависит от эвристики
         self.assertGreaterEqual(score, 0.0)
         self.assertLessEqual(score, 1.0)
 
@@ -363,7 +363,7 @@ class TestMath(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# add_value_assessment tests
+# Тесты add_value_assessment
 # ---------------------------------------------------------------------------
 
 class TestAddValueAssessment(BaseMCPTest):
@@ -383,7 +383,7 @@ class TestAddValueAssessment(BaseMCPTest):
         bad_benefits = json.dumps([{"type": "unknown_type", "description": "X", "magnitude": "High", "tangibility": "tangible", "confidence": "High"}])
         result = mod76.add_value_assessment("proj", "OPT-001", bad_benefits, self._costs_json())
         self.assertIn("❌", result)
-        self.assertIn("Invalid benefit types", result)
+        self.assertIn("Недопустимые типы", result)
 
     def test_invalid_magnitude_in_benefits(self):
         bad_benefits = json.dumps([{"type": "operational", "description": "X", "magnitude": "VERY_HIGH", "tangibility": "tangible", "confidence": "High"}])
@@ -400,7 +400,7 @@ class TestAddValueAssessment(BaseMCPTest):
     def test_empty_benefits_list(self):
         result = mod76.add_value_assessment("proj", "OPT-001", "[]", self._costs_json())
         self.assertIn("❌", result)
-        self.assertIn("empty", result)
+        self.assertIn("пустым", result)
 
     def test_invalid_benefits_json(self):
         result = mod76.add_value_assessment("proj", "OPT-001", "not_json", self._costs_json())
@@ -421,7 +421,7 @@ class TestAddValueAssessment(BaseMCPTest):
         bad_costs = json.dumps({"components": [{"component": "A", "cost_items": [{"category": "unknown_cat", "description": "X", "magnitude": "High"}]}]})
         result = mod76.add_value_assessment("proj", "OPT-001", self._benefits_json(), bad_costs)
         self.assertIn("❌", result)
-        self.assertIn("category", result)
+        self.assertIn("категория", result)
 
     def test_costs_json_invalid_magnitude(self):
         bad_costs = json.dumps({"components": [{"component": "A", "cost_items": [{"category": "development", "description": "X", "magnitude": "HUGE"}]}]})
@@ -447,7 +447,7 @@ class TestAddValueAssessment(BaseMCPTest):
             self._costs_json(),
         )
         self.assertIn("✅", result)
-        self.assertIn("added", result)
+        self.assertIn("добавлена", result)
         self.assertIn("OPT-001", result)
         self.assertIn("Value Score", result)
 
@@ -455,7 +455,7 @@ class TestAddValueAssessment(BaseMCPTest):
         mod76.add_value_assessment("proj", "OPT-001", self._benefits_json(), self._costs_json())
         result = mod76.add_value_assessment("proj", "OPT-001", self._benefits_json(), self._costs_json())
         self.assertIn("✅", result)
-        self.assertIn("updated", result)
+        self.assertIn("обновлена", result)
 
     def test_saved_to_file(self):
         mod76.add_value_assessment("proj_save", "OPT-001", self._benefits_json(), self._costs_json())
@@ -464,14 +464,14 @@ class TestAddValueAssessment(BaseMCPTest):
         self.assertIn("value_score", rec["value_assessments"]["OPT-001"])
 
     def test_graceful_degradation_no_design_options(self):
-        # option_meta = None, must not crash
+        # option_meta = None, не должно падать
         result = mod76.add_value_assessment("orphan_proj", "OPT-999", self._benefits_json(), self._costs_json())
         self.assertIn("✅", result)
 
     def test_graceful_degradation_no_context(self):
         result = mod76.add_value_assessment("proj", "OPT-001", self._benefits_json(), self._costs_json())
         self.assertIn("✅", result)
-        # Alignment Score = 0 warning
+        # Alignment Score = 0 предупреждение
         self.assertIn("Alignment Score", result)
 
     def test_graceful_degradation_no_risks_file(self):
@@ -507,7 +507,7 @@ class TestAddValueAssessment(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# compare_value tests
+# Тесты compare_value
 # ---------------------------------------------------------------------------
 
 class TestCompareValue(BaseMCPTest):
@@ -531,16 +531,16 @@ class TestCompareValue(BaseMCPTest):
 
     def test_two_variants_ranking(self):
         self._add_assessment("rank_proj", "OPT-001", magnitude="High", confidence="High", risk_level="Low")
-        # OPT-002 with high risk — should rank lower
+        # OPT-002 с высоким риском — должен быть ниже
         benefits_low = json.dumps([make_benefit(magnitude="Low", confidence="Low")])
         costs = json.dumps(make_costs())
         risks_high = json.dumps([make_risk(risk_level="Critical")])
         mod76.add_value_assessment("rank_proj", "OPT-002", benefits_low, costs, risks_json=risks_high)
         result = mod76.compare_value("rank_proj")
-        # OPT-001 should be above OPT-002
+        # OPT-001 должен быть выше OPT-002
         pos_1 = result.find("OPT-001")
         pos_2 = result.find("OPT-002")
-        self.assertLess(pos_1, pos_2)  # OPT-001 appears earlier = higher in the ranking
+        self.assertLess(pos_1, pos_2)  # OPT-001 встречается раньше = выше в ranking
 
     def test_winner_saved_to_file(self):
         self._add_assessment("winner_proj", "OPT-001")
@@ -561,17 +561,17 @@ class TestCompareValue(BaseMCPTest):
         self._add_assessment("no_ctx_proj", "OPT-001")
         result = mod76.compare_value("no_ctx_proj")
         self.assertIn("Alignment", result)
-        # Warning about the missing context
+        # Предупреждение об отсутствии context
         self.assertIn("business_context", result)
 
     def test_with_context_alignment_nonzero(self):
         ctx = make_context(project_id="ctx_proj", goals=[
-            {"id": "G-001", "title": "Speed up request processing"}
+            {"id": "G-001", "title": "Ускорить обработку заявок"}
         ])
         save_context(ctx, self.tmp_dir)
         do_data = make_design_options("ctx_proj", options=[
             make_option("OPT-001", opportunities=[
-                {"type": "efficiency", "description": "Speed up request processing automatically"}
+                {"type": "efficiency", "description": "Ускорение обработки заявок автоматически"}
             ])
         ])
         save_design_options(do_data, self.tmp_dir)
@@ -580,12 +580,12 @@ class TestCompareValue(BaseMCPTest):
         mod76.add_value_assessment("ctx_proj", "OPT-001", benefits, costs)
         result = mod76.compare_value("ctx_proj")
         self.assertIn("OPT-001", result)
-        # There should be no warning about the missing context
-        self.assertNotIn("business_context.json (7.3) not found", result)
+        # Не должно быть предупреждения об отсутствии context
+        self.assertNotIn("business_context.json (7.3) не найден", result)
 
 
 # ---------------------------------------------------------------------------
-# check_value_readiness tests
+# Тесты check_value_readiness
 # ---------------------------------------------------------------------------
 
 class TestCheckValueReadiness(BaseMCPTest):
@@ -606,7 +606,7 @@ class TestCheckValueReadiness(BaseMCPTest):
             make_option("OPT-001"), make_option("OPT-002")
         ])
         save_design_options(do_data, self.tmp_dir)
-        # Only OPT-001 assessed
+        # Только OPT-001 оценён
         benefits = json.dumps([make_benefit()])
         costs = json.dumps(make_costs())
         mod76.add_value_assessment("partial_proj", "OPT-001", benefits, costs)
@@ -625,14 +625,14 @@ class TestCheckValueReadiness(BaseMCPTest):
         self.assertIn("compare_value", result)
 
     def test_empty_benefits_warning(self):
-        # Assess with benefits, then replace them in the file with empty ones
+        # Оцениваем с benefits, потом подменяем в файле на пустые
         do_data = make_design_options("warn_proj", options=[make_option("OPT-001")])
         save_design_options(do_data, self.tmp_dir)
         benefits = json.dumps([make_benefit()])
         costs = json.dumps(make_costs())
         mod76.add_value_assessment("warn_proj", "OPT-001", benefits, costs)
         mod76.compare_value("warn_proj")
-        # Patch the file: remove benefits
+        # Патчим файл: убираем benefits
         rec = load_rec_file("warn_proj", self.tmp_dir)
         rec["value_assessments"]["OPT-001"]["benefits"] = []
         path = data_path("warn_proj", "warn_proj_recommendation.json")
@@ -715,7 +715,7 @@ class TestCheckValueReadiness(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# save_recommendation tests
+# Тесты save_recommendation
 # ---------------------------------------------------------------------------
 
 class TestSaveRecommendation(BaseMCPTest):
@@ -742,7 +742,7 @@ class TestSaveRecommendation(BaseMCPTest):
         self.assertIn("rationale", result)
 
     def test_recommend_option_without_option_id(self):
-        result = mod76.save_recommendation("proj", "recommend_option", rationale="Good option")
+        result = mod76.save_recommendation("proj", "recommend_option", rationale="Хороший вариант")
         self.assertIn("❌", result)
         self.assertIn("recommended_option_id", result)
 
@@ -750,16 +750,16 @@ class TestSaveRecommendation(BaseMCPTest):
         self._setup_full("known_proj")
         result = mod76.save_recommendation(
             "known_proj", "recommend_option",
-            rationale="Test",
+            rationale="Тест",
             recommended_option_id="OPT-999",
         )
         self.assertIn("❌", result)
-        self.assertIn("not found", result)
+        self.assertIn("не найден", result)
 
     def test_invalid_parallel_option_ids(self):
         result = mod76.save_recommendation(
             "proj", "recommend_parallel",
-            rationale="Test",
+            rationale="Тест",
             parallel_option_ids_json="not_json",
         )
         self.assertIn("❌", result)
@@ -768,7 +768,7 @@ class TestSaveRecommendation(BaseMCPTest):
     def test_invalid_success_metrics_json(self):
         result = mod76.save_recommendation(
             "proj", "no_action",
-            rationale="Test",
+            rationale="Тест",
             success_metrics_json="not_json",
         )
         self.assertIn("❌", result)
@@ -777,7 +777,7 @@ class TestSaveRecommendation(BaseMCPTest):
     def test_invalid_risks_acknowledged_json(self):
         result = mod76.save_recommendation(
             "proj", "no_action",
-            rationale="Test",
+            rationale="Тест",
             risks_acknowledged_json="not_json",
         )
         self.assertIn("❌", result)
@@ -788,9 +788,9 @@ class TestSaveRecommendation(BaseMCPTest):
         result = mod76.save_recommendation(
             "rec_opt_proj",
             "recommend_option",
-            rationale="OPT-001 has the best Value Score",
+            rationale="OPT-001 имеет лучший Value Score",
             recommended_option_id="OPT-001",
-            success_metrics_json='[{"metric": "Processing time", "baseline": "2h", "target": "15min", "measurement_method": "CRM"}]',
+            success_metrics_json='[{"metric": "Время обработки", "baseline": "2ч", "target": "15мин", "measurement_method": "CRM"}]',
         )
         self.assertIn("✅", result)
         self.assertIn("recommend_option", result)
@@ -800,7 +800,7 @@ class TestSaveRecommendation(BaseMCPTest):
         result = mod76.save_recommendation(
             "rec_par_proj",
             "recommend_parallel",
-            rationale="Run the pilot and the main system in parallel",
+            rationale="Реализуем пилот и основную систему параллельно",
             parallel_option_ids_json='["OPT-001", "OPT-002"]',
         )
         self.assertIn("✅", result)
@@ -810,7 +810,7 @@ class TestSaveRecommendation(BaseMCPTest):
         result = mod76.save_recommendation(
             "reanalyze_proj",
             "recommend_reanalyze",
-            rationale="The options don't cover the client's critical requirements",
+            rationale="Варианты не покрывают критические требования клиента",
         )
         self.assertIn("✅", result)
         self.assertIn("recommend_reanalyze", result)
@@ -819,23 +819,23 @@ class TestSaveRecommendation(BaseMCPTest):
         result = mod76.save_recommendation(
             "no_action_proj",
             "no_action",
-            rationale="Implementation costs exceed the expected benefits over a 3-year horizon",
+            rationale="Затраты на внедрение превышают ожидаемые выгоды в 3-летнем горизонте",
         )
         self.assertIn("✅", result)
         self.assertIn("no_action", result)
 
     def test_idempotent_update(self):
-        mod76.save_recommendation("idemp_proj", "no_action", rationale="First call")
-        result = mod76.save_recommendation("idemp_proj", "no_action", rationale="Second call")
+        mod76.save_recommendation("idemp_proj", "no_action", rationale="Первый вызов")
+        result = mod76.save_recommendation("idemp_proj", "no_action", rationale="Второй вызов")
         self.assertIn("✅", result)
-        self.assertIn("updated", result)
+        self.assertIn("обновлена", result)
 
     def test_no_success_metrics_warning(self):
         self._setup_full("warn_metrics_proj")
         result = mod76.save_recommendation(
             "warn_metrics_proj",
             "recommend_option",
-            rationale="Choosing OPT-001",
+            rationale="Выбираем OPT-001",
             recommended_option_id="OPT-001",
             success_metrics_json="[]",
         )
@@ -845,16 +845,16 @@ class TestSaveRecommendation(BaseMCPTest):
     def test_save_artifact_called(self):
         from unittest.mock import patch
         with patch("skills.value_recommend_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
-            mod76.save_recommendation("artifact_proj", "no_action", rationale="Test")
+            mock_sa.return_value = "✅ Сохранено"
+            mod76.save_recommendation("artifact_proj", "no_action", rationale="Тест")
             mock_sa.assert_called_once()
 
     def test_success_metrics_saved_to_file(self):
-        metrics = [{"metric": "NPS", "baseline": "6", "target": "8", "measurement_method": "Survey"}]
+        metrics = [{"metric": "NPS", "baseline": "6", "target": "8", "measurement_method": "Опрос"}]
         mod76.save_recommendation(
             "metrics_save_proj",
             "recommend_option",
-            rationale="Test",
+            rationale="Тест",
             recommended_option_id="OPT-999",
             success_metrics_json=json.dumps(metrics),
         )
@@ -866,88 +866,88 @@ class TestSaveRecommendation(BaseMCPTest):
     def test_graceful_without_architecture(self):
         result = mod76.save_recommendation(
             "no_arch_proj", "no_action",
-            rationale="Test without architecture",
+            rationale="Тест без архитектуры",
         )
         self.assertIn("✅", result)
 
     def test_graceful_without_design_options(self):
-        # Without design_options — no validation of option_id
+        # Без design_options — нет валидации option_id
         result = mod76.save_recommendation(
             "no_do_proj2", "recommend_reanalyze",
-            rationale="No options in the system",
+            rationale="Нет вариантов в системе",
         )
         self.assertIn("✅", result)
 
 
 # ---------------------------------------------------------------------------
-# Pipeline test: full happy path
+# Pipeline тест: полный happy path
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_recommend_option(self):
-        """Full happy path: add×2 → compare → check → save(recommend_option)"""
+        """Полный happy path: add×2 → compare → check → save(recommend_option)"""
         pid = "pipeline_proj"
 
-        # Setup: design_options + context
+        # Подготовка: design_options + context
         do_data = make_design_options(pid, options=[
-            make_option("OPT-001", title="In-house development", approach="build", opportunities=[
-                {"type": "efficiency", "description": "Speed up request processing"}
+            make_option("OPT-001", title="Собственная разработка", approach="build", opportunities=[
+                {"type": "efficiency", "description": "Ускорение обработки заявок"}
             ]),
-            make_option("OPT-002", title="Off-the-shelf SaaS solution", approach="buy"),
+            make_option("OPT-002", title="Готовое SaaS-решение", approach="buy"),
         ])
         save_design_options(do_data, self.tmp_dir)
 
         ctx = make_context(pid, goals=[
-            {"id": "G-001", "title": "Speed up request processing"},
+            {"id": "G-001", "title": "Ускорить обработку заявок"},
         ])
         save_context(ctx, self.tmp_dir)
 
-        # Step 1: add_value_assessment for OPT-001
+        # Шаг 1: add_value_assessment для OPT-001
         benefits_1 = json.dumps([
-            make_benefit("operational", "Reduce processing time from 2h to 15min", "High", "tangible", "High"),
-            make_benefit("strategic", "Competitive advantage", "Medium", "intangible", "Medium"),
+            make_benefit("operational", "Снижение времени обработки с 2ч до 15мин", "High", "tangible", "High"),
+            make_benefit("strategic", "Конкурентное преимущество", "Medium", "intangible", "Medium"),
         ])
         costs_1 = json.dumps(make_costs([make_component("Backend API", [
-            make_cost_item("development", "Development", "High"),
-            make_cost_item("resources", "Hiring developers", "High"),
+            make_cost_item("development", "Разработка", "High"),
+            make_cost_item("resources", "Найм разработчиков", "High"),
         ])]))
-        risks_1 = json.dumps([make_risk("RSK-001", "Development delay", risk_level="Medium")])
+        risks_1 = json.dumps([make_risk("RSK-001", "Задержка разработки", risk_level="Medium")])
 
         r1 = mod76.add_value_assessment(pid, "OPT-001", benefits_1, costs_1, risks_json=risks_1)
         self.assertIn("✅", r1)
-        self.assertIn("added", r1)
+        self.assertIn("добавлена", r1)
 
-        # Step 2: add_value_assessment for OPT-002
-        benefits_2 = json.dumps([make_benefit("operational", "Fast launch", "Medium", "tangible", "High")])
+        # Шаг 2: add_value_assessment для OPT-002
+        benefits_2 = json.dumps([make_benefit("operational", "Быстрый запуск", "Medium", "tangible", "High")])
         costs_2 = json.dumps(make_costs([make_component("SaaS License", [
-            make_cost_item("acquisition", "License", "Medium"),
+            make_cost_item("acquisition", "Лицензия", "Medium"),
         ])]))
 
         r2 = mod76.add_value_assessment(pid, "OPT-002", benefits_2, costs_2)
         self.assertIn("✅", r2)
 
-        # Step 3: compare_value
+        # Шаг 3: compare_value
         r3 = mod76.compare_value(pid)
         self.assertIn("Winner", r3)
         self.assertIn("OPT-001", r3)
         self.assertIn("OPT-002", r3)
 
-        # Step 4: check_value_readiness
+        # Шаг 4: check_value_readiness
         r4 = mod76.check_value_readiness(pid)
-        self.assertIn("✅", r4)  # All checks passed
+        self.assertIn("✅", r4)  # Все проверки пройдены
 
-        # Step 5: save_recommendation
+        # Шаг 5: save_recommendation
         metrics = json.dumps([{
-            "metric": "Request processing time",
-            "baseline": "2 hours",
-            "target": "15 minutes",
-            "measurement_method": "CRM ticket monitoring",
+            "metric": "Время обработки заявки",
+            "baseline": "2 часа",
+            "target": "15 минут",
+            "measurement_method": "Мониторинг тикетов CRM",
         }])
         r5 = mod76.save_recommendation(
             pid,
             "recommend_option",
-            rationale="OPT-001 provides the best balance of value and flexibility",
+            rationale="OPT-001 обеспечивает наилучший баланс ценности и гибкости",
             recommended_option_id="OPT-001",
             success_metrics_json=metrics,
             risks_acknowledged_json='["RSK-001"]',
@@ -955,7 +955,7 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("✅", r5)
         self.assertIn("recommend_option", r5)
 
-        # Check the final file
+        # Проверяем итоговый файл
         rec = load_rec_file(pid, self.tmp_dir)
         self.assertIn("OPT-001", rec["value_assessments"])
         self.assertIn("OPT-002", rec["value_assessments"])
@@ -967,11 +967,11 @@ class TestPipeline(BaseMCPTest):
         self.assertEqual(rec["recommendation"]["risks_acknowledged"], ["RSK-001"])
 
     def test_pipeline_no_action(self):
-        """Pipeline for no_action — without option_id and success_metrics"""
+        """Pipeline для no_action — без option_id и success_metrics"""
         pid = "no_action_pipeline"
 
-        benefits = json.dumps([make_benefit("financial", "Savings are negligible", "Low", "tangible", "Low")])
-        costs = json.dumps(make_costs([make_component("All", [make_cost_item("development", "Development", "High")])]))
+        benefits = json.dumps([make_benefit("financial", "Экономия незначительна", "Low", "tangible", "Low")])
+        costs = json.dumps(make_costs([make_component("All", [make_cost_item("development", "Разработка", "High")])]))
         risks = json.dumps([make_risk(risk_level="Critical")])
 
         mod76.add_value_assessment(pid, "OPT-001", benefits, costs, risks_json=risks)
@@ -980,7 +980,7 @@ class TestPipeline(BaseMCPTest):
         result = mod76.save_recommendation(
             pid,
             "no_action",
-            rationale="Value Score < 2.0 — costs and risks exceed benefits. Recommended not to implement.",
+            rationale="Value Score < 2.0 — затраты и риски превышают выгоды. Рекомендуется не внедрять.",
         )
         self.assertIn("✅", result)
 

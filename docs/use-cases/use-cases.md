@@ -1,72 +1,72 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
 ---
 
-# AInalyst Platform Use Cases
-## Use Cases: possible scenarios of a business analyst's work on the Platform. Situations and names are fictional, any resemblance is coincidental
+# Варианты использования AI Платформы AIналитик
+## Use Cases — возможные сценарии работы бизнес-аналитика в Платформе. Ситуации и имена вымышлены, любые совпадения случайны
 
 ---
 
-In the user guide we walked through the platform's capabilities through one continuous project. Here the approach is different: independent scenarios from different industries and different working situations. Each one shows a specific pain point and how the platform relieves it.
+В пользовательской инструкции мы рассматривали возможности платформы через один сквозной проект. Здесь — другой подход: независимые сценарии из разных индустрий и разных рабочих ситуаций. Каждый показывает конкретную боль и то, как платформа её снимает.
 
-The contexts differ. The analysts differ. But the principle is the same: you describe the situation, the platform does the work.
+Контексты разные. Аналитики разные. Но принцип один: вы описываете ситуацию — платформа делает работу.
 
 ---
 
-## UC-01: When the analyst leaves the project
+## UC-01 — Когда аналитик уходит из проекта
 
-> **For:** Heads of business analysis departments, CTOs, PMs
-> **Pain:** The key BA quit, went on leave, or got sick, and the entire project context disappeared with them
-> **Features:** Stakeholder registry (3.2), Decision Log (4.5), traceability graph (5.1), CR history (5.4), approval statuses (5.5)
+> **Для кого:** Руководители отделов бизнес-анализа, технические директора, PM
+> **Боль:** Ключевой BA уволился, ушёл в отпуск, заболел — и весь контекст проекта исчез вместе с ним
+> **Фичи:** Реестр стейкхолдеров (3.2), Decision Log (4.5), граф трассировки (5.1), история CR (5.4), статусы согласования (5.5)
 
-### Situation
+### Ситуация
 
 It's month five of a project to implement an assortment management system at a large retail chain. The key business analyst, Anthony, the person who knows every stakeholder personally, remembers why FR-034 was dropped back in March, and keeps three unresolved approval conditions with the CFO in his head, suddenly resigns.
 
-The project has: 14 stakeholders with different histories of engagement, 87 requirements in various statuses, 9 approved change requests, and a Steering Committee presentation in three weeks.
+На проекте: 14 стейкхолдеров с разной историей вовлечённости, 87 требований в разных статусах, 9 принятых Change Request, и через 3 недели презентация Steering Committee.
 
-The head of the BA department is in a panic. The new analyst, Julia, starts on the project on Monday.
+Руководитель отдела BA в панике. Новый аналитик Юлия выходит на проект в понедельник.
 
-This is a typical situation that turns into a crisis at most companies: weeks spent "fighting the archives," interviewing people who "remember something," and trying to reconstruct context from email threads and chat history.
+Это типичная ситуация, которая в большинстве компаний превращается в кризис: несколько недель уходит на «войну с архивами», интервью с теми кто «что-то помнит», и попытки восстановить контекст по переписке в почте и мессенджерах.
 
-With AInalyst, this story looks different.
+С AIналитик эта история выглядит иначе.
 
-### What Julia does
+### Что делает Юлия
 
-She opens AInalyst, looks at the project folder, and types one line:
+Она открывает AIналитик, смотрит на папку проекта и пишет одну фразу:
 
 > **Julia:** I just started on the assortment-2026 project. The previous business analyst, Anthony, resigned. Tell me about the current state: stakeholders, open questions, unresolved approvals.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
-AInalyst reads all the project artifacts and produces a structured summary in a few seconds:
+AIналитик читает все артефакты проекта и за несколько секунд выдаёт структурированную сводку:
 
 ---
 
-> **AInalyst:** Project assortment-2026, active phase: lifecycle. Here's the current context:
+> **AIналитик:** Проект assortment-2026, активная фаза — lifecycle. Вот текущий контекст:
 >
 > **Stakeholders (14 people):**
 > Karen Foster (CFO): Key Player, Manage Closely. Status: ⚠️ Concerned since March 28. Last interaction: April 3, an email that went unanswered. Needs attention.
 > Michael Turner (IT Director): Context Setter. Status: ✅ Champion. Active.
 > *(12 more participants with history and statuses)*
 >
-> **Open approval questions:**
-> 3 conditional approvals are still open. One is overdue: the CFO's condition on FR-037 (security review) had a deadline of April 1.
+> **Открытые вопросы по согласованию:**
+> 3 conditional approval не закрыты. Один просрочен: условие финансового директора по FR-037 (security review) — дедлайн был 1 апреля.
 >
 > **Recent decisions from the Decision Log:**
 > March 15: FR-034 moved to v2. Reason: high cost, low priority after prioritization. Decision made by Anthony together with the Product Owner.
 > March 22: CR-008 (ERP integration) approved with a condition: implement asynchronously.
 >
-> Would you like me to show the full stakeholder registry, or should we jump straight to the unresolved approvals?
+> Хочешь, чтобы я показал полный реестр стейкхолдеров или сразу перешли к незакрытым согласованиям?
 
 ---
 
-Julia continues:
+Юлия продолжает:
 
-> **Julia:** Show me the situation with the CFO in detail: why is she Concerned, and what's going on with the overdue condition?
+> **Юлия:** Покажи детально ситуацию с финансовым директором — почему Concerned и что с просроченным условием?
 
 ---
 
@@ -79,44 +79,44 @@ Julia continues:
 
 ---
 
-> **Julia:** Yes, draft it. And update the owner of this condition to me.
+> **Юлия:** Да, подготовь. И обнови ответственного по этому условию на меня.
 
-### What Julia gets
+### Что получает Юлия
 
-In 20 minutes she knows:
+За 20 минут она знает:
 
-- Which stakeholders need immediate attention and why
-- Why every key decision over the last two months was made
-- What exactly needs to happen today so the presentation in three weeks doesn't fall apart
-- The full history of every requirement: where it came from, how it changed, who approved it
+- Кто из стейкхолдеров требует немедленного внимания и почему
+- Почему было принято каждое ключевое решение за последние два месяца
+- Что конкретно нужно сделать сегодня, чтобы не провалить презентацию через 3 недели
+- Полную историю каждого требования — откуда взялось, как менялось, кто согласовал
 
-Context that usually lives in one person's head and disappears with them is here captured, structured, and available to the new analyst from minute one.
+Контекст, который обычно живёт в голове одного человека и исчезает вместе с ним, — здесь зафиксирован, структурирован и доступен новому аналитику с первой минуты.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, AInalyst does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — всё делает AIналитик автоматически.*
 
-On the first request, AInalyst pulls from several sources at once: it reads the stakeholder registry with its status change history (Chapter 3 MCP server, `planning_mcp`), retrieves the Decision Log with every recorded decision (Task 4.5 MCP server, `elicitation_collaborate_mcp`), and checks approval statuses and open conditions (Task 5.5 MCP server, `requirements_approve_mcp`). The traceability graph (Task 5.1 MCP server, `requirements_traceability_mcp`) lets it instantly answer, for any requirement, "where did this come from and what depends on it."
+При первом запросе AIналитик обращается к нескольким источникам одновременно: читает реестр стейкхолдеров с историей изменений статусов (MCP-сервер главы 3 — `planning_mcp`), достаёт Decision Log со всеми зафиксированными решениями (MCP-сервер задачи 4.5 — `elicitation_collaborate_mcp`), проверяет статусы согласования и открытые условия (MCP-сервер задачи 5.5 — `requirements_approve_mcp`). Граф трассировки (MCP-сервер задачи 5.1 — `requirements_traceability_mcp`) позволяет по любому требованию мгновенно ответить «откуда это взялось и что за ним тянется».
 
 All this information accumulated in structured JSON files in the `governance_plans/data/` folder throughout the project, every time Anthony saved interview results, updated a stakeholder status, recorded a decision, or closed a CR. Automatically, as a side effect of routine work.
 
-For Julia this means: she doesn't get a folder of documents that takes hours to read, she gets a living, structured project memory she can talk to right away.
+Для Юлии это означает: она получает не папку с документами, которые нужно читать часами, а живую структурированную память проекта, с которой можно сразу разговаривать.
 
 ---
 
-## UC-02: Choosing a methodology: one feature, two completely different outcomes
+## UC-02 — Выбор методологии: одна фича, два совершенно разных результата
 
-> **For:** Business analysts at any level
-> **Pain:** The methodology gets picked "by default," without analyzing context, risking a costly mistake
-> **Features:** Approach selection matrix, regulatory override (Task 3.1)
+> **Для кого:** Бизнес-аналитики любого уровня
+> **Боль:** Методология выбирается «по умолчанию» — без анализа контекста и с риском дорогостоящей ошибки
+> **Фичи:** Матрица выбора подхода, regulatory override (задача 3.1)
 
-### Situation
+### Ситуация
 
-The same analyst. The same platform feature. Two projects, and fundamentally different outcomes. A good illustration of how the platform doesn't work off a template, it works off context.
+Один и тот же аналитик. Одна и та же функция платформы. Два проекта — и принципиально разные результаты. Хорошая иллюстрация того, как платформа работает не по шаблону, а по контексту.
 
-**Project A:** An HR startup automating onboarding. A five-person team, the client doesn't yet know what they want, everything will change.
+**Проект A:** HR-стартап, автоматизация онбординга. Команда пять человек, заказчик сам не знает что хочет, всё будет меняться.
 
-**Project B:** A credit risk assessment system at a bank. Requirements are formally defined. There are regulatory obligations to the central bank, with an audit in a year. The team wants Scrum: "that's how we always do it."
+**Проект B:** Система оценки кредитных рисков в банке. Требования формально определены. Есть регуляторные обязательства перед ЦБ, через год аудит. Команда хочет Scrum — «мы всегда так делаем».
 
 BA Paul opens AInalyst for each project.
 
@@ -124,23 +124,23 @@ BA Paul opens AInalyst for each project.
 
 > **Paul:** New project. HR startup, we're automating employee onboarding. Small team, the client doesn't fully know what they want yet, requirements will definitely change.
 
-### How AInalyst responds: Project A
+### Как отвечает AIналитик — Проект A
 
 ---
 
-> **AInalyst:** Two clarifying questions:
-> 1. How often will requirements change: rarely, regularly, or constantly?
-> 2. How high is the uncertainty about the end result right now?
+> **AIналитик:** Два уточняющих вопроса:
+> 1. Как часто будут меняться требования — редко / регулярно / постоянно?
+> 2. Насколько высока неопределённость в понимании конечного результата прямо сейчас?
 
 > **Paul:** Constantly. Uncertainty is high.
 
-> **AInalyst:** Recommendation: **Adaptive (Agile)**.
+> **AIналитик:** Рекомендация: **Adaptive (Agile)**.
 >
-> Rationale: high frequency of change plus high uncertainty is a classic Agile context. Iterative cycles will let you test hypotheses without costly rework.
+> Обоснование: высокая частота изменений + высокая неопределённость — классический Agile-контекст. Итеративные циклы позволят проверять гипотезы без дорогостоящих переделок.
 >
-> Recommended BABOK techniques: User Stories, Story Mapping, Iterative Elicitation, Product Backlog Refinement.
+> Рекомендованные техники BABOK: User Stories, Story Mapping, Iterative Elicitation, Product Backlog Refinement.
 >
-> Save this decision?
+> Сохранить решение?
 
 ---
 
@@ -148,48 +148,48 @@ BA Paul opens AInalyst for each project.
 
 > **Paul:** New project. A bank, credit risk assessment system. Requirements are laid out in regulatory documents, the team wants Scrum. There are central bank regulatory requirements, and an audit in a year.
 
-### How AInalyst responds: Project B
+### Как отвечает AIналитик — Проект B
 
 ---
 
-> **AInalyst:** ⚠️ Regulatory context detected.
+> **AIналитик:** ⚠️ Регуляторный контекст обнаружен.
 >
-> The team wants Scrum, I understand the logic. But in this context that creates a serious risk. Here's why:
+> Команда хочет Scrum — я понимаю логику. Но в данном контексте это создаёт серьёзный риск. Вот почему:
 >
-> A central bank regulatory audit requires full traceability: every requirement must be documented, approved, and have proof of fulfillment. Plain Scrum doesn't provide for that: artifacts are kept to a minimum, and the change history isn't rigorous.
+> Регуляторный аудит ЦБ требует полной трассировки: каждое требование должно быть документировано, согласовано и иметь доказательство выполнения. В чистом Scrum это не предусмотрено — артефакты фиксируются по минимуму, а история изменений не строгая.
 >
-> **Recommendation: Hybrid (Predictive + Adaptive).**
+> **Рекомендация: Hybrid (Predictive + Adaptive).**
 >
-> Predictive layer: requirement capture, traceability, compliance gates before every release, an audit trail.
-> Adaptive layer: iterative development, sprints, stakeholder demos.
+> Predictive-слой: фиксация требований, трассировка, compliance gates перед каждым релизом, аудиторский след.
+> Adaptive-слой: итеративная разработка, спринты, демо стейкхолдерам.
 >
-> This lets the team work in Scrum inside the iterations, while still passing the audit without a scramble.
+> Это позволяет команде работать по Scrum внутри итераций — и при этом пройти аудит без авралов.
 >
-> Save the decision and put together a BA plan with a compliance checklist?
+> Сохранить решение и сформировать план BA с compliance-чеклистом?
 
 ---
 
 ### What Paul gets
 
-In the first case: quick confirmation of the right intuitive call. In the second: protection from a mistake he might not have caught himself, one that would only have surfaced during the audit.
+В первом случае — быстрое подтверждение правильного интуитивного решения. Во втором — защита от ошибки, которую он мог бы не заметить сам, и которая вскрылась бы только во время аудита.
 
-The platform doesn't just pick a methodology from parameters. It notices context that changes the rules, and explains why.
+Платформа не просто подбирает методологию по параметрам. Она замечает контекст, который меняет правила — и объясняет почему.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, AInalyst does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — всё делает AIналитик автоматически.*
 
-The `planning` phase MCP server (`planning_mcp`), when the `select_ba_approach` tool is called, analyzes the supplied parameters against the `APPROACH_MATRIX`: frequency of change, uncertainty, team size, time horizon. For Project B, a separate `REGULATORY_OVERRIDE` check fires: if regulatory oversight is detected in the context, the recommendation is automatically adjusted to Hybrid regardless of the other parameters. The result is saved to `ba_plan.json` as the project's official methodology decision.
+MCP-сервер фазы `planning` (`planning_mcp`) при вызове инструмента `select_ba_approach` анализирует переданные параметры через матрицу `APPROACH_MATRIX`: частота изменений, неопределённость, размер команды, временной горизонт. Для Проекта B срабатывает отдельная проверка `REGULATORY_OVERRIDE` — если в контексте обнаружен регуляторный надзор, рекомендация автоматически корректируется до Hybrid вне зависимости от остальных параметров. Результат сохраняется в `ba_plan.json` как официальное методологическое решение проекта.
 
 ---
 
-## UC-03: A 90-minute interview becomes a structured artifact
+## UC-03 — 90-минутное интервью становится структурированным артефактом
 
-> **For:** Business analysts working with interviews
-> **Pain:** Hours of manual review after an interview, and something important still gets lost
-> **Features:** Processing elicitation results (Task 4.2)
+> **Для кого:** Бизнес-аналитики, работающие с интервью
+> **Боль:** После интервью — часы ручного разбора записей, и всё равно что-то важное теряется
+> **Фичи:** Обработка результатов выявления (задача 4.2)
 
-### Situation
+### Ситуация
 
 An insurance company. BA Daniel conducted a 90-minute interview with the director of claims settlement. The transcript is a raw Zoom recording: interruptions, digressions, two places where the interviewee contradicts herself, and one place where she clearly contradicts something the IT director said a week earlier. The file sits in the `inputs/` folder.
 
@@ -199,26 +199,26 @@ Daniel could spend two hours reviewing it by hand. Instead he writes one line.
 
 > **Daniel:** Process the interview transcript with Helen Walsh from the file interview_helen_20260401.txt
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Processed the transcript (94 min, 8,400 words). Here's the result:
+> **AIналитик:** Обработал транскрипт (94 мин, 8 400 слов). Вот результат:
 >
-> **Candidate requirements (14):**
-> FR candidate: The system should automatically calculate the payout deadline based on claim type. Source: "we spend 2 hours on every complex case just calculating deadlines" (min. 23).
-> NFR candidate: Response time when opening a claim record should be no more than 3 seconds. Source: "right now it takes 10-15 seconds to load, people go get coffee."
-> *(12 more requirements)*
+> **Требования-кандидаты (14):**
+> — FR-кандидат: Система должна автоматически рассчитывать срок выплаты на основе типа убытка. Источник: «мы тратим по 2 часа на каждый сложный случай только на расчёт сроков» (мин. 23).
+> — NFR-кандидат: Время отклика при открытии карточки убытка — не более 3 секунд. Источник: «сейчас грузится по 10-15 секунд, люди уходят пить кофе».
+> — *(ещё 12 требований)*
 >
 > **Business rules (3):**
 > Category A claims (over 500K dollars) must go through senior expert review before payout.
 >
-> **Metrics:**
-> Target processing time for a standard claim: 4 business days (currently 9).
+> **Метрики:**
+> — Целевое время обработки стандартного убытка: 4 рабочих дня (сейчас — 9).
 >
-> **Gaps, need clarification (2):**
-> Unclear: who has the authority to manually override the automatic deadline calculation?
-> Unclear: how should the system handle claims on foreign policies?
+> **Пробелы — нужно уточнить (2):**
+> — Неясно: кто имеет право вручную переопределить автоматический расчёт срока?
+> — Неясно: как система должна обрабатывать убытки по иностранным полисам?
 >
 > **Contradiction ⚠️:**
 > Helen says: "the tax authority database integration is urgent, it's blocking our work." The IT director (interview from March 25): "the tax authority integration is next year, there's no capacity right now." Needs resolution.
@@ -235,35 +235,35 @@ Instead of two hours of manual review, a structured artifact in minutes. Every r
 
 Max, whom Daniel "caught out of the corner of his ear," is now in the stakeholder registry with a note on where he came from.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
-AInalyst reads the file from `inputs/` and passes it to the Task 4.2 MCP server (`elicitation_conduct_mcp`). The `process_elicitation_results` tool analyzes the text and returns a structured set: candidate requirements by type, business rules, metrics, gaps, contradictions. If new names are found in the text, it suggests calling `update_stakeholder_registry`, which adds the participant to `stakeholder_registry.json` with a note on the source. The resulting Markdown artifact is saved to `governance_plans/reports/` via `save_artifact` from `common.py`.
+AIналитик читает файл из `inputs/` и передаёт его в MCP-сервер задачи 4.2 (`elicitation_conduct_mcp`). Инструмент `process_elicitation_results` анализирует текст и возвращает структурированный набор: требования-кандидаты по типам, бизнес-правила, метрики, пробелы, противоречия. Если в тексте найдены новые имена — предлагает вызов `update_stakeholder_registry`, который добавляет участника в `stakeholder_registry.json` с пометкой об источнике. Итоговый Markdown-артефакт сохраняется в `governance_plans/reports/` через `save_artifact` из `common.py`.
 
 ---
 
-## UC-04: A stakeholder conflict nobody noticed
+## UC-04 — Конфликт стейкхолдеров, который никто не заметил
 
-> **For:** Business analysts on projects with many stakeholders
-> **Pain:** Two stakeholders want opposite things, and nobody notices until the approval stage
-> **Features:** Cross-analysis of multiple elicitation sessions (Task 4.2)
+> **Для кого:** Бизнес-аналитики на проектах с множеством стейкхолдеров
+> **Боль:** Два стейкхолдера хотят противоположного — и никто не замечает до этапа согласования
+> **Фичи:** Кросс-анализ нескольких сессий выявления (задача 4.2)
 
-### Situation
+### Ситуация
 
 A manufacturing holding. The project: a unified production planning system. Over three weeks, BA Natalie conducted four interviews: the production director, the chief technologist, the head of supply chain, and the CFO. She processed each interview separately, got the requirements, saved the artifacts, and moved on.
 
-Everything was fine until she asked the platform to compare the results.
+Всё шло хорошо, пока она не попросила платформу сравнить результаты.
 
 ### What Natalie does
 
 > **Natalie:** Compare the results of the four interviews for the production-planning project. I want to understand where there are contradictions and where stakeholders agree.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Analyzing the four elicitation artifacts...
+> **AIналитик:** Анализирую четыре артефакта выявления...
 >
 > **Consensus, stakeholders agree:**
 > All four consider visualizing production capacity utilization a priority
@@ -274,48 +274,48 @@ Everything was fine until she asked the platform to compare the results.
 > Production director (Bennett): "The main thing is replanning speed. We need data within 15 minutes, even if it's slightly stale."
 > CFO (Reed): "We need 100% real-time accuracy for financial reporting. Speed is secondary."
 >
-> This is a fundamental architectural conflict: real-time vs. batch processing. Both requirements can't be satisfied without an explicit trade-off.
+> Это фундаментальный архитектурный конфликт: real-time vs. batch processing. Нельзя удовлетворить оба требования без явного компромисса.
 >
-> **Gap, nobody clarified:**
-> Who has the authority to manually adjust the plan? This is critical for the business rules.
+> **Пробел — никто не прояснил:**
+> — Кто имеет право вручную корректировать план? Это критично для бизнес-правил.
 >
 > **Recommendation:** Hold a joint workshop with Bennett and Reed. There's no moving to architecture without a decision on data.
 >
-> Log the conflict as an open issue?
+> Зафиксировать конфликт как открытый вопрос?
 
 > **Natalie:** Yes. And suggest a workshop structure: what to discuss, in what order.
 
-> **AInalyst:** Conflict logged. A 60-minute workshop structure:
+> **AIналитик:** Конфликт зафиксирован. Структура воркшопа на 60 минут:
 >
-> **Block 1 (15 min):** Show both requirements side by side on screen. Ask each person to state: what exactly breaks if we adopt the other side's requirement?
+> **Блок 1 (15 мин):** Показать оба требования на экране рядом. Попросить каждого сформулировать: что именно сломается, если принять требование другой стороны?
 >
-> **Block 2 (20 min):** Walk through three options: (1) real-time for everyone, (2) batch for everyone, (3) split streams, the finance module gets real-time, production gets 15-minute updates.
+> **Блок 2 (20 мин):** Разобрать три варианта: (1) real-time для всех, (2) batch для всех, (3) разные потоки — финансовый модуль получает real-time, производственный — 15-минутные обновления.
 >
-> **Block 3 (25 min):** Choose an option and record the decision.
+> **Блок 3 (25 мин):** Выбрать вариант и зафиксировать решение.
 >
-> Your role is facilitator, not arbiter. You structure the conversation, they make the decision.
+> Твоя роль — фасилитатор, не арбитр. Ты структурируешь разговор, решение принимают они.
 
 ---
 
 ### What Natalie gets
 
-A conflict that could have surfaced at the requirements approval stage (and demanded rework of already-finished artifacts) is caught now, while it's still easy to resolve with a single workshop. There's a concrete action plan.
+Конфликт, который мог всплыть на этапе согласования требований (и потребовать переделки уже готовых артефактов), обнаружен сейчас — когда его ещё легко разрешить одним воркшопом. Есть конкретный план действий.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
-The Task 4.2 MCP server (`elicitation_conduct_mcp`), when `compare_elicitation_results` is called, reads the saved artifacts across all the specified elicitation sessions. For each topic, the tool compares what each stakeholder said, looking for direct contradictions and areas of consensus. A detected conflict can be passed straight to Task 4.5 (`elicitation_collaborate_mcp`), logged in the Decision Log as an open issue requiring resolution through a workshop or escalation.
+MCP-сервер задачи 4.2 (`elicitation_conduct_mcp`) при вызове `compare_elicitation_results` читает сохранённые артефакты по всем указанным сессиям выявления. По каждой теме инструмент сопоставляет что сказал каждый стейкхолдер, ищет прямые противоречия и зоны консенсуса. Выявленный конфликт может быть сразу передан в задачу 4.5 (`elicitation_collaborate_mcp`) — зафиксирован в Decision Log как открытый вопрос, требующий разрешения через воркшоп или эскалацию.
 
 ---
 
-## UC-05: The stakeholder quietly sabotaging the project
+## UC-05 — Стейкхолдер, который молча саботирует проект
 
-> **For:** Business analysts working in organizations with a complex political environment
-> **Pain:** Something is clearly wrong, but it's not clear what, or how to respond professionally
-> **Features:** Engagement signal diagnostics, status change history (Task 4.5)
+> **Для кого:** Бизнес-аналитики, работающие в организациях со сложной политической средой
+> **Боль:** Что-то явно идёт не так, но непонятно что — и как реагировать профессионально
+> **Фичи:** Диагностика сигналов вовлечённости, история изменений статуса (задача 4.5)
 
-### Situation
+### Ситуация
 
 A government organization. A document archive digitization project. BA Steven has been on it for three months.
 
@@ -329,164 +329,164 @@ Steven is confused and doesn't know how to interpret what's happening.
 
 > **Steven:** David used to actively support the project. For the last three weeks: he doesn't answer emails, stays silent in meetings, and yesterday wrote to the director going around me with a list of risks. What's going on and what should I do?
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Signal 🟡, requires a proactive response. This is a pattern of passive resistance. Three most likely causes:
+> **AIналитик:** Сигнал 🟡 — требует проактивной реакции. Это паттерн пассивного сопротивления. Три наиболее вероятные причины:
 >
 > **Option 1: David doesn't feel heard.**
 > He agrees publicly because disagreeing feels awkward in his role. He influences privately through the director, the only channel available to him. Tactic: a 1-on-1 meeting with no agenda. "I sense you have concerns. I want to hear them directly."
 >
-> **Option 2: Specific technical concerns that are awkward to raise publicly.**
-> He may understand something about the architecture or integration that others don't see. He stays silent in meetings because the audience isn't technical. Tactic: the same 1-on-1, with a specific ask: "Tell me more about the risks you described to the director."
+> **Вариант 2: Конкретные технические опасения, которые неудобно озвучивать публично.**
+> Возможно, понимает что-то про архитектуру или интеграцию, чего другие не видят. На встречах молчит, потому что аудитория нетехническая. Тактика: та же встреча 1-на-1, с конкретным запросом: «Расскажи подробнее про риски, которые ты описал директору».
 >
 > **Option 3: A shift in leadership positioning or personal interests.**
 > Something changed in the organizational context: new priorities, a threat to budget or to David's authority. Tactic: carefully probe through indirect sources before meeting directly.
 >
-> Which option seems most likely to you?
+> Какой вариант кажется тебе наиболее вероятным?
 
 > **Steven:** Probably option 2, he definitely has technical knowledge the rest of us don't. I'll go through a 1-on-1. Update his registry status: was Champion, now Concerned. I've scheduled a meeting for Friday.
 
-> **AInalyst:** Updated. History:
-> Champion (since January 2026) → Concerned (April 14, 2026).
-> Reason: passive resistance, going to the director around the BA.
-> Planned action: 1-on-1 meeting on Friday, April 18.
+> **AIналитик:** Обновлено. История:
+> Champion (с января 2026) → Concerned (14 апреля 2026).
+> Причина: пассивное сопротивление, выход на директора в обход BA.
+> Запланированное действие: встреча 1-на-1 в пятницу 18 апреля.
 >
-> Come back after the meeting, we'll update the status and log what you learn.
+> После встречи возвращайся — обновим статус и зафиксируем что выяснилось.
 
 ---
 
 ### What Steven gets
 
-Instead of a nagging "something's wrong, I don't know what," a concrete diagnosis with three hypotheses and tactics for each. A specific next step.
+Вместо тревожного «что-то не так, не знаю что» — конкретная диагностика с тремя гипотезами и тактиками для каждой. Конкретный следующий шаг.
 
 And importantly: the status change history is recorded. If Steven goes on leave or leaves the project, the next analyst will open the registry and see this whole history. No need to explain "why David suddenly became a problem."
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, AInalyst does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — всё делает AIналитик автоматически.*
 
-AInalyst passes the situation description to the Task 4.5 MCP server (`elicitation_collaborate_mcp`). The `diagnose_engagement_signal` tool analyzes the behavior pattern and returns a signal classification, likely causes, and tactics. Once the BA has made a decision, `update_engagement_status` updates the record in `stakeholder_registry.json`, not just changing the current status but preserving the full history with date, reason, and planned action. This history accumulates over the life of the project and is available to any team member, including a new analyst who comes in as a replacement.
+AIналитик передаёт описание ситуации в MCP-сервер задачи 4.5 (`elicitation_collaborate_mcp`). Инструмент `diagnose_engagement_signal` анализирует паттерн поведения и возвращает классификацию сигнала, вероятные причины и тактики. После того как BA принял решение, `update_engagement_status` обновляет запись в `stakeholder_registry.json` — не просто меняет текущий статус, а сохраняет полную историю с датой, причиной и запланированным действием. Эта история накапливается на протяжении всего проекта и доступна любому члену команды — в том числе новому аналитику, который придёт на замену.
 
 ---
 
-## UC-06: Joining a project already in progress
+## UC-06 — Подключение к проекту, который уже идёт
 
-> **For:** Business analysts starting to work with the platform mid-project
-> **Pain:** A lot of work has already happened without AInalyst: interviews conducted, requirements collected, correspondence piled up. Starting over isn't realistic. But continuing to work without structure is a risk.
-> **Features:** Project initialization from existing materials, requirement import from Confluence, flexible phase switching
+> **Для кого:** Бизнес-аналитики, которые начинают работать с платформой в середине проекта
+> **Боль:** Много работы уже сделано без AIналитик — интервью проведены, требования собраны, переписка накоплена. Начинать заново нереально. Но и работать без структуры дальше — риск.
+> **Фичи:** Инициализация проекта по готовым материалам, импорт требований из Confluence, гибкое переключение фаз
 
-### Situation
+### Ситуация
 
 A financial company. A credit underwriting process automation project has been running for three months. BA Kevin just joined the team, the previous analyst moved to another project.
 
-A lot has piled up: a Confluence page with 60 requirements, four interview transcripts in a shared folder, several email threads with stakeholders, an informal priority table in Excel. All of it exists scattered, no unified structure, no traceability, no decision history.
+Накоплено многое: страница в Confluence с 60 требованиями, четыре транскрипта интервью в общей папке, несколько цепочек писем со стейкхолдерами, неформальная таблица приоритетов в Excel. Всё это существует в разрозненном виде — нет единой структуры, нет трассировки, нет истории решений.
 
-Starting from scratch and re-asking stakeholders about things already discussed would mean losing their trust. But moving forward while keeping everything in different places is a risk too.
+Начинать с нуля и переспрашивать стейкхолдеров о том, что уже обсуждалось, — значит терять их доверие. Но и двигаться дальше, держа всё в разных местах — значит рисковать.
 
 Kevin decides to plug AInalyst into the live project right now.
 
 ### What Kevin does
 
-He starts the `planning` phase and begins not with a "new project," but by describing what's already there:
+Он запускает фазу `planning` и начинает не с «нового проекта», а с описания того, что уже есть:
 
 > **Kevin:** I need to connect the platform to a project that's already underway. The project is called credit-underwriting-2026. It's been running three months, I just joined. Requirements are collected on a Confluence page called "Underwriting / System Requirements." I know six stakeholders: Peters (business owner), Grant (IT architect), Sheridan (compliance), and three more business analysts. Four interviews have been done, transcripts are in inputs/.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Got it, initializing the project from the existing materials.
+> **AIналитик:** Понял — инициализирую проект на основе существующих материалов.
 >
-> **Step 1: Creating the project structure.**
-> Project credit-underwriting-2026 registered. Active phase: planning.
+> **Шаг 1: Создаю структуру проекта.**
+> Проект credit-underwriting-2026 зарегистрирован. Активная фаза: planning.
 >
 > **Step 2: Adding stakeholders.**
 > Added all six. Peters: provisionally Key Player (confirm influence/interest when you can). Statuses set to Unknown, update after you've met them.
 >
-> **Step 3: Pulling requirements from Confluence.**
-> Reading the page "Underwriting / System Requirements"...
-> Found: 58 requirements. Structure is inconsistent, some are User Stories, some are free text, 7 lines have no explicit identifier.
+> **Шаг 3: Выгружаю требования из Confluence.**
+> Читаю страницу «Андеррайтинг / Требования к системе»...
+> Найдено: 58 требований. Структура неоднородная — часть в формате User Story, часть в свободном тексте, 7 строк без явного идентификатора.
 >
-> What would you like to do?
-> (A) Import as-is and verify quality afterward
-> (B) Normalize the format on import, will take a bit longer
-> (C) Show me the first 10 first so I can decide
+> Что хочешь сделать?
+> — (А) Импортировать как есть и потом верифицировать качество
+> — (Б) Нормализовать формат при импорте — займёт немного дольше
+> — (В) Сначала показать мне первые 10, чтобы принять решение
 
 > **Kevin:** Let's go with option B, normalize on import.
 
-> **AInalyst:** Normalizing... done.
-> Imported 58 requirements: 51 correctly structured, 7 flagged as "needs clarification", incomplete wording, no acceptance criteria. I'll show you the list later.
+> **AIналитик:** Нормализую... готово.
+> Импортировано 58 требований: 51 корректно структурированы, 7 помечены как «требуют уточнения» — неполные формулировки, нет критериев приёмки. Покажу список позже.
 >
-> Recommended next step: switch to the `lifecycle` phase and run an initial traceability pass, linking requirements to each other and to the business objectives. For that I need to know: are the project's business objectives already recorded, or should we start drafting them together?
+> Рекомендую следующий шаг: переключиться в фазу `lifecycle` и запустить начальную трассировку — связать требования между собой и с бизнес-целями. Для этого мне нужно понять: есть ли уже зафиксированные бизнес-цели проекта, или начнём их формулировать с тобой?
 
 ---
 
 > **Kevin:** Objectives aren't recorded yet, but Peters mentioned cutting application review time from 5 days to 2. That's the main goal.
 
-> **AInalyst:** Recording business objective: BG-001, "Reduce credit application review time from 5 to 2 business days by Q3 2026."
+> **AIналитик:** Фиксирую бизнес-цель: BG-001 — «Сократить время рассмотрения кредитной заявки с 5 до 2 рабочих дней к Q3 2026».
 >
-> Now let's see which of the 58 requirements serve this objective and which might be out of scope. It'll take a couple of minutes, want me to run it?
+> Теперь посмотрим, какие из 58 требований на эту цель работают, а какие могут быть вне скоупа. Это займёт пару минут — запустить?
 
 ---
 
 ### What Kevin gets
 
-In one working session, not starting from zero, but picking up exactly where the previous analyst left off:
+За один сеанс работы — не с нуля, а ровно оттуда где остановился предыдущий аналитик:
 
-- All the Confluence requirements in a structured repository with identifiers
-- A stakeholder registry with a placeholder ready for status updates
-- A first formulated business objective
-- An understanding of which requirements look suspicious and need attention
+- Все требования из Confluence в структурированном репозитории с идентификаторами
+- Реестр стейкхолдеров с заготовкой для обновления статусов
+- Первая сформулированная бизнес-цель
+- Понимание какие требования подозрительны и требуют внимания
 
-The platform doesn't force you to start over. It plugs into what's already there.
+Платформа не заставляет начинать заново. Она встраивается в то, что уже есть.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
-When initializing an existing project, AInalyst uses the `planning` phase MCP server (`planning_mcp`) to build the basic structure: registers the project, creates the stakeholder registry with the supplied names. To read Confluence it uses the built-in Confluence MCP server, which reads the page directly by title and passes the content along for processing. Requirement normalization runs through `requirements_traceability_mcp` (Task 5.1): each requirement gets an identifier, the structure is brought to a common format, and problematic entries are flagged. The transcripts in `inputs/` can be processed at any point through the `elicitation` phase, without switching to it right away, the phase order is flexible.
+При инициализации существующего проекта AIналитик использует MCP-сервер фазы `planning` (`planning_mcp`) для создания базовой структуры: регистрирует проект, создаёт реестр стейкхолдеров с переданными именами. Для чтения Confluence задействован встроенный Confluence MCP-сервер — он напрямую читает страницу по названию и передаёт содержимое на обработку. Нормализация требований происходит через `requirements_traceability_mcp` (задача 5.1) — каждому требованию присваивается идентификатор, структура приводится к единому формату, проблемные записи помечаются флагом. Транскрипты из `inputs/` можно обработать в любой момент через фазу `elicitation`, не переходя к ней немедленно — порядок фаз гибкий.
 
 ---
 
-## UC-07: When there's no business analyst on the project
+## UC-07 — Когда на проекте нет бизнес-аналитика
 
-> **For:** Product managers, project managers, technical directors, and CTOs on projects without a dedicated BA
-> **Pain:** Product understanding exists, but there's no methodological expertise, requirements are vague, stakeholders say different things, documentation is missing or outdated
-> **Features:** Full BABOK methodology cycle guided by the platform, no need to know BABOK in advance
+> **Для кого:** Продакт-менеджеры, проджект-менеджеры, технические директора и CTO на проектах без выделенного BA
+> **Боль:** Понимание продукта есть, но нет методологической экспертизы — требования размытые, стейкхолдеры говорят разное, документация отсутствует или устаревшая
+> **Фичи:** Полный цикл BABOK-методологии под руководством платформы, без необходимости знать BABOK заранее
 
-### Situation
+### Ситуация
 
-A tech startup. The team is building a B2B SaaS product for managing corporate business travel. Eight people: three developers, a designer, a QA engineer, a CEO, and a CPO who is de facto the product manager.
+Технологический стартап. Команда разрабатывает B2B SaaS-продукт для управления корпоративными командировками. Восемь человек: три разработчика, дизайнер, QA, CEO и CPO — он же де-факто продакт-менеджер.
 
 CPO Alex understands the market and users well. But he has no experience with requirements methodology: requirements live in his head, in Notion as scattered notes, and in team chats. The architect has already rebuilt the booking module twice because "it turned out that wasn't what was meant."
 
-Hiring a BA is expensive and premature. But continuing to work as they are means continuing to rebuild.
+Нанять BA в штат — дорого и преждевременно. Но продолжать работать как сейчас — значит продолжать переделывать.
 
 Alex decides to try AInalyst on his own.
 
 ### What Alex does
 
-He doesn't prepare anything special and doesn't study BABOK. He just opens AInalyst and describes the situation in his own words:
+Он ничего специально не готовит и не изучает BABOK. Просто открывает AIналитик и описывает ситуацию своими словами:
 
 > **Alex:** We're building a B2B SaaS for corporate business travel. I'm the CPO, we don't have a BA. I want to get our requirements in order, right now it's all in my head and in Notion. We keep rebuilding things because of misunderstandings. Where do I start?
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Good start, you've correctly diagnosed the problem. Here's a suggested route, briefly:
+> **AIналитик:** Хороший старт — ты правильно диагностировал проблему. Вот предлагаемый маршрут, коротко:
 >
-> 1. First, let's figure out who your stakeholders are and whose interests need to be considered, that'll take 15 minutes.
-> 2. Then let's record the project's business objectives in measurable form, so it's clear what counts as success.
-> 3. Then we'll move on to the requirements themselves, structuring what already exists and adding what's missing.
+> 1. Сначала разберёмся кто твои стейкхолдеры и чьи интересы нужно учитывать — это займёт 15 минут.
+> 2. Потом зафиксируем бизнес-цели проекта в измеримом виде — чтобы было понятно что считается успехом.
+> 3. Затем перейдём к самим требованиям — структурируем то что уже есть и добавим то чего не хватает.
 >
-> Shall we start? Tell me: who pays for your product, and who uses it, are those different people?
+> Начнём? Расскажи: кто платит за ваш продукт и кто его использует — это разные люди?
 
 > **Alex:** The company's HR director or CFO pays. It's used by the employees themselves who travel, and by travel coordinators who arrange everything.
 
-> **AInalyst:** Good, you've got three different groups with potentially different needs. Let's go through each one. One more question: is there anyone on your team whose opinion of the product is critical, like a CTO or someone who's worked directly with clients?
+> **AIналитик:** Отлично — у тебя три разные группы с потенциально разными потребностями. Продолжим по каждой. Ещё вопрос: есть ли кто-то внутри вашей команды, чьё мнение о продукте критично — например, CTO или кто-то кто работал с клиентами напрямую?
 
 ---
 
@@ -496,16 +496,16 @@ He doesn't prepare anything special and doesn't study BABOK. He just opens AInal
 
 > **Alex:** Okay, stakeholders are clear. What's next?
 
-> **AInalyst:** Now, objectives. You mentioned you keep rebuilding the booking module. Try to put it this way: what should change in your product or process in six months for you to say "we did this right"?
+> **AIналитик:** Теперь цели. Ты упомянул что постоянно переделываете модуль бронирования. Попробуй сформулировать: что должно измениться в вашем продукте или процессе через полгода, чтобы ты сказал «мы сделали это правильно»?
 
 > **Alex:** Well... travel coordinators stop calling us with questions every day. And developers stop rebuilding the same thing twice.
 
-> **AInalyst:** Good, those are two different objectives, let's make them measurable:
-
-> BG-001 (draft): "Reduce travel coordinator support inquiries by 70% by Q3 2026."
-> BG-002 (draft): "Cut the percentage of tasks sent back for rework due to unclear requirements from the current level to under 10%."
+> **AIналитик:** Хорошо — это две разные цели, давай сделаем их измеримыми:
 >
-> How do these read to you? If the numbers aren't right, say so and we'll adjust.
+> BG-001 (черновик): «Снизить количество обращений travel-координаторов в поддержку на 70% к Q3 2026».
+> BG-002 (черновик): «Сократить процент задач, возвращаемых на доработку из-за неясных требований, с текущего уровня до менее 10%».
+>
+> Как тебе такие формулировки? Если цифры не те — скажи, скорректируем.
 
 ---
 
@@ -513,278 +513,278 @@ From there, AInalyst walks Alex step by step through structuring the requirement
 
 ### What Alex gets
 
-After a few working sessions, no consultants, no BABOK courses, no new hire:
+Через несколько сеансов работы — без консультантов, без курсов по BABOK, без найма нового сотрудника:
 
-- A stakeholder registry with roles and priorities
-- Formulated and validated business objectives
-- A structured requirements repository with traceability
-- An understanding of why specific requirements conflict with each other, and how to resolve it
+- Реестр стейкхолдеров с ролями и приоритетами
+- Сформулированные и валидированные бизнес-цели
+- Структурированный репозиторий требований с трассировкой
+- Понимание почему конкретные требования конфликтуют между собой — и как это разрешить
 
 Methodology here became the platform's job, not his. Alex brought knowledge of the product and the market. The rest, process, structure, artifacts, AInalyst took on itself.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The user doesn't work with this directly, the Platform does it all automatically.*
+> *Пользователь с этим не работает напрямую — Платформа всё делает автоматически.*
 
-AInalyst adapts its questions and explanations for a non-technical audience: BABOK terminology isn't used in the conversation, but the methodology is followed fully. Under the hood, the same tools are used as in a professional BA's work: `planning_mcp` builds the stakeholder registry (Task 3.2), `future_state_mcp` validates business objectives against SMART criteria (Task 6.2), `requirements_traceability_mcp` initializes the repository and builds the traceability graph (Task 5.1). The only difference is that AInalyst takes on the role of methodologist itself, proposing the next step, explaining why it's needed, and adjusting the depth of detail to the person it's talking to.
+AIналитик адаптирует свои вопросы и объяснения под нетехническую аудиторию: термины BABOK не используются в диалоге, но методология соблюдается полностью. Под капотом задействованы те же инструменты что и в работе профессионального BA: `planning_mcp` формирует реестр стейкхолдеров (задача 3.2), `future_state_mcp` валидирует бизнес-цели по критериям SMART (задача 6.2), `requirements_traceability_mcp` инициализирует репозиторий и строит граф трассировки (задача 5.1). Разница только в том, что AIналитик берёт на себя функцию методолога — сам предлагает следующий шаг, объясняет зачем это нужно и адаптирует глубину погружения под собеседника.
 
 ---
 
-## UC-08: Impact analysis on a sudden change request
+## UC-08 — Impact Analysis при внезапном Change Request
 
-> **For:** Business analysts on active projects
-> **Pain:** A change request "sounds simple," but drags half the project's artifacts behind it, and nobody sees that before development
-> **Features:** BFS traversal of the traceability graph, CR scoring (Tasks 5.1 + 5.4)
+> **Для кого:** Бизнес-аналитики на активных проектах
+> **Боль:** Change Request «звучит просто» — но за ним тянется половина артефактов проекта, и никто этого не видит до разработки
+> **Фичи:** BFS-обход графа трассировки, скоринг CR (задачи 5.1 + 5.4)
 
-### Situation
+### Ситуация
 
 A logistics company. The project: a route management system. Work is on track, everything on schedule. Then the commercial director sends BA Andrew a short message: "We need to add real-time CO2 emissions calculation for each route, for the ESG report. That's simple, right?"
 
 At first glance, a small addition. But Andrew is experienced enough to be wary. "Simple" from a stakeholder's mouth is one of the most dangerous signals in requirements management.
 
-He opens the Platform.
+Он открывает Платформу.
 
 ### What Andrew does
 
 > **Andrew:** Open a change request: the commercial director wants to add real-time CO2 emissions calculation for each route. Says it's simple.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** CR-011 created. Running impact analysis on the traceability graph...
+> **AIналитик:** CR-011 создан. Запускаю impact analysis по графу трассировки...
 >
-> **Affected artifacts (11):**
+> **Затронутые артефакты (11):**
 >
-> FR-022 (route cost calculation): direct dependency. CO2 needs to be calculated on the same route data as cost. A change in the calculation logic could affect FR-022.
-> NFR-003 (performance: API response time no more than 500 ms): ⚠️ **conflict**. Real-time CO2 calculation requires a call to an external emissions API. That adds at least 200-400 ms to every request. NFR-003 is now at risk.
-> ADR-002 (architectural decision: route data caching): needs review. Cached data doesn't work for a real-time CO2 calculation.
-> TC-014, TC-015, TC-017 (three test cases): will need updating.
-> *(5 more second-level dependency artifacts)*
+> — FR-022 (расчёт стоимости маршрута) — прямая зависимость. CO₂ нужно считать на тех же данных о маршруте, что и стоимость. Изменение логики расчёта может затронуть FR-022.
+> — NFR-003 (производительность: отклик API не более 500 мс) — ⚠️ **конфликт**. Расчёт CO₂ в реальном времени требует обращения к внешнему API эмиссий. Это добавляет минимум 200-400 мс к каждому запросу. NFR-003 окажется под угрозой.
+> — ADR-002 (архитектурное решение: кэширование данных о маршрутах) — нужен пересмотр. Кэшированные данные не подходят для расчёта CO₂ в реальном времени.
+> — TC-014, TC-015, TC-017 (три тест-кейса) — потребуют обновления.
+> — *(ещё 5 артефактов второго уровня зависимости)*
 >
-> **CR assessment:**
-> Score: 5.8, **Modify** (accept with a condition).
+> **Оценка CR:**
+> Score: 5.8 — **Modify** (принять с условием).
 >
-> Recommendation: accept CR-011, but modify the requirement, drop "real time." CO2 is calculated asynchronously and available the next time the route is opened. This removes the conflict with NFR-003 and doesn't require revisiting ADR-002.
+> Рекомендация: принять CR-011, но изменить требование — убрать «реальное время». CO₂ считается асинхронно и доступен при следующем открытии маршрута. Это снимает конфликт с NFR-003 и не требует пересмотра ADR-002.
 >
-> Send it to the commercial director for approval?
+> Вынести на согласование с коммерческим директором?
 
 > **Andrew:** Yes. And prepare the arguments for why real time isn't possible without consequences.
 
-> **AInalyst:** Done. Arguments for the meeting:
+> **AIналитик:** Готово. Аргументы для встречи:
 >
-> Real time means calling an external API every time a route is opened. The system currently handles up to 800 requests per minute at peak hours. Adding an external call would increase average response time from the current 320 ms to an estimated 680-900 ms, which breaks the SLA agreed with clients in NFR-003.
+> Реальное время означает обращение к внешнему API при каждом открытии маршрута. Сейчас система обрабатывает до 800 запросов в минуту в пиковые часы. Добавление внешнего вызова увеличит среднее время отклика с текущих 320 мс до расчётных 680-900 мс — это нарушает SLA, согласованный с клиентами в NFR-003.
 >
-> The asynchronous option: CO2 is recalculated in the background every 15 minutes. That's more than sufficient for the ESG report, reports are produced quarterly.
+> Асинхронный вариант: CO₂ пересчитывается в фоне раз в 15 минут. Для ESG-отчёта это абсолютно достаточно — отчёты формируются раз в квартал.
 
 ---
 
 ### What Andrew gets
 
-He goes to the commercial director not with a refusal, but with data and an alternative. The conversation shifts from "you don't want to do this" to "here's why it has to be this way and how we'll implement it." The CR gets accepted, but in a form that doesn't create technical debt.
+Он приходит к коммерческому директору не с отказом, а с данными и альтернативой. Разговор из «вы не хотите делать» превращается в «вот почему именно так и как мы это реализуем». CR принят — но в варианте, который не создаёт технического долга.
 
-And importantly: nobody "forgot" about the three test cases and the caching architectural decision. They're on the list of affected artifacts, they'll be updated before development starts, not after.
+И важное: никто не «забыл» про три тест-кейса и архитектурное решение по кэшированию. Они в списке затронутых артефактов — их обновят до начала разработки, а не после.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
-The Task 5.4 MCP server (`requirements_assess_changes_mcp`), on receiving a CR, traverses the traceability graph in `traceability_repo.json` using a BFS (breadth-first search) algorithm, finding all artifacts connected to the changed requirements, including second and third-level dependencies. The `score_cr` tool assigns a score based on the number of affected artifacts, the presence of NFR conflicts, and the complexity of the changes. All affected requirements' statuses are updated automatically, flagged as "needs review due to CR-011." The result is saved to the Decision Log via `elicitation_collaborate_mcp`.
+MCP-сервер задачи 5.4 (`requirements_assess_changes_mcp`) при получении CR выполняет обход графа трассировки в `traceability_repo.json` по алгоритму BFS (поиск в ширину) — находит все артефакты, связанные с изменяемыми требованиями, включая зависимости второго и третьего уровня. Инструмент `score_cr` присваивает оценку на основе количества затронутых артефактов, наличия конфликтов с NFR и сложности изменений. Статусы всех затронутых требований обновляются автоматически — помечаются как «требуют проверки в связи с CR-011». Результат сохраняется в Decision Log через `elicitation_collaborate_mcp`.
 
 ---
 
-## UC-09: Three prioritization methods for three different contexts
+## UC-09 — Три метода приоритизации под разный контекст
 
-> **For:** Business analysts on projects with competing requirements
-> **Pain:** Prioritization gets done "by feel" or turns into political horse-trading, with no defensible result
-> **Features:** MoSCoW, WSJF, Impact/Effort Matrix (Task 5.3)
+> **Для кого:** Бизнес-аналитики на проектах с конкурирующими требованиями
+> **Боль:** Приоритизация делается «по ощущениям» или превращается в политический торг — без защищаемого результата
+> **Фичи:** MoSCoW, WSJF, Impact/Effort Matrix (задача 5.3)
 
-### Situation
+### Ситуация
 
 One tool, three fundamentally different scenarios. BA Rachel works on three projects at once. Each has its own audience, its own constraints, its own expectations for prioritization.
 
-**Project A:** An internal HR tool, 25 requirements, three stakeholders, a deadline in two weeks. Needs to be fast.
+**Проект A:** Внутренний HR-инструмент, 25 требований, три стейкхолдера, дедлайн — через две недели. Нужно быстро.
 
-**Project B:** A product Agile team, 60 requirements in the backlog, needs numeric ranking, every requirement needs a score the team can order by.
+**Проект B:** Продуктовая Agile-команда, 60 требований в backlog, нужно числовое ранжирование — чтобы у каждого требования был score и команда понимала порядок.
 
-**Project C:** A workshop with three directors tomorrow. Non-technical audience, numbers would scare them off, needs something visual, an hour to run.
+**Проект C:** Завтра воркшоп с тремя директорами. Аудитория нетехническая, числа отпугнут, нужно что-то наглядное на час.
 
-### Project A: MoSCoW in 20 minutes
+### Проект A — MoSCoW за 20 минут
 
 > **Rachel:** I need to prioritize 25 requirements for the HR tool. Three stakeholders, deadline in two weeks. Fast.
 
-> **AInalyst:** I recommend MoSCoW, the fastest method for a small set with a tight deadline. Starting a prioritization session. I'll name the requirements one at a time, tell me for each: Must / Should / Could / Won't.
+> **AIналитик:** Рекомендую MoSCoW — самый быстрый метод для небольшого набора с жёстким дедлайном. Запускаю сессию приоритизации. Буду называть требования по одному — скажи для каждого: Must / Should / Could / Won't.
 
-*Twenty minutes later: a MoSCoW matrix with rationale and an artifact ready for stakeholders.*
+*Через 20 минут — матрица MoSCoW с обоснованием и артефактом для стейкхолдеров.*
 
-### Project B: WSJF for an Agile team
+### Проект B — WSJF для Agile-команды
 
 > **Rachel:** For the content management project I need numeric prioritization. 60 requirements, we work in Scrum, need a score for each.
 
-> **AInalyst:** I recommend WSJF (Weighted Shortest Job First), the standard for SAFe and Agile teams, it produces a numeric score from business value, time criticality, and risk. For 60 requirements this is the right fit.
+> **AIналитик:** Рекомендую WSJF (Weighted Shortest Job First) — стандарт для SAFe и Agile-команд, даёт числовой score на основе бизнес-ценности, time-criticality и риска. Для 60 требований это оптимально.
 >
-> For each requirement we need to score three parameters from 1 to 10: Business Value, Time Criticality, Risk Reduction. Shall we start? We can do it in batches of 10, easier than all at once.
+> По каждому требованию нужно оценить три параметра от 1 до 10: Business Value, Time Criticality, Risk Reduction. Начинаем? Можем делать блоками по 10 — удобнее чем всё сразу.
 
-*The result: a ranked backlog with WSJF scores, ready to load into Jira.*
+*По итогу — ранжированный backlog с WSJF-score, готовый к загрузке в Jira.*
 
-### Project C: A workshop with directors
+### Проект C — воркшоп с директорами
 
 > **Rachel:** Tomorrow there's a workshop with three directors to prioritize product features. Non-technical audience, an hour max, needs to be visual, no formulas or numbers.
 
-> **AInalyst:** I recommend the Impact/Effort Matrix. Two dimensions, no math involved, the directors place features themselves on a "high/low impact" vs "high/low effort" grid. Intuitive, gets everyone involved.
+> **AIналитик:** Рекомендую Impact/Effort Matrix. Два измерения, никакой математики — директора сами расставляют фичи на поле «высокий/низкий impact» vs «высокий/низкий effort». Интуитивно понятно, вовлекает всех.
 >
-> I'll prepare the workshop materials: a list of all requirements described in business language, no technical jargon. Ready to print or put up on screen.
+> Подготовлю материалы для воркшопа: список всех требований с описаниями на бизнес-языке, без технического жаргона. Готово — можешь распечатать или вынести на экран.
 
-The day after the workshop:
+На следующий день после воркшопа:
 
 > **Rachel:** Entering the workshop scores: FR-001, high impact, low effort; FR-007, high impact, high effort; FR-019, low impact, high effort...
 
-> **AInalyst:** Building the matrix...
+> **AIналитик:** Строю матрицу...
 >
-> ⚠️ **Dependency violation detected:**
-> FR-019 landed in the "don't do" quadrant (low impact, high effort). But FR-004 ("quick win," high priority) has a direct dependency on FR-019, it can't be implemented without it.
+> ⚠️ **Dependency violation обнаружен:**
+> FR-019 попал в квадрант «не делаем» (низкий impact, высокий effort). Но FR-004 («быстрые победы», высокий приоритет) имеет прямую зависимость от FR-019 — без него FR-004 реализовать невозможно.
 >
-> Options:
-> (A) Raise FR-019's priority, accept it as a forced dependency
-> (B) Revisit FR-004, remove the dependency or push it to the next release
+> Варианты:
+> — (А) Повысить приоритет FR-019 — принять как вынужденный
+> — (Б) Пересмотреть FR-004 — убрать зависимость или перенести в следующий релиз
 >
-> What do you want to do?
+> Что решаем?
 
 ### What Rachel gets
 
-On each project, a method that fits the context, not "always MoSCoW." And crucially: the dependency violation on Project C surfaced right there in the workshop, while the directors were still in the room, not during sprint planning when changing anything is already painful.
+На каждом проекте — метод под контекст, а не «всегда MoSCoW». И главное: dependency violation на Проекте C всплыл прямо на воркшопе, пока директора ещё в комнате — а не на планировании спринта, когда менять что-либо уже болезненно.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платорма всё делает автоматически.*
 
-The Task 5.3 MCP server (`requirements_prioritize_mcp`) starts a session with the chosen method via `start_prioritization_session`. For WSJF, the `run_aggregation` tool applies stakeholder influence weights from the registry (Task 3.2), scores from more influential participants carry more weight. When finalizing the matrix, `resolve_conflict` checks the traceability graph for dependency violations, it's not allowed to leave a requirement in "don't do" if high-priority requirements depend on it. The result is saved via `save_prioritization_result`.
+MCP-сервер задачи 5.3 (`requirements_prioritize_mcp`) запускает сессию с выбранным методом через `start_prioritization_session`. Для WSJF инструмент `run_aggregation` применяет influence-веса стейкхолдеров из реестра (задача 3.2) — оценки более влиятельных участников весят больше. При финализации матрицы `resolve_conflict` проверяет граф трассировки на dependency violations — запрещено оставлять в «не делаем» требование, от которого зависят требования с высоким приоритетом. Результат сохраняется через `save_prioritization_result`.
 
 ---
 
-## UC-10: Root cause analysis: three techniques for one problem
+## UC-10 — RCA: три техники для одной проблемы
 
-> **For:** Business analysts at the strategy analysis stage
-> **Pain:** Projects fix symptoms instead of causes, and the problem comes back a year later in a different shape
-> **Features:** Five Whys, Fishbone, Problem Tree (Task 6.1)
+> **Для кого:** Бизнес-аналитики на этапе стратегического анализа
+> **Боль:** Проекты решают симптомы, а не причины — и проблема возвращается через год в другом виде
+> **Фичи:** «Пять почему», Fishbone, Дерево проблем (задача 6.1)
 
-### Situation
+### Ситуация
 
-Three different projects, three different tools. One principle: the platform doesn't impose a technique, it picks the one that fits the context.
+Три разных проекта, три разных инструмента. Один принцип: платформа не навязывает технику — она подбирает подходящую под контекст.
 
-**Context A, a medical center:** Patients complain about long waits for test results. The BA needs a fast answer, he has 20 minutes before a meeting with the chief physician.
+**Контекст A — медцентр:** Пациенты жалуются на долгое ожидание результатов анализов. BA нужен быстрый ответ — у него 20 минут до встречи с главврачом.
 
-**Context B, a bank:** Client churn is rising. The causes are clearly multifactorial: complaints about service, technology, competitors, processes. A full picture is needed.
+**Контекст B — банк:** Растёт отток клиентов. Причины явно многофакторные: жалобы на сервис, технологии, конкурентов, процессы. Нужна полная картина.
 
 **Context C, manufacturing:** Needs an argument for a 15-million-dollar budget committee. The directors want to see cause-and-effect logic.
 
-### Context A: Five Whys in 20 minutes
+### Контекст A — «Пять почему» за 20 минут
 
 > **BA Ian:** I need to quickly figure out why patients are waiting so long for test results. I have 20 minutes.
 
-> **AInalyst:** Starting Five Whys, the fastest method for a linear problem.
+> **AIналитик:** Запускаю «Пять почему» — самый быстрый метод для линейной проблемы.
 >
-> Why do patients wait a long time for results?
+> Почему пациенты долго ждут результаты?
 
 > **Ian:** The lab enters results into the system late.
 
-> **AInalyst:** Why does the lab enter them late?
+> **AIналитик:** Почему лаборатория поздно передаёт?
 
 > **Ian:** Lab technicians enter data manually at the end of their shift, not right away.
 
-> **AInalyst:** Why do they enter it at the end of the shift?
+> **AIналитик:** Почему вносят в конце смены?
 
 > **Ian:** Because the data entry system only sits on one computer in the corner, it's inconvenient to walk over there after every test.
 
-> **AInalyst:** Root cause: an **infrastructure constraint**, not enough data entry points. This isn't a motivation or process problem.
+> **AIналитик:** Корневая причина: **инфраструктурное ограничение** — недостаточное количество точек ввода данных. Это не проблема мотивации или процесса.
 >
-> Business need BN-001: "Give lab technicians the ability to enter results immediately after completing a test."
+> Бизнес-потребность BN-001: «Обеспечить лаборантам возможность вносить результаты немедленно после выполнения анализа».
 >
-> Log it?
+> Зафиксировать?
 
 *Two questions, and the root cause is found. Ian walks into the meeting with the chief physician with a concrete diagnosis, not a vague "we need to improve processes."*
 
-### Context B: Fishbone for a multifactorial problem
+### Контекст B — Fishbone для многофакторной проблемы
 
 > **BA Olivia:** The bank is losing clients. The causes are definitely multifactorial, complaints about everything. We need the full picture.
 
-> **AInalyst:** For a multifactorial problem I recommend Fishbone (Ishikawa diagram). It organizes causes by category and makes sure you don't miss a whole branch of factors.
-
-> Suggested categories for a banking context: Service, Technology, Process, Personnel, Product, External Environment. Which of these are definitely relevant?
+> **AIналитик:** Для многофакторной проблемы рекомендую Fishbone (диаграмма Исикавы). Он структурирует причины по категориям и не даёт упустить целую ветку факторов.
+>
+> Предлагаю категории для банковского контекста: Сервис, Технологии, Процессы, Персонал, Продукт, Внешняя среда. Какие из них точно релевантны?
 
 > **Olivia:** All six.
 
-> **AInalyst:** Let's start with Technology, that usually has the most concrete factors. What do you know about technology-related problems?
+> **AIналитик:** Начнём с Технологий — там обычно самые конкретные факторы. Что ты знаешь о технологических проблемах?
 
 > **Olivia:** Opening an account takes 4 days, there's no online application. The mobile app crashes on transfers above 100,000. There's no integration with the Faster Payments System.
 
-> **AInalyst:** Logged three factors under the Technology branch. Move on to Service?
+> **AIналитик:** Зафиксировал три фактора в ветку Технологии. Переходим к Сервису?
 
-*After filling in all six branches:*
+*После заполнения всех шести веток:*
 
-> **AInalyst:** Synthesis: three groups of root causes stand out.
+> **AIналитик:** Синтез: выделяется три группы корневых причин.
 >
-> **Technology gap**: the product lags market standards on 5 of 8 key parameters. This accounts for 40% of complaint mentions.
+> **Технологический разрыв** — продукт отстаёт от рыночных стандартов по 5 из 8 ключевых параметров. Это объясняет 40% упоминаний в жалобах.
 >
-> **Process sluggishness**: average issue resolution time is 6.2 days vs. 1.8 for the market leader.
+> **Процессная медлительность** — среднее время решения проблемы клиента 6.2 дня vs. 1.8 у лидера рынка.
 >
-> **Product gap**: no cashback or loyalty programs, while three direct competitors have them.
+> **Продуктовый пробел** — отсутствие кэшбека и накопительных программ при наличии их у трёх прямых конкурентов.
 >
-> Registering three business needs: BN-001, BN-002, BN-003. Move on to defining the future state?
+> Регистрирую три бизнес-потребности: BN-001, BN-002, BN-003. Перейдём к формулировке целевого состояния?
 
-### What the BA gets
+### Что получает BA
 
-In both cases: not just a list of causes, but a structured business need with an identifier that automatically becomes the root node of the traceability graph. Every subsequent project requirement will be linked to it, and at any point it becomes possible to check: does this requirement actually solve the problem the project was launched to fix?
+В обоих случаях — не просто список причин, а структурированная бизнес-потребность с идентификатором, которая автоматически становится корневым узлом графа трассировки. Все последующие требования проекта будут к ней привязаны — и в любой момент можно будет проверить: а это требование вообще решает ту проблему, ради которой затеяли проект?
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 6.1 MCP server (`current_state_mcp`) supports three modes through the `run_root_cause_analysis` tool: `five_whys`, `fishbone`, and `problem_tree`. AInalyst picks the mode based on context: number of factors, presence of organizational pressure, time constraints. When the analysis is done, `register_business_need` creates a BN-xxx record in `traceability_repo.json` as a root node of the graph, all subsequent business objectives and requirements will inherit traceability links from it.
 
 ---
 
-## UC-11: SMART objectives and gap analysis: from vague intentions to defensible goals
+## UC-11 — SMART-цели и GAP-анализ: от размытых намерений к защищаемым целям
 
-> **For:** Business analysts at the future-state definition stage
-> **Pain:** Objectives are worded so vaguely nobody can tell if they've been met, and nobody has measured the gap between "now" and "want"
-> **Features:** SMART validation of business objectives, gap analysis (Task 6.2)
+> **Для кого:** Бизнес-аналитики на этапе определения будущего состояния
+> **Боль:** Цели формулируются так, что непонятно достигнуты ли они — а GAP между «сейчас» и «хотим» никто не измерял
+> **Фичи:** SMART-валидация бизнес-целей, GAP-анализ (задача 6.2)
 
-### Situation
+### Ситуация
 
 An EdTech company. A new LMS (learning management system) is launching. BA Chloe is starting the analysis phase, needing to record the future-state objectives.
 
-The first attempt at wording is the kind that usually comes out of a strategy meeting.
+Первая попытка формулировки — такая, какую обычно приносят с совещания по стратегии.
 
 ### What Chloe does
 
 > **Chloe:** Recording the project objective: improve employee engagement in training.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** ❌ The objective failed SMART validation.
+> **AIналитик:** ❌ Цель не прошла SMART-валидацию.
 >
-> Problems:
-> **Not measurable:** "improve engagement," how will we know we've achieved it?
-> **No time horizon:** by when?
-> **No baseline metric:** what's the starting point?
+> Проблемы:
+> — **Не измерима:** «улучшить вовлечённость» — как мы узнаем что достигли цели?
+> — **Нет временного горизонта:** к когда?
+> — **Нет базовой метрики:** что является отправной точкой?
 >
-> Let's try rewording it. What's currently measured in your training system? Do you have data on completion rate or other metrics?
+> Попробуем переформулировать. Что сейчас измеряется в вашей системе обучения? Есть ли данные по completion rate или другим метрикам?
 
 > **Chloe:** Yes, completion rate right now is 34%. We want 70% by year end.
 
-> **AInalyst:** New wording: "Increase corporate training program completion rate from 34% to 70% by Q4 2026."
+> **AIналитик:** Новая формулировка: «Увеличить completion rate корпоративных обучающих программ с 34% до 70% к Q4 2026».
 >
-> ✅ SMART check passed:
-> Specific: completion rate as the metric
-> Measurable: 34% → 70%
-> Achievable: a 36-point increase in a year is ambitious but realistic with a platform change
-> Relevant: directly tied to business need BN-001
-> Time-bound: Q4 2026
+> ✅ SMART-проверка пройдена:
+> — Specific: completion rate как метрика
+> — Measurable: 34% → 70%
+> — Achievable: рост на 36 п.п. за год — амбициозно, но реалистично при смене платформы
+> — Relevant: напрямую связано с бизнес-потребностью BN-001
+> — Time-bound: Q4 2026
 >
-> Log it as BG-001?
+> Зафиксировать как BG-001?
 
 > **Chloe:** Yes. Now run gap analysis.
 
@@ -833,253 +833,253 @@ The first attempt at wording is the kind that usually comes out of a strategy me
 
 Instead of a vague "improve engagement," a concrete, measurable target and one clearly described gap per future-state element, each rated for how hard the change is. The gap analysis shows immediately: not everything needs fixing, and `technology` is where the effort sits.
 
-And importantly: BG-001 is now recorded in the traceability repository. When requirements for mobile access appear in the design phase, they'll automatically link to this objective. At any point you can ask "which requirements serve objective BG-001?" and get the full list.
+И важное: BG-001 теперь зафиксирована в трассировочном репозитории. Когда в фазе design появятся требования к мобильному доступу — они автоматически будут привязаны к этой цели. В любой момент можно будет спросить: «какие требования работают на цель BG-001?» — и получить полный список.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 6.2 MCP server (`future_state_mcp`), when `define_goals_and_objectives` is called, runs the wording through a SMART check — a metric, a time horizon, a baseline, and a target value. An objective that fails is still **recorded**, marked `smart_validated: false`, and the weakness is named in the answer: the platform warns, it does not block, so a goal is never lost because its wording was not ready yet. Once objective BG-001 is in place, the `run_gap_analysis` tool compares the current and future states element by element — one gap card for each of the future-state elements captured, out of the eight BABOK defines — and returns them with a change type (`new` where there is no current state, `improve` where there is) and a complexity rating (low / medium / high). It assigns no gap IDs and no priorities: how big a gap is stays the analyst's judgement, recorded later as `gap_severity` in 6.4. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
 
 ---
 
-## UC-12: Verifying requirements: a junior BA works like a senior
+## UC-12 — Верификация требований: Junior BA работает как Senior
 
-> **For:** Junior BAs, team leads, heads of business analysis practice
-> **Pain:** Requirements go into development "raw," and wording problems only surface during testing
-> **Features:** Requirements quality check against 9 BABOK characteristics (Task 7.2)
+> **Для кого:** Junior BA, тимлиды, руководители практики бизнес-анализа
+> **Боль:** Требования уходят в разработку «сырыми» — и проблемы формулировок вскрываются уже в тестировании
+> **Фичи:** Проверка качества требований по 9 характеристикам BABOK (задача 7.2)
 
-### Situation
+### Ситуация
 
-A fintech startup. Roman has been a business analyst for a little over a year. He wrote 40 requirements for a new credit scoring module, spent a week on it, reread it several times, was satisfied. Tomorrow he plans to hand it off to development.
+Финтех-стартап. Роман работает бизнес-аналитиком чуть больше года. Он написал 40 требований к новому модулю оценки кредитоспособности — потратил на это неделю, несколько раз перечитал, остался доволен. Завтра планирует передать в разработку.
 
-Before handing it off, he decides to run it through the platform.
+Перед передачей он решает прогнать через платформу.
 
-### What Roman does
+### Что делает Роман
 
-> **Roman:** Check the quality of the requirements for the credit scoring module. All 40 of them, file requirements_credit_v3.md.
+> **Роман:** Проверь качество требований по модулю кредитной оценки. Все 40 штук, файл requirements_credit_v3.md.
 
-### How AInalyst responds
-
----
-
-> **AInalyst:** Checking 40 requirements against the 9 BABOK characteristics...
->
-> **Check summary:**
-> ✅ Correct: 29 of 40
-> ⚠️ With issues: 11 requirements
->
-> **Problems found by type:**
->
-> 🔴 **Ambiguity (6 cases)**, vague wording:
-> FR-007: "The system should process applications quickly." What does "quickly" mean? No measurable criterion.
-> FR-014: "The interface should be user-friendly." Unverifiable, what's the acceptance criterion?
-> *(4 more requirements)*
->
-> 🟡 **Not Atomic (3 cases)**, one requirement bundles several unrelated ones:
-> FR-023: "The system should calculate the credit score AND send a notification AND save the calculation history." Three different requirements in one.
->
-> 🟡 **Missing Acceptance Criteria (2 cases):**
-> FR-031, FR-038: correctly worded requirements, but no acceptance criteria at all. A developer won't know when to consider the task done.
-
-> **Roman:** Show me how to fix FR-007.
-
-> **AInalyst:** Original version:
-> *"The system should process applications quickly"*
->
-> Problem: "quickly" is a subjective criterion. The developer will build "quickly" to their own understanding, the tester will check it against theirs.
->
-> Fixed version:
-> *"The system shall calculate the applicant's credit score in no more than 3 seconds from receipt of all required data, under standard load (up to 100 concurrent requests)"*
->
-> What changed: a measurable metric was added (3 sec), a measurement condition (standard load), and a boundary value (100 requests). This requirement is now verifiable.
->
-> Fix the remaining 5 ambiguity cases the same way?
+### Как отвечает AIналитик
 
 ---
 
-### What Roman gets
+> **AIналитик:** Проверяю 40 требований по 9 характеристикам BABOK...
+>
+> **Итог проверки:**
+> — ✅ Корректных: 29 из 40
+> — ⚠️ С замечаниями: 11 требований
+>
+> **Найденные проблемы по типам:**
+>
+> 🔴 **Ambiguity (6 случаев)** — размытые формулировки:
+> FR-007: «Система должна быстро обрабатывать заявки». Что значит «быстро»? Нет измеримого критерия.
+> FR-014: «Интерфейс должен быть удобным для пользователя». Неверифицируемо — каков критерий приёмки?
+> *(ещё 4 требования)*
+>
+> 🟡 **Not Atomic (3 случая)** — одно требование содержит несколько несвязанных:
+> FR-023: «Система должна рассчитывать кредитный рейтинг И отправлять уведомление И сохранять историю расчётов». Три разных требования в одном.
+>
+> 🟡 **Missing Acceptance Criteria (2 случая):**
+> FR-031, FR-038 — требования корректные по формулировке, но нет ни одного критерия приёмки. Разработчик не поймёт когда считать задачу выполненной.
 
-11 problems that developers would have discovered during implementation, each one turning into clarifying questions, back-and-forth, lost time, and possibly rework. Found in a few minutes before handoff, not after.
+> **Роман:** Покажи как исправить FR-007.
 
-For a junior BA this isn't just a fix to one document. Walking through each case is training on real material: why the wording was bad and what good wording looks like. After ten such sessions, requirement quality becomes a habit.
+> **AIналитик:** Исходный вариант:
+> *«Система должна быстро обрабатывать заявки»*
+>
+> Проблема: «быстро» — субъективный критерий. Разработчик сделает «быстро» по своему пониманию, тестировщик проверит по своему.
+>
+> Исправленный вариант:
+> *«Система должна рассчитывать кредитный рейтинг заявителя за не более чем 3 секунды с момента получения всех необходимых данных при стандартной нагрузке (до 100 одновременных запросов)»*
+>
+> Что изменилось: добавлена измеримая метрика (3 сек), условие измерения (стандартная нагрузка) и граничное значение (100 запросов). Это требование теперь верифицируемо.
+>
+> Исправить остальные 5 ambiguity-случаев в том же режиме?
 
-### What happens under the hood
+---
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+### Что получает Роман
+
+11 проблем, которые разработчики обнаружили бы в процессе реализации — каждая из которых превратилась бы в уточняющие вопросы, переписку, потерянное время и, возможно, переделку. Найдены за несколько минут до передачи, а не после.
+
+Для Junior BA это не просто исправление конкретного документа. Разбор каждого случая — обучение на реальном материале: почему формулировка плохая и как должна выглядеть хорошая. После десяти таких сессий качество требований меняется на уровне привычки.
+
+### Что происходит под капотом
+
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 7.2 MCP server (`requirements_verify_mcp`), when `check_req_quality` is called, checks each requirement against two groups of BABOK characteristics: Group A (atomic, unambiguous, verifiable, feasible, necessary) and Group B (prioritized, complete, consistent, traceable). Each problem gets a VI-xxx identifier in the verification tracker. After a fix, the BA marks the requirement via `mark_req_verified`, the status changes from `draft` to `verified`. Once all requirements are checked, `save_artifact` generates a Verification Report in `governance_plans/reports/`.
 
 ---
 
-## UC-13: Assessing organizational readiness for change
+## UC-13 — Оценка готовности организации к изменениям
 
-> **For:** Business analysts and PMs on large transformation projects
-> **Pain:** The director wants to launch everything at once, but the organization objectively isn't ready. And "that's my gut feeling" isn't an argument
-> **Features:** Organizational readiness assessment, change strategy option matrix (Task 6.4)
+> **Для кого:** Бизнес-аналитики и PM на крупных трансформационных проектах
+> **Боль:** Директор хочет запустить всё сразу — а организация объективно не готова. Но «я так чувствую» — не аргумент
+> **Фичи:** Organizational Readiness Assessment, матрица вариантов изменения (задача 6.4)
 
-### Situation
+### Ситуация
 
 A pharmacy chain, 150 retail locations nationwide. The director of development, Hastings, has set the goal: roll out a new inventory management system across all locations at once by September 1. "Big bang." The team is afraid to push back, the director is used to fast results.
 
-BA Vera senses something is off. Past major rollouts at the company have ended in chaos, but that's not something people say openly. She doesn't have the authority to say "no," but she has an obligation to present the data.
+BA Вера понимает: что-то здесь не так. Прошлые крупные внедрения в компании заканчивались хаосом — но об этом не принято говорить открыто. У неё нет полномочий сказать «нет», но есть обязанность представить данные.
 
-She opens AInalyst.
+Она открывает AIналитик.
 
-### What Vera does
+### Что делает Вера
 
-> **Vera:** I need to assess organizational readiness for change for the WMS rollout project. The director is planning a big bang by September 1, 150 locations at once. I want an objective picture.
+> **Вера:** Нужно оценить готовность организации к изменениям по проекту внедрения WMS. Директор планирует big bang к 1 сентября, 150 точек одновременно. Хочу получить объективную картину.
 
-### How AInalyst responds
-
----
-
-> **AInalyst:** Running an Organizational Readiness Assessment across six dimensions. I'll ask questions for each, answer from 1 to 5, where 1 is critically low and 5 is fully ready.
->
-> **Leadership engagement.** How actively is top management supporting the change, allocating resources, publicly communicating its importance?
-
-> **Vera:** 4, the director personally initiated the project, the budget is allocated.
-
-> **AInalyst:** **Cultural readiness.** How does the company typically react to change, does staff embrace new things or resist? Have there been major changes in the last 2 years?
-
-> **Vera:** 2, people are used to working the old way, the last CRM rollout two years ago was rough, a third of the stores resisted it for six months.
-
-> **AInalyst:** **Change history.** How successfully has the company delivered major transformation projects in the past?
-
-> **Vera:** 1, honestly, not a single major project was finished on time and without losses.
+### Как отвечает AIналитик
 
 ---
 
-*After six questions:*
+> **AIналитик:** Запускаю Organizational Readiness Assessment по шести измерениям. Буду задавать вопросы по каждому — отвечай от 1 до 5, где 1 — критически низко, 5 — полностью готовы.
+>
+> **Вовлечённость руководства.** Насколько топ-менеджмент активно поддерживает изменение — выделяет ресурсы, публично транслирует важность?
+
+> **Вера:** 4 — директор лично инициировал проект, бюджет выделен.
+
+> **AIналитик:** **Культурная готовность.** Как в компании обычно реагируют на изменения — персонал принимает новое или сопротивляется? Были крупные изменения за последние 2 года?
+
+> **Вера:** 2 — люди привыкли работать по-старому, последнее внедрение CRM два года назад прошло тяжело, треть магазинов саботировала полгода.
+
+> **AIналитик:** **История изменений.** Насколько успешно компания реализовывала крупные проекты трансформации раньше?
+
+> **Вера:** 1 — честно говоря, ни один крупный проект не был завершён в срок и без потерь.
 
 ---
 
-> **AInalyst:** Final Readiness Score: **2.4 / 5.0**, status **Proceed with Caution**.
->
-> Breakdown by dimension:
-> Leadership engagement: 4/5 ✅
-> Cultural readiness: 2/5 ⚠️
-> Change history: 1/5 🔴
-> Technical maturity: 2/5 ⚠️
-> Resource readiness: 3/5 ✅
-> Communication maturity: 2/5 ⚠️
->
-> **Key risk:** The director's high engagement creates an illusion of readiness. But cultural resistance plus a negative track record plus low technical maturity are three independent failure factors, any one of which alone could stop a big bang rollout across the locations.
->
-> Comparing strategy options...
-
-> **AInalyst:** **Analysis of three options:**
->
-> **Option A, Big Bang (as the director is planning):**
-> Speed: maximum. Risk: critical. At a score of 2.4, the historical success rate for big bang rollouts of this kind is under 30%.
->
-> **Option B, Pilot First (recommended):**
-> Launch at 5-10 pilot locations with varied profiles, different regions, sizes, staff experience. 2-3 months. Adjust and scale based on pilot results.
->
-> **Option C, Phased Rollout:**
-> Waves of 30-40 locations every 6 weeks. Lower risk than big bang, but higher than a pilot.
->
-> **Weighted assessment:** Option B (Pilot First) scores highest given the risk profile and current readiness. Time to full coverage: December 2026 instead of September. The trade-off: 3 extra months versus a high probability of failure and a second rollout attempt.
->
-> Put together a report with the rationale for the director?
-
-> **Vera:** Yes. And add a section on what needs to happen before the pilot, the minimum set of conditions.
+*После шести вопросов:*
 
 ---
 
-### What Vera gets
+> **AIналитик:** Итоговый Readiness Score: **2.4 / 5.0** — статус **Proceed with Caution**.
+>
+> Детализация по измерениям:
+> — Вовлечённость руководства: 4/5 ✅
+> — Культурная готовность: 2/5 ⚠️
+> — История изменений: 1/5 🔴
+> — Техническая зрелость: 2/5 ⚠️
+> — Ресурсная готовность: 3/5 ✅
+> — Коммуникационная зрелость: 2/5 ⚠️
+>
+> **Ключевой риск:** Высокая вовлечённость директора создаёт иллюзию готовности. Но культурное сопротивление + негативная история + низкая техническая зрелость — это три независимых фактора провала, каждый из которых в одиночку способен остановить big bang в точках.
+>
+> Сравниваю варианты стратегии изменения...
 
-Not "I feel like this is risky," but a structured assessment with scores across six dimensions, a comparative analysis of three options, and a concrete alternative with a rationale. Now the conversation with the director is about data, not fears.
+> **AIналитик:** **Анализ трёх вариантов:**
+>
+> **Вариант A — Big Bang (как планирует директор):**
+> Скорость: максимальная. Риск: критический. При score 2.4 вероятность успеха big bang — менее 30% по историческим данным аналогичных внедрений.
+>
+> **Вариант B — Pilot First (рекомендуемый):**
+> Запуск в 5-10 пилотных точках с разным профилем — разный регион, размер, опыт персонала. 2-3 месяца. По результатам пилота — корректировка и масштабирование.
+>
+> **Вариант C — Phased Rollout:**
+> Волнами по 30-40 точек, каждые 6 недель. Риск ниже big bang, но выше пилота.
+>
+> **Взвешенная оценка:** Вариант B (Pilot First) набирает наивысший балл с учётом профиля рисков и текущей готовности. Срок достижения полного покрытия — декабрь 2026 вместо сентября. Разница: 3 месяца против высокой вероятности провала и повторного внедрения.
+>
+> Сформировать отчёт с обоснованием для директора?
 
-And a second benefit: if the director insists on big bang anyway, the Decision Log records that the risks were presented, assessed, and knowingly accepted. That's professional insurance.
+> **Вера:** Да. И добавь в отчёт что нужно сделать до пилота — минимальный набор условий.
 
-### What happens under the hood
+---
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+### Что получает Вера
+
+Не «мне кажется, это рискованно», а структурированная оценка с баллами по шести измерениям, сравнительный анализ трёх вариантов и конкретная альтернатива с обоснованием. Теперь разговор с директором — не про страхи, а про данные.
+
+И вторая ценность: если директор всё равно настоит на big bang — в Decision Log зафиксировано что риски были представлены, оценены и осознанно приняты. Это профессиональная страховка.
+
+### Что происходит под капотом
+
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 6.4 MCP server (`change_strategy_mcp`), when `assess_enterprise_readiness` is called, collects scores across six standard dimensions and computes a weighted Readiness Score, change history and cultural readiness carry extra weight since they're the strongest predictors of failure. The `compare_strategy_options` tool builds a weighted matrix for each option against: speed, risk, cost, fit with the readiness profile. The result, with the recommended option, is saved to `{project}_change_strategy.json` and used when generating the final artifact via `save_artifact`.
 
 ---
 
-## UC-14: One artifact, five audiences
+## UC-14 — Один артефакт для пяти аудиторий
 
-> **For:** Business analysts on projects with complex communication needs
-> **Pain:** Every audience needs something different, the director won't read a tech spec, a lawyer won't understand User Stories, a developer doesn't need a business case
-> **Features:** Communication package with role-based adaptation (Task 4.4)
+> **Для кого:** Бизнес-аналитики на проектах со сложной коммуникацией
+> **Боль:** Каждую аудиторию нужно по-разному — директор не будет читать техспецификацию, юрист не поймёт User Stories, разработчик не нуждается в бизнес-обосновании
+> **Фичи:** Коммуникационный пакет с адаптацией под роль (задача 4.4)
 
-### Situation
+### Ситуация
 
-A large retailer. The project: a new loyalty system. BA Marina has finished a set of requirements: 12 confirmed functional requirements, three NFRs, two business rules. A good set, now it needs to go out to interested parties.
+Крупный ритейлер. Проект — новая система лояльности. BA Марина завершила набор требований: 12 подтверждённых функциональных требований, три NFR, два бизнес-правила. Хороший набор — теперь его нужно разослать заинтересованным сторонам.
 
-The problem: the audiences are fundamentally different.
+Проблема: аудитории принципиально разные.
 
-The marketing director wants to understand the business value, and nothing else. The CTO wants to see integration dependencies and architectural consequences. The dev team lead wants concrete user stories with acceptance criteria. The QA lead wants a list of testable conditions. The lawyer only cares about what touches GDPR and personal data.
+Директор по маркетингу хочет понять бизнес-ценность — и ничего больше. CTO хочет видеть интеграционные зависимости и архитектурные последствия. Тимлид разработки — конкретные пользовательские истории с критериями приёмки. QA-лид — перечень тестируемых условий. Юрист — только то, что касается GDPR и персональных данных.
 
-The usual path: five different documents, five separate editing sessions. Marina tries a different one.
+Обычный путь — пять разных документов, пять отдельных сессий редактирования. Марина пробует другой.
 
-### What Marina does
+### Что делает Марина
 
-> **Marina:** Prepare a communication package for the loyalty system requirements for five audiences: marketing director, CTO, dev team lead, QA lead, lawyer. Source: approved_requirements_loyalty_v2.md.
+> **Марина:** Подготовь коммуникационный пакет по требованиям системы лояльности для пяти аудиторий: директор по маркетингу, CTO, тимлид разработки, QA-лид, юрист. Исходник — approved_requirements_loyalty_v2.md.
 
-### How AInalyst responds
-
----
-
-> **AInalyst:** Reading the requirements... Done. Generating five versions.
->
-> **Version 1, Marketing Director (business summary, 1 page):**
-> Focus: what the business gets, in what metrics, by when. Technical details excluded. Three key points: the points-accrual mechanic is projected to increase retention by 12-18%, personalized offers launch automatically, mobile app integration is ready for Q3.
->
-> **Version 2, CTO (technical overview):**
-> Focus: integration points, dependencies on existing infrastructure, performance and security NFRs. A list of open architectural questions requiring resolution before design is attached.
->
-> **Version 3, Dev Team Lead (User Stories + AC):**
-> The 12 requirements reformatted as User Stories with full acceptance criteria. Definition of Done for each story. Dependencies between stories are marked.
->
-> **Version 4, QA Lead (test matrix):**
-> For each requirement: testable conditions, positive and negative scenarios, boundary values. Format ready for import into TestRail.
->
-> **Version 5, Lawyer (GDPR slice):**
-> Only requirements touching personal data: collection, storage, transfer to third parties, retention period, consent withdrawal mechanism. Each one links to the relevant GDPR article.
->
-> All five documents are saved in `governance_plans/reports/`. Want to preview one of them first?
-
-> **Marina:** Show me the lawyer's version, I want to make sure I didn't miss anything.
-
-> **AInalyst:** Here's the GDPR slice.
-> Found 4 GDPR-relevant requirements:
-> FR-003: collecting email and phone number at registration → Art. 6(1)(b), consent for processing
-> FR-007: sharing data with partners for personalized offers → Art. 28, data processor agreement
-> FR-009: purchase history retained for 3 years → Art. 5(1)(e), storage limitation
-> FR-011: account deletion → Art. 17, right to erasure
->
-> ⚠️ **Note:** FR-007 needs an explicit statement in the user agreement of which partners specifically and for what purpose. The current wording doesn't specify this. Recommend clarifying this before legal review.
+### Как отвечает AIналитик
 
 ---
 
-### What Marina gets
+> **AIналитик:** Читаю требования... Готово. Генерирую пять версий.
+>
+> **Версия 1 — Директор по маркетингу (бизнес-резюме, 1 страница):**
+> Акцент: что получит бизнес, в каких метриках, к какому сроку. Технические детали исключены. Три ключевых тезиса: накопительная механика увеличивает retention на прогнозируемые 12-18%, персонализированные офферы запускаются автоматически, интеграция с мобильным приложением готова к Q3.
+>
+> **Версия 2 — CTO (технический обзор):**
+> Акцент: интеграционные точки, зависимости от существующей инфраструктуры, NFR по производительности и безопасности. Приложен список открытых архитектурных вопросов, требующих решения до дизайна.
+>
+> **Версия 3 — Тимлид разработки (User Stories + AC):**
+> 12 требований переформатированы в User Stories с полными критериями приёмки. Definition of Done по каждой истории. Зависимости между историями отмечены.
+>
+> **Версия 4 — QA-лид (тест-матрица):**
+> Для каждого требования — тестируемые условия, позитивные и негативные сценарии, граничные значения. Формат готов к импорту в TestRail.
+>
+> **Версия 5 — Юрист (GDPR-срез):**
+> Только требования, затрагивающие персональные данные: сбор, хранение, передача третьим лицам, срок хранения, механизм отзыва согласия. Для каждого — ссылка на соответствующую статью GDPR.
+>
+> Все пять документов сохранены в `governance_plans/reports/`. Хочешь сначала просмотреть какой-то конкретный?
 
-Five documents from one source, in a single command. Each adapted to the audience's language and needs. And on top of that: the platform itself caught a potential GDPR issue in FR-007 that Marina might have missed while preparing the legal version.
+> **Марина:** Покажи версию для юриста — хочу убедиться что ничего не пропустила.
 
-Instead of half a day of editing, a few minutes and five finished artifacts.
-
-### What happens under the hood
-
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
-
-The Task 4.4 MCP server (`elicitation_communicate_mcp`), when `prepare_communication_package` is called, runs five parallel generations with different `role` parameters: `executive`, `cto`, `dev_lead`, `qa_lead`, `legal`. Each profile determines the relevant requirement filter, level of detail, and output format. For the legal profile, a GDPR analysis fires additionally, the tool checks each requirement for personal data markers and maps it to regulation articles. After generation, `log_communication` records the distribution in the communication log, and `check_communication_schedule` verifies whether a scheduled deadline was missed for any recipient.
+> **AIналитик:** Показываю GDPR-срез.
+> Найдено 4 требования с GDPR-релевантностью:
+> — FR-003: сбор email и телефона при регистрации → ст. 6(1)(b) — согласие на обработку
+> — FR-007: передача данных партнёрам для персонализированных офферов → ст. 28 — договор с обработчиком данных
+> — FR-009: история покупок хранится 3 года → ст. 5(1)(e) — ограничение хранения
+> — FR-011: удаление аккаунта → ст. 17 — право на забвение
+>
+> ⚠️ **Замечание:** FR-007 требует явного указания в пользовательском соглашении каких именно партнёров и с какой целью. В текущей формулировке это не специфицировано. Рекомендую уточнить до юридического согласования.
 
 ---
 
-## UC-15: Reusing requirements on a new project
+### Что получает Марина
 
-> **For:** Business analysts at organizations with several similar projects
-> **Pain:** Writing the same thing from scratch every time, authentication, roles, notifications, logging. Even though it's already been done three times
-> **Features:** Requirement search and reuse (Task 5.2)
+Пять документов из одного исходника — за одну команду. Каждый адаптирован под язык и потребности аудитории. И дополнительно: платформа сама обнаружила потенциальную GDPR-проблему в FR-007, которую Марина могла не заметить при подготовке юридической версии.
 
-### Situation
+Вместо полудня редактирования — несколько минут и пять готовых артефактов.
 
-An enterprise software company. Over three years it delivered three similar projects: an HR portal, an internal CRM, and a document management system. Each time the BA wrote requirements for authentication, the role model, and the notification system from a blank page.
+### Что происходит под капотом
+
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
+
+MCP-сервер задачи 4.4 (`elicitation_communicate_mcp`) при вызове `prepare_communication_package` запускает пять параллельных генераций с разными `role`-параметрами: `executive`, `cto`, `dev_lead`, `qa_lead`, `legal`. Каждый профиль определяет фильтр релевантных требований, уровень детализации и формат вывода. Для юридического профиля дополнительно срабатывает GDPR-анализ — инструмент проверяет каждое требование на наличие маркеров персональных данных и сопоставляет со статьями регламента. После генерации `log_communication` фиксирует факт рассылки в журнал коммуникаций, `check_communication_schedule` проверяет не пропущен ли плановый срок по кому-то из адресатов.
+
+---
+
+## UC-15 — Повторное использование требований на новом проекте
+
+> **Для кого:** Бизнес-аналитики в организациях с несколькими похожими проектами
+> **Боль:** Каждый раз пишем одно и то же с нуля — авторизация, роли, уведомления, логирование. Хотя это уже делали трижды
+> **Фичи:** Поиск и повторное использование требований (задача 5.2)
+
+### Ситуация
+
+Компания-разработчик корпоративного ПО. За три года реализовала три похожих проекта: портал для HR, внутренняя CRM и система документооборота. Каждый раз BA писал требования к авторизации, ролевой модели и системе уведомлений — заново, «с чистого листа».
 
 Now a fourth project is starting: an employee self-service portal. BA Adam knows: authentication, roles, and notifications are coming again. He decides not to reinvent the wheel.
 
@@ -1087,65 +1087,65 @@ Now a fourth project is starting: an employee self-service portal. BA Adam knows
 
 > **Adam:** Starting a new project: self-service-portal-2026. Before writing requirements for authentication and the role model, check if there's anything reusable from past projects.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Searching by tag `authentication` and `authorization` in the repositories hr-portal-2024, crm-internal-2024, docflow-2025...
+> **AIналитик:** Ищу по тегу `authentication` и `authorization` в репозиториях hr-portal-2024, crm-internal-2024, docflow-2025...
 >
-> Found: 8 requirements tagged `authentication`.
+> Найдено: 8 требований с тегом `authentication`.
 >
-> **By status:**
-> ✅ Approved: 6 requirements
-> ⚠️ Approved with notes: 2 requirements (have caveats, need a relevance check)
+> **По статусам:**
+> — ✅ Approved: 6 требований
+> — ⚠️ Approved with notes: 2 требования (есть замечания, требуют проверки актуальности)
 >
-> **List:**
-> FR-AUTH-001: The system shall support SSO via the corporate LDAP. Source: hr-portal-2024. Status: approved. Used in 2 projects.
-> FR-AUTH-002: A user session shall end automatically after 30 minutes of inactivity. Source: crm-internal-2024. Status: approved.
-> FR-AUTH-003: Login attempts with an incorrect password are locked out after 5 failed tries. Source: hr-portal-2024. Status: approved. Requirement passed a security review.
-> *(5 more requirements)*
+> **Список:**
+> — FR-AUTH-001: Система должна поддерживать SSO через корпоративный LDAP. Источник: hr-portal-2024. Статус: approved. Использовано в 2 проектах.
+> — FR-AUTH-002: Сессия пользователя должна завершаться автоматически через 30 минут неактивности. Источник: crm-internal-2024. Статус: approved.
+> — FR-AUTH-003: Попытки входа с неверным паролем блокируются после 5 неудачных попыток. Источник: hr-portal-2024. Статус: approved. Требование прошло security review.
+> — *(ещё 5 требований)*
 >
-> On the role model (`roles`, `rbac`) found another 11 requirements. Show them?
+> По ролевой модели (`roles`, `rbac`) найдено ещё 11 требований. Показать?
 
 > **Adam:** Yes. And tell me right away, of what you found, what can be added to the new project unchanged?
 
-> **AInalyst:** Of the 19 requirements found:
+> **AIналитик:** Из 19 найденных требований:
 >
-> **Add unchanged (13):** basic authentication, SSO, lockout on failed attempts, read/write role permissions, login logging. They don't depend on the specifics of the business processes.
+> — **Добавить без изменений (13):** базовая авторизация, SSO, блокировка по попыткам, ролевые права чтения/записи, логирование входов. Они не зависят от специфики бизнес-процессов.
 >
-> **Adapt before use (4):** requirements for roles specific to previous domains (for example, the "HR manager role" from hr-portal doesn't apply directly and needs adapting).
+> — **Адаптировать перед использованием (4):** требования к ролям, специфичным для предыдущих доменов (например, «роль HR-менеджера» в hr-portal — неприменима напрямую, нужна адаптация).
 >
-> **Don't reuse (2):** requirements with notes from the 2024 security review, the architecture has changed, they're outdated.
+> — **Не переиспользовать (2):** требования с замечаниями из security review 2024 года — архитектура изменилась, они устарели.
 >
-> Add the 13 requirements to the self-service-portal-2026 repository, keeping a link back to the source?
+> Добавить 13 требований в репозиторий self-service-portal-2026 с сохранением ссылки на источник?
 
 > **Adam:** Yes, add them.
 
-> **AInalyst:** Done. 13 requirements added to the self-service-portal-2026 repository. Source and version preserved for traceability. Total savings: roughly 3-4 hours of drafting and approvals.
+> **AIналитик:** Готово. 13 требований добавлены в репозиторий self-service-portal-2026. Источник и версия сохранены для трассировки. Общая экономия: примерно 3-4 часа формулировок и согласований.
 >
-> Now you can focus on what's actually unique to this project.
+> Теперь можешь сосредоточиться на том, что действительно уникально для этого проекта.
 
 ---
 
 ### What Adam gets
 
-Three to four hours of work he'd already done isn't done again. 13 requirements in the new repository from minute one, all previously approved on past projects. And importantly: traceability is preserved, if a problem ever turns up in a source requirement, the platform will flag every project where it's used.
+Три-четыре часа работы, которую он уже делал — не делаются снова. 13 требований в новом репозитории с первой минуты, все прошедшие согласование на прошлых проектах. И важно: трассировка сохранена — если в будущем в исходном требовании обнаружится проблема, платформа уведомит о всех проектах где оно используется.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
-The Task 5.2 MCP server (`requirements_maintain_mcp`), when `find_reusable_requirements` is called, searches by tags and keywords across all `traceability_repo.json` repositories available in the platform's working directory. The `approved` status acts as a filter, requirements in `draft` or `rejected` status don't appear in the results. When adding to the new repository via `init_traceability_repo`, each reused requirement keeps a link to its source (`source_project`, `source_id`), which provides two-way traceability: from the new project back to the original, and forward again.
+MCP-сервер задачи 5.2 (`requirements_maintain_mcp`) при вызове `find_reusable_requirements` выполняет поиск по тегам и ключевым словам во всех репозиториях `traceability_repo.json`, доступных в рабочей директории платформы. Статус `approved` является фильтром — требования в статусе `draft` или `rejected` в результаты не попадают. При добавлении в новый репозиторий через `init_traceability_repo` каждое переиспользуемое требование сохраняет ссылку на источник (`source_project`, `source_id`), что обеспечивает двустороннюю трассировку: из нового проекта к исходному и обратно.
 
 ---
 
-## UC-16: Orphan requirements and assumption management
+## UC-16 — Orphan-требования и управление допущениями
 
-> **For:** Business analysts on projects with "sprawling" scope
-> **Pain:** The repository accumulates requirements nobody's sure of the purpose of, and assumptions nobody has verified
-> **Features:** Business alignment check, assumption log (Task 7.3)
+> **Для кого:** Бизнес-аналитики на проектах с «разросшимся» скоупом
+> **Боль:** В репозитории копятся требования, которые непонятно зачем — и допущения, которые никто не проверял
+> **Фичи:** Проверка бизнес-выравнивания, реестр допущений (задача 7.3)
 
-### Situation
+### Ситуация
 
 A large telecom. The project: a self-service portal for B2B clients: contract management, invoice viewing, support tickets. The repository has grown to 55 requirements. BA Stephanie suspects some of them appeared "along the way," with no link to real business objectives. And one critical assumption that nobody has verified is bothering her too.
 
@@ -1153,32 +1153,32 @@ A large telecom. The project: a self-service portal for B2B clients: contract ma
 
 > **Stephanie:** Check business alignment for all 55 requirements on the b2b-portal-2026 project. I want to find orphan requirements, ones not linked to any business objective.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Running the check against the traceability graph...
+> **AIналитик:** Запускаю проверку по графу трассировки...
 >
-> Of 55 requirements, 7 are orphans (not linked to any business objective or business need):
+> Из 55 требований — 7 orphan-требований (нет связи ни с одной бизнес-целью или бизнес-потребностью):
 >
-> FR-041, FR-042, FR-043: mobile app requirements. The mobile app isn't in scope for b2b-portal-2026 per ba_plan.json.
-> FR-047, FR-048: billing logic requirements. Billing belongs to the ERP-billing system, a different domain.
-> FR-033, FR-039: duplicate FR-011 and FR-019 with minor wording differences.
+> — FR-041, FR-042, FR-043: требования к мобильному приложению. Мобильное приложение не входит в скоуп b2b-portal-2026 согласно ba_plan.json.
+> — FR-047, FR-048: требования к биллинговой логике. Биллинг принадлежит системе ERP-billing — это чужой домен.
+> — FR-033, FR-039: дублируют FR-011 и FR-019 с незначительными отличиями в формулировке.
 >
-> Recommendations: the first five, move out of scope or hand off to the relevant projects. The last two, verify and, if confirmed duplicates, remove.
+> Рекомендации: первые пять — вынести за скоуп или передать в соответствующие проекты. Последние два — проверить и при подтверждении дубля удалить.
 >
-> What do you want to do with each one?
+> Что делаем с каждым?
 
 > **Stephanie:** Accepted for all seven. Now I want to log a critical assumption: we're assuming the ERP system supports a REST API for exporting invoice data. This hasn't been confirmed.
 
-> **AInalyst:** Logging assumption AS-001:
-> "The ERP system (SAP version x.x) supports a REST API and provides an endpoint for exporting a customer's invoice data."
+> **AIналитик:** Фиксирую допущение AS-001:
+> «ERP-система (SAP версии x.x) поддерживает REST API и предоставляет endpoint для выгрузки данных о счетах по клиенту».
 >
-> Risk level: **high_risk**, if this assumption turns out false, it blocks implementation of FR-008, FR-012, FR-015, FR-021 (all invoice-viewing requirements, 4 requirements in total depend directly on this API).
+> Уровень риска: **high_risk** — если допущение окажется ложным, это блокирует реализацию FR-008, FR-012, FR-015, FR-021 (все требования к просмотру счетов, итого 4 требования напрямую зависят от этого API).
 >
-> ⚠️ **Warning:** Validation of FR-008, FR-012, FR-015, FR-021 is blocked until AS-001 is confirmed. Recommend initiating a technical consultation with the ERP architect before the design phase wraps up.
+> ⚠️ **Предупреждение:** Валидация требований FR-008, FR-012, FR-015, FR-021 заблокирована до подтверждения AS-001. Рекомендую инициировать техническую консультацию с архитектором ERP до завершения фазы design.
 >
-> Assign an owner to verify the assumption?
+> Назначить ответственного за верификацию допущения?
 
 > **Stephanie:** Yes, owner is Grant (IT architect). Deadline: April 18.
 
@@ -1188,25 +1188,25 @@ A large telecom. The project: a self-service portal for B2B clients: contract ma
 
 Seven "extra" requirements removed before development, that's several days of developer work saved that wasn't needed. A critical assumption is logged, its risk assessed, and four dependent requirements are flagged "don't validate until confirmed." Grant knows what's expected of him and by when.
 
-If the assumption hadn't been logged, it might have been discovered mid-development, when a developer tried to call an API that doesn't exist.
+Если бы допущение не было зафиксировано — его, возможно, обнаружили бы в середине разработки, когда разработчик попытался бы вызвать несуществующий API.
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 7.3 MCP server (`requirements_validate_mcp`), when `check_business_alignment` is called, does a BFS traversal of the graph in `traceability_repo.json`, for each requirement looking for a path to a business-need root node. Requirements with no such path get the `orphan` status. When an assumption is logged via `log_assumption`, the tool automatically computes an impact_score, the number of requirements that depend on that assumption. If the score exceeds a threshold, or the risk level is `high_risk`, all dependent requirements are flagged `blocked_by_assumption`, and their status in the approval cycle is frozen until the assumption is verified.
 
 ---
 
-## UC-17: A final recommendation to the sponsor with a Value Score
+## UC-17 — Финальная рекомендация спонсору с Value Score
 
-> **For:** Business analysts preparing a recommendation for senior leadership
-> **Pain:** "We recommend option B" sounds like an opinion. Not a conclusion from an analysis.
-> **Features:** Weighted evaluation of solution options, Recommendation Document (Task 7.6)
+> **Для кого:** Бизнес-аналитики, готовящие рекомендацию для высшего руководства
+> **Боль:** «Мы рекомендуем вариант B» — звучит как мнение. А не как вывод из анализа
+> **Фичи:** Взвешенная оценка вариантов решения, Recommendation Document (задача 7.6)
 
-### Situation
+### Ситуация
 
-A manufacturing company. The current MES (manufacturing execution system) is outdated: it breaks down, doesn't integrate with new equipment, and vendor support ends in a year. The board is waiting for a recommendation: what to do.
+Производственная компания. Текущая MES-система (управление производством) устарела: ломается, не интегрируется с новым оборудованием, поддержка вендора прекратится через год. Совет директоров ждёт рекомендацию: что делать.
 
 BA Ian put together three options. Now he doesn't just need to choose, he needs to defend the choice in front of people who will ask uncomfortable questions.
 
@@ -1218,41 +1218,41 @@ BA Ian put together three options. Now he doesn't just need to choose, he needs 
 
 > **Ian:** I need to compare three options for replacing the MES and prepare a recommendation for the board. Options: Build (40M / 18 mo), SAP ME (25M / 8 mo), Hybrid Odoo (18M / 12 mo). Critical requirements: SCADA loop integration, compliance with Russian production accounting regulations, scalability to 3 new plants.
 
-### How AInalyst responds
+### Как отвечает AIналитик
 
 ---
 
-> **AInalyst:** Running an evaluation across five parameters: Benefits, Strategic Alignment, Cost, Risk, Implementability. Let's start with the key constraint.
+> **AIналитик:** Запускаю оценку по пяти параметрам: Benefits, Strategic Alignment, Cost, Risk, Implementability. Начнём с ключевого ограничения.
 >
-> You mentioned SCADA loop integration as a critical requirement. Clarify: does each option have a ready connector, or will custom development be needed?
+> Ты упомянул интеграцию с SCADA-контуром как критическое требование. Уточни: есть ли у каждого варианта готовый коннектор или потребуется кастомная разработка?
 
 > **Ian:** SAP ME, no ready connector for our SCADA. Needs custom development, that's +4-5 months and +8-10 million on top. Build, we write it ourselves, already included in the estimate. Odoo, there's a ready module, tested on a similar production line.
 
-> **AInalyst:** Key point: this changes the picture for Option B. Realistic parameters for SAP ME: budget 33-35 million, timeline 12-13 months. Recalculating the scores...
+> **AIналитик:** Ключевое: это меняет картину по Варианту B. Реальные параметры SAP ME: бюджет 33-35 млн, срок 12-13 месяцев. Пересчитываю оценки...
 >
-> **Final Value Score table:**
+> **Итоговая таблица Value Score:**
 >
-> | Parameter (weight) | Build | SAP ME (adj.) | Hybrid Odoo |
+> | Параметр (вес) | Build | SAP ME (скорр.) | Hybrid Odoo |
 > |---|---|---|---|
 > | Benefits (×2.0) | 7.2 | 8.1 | 7.8 |
 > | Strategic Alignment (×1.5) | 8.0 | 7.5 | 8.2 |
-> | Cost (×1.5, inverted) | 4.0 | 5.8 | 8.5 |
-> | Risk (×1.0, inverted) | 5.5 | 6.2 | 7.0 |
+> | Cost (×1.5, инверт.) | 4.0 | 5.8 | 8.5 |
+> | Risk (×1.0, инверт.) | 5.5 | 6.2 | 7.0 |
 > | Implementability (×1.0) | 5.0 | 6.5 | 7.8 |
 >
-> **Final Value Score:**
-> Build: 52.3
-> SAP ME (adjusted): 61.4
-> **Hybrid Odoo: 73.1** ✅ Recommended
+> **Итоговый Value Score:**
+> — Build: 52.3
+> — SAP ME (скорректированный): 61.4
+> — **Hybrid Odoo: 73.1** ✅ Рекомендуется
 >
-> Hybrid Odoo leads despite lacking the "SAP" brand name. Deciding factors: the ready SCADA connector removes the main technical risk, cost is 40% lower than Build for comparable benefits, and there's a worked-out mitigation plan for Odoo, that risk would have stayed open for SAP ME.
+> Hybrid Odoo лидирует несмотря на отсутствие бренда «SAP». Решающие факторы: готовый SCADA-коннектор снимает главный технический риск, стоимость на 40% ниже Build при сопоставимых benefits, и mitigation-план для Odoo проработан — для SAP ME этот риск остался бы открытым.
 >
-> Success metrics to lock in before the project starts:
-> OEE (Overall Equipment Effectiveness): target +8% by Q4 2027
-> Line changeover time: −30% by Q2 2027
-> Integration incidents: no more than 2 per month in year one
+> Success metrics для фиксации до старта проекта:
+> — OEE (Overall Equipment Effectiveness): цель +8% к Q4 2027
+> — Время переналадки линии: −30% к Q2 2027
+> — Интеграционные инциденты: не более 2 в месяц в первый год
 >
-> Put together a Recommendation Document for the board?
+> Сформировать Recommendation Document для совета директоров?
 
 > **Ian:** Yes. And add a section on "what happens if we do nothing," for the directors who'll want to defer the decision.
 
@@ -1260,50 +1260,50 @@ BA Ian put together three options. Now he doesn't just need to choose, he needs 
 
 ### What Ian gets
 
-A recommendation with numbers that can be checked. The board sees not "we think Odoo is better" but a weighted matrix with a formula and parameters that can be challenged, and recalculated with different weights right there in the meeting if needed.
+Рекомендация с числами, которые можно проверить. Совет директоров видит не «мы думаем, что Odoo лучше», а взвешенную матрицу с формулой и параметрами, которые можно оспорить — и при необходимости пересчитать с другими весами прямо на встрече.
 
-And importantly: success metrics are locked in before development starts. In a year and a half, once the system is running, it'll be clear whether the result was achieved, and there won't be arguments about "what we were even planning for."
+И важно: success metrics зафиксированы до начала разработки. Через полтора года, когда система заработает, будет понятно достигнут ли результат — и не будет споров «а что мы вообще планировали».
 
-### What happens under the hood
+### Что происходит под капотом
 
-> *The business analyst doesn't work with this directly, the Platform does it all automatically.*
+> *Бизнес-аналитик с этим не работает напрямую — Платформа всё делает автоматически.*
 
 The Task 7.6 MCP server (`value_recommend_mcp`), when `add_value_assessment` is called, records each option's parameters, then `compare_value` applies the weighted formula: Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0. Adjusting SAP ME's real parameters for SCADA is a change to the Cost and Risk inputs before running the formula, not an exclusion from consideration. The `save_recommendation` tool generates the final Recommendation Document: an options table, the rationale for the choice, success metrics with baseline and target values, and a risk section. The document is saved to `governance_plans/reports/` and is ready to hand to stakeholders.
 
 ---
 
-## Conclusion: why this works, and for whom
+## Заключение: почему это работает — и для кого
 
 Reading all 17 scenarios above closely, one common thread stands out: in none of them does the business analyst type commands, recall tool names, or dig through documentation. Julia just talks about the project. Andrew describes the commercial director's request. Roman asks to "check the requirements." Ordinary human sentences, and the platform does the work.
 
-That's not an accident and not a marketing trick. It's an architectural decision.
+Это не случайность и не маркетинговый приём. Это архитектурное решение.
 
-### How it works under the hood
+### Как это устроено под капотом
 
 Under the hood, AInalyst runs 21 specialized skills and 22 MCP servers with 114 tools, each of which "knows" a specific BABOK task: how to do it correctly, what to watch for, what artifact to produce.
 
-Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when this skill should fire. When the business analyst writes something in the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know what happened under the hood. And doesn't need to: they see the result.
+Каждый скилл написан по строгой спецификации и содержит YAML-заголовок с триггерами — смысловыми паттернами, которые описывают когда именно этот скилл должен сработать. Когда бизнес-аналитик пишет что-то в чат, AIналитик анализирует запрос, сопоставляет его с триггерами, активирует нужный скилл — и тот вызывает соответствующие инструменты из MCP-серверов. Бизнес-аналитик не знает что именно произошло под капотом. Ему это и не нужно: он видит результат.
 
-That's why the same conversational request, "what's going on with this stakeholder," triggers engagement signal diagnostics, while "compare the interviews" triggers cross-analysis of multiple elicitation sessions. Not because the BA picked the right tool, but because the platform itself knows which tool is needed here.
+Именно поэтому один и тот же разговорный запрос «что происходит с этим стейкхолдером» запускает диагностику сигналов вовлечённости, а «сравни интервью» — кросс-анализ нескольких сессий выявления. Не потому что BA выбрал правильный инструмент, а потому что платформа сама знает какой инструмент здесь нужен.
 
-### What this delivers in practice
+### Что это даёт на практике
 
-**Reduced cognitive load.** A project can run for months, stakeholders, decisions, requirements, approval conditions, change history. Holding all of that in your head is impossible. AInalyst records every step and stores context in structured artifacts. At any point you can ask "what's currently open on approvals" or "why was this decision made back in March," and get an answer immediately. No digging through email, no flipping through folders, no polling colleagues.
+**Снижение когнитивной нагрузки.** Проект может идти месяцами — стейкхолдеры, решения, требования, условия согласования, история изменений. Удержать всё это в голове невозможно. AIналитик фиксирует каждый шаг и хранит контекст в структурированных артефактах. В любой момент можно спросить «что сейчас открыто по согласованиям» или «почему было принято вот это решение в марте» — и получить ответ немедленно. Не нужно поднимать переписку, листать папки, опрашивать коллег.
 
-**Methodological insurance.** BABOK is 500 pages of structured expertise. Nobody has to know it cold, but working by its principles means doing the job right. AInalyst has built that expertise into the process: it doesn't let you skip an important step, it warns about risks, it suggests the next action, and it reminds you of deadlines in time. A BA who isn't deeply versed in the methodology works with the platform just as confidently as an experienced specialist, because the platform guides them through the process.
+**Методологическая страховка.** BABOK — это 500 страниц структурированной экспертизы. Знать его «на зубок» не обязан никто, но работать по его принципам — значит делать работу правильно. AIналитик встроил эту экспертизу в процесс: он не даёт пропустить важный шаг, предупреждает о рисках, подсказывает следующее действие и вовремя напоминает о дедлайнах. BA, который плохо ориентируется в методологии, работает с платформой так же уверенно, как опытный специалист, — потому что платформа ведёт его по процессу.
 
-### Who this is built for
+### Для кого это сделано
 
-The scenarios above cover a deliberately wide range of audiences.
+Сценарии выше охватывают очень разную аудиторию — намеренно.
 
-**An experienced business analyst** gets a tool that removes the routine: structuring transcripts, building traceability matrices, generating communication packages for different audiences. It frees up time for what actually requires expertise: analysis, interpretation, decision-making.
+**Опытный бизнес-аналитик** получает инструмент, который снимает рутину: структурирует транскрипты, строит матрицы трассировки, генерирует коммуникационные пакеты для разных аудиторий. Он освобождает время для того, что действительно требует экспертизы, — анализа, интерпретации, принятия решений.
 
-**A junior or less methodologically trained BA** gets a reliable guide. The platform doesn't judge for not knowing BABOK, it just helps get it right: asking the right questions, explaining why a piece of wording failed validation, showing what a good requirement should look like.
+**Начинающий или менее методологически подготовленный BA** получает надёжного проводника. Платформа не осуждает за незнание BABOK — она просто помогает сделать правильно: задаёт нужные вопросы, объясняет почему формулировка не прошла валидацию, показывает как должно выглядеть хорошее требование.
 
-**A product manager or project manager** on a project with no dedicated BA gets the ability to work by a professional methodology without studying it specially. The platform adapts its language to whoever it's talking to and takes on the role of methodologist, while the PM stays in their own area of responsibility: knowledge of the product, the market, the team.
+**Продакт-менеджер или проджект-менеджер**, на чьём проекте нет выделенного BA, получает возможность работать по профессиональной методологии — не изучая её специально. Платформа адаптирует язык под собеседника и берёт на себя роль методолога, пока PM остаётся в своей зоне ответственности: знание продукта, рынка, команды.
 
-**A startup founder or small team** with no budget for a full-time analyst gets a structured environment for working with requirements from day one, instead of accumulating years of chaos in Notion and chat apps.
+**Стартапер или небольшая команда**, у которых нет бюджета на штатного аналитика, получают структурированную среду для работы с требованиями с первого дня — вместо того чтобы годами накапливать хаос в Notion и мессенджерах.
 
 ---
 
-Different roles, different experience, different context. One platform. Because at its core isn't a list of features, it's a principle: **you bring the knowledge of your project and product, AInalyst takes care of everything else.**
+Разные роли, разный опыт, разный контекст. Одна платформа. Потому что в основе — не список функций, а принцип: **вы приносите знание о своём проекте и продукте, AIналитик берёт на себя всё остальное.**

@@ -2,249 +2,249 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
 ---
-# Chapter 6: Strategy Analysis
+# Глава 6 — Strategy Analysis
 
 ---
 
-## Chapter 6 Overview
+## Общая характеристика Главы 6
 
-BABOK Chapter 6 (Strategy Analysis) is the bridge between "we know what is happening" and "we know what to do." If Chapter 4 provides raw material from interviews and workshops, and Chapter 5 structures and approves requirements, then Chapter 6 answers the strategic question: **why are we changing at all, where exactly are we heading, what stands in our way, and how exactly will we do it.**
+Глава 6 BABOK — «Strategy Analysis» — это мост между «мы знаем что происходит» и «мы знаем что делать». Если Глава 4 даёт сырьё из интервью и воркшопов, а Глава 5 структурирует и утверждает требования, то Глава 6 отвечает на стратегический вопрос: **почему мы вообще меняемся, куда именно движемся, что нам мешает, и как конкретно это сделаем.**
 
-The four tasks of Chapter 6 form a single analytical chain:
+Четыре задачи Главы 6 выстраиваются в единую аналитическую цепочку:
 
 ```
-6.1 Current State  →  6.2 Future State
+6.1 Текущее состояние  →  6.2 Будущее состояние
         ↓                          ↓
-6.3 Assess Risks      →  6.4 Change Strategy
+6.3 Оценка рисков      →  6.4 Стратегия изменений
 ```
 
-The outputs of this chain (business needs (BN-xxx), business goals (BG-xxx), risks (RK-xxx), and change strategy (SOL-xxx)) become the foundation for all subsequent work: Chapter 7 (requirements design) and Chapter 8 (solution evaluation).
+Выходы этой цепочки — бизнес-потребности (BN-xxx), бизнес-цели (BG-xxx), риски (RK-xxx) и стратегия изменений (SOL-xxx) — становятся фундаментом для всей последующей работы: Главы 7 (проектирование требований) и Главы 8 (оценка решения).
 
-**Why this chapter is often done poorly.** In practice, BAs frequently skip strategic analysis or treat it as a formality: they write a single page of "problem description" and jump straight to functional requirements. As a result, requirements end up floating in the air: no one can answer the question "why does the business need this?" Approval drags on, priorities are disputed, and by the time the project ends, it is unclear whether the intended goals were achieved.
+**Почему именно эту главу часто делают плохо.** На практике BA нередко пропускают стратегический анализ или выполняют его формально: пишут одну страницу «описания проблемы» и сразу переходят к функциональным требованиям. В результате требования оказываются «в воздухе» — никто не может ответить на вопрос «зачем это нужно бизнесу?». Согласование затягивается, приоритеты спорны, а когда проект заканчивается — непонятно, достигли ли мы того чего хотели.
 
-**Project phase.** All of Chapter 6 runs in the `analysis` phase. If you have not switched the phase yet, ask AInalyst to do it, or run `python phase.py analysis`.
+**Фаза проекта.** Вся Глава 6 выполняется в фазе `analysis`. Если вы ещё не переключили фазу — попросите AIналитик сделать это или запустите скрипт `python phase.py analysis`.
 
 ---
 
-## Task 6.1: Analyze Current State
+## Задача 6.1 — Analyze Current State (Анализ текущего состояния)
 
-### Overview
+### Краткое описание
 
-The BA researches and documents how the organization operates **right now**: business processes, technology, structure, policies, external factors. The main goal is not to describe everything indiscriminately, but to identify the root causes of problems and formulate **business needs**: concrete, measurable justifications for change.
+BA исследует и документирует то, как организация работает **сейчас**: бизнес-процессы, технологии, структуру, политики, внешние факторы. Главная цель — не описать всё подряд, а выявить корневые причины проблем и сформулировать **бизнес-потребности**: конкретные, измеримые обоснования для изменений.
 
-This is the starting point for everything that follows. Without it, you cannot describe the future state, cannot assess risks, cannot form a strategy, and cannot later measure the project's success.
+Это точка отсчёта для всего что будет дальше. Без неё нельзя описать будущее состояние, нельзя оценить риски, нельзя сформировать стратегию — и нельзя потом измерить успех проекта.
 
-### BA Pain Points
+### Боли и проблемы BA
 
-**"We describe symptoms, not causes."** The BA collects complaints: "it's slow," "it's inconvenient," "data gets lost." These are all symptoms. There may be a single root cause (for example, the lack of a unified database), but the BA never digs down to it. As a result, the solution is designed to address the symptoms, and six months later the problem resurfaces somewhere else.
+**«Описываем симптомы, а не причины».** BA собрал жалобы: «медленно», «неудобно», «теряются данные». Это всё симптомы. Корневая причина может быть одна — например, отсутствие единой базы данных — но BA не докапывается до неё. В результате проектируется решение «под симптомы» и через полгода проблема возвращается в другом месте.
 
-**"The business need is framed as a solution."** A classic mistake: instead of "we are losing 30% of customers due to slow processing," they write "we need a CRM system." If the business need is already a solution, alternatives are never considered at all. The project follows a single path from the start, without analysis.
+**«Бизнес-потребность сформулирована как решение».** Классическая ошибка: вместо «мы теряем 30% клиентов из-за медленной обработки» пишут «нам нужна CRM-система». Если бизнес-потребность — это решение, то альтернативы не рассматриваются вовсе. Проект изначально идёт по одному пути без анализа.
 
-**"There are no numbers."** "The process is inefficient," "customers are unhappy," "there's a lot of manual work": these are all descriptions without metrics. Without baseline numbers, it will be impossible to prove the value of the change after it is implemented. And it is impossible to prioritize: how inefficient? How unhappy?
+**«Нет цифр».** «Процесс неэффективный», «клиенты недовольны», «много ручной работы» — всё это описания без метрик. Без базовых цифр невозможно будет доказать ценность изменения после его внедрения. И невозможно приоритизировать: насколько неэффективный? Насколько недовольны?
 
-**"We analyze everything indiscriminately."** The BA tries to describe the entire organization, and three weeks later ends up with 80 pages of text that nobody reads. The analysis drags on, stakeholders lose interest, and real decisions never get made.
+**«Анализируем всё подряд».** BA пытается описать всю организацию целиком — и через три недели у него 80 страниц текста, которые никто не читает. Анализ затягивается, стейкхолдеры теряют интерес, а до реальных решений руки не доходят.
 
-**"RCA is done as a formality."** "The fishbone diagram is drawn," box checked. But the real root cause was never established, because the facilitation was superficial. As a result, the solution ends up aimed at the wrong target.
+**«RCA делается формально».** «Диаграмма Исикавы нарисована» — галочка поставлена. Но реальная корневая причина так и не была установлена, потому что фасилитация была поверхностной. В итоге решение направлено не туда.
 
-### What We Built
+### Что мы реализовали
 
-**Scoping the analysis with smart defaults.** The first step is an explicit contract: exactly what to analyze, out of 8 possible elements (business needs, processes and capabilities, technology, org structure, policies and regulations, business architecture, assets, external factors). The platform proposes a default set depending on the initiative type: for `process_improvement`, that's processes, technology, and policies; for `new_system`, it's capabilities, technology, and architecture. The BA does not have to guess what to analyze: the platform provides a starting point.
+**Скоупирование анализа с умными defaults.** Первый шаг — явный контракт: что именно анализируем из 8 возможных элементов (бизнес-потребности, процессы и возможности, технологии, оргструктура, политики и регуляции, бизнес-архитектура, активы, внешние факторы). Платформа предлагает набор по умолчанию в зависимости от типа инициативы: для `process_improvement` — это процессы, технологии и политики, для `new_system` — возможности, технологии и архитектура. BA не угадывает что нужно анализировать — получает отправную точку.
 
-**Structured data collection for each element.** For every element in scope, the platform asks specific questions and helps the BA structure the answers. The result is not a "stream of consciousness" but a concrete, measurable description with metrics, sources, and pain points.
+**Структурированный сбор данных по каждому элементу.** Для каждого элемента из скоупа платформа задаёт конкретные вопросы и помогает BA структурировать ответы. Результат — не «поток сознания», а конкретное измеримое описание с метриками, источниками и pain points.
 
-**RCA: three techniques to choose from.** The platform supports three approaches to root cause analysis:
-- **"Five Whys"**: for a single problem with a linear chain of causes. Fast, 15 to 30 minutes.
-- **Ishikawa diagram (fishbone)**: when causes are multifactorial: People, Processes, Technology, Data.
-- **Problem tree**: strategic analysis with consequences, useful when you need to convince the sponsor.
+**RCA — три техники на выбор.** Платформа поддерживает три подхода к анализу корневых причин:
+- **«Пять почему»** — для одной проблемы с линейной цепочкой причин. Быстро, 15–30 минут.
+- **Диаграмма Исикавы (fishbone)** — когда причины многофакторные: Люди, Процессы, Технологии, Данные.
+- **Дерево проблем** — стратегический анализ с последствиями, когда нужно убедить спонсора.
 
-Regardless of which technique is chosen, the result is normalized into a single format, which matters for automatically linking it to business needs.
+Независимо от выбранной техники результат нормализуется в единый формат — это важно для автоматической связки с бизнес-потребностями.
 
-**Formulating and registering business needs.** After RCA, the platform helps formulate business needs using a strict template: what is wrong right now (with numbers), why it is happening (a link to the RCA), what happens if nothing changes (cost of inaction), and what we expect from the change. Each business need gets an identifier, BN-001, BN-002, and is automatically registered in the traceability repository (5.1) as the upstream node of the entire chain: `BN → BR → FR → TC`.
+**Формулировка и регистрация бизнес-потребностей.** После RCA платформа помогает сформулировать бизнес-потребности по строгому шаблону: что не так сейчас (с цифрами), почему это происходит (ссылка на RCA), что будет если не менять (cost of inaction), что ожидаем от изменений. Каждая бизнес-потребность получает идентификатор BN-001, BN-002 и автоматически регистрируется в репозитории трассировки (5.1) как upstream-вершина всей цепочки: `BN → BR → FR → TC`.
 
-**Completeness check and final report.** Before wrapping up, the platform checks: whether every element in scope has been filled in, whether at least one RCA exists, and whether business needs are linked to root causes. The final report is saved to the `reports` folder in Markdown format, ready to send to stakeholders.
+**Проверка полноты и финальный отчёт.** Перед завершением платформа проверяет: все ли элементы из скоупа заполнены, есть ли хотя бы один RCA, связаны ли бизнес-потребности с корневыми причинами. Итоговый отчёт сохраняется в папку `reports` в формате Markdown — готов к отправке стейкхолдерам.
 
-### Value for the BA
+### Ценности для BA
 
-**Time saved on structuring.** BAs usually spend significant time not on the analysis itself, but on deciding what exactly to describe, in what format, and in how much detail. The platform removes that burden: scoping takes a five-minute conversation. After that, the BA answers specific questions for each element, thinking about content instead of structure.
+**Экономия времени на структурировании.** Обычно BA тратит значительное время не на сам анализ, а на то чтобы решить: что именно описывать, в каком формате, насколько детально. Платформа снимает эту нагрузку: скоупирование занимает 5 минут диалога. Дальше BA отвечает на конкретные вопросы по каждому элементу — не думает о структуре, а думает о содержании.
 
-**Protection against "treating symptoms."** RCA tools are built into the workflow, so the BA cannot "accidentally" skip cause analysis and jump straight to solutions. Once the root cause is explicitly documented and linked to a business need, every subsequent decision is checked against it. This reduces the risk of a costly reversal midway through development.
+**Защита от «лечения симптомов».** RCA-инструменты встроены в рабочий процесс — BA не может «случайно» пропустить анализ причин и перейти к решениям. Когда корневая причина явно зафиксирована и связана с бизнес-потребностью, все последующие решения проверяются против неё. Это снижает риск дорогостоящего разворота в середине разработки.
 
 **A measurable justification for change.** Business needs backed by metrics speak the sponsor's language. Instead of "we need improvements," the BA shows up with "we are losing 2.4 million dollars per quarter due to manual request processing (RCA-001); with automation, we expect processing time to drop from 8 hours to 1.5 hours." That is a convincing case, not a request for resources.
 
-**Traceability from day one.** The BN-xxx nodes created in 6.1 become the roots of the entire traceability tree. By the end of the project, it will be clear: this feature (FR-045) was built because business need BN-002 exists, which came from root cause RCA-001, confirmed by specific data. That is professional defensibility for every decision.
+**Трассировка с самого начала.** BN-xxx узлы, созданные в 6.1, становятся корнями всего дерева трассировки. В конце проекта будет видно: эта функция (FR-045) была разработана потому что есть бизнес-потребность BN-002, которая возникла из корневой причины RCA-001, подтверждённой такими-то данными. Это профессиональная защищаемость каждого решения.
 
-**A smooth transition into 6.2.** The data from 6.1 automatically becomes context for 6.2: business needs become the foundation for future-state goals, and current metrics become the baseline for KPIs. The BA does not start 6.2 from a blank page.
+**Плавный переход в 6.2.** Данные 6.1 автоматически становятся контекстом для 6.2: бизнес-потребности становятся основой для целей будущего состояния, текущие метрики — baseline для KPI. BA не начинает 6.2 с чистого листа.
 
-### How to Use It: An Example
+### Как пользоваться: пример
 
-Project: an internal contract approval system at a manufacturing company.
+Проект: внутренняя система согласования договоров в производственной компании.
 
-*"I need to analyze the current state for the contract-approval project. We have problems with the speed of contract approval. Initiative type: process improvement."*
+*«Нужно проанализировать текущее состояние по проекту contract-approval. У нас проблемы со скоростью согласования договоров. Тип инициативы — улучшение процесса.»*
 
-The platform proposes a scope: business needs, processes and capabilities, technology, policies. The BA specifies the depth: standard. Next comes an iterative dialogue: AInalyst asks questions about each element, and the BA answers.
+Платформа предлагает скоуп: бизнес-потребности, процессы и возможности, технологии, политики. BA уточняет глубину — standard. Далее — итеративный диалог: AIналитик задаёт вопросы по каждому элементу, BA отвечает.
 
-Once data collection wraps up: *"Run an RCA on the approval speed problem. I'll use Five Whys."*
+По итогу сбора данных: *«Запусти RCA по проблеме скорости согласования. Буду использовать пять почему.»*
 
-The Five Whys dialogue reveals the root cause: the lack of a unified contract status registry forces every approver to check email and call colleagues.
+Диалог по пяти «почему» выявляет корневую причину: отсутствие единого реестра статусов договоров заставляет каждого согласующего проверять почту и звонить коллегам.
 
-*"Record the business need: speed up the approval cycle from the current 14 days to 3 days; the cost of delay is 180 thousand per month."*
+*«Зафиксируй бизнес-потребность: ускорить цикл согласования с текущих 14 дней до 3 дней, стоимость просрочки — 180 тысяч в месяц.»*
 
-BN-001 is registered. The final report is ready at `reports/6_1_current_state_contract-approval.md`.
+BN-001 зарегистрирована. Финальный отчёт готов в `reports/6_1_current_state_contract-approval.md`.
 
-**The BA did not memorize any commands.** Did not think about which tool to call. Just described the context: the platform guided the process.
+**BA не запоминал команд.** Не думал какой инструмент вызывать. Только описывал контекст — платформа вела по процессу.
 
 ---
 
-## Task 6.2: Define Future State
+## Задача 6.2 — Define Future State (Определение будущего состояния)
 
-### Overview
+### Краткое описание
 
-The BA describes the target state of the organization: how processes, technology, and structure should work **after** the change. The key outputs are SMART objectives with measurable KPIs, gap analysis (an explicit description of the gap between as-is and to-be), and an assessment of the change's potential value.
+BA описывает целевое состояние организации: как должны работать процессы, технологии и структура **после** изменений. Ключевые выходы — SMART-цели с измеримыми KPI, gap-анализ (явное описание разрыва между as-is и to-be) и оценка потенциальной ценности изменений.
 
-This is the task where the question "what exactly counts as project success" gets answered.
+Это задача, на которой решается: «что именно считать успехом проекта».
 
-### BA Pain Points
+### Боли и проблемы BA
 
-**"Goals without metrics."** "Improve customer service," "increase efficiency," "reduce risk": these are intentions, not goals. They don't let you answer, at the end of the project, whether you achieved what you wanted. The sponsor can always say "well, we wanted more." The BA has no defense.
+**«Цели без измерений».** «Улучшить клиентский сервис», «повысить эффективность», «снизить риски» — это намерения, не цели. Они не позволяют в конце проекта ответить: мы достигли того, что хотели? Спонсор всегда может сказать «ну, мы хотели большего». BA не защищён.
 
-**"The future is described as a list of deliverables."** "We'll roll out a CRM, configure the integration, train the team": that's an implementation plan, not a description of the future state. The difference is critical: a future-state description answers "how will it work," not "what will we do."
+**«Будущее описывается как список внедряемого».** «Поставим CRM, настроим интеграцию, обучим команду» — это план внедрения, не описание будущего состояния. Разница критична: описание будущего отвечает «как будет работать», а не «что будем делать».
 
-**"Gap analysis is not done explicitly."** The BA understands the gap intuitively but never documents it in a structured way. As a result, task 6.4 has no basis for choosing a strategy: the BA either has to go back and redo the work, or make decisions "by feel."
+**«Gap-анализ не делается явно».** BA понимает разрыв интуитивно, но нигде не фиксирует его структурированно. В результате в задаче 6.4 нет основания для выбора стратегии — приходится либо возвращаться назад, либо принимать решения «по ощущению».
 
-**"Constraints surface too late."** Budget constraints, technical restrictions, regulatory boundaries: the BA learns about them midway through design, when part of the work is already done. Redesigning is expensive.
+**«Ограничения выясняются поздно».** Бюджетные ограничения, технические запреты, регуляторные рамки — BA узнаёт о них в середине проектирования, когда часть работы уже выполнена. Перепроектирование обходится дорого.
 
-**"The value of the change is never assessed."** The BA knows things "will be better" but never tries to structure it: what types of benefits do we expect? How significant are they? This keeps the conversation with the sponsor abstract and reduces their willingness to allocate resources.
+**«Ценность изменения не оценивается».** BA знает что «будет лучше», но не пытается структурировать: какие типы выгод ожидаем? Насколько они значительны? Это делает разговор со спонсором абстрактным и снижает его готовность выделять ресурсы.
 
-### What We Built
+### Что мы реализовали
 
-**"Past next to future": a UX pattern.** If 6.1 has been completed for the same project, whenever the BA describes each future-state element, the platform automatically shows the current state of that same element right next to it. The BA does not switch between documents; the contrast is visible right in the dialogue. This speeds up the work and reduces the risk that the "future" accidentally repeats the "current state."
+**«Прошлое рядом с будущим» — UX-паттерн.** Если 6.1 выполнена для того же проекта, при описании каждого элемента будущего состояния платформа автоматически показывает текущее состояние этого же элемента рядом. BA не переключается между документами — видит контраст прямо в диалоге. Это ускоряет работу и снижает риск что «будущее» случайно повторит «текущее».
 
-**SMART validation of goals.** For every business goal, the platform checks: is there a measurable KPI, is there a baseline (what we're starting from), is there a deadline. A goal without a KPI is not a goal; the platform flags this and suggests an improvement. Each business goal gets a BG-xxx identifier and is registered in the traceability repository.
+**SMART-валидация целей.** Для каждой бизнес-цели платформа проверяет: есть ли измеримый KPI, есть ли baseline (от чего отталкиваемся), есть ли срок. Цель без KPI — не цель, платформа это фиксирует и предлагает улучшение. Каждая бизнес-цель получает идентификатор BG-xxx и регистрируется в трассировочном репозитории.
 
-**Explicit gap analysis as a separate artifact.** Gap analysis is not a "step that's just implied"; it's a separate tool with its own artifact (`{project}_gap_analysis.json`). For every gap, the platform records: the type of change (new / improvement / elimination / replacement) and the degree of complexity. This file is a required input for task 6.4.
+**Явный gap-анализ как отдельный артефакт.** Gap-анализ — не «само собой подразумевающийся шаг», а отдельный инструмент с собственным артефактом (`{project}_gap_analysis.json`). Для каждого разрыва фиксируется: тип изменения (новое / улучшение / устранение / замена), степень сложности. Этот файл — обязательный вход для задачи 6.4.
 
-**A structured constraints registry.** Budget, timelines, technical restrictions, regulatory boundaries: every constraint gets a type, a description, and a status: assumed or confirmed. The platform explicitly flags assumed constraints as needing validation ("this might not actually be a constraint, just a habit").
+**Структурированный реестр ограничений.** Бюджет, сроки, технические запреты, регуляторные рамки — каждое ограничение получает тип, описание и статус: предполагаемое или подтверждённое. Предполагаемые ограничения платформа явно помечает как требующие валидации — «возможно это не ограничение, а просто привычка».
 
-**Assessment of potential value.** A structured list of expected benefits with types (financial, operational, strategic, human), a significance rating, and a confidence rating. This is not an accounting calculation; it is context for task 7.6, where a detailed value analysis will be performed.
+**Оценка потенциальной ценности.** Структурированный список ожидаемых выгод с типами (финансовые, операционные, стратегические, человеческие), оценкой значимости и уверенности. Это не бухгалтерский расчёт — это контекст для задачи 7.6, где будет выполнен детальный анализ ценности.
 
-### Value for the BA
+### Ценности для BA
 
-**SMART goals as protection against overestimating success.** When, a year later, the sponsor says "well, we expected more," the BA pulls up BG-001: "the goal was to cut processing time from 14 to 3 days. We reached 4 days, 97% of the goal." That is a conversation about data, not impressions. The platform makes goals defensible from the moment they are set.
+**SMART-цели как защита от переоценки успеха.** Когда через год спонсор говорит «ну, мы ожидали большего», BA открывает BG-001: «цель была — сократить время обработки с 14 до 3 дней. Достигли 4 дней — 97% от цели». Это разговор о данных, а не о впечатлениях. Платформа делает цели защищаемыми ещё на этапе их постановки.
 
-**Gap analysis as time saved in task 6.4.** A BA who completed gap analysis in 6.2 does not start from zero when choosing a strategy in task 6.4. The platform automatically uses the gap artifact as input: here is what needs to change, here is the complexity of each change. Task 6.4 work is cut in half.
+**Gap-анализ как экономия на этапе 6.4.** BA, который сделал gap-анализ в 6.2, в задаче 6.4 не начинает с нуля при выборе стратегии. Платформа автоматически использует gap-артефакт как вход: вот что нужно изменить, вот сложность каждого изменения. Работа 6.4 сокращается вдвое.
 
-**Documenting constraints early means fewer do-overs.** Constraints documented in 6.2 become context for design in Chapter 7. Instead of discovering a budget constraint while evaluating design options (7.5) and redoing work, the BA and the team work within known boundaries from the start.
+**Ранняя фиксация ограничений = меньше переделок.** Ограничения, зафиксированные в 6.2, становятся контекстом для проектирования в Главе 7. Вместо того чтобы узнать о бюджетном ограничении на этапе оценки дизайн-опций (7.5) и переделывать работу — BA и команда работают в известных рамках с самого начала.
 
-**Connected to the rest of the platform.** The data from 6.2 feeds three later tasks: gap_analysis feeds 6.4 (strategy), business goals feed 7.3 (business context for requirements), and the value assessment feeds 7.6 (value analysis). The BA does the work once; the platform reuses the results.
+**Связность с остальной платформой.** Данные 6.2 питают три последующих задачи: gap_analysis → 6.4 (стратегия), бизнес-цели → 7.3 (бизнес-контекст для требований), оценка ценности → 7.6 (анализ value). BA делает работу один раз — платформа переиспользует результаты.
 
-### How to Use It: An Example
+### Как пользоваться: пример
 
-Continuing the contract-approval project. 6.1 is complete, BN-001 is on record.
+Продолжение проекта contract-approval. 6.1 выполнена, BN-001 зафиксирована.
 
-*"Let's describe the future state for contract-approval. We want to cut the approval cycle from 14 to 3 days within 6 months."*
+*«Описываем будущее состояние для contract-approval. Хотим сократить цикл согласования с 14 до 3 дней за 6 месяцев.»*
 
-The platform scopes the analysis using the same elements as in 6.1. For every element, it shows the current state right next to it: "right now: approval by email, manual notification, no unified status." The BA describes how it should be.
+Платформа скоупирует анализ — те же элементы что в 6.1. По каждому элементу рядом показывает текущее состояние: «сейчас — согласование по email, ручное уведомление, нет единого статуса». BA описывает как должно быть.
 
-*"Record the goal: cut the average approval time from 14 to 3 business days by October 1."*
+*«Зафиксируй цель: сократить средний срок согласования с 14 до 3 рабочих дней к 1 октября.»*
 
-The AInalyst platform checks SMART: there's a metric, there's a baseline, there's a deadline. BG-001 is registered.
+Платформа AIналитик проверяет SMART: метрика есть, baseline есть, срок есть — BG-001 зарегистрирована.
 
-*"Run the gap analysis."*
+*«Запусти gap-анализ.»*
 
-Three key gaps: no unified status registry (HIGH, replacement), no automatic notifications (MEDIUM, new), approval requires an in-person signature (LOW, improvement).
+Три ключевых gap: нет единого реестра статусов (HIGH, замена), нет автоуведомлений (MEDIUM, новое), согласование требует личной подписи (LOW, улучшение).
 
 *"Record the constraint: budget no more than 3 million dollars, timeline: 6 months."*
 
-The report and gap_analysis.json are saved, ready to be used in 6.3 and 6.4.
+Отчёт и gap_analysis.json сохранены — готовы к использованию в 6.3 и 6.4.
 
 ---
 
-## Task 6.3: Assess Risks
+## Задача 6.3 — Assess Risks (Оценка рисков)
 
-### Overview
+### Краткое описание
 
-The BA identifies threats to achieving business goals, assesses them by likelihood and impact, plans response measures, and forms a justified recommendation for the sponsor: proceed with the project, proceed with risk-mitigation conditions, or do not proceed.
+BA идентифицирует угрозы достижению бизнес-целей, оценивает их по вероятности и воздействию, планирует меры реагирования и формирует обоснованную рекомендацию для спонсора: продолжать проект, продолжать с условиями по снижению рисков или не начинать.
 
-### BA Pain Points
+### Боли и проблемы BA
 
-**"Risks are a formality."** The risk table exists because "that's how it's done." Nobody reads it, response measures are never carried out, risks are never updated. A ghost document that has no effect on decisions.
+**«Риски — формальность».** Таблица рисков создана потому что «так надо». Никто её не читает, меры реагирования не исполняются, риски не обновляются. Документ-призрак, который никак не влияет на решения.
 
-**"Risks are vaguely worded."** "Integration risk," "schedule risk," "budget risk": these are categories, not risks. A vague risk cannot be scored for likelihood, and no one can devise a concrete mitigation plan for it. When such a "risk" actually happens, everyone is surprised.
+**«Риски сформулированы расплывчато».** «Риск интеграции», «риск сроков», «риск бюджета» — это категории, не риски. Когда риск расплывчатый, его невозможно ни оценить вероятность, ни придумать конкретный mitigation-план. При наступлении такого «риска» все удивляются.
 
-**"There is no link between risks and decisions."** The BA described the risks in one document and wrote the strategy in another. Nobody checked whether the chosen strategy reduces the top risks, or makes them worse. The link exists only in the BA's head, if it exists at all.
+**«Нет связи между рисками и решениями».** BA описал риски в одном документе, написал стратегию в другом. Никто не проверял: а выбранная стратегия снижает топ-риски? Или она их усугубляет? Связь существует только в голове BA, если вообще существует.
 
-**"The sponsor doesn't know their own risk position."** The BA shows up with a risk matrix, and the sponsor asks "so what?" There has been no conversation about risk tolerance, which means there are no criteria for evaluation: is a risk with a score of 15 fine, or a catastrophe? It depends on the organization's context.
+**«Спонсор не знает своей позиции по риску».** BA приходит с risk matrix, а спонсор спрашивает «ну и что?». Нет разговора о толерантности к риску — значит, нет критериев для оценки: вот этот риск с score 15 — это нормально или катастрофа? Зависит от контекста организации.
 
-**"The recommendation is just the BA's personal opinion."** "I think the risks are acceptable" is not a professional position. The sponsor may disagree, leaving the BA in a vulnerable spot. There are no objective criteria.
+**«Рекомендация — личное мнение BA».** «Я думаю, риски приемлемые» — это не профессиональная позиция. Спонсор может не согласиться, и тогда BA в уязвимой позиции. Нет объективных критериев.
 
-### What We Built
+### Что мы реализовали
 
-**Auto-importing draft risks from context.** If tasks 6.1 and 6.2 have been completed, the platform automatically scans the artifacts and proposes draft risks: from the root causes in 6.1, from the constraints and gaps in 6.2, and from problems stakeholders mentioned (4.2). The BA does not start from a blank page: they review the proposed list and add to it.
+**Автоимпорт черновиков рисков из контекста.** Если выполнены задачи 6.1 и 6.2 — платформа автоматически сканирует артефакты и предлагает черновики рисков: из корневых причин 6.1, из ограничений и gaps 6.2, из упомянутых стейкхолдерами проблем (4.2). BA не начинает с пустой страницы — проверяет предложенный список и дополняет его.
 
-**The "If X, then Y" risk format.** The platform requires a clear statement: "If [trigger/condition], then [consequence]." For example: "If the legacy system's API does not support the required methods, then integration will take 6 weeks longer," instead of "integration risk." A statement like this can be scored, and a concrete mitigation plan can be built around it.
+**Формат риска «Если X, то Y».**  Платформа требует чёткой формулировки: «Если [триггер/условие], то [последствие]». Примеры — «Если API legacy-системы не поддерживает нужные методы, то интеграция займёт на 6 недель больше» вместо «риск интеграции». Такую формулировку можно оценить и по ней можно составить конкретный mitigation-план.
 
-**A risk matrix with semi-quantitative scoring.** Every risk is scored on two axes: likelihood (1 to 5) and impact (1 to 5). The platform builds the matrix, classifies risks into Low / Medium / High zones, and generates a cumulative profile. This is not just a nice-looking table; it is the basis for the recommendation.
+**Risk matrix с полуколичественной оценкой.** Каждый риск оценивается по двум осям: likelihood (1–5) и impact (1–5). Платформа строит матрицу, классифицирует риски по зонам Low / Medium / High и формирует cumulative profile. Это не просто красивая таблица — это основание для рекомендации.
 
-**An explicit risk-tolerance position.** Before building the matrix, the BA records the organization's tolerance_level and the High-risk threshold. Quick reference points: a bank or the public sector maps to risk_averse, a commercial company to neutral, a startup to risk_seeking. After that, a rating of "score 15 is High" carries concrete meaning for that specific organization.
+**Явная позиция по риск-толерантности.** Перед матрицей BA фиксирует tolrance_level организации и порог High-рисков. Быстрые ориентиры: банк или госсектор → risk_averse, коммерческая компания → neutral, стартап → risk_seeking. После этого оценка «score 15 — это High» имеет конкретный смысл для данной организации.
 
-**A deterministic recommendation with a narrative.** The logic for determining the recommendation type is algorithmic: no High risks maps to `proceed_despite_risk`; High risks with mitigation maps to `proceed_with_mitigation`; critical risks without mitigation maps to `do_not_proceed`. The platform adds specific text backed by numbers. The BA comes to the sponsor not with a personal opinion, but with a justified position.
+**Детерминированная рекомендация с narrative.** Логика определения типа рекомендации — алгоритмическая: нет High-рисков → `proceed_despite_risk`; есть High-риски с mitigation → `proceed_with_mitigation`; критичные риски без mitigation → `do_not_proceed`. Платформа добавляет конкретный текст с цифрами. BA приходит к спонсору не с личным мнением, а с обоснованной позицией.
 
-**Integration with traceability.** When finalized, risks (RK-xxx) can be registered in the 5.1 repository with `threatens` links to business needs. This means that in task 5.4 (change management), it will be visible which risks threaten which business needs.
+**Интеграция с трассировкой.** При финализации риски (RK-xxx) могут быть зарегистрированы в репозитории 5.1 со связями `threatens` к бизнес-потребностям. Это означает: в задаче 5.4 (управление изменениями) будет видно какие риски угрожают каким бизнес-потребностям.
 
-### Value for the BA
+### Ценности для BA
 
-**From a "formal document" to a working decision-making tool.** A risk register built through the platform has a direct effect on 6.4: when comparing strategy options, each option is scored on which risks it reduces and which it makes worse. The risks from 6.3 literally feed into the strategy-selection matrix.
+**От «формального документа» к рабочему инструменту принятия решений.** Риск-реестр, созданный через платформу, напрямую влияет на 6.4: при сравнении вариантов стратегии каждый вариант оценивается по тому, какие риски он снижает, а какие усугубляет. Риски из 6.3 буквально входят в матрицу выбора стратегии.
 
-**A defensible recommendation for the sponsor.** When the sponsor asks "are you sure we should move forward?" the BA answers: "Of 11 identified risks, 2 are in the High zone. A mitigation plan has been developed for both. If the plans are carried out, the cumulative profile drops from 78 to 42. Recommendation: proceed_with_mitigation." That is concrete and defensible.
+**Защищаемая рекомендация для спонсора.** Когда спонсор спрашивает «вы уверены что нам стоит двигаться вперёд?», BA отвечает: «Из 11 идентифицированных рисков 2 находятся в High-зоне. По обоим разработан mitigation-план. При выполнении планов суммарный профиль снижается с 78 до 42. Рекомендация — proceed_with_mitigation.» Это конкретно и защищаемо.
 
-**Time saved through auto-import.** A BA who diligently completed 6.1 and 6.2 gets draft risks "for free": the platform scans the artifacts already created. Instead of thinking "what could go wrong?" from a blank page, the BA reviews the proposals and adds project-specific risks.
+**Экономия времени через автоимпорт.** BA, который добросовестно выполнил 6.1 и 6.2, получает черновики рисков «бесплатно» — платформа сканирует уже созданные артефакты. Вместо того чтобы думать «а что могло пойти не так?» с чистого листа, BA проверяет предложенное и дополняет специфическими рисками.
 
-**Professional communication.** The 6.3 report is a document for the sponsor. It is written in plain language: the top 3 High risks, mitigation plans, the recommendation. The BA doesn't have to explain what a risk matrix is; they just hand over the document.
+**Профессиональная коммуникация.** Отчёт 6.3 — это документ для спонсора. Он написан человеческим языком: топ-3 High-риска, mitigation-планы, рекомендация. BA не объясняет что такое risk matrix — просто передаёт документ.
 
-### How to Use It: An Example
+### Как пользоваться: пример
 
-*"Let's assess risks for the contract-approval project. Initiative type: process improvement. Standard analysis depth."*
+*«Оцениваем риски для проекта contract-approval. Тип инициативы — улучшение процесса. Стандартная глубина анализа.»*
 
-The platform proposes a scope and, if the 6.1/6.2 artifacts are available, scans them. It proposes draft risks: "If the legacy approval system does not support API integration, then the module will need to be reworked. Add it?"
+Платформа предлагает скоупировать и, если доступны 6.1/6.2 артефакты, сканирует их. Предлагает черновики рисков: «Если legacy-система согласования не поддерживает API-интеграцию, то потребуется переработка модуля — добавить?»
 
-The BA confirms the relevant risks and adds specific ones: "Add a risk: If the key user (the director of legal affairs) does not accept the new process, then adoption will be under 40% and the goals will not be achieved."
+BA подтверждает релевантные риски, добавляет специфические: «Добавь риск: Если ключевой пользователь (директор по правовым вопросам) не примет новый процесс, то adoption составит менее 40% и цели не будут достигнуты».
 
-*"Set the risk tolerance: commercial company, neutral position, High threshold: 15."*
+*«Установи толерантность к риску: коммерческая компания, нейтральная позиция, порог High — 15.»*
 
-*"Run the risk matrix."*
+*«Запусти risk matrix.»*
 
-Result: 2 High risks (integration and user adoption), 4 Medium, 5 Low.
+Результат: 2 High-риска (интеграция и user adoption), 4 Medium, 5 Low.
 
-*"Generate the recommendation."*
+*«Сгенерируй рекомендацию.»*
 
-Recommendation: `proceed_with_mitigation`. Narrative: "If the mitigations for RK-003 and RK-007 are carried out, the cumulative profile drops to an acceptable level. The key condition is to prototype the API in the first 2 weeks of the project."
+Рекомендация: `proceed_with_mitigation`. Narrative: «При реализации mitigation по RK-003 и RK-007 суммарный профиль снижается до приемлемого уровня. Ключевое условие — провести прототипирование API в первые 2 недели проекта.»
 
 ---
 
-## Task 6.4: Define Change Strategy
+## Задача 6.4 — Define Change Strategy (Стратегия изменений)
 
-### Overview
+### Краткое описание
 
-The BA synthesizes everything accumulated in Chapter 6: builds the solution scope, assesses the organization's readiness for change, compares strategy options, and defines the transition plan: exactly how the change will be implemented, in one big step, in phases, or with a pilot first.
+BA синтезирует всё накопленное в Главе 6: формирует скоуп решения, оценивает готовность организации к изменениям, сравнивает варианты стратегии и определяет план перехода — как именно будет реализовано изменение: одним большим шагом, поэтапно или сначала пилот.
 
-This is the culmination of strategy analysis and the starting point for Chapter 7.
+Это кульминация стратегического анализа и стартовая точка для Главы 7.
 
-### BA Pain Points
+### Боли и проблемы BA
 
-**"The strategy comes out of thin air."** "We decided to do it in three phases": where did that decision come from? There is no justification. If someone asks "why three phases and not two or five?" there is no answer. The decision was made in a meeting, by feel.
+**«Стратегия появляется из воздуха».** «Мы решили делать в три фазы» — откуда это решение? Никакого обоснования нет. Если кто-то спросит «почему три фазы, а не две или пять?» — ответа нет. Решение было принято на совещании по ощущениям.
 
-**"Scope creep starts immediately."** At the start of the project, there is no explicit document stating "what's in, what's out." The very first meetings start adding functionality, and nobody objects, because there are no documented boundaries. By the middle of the project, the scope has doubled.
+**«Scope creep начинается сразу».** В начале проекта нет явного документа «что входит, что не входит». Первые же встречи начинают добавлять функциональность, никто не возражает, потому что нет зафиксированных рамок. К середине проекта scope удвоился.
 
-**"Organizational readiness is never assessed."** The BA picks a big_bang strategy without accounting for the fact that the organization hasn't run a single major IT project in the last 5 years, has no internal expertise, and changes leadership every year. The project kicks off, and 3 months in, the team starts sabotaging it: a classic organizational readiness failure.
+**«Готовность организации не оценивается».** BA выбирает big_bang стратегию, не учитывая что в организации не было ни одного крупного IT-проекта за последние 5 лет, нет внутренней экспертизы, руководство меняется каждый год. Проект стартует и через 3 месяца начинается саботаж со стороны команды — классический organizational readiness failure.
 
-**"do_nothing is never considered."** "Why consider doing nothing, we've already decided to act?" is a common attitude. As a result, there is no explicit comparison of what happens if things are left as they are. This deprives the project of a clear justification in front of the board.
+**«do_nothing не рассматривается».** «Зачем рассматривать вариант ничего не делать, мы же уже решили делать?» — распространённая позиция. В результате нет явного сравнения: а что произойдёт если оставить как есть? Это лишает проект чёткого обоснования перед советом директоров.
 
-**"Transition states are never planned."** The BA described the end state but not the intermediate ones. As a result, every project phase is left hanging: there is no understanding of what should be working after phase 1, or what value it delivers right now, rather than only at the end.
+**«Переходные состояния не планируются».** BA описал конечное состояние, но не промежуточные. В результате каждая фаза проекта «висит в воздухе» — нет понимания, что должно работать после фазы 1, какую ценность это даёт уже сейчас, а не в конце.
 
-### What We Built
+### Что мы реализовали
 
 **Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads the artifacts of the previous tasks: business needs BN-xxx, business goals BG-xxx, risks RK-xxx, and the 6.2 gap analysis. The BA starts work with the context already filled in; there is no need to "remember what we did earlier."
 
@@ -252,75 +252,75 @@ This is the culmination of strategy analysis and the starting point for Chapter 
 
 **What the platform does check is coverage.** When a capability names the element it covers — `gap_source: "6.2:technology"` — both the tool's reply and the final Change Strategy document report which analysed gaps are covered, which no in-scope capability declares, and which were deliberately left out of scope. Capabilities that name no element are counted as *uncheckable*, not as uncovered: an unstated link means the platform cannot tell, and saying otherwise would turn a missing declaration into an accusation. Where no gap analysis was imported at all, the document says the coverage was not checked rather than reporting a number it cannot support. Two of 6.2's elements, `business_needs` and `external`, describe the context of the change rather than a capability the organization builds, so by default they are reported on their own "Context elements" line and left out of the coverage count — a capability can still claim one explicitly through `gap_source`, which brings it back into the count.
 
-**An explicit solution scope with capability categorization.** Every capability (process, technology, data, people, org structure) that changes in the project is explicitly registered with a critical gap level (high / medium / low / none) and a link to the gap analysis from 6.2. What is **out** of scope is also explicitly documented: this is the first line of defense against scope creep.
+**Явный скоуп решения с категоризацией capabilities.** Каждая capability (процесс, технология, данные, люди, оргструктура), которая изменяется в проекте, регистрируется явно с указанием степени critical gap (high / medium / low / none) и ссылкой на gap-анализ из 6.2. Также явно фиксируется что **не входит** в скоуп — это первая линия защиты от scope creep.
 
-**Organizational readiness assessment across 6 dimensions.** The platform assesses: leadership engagement, cultural readiness, resource availability, operational readiness, technical maturity, and the organization's track record with change. Each dimension gets a rating from 1 to 5 with a justification. The resulting readiness_score determines the verdict: ready / proceed_with_caution / not_ready. A low score is not a death sentence: it is a signal to add a "Phase 0" for organizational preparation.
+**Оценка готовности организации по 6 измерениям.** Платформа оценивает: вовлечённость руководства, культурная готовность, доступность ресурсов, операционная готовность, техническая зрелость, история изменений в организации. Каждое измерение — оценка 1–5 с обоснованием. Итоговый readiness_score определяет вердикт: ready / proceed_with_caution / not_ready. Низкий score — не приговор: это сигнал добавить «Фазу 0» по подготовке организации.
 
-**A strategic options registry that includes do_nothing.** The "do nothing" option (OPT-000) is added automatically and requires an explicit justification: what happens to the business needs if things are left as they are. This is not a formality; it is an argument for the board: "we considered the status quo, and here is why it's unacceptable." For every real option (big_bang / phased / pilot_first), the platform records the pros, the cons, the investment, and the link to the risks from 6.3.
+**Реестр стратегических вариантов с do_nothing.** Вариант «ничего не делать» (OPT-000) добавляется автоматически и требует явного обоснования — что произойдёт с бизнес-потребностями если оставить как есть. Это не формальность: это аргумент для совета директоров «мы рассмотрели статус-кво — вот почему он неприемлем». Для каждого реального варианта (big_bang / phased / pilot_first) фиксируются плюсы, минусы, инвестиции и связь с рисками из 6.3.
 
-**A weighted comparison matrix for the options.** The platform applies 6 weighted criteria: alignment with business goals (25%), risk reduction (20%), cost (20%), speed to first value (15%), alignment with readiness_score (10%), and feasibility (10%). The BA scores every option against every criterion, and the platform calculates the winner and generates a narrative: why this particular option won, with specific references to BG, RK, and readiness.
+**Взвешенная матрица сравнения вариантов.** Платформа применяет 6 критериев с весами: соответствие бизнес-целям (25%), снижение рисков (20%), стоимость (20%), скорость первой ценности (15%), соответствие readiness_score (10%), реализуемость (10%). BA выставляет оценки по каждому варианту по каждому критерию — платформа считает winner и формирует narrative: почему именно этот вариант победил, с конкретными ссылками на BG, RK и readiness.
 
-**Transition states with explicit value at every phase.** For every phase, the platform records: which capabilities are delivered, which gaps are closed, which risks remain, and, critically, **what standalone value the business gets at the end of that phase**. If a phase delivers no standalone value, that is a signal to rethink the phase breakdown.
+**Переходные состояния с явной ценностью на каждой фазе.** Для каждой фазы фиксируется: какие capabilities реализуются, какие gaps закрываются, какие риски остаются, и — ключевое — **какую standalone ценность получает бизнес по итогу этой фазы**. Если фаза не даёт самостоятельной ценности — это сигнал пересмотреть нарезку.
 
-### Value for the BA
+### Ценности для BA
 
-**A justified strategy, not a decision "by feel."** When leadership asks "why phased and not big_bang?" the BA pulls up the comparison matrix: here is readiness_score = 2.8 (proceed_with_caution), here is risk RK-007 (technology, High), here is the "alignment with readiness" criterion: phased wins by a clear margin. The decision was made with data.
+**Обоснованная стратегия, а не решение «по ощущениям».** Когда руководство спрашивает «почему phased, а не big_bang?», BA открывает матрицу сравнения: вот readiness_score = 2.8 (proceed_with_caution), вот риск RK-007 (technology, High), вот критерий «соответствие readiness» — phased выигрывает с отрывом. Решение принято с данными.
 
-**Scope is locked in from the start.** An explicit list of capabilities in scope and an explicit "out of scope" list form a document you can point to. "Was this in the original scope? No, so it's a CR." The BA is protected from informal scope creep from day one.
+**Скоуп зафиксирован на старте.** Явный список capabilities в скоупе и явный список «не входит» — это документ, к которому можно апеллировать. «Это было в исходном скоупе? Нет — значит это CR». BA защищён от неформального scope creep с первого дня.
 
-**A realistic plan that won't fail on the human side.** Readiness assessment is a tool for preventing organizational failures, one of the leading causes of IT project failure. A BA who documented "leadership engagement = 2/5" ahead of time and added a Phase 0 for change management reduces that risk explicitly and proactively.
+**Реалистичный план, который не провалится на людях.** Readiness assessment — это инструмент предотвращения организационных сбоев, которые являются одной из главных причин провала ИТ-проектов. BA, который заранее зафиксировал «вовлечённость руководства = 2/5» и добавил Фазу 0 по change management, снижает этот риск явно и проактивно.
 
-**Each phase as a mini-value.** Transition states with explicit value at every stage form the basis for managing expectations. After the first phase, the business has something working and useful. This sustains motivation, reduces the risk of the project being cancelled halfway through, and provides data to test hypotheses before full rollout.
+**Каждая фаза как мини-ценность.** Переходные состояния с явной ценностью на каждом этапе — это основа для управления ожиданиями. После первой фазы у бизнеса есть что-то работающее и полезное. Это поддерживает мотивацию, снижает риск закрытия проекта «на полпути» и даёт данные для проверки гипотез до полного внедрения.
 
-**Strategy as a contract for all subsequent work.** `{project}_change_strategy.json` is the input for Chapter 7 (what to specify) and Chapter 8 (how to evaluate the outcome). A BA who did 6.4 well won't have to redo the requirements architecture midway through the project because the scope changed.
+**Стратегия как контракт для всей последующей работы.** `{project}_change_strategy.json` — это вход для Главы 7 (что специфицировать) и Главы 8 (как оценивать результат). BA, сделавший 6.4 качественно, не будет переделывать архитектуру требований в середине проекта из-за изменившегося скоупа.
 
-### How to Use It: An Example
+### Как пользоваться: пример
 
-*"Let's define the change strategy for contract-approval. Horizon: 6 months, Agile approach."*
+*«Определяем стратегию изменений для contract-approval. Горизонт — 6 месяцев, Agile-подход.»*
 
-The platform imports the context: BN-001, BG-001, the gap analysis (3 gaps), 2 High risks.
+Платформа импортирует контекст: BN-001, BG-001, gap-анализ (3 gap), 2 High-риска.
 
-*"Define the solution scope: in scope: the contract status module, the automatic notification system, ERP integration. Out of scope: electronic signature (a separate project)."*
+*«Определи скоуп решения: в скоупе — модуль статусов договоров, система автоуведомлений, интеграция с ERP. Не в скоупе — электронная подпись (отдельный проект).»*
 
-*"Assess the organization's readiness. Leadership engagement: 4 (the director personally initiated the project). Cultural readiness: 3 (the team is cautious about new things). Technology: 3 (the ERP is old but has an API). Change history: 2 (past projects have dragged on)."*
+*«Оцени готовность организации. Вовлечённость руководства — 4 (директор лично инициировал проект). Культурная готовность — 3 (команда осторожна с новым). Технология — 3 (ERP старый, но с API). История изменений — 2 (прошлые проекты затягивались).»*
 
-Readiness score: 3.1, `proceed_with_caution`.
+Readiness score: 3.1 → `proceed_with_caution`.
 
-*"Add the phased option: two phases, medium investment, integration risk reduced by a pilot in phase 1."*
+*«Добавь вариант phased: две фазы, инвестиции medium, риск интеграции снижается за счёт пилота в фазе 1.»*
 
-*"Compare the options."*
+*«Сравни варианты.»*
 
-Winner: phased. Narrative: "Given a readiness_score of 3.1 and the High integration risk (RK-003), a phased strategy is optimal: the first phase tests the technical risk and delivers value with limited investment."
+Winner: phased. Narrative: «Учитывая readiness_score 3.1 и High-риск интеграции (RK-003), поэтапная стратегия оптимальна — первая фаза проверяет технический риск и даёт ценность при ограниченных инвестициях.»
 
-*"Define the transition states. Phase 1 (3 months): status module plus notifications, closing the "no unified registry" gap. Value: the time to look up a contract's status drops from 2 hours to 5 minutes. Phase 2 (3 months): ERP integration, full automation. Value: goal BG-001 is achieved."*
+*«Определи переходные состояния. Фаза 1 (3 месяца): модуль статусов + уведомления, закрываем gap "нет единого реестра". Ценность: сокращение времени поиска статуса договора с 2 часов до 5 минут. Фаза 2 (3 месяца): интеграция с ERP, полная автоматизация. Ценность: цель BG-001 достигнута.»*
 
-The report and `contract-approval_change_strategy.json` are saved. The project is ready for Chapter 7.
+Отчёт и `contract-approval_change_strategy.json` сохранены. Проект готов к Главе 7.
 
 ---
 
-## Chapter 6 Final Synthesis
+## Финальный синтез по Главе 6
 
-**Chapter 6 is the analytical backbone of the entire project.** If Chapter 4 gives you "what stakeholders say" and Chapter 5 gives you "what we recorded as requirements," then Chapter 6 answers the question "why does this make sense, and how will we do it." Without it, requirements hang in the air with no strategic justification.
+**Глава 6 — это аналитический позвоночник всего проекта.** Если Глава 4 даёт «что говорят стейкхолдеры», а Глава 5 — «что мы зафиксировали как требования», то Глава 6 отвечает на вопрос «почему это имеет смысл и как мы это сделаем». Без неё требования висят в воздухе без стратегического обоснования.
 
-**Each task in Chapter 6 eliminates a specific class of risk:**
+**Каждая задача Главы 6 устраняет конкретный класс рисков:**
 
-- 6.1 eliminates the risk of "treating symptoms": the root cause gets solved instead
-- 6.2 eliminates the risk of "success being unmeasurable": SMART goals with KPIs provide a clear criterion
-- 6.3 eliminates the risk of "mid-project surprises": top threats are identified in advance
-- 6.4 eliminates the risk of "implementation failure": the strategy is justified and the scope is locked in
+- 6.1 устраняет риск «лечения симптомов» — вместо этого решается корневая причина
+- 6.2 устраняет риск «успех неизмерим» — SMART-цели с KPI дают чёткий критерий
+- 6.3 устраняет риск «сюрпризы в середине» — топ-угрозы идентифицированы заранее
+- 6.4 устраняет риск «провал на реализации» — стратегия обоснована и скоуп зафиксирован
 
-**The Chapter 6 artifact chain**, once you've gone through it fully, looks like this:
+**Цепочка артефактов Главы 6** после полного прохождения выглядит так:
 
 ```
 reports/
-  6_1_current_state_{project}.md        ← as-is analysis, BN-xxx
-  6_2_future_state_{project}.md         ← BG-xxx goals, gap analysis
-  6_3_risk_assessment_{project}.md      ← RK-xxx register, recommendation
-  6_4_change_strategy_{project}.md      ← SOL-xxx scope, strategy, phases
+  6_1_current_state_{project}.md        ← анализ as-is, BN-xxx
+  6_2_future_state_{project}.md         ← цели BG-xxx, gap-анализ
+  6_3_risk_assessment_{project}.md      ← реестр RK-xxx, рекомендация
+  6_4_change_strategy_{project}.md      ← скоуп SOL-xxx, стратегия, фазы
 ```
 
-All four documents together form a professional strategy package, ready to present to the sponsor and hand off to Chapter 7.
+Все четыре документа — это профессиональный стратегический пакет, готовый к презентации спонсору и передаче в Главу 7.
 
-**The BA's responsibility in Chapter 6** comes down to three things: providing context (describing what's happening in the organization right now), making the strategic decisions (where to draw the scope boundary, which option to choose, what the risk position is), and keeping the `analysis` phase active. Everything else (structuring, storage, report generation, traceability, context import between tasks) is handled by the platform.
+**Ответственность BA в Главе 6** — три вещи: предоставить контекст (описать что происходит в организации сейчас), принять стратегические решения (где провести границу скоупа, какой вариант выбрать, какова позиция по риску) и следить за фазой `analysis`. Всё остальное — структурирование, хранение, генерация отчётов, трассировка, импорт контекста между задачами — берёт на себя платформа.
 
-**Practical outcome:** a BA who has gone through Chapter 6 using the platform arrives at Chapter 7 with a clear answer to "what exactly are we designing, and why." It's not just a list of requirements: it's a strategically justified position with measurable goals, known constraints, and a locked-in scope. A solid foundation for quality work at the next stage.
+**Практический результат:** BA, прошедший Главу 6 через платформу, приходит в Главу 7 с чётким ответом на вопрос «что именно и зачем мы проектируем». Это не просто список требований — это стратегически обоснованная позиция с измеримыми целями, известными ограничениями и зафиксированным скоупом. Фундамент для качественной работы на следующем этапе.

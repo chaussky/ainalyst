@@ -1,6 +1,6 @@
 """
 BABOK 5.3 — Prioritize Requirements
-MCP tools for prioritizing requirements and designs.
+MCP-инструменты для приоритизации требований и дизайнов.
 
 Tools:
   - start_prioritization_session  — open a session, choose a method (MoSCoW / WSJF /
@@ -10,15 +10,15 @@ Tools:
   - resolve_conflict              — record a conflict resolution decision
   - save_prioritization_result    — finalize the session, update the 5.1 repository
 
-Storage:
-  - Priorities are written to {project}_traceability_repo.json (the priority field on each requirement)
-  - Session snapshots are stored in {project}_prioritization.json
+Хранение:
+  - Приоритеты пишутся в {project}_traceability_repo.json (поле priority в каждом требовании)
+  - Снапшоты сессий хранятся в {project}_prioritization.json
 
-Integration:
-  In:  5.1 repository (dependencies), 5.2 attributes (stability), 4.2 registry (influence)
-  Out: prioritized requirements → 6.3 (Assess Risks)
+Интеграция:
+  Вход:  репозиторий 5.1 (зависимости), атрибуты 5.2 (стабильность), реестр 4.2 (influence)
+  Выход: приоритизированные требования → 6.3 (Оценка рисков)
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -39,17 +39,17 @@ mcp = FastMCP("BABOK_Requirements_Prioritize")
 REPO_FILENAME = "traceability_repo.json"
 PRIO_FILENAME = "prioritization.json"
 
-# MoSCoW numeric weights for aggregation
+# MoSCoW числовые веса для агрегации
 MOSCOW_WEIGHTS = {"Must": 4, "Should": 3, "Could": 2, "Won't": 1}
 MOSCOW_THRESHOLDS = [("Must", 3.5), ("Should", 2.5), ("Could", 1.5), ("Won't", 0.0)]
 
-# Influence weights for weighted voting
+# Influence веса для взвешенного голосования
 INFLUENCE_WEIGHTS = {"High": 3, "Medium": 2, "Low": 1}
 
-# Must Inflation threshold
+# Порог Must Inflation
 MUST_INFLATION_THRESHOLD = 0.6
 
-# Stability — minor-version thresholds (match 5.2)
+# Стабильность — пороги minor-версии (совпадают с 5.2)
 VOLATILITY_WARNING = 3   # 1.3+
 VOLATILITY_CRITICAL = 4  # 1.4+
 
@@ -70,7 +70,7 @@ DEFAULT_VALUE_LABEL = "Could"
 
 
 # ---------------------------------------------------------------------------
-# Utilities — file layer
+# Утилиты — файловый слой
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
@@ -124,7 +124,7 @@ def _find_session(sessions: list, label: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Utilities — method logic
+# Утилиты — логика методов
 # ---------------------------------------------------------------------------
 
 def _fmt_num(value) -> str:
@@ -137,7 +137,7 @@ def _fmt_num(value) -> str:
 
 
 def _minor_version(version_str: str) -> int:
-    """Extracts the minor part of the version: '1.3' → 3"""
+    """Извлекает minor-часть версии: '1.3' → 3"""
     try:
         parts = str(version_str).split(".")
         if len(parts) >= 2:
@@ -148,7 +148,7 @@ def _minor_version(version_str: str) -> int:
 
 
 def _stability_flag(node: dict) -> Optional[str]:
-    """Returns a stability flag, or None if all is fine."""
+    """Возвращает флаг стабильности или None если всё ок."""
     version = node.get("version", "1.0")
     minor = _minor_version(version)
     if minor >= VOLATILITY_CRITICAL:
@@ -162,10 +162,10 @@ def _stability_flag(node: dict) -> Optional[str]:
 
 def _aggregate_moscow(scores_by_sh: dict, influence_by_sh: dict) -> dict:
     """
-    Aggregates MoSCoW scores from multiple stakeholders, weighted by influence.
-    Returns {req_id: {"priority": "Must"|..., "weighted_score": float}}
+    Агрегирует MoSCoW-оценки нескольких стейкхолдеров с весами influence.
+    Возвращает {req_id: {"priority": "Must"|..., "weighted_score": float}}
     """
-    # Collect all req_id's
+    # Собираем все req_id
     all_reqs = set()
     for sh_scores in scores_by_sh.values():
         all_reqs.update(sh_scores.keys())
@@ -200,9 +200,9 @@ def _aggregate_moscow(scores_by_sh: dict, influence_by_sh: dict) -> dict:
 
 def _aggregate_wsjf(scores_by_sh: dict, influence_by_sh: dict) -> dict:
     """
-    Aggregates WSJF scores.
+    Агрегирует WSJF-оценки.
     scores_by_sh[sh_id][req_id] = {"bv": N, "tc": N, "rr": N, "js": N}
-    Returns {req_id: {"priority_score": float, "wsjf": float, "cod": float, "js": float}}
+    Возвращает {req_id: {"priority_score": float, "wsjf": float, "cod": float, "js": float}}
     """
     all_reqs = set()
     for sh_scores in scores_by_sh.values():
@@ -221,7 +221,7 @@ def _aggregate_wsjf(scores_by_sh: dict, influence_by_sh: dict) -> dict:
             bv_sum += s.get("bv", 0) * weight
             tc_sum += s.get("tc", 0) * weight
             rr_sum += s.get("rr", 0) * weight
-            # Job Size — a technical estimate, not weighted by influence
+            # Job Size — техническая оценка, не взвешивается по influence
             js_sum += s.get("js", 1)
             total_weight += weight
 
@@ -229,7 +229,7 @@ def _aggregate_wsjf(scores_by_sh: dict, influence_by_sh: dict) -> dict:
             continue
 
         cod = (bv_sum + tc_sum + rr_sum) / total_weight
-        # Average JS over the number of stakeholders who provided it
+        # JS усредняем по числу стейкхолдеров кто его дал
         n_sh = sum(1 for sh_scores in scores_by_sh.values() if req_id in sh_scores)
         js = js_sum / n_sh if n_sh > 0 else 1.0
         wsjf = round(cod / js, 2) if js > 0 else 0.0
@@ -241,7 +241,7 @@ def _aggregate_wsjf(scores_by_sh: dict, influence_by_sh: dict) -> dict:
             "js": round(js, 2),
         }
 
-    # Normalize to MoSCoW-compatible labels for consistency
+    # Нормализуем в MoSCoW-совместимые метки для единообразия
     if result:
         scores = [v["wsjf"] for v in result.values()]
         max_s = max(scores) if scores else 1
@@ -262,7 +262,7 @@ def _aggregate_wsjf(scores_by_sh: dict, influence_by_sh: dict) -> dict:
 def _aggregate_impact_effort(scores_by_sh: dict, influence_by_sh: dict,
                               quadrant_mapping: dict) -> dict:
     """
-    Aggregates Impact/Effort scores.
+    Агрегирует Impact/Effort оценки.
     scores_by_sh[sh_id][req_id] = {"impact": "High"|"Medium"|"Low", "effort": ...}
     quadrant_mapping: {"QuickWins": "Must", "BigBets": "Should", ...}
     """
@@ -290,7 +290,7 @@ def _aggregate_impact_effort(scores_by_sh: dict, influence_by_sh: dict,
         avg_imp = imp_sum / total_weight
         avg_eff = eff_sum / total_weight
 
-        # Determine the quadrant
+        # Определяем квадрант
         if avg_imp >= 2.5 and avg_eff < 2.5:
             quadrant = "QuickWins"
         elif avg_imp >= 2.5 and avg_eff >= 2.5:
@@ -531,9 +531,9 @@ def _timebox_unplaced(aggregated: dict) -> set:
 
 def _detect_stakeholder_conflicts(scores_by_sh: dict, method: str) -> list:
     """
-    Looks for conflicts between stakeholders.
-    MoSCoW: a spread of ≥ 2 categories.
-    Returns a list of {"req_id", "conflict_type", "scores", "severity"}
+    Ищет конфликты между стейкхолдерами.
+    MoSCoW: расхождение ≥ 2 категории.
+    Возвращает список {"req_id", "conflict_type", "scores", "severity"}
     """
     if method not in ("MoSCoW", "TimeBoxing"):
         return []  # for WSJF and IE, conflicts surface through aggregation
@@ -803,7 +803,7 @@ def _timebox_report_block(aggregated: dict, capacity: float, unit: str) -> list:
 
 
 # ---------------------------------------------------------------------------
-# MCP tools
+# MCP-инструменты
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -841,13 +841,13 @@ def start_prioritization_session(
     repo = _load_repo(project_name)
     prio_data = _load_prio(project_name)
 
-    # Check that a session with this name doesn't already exist
+    # Проверяем что сессия с таким именем не существует
     existing = _find_session(prio_data["sessions"], session_label)
     if existing:
-        return (f"⚠️ Session '{session_label}' already exists for project '{project_name}'.\n"
-                f"Use a different name or continue working with the existing session.")
+        return (f"⚠️ Сессия '{session_label}' уже существует для проекта '{project_name}'.\n"
+                f"Используйте другое название или продолжите работу с существующей сессией.")
 
-    # Default quadrant mapping
+    # Дефолтный маппинг квадрантов
     default_qmap = {
         "QuickWins": "Must",
         "BigBets": "Should",
@@ -859,7 +859,7 @@ def start_prioritization_session(
         try:
             quadrant_mapping = {**default_qmap, **json.loads(quadrant_mapping_json)}
         except json.JSONDecodeError:
-            return "❌ Error parsing quadrant_mapping_json. Check the JSON format."
+            return "❌ Ошибка парсинга quadrant_mapping_json. Проверьте формат JSON."
 
     # Time Boxing/Budgeting prioritises by the allocation of a fixed resource
     # (BABOK 10.33.3 .3). Without a box there is nothing to fill.
@@ -894,10 +894,10 @@ def start_prioritization_session(
         and n.get("status") != "deprecated"
     ]
     if not nodes:
-        return (f"⚠️ Repository '{project_name}' has no requirements, or doesn't exist.\n"
-                f"First create the repository via 5.1 (init_traceability_repo).")
+        return (f"⚠️ Репозиторий '{project_name}' не содержит требований или не существует.\n"
+                f"Сначала создайте репозиторий через 5.1 (init_traceability_repo).")
 
-    # Check stability
+    # Проверяем стабильность
     stability_warnings = []
     stability_critical = []
     for node in nodes:
@@ -907,7 +907,7 @@ def start_prioritization_session(
         elif flag in ("warning", "unknown"):
             stability_warnings.append(node["id"])
 
-    # Create the session
+    # Создаём сессию
     session = {
         "label": session_label,
         "method": method,
@@ -943,8 +943,8 @@ def start_prioritization_session(
 
     # Build the report
     lines = [
-        f"<!-- BABOK 5.3 — Prioritize Requirements, Project: {project_name}, "
-        f"Session: {session_label}, Method: {method}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.3 — Prioritize Requirements, Проект: {project_name}, "
+        f"Сессия: {session_label}, Метод: {method}, Дата: {date.today()} -->",
         "",
         f"# Prioritization session: {session_label}",
         f"**Project:** {project_name}  ",
@@ -964,27 +964,27 @@ def start_prioritization_session(
         "",
         "---",
         "",
-        f"## Requirements to score ({len(nodes)})",
+        f"## Требования для оценки ({len(nodes)} шт.)",
         "",
     ]
 
     if method == "MoSCoW":
-        lines.append("| ID | Title | Type | Current priority | Stability |")
+        lines.append("| ID | Название | Тип | Текущий приоритет | Stability |")
         lines.append("|-----|----------|-----|-------------------|-----------|")
         for n in nodes:
             flag = _stability_flag(n)
-            stab_icon = {"critical": "🔴 Critical", "warning": "🟡 Caution",
+            stab_icon = {"critical": "🔴 Критично", "warning": "🟡 Внимание",
                          "unknown": "🟡 Unknown"}.get(flag, "🟢 Stable")
             lines.append(f"| {n['id']} | {n.get('title','—')} | {n.get('type','—')} "
                          f"| {n.get('priority','—')} | {stab_icon} |")
     elif method == "WSJF":
-        lines.append(f"**Scale:** {wsjf_scale}  ")
+        lines.append(f"**Шкала:** {wsjf_scale}  ")
         if wsjf_scale == "Fibonacci":
-            lines.append("**Values:** 1, 2, 3, 5, 8, 13 (relative, pick a reference = 3)")
+            lines.append("**Значения:** 1, 2, 3, 5, 8, 13 (относительные, выберите эталон = 3)")
         else:
-            lines.append("**Values:** 1–10 (absolute)")
+            lines.append("**Значения:** 1–10 (абсолютные)")
         lines.append("")
-        lines.append("| ID | Title | Components to score: BV, TC, RR, JS |")
+        lines.append("| ID | Название | Компоненты для оценки: BV, TC, RR, JS |")
         lines.append("|-----|----------|---------------------------------------|")
         for n in nodes:
             lines.append(f"| {n['id']} | {n.get('title','—')} | BV=?, TC=?, RR=?, JS=? |")
@@ -1001,7 +1001,7 @@ def start_prioritization_session(
             lines.append(f"| {n['id']} | {n.get('title','—')} | {n.get('priority','—')} "
                          f"| ? | {stab_icon} |")
     else:  # ImpactEffort
-        lines.append("**Quadrant mapping:**")
+        lines.append("**Маппинг квадрантов:**")
         for q, p in quadrant_mapping.items():
             q_label = {"QuickWins": "Quick Wins (High Impact, Low Effort)",
                        "BigBets": "Big Bets (High Impact, High Effort)",
@@ -1009,7 +1009,7 @@ def start_prioritization_session(
                        "ThanklessTasks": "Thankless Tasks (Low Impact, High Effort)"}.get(q, q)
             lines.append(f"- {q_label} → **{p}**")
         lines.append("")
-        lines.append("| ID | Title | Impact (Low/Medium/High) | Effort (Low/Medium/High) |")
+        lines.append("| ID | Название | Impact (Low/Medium/High) | Effort (Low/Medium/High) |")
         lines.append("|-----|----------|--------------------------|--------------------------|")
         for n in nodes:
             lines.append(f"| {n['id']} | {n.get('title','—')} | ? | ? |")
@@ -1019,10 +1019,10 @@ def start_prioritization_session(
             "",
             "---",
             "",
-            "## ⚠️ Stability warnings",
+            "## ⚠️ Предупреждения о стабильности",
             "",
-            "### 🔴 Critically unstable (version 1.4+)",
-            "Assigning Must creates a high risk of rework.",
+            "### 🔴 Критически нестабильные (версия 1.4+)",
+            "Присвоение Must создаёт высокий риск переделок.",
             "",
         ]
         for rid in stability_critical:
@@ -1031,7 +1031,7 @@ def start_prioritization_session(
     if stability_warnings:
         lines += [
             "",
-            "### 🟡 Unstable (version 1.3+) or with unknown stability",
+            "### 🟡 Нестабильные (версия 1.3+) или с неизвестной стабильностью",
             "",
         ]
         for rid in stability_warnings:
@@ -1041,12 +1041,12 @@ def start_prioritization_session(
         "",
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
-        "1. Call `add_stakeholder_scores` for each stakeholder",
-        "2. After collecting all scores — call `run_aggregation`",
-        "3. Resolve conflicts (`resolve_conflict`) if any",
-        "4. Finalize: `save_prioritization_result`",
+        "1. Вызвать `add_stakeholder_scores` для каждого стейкхолдера",
+        "2. После сбора всех оценок — вызвать `run_aggregation`",
+        "3. Разрешить конфликты (`resolve_conflict`) если они есть",
+        "4. Финализировать: `save_prioritization_result`",
     ]
 
     return "\n".join(lines)
@@ -1062,10 +1062,10 @@ def add_stakeholder_scores(
     scores_json: str,
 ) -> str:
     """
-    Add one stakeholder's scores for the current session.
+    Добавить оценки одного стейкхолдера для текущей сессии.
 
-    Called once per stakeholder.
-    A repeat call for the same stakeholder replaces the previous scores.
+    Вызывается по одному разу на стейкхолдера.
+    Повторный вызов для того же стейкхолдера заменяет предыдущие оценки.
 
     Parameters:
     - stakeholder_id: who is scoring — a name or a role, as recorded in the
@@ -1081,7 +1081,7 @@ def add_stakeholder_scores(
 
       WSJF:
         [{"req_id": "FR-001", "bv": 5, "tc": 3, "rr": 2, "js": 3}, ...]
-        (js — Job Size, an effort estimate from the development team)
+        (js — Job Size, оценка усилий от команды разработки)
 
       ImpactEffort:
         [{"req_id": "FR-001", "impact": "High", "effort": "Low"}, ...]
@@ -1098,10 +1098,10 @@ def add_stakeholder_scores(
     prio_data = _load_prio(project_name)
     session = _find_session(prio_data["sessions"], session_label)
     if not session:
-        return f"❌ Session '{session_label}' not found. Call start_prioritization_session first."
+        return f"❌ Сессия '{session_label}' не найдена. Сначала вызовите start_prioritization_session."
 
     if session["status"] == "closed":
-        return f"❌ Session '{session_label}' is already closed."
+        return f"❌ Сессия '{session_label}' уже закрыта."
 
     # Elements are read as objects (`item.get("req_id")`) immediately below, so the
     # shape has to be checked here rather than discovered by an AttributeError.
@@ -1111,7 +1111,7 @@ def add_stakeholder_scores(
     if shape_error:
         return shape_error
 
-    # Validate and normalize scores by method
+    # Валидация и нормализация оценок по методу
     method = session["method"]
     normalized = {}
 
@@ -1133,15 +1133,15 @@ def add_stakeholder_scores(
                     "scores_json", ("score", "priority", "moscow"),
                     '[{"req_id": "FR-001", "score": "Must"}]')
             if score not in valid_vals:
-                return (f"❌ Invalid value '{score}' for {rid}. "
-                        f"Allowed: Must / Should / Could / Won't")
+                return (f"❌ Недопустимое значение '{score}' для {rid}. "
+                        f"Допустимо: Must / Should / Could / Won't")
             normalized[rid] = score
 
     elif method == "WSJF":
         for item in raw_scores:
             rid = pick_field(item, "req_id", "requirement_id", "id")
             if not rid:
-                return f"❌ Missing req_id in: {item}"
+                return f"❌ Отсутствует req_id в: {item}"
             normalized[rid] = {
                 "bv": float(item.get("bv", 0)),
                 "tc": float(item.get("tc", 0)),
@@ -1156,10 +1156,10 @@ def add_stakeholder_scores(
             impact = pick_field(item, "impact", "value") or "Medium"
             effort = pick_field(item, "effort", "cost", "size") or "Medium"
             if not rid:
-                return f"❌ Missing req_id in: {item}"
+                return f"❌ Отсутствует req_id в: {item}"
             if impact not in valid_ie or effort not in valid_ie:
-                return (f"❌ Invalid impact/effort value for {rid}. "
-                        f"Allowed: Low / Medium / High")
+                return (f"❌ Недопустимое значение impact/effort для {rid}. "
+                        f"Допустимо: Low / Medium / High")
             normalized[rid] = {"impact": impact, "effort": effort}
 
     elif method == "TimeBoxing":
@@ -1202,12 +1202,12 @@ def add_stakeholder_scores(
         f"✅ Scores for stakeholder **{stakeholder_id}** ({stakeholder_influence} influence) "
         f"saved{is_update}",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Session:** {session_label}  ",
-        f"**Method:** {method}  ",
-        f"**Requirements scored:** {len(normalized)}",
+        f"**Проект:** {project_name}  ",
+        f"**Сессия:** {session_label}  ",
+        f"**Метод:** {method}  ",
+        f"**Требований оценено:** {len(normalized)}",
         "",
-        f"**Stakeholders with scores:** {len(session['stakeholder_scores'])}",
+        f"**Стейкхолдеров с оценками:** {len(session['stakeholder_scores'])}",
         "",
     ]
 
@@ -1246,24 +1246,24 @@ def run_aggregation(
     conflict_threshold: Literal["Strict", "Normal", "Loose"] = "Normal",
 ) -> str:
     """
-    Aggregate stakeholder scores, compute priorities, surface conflicts.
+    Агрегировать оценки стейкхолдеров, рассчитать приоритеты, выявить конфликты.
 
-    - Strict: conflict at a spread ≥ 1 category
-    - Normal: conflict at a spread ≥ 2 categories (recommended)
-    - Loose: conflict only for Must vs Won't
+    - Strict: конфликт при расхождении ≥ 1 категории
+    - Normal: конфликт при расхождении ≥ 2 категории (рекомендуется)
+    - Loose: конфликт только Must vs Won't
 
-    Detects:
-    - 🔴 Inter-stakeholder conflicts
-    - ⚠️ Dependency violations (Must/Should depends on a lower-priority item)
-    - 🟡 Must Inflation (>60% of requirements at Must)
-    - 🟡 Unstable requirements at high priority
+    Детектирует:
+    - 🔴 Межстейкхолдерские конфликты
+    - ⚠️ Dependency violations (Must/Should зависит от ниже-приоритетного)
+    - 🟡 Must Inflation (>60% требований в Must)
+    - 🟡 Нестабильные требования в высоком приоритете
     """
     logger.info(f"5.3 run_aggregation: {project_name}/{session_label}")
 
     prio_data = _load_prio(project_name)
     session = _find_session(prio_data["sessions"], session_label)
     if not session:
-        return f"❌ Session '{session_label}' not found."
+        return f"❌ Сессия '{session_label}' не найдена."
 
     # A finalised session is a signed record. Re-aggregating it changed the numbers
     # the report renders while the 5.1 graph kept the priorities written at closing
@@ -1276,7 +1276,7 @@ def run_aggregation(
                 f"re-prioritise.")
 
     if not session["stakeholder_scores"]:
-        return "⚠️ No stakeholder scores yet. Call add_stakeholder_scores first."
+        return "⚠️ Нет оценок стейкхолдеров. Сначала вызовите add_stakeholder_scores."
 
     repo = _load_repo(project_name)
     method = session["method"]
@@ -1338,7 +1338,7 @@ def run_aggregation(
     # Must Inflation
     inflation = _check_must_inflation(aggregated)
 
-    # Unstable items at Must
+    # Нестабильные в Must
     volatile_must = []
     nodes_by_id = {n["id"]: n for n in repo.get("requirements", [])}
     for req_id, agg in aggregated.items():
@@ -1352,24 +1352,24 @@ def run_aggregation(
 
     _save_prio(project_name, prio_data)
 
-    # Report
+    # Отчёт
     lines = [
-        f"<!-- BABOK 5.3 — Aggregation, {project_name}/{session_label}, {date.today()} -->",
+        f"<!-- BABOK 5.3 — Агрегация, {project_name}/{session_label}, {date.today()} -->",
         "",
-        f"# Aggregation results: {session_label}",
-        f"**Project:** {project_name}  ",
-        f"**Method:** {method}  ",
-        f"**Stakeholders:** {len(scores_by_sh)}  ",
-        f"**Conflict threshold:** {conflict_threshold}",
+        f"# Результаты агрегации: {session_label}",
+        f"**Проект:** {project_name}  ",
+        f"**Метод:** {method}  ",
+        f"**Стейкхолдеров:** {len(scores_by_sh)}  ",
+        f"**Порог конфликта:** {conflict_threshold}",
         "",
         "---",
         "",
-        "## Final priorities",
+        "## Итоговые приоритеты",
         "",
     ]
 
     if method == "MoSCoW":
-        lines.append("| ID | Priority | Weighted score |")
+        lines.append("| ID | Приоритет | Взвешенный балл |")
         lines.append("|-----|-----------|-----------------|")
         for req_id, data in sorted(aggregated.items(),
                                    key=lambda x: x[1].get("weighted_score", 0) if isinstance(x[1], dict) else 0,
@@ -1380,7 +1380,7 @@ def run_aggregation(
             lines.append(f"| {req_id} | {icon} {prio} | {ws} |")
 
     elif method == "WSJF":
-        lines.append("| ID | Priority | WSJF | CoD | JS |")
+        lines.append("| ID | Приоритет | WSJF | CoD | JS |")
         lines.append("|-----|-----------|------|-----|----|")
         for req_id, data in sorted(aggregated.items(),
                                    key=lambda x: x[1].get("wsjf", 0) if isinstance(x[1], dict) else 0,
@@ -1397,7 +1397,7 @@ def run_aggregation(
         lines += _timebox_report_block(aggregated, capacity, capacity_unit)
 
     else:
-        lines.append("| ID | Priority | Quadrant | Avg Impact | Avg Effort |")
+        lines.append("| ID | Приоритет | Квадрант | Avg Impact | Avg Effort |")
         lines.append("|-----|-----------|----------|------------|------------|")
         for req_id, data in aggregated.items():
             prio = data.get("priority", "—") if isinstance(data, dict) else data
@@ -1414,81 +1414,81 @@ def run_aggregation(
             "",
             "---",
             "",
-            f"## 🟠 Must Inflation — {int(inflation['must_ratio']*100)}% of requirements at Must",
+            f"## 🟠 Must Inflation — {int(inflation['must_ratio']*100)}% требований в Must",
             "",
             "Recommendation: re-run the session with method=\"TimeBoxing\" — set the "
             "capacity the team can actually deliver, and the box decides what fits.",
             "Ask the stakeholders: \"If we could only ship 40% — what would you pick?\"",
         ]
 
-    # Conflicts
+    # Конфликты
     if conflicts:
         lines += [
             "",
             "---",
             "",
-            f"## 🔴 Stakeholder conflicts ({len(conflicts)})",
+            f"## 🔴 Конфликты стейкхолдеров ({len(conflicts)} шт.)",
             "",
-            "Require resolution before finalizing.",
+            "Требуют разрешения перед финализацией.",
             "",
         ]
         for c in conflicts:
-            lines.append(f"### Requirement `{c['req_id']}` — {c['severity']}")
+            lines.append(f"### Требование `{c['req_id']}` — {c['severity']}")
             lines.append("")
             for sh_id, score in c["scores"].items():
                 infl = influence_by_sh.get(sh_id, "Medium")
                 lines.append(f"- **{sh_id}** ({infl}): **{score}**")
             lines.append("")
-            lines.append("Call `resolve_conflict` to record the decision.")
+            lines.append("Вызовите `resolve_conflict` для фиксации решения.")
             lines.append("")
     else:
-        lines += ["", "---", "", "## ✅ Stakeholder conflicts", "", "No conflicts found.", ""]
+        lines += ["", "---", "", "## ✅ Конфликты стейкхолдеров", "", "Конфликтов не обнаружено.", ""]
 
     # Dependency violations
     if violations:
         lines += [
             "---",
             "",
-            f"## ⚠️ Dependency Violations ({len(violations)})",
+            f"## ⚠️ Dependency Violations ({len(violations)} шт.)",
             "",
-            "Logical contradictions: a high-priority requirement depends on a lower-priority one.",
+            "Логические противоречия: требование с высоким приоритетом зависит от низкоприоритетного.",
             "",
         ]
         for v in violations:
-            lines.append(f"- `{v['req_id']}` (**{v['req_priority']}**) depends on "
+            lines.append(f"- `{v['req_id']}` (**{v['req_priority']}**) зависит от "
                          f"`{v['depends_on']}` (**{v['dep_priority']}**)")
         lines += [
             "",
-            "Options: raise the dependency's priority / lower the requirement's / decompose it.",
-            "Record the decision via `resolve_conflict`.",
+            "Варианты: поднять зависимость / понизить требование / декомпозировать.",
+            "Зафиксируйте решение через `resolve_conflict`.",
             "",
         ]
 
-    # Unstable items at Must
+    # Нестабильные в Must
     if volatile_must:
         lines += [
             "---",
             "",
-            "## 🟡 Unstable requirements at Must",
+            "## 🟡 Нестабильные требования в Must",
             "",
         ]
         for item in volatile_must:
             icon = "🔴" if item["flag"] == "critical" else "🟡"
-            lines.append(f"- {icon} `{item['req_id']}` (version {item['version']}) — risk of rework")
+            lines.append(f"- {icon} `{item['req_id']}` (версия {item['version']}) — риск переделок")
         lines.append("")
 
     lines += [
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
     ]
     has_open = conflicts or violations
     if has_open:
-        lines.append("1. Resolve conflicts → `resolve_conflict`")
-        lines.append("2. After resolving all conflicts → `save_prioritization_result`")
+        lines.append("1. Разрешить конфликты → `resolve_conflict`")
+        lines.append("2. После разрешения всех конфликтов → `save_prioritization_result`")
     else:
-        lines.append("1. No conflicts remain → you can call `save_prioritization_result`")
+        lines.append("1. Все конфликты отсутствуют → можно вызывать `save_prioritization_result`")
 
     return "\n".join(lines)
 
@@ -1505,21 +1505,21 @@ def resolve_conflict(
     decided_by: str,
 ) -> str:
     """
-    Record a prioritization conflict-resolution decision.
+    Зафиксировать решение по конфликту приоритизации.
 
-    Parameters:
-    - req_id: ID of the requirement in conflict
-    - conflict_type: conflict type
-    - final_priority: final priority after resolution
-    - rationale: rationale for the decision
-    - decided_by: who made the decision (stakeholder_id or a role, e.g. "Sponsor")
+    Параметры:
+    - req_id: ID требования с конфликтом
+    - conflict_type: тип конфликта
+    - final_priority: итоговый приоритет после разрешения
+    - rationale: обоснование решения
+    - decided_by: кто принял решение (stakeholder_id или роль, например "Sponsor")
     """
     logger.info(f"5.3 resolve_conflict: {project_name}/{session_label} req={req_id}")
 
     prio_data = _load_prio(project_name)
     session = _find_session(prio_data["sessions"], session_label)
     if not session:
-        return f"❌ Session '{session_label}' not found."
+        return f"❌ Сессия '{session_label}' не найдена."
 
     # Update the aggregated value.
     # TimeBoxing is different in kind: for the other three methods `priority` IS the
@@ -1587,7 +1587,7 @@ def resolve_conflict(
     else:
         session["aggregated"][req_id] = {"priority": final_priority, "resolved": True}
 
-    # Mark the conflict as resolved
+    # Помечаем конфликт как разрешённый
     resolution = {
         "req_id": req_id,
         "conflict_type": conflict_type,
@@ -1613,7 +1613,7 @@ def resolve_conflict(
             break
 
     if not found:
-        # Add as a standalone entry (manual resolution)
+        # Добавляем как отдельную запись (ручное разрешение)
         session["conflicts"].append({
             "req_id": req_id,
             "conflict_type": conflict_type,
@@ -1623,16 +1623,16 @@ def resolve_conflict(
 
     _save_prio(project_name, prio_data)
 
-    # Check whether unresolved conflicts remain
+    # Проверяем остались ли нерешённые конфликты
     open_conflicts = [c for c in session["conflicts"] if not c.get("resolved")]
     open_violations = [v for v in session["dependency_violations"] if not v.get("resolved")]
 
     lines = [
-        f"✅ Conflict on `{req_id}` resolved",
+        f"✅ Конфликт по `{req_id}` разрешён",
         "",
-        f"**Final priority:** {final_priority}  ",
-        f"**Decided by:** {decided_by}  ",
-        f"**Rationale:** {rationale}",
+        f"**Итоговый приоритет:** {final_priority}  ",
+        f"**Принял решение:** {decided_by}  ",
+        f"**Обоснование:** {rationale}",
         "",
     ]
     if timebox_note:
@@ -1640,10 +1640,10 @@ def resolve_conflict(
 
     if open_conflicts or open_violations:
         total_open = len(open_conflicts) + len(open_violations)
-        lines.append(f"⚠️ **{total_open}** unresolved conflict(s)/violation(s) remain.")
-        lines.append("Keep calling `resolve_conflict` for each.")
+        lines.append(f"⚠️ Остаётся **{total_open}** нерешённых конфликтов/violations.")
+        lines.append("Продолжайте вызывать `resolve_conflict` для каждого.")
     else:
-        lines.append("✅ All conflicts resolved. You can call `save_prioritization_result`.")
+        lines.append("✅ Все конфликты разрешены. Можно вызывать `save_prioritization_result`.")
 
     return "\n".join(lines)
 
@@ -1655,22 +1655,22 @@ def save_prioritization_result(
     session_label: str,
 ) -> str:
     """
-    Finalize the prioritization session.
+    Финализировать сессию приоритизации.
 
-    Actions:
-    1. Checks that all conflicts are resolved
-    2. Updates the priority field in the 5.1 repository
-    3. Closes the session in {project}_prioritization.json
-    4. Saves the Markdown report
+    Действия:
+    1. Проверяет что все конфликты разрешены
+    2. Обновляет поле priority в репозитории 5.1
+    3. Закрывает сессию в {project}_prioritization.json
+    4. Сохраняет Markdown-отчёт
 
-    Warns if unresolved conflicts remain (but allows saving anyway).
+    Предупреждает если остались нерешённые конфликты (но позволяет сохранить).
     """
     logger.info(f"5.3 save_prioritization_result: {project_name}/{session_label}")
 
     prio_data = _load_prio(project_name)
     session = _find_session(prio_data["sessions"], session_label)
     if not session:
-        return f"❌ Session '{session_label}' not found."
+        return f"❌ Сессия '{session_label}' не найдена."
 
     open_conflicts = [c for c in session["conflicts"] if not c.get("resolved")]
     open_violations = [v for v in session["dependency_violations"] if not v.get("resolved")]
@@ -1775,16 +1775,16 @@ def save_prioritization_result(
         session["closed_at"] = str(date.today())
     _save_prio(project_name, prio_data)
 
-    # Markdown report
+    # Markdown отчёт
     lines = [
-        f"<!-- BABOK 5.3 — Prioritize Requirements (result), "
-        f"Project: {project_name}, Session: {session_label}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.3 — Prioritize Requirements (результат), "
+        f"Проект: {project_name}, Сессия: {session_label}, Дата: {date.today()} -->",
         "",
-        f"# Prioritization results: {session_label}",
-        f"**Project:** {project_name}  ",
-        f"**Method:** {session['method']}  ",
-        f"**Date:** {date.today()}  ",
-        f"**Requirements updated:** {updated_count}",
+        f"# Результаты приоритизации: {session_label}",
+        f"**Проект:** {project_name}  ",
+        f"**Метод:** {session['method']}  ",
+        f"**Дата:** {date.today()}  ",
+        f"**Обновлено требований:** {updated_count}",
         "",
     ]
     if refinalise_note:
@@ -1819,7 +1819,7 @@ def save_prioritization_result(
     lines += [
         "---",
         "",
-        "## Final priorities",
+        "## Итоговые приоритеты",
         "",
     ]
     if not_found_ids:
@@ -1844,12 +1844,12 @@ def save_prioritization_result(
     for prio_label in ["Must", "Should", "Could", "Won't"]:
         reqs = priority_summary.get(prio_label, [])
         icon = {"Must": "🔴", "Should": "🟠", "Could": "🟡", "Won't": "🟢"}[prio_label]
-        lines.append(f"### {icon} {prio_label} ({len(reqs)})")
+        lines.append(f"### {icon} {prio_label} ({len(reqs)} шт.)")
         if reqs:
             for rid in reqs:
                 lines.append(f"- `{rid}`")
         else:
-            lines.append("*(no requirements)*")
+            lines.append("*(нет требований)*")
         lines.append("")
 
     # The box belongs in the signed artefact too, not only in the working
@@ -1884,11 +1884,11 @@ def save_prioritization_result(
     lines += [
         "---",
         "",
-        "## Session statistics",
+        "## Статистика сессии",
         "",
-        f"- Stakeholders: {len(session['stakeholder_scores'])}",
-        f"- Conflicts: {total_conflicts} (resolved: {resolved_conflicts})",
-        f"- Dependency violations: {total_violations} (resolved: {resolved_violations})",
+        f"- Стейкхолдеров: {len(session['stakeholder_scores'])}",
+        f"- Конфликтов: {total_conflicts} (разрешено: {resolved_conflicts})",
+        f"- Dependency violations: {total_violations} (разрешено: {resolved_violations})",
         "",
     ]
 
@@ -1896,7 +1896,7 @@ def save_prioritization_result(
         lines += [
             "---",
             "",
-            "## ⚠️ Unresolved conflicts",
+            "## ⚠️ Нерешённые конфликты",
             "",
             f"Still unresolved: {len(open_conflicts)} conflict(s), {len(open_violations)} violation(s).",
             # This used to send the BA to `resolve_conflict`, which refuses on a

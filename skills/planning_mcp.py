@@ -1,6 +1,6 @@
 """
 BABOK 3 — Business Analysis Planning and Monitoring
-MCP tools for business analysis planning.
+MCP-инструменты для планирования бизнес-анализа.
 
 Tools:
   - suggest_ba_approach           — 3.1: choose a methodology (Predictive/Agile/Hybrid)
@@ -11,9 +11,9 @@ Tools:
   - evaluate_ba_performance       — 3.5: BA performance metrics + improvement plan
   - save_ba_plan                  — finalize: render the Markdown BA Plan report
 
-Storage:
-  - {project}_ba_plan.json        — single JSON document with all plan sections
-  - {project}_ba_plan_*.md        — Markdown report (via save_artifact)
+Хранение:
+  - {project}_ba_plan.json        — единый JSON-документ со всеми секциями плана
+  - {project}_ba_plan_*.md        — Markdown-отчёт (через save_artifact)
 
 Integration:
   Output: ba_plan.json. Sections 3.1b (ba_activities), 3.3 (governance) and 3.4
@@ -47,7 +47,7 @@ Integration:
   Wiring that is a planned feature, not current behavior — do not promise it to the
   BA in tool output.
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -77,8 +77,8 @@ mcp = FastMCP("BABOK_Planning")
 PLAN_FILENAME = "ba_plan.json"
 
 # ---------------------------------------------------------------------------
-# Templates (the APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES
-# matrices live in common.py — single source of truth, ADR-REVIEW-5)
+# Шаблоны (матрицы APPROACH_MATRIX, REGULATORY_OVERRIDE, QUADRANT_STRATEGIES
+# перенесены в common.py — единственный источник истины, ADR-REVIEW-п5)
 # ---------------------------------------------------------------------------
 
 # The 3.3 criticality templates live in skills/common.py: the readers in 5.3/5.4/5.5
@@ -126,9 +126,9 @@ def _trace_source_text(level: str, criticality: str, source: str) -> str:
 
 
 _TRACEABILITY_LEVELS = {
-    "High":   "Full traceability: Business goals → Requirements → Test cases → Code",
-    "Medium": "Requirements linked to Jira tickets and test cases",
-    "Low":    "Basic: requirement numbering, links as needed",
+    "High":   "Полная трассировка: Бизнес-цели → Требования → Тест-кейсы → Код",
+    "Medium": "Связь требований с задачами Jira и тест-кейсами",
+    "Low":    "Базовая: нумерация требований, ссылки по необходимости",
 }
 
 # The eight 4.4 audience archetypes. Kept in sync with the `audience_role` Literal in
@@ -146,19 +146,19 @@ _CLEAR_TEXT = "-"          # explicit clearing value for free-text parameters
 _CLEAR_ENUM = "None"       # explicit clearing value for the Literal parameters
 
 _ISSUE_RECOMMENDATIONS = {
-    "no templates":        "📋 Adopt standard requirement templates (SRS, User Story template)",
-    "slow approval":       "⚡ Shorten the approval chain, delegate to PO",
-    "conflicts":           "🔍 Introduce mandatory peer review of requirements before handoff to development",
-    "weak traceability":   "🔗 Set up traceability in Jira: Epic → Story → Test",
-    "no metrics":          "📊 Introduce BA quality metrics: Defect Rate, Rework Rate, Requirement Stability",
-    "onboarding":          "🎓 Create a BA playbook and a project knowledge base",
-    "no documentation":    "📝 Create a single versioned artifact repository",
-    "scope creep":         "🎯 Strengthen governance: formalize the CR process via 5.4",
+    "нет шаблонов":        "📋 Внедрить стандартные шаблоны требований (SRS, User Story template)",
+    "долгое согласование": "⚡ Сократить цепочку согласования, делегировать PO",
+    "конфликты":           "🔍 Ввести обязательный peer-review требований перед передачей в разработку",
+    "слабая трассировка":  "🔗 Настроить трассировку в Jira: Epic → Story → Test",
+    "нет метрик":          "📊 Ввести метрики качества BA: Defect Rate, Rework Rate, Requirement Stability",
+    "onboarding":          "🎓 Создать BA Playbook и базу знаний по проекту",
+    "нет документации":    "📝 Создать единое хранилище артефактов с версионированием",
+    "scope creep":         "🎯 Усилить Governance: формализовать процесс CR через 5.4",
 }
 
 
 # ---------------------------------------------------------------------------
-# Utilities
+# Утилиты
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -201,13 +201,13 @@ def _empty_plan(project_id: str) -> dict:
 
 
 def _classify_stakeholder(influence: str, interest: str) -> tuple:
-    """Returns (quadrant, strategy, frequency) per the Power/Interest matrix."""
+    """Возвращает (quadrant, strategy, frequency) по матрице Power/Interest."""
     key = (influence, interest)
-    return QUADRANT_STRATEGIES.get(key, ("Crowd", "Monitor", "Quarterly"))
+    return QUADRANT_STRATEGIES.get(key, ("Crowd", "Monitor", "Квартально"))
 
 
 # ---------------------------------------------------------------------------
-# Tools
+# Инструменты
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -220,18 +220,18 @@ def suggest_ba_approach(
     ba_notes: str = "",
 ) -> str:
     """
-    BABOK 3.1 — Determine the business analysis approach (Predictive / Agile / Hybrid).
+    BABOK 3.1 — Определить подход к бизнес-анализу (Predictive / Agile / Hybrid).
 
-    Selects a methodology from the BABOK matrix based on change frequency and uncertainty.
-    Applies a compliance override when regulatory_need=True.
-    Saves the decision to {project}_ba_plan.json, section 'ba_approach'.
+    Выбирает методологию по матрице BABOK на основе частоты изменений и неопределённости.
+    При regulatory_need=True применяет compliance override.
+    Сохраняет решение в {project}_ba_plan.json секция 'ba_approach'.
 
     Args:
-        project_id: Project identifier
-        change_frequency: Expected frequency of requirement changes (Low/Medium/High)
-        uncertainty: Level of project uncertainty (Low/Medium/High)
-        regulatory_need: True if the project requires strict compliance/audit
-        ba_notes: Additional context from the BA
+        project_id: Идентификатор проекта
+        change_frequency: Ожидаемая частота изменений требований (Low/Medium/High)
+        uncertainty: Уровень неопределённости в проекте (Low/Medium/High)
+        regulatory_need: True если проект требует строгого комплаенса/аудита
+        ba_notes: Дополнительный контекст от BA
     """
     approach, techniques = APPROACH_MATRIX.get(
         (change_frequency, uncertainty),
@@ -257,23 +257,23 @@ def suggest_ba_approach(
     _save_plan(plan, project_id)
 
     approach_hints = {
-        "Predictive (Waterfall)": "Clear requirements from the start. Document thoroughly.",
-        "Hybrid": "Combine planning and flexibility. Plan phases, adapt within them.",
-        "Adaptive (Agile)": "Work iteratively. User stories + backlog + retrospectives.",
-        "Hybrid (Agile + compliance gates)": "Agile cadence + formal sign-off points for audit.",
-        "Hybrid (with strengthened governance)": "Hybrid approach + stronger change control.",
+        "Predictive (Waterfall)": "Чёткие требования с самого начала. Документируй тщательно.",
+        "Hybrid": "Сочетай плановость и гибкость. Планируй фазы, адаптируйся внутри.",
+        "Adaptive (Agile)": "Работай итерационно. User stories + backlog + ретроспективы.",
+        "Hybrid (Agile + compliance gates)": "Agile-ритм + формальные точки согласования для аудита.",
+        "Hybrid (с усиленным Governance)": "Гибридный подход + усиленный контроль изменений.",
     }
     hint = approach_hints.get(approach, "")
 
     return (
-        f"✅ BA approach recorded\n\n"
-        f"  Project:         {project_id}\n"
-        f"  Change frequency: {change_frequency}\n"
-        f"  Uncertainty:       {uncertainty}\n"
-        f"  Regulatory:        {'Yes' if regulatory_need else 'No'}"
+        f"✅ Подход к BA зафиксирован\n\n"
+        f"  Проект:         {project_id}\n"
+        f"  Частота изменений: {change_frequency}\n"
+        f"  Неопределённость:  {uncertainty}\n"
+        f"  Регуляторный:      {'Да' if regulatory_need else 'Нет'}"
         f"{regulatory_note}\n\n"
-        f"  **Recommended approach: {approach}**\n"
-        f"  BABOK techniques: {', '.join(techniques)}\n\n"
+        f"  **Рекомендуемый подход: {approach}**\n"
+        f"  Техники BABOK: {', '.join(techniques)}\n\n"
         f"  💡 {hint}\n\n"
         f"→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.\n"
         f"   Optional first: `plan_ba_activities` — which BABOK tasks run in which "
@@ -370,22 +370,22 @@ def plan_stakeholder_engagement(
     stakeholders_json: str,
 ) -> str:
     """
-    BABOK 3.2 — Build the stakeholder engagement matrix (Power/Interest Grid).
+    BABOK 3.2 — Составить матрицу вовлечения стейкхолдеров (Power/Interest Grid).
 
-    Classifies each stakeholder into a quadrant (Key Players / Context Setters /
-    Subjects / Crowd) and assigns a strategy and communication frequency.
-    Saves the registry to {project}_ba_plan.json, section 'stakeholder_engagement'.
+    Классифицирует каждого стейкхолдера по квадранту (Key Players / Context Setters /
+    Subjects / Crowd) и назначает стратегию и частоту коммуникации.
+    Сохраняет реестр в {project}_ba_plan.json секция 'stakeholder_engagement'.
 
     Args:
-        project_id: Project identifier
-        stakeholders_json: JSON array of stakeholders. Object format:
+        project_id: Идентификатор проекта
+        stakeholders_json: JSON-массив стейкхолдеров. Формат объекта:
             {
-              "name": "John Smith",
+              "name": "Иван Петров",
               "role": "Product Owner",
               "influence": "High",
               "interest": "High",
               "attitude": "Champion",
-              "contact": "john@company.com"
+              "contact": "ivan@company.com"
             }
             influence/interest: Low | Medium | High
             attitude: Champion | Neutral | Blocker
@@ -404,7 +404,7 @@ def plan_stakeholder_engagement(
         return shape_error
 
     if not stakeholders:
-        return "⚠️ Stakeholder list is empty. Add at least one stakeholder."
+        return "⚠️ Список стейкхолдеров пуст. Добавь хотя бы одного стейкхолдера."
 
     valid = []
     seed_source = []
@@ -414,13 +414,13 @@ def plan_stakeholder_engagement(
         influence = s.get("influence", "")
         interest = s.get("interest", "")
         if not name:
-            errors.append(f"Stakeholder #{i+1}: missing 'name' field")
+            errors.append(f"Стейкхолдер #{i+1}: отсутствует поле 'name'")
             continue
         if influence not in ("Low", "Medium", "High"):
-            errors.append(f"'{name}': influence must be Low/Medium/High, got '{influence}'")
+            errors.append(f"'{name}': influence должен быть Low/Medium/High, получено '{influence}'")
             continue
         if interest not in ("Low", "Medium", "High"):
-            errors.append(f"'{name}': interest must be Low/Medium/High, got '{interest}'")
+            errors.append(f"'{name}': interest должен быть Low/Medium/High, получено '{interest}'")
             continue
         quadrant, strategy, frequency = _classify_stakeholder(influence, interest)
         valid.append({
@@ -442,7 +442,7 @@ def plan_stakeholder_engagement(
         seed_source.append(s)
 
     if errors:
-        return "❌ Errors in stakeholders_json:\n" + "\n".join(f"  • {e}" for e in errors)
+        return "❌ Ошибки в stakeholders_json:\n" + "\n".join(f"  • {e}" for e in errors)
 
     plan = _load_plan(project_id)
     plan["stakeholder_engagement"] = {
@@ -479,15 +479,15 @@ def plan_stakeholder_engagement(
     for q, cnt in sorted(quadrants.items()):
         lines.append(f"  {q}: {cnt}\n")
 
-    lines.append("\n**Registry:**\n")
+    lines.append("\n**Реестр:**\n")
     for s in valid:
         lines.append(
             f"  • {s['name']} ({s['role']}) — {s['quadrant']} | {s['comm_frequency']}\n"
-            f"    Strategy: {s['strategy']}\n"
+            f"    Стратегия: {s['strategy']}\n"
         )
 
     if blockers:
-        lines.append(f"\n⚠️ Blockers: {', '.join(blockers)} — require special attention\n")
+        lines.append(f"\n⚠️ Blockers: {', '.join(blockers)} — требуют особого внимания\n")
 
     # The blocker line above describes the PLAN just submitted, which is right — that
     # is what this tool reports on. But an attitude STATED here overwrites what an
@@ -511,7 +511,7 @@ def plan_stakeholder_engagement(
     lines.append(registry_note)
 
     lines.append(
-        f"\n→ Next step: `plan_ba_governance` — define decision-making rules."
+        f"\n→ Следующий шаг: `plan_ba_governance` — определи правила принятия решений."
     )
     return "".join(lines)
 
@@ -598,7 +598,7 @@ def plan_ba_governance(
     prioritization_criteria_json: str = "",
 ) -> str:
     """
-    BABOK 3.3 — Define the business analysis governance plan.
+    BABOK 3.3 — Определить план governance бизнес-анализа.
 
     Records decision authority, change control, approvals and their timing, and the
     prioritization approach. Project criticality supplies the DEFAULT wording for the
@@ -831,9 +831,9 @@ def plan_ba_governance(
     _save_plan(plan, project_id)
 
     criticality_hints = {
-        "High": "⚠️ High criticality: formalize every CR, change nothing without sign-off.",
-        "Medium": "📋 Medium criticality: standard process via PO/backlog.",
-        "Low": "✅ Low criticality: flexible process, record only key decisions.",
+        "High": "⚠️ Высокая критичность: формализуй каждый CR, ничего не меняй без подписи.",
+        "Medium": "📋 Средняя критичность: стандартный process через PO/backlog.",
+        "Low": "✅ Низкая критичность: гибкий процесс, фиксируй только ключевые решения.",
     }
 
     def _src(field):
@@ -970,7 +970,7 @@ def plan_information_management(
     additional_attributes_json: str = "",
 ) -> str:
     """
-    BABOK 3.4 — Plan business analysis information management.
+    BABOK 3.4 — Спланировать управление информацией BA.
 
     Defines where and how requirements and artifacts are stored, the traceability
     level, how much detail each audience gets, how requirements will be reused, and
@@ -1563,17 +1563,17 @@ def evaluate_ba_performance(
     ba_notes: str = "",
 ) -> str:
     """
-    BABOK 3.5 — Evaluate BA performance and build an improvement plan.
+    BABOK 3.5 — Оценить эффективность BA и составить план улучшений.
 
-    Matches identified issues with recommendations, records metrics.
-    Saves to {project}_ba_plan.json, section 'performance'.
+    Сопоставляет выявленные проблемы с рекомендациями, фиксирует метрики.
+    Сохраняет в {project}_ba_plan.json секция 'performance'.
 
     Args:
-        project_id: Project identifier
-        current_issues_json: JSON list of current issues, e.g. '["no templates", "scope creep"]'
-        metrics_json: JSON list of metrics to monitor, e.g.
+        project_id: Идентификатор проекта
+        current_issues_json: JSON-список текущих проблем, напр. '["нет шаблонов", "scope creep"]'
+        metrics_json: JSON-список метрик для мониторинга, напр.
             '[{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]'
-        ba_notes: Additional context
+        ba_notes: Дополнительный контекст
     """
     current_issues, error = _parse_string_list(current_issues_json, "current_issues_json")
     if error:
@@ -1607,7 +1607,7 @@ def evaluate_ba_performance(
             '[{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]')
     metrics = normalized_metrics
 
-    # Match issues to recommendations
+    # Сопоставляем проблемы с рекомендациями
     recommendations = []
     unmatched = []
     for issue in current_issues:
@@ -1621,13 +1621,13 @@ def evaluate_ba_performance(
             unmatched.append(issue)
             recommendations.append({
                 "issue": issue,
-                "recommendation": f"⚠️ Requires manual analysis: «{issue}»"
+                "recommendation": f"⚠️ Требует ручного анализа: «{issue}»"
             })
 
     if not current_issues:
         recommendations.append({
-            "issue": "no explicit issues",
-            "recommendation": "✅ Hold a retrospective once per quarter as a preventive measure."
+            "issue": "нет явных проблем",
+            "recommendation": "✅ Провести ретроспективу раз в квартал для профилактики."
         })
 
     performance = {
@@ -1643,19 +1643,19 @@ def evaluate_ba_performance(
     _save_plan(plan, project_id)
 
     lines = [
-        f"✅ BA performance assessment recorded\n\n",
-        f"  Project:  {project_id}\n",
-        f"  Issues:   {len(current_issues)}\n",
-        f"  Metrics:  {len(metrics)}\n\n",
+        f"✅ Оценка эффективности BA зафиксирована\n\n",
+        f"  Проект:   {project_id}\n",
+        f"  Проблем:  {len(current_issues)}\n",
+        f"  Метрик:   {len(metrics)}\n\n",
     ]
 
     if recommendations:
-        lines.append("**Improvement recommendations:**\n")
+        lines.append("**Рекомендации по улучшению:**\n")
         for r in recommendations:
             lines.append(f"  {r['recommendation']}\n")
 
     if metrics:
-        lines.append("\n**Metrics to monitor:**\n")
+        lines.append("\n**Метрики для мониторинга:**\n")
         for m in metrics:
             if isinstance(m, dict):
                 name = m.get("name", "")
@@ -1666,8 +1666,8 @@ def evaluate_ba_performance(
                 lines.append(f"  • {m}\n")
 
     lines.append(
-        f"\n→ BA plan for project `{project_id}` is ready.\n"
-        f"  Call `save_ba_plan` to generate the Markdown report."
+        f"\n→ BA-план для проекта `{project_id}` готов.\n"
+        f"  Вызови `save_ba_plan` для генерации Markdown-отчёта."
     )
     return "".join(lines)
 
@@ -1678,13 +1678,13 @@ def save_ba_plan(
     project_id: str,
 ) -> str:
     """
-    Finalize the BA plan: generate the Markdown report.
+    Финализировать BA-план: сгенерировать Markdown-отчёт.
 
-    Builds a readable document from all sections of {project}_ba_plan.json
-    via save_artifact(). The JSON remains the contract for downstream tasks.
+    Создаёт читаемый документ из всех секций {project}_ba_plan.json
+    через save_artifact(). JSON остаётся как контракт для downstream задач.
 
     Args:
-        project_id: Project identifier
+        project_id: Идентификатор проекта
     """
     plan = _load_plan(project_id)
 
@@ -1708,8 +1708,8 @@ def save_ba_plan(
     # so omitting it here refused a plan that actually had content.
     if not any([approach, activities, engagement, governance, info_mgmt, performance]):
         return (
-            "⚠️ BA plan is empty or not filled in.\n"
-            "Complete steps 3.1-3.5 before saving the report."
+            "⚠️ BA-план пуст или не заполнен.\n"
+            "Пройди шаги 3.1–3.5 перед сохранением отчёта."
         )
 
     def _notes_block(section: dict) -> list:
@@ -1724,7 +1724,7 @@ def save_ba_plan(
 
     md_lines = [
         f"# BA Plan — {project_id}",
-        f"**Date:** {date.today()}",
+        f"**Дата:** {date.today()}",
         "",
         "---",
         "",
@@ -1732,15 +1732,15 @@ def save_ba_plan(
 
     if approach:
         md_lines += [
-            "## 3.1 Business Analysis Approach",
+            "## 3.1 Подход к бизнес-анализу",
             "",
-            f"| Parameter | Value |",
+            f"| Параметр | Значение |",
             f"|----------|---------|",
-            f"| Change frequency | {approach.get('change_frequency', '')} |",
-            f"| Uncertainty | {approach.get('uncertainty', '')} |",
-            f"| Regulatory | {'Yes' if approach.get('regulatory_need') else 'No'} |",
-            f"| **Recommended approach** | **{approach.get('recommended_approach', '')}** |",
-            f"| BABOK techniques | {', '.join(approach.get('techniques', []))} |",
+            f"| Частота изменений | {approach.get('change_frequency', '')} |",
+            f"| Неопределённость | {approach.get('uncertainty', '')} |",
+            f"| Регуляторный | {'Да' if approach.get('regulatory_need') else 'Нет'} |",
+            f"| **Рекомендуемый подход** | **{approach.get('recommended_approach', '')}** |",
+            f"| Техники BABOK | {', '.join(approach.get('techniques', []))} |",
             "",
         ]
         md_lines += _notes_block(approach)
@@ -1805,9 +1805,9 @@ def save_ba_plan(
     if engagement:
         stakeholders = engagement.get("stakeholders", [])
         md_lines += [
-            "## 3.2 Stakeholder Engagement",
+            "## 3.2 Вовлечение стейкхолдеров",
             "",
-            f"| Stakeholder | Role | Quadrant | Strategy | Frequency |",
+            f"| Стейкхолдер | Роль | Квадрант | Стратегия | Частота |",
             f"|-------------|------|----------|-----------|---------|",
         ]
         for s in stakeholders:
@@ -1890,7 +1890,7 @@ def save_ba_plan(
                                         gov_criticality,
                                         info_mgmt.get("traceability_source", ""))
         md_lines += [
-            "## 3.4 Information Management",
+            "## 3.4 Управление информацией",
             "",
             f"- **Tools:** {', '.join(info_mgmt.get('storage_tools', []))}",
             f"- **Traceability:** {info_mgmt.get('traceability_level', '')} — "
@@ -1949,13 +1949,13 @@ def save_ba_plan(
 
     if performance:
         recs = performance.get("recommendations", [])
-        md_lines += ["## 3.5 BA Performance", ""]
+        md_lines += ["## 3.5 Эффективность BA", ""]
         for r in recs:
             md_lines.append(f"- {r['recommendation']}")
         md_lines.append("")
         metrics = performance.get("metrics", [])
         if metrics:
-            md_lines.append("**Metrics:**")
+            md_lines.append("**Метрики:**")
             for m in metrics:
                 if isinstance(m, dict):
                     md_lines.append(f"- {m.get('name', '')}: {m.get('baseline', '')} → {m.get('target', '')}")

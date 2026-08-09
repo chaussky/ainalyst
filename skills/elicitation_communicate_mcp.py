@@ -1,13 +1,13 @@
 """
 BABOK 4.4 — Communicate Business Analysis Information
-MCP tools for preparing and logging communication packages.
+MCP-инструменты для подготовки и фиксации коммуникационных пакетов.
 
 Tools:
   - prepare_communication_package  — save a package adapted for the audience
   - log_communication              — log the fact of a communication and its outcome
   - check_communication_schedule   — who is overdue for contact, and which events triggered it
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -36,7 +36,7 @@ _LEVEL_GUIDANCE = {
 
 
 # ---------------------------------------------------------------------------
-# 4.4.1 — Prepare an adapted communication package
+# 4.4.1 — Подготовить адаптированный коммуникационный пакет
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -58,56 +58,56 @@ def prepare_communication_package(
     adapted_content: str,
     key_messages_json: str,
     recommended_format: Literal[
-        "Formal Document",
-        "Informal Document",
-        "Presentation",
+        "Формальный документ",
+        "Неформальный документ",
+        "Презентация",
         "Email",
-        "1-on-1 Meeting",
-        "Group Meeting",
+        "Встреча 1-на-1",
+        "Групповая встреча",
     ],
     recommended_channel: str,
     open_questions: str,
     ba_notes: str,
 ) -> str:
     """
-    BABOK 4.4 — Saves an adapted communication package.
-    Contains the artifact repackaged for a specific audience,
-    plus recommendations on format and delivery channel.
+    BABOK 4.4 — Сохраняет адаптированный коммуникационный пакет.
+    Содержит переупакованный артефакт под конкретную аудиторию,
+    рекомендации по формату и каналу доставки.
 
     Args:
-        project_name:           Project name.
-        source_artifact_path:   Path to the source artifact (from 4.3 or another task).
-        audience_role:          Target audience role.
-        audience_profile_json:  Audience profile from the stakeholder registry. Format:
+        project_name:           Название проекта.
+        source_artifact_path:   Путь к исходному артефакту (из 4.3 или другой задачи).
+        audience_role:          Роль целевой аудитории.
+        audience_profile_json:  Профайл аудитории из реестра стейкхолдеров. Формат:
                                 {
                                   "stakeholder_role": "...",
                                   "influence": "High | Medium | Low",
                                   "interest": "High | Medium | Low",
                                   "attitude": "Champion | Neutral | Blocker",
-                                  "communication_preference": "text or ''",
-                                  "key_concerns": "text or ''"
+                                  "communication_preference": "текст или ''",
+                                  "key_concerns": "текст или ''"
                                 }
-        adapted_content:        Adapted artifact content — text rephrased
-                                into language for this specific audience.
-                                This is the package's main block.
-        key_messages_json:      Key messages — 3-5 main points the audience
-                                should take away. Format:
+        adapted_content:        Адаптированное содержимое артефакта — текст,
+                                переформулированный на язык данной аудитории.
+                                Это основной блок пакета.
+        key_messages_json:      Ключевые сообщения — 3–5 главных тезисов
+                                которые аудитория должна вынести. Формат:
                                 [
                                   {
-                                    "message": "Point",
-                                    "why_it_matters": "Why it matters to this audience"
+                                    "message": "Тезис",
+                                    "why_it_matters": "Почему важно для этой аудитории"
                                   }
                                 ]
-        recommended_format:     Recommended format for presenting the material.
-        recommended_channel:    Recommended channel (email, Confluence, Jira, meeting, etc.).
-        open_questions:         Questions the audience may raise.
-                                The BA should be ready to answer them.
-        ba_notes:               BA notes: specifics of this audience, what to watch for.
+        recommended_format:     Рекомендованный формат подачи материала.
+        recommended_channel:    Рекомендованный канал (email, Confluence, Jira, встреча и т.д.).
+        open_questions:         Вопросы, которые могут возникнуть у аудитории.
+                                BA должен быть готов ответить на них.
+        ba_notes:               Заметки BA: особенности этой аудитории, на что обратить внимание.
 
     Returns:
-        Path to the saved communication package.
+        Путь к сохранённому коммуникационному пакету.
     """
-    logger.info(f"4.4 Preparing package: project='{project_name}', audience='{audience_role}'")
+    logger.info(f"4.4 Подготовка пакета: проект='{project_name}', аудитория='{audience_role}'")
 
     profile, error = parse_json_dict(
         audience_profile_json, "audience_profile_json",
@@ -154,7 +154,7 @@ def prepare_communication_package(
     attitude_icon = {"Champion": "🟢", "Neutral": "🟡", "Blocker": "🔴"}.get(attitude, "🟡")
 
     # -----------------------------------------------------------------------
-    # Build the package
+    # Формируем пакет
     # -----------------------------------------------------------------------
     lines = []
     lines.append(f"# Communication Package: {audience_role}\n")
@@ -168,17 +168,17 @@ def prepare_communication_package(
     lines.append(f"**Source:** `{source_artifact_path}`\n")
     lines.append("---\n")
 
-    # Audience profile
-    lines.append("## Audience Profile\n")
-    lines.append(f"| Parameter | Value |")
+    # Профайл аудитории
+    lines.append("## Профайл аудитории\n")
+    lines.append(f"| Параметр | Значение |")
     lines.append(f"|---|---|")
-    lines.append(f"| Influence | {profile.get('influence', '—')} |")
-    lines.append(f"| Interest | {profile.get('interest', '—')} |")
-    lines.append(f"| Attitude toward the project | {attitude_icon} {attitude} |")
+    lines.append(f"| Влияние | {profile.get('influence', '—')} |")
+    lines.append(f"| Интерес | {profile.get('interest', '—')} |")
+    lines.append(f"| Отношение к проекту | {attitude_icon} {attitude} |")
     if profile.get("communication_preference"):
-        lines.append(f"| Communication style | {profile['communication_preference']} |")
+        lines.append(f"| Стиль общения | {profile['communication_preference']} |")
     if profile.get("key_concerns"):
-        lines.append(f"| Key concerns | {profile['key_concerns']} |\n")
+        lines.append(f"| Ключевые опасения | {profile['key_concerns']} |\n")
     else:
         lines.append("")
 
@@ -195,59 +195,59 @@ def prepare_communication_package(
     # Key messages
     if key_messages:
         lines.append("---\n")
-        lines.append("## Key Messages\n")
-        lines.append("_What the audience should take away from this communication:_\n")
+        lines.append("## Ключевые сообщения\n")
+        lines.append("_Что аудитория должна вынести из этой коммуникации:_\n")
         for i, msg in enumerate(key_messages, 1):
             lines.append(f"**{i}. {msg.get('message', '—')}**  ")
             if msg.get("why_it_matters"):
-                lines.append(f"*Why it matters: {msg['why_it_matters']}*\n")
+                lines.append(f"*Почему важно: {msg['why_it_matters']}*\n")
             else:
                 lines.append("")
 
-    # Adapted content
+    # Адаптированное содержимое
     lines.append("---\n")
-    lines.append(f"## Package Content [{audience_role}]\n")
+    lines.append(f"## Содержимое пакета [{audience_role}]\n")
     lines.append(adapted_content)
     lines.append("")
 
-    # Delivery recommendations
+    # Рекомендации по доставке
     lines.append("---\n")
-    lines.append("## Delivery Recommendations\n")
-    lines.append(f"| Parameter | Recommendation |")
+    lines.append("## Рекомендации по доставке\n")
+    lines.append(f"| Параметр | Рекомендация |")
     lines.append(f"|---|---|")
-    lines.append(f"| Format | {recommended_format} |")
-    lines.append(f"| Channel | {recommended_channel} |\n")
+    lines.append(f"| Формат | {recommended_format} |")
+    lines.append(f"| Канал | {recommended_channel} |\n")
 
-    # Possible questions from the audience
+    # Возможные вопросы от аудитории
     if open_questions:
         lines.append("---\n")
-        lines.append("## Possible Questions from the Audience\n")
-        lines.append("_The BA should be ready to answer:_\n")
+        lines.append("## Возможные вопросы от аудитории\n")
+        lines.append("_BA должен быть готов ответить:_\n")
         lines.append(open_questions)
         lines.append("")
 
-    # Blocker — special section
+    # Blocker — специальный раздел
     if attitude == "Blocker":
         lines.append("---\n")
-        lines.append("## ⚠️ Caution: Audience Is Skeptical\n")
+        lines.append("## ⚠️ Внимание: аудитория настроена скептически\n")
         lines.append(
-            "The stakeholder is classified as a Blocker. Recommended:\n"
-            "- Hold a 1-on-1 meeting before the group presentation\n"
-            "- Explicitly address their key concerns at the start of the package\n"
-            "- Prepare a \"What this means for you personally\" section\n"
+            "Стейкхолдер классифицирован как Blocker. Рекомендуется:\n"
+            "- Провести встречу 1-на-1 до групповой презентации\n"
+            "- Явно адресовать его ключевые опасения в начале пакета\n"
+            "- Подготовить раздел «Что это даёт лично вам»\n"
         )
 
-    # BA notes
+    # Заметки BA
     if ba_notes:
         lines.append("---\n")
-        lines.append("## BA Notes\n")
+        lines.append("## Заметки BA\n")
         lines.append(ba_notes)
         lines.append("")
 
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.4 — Communication Package. "
-        f"Project: {project_name}. Audience: {audience_role}. Date: {today}.*\n"
+        f"Проект: {project_name}. Аудитория: {audience_role}. Дата: {today}.*\n"
     )
 
     content = "\n".join(lines)
@@ -255,12 +255,12 @@ def prepare_communication_package(
     meta = (
         f"<!--\n"
         f"  BABOK 4.4 — Communication Package\n"
-        f"  Project: {project_name}\n"
-        f"  Audience: {audience_role}\n"
+        f"  Проект: {project_name}\n"
+        f"  Аудитория: {audience_role}\n"
         f"  Attitude: {attitude}\n"
-        f"  Format: {recommended_format}\n"
-        f"  Channel: {recommended_channel}\n"
-        f"  Created: {today}\n"
+        f"  Формат: {recommended_format}\n"
+        f"  Канал: {recommended_channel}\n"
+        f"  Создан: {today}\n"
         f"-->\n\n"
     )
 
@@ -285,7 +285,7 @@ def prepare_communication_package(
 
 
 # ---------------------------------------------------------------------------
-# 4.4.2 — Log the fact of a communication
+# 4.4.2 — Зафиксировать факт коммуникации
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -297,19 +297,19 @@ def log_communication(
     communication_date: str,
     channel_used: Literal[
         "Email",
-        "1-on-1 Meeting",
-        "Group Meeting",
-        "Messenger",
-        "Confluence / Document",
-        "Other",
+        "Встреча 1-на-1",
+        "Групповая встреча",
+        "Мессенджер",
+        "Confluence / документ",
+        "Другое",
     ],
     participants_json: str,
     understanding_status: Literal[
-        "Understood and Agreed",
-        "Partially Understood",
-        "Not Understood — Needs Repeat",
-        "No Response",
-        "Disagreed",
+        "Понял и согласен",
+        "Понял частично",
+        "Не понял — нужен повтор",
+        "Нет ответа",
+        "Не согласен",
     ],
     feedback_summary: str,
     action_items_json: str,
@@ -317,35 +317,35 @@ def log_communication(
     followup_deadline: str,
 ) -> str:
     """
-    BABOK 4.4 — Logs the fact of a communication and its outcome.
-    Creates an entry in the project's communication log.
+    BABOK 4.4 — Фиксирует факт коммуникации и её результат.
+    Создаёт запись в журнале коммуникаций проекта.
 
     Args:
-        project_name:               Project name.
-        communication_package_path: Path to the delivered package (from prepare_communication_package).
-        audience_role:              Recipient's role.
-        communication_date:         Communication date in DD.MM.YYYY format.
-        channel_used:               Channel actually used.
-        participants_json:          List of participants. Format:
-                                    [{"name": "Name or role", "role": "job title"}]
-        understanding_status:       Audience's understanding status after the communication.
-        feedback_summary:           Brief summary of feedback: what was said, what concerns
-                                    were raised, what questions came up.
-        action_items_json:          List of resulting actions. Format:
+        project_name:               Название проекта.
+        communication_package_path: Путь к переданному пакету (из prepare_communication_package).
+        audience_role:              Роль получателя.
+        communication_date:         Дата коммуникации в формате ДД.ММ.ГГГГ.
+        channel_used:               Фактически использованный канал.
+        participants_json:          Список участников. Формат:
+                                    [{"name": "Имя или роль", "role": "должность"}]
+        understanding_status:       Статус понимания аудитории по итогам коммуникации.
+        feedback_summary:           Краткое резюме обратной связи: что сказали, что волнует,
+                                    какие вопросы задали.
+        action_items_json:          Список действий по итогам. Формат:
                                     [
                                       {
-                                        "action": "What to do",
-                                        "owner": "Who is doing it",
-                                        "deadline": "DD.MM.YYYY or ''"
+                                        "action": "Что сделать",
+                                        "owner": "Кто делает",
+                                        "deadline": "ДД.ММ.ГГГГ или ''"
                                       }
                                     ]
-        needs_followup:             True if a repeat communication is needed.
-        followup_deadline:          Follow-up deadline in DD.MM.YYYY format, or '' if not needed.
+        needs_followup:             True если нужна повторная коммуникация.
+        followup_deadline:          Срок follow-up в формате ДД.ММ.ГГГГ или '' если не нужен.
 
     Returns:
-        Path to the saved communication log entry.
+        Путь к сохранённой записи журнала коммуникаций.
     """
-    logger.info(f"4.4 Communication log: project='{project_name}', audience='{audience_role}'")
+    logger.info(f"4.4 Журнал коммуникации: проект='{project_name}', аудитория='{audience_role}'")
 
     participants, error = parse_json_dict_list(
         participants_json, "participants_json",
@@ -361,40 +361,40 @@ def log_communication(
 
     today = date.today().strftime("%d.%m.%Y")
 
-    # Understanding status icon
+    # Иконка статуса понимания
     status_icons = {
-        "Understood and Agreed": "✅",
-        "Partially Understood": "🟡",
-        "Not Understood — Needs Repeat": "🔴",
-        "No Response": "⏳",
-        "Disagreed": "❌",
+        "Понял и согласен": "✅",
+        "Понял частично": "🟡",
+        "Не понял — нужен повтор": "🔴",
+        "Нет ответа": "⏳",
+        "Не согласен": "❌",
     }
     status_icon = status_icons.get(understanding_status, "❓")
 
     # -----------------------------------------------------------------------
-    # Build the log entry
+    # Формируем запись журнала
     # -----------------------------------------------------------------------
     lines = []
-    lines.append(f"# Communication Log — {audience_role}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Communication date:** {communication_date}  ")
-    lines.append(f"**Logged on:** {today}  ")
-    lines.append(f"**Package:** `{communication_package_path}`\n")
+    lines.append(f"# Журнал коммуникации — {audience_role}\n")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Дата коммуникации:** {communication_date}  ")
+    lines.append(f"**Зафиксировано:** {today}  ")
+    lines.append(f"**Пакет:** `{communication_package_path}`\n")
     lines.append("---\n")
 
-    # Fact of the communication
-    lines.append("## Communication Details\n")
-    lines.append(f"| Parameter | Value |")
+    # Факт коммуникации
+    lines.append("## Факт коммуникации\n")
+    lines.append(f"| Параметр | Значение |")
     lines.append(f"|---|---|")
-    lines.append(f"| Audience | {audience_role} |")
-    lines.append(f"| Channel | {channel_used} |")
-    lines.append(f"| Participants | {', '.join(p.get('name', '—') for p in participants)} |")
-    lines.append(f"| Understanding status | {status_icon} {understanding_status} |\n")
+    lines.append(f"| Аудитория | {audience_role} |")
+    lines.append(f"| Канал | {channel_used} |")
+    lines.append(f"| Участники | {', '.join(p.get('name', '—') for p in participants)} |")
+    lines.append(f"| Статус понимания | {status_icon} {understanding_status} |\n")
 
-    # Feedback
+    # Обратная связь
     if feedback_summary:
         lines.append("---\n")
-        lines.append("## Audience Feedback\n")
+        lines.append("## Обратная связь аудитории\n")
         lines.append(feedback_summary)
         lines.append("")
 
@@ -402,7 +402,7 @@ def log_communication(
     if action_items:
         lines.append("---\n")
         lines.append("## Action Items\n")
-        lines.append(f"| # | Action | Owner | Deadline |")
+        lines.append(f"| # | Действие | Кто | Срок |")
         lines.append(f"|---|---|---|---|")
         for i, item in enumerate(action_items, 1):
             deadline = item.get("deadline") or "—"
@@ -416,28 +416,28 @@ def log_communication(
     # Follow-up
     lines.append("---\n")
     if needs_followup:
-        lines.append("## 🔄 Follow-up Required\n")
-        lines.append(f"**Deadline:** {followup_deadline or 'not specified'}  ")
-        if understanding_status == "Not Understood — Needs Repeat":
+        lines.append("## 🔄 Требуется Follow-up\n")
+        lines.append(f"**Срок:** {followup_deadline or 'не указан'}  ")
+        if understanding_status == "Не понял — нужен повтор":
             lines.append(
-                "\n*Recommendation: change the format or delivery channel — "
-                "the current one did not achieve the result.*\n"
+                "\n*Рекомендация: изменить формат или канал подачи — "
+                "текущий не дал результата.*\n"
             )
-        elif understanding_status == "Disagreed":
+        elif understanding_status == "Не согласен":
             lines.append(
-                "\n*Recommendation: move to task 4.5 (Manage Stakeholder Collaboration) "
-                "— this is no longer a communication issue but a disagreement to manage.*\n"
+                "\n*Рекомендация: перейти к задаче 4.5 (Manage Stakeholder Collaboration) "
+                "— здесь уже не вопрос коммуникации, а управление разногласием.*\n"
             )
         else:
             lines.append("")
     else:
-        lines.append("## ✅ Communication Completed\n")
-        lines.append("No repeat communication is required.\n")
+        lines.append("## ✅ Коммуникация завершена\n")
+        lines.append("Повторная коммуникация не требуется.\n")
 
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.4 — Communication Log. "
-        f"Project: {project_name}. Logged on: {today}.*\n"
+        f"Проект: {project_name}. Дата записи: {today}.*\n"
     )
 
     content = "\n".join(lines)
@@ -445,12 +445,12 @@ def log_communication(
     meta = (
         f"<!--\n"
         f"  BABOK 4.4 — Communication Log\n"
-        f"  Project: {project_name}\n"
-        f"  Audience: {audience_role}\n"
-        f"  Date: {communication_date}\n"
-        f"  Understanding status: {understanding_status}\n"
+        f"  Проект: {project_name}\n"
+        f"  Аудитория: {audience_role}\n"
+        f"  Дата: {communication_date}\n"
+        f"  Статус понимания: {understanding_status}\n"
         f"  Follow-up: {needs_followup}\n"
-        f"  Logged on: {today}\n"
+        f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
 
@@ -458,7 +458,7 @@ def log_communication(
 
 
 # ---------------------------------------------------------------------------
-# 4.4.3 — Check the communication schedule
+# 4.4.3 — Проверить расписание коммуникаций
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -471,50 +471,50 @@ def check_communication_schedule(
     triggered_events_json: str,
 ) -> str:
     """
-    BABOK 4.4 — Checks the communication schedule and produces a list
-    of stakeholders who need to be contacted now.
-    Compares the date of the last communication against the frequency from
-    the plan (3.2) and checks whether any trigger events have occurred.
+    BABOK 4.4 — Проверяет расписание коммуникаций и выдаёт список
+    стейкхолдеров, которым нужно написать сейчас.
+    Сравнивает дату последней коммуникации с частотой из плана (3.2)
+    и проверяет наступление триггерных событий.
 
     Args:
-        project_name:           Project name.
-        today_date:             Today's date in DD.MM.YYYY format.
-        stakeholders_json:      Stakeholder registry with schedule. Format:
+        project_name:           Название проекта.
+        today_date:             Сегодняшняя дата в формате ДД.ММ.ГГГГ.
+        stakeholders_json:      Реестр стейкхолдеров с расписанием. Формат:
                                 [
                                   {
-                                    "role": "Sponsor",
-                                    "name": "Name or ''",
+                                    "role": "Спонсор",
+                                    "name": "Имя или ''",
                                     "influence": "High | Medium | Low",
                                     "interest": "High | Medium | Low",
                                     "attitude": "Champion | Neutral | Blocker",
-                                    "comm_frequency": "After Each Session | Weekly | At Milestone | On Request",
-                                    "comm_triggers": ["Requirements change", "New decision"],
-                                    "last_communication_date": "DD.MM.YYYY or ''",
-                                    "last_communication_topic": "What was discussed last time, or ''"
+                                    "comm_frequency": "После каждой сессии | Еженедельно | По milestone | По запросу",
+                                    "comm_triggers": ["Изменение требований", "Новое решение"],
+                                    "last_communication_date": "ДД.ММ.ГГГГ или ''",
+                                    "last_communication_topic": "О чём писали последний раз или ''"
                                   }
                                 ]
-        communication_log_json: Recent entries from log_communication. Format:
+        communication_log_json: Последние записи из log_communication. Формат:
                                 [
                                   {
-                                    "audience_role": "role",
-                                    "communication_date": "DD.MM.YYYY",
-                                    "understanding_status": "status",
+                                    "audience_role": "роль",
+                                    "communication_date": "ДД.ММ.ГГГГ",
+                                    "understanding_status": "статус",
                                     "needs_followup": true
                                   }
                                 ]
-        triggered_events_json:  Events that occurred since the last check. Format:
+        triggered_events_json:  События, произошедшие с момента последней проверки. Формат:
                                 [
                                   {
-                                    "event_type": "Elicitation session completed | Decision made | Requirements change | Milestone reached | Risk identified",
-                                    "description": "Brief event description",
-                                    "date": "DD.MM.YYYY"
+                                    "event_type": "Завершена сессия выявления | Принято решение | Изменение требований | Достигнут milestone | Выявлен риск",
+                                    "description": "Краткое описание события",
+                                    "date": "ДД.ММ.ГГГГ"
                                   }
                                 ]
 
     Returns:
-        Path to the saved communication schedule report.
+        Путь к сохранённому отчёту о расписании коммуникаций.
     """
-    logger.info(f"4.4 Checking schedule: project='{project_name}', date='{today_date}'")
+    logger.info(f"4.4 Проверка расписания: проект='{project_name}', дата='{today_date}'")
 
     stakeholders, error = parse_json_dict_list(
         stakeholders_json, "stakeholders_json",
@@ -630,11 +630,11 @@ def check_communication_schedule(
     # had every stakeholder silently excluded under a clean "on track" verdict.
     no_cadence_roles = []
 
-    # Build the communication queue
-    urgent = []       # needed today
-    due_soon = []     # within the next 3 days
-    triggered = []    # trigger fired
-    followup_due = [] # unresolved follow-up from the log
+    # Собираем очередь коммуникаций
+    urgent = []       # нужно сегодня
+    due_soon = []     # в ближайшие 3 дня
+    triggered = []    # сработал триггер
+    followup_due = [] # незакрытый follow-up из лога
 
     for sh in stakeholders:
         role = sh.get("role") or sh.get("name") or "—"
@@ -666,25 +666,25 @@ def check_communication_schedule(
             if overdue >= 0:
                 urgent.append({
                     "role": role,
-                    "reason": f"Overdue by {overdue} day(s) (frequency: {freq}, last time: {sh.get('last_communication_date', '—')})",
+                    "reason": f"Просрочено на {overdue} дн. (частота: {freq}, последний раз: {sh.get('last_communication_date', '—')})",
                     "influence": sh.get("influence", "—"),
                     "last_topic": sh.get("last_communication_topic", ""),
                 })
             elif overdue >= -3:
                 due_soon.append({
                     "role": role,
-                    "reason": f"In {-overdue} day(s) (frequency: {freq})",
+                    "reason": f"Через {-overdue} дн. (частота: {freq})",
                     "influence": sh.get("influence", "—"),
                 })
         elif days_limit and not last_date:
             urgent.append({
                 "role": role,
-                "reason": f"No communication on record yet (frequency: {freq})",
+                "reason": f"Нет ни одной коммуникации (частота: {freq})",
                 "influence": sh.get("influence", "—"),
                 "last_topic": "",
             })
 
-        # Check triggers
+        # Проверяем триггеры
         for event in events:
             event_type = event.get("event_type", "")
             for trigger in triggers:
@@ -706,15 +706,15 @@ def check_communication_schedule(
             })
 
     # -----------------------------------------------------------------------
-    # Build the report
+    # Формируем отчёт
     # -----------------------------------------------------------------------
     lines = []
-    lines.append(f"# Communication Schedule — Check on {today_date}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Check date:** {today_date}\n")
+    lines.append(f"# Расписание коммуникаций — проверка на {today_date}\n")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Дата проверки:** {today_date}\n")
     lines.append("---\n")
 
-    # Summary
+    # Сводка
     total_actions = len(urgent) + len(triggered) + len(followup_due)
     if total_actions == 0:
         if unknown_frequencies or no_cadence_roles:
@@ -761,44 +761,44 @@ def check_communication_schedule(
             lines.append(f"**{item['role']}** (influence: {item['influence']})  ")
             lines.append(f"- {item['reason']}  ")
             if item.get("last_topic"):
-                lines.append(f"- Last topic: {item['last_topic']}  ")
+                lines.append(f"- Последняя тема: {item['last_topic']}  ")
             lines.append("")
 
-    # Triggered events
+    # Триггерные события
     if triggered:
         lines.append("---\n")
-        lines.append("## 🟡 Trigger Fired\n")
+        lines.append("## 🟡 Сработал триггер\n")
         seen = set()
         for item in triggered:
             key = (item["role"], item["trigger"])
             if key in seen:
                 continue
             seen.add(key)
-            lines.append(f"**{item['role']}** (influence: {item['influence']})  ")
-            lines.append(f"- Trigger: «{item['trigger']}»  ")
-            lines.append(f"- Event: {item['event']} ({item['event_date']})  ")
+            lines.append(f"**{item['role']}** (влияние: {item['influence']})  ")
+            lines.append(f"- Триггер: «{item['trigger']}»  ")
+            lines.append(f"- Событие: {item['event']} ({item['event_date']})  ")
             lines.append("")
 
     # Follow-up
     if followup_due:
         lines.append("---\n")
-        lines.append("## 🔄 Unresolved Follow-ups\n")
+        lines.append("## 🔄 Незакрытые follow-up\n")
         for item in followup_due:
-            lines.append(f"**{item['role']}** — status: {item['status']}, date: {item['date']}")
+            lines.append(f"**{item['role']}** — статус: {item['status']}, дата: {item['date']}")
         lines.append("")
 
-    # Coming soon (within the next 3 days)
+    # Скоро (в ближайшие 3 дня)
     if due_soon:
         lines.append("---\n")
-        lines.append("## 🟢 Coming Soon (Next 3 Days)\n")
+        lines.append("## 🟢 Скоро (в ближайшие 3 дня)\n")
         for item in due_soon:
             lines.append(f"- **{item['role']}**: {item['reason']}")
         lines.append("")
 
-    # Past events
+    # Прошедшие события
     if events:
         lines.append("---\n")
-        lines.append("## Events Since Last Check\n")
+        lines.append("## События с последней проверки\n")
         for ev in events:
             lines.append(f"- [{ev.get('date', '—')}] **{ev.get('event_type', '—')}**: {ev.get('description', '—')}")
         lines.append("")
@@ -806,7 +806,7 @@ def check_communication_schedule(
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.4 — Communication Schedule Check. "
-        f"Project: {project_name}. Date: {today_date}.*\n"
+        f"Проект: {project_name}. Дата: {today_date}.*\n"
     )
 
     content = "\n".join(lines)
@@ -814,9 +814,9 @@ def check_communication_schedule(
     meta = (
         f"<!--\n"
         f"  BABOK 4.4 — Communication Schedule\n"
-        f"  Project: {project_name}\n"
-        f"  Check date: {today_date}\n"
-        f"  Urgent: {len(urgent)}, Triggered: {len(triggered)}, Follow-up: {len(followup_due)}\n"
+        f"  Проект: {project_name}\n"
+        f"  Дата проверки: {today_date}\n"
+        f"  Срочных: {len(urgent)}, Триггерных: {len(triggered)}, Follow-up: {len(followup_due)}\n"
         f"-->\n\n"
     )
 

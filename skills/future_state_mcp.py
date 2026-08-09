@@ -54,7 +54,7 @@ GOALS_FILENAME = "future_state_goals.json"
 GAP_FILENAME = "gap_analysis.json"
 REPO_FILENAME = "traceability_repo.json"
 
-# 6.1 files (optional source)
+# Файлы 6.1 (опциональный источник)
 CS_SCOPE_FILENAME = "current_state_scope.json"
 CS_STATE_FILENAME = "current_state.json"
 CS_NEEDS_FILENAME = "business_needs.json"
@@ -65,14 +65,14 @@ VALID_ELEMENTS = [
 ]
 
 ELEMENT_LABELS = {
-    "business_needs": "Business Needs",
-    "org_structure": "Organizational Structure and Culture",
-    "capabilities": "Capabilities and Processes",
-    "technology": "Technology and Infrastructure",
-    "policies": "Policies",
-    "architecture": "Business Architecture",
-    "assets": "Internal Assets",
-    "external": "External Influencers",
+    "business_needs": "Бизнес-потребности",
+    "org_structure": "Организационная структура и культура",
+    "capabilities": "Возможности и процессы",
+    "technology": "Технологии и инфраструктура",
+    "policies": "Политики",
+    "architecture": "Бизнес-архитектура",
+    "assets": "Внутренние активы",
+    "external": "Внешние воздействия",
 }
 
 DEFAULT_ELEMENTS_BY_TYPE = {
@@ -86,7 +86,7 @@ DEFAULT_ELEMENTS_BY_TYPE = {
 
 
 # ---------------------------------------------------------------------------
-# Utilities
+# Утилиты
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -145,7 +145,7 @@ def _load_scope(project_id: str) -> Optional[dict]:
 def _save_scope(data: dict) -> str:
     path = _scope_path(data["project_id"])
     _save_json(path, data)
-    logger.info(f"Future state scope saved: {path}")
+    logger.info(f"Скоуп будущего состояния сохранён: {path}")
     return path
 
 
@@ -169,7 +169,7 @@ def _save_state(data: dict) -> str:
     path = _state_path(data["project_id"])
     data["updated"] = str(date.today())
     _save_json(path, data)
-    logger.info(f"Future state data saved: {path}")
+    logger.info(f"Данные будущего состояния сохранены: {path}")
     return path
 
 
@@ -189,7 +189,7 @@ def _save_goals(data: dict) -> str:
     path = _goals_path(data["project_id"])
     data["updated"] = str(date.today())
     _save_json(path, data)
-    logger.info(f"Future state goals saved: {path}")
+    logger.info(f"Цели будущего состояния сохранены: {path}")
     return path
 
 
@@ -200,7 +200,7 @@ def _load_gap(project_id: str) -> Optional[dict]:
 def _save_gap(data: dict) -> str:
     path = _gap_path(data["project_id"])
     _save_json(path, data)
-    logger.info(f"Gap analysis saved: {path}")
+    logger.info(f"Gap-анализ сохранён: {path}")
     return path
 
 
@@ -212,7 +212,7 @@ def _save_repo(repo: dict) -> None:
     path = _repo_path(repo["project"])
     repo["updated"] = str(date.today())
     _save_json(path, repo)
-    logger.info(f"Traceability repository updated from 6.2: {path}")
+    logger.info(f"Репозиторий трассировки обновлён из 6.2: {path}")
 
 
 def _needs_line(need_ids, graph_nodes: dict) -> str:
@@ -235,25 +235,25 @@ def _next_goal_id(goals_data: dict) -> str:
 
 
 def _validate_smart(goal_title: str, description: str, objectives: list) -> list:
-    """Checks SMART criteria for a goal. Returns a list of issues."""
+    """Проверяет SMART-критерии для цели. Возвращает список замечаний."""
     issues = []
     if len(goal_title.strip()) < 10:
-        issues.append("S (Specific): the goal title is too short — add more specifics")
+        issues.append("S (Specific): заголовок цели слишком короткий — добавьте конкретики")
     if not objectives:
-        issues.append("M (Measurable): no target metric defined — add a KPI")
+        issues.append("M (Measurable): нет ни одного целевого показателя — добавьте KPI")
     else:
         for obj in objectives:
             if not obj.get("target"):
-                issues.append(f"M (Measurable): metric '{obj.get('title', '?')}' has no target value")
+                issues.append(f"M (Measurable): в показателе '{obj.get('title', '?')}' не указано target значение")
             if not obj.get("baseline"):
-                issues.append(f"M (Measurable): metric '{obj.get('title', '?')}' has no baseline (current value)")
+                issues.append(f"M (Measurable): в показателе '{obj.get('title', '?')}' не указан baseline (текущее значение)")
             if not obj.get("deadline"):
-                issues.append(f"T (Time-bound): metric '{obj.get('title', '?')}' has no deadline")
+                issues.append(f"T (Time-bound): в показателе '{obj.get('title', '?')}' не указан deadline")
     return issues
 
 
 # ---------------------------------------------------------------------------
-# 6.2.1 — Scoping the future-state analysis
+# 6.2.1 — Скоупинг анализа будущего состояния
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -274,44 +274,44 @@ def scope_future_state(
     If 6.1 data exists, it is automatically read in as context.
 
     Args:
-        project_id:        Project identifier (the same one used in 6.1).
-        initiative_type:   Initiative type:
-                           - process_improvement — process improvement
-                           - new_system          — new system implementation
-                           - regulatory          — regulatory compliance
-                           - cost_reduction      — cost reduction
-                           - market_opportunity  — market opportunity
-                           - other               — other
-        analysis_depth:    Analysis depth:
-                           - light    — 3-4 elements, a strategic snapshot
-                           - standard — 5-6 elements, most projects
-                           - deep     — all 8 elements, strategic initiatives
-        known_goals:       Optional — known goals from the sponsor (free text).
-        elements_in_scope: Optional — override the element list manually.
-                           JSON list of keys:
+        project_id:        Идентификатор проекта (тот же что в 6.1).
+        initiative_type:   Тип инициативы:
+                           - process_improvement — улучшение процессов
+                           - new_system          — внедрение новой системы
+                           - regulatory          — выполнение регуляторных требований
+                           - cost_reduction      — снижение затрат
+                           - market_opportunity  — рыночная возможность
+                           - other               — другое
+        analysis_depth:    Глубина анализа:
+                           - light    — 3–4 элемента, стратегический срез
+                           - standard — 5–6 элементов, большинство проектов
+                           - deep     — все 8 элементов, стратегические инициативы
+        known_goals:       Опционально — известные цели от спонсора (свободный текст).
+        elements_in_scope: Опционально — переопределить список элементов вручную.
+                           JSON-список ключей:
                            '[\"business_needs\",\"capabilities\",\"technology\"]'
-                           Valid keys: business_needs | org_structure | capabilities |
+                           Допустимые ключи: business_needs | org_structure | capabilities |
                            technology | policies | architecture | assets | external
 
     Returns:
-        Scope confirmation + context from 6.1 (if available) + next steps.
+        Подтверждение скоупа + контекст из 6.1 (если есть) + следующие шаги.
     """
     logger.info(f"scope_future_state: {project_id}, type={initiative_type}, depth={analysis_depth}")
 
-    # Determine the elements in scope
+    # Определяем элементы в скоупе
     if elements_in_scope.strip():
         try:
             custom_elements = json.loads(elements_in_scope)
             invalid = [e for e in custom_elements if e not in VALID_ELEMENTS]
             if invalid:
                 return (
-                    f"❌ Unknown elements: {invalid}\n"
-                    f"Allowed: {VALID_ELEMENTS}"
+                    f"❌ Неизвестные элементы: {invalid}\n"
+                    f"Допустимые: {VALID_ELEMENTS}"
                 )
             chosen_elements = custom_elements
-            elements_source = "specified manually"
+            elements_source = "указаны вручную"
         except json.JSONDecodeError as e:
-            return f"❌ Error parsing elements_in_scope: {e}"
+            return f"❌ Ошибка парсинга elements_in_scope: {e}"
     else:
         base_elements = DEFAULT_ELEMENTS_BY_TYPE.get(initiative_type, ["business_needs", "capabilities"])
         if analysis_depth == "deep":
@@ -320,9 +320,9 @@ def scope_future_state(
             chosen_elements = base_elements[:3]
         else:
             chosen_elements = base_elements
-        elements_source = f"recommended for {initiative_type}/{analysis_depth}"
+        elements_source = f"рекомендовано для {initiative_type}/{analysis_depth}"
 
-    # Read 6.1 data if available (ADR-060)
+    # Читаем данные 6.1 если есть (ADR-060)
     cs_scope = _load_json(_cs_scope_path(project_id))
     cs_needs = _load_json(_cs_needs_path(project_id))
     has_current_state = cs_scope is not None
@@ -344,27 +344,27 @@ def scope_future_state(
     _save_scope(scope_data)
 
     type_labels = {
-        "process_improvement": "Process Improvement",
-        "new_system": "New System Implementation",
-        "regulatory": "Regulatory Compliance",
-        "cost_reduction": "Cost Reduction",
-        "market_opportunity": "Market Opportunity",
-        "other": "Other",
+        "process_improvement": "Улучшение процессов",
+        "new_system": "Внедрение новой системы",
+        "regulatory": "Регуляторные требования",
+        "cost_reduction": "Снижение затрат",
+        "market_opportunity": "Рыночная возможность",
+        "other": "Другое",
     }
     depth_labels = {
-        "light": "Light (3-4 elements, a quick pass)",
-        "standard": "Standard (5-6 elements)",
-        "deep": "Deep (all 8 elements)",
+        "light": "Лёгкий (3–4 элемента, стратегический срез)",
+        "standard": "Стандартный (5–6 элементов)",
+        "deep": "Глубокий (все 8 элементов)",
     }
 
     lines = [
-        f"{'⚠️ Scope UPDATED' if is_update else '✅ Future-state analysis scope defined'} — **{project_id}**",
+        f"{'⚠️ Скоуп ОБНОВЛЁН' if is_update else '✅ Скоуп анализа будущего состояния определён'} — **{project_id}**",
         "",
-        f"**Initiative type:** {type_labels.get(initiative_type, initiative_type)}",
-        f"**Analysis depth:** {depth_labels.get(analysis_depth, analysis_depth)}",
-        f"**Date:** {date.today()}",
+        f"**Тип инициативы:** {type_labels.get(initiative_type, initiative_type)}",
+        f"**Глубина анализа:** {depth_labels.get(analysis_depth, analysis_depth)}",
+        f"**Дата:** {date.today()}",
         "",
-        f"## Elements in scope ({len(chosen_elements)} of 8) — {elements_source}",
+        f"## Элементы в скоупе ({len(chosen_elements)} из 8) — {elements_source}",
         "",
     ]
 
@@ -374,36 +374,36 @@ def scope_future_state(
 
     not_in_scope = [e for e in VALID_ELEMENTS if e not in chosen_elements]
     if not_in_scope:
-        lines += ["", "### Elements out of scope:"]
+        lines += ["", "### Элементы вне скоупа:"]
         for elem in not_in_scope:
             lines.append(f"- ~~{elem}~~ — {ELEMENT_LABELS.get(elem, elem)}")
 
-    # Context from 6.1
+    # Контекст из 6.1
     if has_current_state:
         bn_count = len(cs_needs.get("needs", [])) if cs_needs else 0
         cs_elements = cs_scope.get("elements_in_scope", [])
         lines += [
             "",
-            "## ✅ Data from 6.1 found",
+            "## ✅ Данные из 6.1 найдены",
             "",
-            f"- Current-state elements: {len(cs_elements)}",
-            f"- Business needs: {bn_count}",
+            f"- Элементов текущего состояния: {len(cs_elements)}",
+            f"- Бизнес-потребностей: {bn_count}",
             "",
-            "When filling in elements (`capture_future_state_element`) the system will show",
-            "the current state alongside the future one — use it as a reference point.",
-            "Goals (`define_goals_and_objectives`) can be linked to existing BN-xxx.",
+            "При заполнении элементов (`capture_future_state_element`) система покажет",
+            "текущее состояние рядом с будущим — используйте как ориентир.",
+            "Цели (`define_goals_and_objectives`) можно привязать к существующим BN-xxx.",
         ]
     else:
         lines += [
             "",
-            "ℹ️ No 6.1 data found — the gap analysis will run without a current-state baseline.",
-            "If 6.1 has not been performed yet, it's recommended to start there.",
+            "ℹ️ Данные 6.1 не найдены — gap-анализ будет работать без базы текущего состояния.",
+            "Если 6.1 ещё не проводилась — рекомендуется начать с неё.",
         ]
 
     if known_goals:
         lines += [
             "",
-            "## Known goals",
+            "## Известные цели",
             "",
             known_goals,
         ]
@@ -412,22 +412,22 @@ def scope_future_state(
         "",
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
-        "1. `capture_future_state_element` — fill in each element from the scope",
-        "2. `define_goals_and_objectives` — capture SMART goals with KPIs",
-        "3. `capture_constraints` — capture constraints",
-        "4. `run_gap_analysis` — compare current and future state",
-        "5. `assess_potential_value` — assess potential value",
-        "6. `check_future_state_completeness` — check readiness",
-        "7. `save_future_state` — finalize the analysis",
+        "1. `capture_future_state_element` — заполнить каждый элемент из скоупа",
+        "2. `define_goals_and_objectives` — зафиксировать SMART-цели с KPI",
+        "3. `capture_constraints` — зафиксировать ограничения",
+        "4. `run_gap_analysis` — сравнить текущее и будущее состояние",
+        "5. `assess_potential_value` — оценить потенциальную ценность",
+        "6. `check_future_state_completeness` — проверить готовность",
+        "7. `save_future_state` — финализировать анализ",
     ]
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 6.2.2 — Iterative data capture for future-state elements
+# 6.2.2 — Итеративный сбор данных по элементам будущего состояния
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -450,34 +450,34 @@ def capture_future_state_element(
     When 6.1 data exists, shows the current state alongside it ("past next to future").
 
     Args:
-        project_id:             Project identifier.
-        element:                One of the 8 elements:
+        project_id:             Идентификатор проекта.
+        element:                Один из 8 элементов:
                                 business_needs | org_structure | capabilities | technology |
                                 policies | architecture | assets | external
-        description:            Description of the element's target state ("how it should be").
-                                Outcome-oriented, not implementation-process-oriented.
-        target_metrics:         Target measurable metrics for this element.
-                                JSON object: '{\"processing_time\": \"2 hours\", \"error_rate\": \"<2%\"}'
-        linked_business_needs:  List of BN-xxx from 6.1 that this element addresses.
-                                JSON list of strings: '[\"BN-001\",\"BN-002\"]'
-        sources:                Where the data comes from: JSON list of sources.
-                                Allowed: elicitation | document | workshop | interview | other
-        notes:                  Free-form notes (assumptions, questions, open items).
+        description:            Описание целевого состояния элемента («как должно быть»).
+                                Ориентировано на результат, не на процесс внедрения.
+        target_metrics:         Целевые измеримые показатели для этого элемента.
+                                JSON-объект: '{\"processing_time\": \"2 hours\", \"error_rate\": \"<2%\"}'
+        linked_business_needs:  Список BN-xxx из 6.1, которые этот элемент адресует.
+                                JSON-список строк: '[\"BN-001\",\"BN-002\"]'
+        sources:                Откуда данные: JSON-список источников.
+                                Допустимые: elicitation | document | workshop | interview | other
+        notes:                  Свободные заметки (допущения, вопросы, открытые пункты).
 
     Returns:
-        Capture confirmation + current state from 6.1 (if available) + progress.
+        Подтверждение записи + текущее состояние из 6.1 (если есть) + прогресс.
     """
     logger.info(f"capture_future_state_element: {project_id}, element={element}")
 
     if not description.strip():
-        return "❌ description cannot be empty — describe the element's target state."
+        return "❌ description не может быть пустым — опиши целевое состояние элемента."
 
     try:
         target_dict = json.loads(target_metrics) if target_metrics.strip() else {}
         if not isinstance(target_dict, dict):
-            return "❌ target_metrics must be a JSON object: '{\"metric\": \"value\"}'"
+            return "❌ target_metrics должен быть JSON-объектом: '{\"показатель\": \"значение\"}'"
     except json.JSONDecodeError as e:
-        return f"❌ Error parsing target_metrics: {e}"
+        return f"❌ Ошибка парсинга target_metrics: {e}"
 
     # The ELEMENTS are checked, not only the container — see the same guard in 6.1
     # `capture_current_state_element`. A list of objects passed the container check,
@@ -498,16 +498,16 @@ def capture_future_state_element(
     else:
         sources_list = ["elicitation"]
 
-    # Check the scope
+    # Проверяем скоуп
     scope = _load_scope(project_id)
     scope_warning = ""
     if scope and element not in scope.get("elements_in_scope", []):
         scope_warning = (
-            f"\n⚠️ Element `{element}` is not part of the current scope. "
-            f"Add it by calling `scope_future_state` again."
+            f"\n⚠️ Элемент `{element}` не входит в текущий скоуп. "
+            f"Добавить через повторный вызов `scope_future_state`."
         )
 
-    # Load and update the state
+    # Загружаем и обновляем state
     state = _load_state(project_id)
     is_update = element in state["elements"]
 
@@ -523,28 +523,28 @@ def capture_future_state_element(
     _save_state(state)
 
     label = ELEMENT_LABELS.get(element, element)
-    action = "UPDATED" if is_update else "saved"
+    action = "ОБНОВЛЁН" if is_update else "сохранён"
 
     lines = [
-        f"✅ Future-state element **{label}** (`{element}`) {action}",
+        f"✅ Элемент будущего состояния **{label}** (`{element}`) {action}",
         "",
-        f"**Description:** {description[:200]}{'...' if len(description) > 200 else ''}",
+        f"**Описание:** {description[:200]}{'...' if len(description) > 200 else ''}",
     ]
 
     if target_dict:
-        lines += ["", "**Target metrics:**"]
+        lines += ["", "**Целевые метрики:**"]
         for k, v in target_dict.items():
             lines.append(f"- {k}: {v}")
 
     if bn_list:
-        lines += ["", f"**Linked business needs:** {', '.join(bn_list)}"]
+        lines += ["", f"**Связанные бизнес-потребности:** {', '.join(bn_list)}"]
 
-    lines += ["", f"**Sources:** {', '.join(sources_list)}"]
+    lines += ["", f"**Источники:** {', '.join(sources_list)}"]
 
     if scope_warning:
         lines.append(scope_warning)
 
-    # Current state from 6.1 (UX pattern: "past next to future")
+    # Текущее состояние из 6.1 (UX-паттерн «прошлое рядом с будущим»)
     cs_state = _load_json(_cs_state_path(project_id))
     if cs_state and element in cs_state.get("elements", {}):
         cs_elem = cs_state["elements"][element]
@@ -554,18 +554,18 @@ def capture_future_state_element(
                 "",
                 "---",
                 "",
-                f"### 🔍 For comparison — current state (`{element}` from 6.1):",
+                f"### 🔍 Для сравнения — текущее состояние (`{element}` из 6.1):",
                 "",
                 cs_desc[:300] + ("..." if len(cs_desc) > 300 else ""),
             ]
             cs_metrics = cs_elem.get("metrics", {})
             if cs_metrics:
-                lines += ["", "**Current metrics:**"]
+                lines += ["", "**Текущие метрики:**"]
                 for k, v in cs_metrics.items():
                     lines.append(f"- {k}: {v}")
             lines += ["", "---"]
 
-    # Progress against the scope
+    # Прогресс по скоупу
     if scope:
         elements_in_scope = scope.get("elements_in_scope", [])
         filled = [e for e in elements_in_scope if e in state["elements"] and not state["elements"][e].get("draft", True)]
@@ -573,7 +573,7 @@ def capture_future_state_element(
 
         lines += [
             "",
-            f"## Progress: {len(filled)}/{len(elements_in_scope)} elements",
+            f"## Прогресс: {len(filled)}/{len(elements_in_scope)} элементов",
             "",
         ]
         for e in elements_in_scope:
@@ -582,13 +582,13 @@ def capture_future_state_element(
             lines.append(f"{status} {elem_label}")
 
         if remaining:
-            lines += ["", f"**Next element:** `{remaining[0]}`"]
+            lines += ["", f"**Следующий элемент:** `{remaining[0]}`"]
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 6.2.3 — Business goals and KPIs
+# 6.2.3 — Бизнес-цели и KPI
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -607,46 +607,46 @@ def define_goals_and_objectives(
     Establishes traceability BN → derives → BG.
 
     Args:
-        project_id:              Project identifier.
-        goal_title:              Short goal title (up to 100 characters).
-        description:             Goal description — what will be achieved and why it matters.
-        objectives_json:         List of target metrics (KPIs) — JSON list of objects.
-                                 Each object:
+        project_id:              Идентификатор проекта.
+        goal_title:              Краткий заголовок цели (до 100 символов).
+        description:             Описание цели — чего достигнем и почему это важно.
+        objectives_json:         Список целевых показателей (KPI) — JSON-список объектов.
+                                 Каждый объект:
                                  {
-                                   \"title\": \"Reduce request processing time\",
-                                   \"metric\": \"Processing time (hours)\",
-                                   \"baseline\": \"8 hours (Q1 2025)\",
-                                   \"target\": \"2 hours\",
+                                   \"title\": \"Сократить время обработки заявок\",
+                                   \"metric\": \"Время обработки (часы)\",
+                                   \"baseline\": \"8 часов (Q1 2025)\",
+                                   \"target\": \"2 часа\",
                                    \"deadline\": \"2025-12-31\"
                                  }
-        linked_business_needs:   List of BN-xxx from 6.1 that the goal is linked to.
-                                 JSON list of strings: '[\"BN-001\",\"BN-002\"]'
-        register_in_traceability: If True — create a business_goal node in the 5.1 repository.
-                                 Default: True. Disable if the 5.1 repository has not been created.
+        linked_business_needs:   Список BN-xxx из 6.1, к которым привязана цель.
+                                 JSON-список строк: '[\"BN-001\",\"BN-002\"]'
+        register_in_traceability: Если True — создать узел business_goal в репозитории 5.1.
+                                 Default: True. Отключить если репозиторий 5.1 не создан.
 
     Returns:
-        Goal card with ID + SMART notes + 5.1 registration status.
+        Карточка цели с ID + SMART-замечания + статус регистрации в 5.1.
     """
     logger.info(f"define_goals_and_objectives: {project_id}, title='{goal_title[:50]}'")
 
     if not goal_title.strip():
-        return "❌ goal_title cannot be empty."
+        return "❌ goal_title не может быть пустым."
     if not description.strip():
-        return "❌ description cannot be empty."
+        return "❌ description не может быть пустым."
 
     try:
         objectives = json.loads(objectives_json) if objectives_json.strip() else []
         if not isinstance(objectives, list):
-            return "❌ objectives_json must be a JSON list of objects."
+            return "❌ objectives_json должен быть JSON-списком объектов."
     except json.JSONDecodeError as e:
-        return f"❌ Error parsing objectives_json: {e}"
+        return f"❌ Ошибка парсинга objectives_json: {e}"
 
     try:
         bn_list = json.loads(linked_business_needs) if linked_business_needs.strip() else []
         if not isinstance(bn_list, list):
-            return "❌ linked_business_needs must be a JSON list of strings."
+            return "❌ linked_business_needs должен быть JSON-списком строк."
     except json.JSONDecodeError as e:
-        return f"❌ Error parsing linked_business_needs: {e}"
+        return f"❌ Ошибка парсинга linked_business_needs: {e}"
 
     # Normalise the objective spellings BEFORE the SMART validation reads them.
     # `objective` and `name` are the near-misses an LLM writes for `title`. Reading only
@@ -687,7 +687,7 @@ def define_goals_and_objectives(
     goals_data["goals"].append(goal_record)
     _save_goals(goals_data)
 
-    # Registration in the 5.1 repository (ADR-062)
+    # Регистрация в репозитории 5.1 (ADR-062)
     traceability_status = ""
     if register_in_traceability:
         repo = _load_repo(project_id)
@@ -734,7 +734,7 @@ def define_goals_and_objectives(
                         "from": goal_id,
                         "to": bn_id,
                         "relation": "derives",
-                        "rationale": f"Business goal derives from business need {bn_id}",
+                        "rationale": f"Бизнес-цель вытекает из бизнес-потребности {bn_id}",
                         "added": str(date.today()),
                     })
                 repo["history"].append({
@@ -762,55 +762,55 @@ def define_goals_and_objectives(
                         f" then re-run this tool, or check the id for a typo."
                     )
             else:
-                traceability_status = f"\n\nℹ️ Node `{goal_id}` already exists in the 5.1 repository."
+                traceability_status = f"\n\nℹ️ Узел `{goal_id}` уже существует в репозитории 5.1."
 
     lines = [
-        f"✅ Business goal captured: **{goal_id}**",
+        f"✅ Бизнес-цель зафиксирована: **{goal_id}**",
         "",
         f"**{goal_title}**",
         "",
-        f"**Date:** {date.today()}",
+        f"**Дата:** {date.today()}",
         "",
-        "## Description",
+        "## Описание",
         "",
         description,
     ]
 
     if objectives:
-        lines += ["", "## Target metrics (KPIs)", ""]
+        lines += ["", "## Целевые показатели (KPI)", ""]
         for i, obj in enumerate(objectives, 1):
             lines += [
                 f"### {i}. {obj.get('title', '—')}",
-                f"- **Metric:** {obj.get('metric', '—')}",
+                f"- **Метрика:** {obj.get('metric', '—')}",
                 f"- **Baseline:** {obj.get('baseline', '—')}",
                 f"- **Target:** {obj.get('target', '—')}",
-                f"- **Deadline:** {obj.get('deadline', '—')}",
+                f"- **Дедлайн:** {obj.get('deadline', '—')}",
                 "",
             ]
 
     if bn_list:
-        lines += [f"**Linked business needs:** {', '.join(bn_list)}"]
+        lines += [f"**Связанные бизнес-потребности:** {', '.join(bn_list)}"]
 
-    # SMART notes
+    # SMART-замечания
     if smart_issues:
         lines += [
             "",
-            "## ⚠️ SMART notes",
+            "## ⚠️ SMART-замечания",
             "",
-            "> The goal has been saved. Address these notes to meet SMART criteria:",
+            "> Цель сохранена. Устраните замечания для соответствия SMART-критериям:",
             "",
         ]
         for issue in smart_issues:
             lines.append(f"- {issue}")
     else:
-        lines += ["", "✅ SMART criteria met."]
+        lines += ["", "✅ SMART-критерии соблюдены."]
 
     total_goals = len(goals_data["goals"])
     lines += [
         "",
         "---",
         "",
-        f"Total business goals in the project: **{total_goals}**",
+        f"Всего бизнес-целей в проекте: **{total_goals}**",
         traceability_status,
     ]
 
@@ -818,7 +818,7 @@ def define_goals_and_objectives(
 
 
 # ---------------------------------------------------------------------------
-# 6.2.4 — Constraints register
+# 6.2.4 — Реестр ограничений
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -836,44 +836,44 @@ def capture_constraints(
     Constraints are checked in 7.5 when developing design options.
 
     Args:
-        project_id:       Project identifier.
-        constraint_title: Short constraint title.
-        category:         Constraint category:
-                          - budget     — financial limit
-                          - time       — timeframe, deadlines
-                          - technology — technology standards
-                          - policy     — internal policies and rules
-                          - resources  — team, competencies, capacity
-                          - compliance — regulatory and legal requirements
-                          - other      — other
-        description:      Full description of the constraint and its impact.
-        status:           Confirmation status:
-                          - confirmed — confirmed in documentation or by an authorized person
-                          - assumed   — the BA assumes the constraint exists
-        linked_elements:  Future-state elements affected by the constraint.
-                          JSON list of keys: '[\"technology\",\"capabilities\"]'
+        project_id:       Идентификатор проекта.
+        constraint_title: Краткий заголовок ограничения.
+        category:         Категория ограничения:
+                          - budget     — финансовый лимит
+                          - time       — временные рамки, дедлайны
+                          - technology — технологические стандарты
+                          - policy     — внутренние политики и правила
+                          - resources  — команда, компетенции, мощности
+                          - compliance — регуляторные и законодательные требования
+                          - other      — прочее
+        description:      Полное описание ограничения и его влияния.
+        status:           Статус подтверждения:
+                          - confirmed — подтверждено документально или уполномоченным лицом
+                          - assumed   — BA предполагает наличие ограничения
+        linked_elements:  Элементы будущего состояния, на которые влияет ограничение.
+                          JSON-список ключей: '[\"technology\",\"capabilities\"]'
 
     Returns:
-        Constraint card + the project's overall constraints register.
+        Карточка ограничения + итоговый реестр ограничений проекта.
     """
     logger.info(f"capture_constraints: {project_id}, category={category}, title='{constraint_title[:40]}'")
 
     if not constraint_title.strip():
-        return "❌ constraint_title cannot be empty."
+        return "❌ constraint_title не может быть пустым."
     if not description.strip():
-        return "❌ description cannot be empty."
+        return "❌ description не может быть пустым."
 
     try:
         elements_list = json.loads(linked_elements) if linked_elements.strip() else []
         invalid = [e for e in elements_list if e not in VALID_ELEMENTS]
         if invalid:
-            return f"❌ Unknown elements in linked_elements: {invalid}"
+            return f"❌ Неизвестные элементы в linked_elements: {invalid}"
     except json.JSONDecodeError as e:
-        return f"❌ Error parsing linked_elements: {e}"
+        return f"❌ Ошибка парсинга linked_elements: {e}"
 
     state = _load_state(project_id)
 
-    # Check for a duplicate by title
+    # Проверяем дубликат по заголовку
     existing_titles = [c["title"] for c in state.get("constraints", [])]
     is_duplicate = constraint_title in existing_titles
 
@@ -887,47 +887,47 @@ def capture_constraints(
     }
 
     if is_duplicate:
-        # Update the existing one
+        # Обновляем существующее
         state["constraints"] = [c for c in state["constraints"] if c["title"] != constraint_title]
     state["constraints"].append(constraint_record)
     _save_state(state)
 
     category_labels = {
-        "budget": "Financial limit",
-        "time": "Timeframe",
-        "technology": "Technology standards",
-        "policy": "Internal policies",
-        "resources": "Resources and competencies",
-        "compliance": "Regulatory requirements",
-        "other": "Other",
+        "budget": "Финансовый лимит",
+        "time": "Временные рамки",
+        "technology": "Технологические стандарты",
+        "policy": "Внутренние политики",
+        "resources": "Ресурсы и компетенции",
+        "compliance": "Регуляторные требования",
+        "other": "Прочее",
     }
 
-    status_icons = {"confirmed": "✅ Confirmed", "assumed": "🔶 Assumption"}
+    status_icons = {"confirmed": "✅ Подтверждено", "assumed": "🔶 Предположение"}
 
     lines = [
-        f"{'⚠️ Constraint UPDATED' if is_duplicate else '✅ Constraint captured'}",
+        f"{'⚠️ Ограничение ОБНОВЛЕНО' if is_duplicate else '✅ Ограничение зафиксировано'}",
         "",
         f"**{constraint_title}**",
-        f"**Category:** {category_labels.get(category, category)}  ",
-        f"**Status:** {status_icons.get(status, status)}  ",
-        f"**Date:** {date.today()}",
+        f"**Категория:** {category_labels.get(category, category)}  ",
+        f"**Статус:** {status_icons.get(status, status)}  ",
+        f"**Дата:** {date.today()}",
         "",
-        "## Description",
+        "## Описание",
         "",
         description,
     ]
 
     if elements_list:
-        lines += ["", f"**Affected elements:** {', '.join(elements_list)}"]
+        lines += ["", f"**Затронутые элементы:** {', '.join(elements_list)}"]
 
     if status == "assumed":
         lines += [
             "",
-            "⚠️ The constraint is marked as an assumption.",
-            "It's recommended to validate it with an authorized person before starting solution design.",
+            "⚠️ Ограничение помечено как предположение.",
+            "Рекомендуется валидировать у уполномоченного лица до начала дизайна решения.",
         ]
 
-    # Overall register
+    # Итоговый реестр
     all_constraints = state.get("constraints", [])
     confirmed = [c for c in all_constraints if c.get("status") == "confirmed"]
     assumed = [c for c in all_constraints if c.get("status") == "assumed"]
@@ -936,8 +936,8 @@ def capture_constraints(
         "",
         "---",
         "",
-        f"## Project constraints register: {len(all_constraints)} total",
-        f"✅ Confirmed: {len(confirmed)}  |  🔶 Assumed: {len(assumed)}",
+        f"## Реестр ограничений проекта: {len(all_constraints)} шт.",
+        f"✅ Подтверждено: {len(confirmed)}  |  🔶 Предположений: {len(assumed)}",
         "",
     ]
     by_cat: dict = {}
@@ -951,7 +951,7 @@ def capture_constraints(
 
 
 # ---------------------------------------------------------------------------
-# 6.2.5 — Gap analysis
+# 6.2.5 — Gap-анализ
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -964,17 +964,17 @@ def run_gap_analysis(
     A separate explicit tool: the BA runs it deliberately after filling in all elements.
     The result is a direct input for 6.4 (Define Change Strategy).
 
-    For each future-state element:
-    - Compares it with the current state from 6.1 (if available)
-    - States the gap (gap_summary)
-    - Determines the change type: new | improve | eliminate | replace
-    - Assesses complexity: low | medium | high
+    По каждому элементу будущего состояния:
+    - Сравнивает с текущим состоянием из 6.1 (если есть)
+    - Формулирует разрыв (gap_summary)
+    - Определяет тип изменения: new | improve | eliminate | replace
+    - Оценивает сложность: low | medium | high
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        Gap cards for every element + summary + the {project}_gap_analysis.json artifact.
+        Gap-карточки по всем элементам + сводка + артефакт {project}_gap_analysis.json.
     """
     logger.info(f"run_gap_analysis: {project_id}")
 
@@ -983,11 +983,11 @@ def run_gap_analysis(
 
     if not elements_data:
         return (
-            "⚠️ No future-state data found.\n"
-            "First fill in the elements via `capture_future_state_element`."
+            "⚠️ Нет данных будущего состояния.\n"
+            "Сначала заполните элементы через `capture_future_state_element`."
         )
 
-    # Read 6.1 data for comparison
+    # Читаем данные 6.1 для сравнения
     cs_state = _load_json(_cs_state_path(project_id))
     cs_elements = cs_state.get("elements", {}) if cs_state else {}
     has_current_state = bool(cs_elements)
@@ -1000,15 +1000,15 @@ def run_gap_analysis(
         current_desc = cs_elem.get("description") if cs_elem else None
         future_desc = fs_data.get("description", "")
 
-        # Automatic classification of the change type
+        # Автоматическая классификация типа изменения
         if not current_desc:
             change_type = "new"
-            gap_summary = f"No current state — the element is being created from scratch. Target: {future_desc[:100]}"
+            gap_summary = f"Нет текущего состояния — элемент создаётся с нуля. Целевое: {future_desc[:100]}"
             complexity = "medium"
         else:
             change_type = "improve"
-            gap_summary = f"Current: {current_desc[:80]}... → Target: {future_desc[:80]}..."
-            # Simple complexity heuristic
+            gap_summary = f"Текущее: {current_desc[:80]}... → Целевое: {future_desc[:80]}..."
+            # Простая эвристика сложности
             current_pain = len(cs_elem.get("pain_points", []))
             target_metrics = fs_data.get("target_metrics", {})
             if current_pain >= 3 or len(target_metrics) >= 3:
@@ -1038,25 +1038,25 @@ def run_gap_analysis(
     }
     _save_gap(gap_data)
 
-    # Update the flag in state
+    # Обновляем флаг в state
     state["gap_analysis_done"] = True
     _save_state(state)
 
-    # Build the report
+    # Формируем отчёт
     complexity_icons = {"low": "🟢", "medium": "🟡", "high": "🔴"}
     change_labels = {
-        "new": "🆕 New",
-        "improve": "⬆️ Improve",
-        "eliminate": "🗑️ Eliminate",
-        "replace": "🔄 Replace",
+        "new": "🆕 Новое",
+        "improve": "⬆️ Улучшение",
+        "eliminate": "🗑️ Устранение",
+        "replace": "🔄 Замена",
     }
 
     lines = [
-        f"✅ Gap analysis completed — **{project_id}**",
+        f"✅ Gap-анализ проведён — **{project_id}**",
         "",
-        f"**Date:** {date.today()}",
-        f"**Elements analyzed:** {len(gaps)}",
-        f"**Current-state baseline:** {'✅ from 6.1' if has_current_state else '⚠️ missing (gap = null → future)'}",
+        f"**Дата:** {date.today()}",
+        f"**Элементов проанализировано:** {len(gaps)}",
+        f"**Базис текущего состояния:** {'✅ из 6.1' if has_current_state else '⚠️ отсутствует (gap = null → future)'}",
         "",
         "---",
         "",
@@ -1066,24 +1066,24 @@ def run_gap_analysis(
         lines += [
             f"## {gap['element_label']} (`{gap['element']}`)",
             "",
-            f"**Change type:** {change_labels.get(gap['change_type'], gap['change_type'])}  ",
-            f"**Complexity:** {complexity_icons.get(gap['complexity'], '')} {gap['complexity'].capitalize()}",
+            f"**Тип изменения:** {change_labels.get(gap['change_type'], gap['change_type'])}  ",
+            f"**Сложность:** {complexity_icons.get(gap['complexity'], '')} {gap['complexity'].capitalize()}",
             "",
         ]
         if gap["current_description"]:
             lines += [
-                f"**Current state:** {gap['current_description'][:150]}{'...' if len(gap['current_description']) > 150 else ''}",
+                f"**Текущее состояние:** {gap['current_description'][:150]}{'...' if len(gap['current_description']) > 150 else ''}",
             ]
         else:
-            lines.append("**Current state:** *(no 6.1 data)*")
+            lines.append("**Текущее состояние:** *(данных 6.1 нет)*")
         lines += [
-            f"**Target state:** {gap['future_description'][:150]}{'...' if len(gap['future_description']) > 150 else ''}",
+            f"**Целевое состояние:** {gap['future_description'][:150]}{'...' if len(gap['future_description']) > 150 else ''}",
             "",
             f"**Gap:** {gap['gap_summary']}",
             "",
         ]
 
-    # Summary
+    # Сводка
     by_type: dict = {}
     by_complexity: dict = {}
     for g in gaps:
@@ -1093,13 +1093,13 @@ def run_gap_analysis(
     lines += [
         "---",
         "",
-        "## Gap analysis summary",
+        "## Сводка gap-анализа",
         "",
-        "### By change type:",
+        "### По типу изменений:",
     ]
     for ct, cnt in by_type.items():
         lines.append(f"- {change_labels.get(ct, ct)}: {cnt}")
-    lines += ["", "### By complexity:"]
+    lines += ["", "### По сложности:"]
     for cx, cnt in by_complexity.items():
         lines.append(f"- {complexity_icons.get(cx, '')} {cx.capitalize()}: {cnt}")
 
@@ -1107,18 +1107,18 @@ def run_gap_analysis(
         "",
         "---",
         "",
-        f"**Artifact:** `{_safe(project_id)}_{GAP_FILENAME}`",
+        f"**Артефакт:** `{_safe(project_id)}_{GAP_FILENAME}`",
         "",
-        "**Next step:**",
-        "- `assess_potential_value` — assess the potential value of the changes",
-        "- In task **6.4** this gap analysis becomes the foundation for the change strategy",
+        "**Следующий шаг:**",
+        "- `assess_potential_value` — оценить потенциальную ценность изменений",
+        "- В задаче **6.4** этот gap-анализ станет основой стратегии изменений",
     ]
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 6.2.6 — Potential value
+# 6.2.6 — Потенциальная ценность
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1134,15 +1134,15 @@ def assess_potential_value(
     No formula — a structured list of benefits. This is context for 7.6, not a replacement.
 
     Args:
-        project_id:       Project identifier.
-        benefits_json:    List of benefits. JSON list of objects:
+        project_id:       Идентификатор проекта.
+        benefits_json:    Список выгод. JSON-список объектов:
                           [
                             {
-                              \"benefit_title\": \"Reduced processing time\",
+                              \"benefit_title\": \"Сокращение времени обработки\",
                               \"benefit_type\": \"operational\",
                               \"magnitude\": \"high\",
                               \"confidence\": \"medium\",
-                              \"description\": \"Benefit description\",
+                              \"description\": \"Описание выгоды\",
                               \"linked_business_needs\": [\"BN-001\"],
                               \"linked_goals\": [\"BG-001\"]
                             }
@@ -1150,27 +1150,27 @@ def assess_potential_value(
                           benefit_type: financial | operational | strategic | compliance
                           magnitude: high | medium | low
                           confidence: high | medium | low
-        investment_level: Qualitative investment level:
-                          - low     — minor changes, no development needed
-                          - medium  — moderate development / procurement, 3-12 months
-                          - high    — transformational project, 12+ months
-                          - unknown — cannot be estimated yet
-        value_summary:    Overall value statement for communicating with the sponsor.
+        investment_level: Качественный уровень инвестиций:
+                          - low     — небольшие изменения без разработки
+                          - medium  — умеренная разработка / закупка, 3–12 месяцев
+                          - high    — трансформационный проект, 12+ месяцев
+                          - unknown — пока невозможно оценить
+        value_summary:    Суммарный тезис о ценности для коммуникации со спонсором.
 
     Returns:
-        Structured potential-value card + "benefit / investment" profile.
+        Структурированная карточка потенциальной ценности + профиль «выгода / инвестиции».
     """
     logger.info(f"assess_potential_value: {project_id}")
 
     try:
         benefits = json.loads(benefits_json) if benefits_json.strip() else []
         if not isinstance(benefits, list):
-            return "❌ benefits_json must be a JSON list of objects."
+            return "❌ benefits_json должен быть JSON-списком объектов."
     except json.JSONDecodeError as e:
-        return f"❌ Error parsing benefits_json: {e}"
+        return f"❌ Ошибка парсинга benefits_json: {e}"
 
     if not benefits:
-        return "❌ benefits_json cannot be empty — add at least one benefit."
+        return "❌ benefits_json не может быть пустым — добавьте хотя бы одну выгоду."
 
     valid_types = {"financial", "operational", "strategic", "compliance"}
     valid_magnitude = {"high", "medium", "low"}
@@ -1178,11 +1178,11 @@ def assess_potential_value(
 
     for i, b in enumerate(benefits):
         if b.get("benefit_type") not in valid_types:
-            return f"❌ Benefit {i+1}: benefit_type must be one of {valid_types}"
+            return f"❌ Выгода {i+1}: benefit_type должен быть одним из {valid_types}"
         if b.get("magnitude") not in valid_magnitude:
-            return f"❌ Benefit {i+1}: magnitude must be one of {valid_magnitude}"
+            return f"❌ Выгода {i+1}: magnitude должен быть одним из {valid_magnitude}"
         if b.get("confidence") not in valid_confidence:
-            return f"❌ Benefit {i+1}: confidence must be one of {valid_confidence}"
+            return f"❌ Выгода {i+1}: confidence должен быть одним из {valid_confidence}"
 
     value_data = {
         "benefits": benefits,
@@ -1196,56 +1196,56 @@ def assess_potential_value(
     _save_state(state)
 
     type_labels = {
-        "financial": "💰 Financial",
-        "operational": "⚙️ Operational",
-        "strategic": "🎯 Strategic",
-        "compliance": "📋 Compliance",
+        "financial": "💰 Финансовая",
+        "operational": "⚙️ Операционная",
+        "strategic": "🎯 Стратегическая",
+        "compliance": "📋 Соответствие требованиям",
     }
-    magnitude_icons = {"high": "🔺 High", "medium": "▶️ Medium", "low": "🔻 Low"}
-    confidence_icons = {"high": "✅ High", "medium": "🟡 Medium", "low": "⚠️ Low"}
+    magnitude_icons = {"high": "🔺 Высокий", "medium": "▶️ Средний", "low": "🔻 Низкий"}
+    confidence_icons = {"high": "✅ Высокая", "medium": "🟡 Средняя", "low": "⚠️ Низкая"}
     investment_labels = {
-        "low": "Low (no significant development)",
-        "medium": "Medium (moderate development/procurement)",
-        "high": "High (transformational project)",
-        "unknown": "Unknown (needs clarification)",
+        "low": "Низкий (без значительной разработки)",
+        "medium": "Средний (умеренная разработка/закупка)",
+        "high": "Высокий (трансформационный проект)",
+        "unknown": "Неизвестен (требует уточнения)",
     }
 
     lines = [
-        f"✅ Potential value assessed — **{project_id}**",
+        f"✅ Потенциальная ценность оценена — **{project_id}**",
         "",
-        f"**Date:** {date.today()}",
-        f"**Investment level:** {investment_labels.get(investment_level, investment_level)}",
+        f"**Дата:** {date.today()}",
+        f"**Уровень инвестиций:** {investment_labels.get(investment_level, investment_level)}",
         "",
     ]
 
     if value_summary:
         lines += [
-            "## Overall assessment",
+            "## Суммарная оценка",
             "",
             value_summary,
             "",
         ]
 
-    lines += ["## Benefit breakdown", ""]
+    lines += ["## Структура выгод", ""]
 
     for i, b in enumerate(benefits, 1):
         lines += [
             f"### {i}. {b.get('benefit_title', '—')}",
-            f"**Type:** {type_labels.get(b.get('benefit_type', ''), b.get('benefit_type', ''))}  ",
-            f"**Magnitude:** {magnitude_icons.get(b.get('magnitude', ''), b.get('magnitude', ''))}  ",
-            f"**Confidence:** {confidence_icons.get(b.get('confidence', ''), b.get('confidence', ''))}",
+            f"**Тип:** {type_labels.get(b.get('benefit_type', ''), b.get('benefit_type', ''))}  ",
+            f"**Масштаб:** {magnitude_icons.get(b.get('magnitude', ''), b.get('magnitude', ''))}  ",
+            f"**Уверенность:** {confidence_icons.get(b.get('confidence', ''), b.get('confidence', ''))}",
             "",
         ]
         if b.get("description"):
             lines.append(b["description"])
             lines.append("")
         if b.get("linked_business_needs"):
-            lines.append(f"*Linked to BN:* {', '.join(b['linked_business_needs'])}")
+            lines.append(f"*Связано с BN:* {', '.join(b['linked_business_needs'])}")
         if b.get("linked_goals"):
-            lines.append(f"*Linked to BG:* {', '.join(b['linked_goals'])}")
+            lines.append(f"*Связано с BG:* {', '.join(b['linked_goals'])}")
         lines.append("")
 
-    # Value profile
+    # Профиль ценности
     high_mag = sum(1 for b in benefits if b.get("magnitude") == "high")
     med_mag = sum(1 for b in benefits if b.get("magnitude") == "medium")
     high_conf = sum(1 for b in benefits if b.get("confidence") == "high")
@@ -1253,26 +1253,26 @@ def assess_potential_value(
     lines += [
         "---",
         "",
-        "## Potential-value profile",
+        "## Профиль потенциальной ценности",
         "",
-        f"- Benefits with high magnitude: {high_mag}/{len(benefits)}",
-        f"- Benefits with high confidence: {high_conf}/{len(benefits)}",
-        f"- Investment level: {investment_level}",
+        f"- Выгод с высоким масштабом: {high_mag}/{len(benefits)}",
+        f"- Выгод с высокой уверенностью: {high_conf}/{len(benefits)}",
+        f"- Уровень инвестиций: {investment_level}",
         "",
     ]
 
-    # Simplified profile assessment
+    # Упрощённая оценка профиля
     if high_mag >= len(benefits) // 2 and investment_level in ("low", "medium"):
-        profile = "🟢 Attractive profile — high value at moderate investment"
+        profile = "🟢 Привлекательный профиль — высокая ценность при умеренных инвестициях"
     elif investment_level == "high" and high_mag < len(benefits) // 2:
-        profile = "🔴 Needs justification — high investment with unclear value"
+        profile = "🔴 Требует обоснования — высокие инвестиции при неочевидной ценности"
     else:
-        profile = "🟡 Average profile — refine in 7.6 with a detailed calculation"
+        profile = "🟡 Средний профиль — уточните в 7.6 с детальным расчётом"
 
     lines += [
         profile,
         "",
-        "**Next step:** `check_future_state_completeness` → `save_future_state`",
+        "**Следующий шаг:** `check_future_state_completeness` → `save_future_state`",
         "",
         "ℹ️ 6.3 `generate_recommendation` reads this value automatically; 7.6 makes its own numeric assessment from the design options.",
     ]
@@ -1281,7 +1281,7 @@ def assess_potential_value(
 
 
 # ---------------------------------------------------------------------------
-# 6.2.7 — Completeness check
+# 6.2.7 — Проверка полноты
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1293,19 +1293,19 @@ def check_future_state_completeness(
     BABOK 6.2 — Check the completeness of the future-state analysis before finalization.
     Follows the check_current_state_completeness (6.1) pattern. Does not block — informs.
 
-    What it checks:
-    - Are all scoped elements filled in (not drafts)?
-    - Is there at least one goal with a KPI?
-    - Are BNs linked to goals (if 6.1 data exists)?
-    - Is there at least one constraint?
-    - Has the gap analysis been run?
-    - Is there a preliminary potential-value assessment?
+    Что проверяет:
+    - Все ли скоупированные элементы заполнены (не черновики)?
+    - Есть ли хотя бы одна цель с KPI?
+    - Привязаны ли BN к целям (если данные 6.1 есть)?
+    - Есть ли хотя бы одно ограничение?
+    - Запущен ли gap-анализ?
+    - Есть ли предварительная оценка потенциальной ценности?
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        Coverage report with verdicts and recommendations.
+        Coverage report с вердиктами и рекомендациями.
     """
     logger.info(f"check_future_state_completeness: {project_id}")
 
@@ -1315,8 +1315,8 @@ def check_future_state_completeness(
 
     if not scope:
         return (
-            "⚠️ The analysis scope has not been defined.\n"
-            "Start with `scope_future_state` — a mandatory first step."
+            "⚠️ Скоуп анализа не определён.\n"
+            "Начните с `scope_future_state` — обязательный первый шаг."
         )
 
     elements_in_scope = scope.get("elements_in_scope", [])
@@ -1326,7 +1326,7 @@ def check_future_state_completeness(
     gap_done = state.get("gap_analysis_done", False)
     goals_list = goals_data.get("goals", [])
 
-    # Check elements
+    # Проверка элементов
     filled_elements = []
     draft_elements = []
     missing_elements = []
@@ -1338,12 +1338,12 @@ def check_future_state_completeness(
         else:
             missing_elements.append(elem)
 
-    # Check goals
+    # Проверка целей
     has_goals = len(goals_list) > 0
     goals_with_kpi = [g for g in goals_list if g.get("objectives")]
     goals_without_kpi = [g for g in goals_list if not g.get("objectives")]
 
-    # Check BN → BG linkage (if 6.1 data exists)
+    # Проверка привязки BN → BG (если есть 6.1)
     cs_needs = _load_json(_cs_needs_path(project_id))
     bn_coverage_issue = None
     if cs_needs:
@@ -1353,31 +1353,31 @@ def check_future_state_completeness(
             linked_bns.update(g.get("linked_business_needs", []))
         uncovered_bns = bn_ids - linked_bns
         if uncovered_bns:
-            bn_coverage_issue = f"BN not linked to any goal: {', '.join(sorted(uncovered_bns))}"
+            bn_coverage_issue = f"BN не привязаны к целям: {', '.join(sorted(uncovered_bns))}"
 
-    # Collect warnings
+    # Собираем предупреждения
     warnings = []
     if missing_elements:
-        warnings.append(f"{len(missing_elements)} elements from the scope are not filled in")
+        warnings.append(f"Незаполнены {len(missing_elements)} элементов из скоупа")
     if draft_elements:
-        warnings.append(f"{len(draft_elements)} elements are in draft")
+        warnings.append(f"{len(draft_elements)} элементов в черновике")
     if not has_goals:
-        warnings.append("No business goals defined — the 6.2 outcome is not formulated")
+        warnings.append("Нет ни одной бизнес-цели — результат 6.2 не сформулирован")
     if goals_without_kpi:
-        warnings.append(f"{len(goals_without_kpi)} goals have no KPI (SMART violation)")
+        warnings.append(f"{len(goals_without_kpi)} целей без KPI (нарушение SMART)")
     if not constraints:
-        warnings.append("No constraints captured — the solution space is unconstrained")
+        warnings.append("Нет ни одного ограничения — пространство решений не ограничено")
     if not gap_done:
-        warnings.append("Gap analysis not run — a mandatory input for 6.4")
+        warnings.append("Gap-анализ не проведён — обязательный вход для 6.4")
     if not potential_value:
-        warnings.append("Potential value not assessed — no context for 7.6")
+        warnings.append("Потенциальная ценность не оценена — нет контекста для 7.6")
     if bn_coverage_issue:
         warnings.append(bn_coverage_issue)
 
     ready = len(warnings) == 0
 
-    # Readiness percentage
-    total_checks = len(elements_in_scope) + 4  # elements + goals + constraints + gap + value
+    # Процент готовности
+    total_checks = len(elements_in_scope) + 4  # элементы + цели + ограничения + gap + value
     passed = (
         len(filled_elements)
         + (1 if has_goals and not goals_without_kpi else 0)
@@ -1388,79 +1388,79 @@ def check_future_state_completeness(
     readiness_pct = round(passed / total_checks * 100) if total_checks else 0
 
     lines = [
-        f"# {'✅ Analysis ready for finalization' if ready else '⚠️ Analysis not yet ready'}",
+        f"# {'✅ Анализ готов к финализации' if ready else '⚠️ Анализ ещё не готов'}",
         "",
-        f"**Project:** {project_id}  ",
-        f"**Readiness:** {readiness_pct}%  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_id}  ",
+        f"**Готовность:** {readiness_pct}%  ",
+        f"**Дата:** {date.today()}",
         "",
-        "## Future-state elements",
+        "## Элементы будущего состояния",
         "",
-        f"| Status | Count |",
+        f"| Статус | Количество |",
         f"|--------|------------|",
-        f"| ✅ Filled in | {len(filled_elements)} |",
-        f"| 📝 Drafts | {len(draft_elements)} |",
-        f"| ⬜ Not filled in | {len(missing_elements)} |",
-        f"| **Total in scope** | **{len(elements_in_scope)}** |",
+        f"| ✅ Заполнены | {len(filled_elements)} |",
+        f"| 📝 Черновики | {len(draft_elements)} |",
+        f"| ⬜ Не заполнены | {len(missing_elements)} |",
+        f"| **Итого в скоупе** | **{len(elements_in_scope)}** |",
         "",
     ]
 
     if missing_elements:
-        lines += ["### Elements not filled in:"]
+        lines += ["### Незаполненные элементы:"]
         for e in missing_elements:
             lines.append(f"- ⬜ `{e}` — {ELEMENT_LABELS.get(e, e)}")
         lines.append("")
 
     lines += [
-        "## Business goals",
+        "## Бизнес-цели",
         "",
-        f"{'✅' if goals_with_kpi else '❌'} Goals with KPI: {len(goals_with_kpi)}  ",
-        f"{'⚠️' if goals_without_kpi else ''} Goals without KPI: {len(goals_without_kpi)}",
+        f"{'✅' if goals_with_kpi else '❌'} Целей с KPI: {len(goals_with_kpi)}  ",
+        f"{'⚠️' if goals_without_kpi else ''} Целей без KPI: {len(goals_without_kpi)}",
         "",
-        "## Constraints",
+        "## Ограничения",
         "",
-        f"{'✅' if constraints else '❌'} Constraints captured: {len(constraints)}",
+        f"{'✅' if constraints else '❌'} Ограничений зафиксировано: {len(constraints)}",
         "",
-        "## Gap analysis",
+        "## Gap-анализ",
         "",
-        f"{'✅' if gap_done else '❌'} Gap analysis: {'completed' if gap_done else 'NOT completed'}",
+        f"{'✅' if gap_done else '❌'} Gap-анализ: {'проведён' if gap_done else 'НЕ проведён'}",
         "",
-        "## Potential value",
+        "## Потенциальная ценность",
         "",
-        f"{'✅' if potential_value else '❌'} Potential-value assessment: {'present' if potential_value else 'missing'}",
+        f"{'✅' if potential_value else '❌'} Оценка потенциальной ценности: {'есть' if potential_value else 'отсутствует'}",
     ]
 
     if cs_needs and bn_coverage_issue:
-        lines += ["", f"## BN coverage", "", f"⚠️ {bn_coverage_issue}"]
+        lines += ["", f"## BN-покрытие", "", f"⚠️ {bn_coverage_issue}"]
 
     if warnings:
         lines += [
             "",
-            "## ⚠️ Warnings",
+            "## ⚠️ Предупреждения",
             "",
         ]
         for w in warnings:
             lines.append(f"- {w}")
         lines += [
             "",
-            "> These are warnings, not blockers.",
-            "> You can proceed via `save_future_state`, but it's recommended to close the gaps.",
+            "> Это предупреждения, не блокировки.",
+            "> Вы можете продолжить через `save_future_state`, но рекомендуется устранить пробелы.",
         ]
     else:
         lines += [
             "",
             "---",
             "",
-            "✅ All checks passed. The analysis is ready for finalization.",
+            "✅ Все проверки пройдены. Анализ готов к финализации.",
             "",
-            "**Next step:** `save_future_state` — create the final report.",
+            "**Следующий шаг:** `save_future_state` — создать финальный отчёт.",
         ]
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 6.2.8 — Finalization and report generation
+# 6.2.8 — Финализация и создание отчёта
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1484,10 +1484,10 @@ def save_future_state(
                                  REGARDLESS of this flag; the flag only prints the
                                  hand-off note, it does not push anything.
                                  Default: False.
-        analyst_notes:           Closing comments from the analyst.
+        analyst_notes:           Заключительные комментарии аналитика.
 
     Returns:
-        Save confirmation + links to artifacts + next steps.
+        Подтверждение сохранения + ссылки на артефакты + следующие шаги.
     """
     logger.info(f"save_future_state: {project_id}")
 
@@ -1497,7 +1497,7 @@ def save_future_state(
     gap_data = _load_gap(project_id)
 
     if not scope:
-        return "⚠️ Analysis scope not found. Start with `scope_future_state`."
+        return "⚠️ Скоуп анализа не найден. Начните с `scope_future_state`."
 
     elements_in_scope = scope.get("elements_in_scope", [])
     elements_data = state.get("elements", {})
@@ -1505,44 +1505,44 @@ def save_future_state(
     potential_value = state.get("potential_value")
     goals_list = goals_data.get("goals", [])
 
-    # Draft warnings
+    # Предупреждения о черновиках
     draft_warnings = [
         e for e in elements_in_scope
         if e in elements_data and elements_data[e].get("draft")
     ]
 
     type_labels = {
-        "process_improvement": "Process Improvement",
-        "new_system": "New System Implementation",
-        "regulatory": "Regulatory Compliance",
-        "cost_reduction": "Cost Reduction",
-        "market_opportunity": "Market Opportunity",
-        "other": "Other",
+        "process_improvement": "Улучшение процессов",
+        "new_system": "Внедрение новой системы",
+        "regulatory": "Регуляторные требования",
+        "cost_reduction": "Снижение затрат",
+        "market_opportunity": "Рыночная возможность",
+        "other": "Другое",
     }
-    depth_labels = {"light": "Light", "standard": "Standard", "deep": "Deep"}
+    depth_labels = {"light": "Лёгкий", "standard": "Стандартный", "deep": "Глубокий"}
     change_labels = {
-        "new": "🆕 New",
-        "improve": "⬆️ Improve",
-        "eliminate": "🗑️ Eliminate",
-        "replace": "🔄 Replace",
+        "new": "🆕 Новое",
+        "improve": "⬆️ Улучшение",
+        "eliminate": "🗑️ Устранение",
+        "replace": "🔄 Замена",
     }
 
-    # Build the Markdown report
+    # Строим Markdown-отчёт
     report_lines = [
-        f"<!-- BABOK 6.2 — Define Future State | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 6.2 — Define Future State | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# Future-State Analysis: {project_title}",
+        f"# Анализ будущего состояния: {project_title}",
         "",
-        f"**Project:** {project_id}  ",
-        f"**Initiative type:** {type_labels.get(scope.get('initiative_type', ''), scope.get('initiative_type', ''))}  ",
-        f"**Analysis depth:** {depth_labels.get(scope.get('analysis_depth', ''), scope.get('analysis_depth', ''))}  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_id}  ",
+        f"**Тип инициативы:** {type_labels.get(scope.get('initiative_type', ''), scope.get('initiative_type', ''))}  ",
+        f"**Глубина анализа:** {depth_labels.get(scope.get('analysis_depth', ''), scope.get('analysis_depth', ''))}  ",
+        f"**Дата:** {date.today()}",
         "",
     ]
 
     if scope.get("known_goals"):
         report_lines += [
-            "## Known goals (from the sponsor)",
+            "## Известные цели (от спонсора)",
             "",
             scope["known_goals"],
             "",
@@ -1562,7 +1562,7 @@ def save_future_state(
     report_lines += [
         "---",
         "",
-        "## Future state: analysis by element",
+        "## Будущее состояние: анализ по элементам",
         "",
     ]
 
@@ -1572,26 +1572,26 @@ def save_future_state(
         report_lines.append("")
         if elem in elements_data:
             elem_data = elements_data[elem]
-            draft_mark = " *(draft)*" if elem_data.get("draft") else ""
+            draft_mark = " *(черновик)*" if elem_data.get("draft") else ""
             report_lines.append(elem_data.get("description", "—") + draft_mark)
             if elem_data.get("target_metrics"):
-                report_lines += ["", "**Target metrics:**"]
+                report_lines += ["", "**Целевые метрики:**"]
                 for k, v in elem_data["target_metrics"].items():
                     report_lines.append(f"- {k}: {v}")
             if elem_data.get("linked_business_needs"):
                 report_lines.append(_needs_line(elem_data["linked_business_needs"], graph_nodes))
             if elem_data.get("notes"):
-                report_lines.append(f"\n*Notes: {elem_data['notes']}*")
+                report_lines.append(f"\n*Примечания: {elem_data['notes']}*")
         else:
-            report_lines.append("*Element not filled in*")
+            report_lines.append("*Элемент не заполнен*")
         report_lines.append("")
 
-    # Business goals
+    # Бизнес-цели
     if goals_list:
         report_lines += [
             "---",
             "",
-            "## Business Goals and KPIs",
+            "## Бизнес-цели и KPI",
             "",
         ]
         for goal in goals_list:
@@ -1618,34 +1618,34 @@ def save_future_state(
             if divergence:
                 report_lines.append(divergence)
             if goal.get("objectives"):
-                report_lines += ["", "**Target metrics:**"]
+                report_lines += ["", "**Целевые показатели:**"]
                 for obj in goal["objectives"]:
                     report_lines.append(
-                        f"- **{obj.get('title', '—')}**: {obj.get('baseline', '?')} → {obj.get('target', '?')} by {obj.get('deadline', '?')}"
+                        f"- **{obj.get('title', '—')}**: {obj.get('baseline', '?')} → {obj.get('target', '?')} к {obj.get('deadline', '?')}"
                     )
             if goal.get("linked_business_needs"):
                 report_lines.append(_needs_line(goal["linked_business_needs"], graph_nodes))
             report_lines.append("")
 
-    # Constraints
+    # Ограничения
     if constraints:
         category_labels = {
-            "budget": "Financial limit",
-            "time": "Timeframe",
-            "technology": "Technology standards",
-            "policy": "Internal policies",
-            "resources": "Resources",
-            "compliance": "Regulatory requirements",
-            "other": "Other",
+            "budget": "Финансовый лимит",
+            "time": "Временные рамки",
+            "technology": "Технологические стандарты",
+            "policy": "Внутренние политики",
+            "resources": "Ресурсы",
+            "compliance": "Регуляторные требования",
+            "other": "Прочее",
         }
         report_lines += [
             "---",
             "",
-            "## Constraints",
+            "## Ограничения",
             "",
         ]
         for c in constraints:
-            status_mark = "✅" if c.get("status") == "confirmed" else "🔶 assumption"
+            status_mark = "✅" if c.get("status") == "confirmed" else "🔶 предположение"
             report_lines += [
                 f"### {c['title']} ({category_labels.get(c.get('category', 'other'), c.get('category', 'other'))}) — {status_mark}",
                 "",
@@ -1653,36 +1653,36 @@ def save_future_state(
                 "",
             ]
 
-    # Gap analysis
+    # Gap-анализ
     if gap_data and gap_data.get("gaps"):
         report_lines += [
             "---",
             "",
-            "## Gap Analysis",
+            "## Gap-анализ",
             "",
-            f"*Current-state baseline: {'available (6.1)' if gap_data.get('has_current_state_baseline') else 'missing'}*",
+            f"*Базис текущего состояния: {'есть (6.1)' if gap_data.get('has_current_state_baseline') else 'отсутствует'}*",
             "",
         ]
         for gap in gap_data["gaps"]:
             report_lines += [
                 f"### {gap['element_label']}",
-                f"- **Change type:** {change_labels.get(gap['change_type'], gap['change_type'])}",
-                f"- **Complexity:** {gap['complexity']}",
+                f"- **Тип изменения:** {change_labels.get(gap['change_type'], gap['change_type'])}",
+                f"- **Сложность:** {gap['complexity']}",
                 f"- **Gap:** {gap['gap_summary']}",
                 "",
             ]
 
-    # Potential value
+    # Потенциальная ценность
     if potential_value:
         report_lines += [
             "---",
             "",
-            "## Potential Value",
+            "## Потенциальная ценность",
             "",
         ]
         if potential_value.get("value_summary"):
             report_lines += [potential_value["value_summary"], ""]
-        report_lines.append(f"**Investment level:** {potential_value.get('investment_level', '—')}")
+        report_lines.append(f"**Уровень инвестиций:** {potential_value.get('investment_level', '—')}")
         report_lines.append("")
         for b in potential_value.get("benefits", []):
             report_lines.append(
@@ -1695,7 +1695,7 @@ def save_future_state(
         report_lines += [
             "---",
             "",
-            "## Analyst's Conclusion",
+            "## Заключение аналитика",
             "",
             analyst_notes,
             "",
@@ -1705,21 +1705,21 @@ def save_future_state(
         report_lines += [
             "---",
             "",
-            f"⚠️ **Drafts:** elements {draft_warnings} contain unconfirmed data.",
+            f"⚠️ **Черновики:** элементы {draft_warnings} содержат неподтверждённые данные.",
             "",
         ]
 
     report_lines += [
         "---",
         "",
-        f"*Future-state analysis performed per BABOK v3 methodology, task 6.2.*  ",
-        f"*Generated: {datetime.now().strftime('%d.%m.%Y %H:%M')}*",
+        f"*Анализ будущего состояния выполнен по методологии BABOK v3, задача 6.2.*  ",
+        f"*Сгенерировано: {datetime.now().strftime('%d.%m.%Y %H:%M')}*",
     ]
 
     report_content = "\n".join(report_lines)
     save_artifact(report_content, prefix=f"6_2_future_state_{_safe(project_id)}", project_id=project_id)
 
-    # Push to 7.3 (ADR-065)
+    # Проброс в 7.3 (ADR-065)
     push_status = ""
     if push_to_business_context:
         goals_summary = [
@@ -1727,46 +1727,46 @@ def save_future_state(
             for g in goals_list
         ]
         push_status = (
-            "\n\n## Integration with 7.3\n\n"
-            f"6.2 data has been prepared for `set_business_context` (7.3).\n"
-            f"Call: `set_business_context(project_id='{project_id}', "
+            "\n\n## Интеграция с 7.3\n\n"
+            f"Данные 6.2 подготовлены для передачи в `set_business_context` (7.3).\n"
+            f"Вызовите: `set_business_context(project_id='{project_id}', "
             f"from_strategy_project_id='{project_id}', ...)`\n"
             f"The `from_strategy_project_id` parameter will pre-fill business goals from {len(goals_list)} BG goals.\n"
             f"(a single parameter for 6.1 + 6.2 data)"
         )
 
     result_lines = [
-        f"✅ Future-state analysis finalized: **{project_id}**",
+        f"✅ Анализ будущего состояния финализирован: **{project_id}**",
         "",
-        f"**Project:** {project_title}",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_title}",
+        f"**Дата:** {date.today()}",
         "",
-        "## Artifact summary",
+        "## Сводка артефактов",
         "",
-        f"- 📄 **Report:** saved (`6_2_future_state_{_safe(project_id)}`)",
-        f"- 📊 **Data:** `{_safe(project_id)}_{STATE_FILENAME}`",
-        f"- 📋 **Scope:** `{_safe(project_id)}_{SCOPE_FILENAME}`",
-        f"- 🎯 **Goals:** `{_safe(project_id)}_{GOALS_FILENAME}` ({len(goals_list)} total)",
+        f"- 📄 **Отчёт:** сохранён (`6_2_future_state_{_safe(project_id)}`)",
+        f"- 📊 **Данные:** `{_safe(project_id)}_{STATE_FILENAME}`",
+        f"- 📋 **Скоуп:** `{_safe(project_id)}_{SCOPE_FILENAME}`",
+        f"- 🎯 **Цели:** `{_safe(project_id)}_{GOALS_FILENAME}` ({len(goals_list)} шт.)",
     ]
 
     if gap_data:
-        result_lines.append(f"- 🔍 **Gap analysis:** `{_safe(project_id)}_{GAP_FILENAME}` ({len(gap_data.get('gaps', []))} elements)")
+        result_lines.append(f"- 🔍 **Gap-анализ:** `{_safe(project_id)}_{GAP_FILENAME}` ({len(gap_data.get('gaps', []))} элементов)")
 
     result_lines += [
         "",
-        "## Statistics",
+        "## Статистика",
         "",
-        f"- Elements analyzed: {len([e for e in elements_in_scope if e in elements_data])} / {len(elements_in_scope)}",
-        f"- Business goals with KPIs: {len([g for g in goals_list if g.get('objectives')])}",
-        f"- Constraints: {len(constraints)}",
-        f"- Gap analysis: {'✅ completed' if gap_data else '⚠️ not completed'}",
-        f"- Potential value: {'✅ assessed' if potential_value else '⚠️ not assessed'}",
+        f"- Элементов проанализировано: {len([e for e in elements_in_scope if e in elements_data])} / {len(elements_in_scope)}",
+        f"- Бизнес-целей с KPI: {len([g for g in goals_list if g.get('objectives')])}",
+        f"- Ограничений: {len(constraints)}",
+        f"- Gap-анализ: {'✅ проведён' if gap_data else '⚠️ не проведён'}",
+        f"- Потенциальная ценность: {'✅ оценена' if potential_value else '⚠️ не оценена'}",
     ]
 
     if draft_warnings:
         result_lines += [
             "",
-            f"⚠️ Drafts: {len(draft_warnings)} elements — {draft_warnings}",
+            f"⚠️ Черновики: {len(draft_warnings)} элементов — {draft_warnings}",
         ]
 
     result_lines += [

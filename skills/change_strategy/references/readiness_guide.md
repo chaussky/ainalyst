@@ -1,210 +1,210 @@
-# readiness_guide.md — Assessing Organizational Readiness for Change
+# readiness_guide.md — Оценка готовности организации к изменению
 
-## 1. Why assess readiness
+## 1. Зачем оценивать готовность
 
-**The problem:** BABOK says "assess organizational readiness," but doesn't say how.
-The BA either writes a narrative like "generally ready" or skips this step entirely.
+**Проблема:** BABOK говорит «оцени готовность организации», но не говорит как.
+BA либо пишет нарратив «в целом готовы», либо вообще пропускает этот шаг.
 
-**Why this is critical:**
-The most expensive project failures aren't technical.
-According to McKinsey (State of the Art of Change Management), 70% of transformations
-fail to meet their goals due to organizational causes: resistance, lack of skills,
-or absence of sponsor support.
+**Почему это критично:**
+Самые дорогие провалы проектов — не технические.
+По данным McKinsey (State of the Art of Change Management), 70% трансформаций
+не достигают целей из-за организационных причин: сопротивления, нехватки навыков,
+отсутствия спонсорской поддержки.
 
-A readiness assessment is the **insurance policy** of a change strategy.
+Оценка готовности = **страховой полис** стратегии изменения.
 
 ---
 
 ## 2. Six dimensions of readiness
 
-### 2.1 `leadership_commitment` — Leadership commitment
+### 2.1 `leadership_commitment` — Готовность руководства
 
-**What it assesses:** How much top management genuinely (not just in words) supports the change.
+**Что оценивает:** Насколько топ-менеджмент реально (не на словах) поддерживает изменение.
 
-**Signals of high readiness (4–5):**
-- The sponsor allocates time to the project (not just money)
-- Middle managers are engaged as champions
-- There are public statements about the priority of the change
+**Сигналы высокой готовности (4–5):**
+- Спонсор выделяет время на проект (не только деньги)
+- Руководители среднего звена вовлечены как champions
+- Есть публичные заявления о приоритетности изменения
 
-**Signals of low readiness (1–2):**
-- The sponsor has delegated everything downward and is "out of the loop"
-- Competing initiatives without prioritization
-- High turnover among key stakeholders
-
----
-
-### 2.2 `cultural_readiness` — Cultural readiness
-
-**What it assesses:** How well the organizational culture accepts change.
-
-**Signals of high readiness (4–5):**
-- Similar changes were successfully implemented in the past
-- Employees see the value proposition and say "we need this"
-- A culture of experimentation that tolerates mistakes
-
-**Signals of low readiness (1–2):**
-- "That's not how we do things" — heard at every meeting
-- Previous changes are perceived as failures
-- Fear of losing one's job / position due to automation
+**Сигналы низкой готовности (1–2):**
+- Спонсор делегировал всё вниз и «не в теме»
+- Конкурирующие инициативы без расстановки приоритетов
+- Высокая текучесть ключевых стейкхолдеров
 
 ---
 
-### 2.3 `resource_availability` — Resource availability
+### 2.2 `cultural_readiness` — Культурная готовность
 
-**What it assesses:** Whether there are enough people, time, and money for implementation.
+**Что оценивает:** Насколько организационная культура принимает изменения.
 
-**Signals of high readiness (4–5):**
-- Budget is approved and reserved
-- Key people are dedicated to the project (not "whenever they have time")
-- No competing projects for the same resources
+**Сигналы высокой готовности (4–5):**
+- В прошлом успешно внедрялись похожие изменения
+- Сотрудники видят value proposition и говорят «нам это нужно»
+- Культура экспериментирования, допускающая ошибки
 
-**Signals of low readiness (1–2):**
-- "This is extra on top of regular work" for all participants
-- Budget is not approved or depends on future decisions
-- Key experts are tied up on other critical projects
-
----
-
-### 2.4 `operational_readiness` — Operational readiness
-
-**What it assesses:** Whether business processes and the operating environment are ready to accept the change.
-
-**Signals of high readiness (4–5):**
-- Processes are documented and stable (there's a baseline to change from)
-- Training procedures are prepared
-- There's a support plan for the transition period
-
-**Signals of low readiness (1–2):**
-- Current processes are chaotic — "you can't change what doesn't exist"
-- No documentation of as-is processes
-- The change period coincides with peak load (year-end, seasonal)
+**Сигналы низкой готовности (1–2):**
+- «Мы так не делаем» — фраза слышна на каждом совещании
+- Предыдущие изменения воспринимаются как провалы
+- Страх потери работы / позиции при автоматизации
 
 ---
 
-### 2.5 `technical_readiness` — Technical readiness
+### 2.3 `resource_availability` — Доступность ресурсов
 
-**What it assesses:** Readiness of the IT infrastructure, team, and architecture.
+**Что оценивает:** Достаточно ли людей, времени и денег для реализации.
 
-**Signals of high readiness (4–5):**
-- Infrastructure meets the requirements of the new solution
-- The IT team has the competencies, or a plan to acquire them
-- Technical debt is manageable
+**Сигналы высокой готовности (4–5):**
+- Бюджет утверждён и зарезервирован
+- Ключевые люди выделены под проект (не «когда будет время»)
+- Нет конкурирующих проектов за те же ресурсы
 
-**Signals of low readiness (1–2):**
-- Outdated infrastructure requires parallel upgrades
-- Key competencies are missing (and there's no hiring/training plan)
-- Critical integrations are unknown or poorly documented
+**Сигналы низкой готовности (1–2):**
+- «Это дополнительно к основной работе» для всех участников
+- Бюджет не утверждён или зависит от будущих решений
+- Ключевые эксперты заняты на других критичных проектах
+
+---
+
+### 2.4 `operational_readiness` — Операционная готовность
+
+**Что оценивает:** Готовы ли бизнес-процессы и операционная среда принять изменение.
+
+**Сигналы высокой готовности (4–5):**
+- Процессы задокументированы и стабильны (есть база для изменений)
+- Подготовлены процедуры обучения
+- Есть план поддержки в переходный период
+
+**Сигналы низкой готовности (1–2):**
+- Текущие процессы хаотичны — «нельзя изменить то, чего нет»
+- Нет документации по-as-is процессам
+- Период изменений совпадает с пиковой нагрузкой (конец года, сезон)
+
+---
+
+### 2.5 `technical_readiness` — Техническая готовность
+
+**Что оценивает:** Готовность IT-инфраструктуры, команды и архитектуры.
+
+**Сигналы высокой готовности (4–5):**
+- Инфраструктура соответствует требованиям нового решения
+- IT-команда имеет компетенции или план их получения
+- Технический долг управляем
+
+**Сигналы низкой готовности (1–2):**
+- Устаревшая инфраструктура требует параллельных апгрейдов
+- Отсутствуют ключевые компетенции (и нет плана найма/обучения)
+- Критические интеграции неизвестны или задокументированы плохо
 
 ---
 
 ### 2.6 `change_history` — Change history
 
-**What it assesses:** How capable the organization is at carrying out change — based on past experience.
+**Что оценивает:** Насколько организация умеет проводить изменения — исходя из прошлого опыта.
 
-**Why this is a separate dimension (not part of culture):**
-- Culture is about "do they want to"
-- Change_history is about "do they know how" (independent of willingness)
-- An organization can be culturally ready but lack experience managing large transformations
+**Почему отдельное измерение (не часть culture):**
+- Culture — это «хотят ли»
+- Change_history — это «умеют ли» (независимо от желания)
+- Организация может быть культурно готовой, но не иметь опыта управления крупными трансформациями
 
-**Signals of high readiness (4–5):**
-- The last 2–3 significant changes were completed successfully
-- Mature change management practices are in place
-- BA / PM functions are well developed
+**Сигналы высокой готовности (4–5):**
+- Последние 2–3 значимых изменения завершились успешно
+- Есть зрелые практики change management
+- BA / PM функции развиты
 
-**Signals of low readiness (1–2):**
-- The last major rollout failed (and there was no retrospective)
-- No dedicated change management function
-- This project is the first experience of this scale
+**Сигналы низкой готовности (1–2):**
+- Последнее крупное внедрение провалилось (и разбора полётов не было)
+- Нет выделенной функции change management
+- Проект — первый опыт такого масштаба
 
 ---
 
-## 3. Scoring scale (1–5)
+## 3. Шкала оценки (1–5)
 
-| Score | Description | What to do |
+| Балл | Описание | Что делать |
 |------|----------|------------|
-| **5** | Fully ready | No obstacles |
-| **4** | Ready with minor caveats | Monitoring, minimal measures |
-| **3** | Partially ready, gaps exist | A concrete remediation plan is needed |
-| **2** | Serious gaps | A preparatory stage is required |
-| **1** | Critically not ready | Change is impossible in the current state |
+| **5** | Полностью готово | Никаких препятствий |
+| **4** | Готово с небольшими оговорками | Мониторинг, минимальные меры |
+| **3** | Частично готово, есть пробелы | Нужен конкретный план устранения |
+| **2** | Серьёзные пробелы | Требуется подготовительный этап |
+| **1** | Критически не готово | Изменение невозможно в текущем состоянии |
 
 ---
 
-## 4. Final readiness_score and verdict
+## 4. Итоговый readiness_score и вердикт
 
 ```
-readiness_score = arithmetic mean of the 6 dimensions
+readiness_score = среднее арифметическое 6 измерений
 ```
 
-| Score | Verdict | Recommendations |
+| Score | Вердикт | Рекомендации |
 |-------|---------|--------------|
-| ≥ 4.0 | `ready` | Ready for implementation |
-| 2.5–3.9 | `proceed_with_caution` | Preparatory measures needed; consider pilot_first or phased |
-| < 2.5 | `not_ready` | A separate organizational readiness program is required |
+| ≥ 4.0 | `ready` | Готовы к реализации |
+| 2.5–3.9 | `proceed_with_caution` | Нужны подготовительные меры; рассмотреть pilot_first или phased |
+| < 2.5 | `not_ready` | Требуется отдельная программа подготовки организации |
 
 ---
 
-## 5. Industry benchmarks
+## 5. Отраслевые ориентиры
 
-### Large bank / public sector / pharmaceutical
-**Typical profile:**
-- leadership_commitment: 3–4 (strong governance)
-- cultural_readiness: 2–3 (high resistance)
-- technical_readiness: 2–3 (legacy systems)
-- change_history: 3 (processes exist, but slow)
+### Крупный банк / госсектор / фармацевтика
+**Типичный профиль:**
+- leadership_commitment: 3–4 (сильное governance)
+- cultural_readiness: 2–3 (высокое сопротивление)
+- technical_readiness: 2–3 (устаревшие системы)
+- change_history: 3 (процессы есть, но медленные)
 
-**Recommendations:** Invest time in cultural_readiness. phased is the preferred strategy.
+**Рекомендации:** Инвестируй время в cultural_readiness. phased — предпочтительная стратегия.
 
-### Mid-size retail / e-commerce
-**Typical profile:**
-- cultural_readiness: 3–4 (accustomed to change)
-- resource_availability: 2–3 (competition for IT resources)
-- operational_readiness: 2 (peak periods create constraints)
+### Средний ритейл / e-commerce
+**Типичный профиль:**
+- cultural_readiness: 3–4 (привыкли к изменениям)
+- resource_availability: 2–3 (конкуренция за IT-ресурсы)
+- operational_readiness: 2 (пиковые периоды создают ограничения)
 
-**Recommendations:** Plan launch dates outside of peak periods. big_bang or phased are both acceptable.
+**Рекомендации:** Планируй даты запуска вне пиков. big_bang или phased приемлемы.
 
-### Startup / digital company
-**Typical profile:**
-- cultural_readiness: 4–5 (culture of experimentation)
-- change_history: 2–3 (young company, little experience with large changes)
-- resource_availability: 2–3 (always "too much going on")
+### Стартап / digital-компания
+**Типичный профиль:**
+- cultural_readiness: 4–5 (культура экспериментирования)
+- change_history: 2–3 (молодая компания, мало опыта крупных изменений)
+- resource_availability: 2–3 (всегда «слишком много всего»)
 
-**Recommendations:** pilot_first is ideal for validation. Don't overrate change_history.
+**Рекомендации:** pilot_first — идеальна для валидации. Не переоценивай change_history.
 
-### Manufacturing / industrial
-**Typical profile:**
-- operational_readiness: 1–2 (no documentation, everything is "in people's heads")
-- cultural_readiness: 2 (high resistance among operators)
-- technical_readiness: 1–3 (depends on the age of the plant)
+### Производство / промышленность
+**Типичный профиль:**
+- operational_readiness: 1–2 (документации нет, всё «в голове»)
+- cultural_readiness: 2 (высокое сопротивление у операторов)
+- technical_readiness: 1–3 (зависит от возраста предприятия)
 
-**Recommendations:** Start with operational_readiness. Without it, the other dimensions don't matter.
+**Рекомендации:** Начни с operational_readiness. Без этого остальные измерения не имеют смысла.
 
 ---
 
-## 6. How to ask the BA questions to assess each dimension
+## 6. Как задать вопросы BA для оценки каждого измерения
 
-If the BA doesn't know how to assess a dimension — use these questions:
+Если BA не знает как оценить измерение — используй эти вопросы:
 
 **leadership_commitment:**
-> "Does your sponsor personally attend key project meetings? How often?"
-> "Are there middle managers who openly support the change?"
+> «Ваш спонсор лично присутствует на ключевых встречах по проекту? Насколько часто?»
+> «Есть ли руководители среднего звена, которые открыто поддерживают изменение?»
 
 **cultural_readiness:**
-> "When was the last time the company made a similar change? How did it feel to people, subjectively?"
-> "Have you heard phrases like 'that's not how we do things' or 'that's not our style'?"
+> «Когда последний раз в компании делали похожее изменение? Как оно прошло субъективно у людей?»
+> «Слышали ли вы фразы типа "у нас так не принято" или "это не наш стиль"?»
 
 **resource_availability:**
-> "Which key people are dedicated to the project full-time? Part-time?"
-> "Has the budget been formally approved, or is it still 'in progress'?"
+> «Кто из ключевых людей выделен на проект full-time? Part-time?»
+> «Бюджет уже утверждён формально или ещё "в процессе"?»
 
 **operational_readiness:**
-> "Are there documented as-is processes for what we're changing?"
-> "When are the business's peak loads? Do they overlap with the planned rollout?"
+> «Есть ли задокументированные as-is процессы для того, что меняем?»
+> «Когда пиковые нагрузки в бизнесе? Не совпадают ли они с запланированным внедрением?»
 
 **technical_readiness:**
-> "Has the team already worked with the technologies of the new solution?"
-> "Are there unknown integrations that might 'surface' unexpectedly?"
+> «Команда уже работала с технологиями нового решения?»
+> «Есть ли неизвестные интеграции, которые могут "вылезти"?»
 
 **change_history:**
-> "Tell me about the last major rollout — what went well, what went poorly?"
-> "Is there a dedicated change manager role in the company, or is it always 'the BA's job'?"
+> «Расскажите про последнее крупное внедрение — что пошло хорошо, что плохо?»
+> «Есть ли в компании выделенная роль change manager или это всегда "сам BA"?»

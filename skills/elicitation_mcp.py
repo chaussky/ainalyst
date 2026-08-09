@@ -1,13 +1,13 @@
 """
 BABOK 4.1 — Prepare for Elicitation
-MCP tools to prepare for requirements elicitation.
+MCP-инструменты для подготовки к выявлению требований.
 
-Tools:
-  - save_elicitation_plan      — save the elicitation plan to .md
-  - create_google_form         — create a Google Form (stub, requires OAuth setup)
-  - get_form_responses         — retrieve responses from a Google Form (stub)
+Инструменты:
+  - save_elicitation_plan      — сохранить план выявления в .md
+  - create_google_form         — создать Google Form (заглушка, требует настройки OAuth)
+  - get_form_responses         — получить ответы из Google Form (заглушка)
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -21,7 +21,7 @@ mcp = FastMCP("BABOK_Elicitation_Prep")
 
 
 # ---------------------------------------------------------------------------
-# 4.1.1 — Save the elicitation plan
+# 4.1.1 — Сохранить план выявления
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -158,40 +158,40 @@ def save_elicitation_plan(
     goals: str,
     stakeholders_json: str,
     technique: Literal[
-        "Interview",
-        "Survey",
-        "Workshop",
-        "Brainstorming",
-        "Document Analysis",
-        "Observation",
-        "Prototyping",
-        "Focus Group",
-        "Benchmarking"
+        "Интервью",
+        "Анкетирование",
+        "Воркшоп",
+        "Мозговой штурм",
+        "Анализ документов",
+        "Наблюдение",
+        "Прототипирование",
+        "Фокус-группа",
+        "Бенчмаркинг"
     ],
     technique_rationale: str,
     questions_or_agenda: str,
     expected_outcomes: str,
 ) -> str:
     """
-    BABOK 4.1 — Saves the requirements elicitation plan to a .md file.
+    BABOK 4.1 — Сохраняет план выявления требований в .md файл.
 
     Args:
-        project_name:          Name of the project or initiative.
-        goals:                 Elicitation goals. What you need to learn / confirm.
-        stakeholders_json:     JSON array of stakeholders. Format:
-                               [{"name": "Jane Doe", "role": "Process Owner",
+        project_name:          Название проекта или инициативы.
+        goals:                 Цели выявления. Что должны узнать / подтвердить.
+        stakeholders_json:     JSON-массив стейкхолдеров. Формат:
+                               [{"name": "Иванов И.И.", "role": "Владелец процесса",
                                  "influence": "High", "interest": "High",
-                                 "what_to_learn": "Pain points of the current process"}]
-        technique:             Selected elicitation technique.
-        technique_rationale:   Rationale for the chosen technique.
-        questions_or_agenda:   Questions (for interview/survey) or agenda (for workshop).
-                               Pass as numbered text or markdown.
-        expected_outcomes:     Expected outcomes of the elicitation session.
+                                 "what_to_learn": "Боли текущего процесса"}]
+        technique:             Выбранная техника выявления.
+        technique_rationale:   Обоснование выбора техники.
+        questions_or_agenda:   Вопросы (для интервью/анкеты) или повестка (для воркшопа).
+                               Передавать как текст с нумерацией или markdown.
+        expected_outcomes:     Ожидаемые результаты сессии выявления.
 
     Returns:
-        Path to the saved elicitation plan file.
+        Путь к сохранённому файлу плана выявления.
     """
-    logger.info(f"4.1 Saving elicitation plan: project='{project_name}', technique='{technique}'")
+    logger.info(f"4.1 Сохранение плана выявления: проект='{project_name}', техника='{technique}'")
 
     # An elicitation plan without stakeholders is meaningless — keep this required
     # (the previous json.loads("") failure had made it required by accident).
@@ -202,7 +202,7 @@ def save_elicitation_plan(
     if error:
         return error
 
-    # Build the stakeholder table
+    # Формируем таблицу стейкхолдеров
     stakeholder_rows = "\n".join([
         f"| {s.get('name', '—')} | {s.get('role', '—')} | "
         f"{s.get('influence', '—')} | {s.get('interest', '—')} | "
@@ -211,7 +211,7 @@ def save_elicitation_plan(
     ])
 
     stakeholder_table = (
-        "| Stakeholder | Role | Influence | Interest | What we want to learn |\n"
+        "| Стейкхолдер | Роль | Влияние | Интерес | Что хотим узнать |\n"
         "| :--- | :--- | :---: | :---: | :--- |\n"
         + stakeholder_rows
     )
@@ -221,9 +221,9 @@ def save_elicitation_plan(
     from datetime import date
     content = f"""# Elicitation Activity Plan
 
-**Project:** {project_name}
-**Prepared on:** {date.today().strftime("%d.%m.%Y")}
-**Technique:** {technique}
+**Проект:** {project_name}  
+**Дата подготовки:** {date.today().strftime("%d.%m.%Y")}  
+**Техника:** {technique}  
 
 ---
 
@@ -233,25 +233,25 @@ def save_elicitation_plan(
 
 ---
 
-## Stakeholders
+## Стейкхолдеры
 
 {stakeholder_table}
 
 ---
 
-## Selected Technique: {technique}
+## Выбранная техника: {technique}
 
-**Rationale:** {technique_rationale}
+**Обоснование:** {technique_rationale}
 
 ---
 
-## Questions / Agenda
+## Вопросы / Повестка
 
 {questions_or_agenda}
 
 ---
 
-## Expected Outcomes
+## Ожидаемые результаты
 
 {expected_outcomes}
 """
@@ -266,7 +266,7 @@ def save_elicitation_plan(
 
 
 # ---------------------------------------------------------------------------
-# 4.1.2 — Create a Google Form (stub)
+# 4.1.2 — Создать Google Form (заглушка)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -276,28 +276,28 @@ def create_google_form(
     questions_json: str,
 ) -> str:
     """
-    BABOK 4.1 — Creates a Google Form for surveying stakeholders.
+    BABOK 4.1 — Создаёт Google Form для анкетирования стейкхолдеров.
 
-    ⚠️  STUB: requires Google OAuth and Forms API setup.
-        Setup instructions appear at the end of the response.
+    ⚠️  ЗАГЛУШКА: требует настройки Google OAuth и Forms API.
+        Инструкция по настройке в конце ответа.
 
     Args:
-        title:          Form title (survey name).
-        description:    Intro text for respondents. State the survey's purpose and deadline.
-        questions_json: JSON array of questions. Format:
+        title:          Заголовок формы (название анкеты).
+        description:    Вводный текст для респондентов. Укажи цель опроса и дедлайн.
+        questions_json: JSON-массив вопросов. Формат:
                         [
                           {
-                            "text": "Question text",
+                            "text": "Текст вопроса",
                             "type": "text" | "scale" | "choice" | "checkbox" | "ranking",
                             "required": true | false,
-                            "options": ["Option 1", "Option 2"]  // for choice / checkbox / ranking
+                            "options": ["Вариант 1", "Вариант 2"]  // для choice / checkbox / ranking
                           }
                         ]
 
     Returns:
-        A link to the created form (once the API is configured) or setup instructions.
+        Ссылку на созданную форму (после настройки API) или инструкцию по настройке.
     """
-    logger.info(f"4.1 create_google_form called: title='{title}'")
+    logger.info(f"4.1 create_google_form вызван: title='{title}'")
 
     questions, error = parse_json_dict_list(
         questions_json, "questions_json",
@@ -305,8 +305,8 @@ def create_google_form(
     if error:
         return error
 
-    # Build the survey preview
-    preview_lines = [f"## Survey preview: {title}\n", f"_{description}_\n"]
+    # Формируем превью анкеты
+    preview_lines = [f"## Превью анкеты: {title}\n", f"_{description}_\n"]
     for i, q in enumerate(questions, 1):
         q_type = q.get("type", "text")
         required = "\\*" if q.get("required") else ""
@@ -320,41 +320,41 @@ def create_google_form(
     setup_instructions = """
 ---
 
-## ⚙️ Google Forms API setup
+## ⚙️ Настройка Google Forms API
 
-To activate this tool, follow these steps:
+Для активации инструмента выполни следующие шаги:
 
 ### 1. Google Cloud Project
-1. Go to https://console.cloud.google.com
-2. Create a new project (or select an existing one)
-3. Enable the **Google Forms API**: APIs & Services → Enable APIs → "Google Forms API"
-4. Enable the **Google Drive API** (needed to retrieve responses)
+1. Перейди на https://console.cloud.google.com
+2. Создай новый проект (или выбери существующий)
+3. Включи **Google Forms API**: APIs & Services → Enable APIs → "Google Forms API"
+4. Включи **Google Drive API** (нужен для получения ответов)
 
 ### 2. OAuth 2.0 credentials
 1. APIs & Services → Credentials → Create Credentials → OAuth Client ID
-2. Type: Desktop App
-3. Download `credentials.json`
+2. Тип: Desktop App
+3. Скачай `credentials.json`
 
-### 3. Install dependencies
+### 3. Установка зависимостей
 ```bash
 pip install google-auth google-auth-oauthlib google-auth-httplib2 googleapiclient
 ```
 
-### 4. Activate in code
-In `skills/elicitation_mcp.py`, replace:
+### 4. Активация в коде
+Замени в файле `skills/elicitation_mcp.py`:
 ```python
-# GOOGLE_CREDENTIALS_PATH = "credentials.json"  # uncomment
-# GOOGLE_TOKEN_PATH = "token.json"               # uncomment
+# GOOGLE_CREDENTIALS_PATH = "credentials.json"  # раскомментируй
+# GOOGLE_TOKEN_PATH = "token.json"               # раскомментируй
 ```
 
-Once configured, this tool will create the form and return a link to share.
+После настройки инструмент создаст форму и вернёт ссылку для рассылки.
 """
 
     return preview + setup_instructions
 
 
 # ---------------------------------------------------------------------------
-# 4.1.3 — Retrieve responses from a Google Form (stub)
+# 4.1.3 — Получить ответы из Google Form (заглушка)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -363,42 +363,42 @@ def get_form_responses(
     export_format: Literal["summary", "full", "csv"] = "summary",
 ) -> str:
     """
-    BABOK 4.1 — Retrieves and structures responses from a Google Form.
+    BABOK 4.1 — Получает и структурирует ответы из Google Form.
 
-    ⚠️  STUB: requires Google OAuth to be configured (see create_google_form).
+    ⚠️  ЗАГЛУШКА: требует настроенного Google OAuth (см. create_google_form).
 
     Args:
-        form_id:        Form ID from the Google Forms URL.
-                        Example: from https://forms.gle/ABC123 → form_id = "ABC123"
-                        Full ID from the editor URL: /forms/d/{FORM_ID}/edit
-        export_format:  Output format:
-                        - "summary"  — per-question summary with aggregation
-                        - "full"     — all responses, row by row
-                        - "csv"      — data for saving to a spreadsheet
+        form_id:        ID формы из URL Google Forms.
+                        Пример: из https://forms.gle/ABC123 → form_id = "ABC123"
+                        Полный ID из URL редактора: /forms/d/{FORM_ID}/edit
+        export_format:  Формат вывода:
+                        - "summary"  — сводка по каждому вопросу с агрегацией
+                        - "full"     — все ответы построчно
+                        - "csv"      — данные для сохранения в таблицу
 
     Returns:
-        Structured responses from the form, or setup instructions for the API.
+        Структурированные ответы из формы или инструкцию по настройке API.
     """
-    logger.info(f"4.1 get_form_responses called: form_id='{form_id}', format='{export_format}'")
+    logger.info(f"4.1 get_form_responses вызван: form_id='{form_id}', format='{export_format}'")
 
     mock_note = f"""
-## ⚠️ Stub: get_form_responses
+## ⚠️ Заглушка: get_form_responses
 
-Tool called for form `{form_id}` (format: {export_format}).
+Инструмент вызван для формы `{form_id}` (формат: {export_format}).
 
-Once the Google API is configured, this tool will:
-- Retrieve all responses via the Google Forms API
-- For `summary`: aggregate responses per question and surface patterns
-- For `full`: return a table of all responses with dates
-- For `csv`: save the data to a file for analysis in Excel / Google Sheets
+После настройки Google API этот инструмент:
+- Получит все ответы через Google Forms API
+- Для `summary`: агрегирует ответы по каждому вопросу, выделит паттерны
+- Для `full`: вернёт таблицу всех ответов с датами
+- Для `csv`: сохранит данные в файл для анализа в Excel / Google Sheets
 
-### What to do right now
+### Что делать прямо сейчас
 
-If responses have already been collected manually — paste them as text or CSV
-directly into the chat, and Claude will structure and analyze them without the API.
+Если ответы уже собраны вручную — передай их как текст или CSV напрямую в чат,
+и Claude структурирует и проанализирует их без API.
 
-### API setup
-See the instructions in the `create_google_form` tool.
+### Настройка API
+См. инструкцию в инструменте `create_google_form`.
 """
     return mock_note
 

@@ -1,199 +1,199 @@
-# Risk Tolerance Guide — BABOK Chapter 6.3
+# Risk Tolerance Guide — Глава 6.3 BABOK
 
-A reference guide on risk tolerance levels and threshold calibration.
-Read it before calling `set_risk_tolerance`.
+Справочник по уровням толерантности к риску и калибровке порогов.
+Читай перед вызовом `set_risk_tolerance`.
 
 ---
 
-## 1. What Risk Tolerance is
+## 1. Что такое Risk Tolerance
 
-**Risk Tolerance** is the maximum level of risk the organization/sponsor
-is willing to accept without escalation or a change to the plan.
+**Risk Tolerance** — максимальный уровень риска, который организация/спонсор
+готова принять без эскалации или изменения плана.
 
-It is defined by two parameters:
+Определяется двумя параметрами:
 
-| Parameter | Description | Default value |
+| Параметр | Описание | Значение по умолчанию |
 |----------|----------|-----------------------|
-| `tolerance_level` | Strategic position (qualitative) | `neutral` |
-| `max_acceptable_score` | Numeric threshold: risks ≥ this value = High | `15` |
+| `tolerance_level` | Стратегическая позиция (качественная) | `neutral` |
+| `max_acceptable_score` | Числовой порог: риски ≥ этого значения = High | `15` |
 
-These two parameters are related but not rigidly tied: the BA can set `risk_averse`
-with a threshold of 12, or `neutral` with a threshold of 18 — depending on context.
-
----
-
-## 2. Tolerance levels
-
-### `risk_averse` — Conservative organization
-
-**Characteristics:**
-- Any risk Medium or above requires an active mitigation plan
-- High bar for accepting uncertainty
-- Strong emphasis on compliance and predictability
-- A mistake costs more than a missed opportunity
-
-**Typical indicators:**
-- Regulated industry (banking, insurance, pharma, public sector)
-- History of major project failures
-- Sponsor with low risk appetite
-- Critical infrastructure / operations
-
-**Recommended threshold:** `max_acceptable_score = 10–12`
-
-**How it affects the recommendation:**
-With `risk_averse`, the `proceed_with_mitigation` recommendation requires
-a clear plan for ALL risks ≥ the threshold, including a mandatory owner.
+Эти два параметра связаны но не жёстко: BA может поставить `risk_averse`
+с порогом 12 или `neutral` с порогом 18 — в зависимости от контекста.
 
 ---
 
-### `neutral` — Balanced position (default)
+## 2. Уровни толерантности
 
-**Characteristics:**
-- Risks are evaluated on a cost/benefit basis
-- Willingness to accept Medium risks without an active plan when impact is low
-- Standard corporate approach to risk management
+### `risk_averse` — Консервативная организация
 
-**Typical indicators:**
-- Commercial company in a competitive environment
-- Projects with moderate stakes
-- Sponsor with a balanced risk appetite
+**Характеристики:**
+- Любой риск Medium или выше требует активного плана снижения
+- Высокий порог для принятия неопределённости
+- Сильный акцент на compliance и предсказуемость
+- Ошибка стоит дороже упущенной возможности
 
-**Recommended threshold:** `max_acceptable_score = 15` (the High-zone boundary)
+**Типичные индикаторы:**
+- Регулируемая отрасль (банки, страхование, фармацевтика, госсектор)
+- История крупных провалов проектов
+- Спонсор с низкой risk appetite
+- Критическая инфраструктура / операции
 
----
+**Рекомендуемый порог:** `max_acceptable_score = 10–12`
 
-### `risk_seeking` — Aggressive position
-
-**Characteristics:**
-- Willingness to accept High risks for potential upside
-- Speed to market matters more than predictability
-- A missed opportunity = a bigger risk than a mistake
-
-**Typical indicators:**
-- Startups and scale-up companies
-- Digital transformation with a first-mover scope
-- Time constraints (market window)
-- Innovation / R&D projects
-
-**Recommended threshold:** `max_acceptable_score = 18–20`
+**Как это влияет на рекомендацию:**
+При `risk_averse` рекомендация `proceed_with_mitigation` требует
+чёткого плана для ВСЕХ рисков ≥ порога, включая обязательного owner.
 
 ---
 
-## 3. Threshold calibration matrix
+### `neutral` — Сбалансированная позиция (default)
 
-| Tolerance Level | Conservative threshold | Standard | Aggressive |
+**Характеристики:**
+- Риски оцениваются по соотношению стоимость/польза
+- Готовность принять Medium-риски без активного плана при низком impact
+- Стандартный корпоративный подход к управлению рисками
+
+**Типичные индикаторы:**
+- Коммерческая компания в конкурентной среде
+- Проекты с умеренными стейками
+- Спонсор с balanced risk appetite
+
+**Рекомендуемый порог:** `max_acceptable_score = 15` (граница High-зоны)
+
+---
+
+### `risk_seeking` — Агрессивная позиция
+
+**Характеристики:**
+- Готовность принять High-риски ради потенциальной выгоды
+- Скорость выхода на рынок важнее предсказуемости
+- Упущенная возможность = больший риск чем ошибка
+
+**Типичные индикаторы:**
+- Стартапы и scale-up компании
+- Digital-трансформация с первопроходческим скоупом
+- Временные ограничения (market window)
+- Инновационные / R&D проекты
+
+**Рекомендуемый порог:** `max_acceptable_score = 18–20`
+
+---
+
+## 3. Матрица калибровки порога
+
+| Tolerance Level | Консервативный порог | Стандартный | Агрессивный |
 |-----------------|---------------------|-------------|-------------|
 | `risk_averse` | 8–10 | **10–12** | 12–14 |
 | `neutral` | 12–14 | **15** | 16–18 |
 | `risk_seeking` | 15–16 | **18** | 20–22 |
 
-**Bold** marks the recommended default value for the level.
+**Жирным** — рекомендуемое значение по умолчанию для уровня.
 
 ---
 
-## 4. Industry examples
+## 4. Отраслевые примеры
 
-### Banking / Financial Services
+### Банковский сектор / Финансовые услуги
 - **Tolerance:** `risk_averse`
-- **Threshold:** 10–12
-- **Typical High risks:** compliance/regulatory (score 15–25), data breach (20–25)
-- **Note:** regulatory risks often carry a mandatory `avoid` status regardless of score
+- **Порог:** 10–12
+- **Типичные High-риски:** compliance/regulatory (score 15–25), data breach (20–25)
+- **Примечание:** regulatory-риски часто имеют принудительный статус `avoid` независимо от score
 
-### Retail / E-commerce
+### Ритейл / E-commerce
 - **Tolerance:** `neutral`
-- **Threshold:** 15
-- **Typical High risks:** seasonal load spikes (technical), competitors (strategic)
-- **Note:** for seasonal projects — tight deadlines raise operational risks
+- **Порог:** 15
+- **Типичные High-риски:** сезонность нагрузки (технический), конкуренты (стратегический)
+- **Примечание:** для сезонных проектов — сжатые сроки поднимают operational-риски
 
-### Manufacturing / Industrial
-- **Tolerance:** `neutral` → `risk_averse` for health & safety risks
-- **Threshold:** 12–15
-- **Typical High risks:** equipment downtime (operational), safety (regulatory)
+### Производство / Промышленность
+- **Tolerance:** `neutral` → `risk_averse` при ОТ-рисках
+- **Порог:** 12–15
+- **Типичные High-риски:** простой оборудования (operational), safety (regulatory)
 
 ### IT / SaaS / Digital
 - **Tolerance:** `neutral` → `risk_seeking`
-- **Threshold:** 15–20
-- **Typical High risks:** technical implementation (4–5), adoption (people, 3–4)
+- **Порог:** 15–20
+- **Типичные High-риски:** техническая реализация (4–5), adoption (people, 3–4)
 
-### Public Sector / Government Projects
+### Государственный сектор / Госпроекты
 - **Tolerance:** `risk_averse`
-- **Threshold:** 8–12
-- **Typical High risks:** political changes (external), procurement (regulatory)
-- **Note:** compliance risks = almost always `avoid`
+- **Порог:** 8–12
+- **Типичные High-риски:** политические изменения (external), procurement (regulatory)
+- **Примечание:** compliance-риски = почти всегда `avoid`
 
-### Pharmaceutical / MedTech
-- **Tolerance:** `risk_averse` (always)
-- **Threshold:** 8–10
-- **Typical High risks:** regulatory approval, clinical data quality, patient safety
-- **Note:** any risk with impact=5 (Critical) → mandatory escalation
-
----
-
-## 5. Dialogue with the BA to determine tolerance
-
-If the sponsor hasn't set tolerance explicitly — help the BA determine it through questions:
-
-**Question 1 — about history:**
-> "How does your organization typically react when a project hits
-> an unexpected problem midway through — does it stop to analyze
-> or adapt and keep moving?"
-
-Answer "stops" → `risk_averse`
-Answer "adapts" → `neutral` or `risk_seeking`
-
-**Question 2 — about the cost of a mistake:**
-> "What's worse for the sponsor: spending an extra 20% of the budget on
-> preventive measures, or facing a 30% chance of a 2-month delay?"
-
-Prefers to spend upfront → `risk_averse`
-Willing to risk the delay → `neutral` or `risk_seeking`
-
-**Question 3 — about regulation:**
-> "Does the project involve regulatory requirements whose violation carries
-> legal liability or fines?"
-
-Yes → `risk_averse` is mandatory, at least for the regulatory category
+### Фармацевтика / МедТех
+- **Tolerance:** `risk_averse` (всегда)
+- **Порог:** 8–10
+- **Типичные High-риски:** regulatory approval, clinical data quality, patient safety
+- **Примечание:** любой risk с impact=5 (Critical) → обязательная эскалация
 
 ---
 
-## 6. Risk Context — additional `set_risk_tolerance` fields
+## 5. Диалог с BA для определения tolerance
 
-Besides `tolerance_level` and `max_acceptable_score`, the tool accepts:
+Если спонсор не задал tolerance явно — помоги BA определить через вопросы:
 
-| Field | Description |
+**Вопрос 1 — про историю:**
+> «Как ваша организация обычно реагирует, когда проект сталкивается
+> с неожиданной проблемой в середине пути — останавливается для анализа
+> или адаптируется и движется дальше?»
+
+Ответ «останавливается» → `risk_averse`
+Ответ «адаптируется» → `neutral` или `risk_seeking`
+
+**Вопрос 2 — про стоимость ошибки:**
+> «Что для спонсора хуже: потратить лишние 20% бюджета на превентивные меры
+> или столкнуться с 30% вероятностью задержки на 2 месяца?»
+
+Предпочитает потратить заранее → `risk_averse`
+Готов рискнуть задержкой → `neutral` или `risk_seeking`
+
+**Вопрос 3 — про регуляторику:**
+> «Есть ли в проекте требования регуляторов, нарушение которых влечёт
+> юридическую ответственность или штрафы?»
+
+Да → обязательно `risk_averse` как минимум по regulatory-категории
+
+---
+
+## 6. Risk Context — дополнительные поля `set_risk_tolerance`
+
+Помимо `tolerance_level` и `max_acceptable_score`, инструмент принимает:
+
+| Поле | Описание |
 |------|----------|
-| `organization_context` | Brief description of the context (industry, project type) |
-| `sponsor_risk_appetite` | Direct quote or interpretation of the sponsor's position |
-| `mandatory_avoid_categories` | Risk categories that always → avoid (e.g.: `["regulatory"]`) |
-| `escalation_threshold` | Score at which escalation to the sponsor is required (usually = max_acceptable_score) |
+| `organization_context` | Краткое описание контекста (отрасль, тип проекта) |
+| `sponsor_risk_appetite` | Прямая цитата или интерпретация позиции спонсора |
+| `mandatory_avoid_categories` | Категории рисков, которые всегда → avoid (напр.: `["regulatory"]`) |
+| `escalation_threshold` | Score, при котором нужна эскалация к спонсору (обычно = max_acceptable_score) |
 
 ---
 
-## 7. How tolerance affects `generate_recommendation`
+## 7. Как tolerance влияет на `generate_recommendation`
 
-| Condition | Tolerance | Recommendation |
+| Условие | Tolerance | Рекомендация |
 |---------|-----------|--------------|
-| No risks ≥ threshold | any | `proceed_despite_risk` |
-| Risks ≥ threshold exist | `risk_seeking` | `proceed_with_mitigation` |
-| Risks ≥ threshold exist | `neutral` | `proceed_with_mitigation` |
-| Risks ≥ threshold exist | `risk_averse` + mitigation possible | `proceed_with_mitigation` |
-| Potential value < exposure | any | `seek_higher_value` |
-| Risks are critical, mitigation impossible | any | `do_not_proceed` |
+| Нет рисков ≥ порога | любой | `proceed_despite_risk` |
+| Есть риски ≥ порога | `risk_seeking` | `proceed_with_mitigation` |
+| Есть риски ≥ порога | `neutral` | `proceed_with_mitigation` |
+| Есть риски ≥ порога | `risk_averse` + mitigation возможен | `proceed_with_mitigation` |
+| Потенц. ценность < exposure | любой | `seek_higher_value` |
+| Риски критичны, mitigation невозможен | любой | `do_not_proceed` |
 
-**`do_not_proceed`** — a rare but important decision. Indicators:
-- A risk with impact=5 (Critical) and likelihood ≥ 4 with no mitigation plan
-- ≥ 3 risks with score ≥ 20 under `risk_averse`
-- mandatory_avoid_categories are violated
+**`do_not_proceed`** — редкое, но важное решение. Признаки:
+- Риск с impact=5 (Critical) и likelihood ≥ 4 без плана снижения
+- ≥ 3 рисков с score ≥ 20 при `risk_averse`
+- mandatory_avoid_categories нарушены
 
 ---
 
-## 8. Revisiting tolerance during the project
+## 8. Пересмотр tolerance в ходе проекта
 
-Tolerance isn't a constant. Revisit it when:
-- Sponsor or key stakeholders change
-- New regulatory requirements appear
-- Significant change to scope or budget
-- After key mitigation plans are executed (risks reduced → worth revisiting)
+Tolerance — не константа. Пересматривай в случаях:
+- Смена спонсора или ключевых стейкхолдеров
+- Новые регуляторные требования
+- Существенное изменение скоупа или бюджета
+- После реализации ключевых mitigation-планов (риски снижены → можно пересмотреть)
 
-When revisiting — call `set_risk_tolerance` again with new parameters,
-then `run_risk_matrix` to recompute zones and `generate_recommendation` for an updated recommendation.
+При пересмотре — вызывай `set_risk_tolerance` снова с новыми параметрами,
+затем `run_risk_matrix` для пересчёта зон и `generate_recommendation` для обновлённой рекомендации.

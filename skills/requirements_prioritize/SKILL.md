@@ -11,72 +11,72 @@ project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: BABOK 5.3 — Prioritize Requirements
-**Task:** prioritize requirements and designs — determine their relative importance to stakeholders.
-**MCP server:** `requirements_prioritize_mcp.py`
+**Задача:** приоритизация требований и дизайнов — определение их относительной важности для стейкхолдеров.
+**MCP-сервер:** `requirements_prioritize_mcp.py`
 **References:** `references/methods_guide.md`, `references/conflict_resolution.md`
 
 ---
 
-## Essence of the task
+## Суть задачи
 
-5.3 is not a one-time event — it is a **continuous process**. Priorities live alongside the project.
+5.3 — не разовое мероприятие, а **непрерывный процесс**. Приоритеты живут вместе с проектом.
 
-**What the BA does in 5.3:**
-- Selects a prioritization method suited to the project context
-- Collects stakeholder scores (each stakeholder has their own view of value)
-- Aggregates the scores, identifies conflicts and dependency violations
-- Facilitates conflict resolution
-- Records the final priorities in the repository
+**Что делает BA в 5.3:**
+- Выбирает метод приоритизации под контекст проекта
+- Собирает оценки стейкхолдеров (у каждого свой взгляд на ценность)
+- Агрегирует оценки, выявляет конфликты и dependency violations
+- Фасилитирует разрешение конфликтов
+- Фиксирует итоговые приоритеты в репозитории
 
-**What 5.3 does NOT do:**
-- It does not create new requirements (that's 4.2/4.3)
-- It does not formally approve requirements with stakeholders (that's 5.5)
-- It does not assess changes/CRs (that's 5.4)
-- It does not make decisions on behalf of stakeholders — it only helps the BA structure the process
+**Что 5.3 НЕ делает:**
+- Не создаёт новые требования (это 4.2/4.3)
+- Не формально согласовывает требования со стейкхолдерами (это 5.5)
+- Не оценивает изменения/CR (это 5.4)
+- Не принимает решения за стейкхолдеров — только помогает BA структурировать процесс
 
-**Output of 5.3:** prioritized requirements → flow into **6.3 (Risk Assessment)**.
+**Выход 5.3:** приоритизированные требования → уходят в **6.3 (Оценка рисков)**.
 
 ---
 
-## Inputs from other tasks
+## Входы из других задач
 
-| Task | What it provides |
+| Задача | Что даёт |
 |--------|----------|
-| **5.1** | Dependency graph → automatic dependency-violation checks |
-| **5.2** | Requirement stability → unstable requirements are flagged as risky for high priority |
-| **4.2** | Stakeholder registry → influence weights for aggregation, list of session participants |
-| **4.3** | Confirmed requirements → list to prioritize |
-| **3.2** | Governance rules → who makes the final decision on conflicts |
+| **5.1** | Граф зависимостей → автоматическая проверка dependency violations |
+| **5.2** | Стабильность требований → нестабильные флагируются как рискованные для высокого приоритета |
+| **4.2** | Реестр стейкхолдеров → influence-веса для агрегации, список участников сессии |
+| **4.3** | Подтверждённые требования → список для приоритизации |
+| **3.2** | Governance rules → кто принимает финальное решение по конфликтам |
 
 ---
 
-## When this skill is activated
+## Когда активируется этот скилл
 
-- Before sprint/release planning — need to decide what goes in
-- After elicitation wraps up (4.3) — initial prioritization
-- After receiving estimates from developers — revisit priorities factoring in cost
-- After a Change Request (5.4) — revisit the affected requirements
-- When the business context changes — full reassessment
-- Regularly (once per sprint/stage) — keep priorities current
+- Перед планированием спринта/релиза — нужно определить что войдёт
+- После завершения выявления (4.3) — первичная приоритизация
+- После получения оценок от разработчиков — пересмотр с учётом стоимости
+- После Change Request (5.4) — пересмотр затронутых требований
+- При изменении бизнес-контекста — полная переоценка
+- Регулярно (раз в спринт/этап) — поддержание актуальности приоритетов
 
 ---
 
 ## Four methods — quick cheat sheet
 
 ### MoSCoW
-`Must` / `Should` / `Could` / `Won't` — categorical ranking.
-Fast, easy for stakeholders to grasp. Does not account for cost or time criticality.
-Details: `references/methods_guide.md` → "Method 1"
+`Must` / `Should` / `Could` / `Won't` — категориальная расстановка.
+Быстро, понятно стейкхолдерам. Не учитывает стоимость и time criticality.
+Подробнее: `references/methods_guide.md` → «Метод 1»
 
 ### WSJF (Weighted Shortest Job First)
-`WSJF = (BV + TC + RR) ÷ Job Size` — numeric ranking.
-Objective, accounts for time and risk. Requires estimates from developers.
-Details: `references/methods_guide.md` → "Method 2"
+`WSJF = (BV + TC + RR) ÷ Job Size` — числовое ранжирование.
+Объективно, учитывает время и риски. Требует оценок от разработчиков.
+Подробнее: `references/methods_guide.md` → «Метод 2»
 
 ### Impact/Effort Matrix
-Two criteria: value vs. effort → 4 quadrants → configurable mapping to priority.
-Visual, good for workshops. The BA configures the mapping for the project.
-Details: `references/methods_guide.md` → "Method 3"
+Два критерия: ценность vs усилия → 4 квадранта → настраиваемый маппинг в приоритет.
+Визуально, хорошо для воркшопов. Маппинг настраивает BA под проект.
+Подробнее: `references/methods_guide.md` → «Метод 3»
 
 ### Time Boxing / Budgeting
 A fixed resource — team throughput for the period, or a fixed budget — decides the
@@ -88,11 +88,11 @@ Details: `references/methods_guide.md` → "Method 4"
 
 ---
 
-## Five operating modes
+## Пять режимов работы
 
-### Mode A — Open a prioritization session
+### Режим A — Открыть сессию приоритизации
 
-**When:** start of a new session (initial or repeat prioritization).
+**Когда:** начало новой сессии (первичная или повторная приоритизация).
 
 Algorithm:
 1. Determine the context: which iteration? which requirement scope?
@@ -107,13 +107,13 @@ Algorithm:
    and `capacity_unit` ("story points" / "person-days" / "USD")
 5. Call `start_prioritization_session`
 
-Result: list of requirements ready for scoring.
-⚠️ Unstable requirements (stability = Volatile) are flagged automatically.
-⚠️ Must-candidate requirements with dependencies are flagged for review.
+Результат: список требований готовых к оценке.
+⚠️ Нестабильные требования (stability = Volatile) — помечаются автоматически.
+⚠️ Требования из Must-кандидатов с зависимостями — помечаются для проверки.
 
-### Mode B — Collect stakeholder scores
+### Режим B — Собрать оценки стейкхолдеров
 
-**When:** after opening the session, for each stakeholder individually.
+**Когда:** после открытия сессии, для каждого стейкхолдера отдельно.
 
 Algorithm:
 1. Score with each stakeholder (from the 4.2 registry) individually
@@ -124,24 +124,24 @@ Algorithm:
    `value` is optional — omit it and the requirement's current priority is used
 6. Call `add_stakeholder_scores` for each stakeholder
 
-> 📌 Important: the BA calls `add_stakeholder_scores` exactly once per stakeholder.
-> Scores accumulate in the session snapshot; aggregation happens only in Mode C.
+> 📌 Важно: BA вызывает `add_stakeholder_scores` по одному разу на стейкхолдера.
+> Оценки накапливаются в снапшоте сессии, агрегация — только в Режиме C.
 
-### Mode C — Aggregate and identify conflicts
+### Режим C — Агрегировать и выявить конфликты
 
-**When:** all scores are collected, ready to calculate.
+**Когда:** все оценки собраны, готовы к расчёту.
 
-Algorithm:
-1. Call `run_aggregation`
-2. Review the result:
-   - Final priority for each requirement
-   - 🔴 Stakeholder conflicts — need resolution
-   - ⚠️ Dependency violations — logical contradictions
-   - 🟡 Unstable requirements at high priority — rework risk
-3. For each conflict — choose a tactic (Mode D)
-4. If there are no conflicts — proceed to Mode E
+Алгоритм:
+1. Вызвать `run_aggregation`
+2. Изучить результат:
+   - Итоговые приоритеты по каждому требованию
+   - 🔴 Конфликты стейкхолдеров — требуют разрешения
+   - ⚠️ Dependency violations — логические противоречия
+   - 🟡 Нестабильные в высоком приоритете — риск переделок
+3. Для каждого конфликта — выбрать тактику (Режим D)
+4. Если конфликтов нет — переходить к Режиму E
 
-Tactics reference: `references/conflict_resolution.md`
+Справка по тактикам конфликтов: `references/conflict_resolution.md`
 
 > 📌 If >60% of requirements are Must, that's a sign of Must Inflation.
 > Recommendation: run a follow-up session with `method="TimeBoxing"` — set the capacity
@@ -149,22 +149,22 @@ Tactics reference: `references/conflict_resolution.md`
 > (A TimeBoxing session does not raise this warning itself: there the Must share
 > follows the capacity, not stakeholder discipline.)
 
-### Mode D — Resolve a conflict
+### Режим D — Разрешить конфликт
 
-**When:** a conflict was identified after aggregation.
+**Когда:** после агрегации выявлен конфликт.
 
-Algorithm:
-1. Determine the conflict type:
-   - Cross-stakeholder (diverging scores)
-   - Dependency violation (Must depends on Won't)
+Алгоритм:
+1. Определить тип конфликта:
+   - Межстейкхолдерский (расхождение оценок)
+   - Dependency violation (Must зависит от Won't)
    - Priority inflation (>60% Must)
-2. Apply a tactic (see `references/conflict_resolution.md`)
-3. Call `resolve_conflict` — record the decision and rationale
-4. Critical conflicts (Must vs. Won't, High/High influence) → link to the Decision Log (4.5)
+2. Применить тактику (см. `references/conflict_resolution.md`)
+3. Вызвать `resolve_conflict` — зафиксировать решение и rationale
+4. Критические конфликты (Must vs Won't, High/High influence) → связать с Decision Log (4.5)
 
-### Mode E — Finalize the result
+### Режим E — Зафиксировать результат
 
-**When:** all conflicts are resolved, priorities are agreed.
+**Когда:** все конфликты разрешены, приоритеты согласованы.
 
 Algorithm:
 1. Verify that all conflicts are marked resolved
@@ -178,50 +178,50 @@ Algorithm:
 
 ---
 
-## MCP tools
+## MCP-инструменты
 
-| Tool | Mode | What it does |
+| Инструмент | Режим | Что делает |
 |------------|-------|-----------|
-| `start_prioritization_session` | A | Open a session, choose a method, get the requirement list |
-| `add_stakeholder_scores` | B | Add scores from one stakeholder |
-| `run_aggregation` | C | Aggregate scores, find conflicts and violations |
-| `resolve_conflict` | D | Record the decision on a conflict |
-| `save_prioritization_result` | E | Finalize, update the 5.1 repository |
+| `start_prioritization_session` | A | Открыть сессию, выбрать метод, получить список требований |
+| `add_stakeholder_scores` | B | Добавить оценки одного стейкхолдера |
+| `run_aggregation` | C | Агрегировать оценки, найти конфликты и violations |
+| `resolve_conflict` | D | Зафиксировать решение по конфликту |
+| `save_prioritization_result` | E | Финализировать, обновить репозиторий 5.1 |
 
 ---
 
-## Mapping from 5.2 — stability as a factor
+## Mapping из 5.2 — стабильность как фактор
 
-Before the session, the `start_prioritization_session` tool automatically checks requirement stability:
+Перед сессией инструмент `start_prioritization_session` автоматически проверяет стабильность требований:
 
-| Stability (from 5.2) | Version | Behavior in 5.3 |
+| Stability (из 5.2) | Версия | Поведение в 5.3 |
 |--------------------|--------|-----------------|
-| `Stable` | < 1.3 | No restrictions |
-| `Volatile` | 1.3–1.3 | 🟡 Warning if Must |
-| `Volatile` (critical) | ≥ 1.4 | 🔴 Flag: "high rework risk if Must" |
-| `Unknown` | — | 🟡 Recommendation: clarify stability before finalizing |
+| `Stable` | < 1.3 | Без ограничений |
+| `Volatile` | 1.3–1.3 | 🟡 Предупреждение при Must |
+| `Volatile` (критично) | ≥ 1.4 | 🔴 Флаг: «высокий риск переделок при Must» |
+| `Unknown` | — | 🟡 Рекомендация: уточнить стабильность перед финализацией |
 
 ---
 
-## Mapping from 5.1 — dependencies
+## Mapping из 5.1 — зависимости
 
-`run_aggregation` automatically checks for dependency violations:
+`run_aggregation` автоматически проверяет dependency violations:
 
-1. For each requirement with a final priority of Must/Should
-2. Looks up all `depends`-type links in the 5.1 repository
-3. Checks: do all upstream dependencies have priority ≥ the current one?
-4. If not — flags it as a dependency violation
+1. Для каждого требования с итоговым приоритетом Must/Should
+2. Ищет в репозитории 5.1 все связи типа `depends`
+3. Проверяет: все upstream-зависимости имеют приоритет ≥ текущего?
+4. Если нет — флагирует как dependency violation
 
-Link types that are checked: `depends` only.
-`derives`, `satisfies`, `verifies` links are not dependency violations.
+Типы связей, которые проверяются: только `depends`.
+Связи `derives`, `satisfies`, `verifies` — не являются dependency violations.
 
 ---
 
-## Common BA questions
+## Типичные вопросы BA
 
-**"A stakeholder changed their mind after the first scoring round — how do I update it?"**
-Call `add_stakeholder_scores` again for the same stakeholder.
-The new scores replace the previous ones in the current session.
+**«Стейкхолдер поменял мнение после первой оценки — как обновить?»**
+Вызвать `add_stakeholder_scores` повторно для того же стейкхолдера.
+Новые оценки заменяют предыдущие в текущей сессии.
 
 **"Do I need to run prioritization for designs too (not just requirements)?"**
 Yes — BABOK includes Designs as input information for 5.3. In this platform the design and
@@ -229,6 +229,6 @@ model artifacts from 7.1 (use cases, business processes, data dictionaries, ERDs
 registered in the 5.1 repository under their own types and are prioritized with the same
 scheme. There is no separate `design` node type.
 
-**"How often should prioritization be repeated?"**
-Rule: whenever any of the triggers above occurs (estimates received, CR accepted, context changed).
-Each session is a separate snapshot with history.
+**«Как часто проводить повторную приоритизацию?»**
+Правило: при любом из триггеров выше (получены оценки, CR принят, контекст изменился).
+Каждая сессия — отдельный снапшот с историей.

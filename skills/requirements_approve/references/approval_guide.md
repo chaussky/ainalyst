@@ -1,248 +1,248 @@
-# Reference Guide: Approve Requirements (BABOK 5.5)
+# Справочник: Утверждение требований (BABOK 5.5)
 
-## When to read this file
+## Когда читать этот файл
 
-Read this file when:
-- The BA is preparing a requirements package for stakeholder approval
-- You need to understand who has sign-off authority versus who is only consulted
-- A stakeholder has rejected a requirement or issued a conditional approval
-- An official baseline needs to be recorded before handoff to development
-- A conflict has arisen between stakeholders during approval
-
----
-
-## The nature of task 5.5
-
-5.5 is the **final point in the requirements life cycle** before handoff to development.
-Goal: obtain formal agreement from authorized stakeholders that the requirements
-describe a solution that justifies the investment.
-
-**Key difference from verification (4.3):**
-- 4.3 checks the *quality* of requirements (completeness, consistency, testability)
-- 5.5 obtains stakeholders' *agreement* on the *content* of the requirements
-
-Requirements that passed 4.3 are verified. After 5.5, they are approved.
-
-**Approval can be formal or informal:**
-- Predictive: formal, at the end of the phase, with a signature or explicit confirmation
-- Agile: informal, before each sprint, the Product Owner approves the backlog
+Читай этот файл когда:
+- BA готовит пакет требований к согласованию со стейкхолдерами
+- Нужно понять кто имеет право подписи, а кто только consulted
+- Стейкхолдер отклонил требование или выставил условное одобрение
+- Нужно зафиксировать official baseline перед передачей в разработку
+- Возник конфликт между стейкхолдерами при согласовании
 
 ---
 
-## Stakeholder roles in the approval process
+## Природа задачи 5.5
 
-### RACI model in the context of 5.5
+5.5 — **финальная точка жизненного цикла требований** перед передачей в разработку.
+Цель: получить официальное согласие уполномоченных стейкхолдеров на то, что требования
+описывают решение, которое оправдывает инвестиции.
 
-| Role | RACI | What this means |
+**Ключевое отличие от верификации (4.3):**
+- 4.3 проверяет *качество* требований (полнота, непротиворечивость, тестируемость)
+- 5.5 получает *согласие* стейкхолдеров на *содержание* требований
+
+Требования, прошедшие 4.3 = верифицированные. После 5.5 = одобренные.
+
+**Одобрение может быть формальным или неформальным:**
+- Predictive: формальное, в конце фазы, с подписью или явным подтверждением
+- Agile: неформальное, перед каждым спринтом, Product Owner одобряет backlog
+
+---
+
+## Роли стейкхолдеров в процессе одобрения
+
+### RACI-модель в контексте 5.5
+
+| Роль | RACI | Что это значит |
 |------|------|---------------|
-| Sponsor | **A** (Accountable) | Bears responsibility for the decision, has veto power |
-| Product Owner / Customer | **A** or **R** | Approves product requirements |
-| Business expert | **R** (Responsible) | Actively participates in the review |
-| End user | **C** (Consulted) | Opinion is taken into account but does not block |
-| Developer / Architect | **C** | Confirms feasibility |
-| Tester | **C** | Confirms testability |
-| Regulator | **C** or **A** | A only for regulatory requirements |
-| Project manager | **I** (Informed) | Receives information for planning |
-| Operational support | **C** | Confirms supportability |
+| Спонсор | **A** (Accountable) | Несёт ответственность за решение, право вето |
+| Product Owner / Клиент | **A** или **R** | Одобряет требования к продукту |
+| Бизнес-эксперт | **R** (Responsible) | Активно участвует в рассмотрении |
+| Конечный пользователь | **C** (Consulted) | Мнение учитывается, но не блокирует |
+| Разработчик / Архитектор | **C** | Подтверждает реализуемость |
+| Тестировщик | **C** | Подтверждает тестируемость |
+| Регулятор | **C** или **A** | A только при регуляторных требованиях |
+| Руководитель проекта | **I** (Informed) | Получает информацию для плана |
+| Операционная поддержка | **C** | Подтверждает поддерживаемость |
 
-**Rule:** Rejected from C (Consulted) is input for risk assessment, not a blocker.
-Rejected from A (Accountable) blocks the baseline.
+**Правило:** Rejected от C (Consulted) — это input для risk assessment, не блокировщик.
+Rejected от A (Accountable) — блокирует baseline.
 
-### Where role information comes from
-Stakeholder roles are defined in task 3.2 (Governance).
-The stakeholder registry from 4.2 contains the current list of participants.
-
----
-
-## Unit of approval: package with exceptions
-
-### How a package is formed
-A package is a group of logically related requirements: a feature, a component, an epic, or
-all requirements for a phase (in Predictive).
-
-### Exceptions for individual requirements
-If a stakeholder agrees with the package as a whole but disagrees with specific req_ids,
-they vote for the package with exceptions. Exceptions are recorded in `record_approval_decision`.
-
-**Example:** A package of 20 requirements. The stakeholder approves 18, marks
-REQ-05 as Conditional (wording needs clarification), and REQ-17 as Rejected (out of scope).
-
-### Package status
-A package is considered **approved** when all requirements in it have a status of `approved`
-or `conditional_approved` with closed conditions.
+### Откуда брать информацию о ролях
+Роли стейкхолдеров определяются в задаче 3.2 (Governance).
+Реестр стейкхолдеров из 4.2 содержит актуальный список участников.
 
 ---
 
-## Stakeholder decision statuses
+## Единица утверждения: пакет с исключениями
+
+### Как формируется пакет
+Пакет = группа требований, логически связанных: фича, компонент, epic, или
+все требования фазы (в Predictive).
+
+### Исключения по отдельным требованиям
+Если стейкхолдер согласен с пакетом в целом, но не согласен с отдельными req_id —
+он голосует за пакет с исключениями. Исключения фиксируются в `record_approval_decision`.
+
+**Пример:** Пакет из 20 требований. Стейкхолдер одобряет 18, ставит Conditional на
+REQ-05 (нужно уточнить формулировку) и Rejected на REQ-17 (за пределами скоупа).
+
+### Статус пакета
+Пакет считается **approved** когда все требования в нём имеют статус `approved`
+или `conditional_approved` с закрытыми условиями.
+
+---
+
+## Статусы решений стейкхолдера
 
 ### Approved
-The stakeholder agrees with the requirement without reservations.
-The requirement is updated in the 5.1 repository: status `approved`.
+Стейкхолдер согласен с требованием без оговорок.
+Требование обновляется в репозитории 5.1: статус `approved`.
 
 ### Conditional
-The stakeholder approves subject to a condition being met. Required fields:
-- `condition_text` — exactly what needs to be done
-- `condition_deadline` — by when
-- `condition_owner` — who is responsible for fulfilling it
+Стейкхолдер одобряет при выполнении условия. Обязательные поля:
+- `condition_text` — что именно нужно сделать
+- `condition_deadline` — до когда
+- `condition_owner` — кто отвечает за выполнение
 
-The requirement stays in `pending_approval` status until the condition is closed.
-When the condition is closed (via `close_approval_condition`) → it moves to `approved`.
+Требование остаётся в статусе `pending_approval` до закрытия условия.
+При закрытии условия (через `close_approval_condition`) → переходит в `approved`.
 
-**Typical conditions:**
-- "Clarify the wording of the acceptance criterion"
-- "Get sign-off from the legal department"
-- "Get confirmation of feasibility from the tech lead"
-- "Add an NFR for performance"
+**Типичные условия:**
+- «Уточнить формулировку критерия приёмки»
+- «Согласовать с юридическим отделом»
+- «Получить подтверждение от техлида о реализуемости»
+- «Добавить NFT-требование к производительности»
 
 ### Rejected
-The stakeholder disagrees. The `rejection_reason` field is required.
-The requirement does NOT move to `approved`.
+Стейкхолдер не согласен. Обязательное поле `rejection_reason`.
+Требование НЕ переходит в `approved`.
 
-**Important:** Rejected from a Consulted stakeholder is not a baseline blocker.
-The BA documents the disagreement as a managed risk.
+**Важно:** Rejected от Consulted-стейкхолдера ≠ блокировщик baseline.
+BA документирует несогласие как управляемый риск.
 
 ### Abstained
-The stakeholder abstains. The reason is recorded.
-Abstained does not block approval, but it is recorded in the audit trail.
+Стейкхолдер воздерживается. Причина фиксируется.
+Abstained не блокирует одобрение, но фиксируется в audit trail.
 
 ---
 
-## Managing conflicts during 5.5
+## Управление конфликтами на этапе 5.5
 
-### Types of conflicts
-1. **Interpretation disagreement** — stakeholders read the requirement differently
-2. **Priority conflict** — a stakeholder wants to change the priority (from 5.3)
-3. **Scope conflict** — a stakeholder considers the requirement unnecessary or insufficient
-4. **CR conflict** — the requirement is already affected by an open CR from 5.4
+### Типы конфликтов
+1. **Противоречие интерпретаций** — стейкхолдеры читают требование по-разному
+2. **Конфликт приоритетов** — стейкхолдер хочет изменить приоритет (из 5.3)
+3. **Конфликт скоупа** — стейкхолдер считает требование лишним или недостаточным
+4. **Конфликт с CR** — требование уже затронуто открытым CR из 5.4
 
-### How the system analyzes a conflict
-When `record_approval_decision` is called with `rejected`, the system automatically checks:
-- The requirement's priority from 5.3 (Must / Should / Could / Won't + WSJF score)
-- Open or recent CRs from 5.4 affecting this requirement
-- Other decisions on the same requirement (are there other rejections?)
-- Status from 5.2 (version, change history, stability)
+### Как система анализирует конфликт
+При `record_approval_decision` с `rejected` система автоматически проверяет:
+- Приоритет требования из 5.3 (Must / Should / Could / Won't + WSJF-скор)
+- Открытые или недавние CR из 5.4, затрагивающие это требование
+- Другие решения по тому же требованию (есть ли другие rejection-ы?)
+- Статус из 5.2 (версия, история изменений, stability)
 
-**Output:** "Smith rejected REQ-12. This requirement has Must priority (5.3),
-is affected by CR-003 (under_change). It is recommended to clarify the CR scope before
-re-submitting for approval."
+**Вывод:** «Иванов отклонил REQ-12. Это требование имеет приоритет Must (5.3),
+затронуто CR-003 (under_change). Рекомендуется уточнить скоуп CR перед повторным
+согласованием.»
 
-The BA receives the facts — the decision remains with the BA.
+BA получает факты — решение остаётся за BA.
 
 ---
 
-## Predictive vs Agile: process differences
+## Predictive vs Agile: различия в процессе
 
 ### Predictive (approach: predictive)
-- A large package is approved at the end of the phase (Requirements Baseline)
-- Formal confirmation: signature, email record, meeting minutes
-- After the Baseline, changes go only through CR (5.4)
-- `create_requirements_baseline` creates an official snapshot with the full list
+- Утверждается большой пакет в конце фазы (Requirements Baseline)
+- Формальное подтверждение: подпись, email-протокол, meeting minutes
+- После Baseline — изменения только через CR (5.4)
+- `create_requirements_baseline` создаёт официальный snapshot с полным списком
 
 ### Agile (approach: agile)
-- A subset of requirements is approved before each sprint
-- The Product Owner approving the Sprint Backlog is itself the approval
-- Less formal, but an audit trail is still needed
-- Baseline = Sprint Goal + the sprint's approved backlog
-- Changes happen without a CR process — they just become the next sprint
+- Утверждается subset требований перед каждым спринтом
+- Product Owner одобряет Sprint Backlog — это и есть approval
+- Менее формально, но audit trail всё равно нужен
+- Baseline = Sprint Goal + одобренный backlog спринта
+- Изменения без CR-процесса — просто следующий спринт
 
-### What changes in the tools
-- `prepare_approval_package`: different package format and recommendations
-- `create_requirements_baseline`: Predictive — full snapshot, Agile — sprint snapshot
-- Number of participants: Predictive — broad group, Agile — Product Owner + team
+### Что меняется в инструментах
+- `prepare_approval_package`: разный формат пакета и рекомендации
+- `create_requirements_baseline`: Predictive — полный snapshot, Agile — sprint snapshot
+- Число участников: Predictive — широкий круг, Agile — Product Owner + team
 
 ---
 
-## Baseline: history and versioning
+## Baseline: история и версионирование
 
-### What a Requirements Baseline is
-A baseline is the official, agreed-upon version of a set of requirements at a point in time.
-Once created, the baseline becomes a reference point. Changes are tracked relative to it.
+### Что такое Requirements Baseline
+Baseline = официальная, согласованная версия набора требований на момент времени.
+После создания baseline — это точка отсчёта. Изменения фиксируются относительно неё.
 
-### Baseline history
-Multiple baselines per project is normal practice:
-- `v1.0` — baseline after the Requirements phase
-- `v1.1` — baseline after the first CR package
-- `v2.0` — baseline for the second version of the product
+### История baseline-ов
+Несколько baseline-ов на проект — нормальная практика:
+- `v1.0` — baseline после фазы Requirements
+- `v1.1` — baseline после первого CR-пакета
+- `v2.0` — baseline для второй версии продукта
 
 Stored in `{project}_approval_history.json`.
 
-### What goes into the baseline snapshot
-- List of all approved requirements with versions (from 5.1)
-- List of stakeholders who made decisions, with dates
-- Conditional approvals with their conditions (closed and open)
-- References to CR Decision Records (from 5.4) included in the baseline
+### Что входит в baseline snapshot
+- Список всех approved требований с версиями (из 5.1)
+- Список стейкхолдеров, принявших решение, с датами
+- Conditional-одобрения с условиями (закрытые и открытые)
+- Ссылки на CR Decision Records (из 5.4), включённые в baseline
 
-### When to create a baseline
-- Predictive: end of the Requirements phase, before Design/Development begins
-- Agile: before each sprint (Sprint Backlog Baseline)
-- After a large CR package (if many requirements changed)
+### Когда создавать baseline
+- Predictive: конец Requirements-фазы, перед началом Design/Development
+- Agile: перед каждым спринтом (Sprint Backlog Baseline)
+- После крупного CR-пакета (если много требований изменилось)
 
 ---
 
-## Tracking approval status
+## Отслеживание статуса одобрения
 
-### What `check_approval_status` shows
+### Что показывает `check_approval_status`
 
-**Baseline readiness dashboard:**
+**Дашборд готовности к baseline:**
 
-| Metric | Good | Needs attention |
+| Метрика | Хорошо | Требует внимания |
 |---------|--------|-----------------|
 | % approved | > 90% | < 70% |
-| Open conditionals | 0 | > 0 (overdue) |
-| Rejected without risk assessment | 0 | > 0 |
-| Stakeholders without a response | 0 | > 0 (overdue) |
+| Открытые conditional | 0 | > 0 (с просрочкой) |
+| Rejected без risk assessment | 0 | > 0 |
+| Стейкхолдеры без ответа | 0 | > 0 (просрочка) |
 
-**System verdict:**
-- ✅ "Baseline can be created" — everything approved, conditions closed
-- 🟡 "Open conditions exist" — baseline is possible with explicit risk assessment
-- 🔴 "Blockers exist" — rejection from an Accountable stakeholder
+**Вердикт системы:**
+- ✅ «Можно создавать baseline» — все approved, условия закрыты
+- 🟡 «Есть открытые условия» — baseline возможен с явным risk assessment
+- 🔴 «Есть блокеры» — rejected от Accountable-стейкхолдера
 
 ---
 
-## Artifacts of task 5.5
+## Артефакты задачи 5.5
 
-### Approval Package (input for stakeholders)
-Generated by `prepare_approval_package`. Contains:
-- The list of requirements with descriptions and acceptance criteria
-- The traceability matrix (links between requirements)
-- Priorities from 5.3
-- Changes since the last baseline (CR Decision Records from 5.4)
+### Approval Package (вход для стейкхолдеров)
+Генерируется `prepare_approval_package`. Содержит:
+- Перечень требований с описаниями и критериями приёмки
+- Матрицу трассировки (связи между требованиями)
+- Приоритеты из 5.3
+- Изменения с момента последнего baseline (CR Decision Records из 5.4)
 
-Tailored to the audience:
-- Business sponsor: business requirements and acceptance criteria in business language
-- Developer: functional + non-functional requirements
-- Regulator: compliance requirements with traceability to regulations
+Адаптируется под аудиторию:
+- Бизнес-заказчик: бизнес-требования и критерии приёмки на языке бизнеса
+- Разработчик: функциональные + нефункциональные требования
+- Регулятор: compliance-требования с трассировкой к нормативам
 
 ### Approval Record
-Generated by `create_requirements_baseline`. The official document:
-- Baseline ID and version
-- Creation date and approval method (approach)
-- List of approved requirements
-- Each stakeholder's decision (with date)
-- Open conditionals and risk assessment for rejected requirements
+Генерируется `create_requirements_baseline`. Официальный документ:
+- Baseline ID и версия
+- Дата создания и метод одобрения (approach)
+- Список approved требований
+- Решения каждого стейкхолдера (с датой)
+- Открытые conditional и risk assessment по rejected требованиям
 
-Passed on to 4.4 (communicate results) and Chapter 6 (input for development).
+Передаётся в 4.4 (коммуникация результатов) и Главу 6 (вход для разработки).
 
 ---
 
-## Common BA mistakes during approval
+## Типичные ошибки BA при согласовании
 
-**1. Requesting approval without prior consultation**
-A stakeholder learns about a requirement for the first time at the approval session → risk of rejection.
-Rule: first 4.4 (communicate and prepare), then 5.5 (formal approval).
+**1. Запрос одобрения без предварительной консультации**
+Стейкхолдер узнаёт о требовании впервые на сессии одобрения → риск rejection.
+Правило: сначала 4.4 (коммуникация и подготовка), потом 5.5 (формальное одобрение).
 
-**2. Ignoring Conditional status**
-The BA records a Conditional and forgets to close the condition.
-`check_approval_status` warns about overdue conditions.
+**2. Игнорирование Conditional-статуса**
+BA фиксирует Conditional и забывает закрыть условие.
+`check_approval_status` предупреждает о просроченных условиях.
 
-**3. Approval without an audit trail**
-"Smith said it was OK at the meeting" — three months later, nobody remembers.
-`record_approval_decision` is mandatory even for verbal approvals.
+**3. Одобрение без audit trail**
+«Иванов сказал ок на встрече» — через 3 месяца никто не помнит.
+`record_approval_decision` обязателен даже для устных одобрений.
 
-**4. Baseline with pending requirements**
-The BA creates a baseline while some requirements are still pending.
-`create_requirements_baseline` warns and lists the unresolved items.
+**4. Baseline с pending-требованиями**
+BA создаёт baseline когда часть требований ещё pending.
+`create_requirements_baseline` предупреждает и перечисляет незакрытые позиции.
 
-**5. Mixing up A and C roles**
-The BA grants blocking power to Consulted stakeholders.
-Rejected from C = input for risk assessment, not a blocker.
+**5. Смешивание ролей A и C**
+BA даёт право блокировать Consulted-стейкхолдерам.
+Rejected от C = input для risk assessment, не блокировщик.

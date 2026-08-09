@@ -1,52 +1,52 @@
 ---
 name: requirements_architecture
 description: >
-  Skill for BABOK 7.4 — Define Requirements Architecture. Use this skill when
-  the BA wants to build a coherent picture out of scattered requirements: define
-  architecture layers, set up views (viewpoints), and link requirements to system components.
-  Triggers: "requirements architecture", "requirements layers",
-  "requirements structure", "views", "how to organize requirements".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 7.4 — Определение архитектуры требований. Используй этот скилл когда
+  BA хочет выстроить целостную картину из разрозненных требований: определить слои
+  архитектуры, задать представления (views), связать требования с компонентами системы.
+  Триггеры: «архитектура требований», «requirements architecture», «слои требований»,
+  «структура требований», «views», «как организовать требования», «requirements structure».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL.md — BABOK 7.4 Define Requirements Architecture
 
-## What this task is about
+## Суть задачи
 
-**Requirements architecture** answers the question: **"How do our requirements form a coherent picture?"**
+**Архитектура требований** отвечает на вопрос: **«Как наши требования образуют целостную картину?»**
 
-Place in the chain:
-- **7.1 Specify** → Create requirements (artifacts: BP, US, FR, BR, DD, ERD)
-- **7.2 Verify** → Check the quality of the wording
-- **7.3 Validate** → Check the business value
-- **7.4 Architecture** → **Organize requirements into a connected structure** ← we are here
-- **7.5 Design Options** → Define solution options
+Место в цепочке:
+- **7.1 Specify** → Создаём требования (артефакты: BP, US, FR, BR, DD, ERD)
+- **7.2 Verify** → Проверяем качество формулировок
+- **7.3 Validate** → Проверяем ценность для бизнеса
+- **7.4 Architecture** → **Организуем требования в связную структуру** ← мы здесь
+- **7.5 Design Options** → Определяем варианты решения
 
-**Key concepts:**
-- **Viewpoint** — the perspective from which a stakeholder looks at the system
-- **View** — a subset of requirements for a specific viewpoint
+**Ключевые понятия:**
+- **Viewpoint (точка зрения)** — перспектива, с которой стейкхолдер смотрит на систему
+- **View (представление)** — подмножество req для конкретного viewpoint
 
-Different stakeholders see the system differently: the business sponsor sees it through processes, the developer through functions,
-the data architect through data models. 7.4 organizes requirements so each stakeholder sees "their own" part.
-
----
-
-## Automatic mapping by artifact type
-
-The platform automatically distributes requirements across viewpoints:
-
-| Artifact type | Viewpoint |
-|---------------|-----------|
-| `business_process` (BP) | Business Processes |
-| `data_dictionary` (DD), `erd` (ERD) | Data and Information |
-| `user_story` (US), `use_case` (UC) | Users and Interaction |
-| `functional` (FR), `non_functional` (NFR) | Functionality |
-| `business_rule` (BR) | Business Rules |
-| `business` (BG nodes) | Not included in viewpoints |
+Разные стейкхолдеры видят систему по-разному: заказчик — через процессы, разработчик — через функции,
+архитектор данных — через модели данных. 7.4 организует требования так, чтобы каждый видел «своё».
 
 ---
 
-## Pipeline (steps in order)
+## Автоматический маппинг по типам артефактов
+
+Платформа автоматически распределяет req по точкам зрения:
+
+| Тип артефакта | Точка зрения |
+|---------------|-------------|
+| `business_process` (BP) | Бизнес-процессы |
+| `data_dictionary` (DD), `erd` (ERD) | Данные и информация |
+| `user_story` (US), `use_case` (UC) | Пользователи и взаимодействие |
+| `functional` (FR), `non_functional` (NFR) | Функциональность |
+| `business_rule` (BR) | Бизнес-правила |
+| `business` (BG-узлы) | Не включается в viewpoints |
+
+---
+
+## Pipeline (шаги по порядку)
 
 ```
 1. analyze_requirements_architecture  ← automatically builds viewpoints from the 5.1 repository
@@ -58,11 +58,11 @@ The platform automatically distributes requirements across viewpoints:
 
 ---
 
-## MCP tools
+## Инструменты MCP
 
 ### 1. `analyze_requirements_architecture`
 
-**When:** at the start of work on the architecture — builds the full picture from the repository.
+**Когда:** в начале работы над архитектурой — строит полную картину из репозитория.
 
 ```
 analyze_requirements_architecture(project_id = "crm_upgrade")
@@ -75,33 +75,33 @@ analyze_requirements_architecture(project_id = "crm_upgrade")
 - Shows custom viewpoints if already added
 - Takes into account business_context from 7.3 (BG list)
 
-**What it returns:**
-- Summary table: viewpoint → requirement count → list of IDs
-- Coverage matrix: which BGs are covered by which viewpoints
-- Custom viewpoints (if any)
-- A hint on which gaps are worth checking
+**Что возвращает:**
+- Сводная таблица: viewpoint → количество req → список ID
+- Coverage matrix: какие BG покрыты какими точками зрения
+- Кастомные viewpoints (если есть)
+- Подсказка: какие разрывы стоит проверить
 
 ---
 
 ### 2. `add_custom_viewpoint`
 
-**When:** the project needs an additional viewpoint (regulatory requirements, security, migration).
+**Когда:** проект требует дополнительной точки зрения (регуляторные требования, безопасность, миграция).
 
 ```
 add_custom_viewpoint(
   project_id = "crm_upgrade",
   viewpoint_id = "security",
-  label = "Security and Access",
-  description = "Requirements for authentication, authorization, data encryption",
+  label = "Безопасность и доступ",
+  description = "Требования к аутентификации, авторизации, шифрованию данных",
   req_ids_json = '["NFR-003", "NFR-007", "FR-015", "BR-002"]',
-  stakeholder_roles = "Security architect, CISO"
+  stakeholder_roles = "Архитектор безопасности, CISO"
 )
 ```
 
 **Important:** custom viewpoints are defined via `req_ids`, not via types.
 "Security" is a cross-cutting slice over FR/NFR/BR — only the BA knows exactly which requirements belong to it.
 
-**Validation:** the tool checks that all passed req_ids exist in the 5.1 repository.
+**Валидация:** инструмент проверяет что все переданные req_ids существуют в репозитории 5.1.
 
 ---
 
@@ -166,7 +166,7 @@ can see *why* the interests are touched, in your own words.
 
 ### 4. `check_architecture_gaps`
 
-**When:** after `analyze_requirements_architecture` — to find weak spots.
+**Когда:** после `analyze_requirements_architecture` — найти слабые места.
 
 ```
 check_architecture_gaps(project_id = "crm_upgrade")
@@ -202,21 +202,21 @@ on that requirement (5.5). A shared word with a requirement title is a fourth so
 kept because it is how this check used to work — but it is a coincidence, not a fact, so
 it now yields a warning that names its own weakness instead of a critical verdict.
 
-⚠️ **Interpretation:** level 2 depends on how complete the links in 5.1 are.
-If the BA hasn't added traceability via 5.1, there will be many false positives. Keep this in mind.
+⚠️ **Интерпретация:** уровень 2 зависит от полноты связей в 5.1.
+Если BA не добавлял трассировку через 5.1 — много ложных срабатываний. Учитывай это.
 
 ---
 
 ### 5. `save_architecture_snapshot`
 
-**When:** the architecture is ready — before handing it off to 4.4 (communication) and 7.5 (design).
+**Когда:** архитектура готова — перед передачей в 4.4 (коммуникация) и 7.5 (дизайн).
 
 ```
 save_architecture_snapshot(
   project_id = "crm_upgrade",
   version = "v1.0",
-  notes = "First version of the requirements architecture. 5 viewpoints covered, 2 critical gaps resolved.",
-  author = "A. Ivanov"
+  notes = "Первая версия архитектуры требований. Покрыто 5 viewpoints, 2 critical gaps устранены.",
+  author = "Иванов А."
 )
 ```
 
@@ -233,11 +233,11 @@ than a row of zeros.
 
 ---
 
-## Typical workflow
+## Типичный рабочий сценарий
 
-### Getting started
-1. Make sure 7.1 has created artifacts of various types (BP, US, FR, etc.)
-2. Call `analyze_requirements_architecture` — get the full picture
+### Начало работы
+1. Убедись что в 7.1 созданы артефакты разных типов (BP, US, FR и т.д.)
+2. Вызови `analyze_requirements_architecture` — получи полную картину
 
 ### If the project is standard
 3. `declare_stakeholder_interest` — record whose interests each requirement touches
@@ -259,9 +259,9 @@ than a row of zeros.
 
 ---
 
-## Files created by task 7.4
+## Файлы, которые создаёт задача 7.4
 
-| File | Contains |
+| Файл | Содержит |
 |------|----------|
 | `{project}_architecture.json` | Viewpoints, views, gaps, snapshot history |
 | `{project}_traceability_repo.json` | The `stakeholders` field on requirement nodes — declared interests only (7.4 writes this one field; everything else in the file belongs to chapter 5) |
@@ -269,7 +269,7 @@ than a row of zeros.
 
 ---
 
-## Links to other tasks
+## Связи с другими задачами
 
 | From | What comes in |
 |------|----------------|
@@ -279,14 +279,14 @@ than a row of zeros.
 | 7.1 | Artifact types — automatic mapping to viewpoints; the `owner` field — evidence of interest |
 | 7.3 | business_context (BG) — coverage matrix |
 
-| To | What we hand off |
-|------|-------------------|
-| 4.4 | Architecture Document — artifact for stakeholder communication |
-| 7.5 | Architecture Document — input artifact for Design Options |
+| Куда | Что передаём |
+|------|-------------|
+| 4.4 | Architecture Document — артефакт для коммуникации со стейкхолдерами |
+| 7.5 | Architecture Document — входной артефакт для Design Options |
 
 ---
 
-## Detailed methodology
+## Детальная методология
 
-- Viewpoints, type mapping, gaps, frameworks, problem patterns →
+- Viewpoints, маппинг типов, разрывы, фреймворки, паттерны проблем →
   `references/architecture_guide.md`

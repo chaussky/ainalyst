@@ -46,7 +46,7 @@ ARCHITECTURE_FILENAME = "architecture.json"
 RISKS_FILENAME = "risks.json"
 REPO_FILENAME = "traceability_repo.json"
 
-# Valid values (ADR-045, ADR-042)
+# Допустимые значения (ADR-045, ADR-042)
 VALID_RECOMMENDATION_TYPES = {
     "recommend_option",
     "recommend_parallel",
@@ -65,14 +65,14 @@ VALID_RISK_LEVELS = {"Low", "Medium", "High", "Critical"}
 VALID_PROBABILITIES = {"Low", "Medium", "High"}
 VALID_IMPACTS = {"Low", "Medium", "High"}
 
-# Mapping of qualitative assessments to numbers (ADR-043)
+# Маппинг качественных оценок в числа (ADR-043)
 MAGNITUDE_MAP = {"Low": 1, "Medium": 2, "High": 3}
 CONFIDENCE_MAP = {"Low": 0.5, "Medium": 1.0, "High": 1.5}
 RISK_LEVEL_MAP = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
 
 
 # ---------------------------------------------------------------------------
-# Utilities — paths and file loading
+# Утилиты — пути и загрузка файлов
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -156,11 +156,11 @@ def _load_risks(project_id: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Math — Value Score (ADR-043)
+# Математика — Value Score (ADR-043)
 # ---------------------------------------------------------------------------
 
 def _calc_benefits_score(benefits: list) -> float:
-    """Benefits_Score = weighted average (magnitude × confidence) across all benefits."""
+    """Benefits_Score = среднее взвешенное (magnitude × confidence) по всем выгодам."""
     if not benefits:
         return 0.0
     scores = []
@@ -172,7 +172,7 @@ def _calc_benefits_score(benefits: list) -> float:
 
 
 def _calc_cost_score(costs: dict) -> float:
-    """Cost_Score = average magnitude across all cost_items of all components."""
+    """Cost_Score = среднее magnitude по всем cost_items всех компонентов."""
     items = []
     for comp in costs.get("components", []):
         for ci in comp.get("cost_items", []):
@@ -185,8 +185,8 @@ def _calc_cost_score(costs: dict) -> float:
 
 def _calc_alignment_score(option: dict, context: Optional[dict]) -> float:
     """
-    Alignment_Score = the share of business goals from 7.3 supported by
-    the option's improvement_opportunities. Range: 0.0–1.0
+    Alignment_Score = доля бизнес-целей из 7.3, поддерживаемых
+    improvement_opportunities варианта. Диапазон: 0.0–1.0
     """
     if not context:
         return 0.0
@@ -200,7 +200,7 @@ def _calc_alignment_score(option: dict, context: Optional[dict]) -> float:
     matched = 0
     for goal in goals:
         goal_title = goal.get("title", "").lower()
-        # Simple heuristic: at least one word from the goal appears in opportunities
+        # Простая эвристика: хотя бы одно слово из goal встречается в opportunities
         words = [w for w in goal_title.split() if len(w) > 3]
         if any(w in opp_descriptions for w in words):
             matched += 1
@@ -270,7 +270,7 @@ def _calc_risk_penalty(risks: list) -> float:
 
 def _calc_value_score(assessment: dict, option: dict, context: Optional[dict]) -> dict:
     """
-    Computes the Value Score and breakdown.
+    Вычисляет Value Score и breakdown.
     Formula: (Benefits×2.0) + (Alignment×1.5) - (Cost×1.5) - (Risk×1.0)
     """
     benefits_score = _calc_benefits_score(assessment.get("benefits", []))
@@ -303,12 +303,12 @@ def _calc_value_score(assessment: dict, option: dict, context: Optional[dict]) -
 
 def _score_label(score: float) -> str:
     if score >= 8.0:
-        return "✅ Strong recommendation"
+        return "✅ Сильная рекомендация"
     if score >= 5.0:
-        return "🟡 Conditional recommendation"
+        return "🟡 Условная рекомендация"
     if score >= 2.0:
-        return "⚠️ Needs review"
-    return "❌ Not recommended"
+        return "⚠️ Требует пересмотра"
+    return "❌ Не рекомендуется"
 
 
 # ---------------------------------------------------------------------------
@@ -330,151 +330,151 @@ def add_value_assessment(
     the assessment structure contains benefits, costs, risks.
     Idempotent by option_id: calling again updates the assessment.
 
-    Reads {project}_risks.json if it exists (from task 6.3) — graceful degradation.
-    Called separately for each option from 7.5.
+    Читает {project}_risks.json если существует (из задачи 6.3) — graceful degradation.
+    Вызывается отдельно для каждого варианта из 7.5.
 
     Args:
-        project_id:    Project identifier.
-        option_id:     Design option ID (from create_design_option in 7.5). For example: OPT-001.
-        benefits_json: JSON list of the option's benefits.
-                       Each item: {
+        project_id:    Идентификатор проекта.
+        option_id:     ID варианта дизайна (из create_design_option в 7.5). Например: OPT-001.
+        benefits_json: JSON-список выгод варианта.
+                       Каждый элемент: {
                          "type": "financial|operational|strategic|regulatory|user_experience",
                          "description": "...",
                          "magnitude": "Low|Medium|High",
                          "tangibility": "tangible|intangible",
                          "confidence": "Low|Medium|High"
                        }
-                       Example: '[{"type": "operational", "description": "Reduce processing time",
+                       Пример: '[{"type": "operational", "description": "Снижение времени обработки",
                                   "magnitude": "High", "tangibility": "tangible", "confidence": "High"}]'
-        costs_json:    JSON object of the option's costs.
-                       Format: {
+        costs_json:    JSON-объект затрат варианта.
+                       Формат: {
                          "components": [
                            {
-                             "component": "Component name",
+                             "component": "Название компонента",
                              "cost_items": [
                                {"category": "development|acquisition|maintenance|operations|resources|opportunity",
                                 "description": "...", "magnitude": "Low|Medium|High"}
                              ]
                            }
                          ],
-                         "opportunity_cost": "Description of the opportunity cost (optional)"
+                         "opportunity_cost": "Описание альтернативных издержек (опционально)"
                        }
-        risks_json:    JSON list of risks (optional — if there is no file from 6.3).
-                       Each item: {
+        risks_json:    JSON-список рисков (опционально — если нет файла из 6.3).
+                       Каждый элемент: {
                          "risk_id": "RSK-001",
                          "description": "...",
                          "probability": "Low|Medium|High",
                          "impact": "Low|Medium|High",
                          "risk_level": "Low|Medium|High|Critical"
                        }
-                       If '[]' is passed and {project}_risks.json (6.3) exists —
-                       risks will be read from there.
-        notes:         Additional notes (optional).
+                       Если передан '[]' и существует {project}_risks.json (6.3) —
+                       риски будут прочитаны оттуда.
+        notes:         Дополнительные заметки (необязательно).
 
     Returns:
-        Confirmation with the Value Score and breakdown.
+        Подтверждение с Value Score и breakdown.
     """
     logger.info(f"add_value_assessment: project_id='{project_id}', option_id='{option_id}'")
 
     if not option_id.strip():
-        return "❌ option_id cannot be empty. Use the format: OPT-001, OPT-002."
+        return "❌ option_id не может быть пустым. Используй формат: OPT-001, OPT-002."
 
-    # Parse benefits
+    # Парсинг benefits
     try:
         benefits = json.loads(benefits_json)
         if not isinstance(benefits, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
         if not benefits:
-            raise ValueError("The benefits list must not be empty")
+            raise ValueError("Список выгод не должен быть пустым")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse benefits_json: {e}\n\n"
-            f"Expected a non-empty JSON list. Example:\n"
+            f"❌ Ошибка парсинга benefits_json: {e}\n\n"
+            f"Ожидается непустой JSON-список. Пример:\n"
             f'\'[{{"type": "operational", "description": "...", '
             f'"magnitude": "High", "tangibility": "tangible", "confidence": "High"}}]\''
         )
 
-    # Validate benefit types
+    # Валидация типов выгод
     invalid_types = [
         b.get("type", "") for b in benefits
         if isinstance(b, dict) and b.get("type", "") not in VALID_BENEFIT_TYPES
     ]
     if invalid_types:
         return (
-            f"❌ Invalid benefit types: {invalid_types}\n\n"
-            f"Valid types: {', '.join(sorted(VALID_BENEFIT_TYPES))}"
+            f"❌ Недопустимые типы выгод: {invalid_types}\n\n"
+            f"Допустимые типы: {', '.join(sorted(VALID_BENEFIT_TYPES))}"
         )
 
-    # Validate magnitude/confidence in benefits
+    # Валидация magnitude/confidence в benefits
     for b in benefits:
         if not isinstance(b, dict):
             continue
         if b.get("magnitude", "Medium") not in VALID_MAGNITUDES:
             return (
-                f"❌ Invalid magnitude in benefits: '{b.get('magnitude')}'.\n"
-                f"Valid values: {', '.join(VALID_MAGNITUDES)}"
+                f"❌ Недопустимый magnitude в benefits: '{b.get('magnitude')}'.\n"
+                f"Допустимые значения: {', '.join(VALID_MAGNITUDES)}"
             )
         if b.get("confidence", "Medium") not in VALID_CONFIDENCES:
             return (
-                f"❌ Invalid confidence in benefits: '{b.get('confidence')}'.\n"
-                f"Valid values: {', '.join(VALID_CONFIDENCES)}"
+                f"❌ Недопустимый confidence в benefits: '{b.get('confidence')}'.\n"
+                f"Допустимые значения: {', '.join(VALID_CONFIDENCES)}"
             )
 
-    # Parse costs
+    # Парсинг costs
     try:
         costs = json.loads(costs_json)
         if not isinstance(costs, dict):
-            raise ValueError("Expected an object (dict)")
+            raise ValueError("Ожидается объект (dict)")
         if "components" not in costs:
-            raise ValueError("The 'components' field is required")
+            raise ValueError("Поле 'components' обязательно")
         if not isinstance(costs["components"], list):
-            raise ValueError("'components' must be a list")
+            raise ValueError("'components' должен быть списком")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse costs_json: {e}\n\n"
-            f'Expected an object with a components field. Example:\n'
+            f"❌ Ошибка парсинга costs_json: {e}\n\n"
+            f'Ожидается объект с полем components. Пример:\n'
             f'{{"components": [{{"component": "Backend", "cost_items": ['
             f'{{"category": "development", "description": "...", "magnitude": "High"}}]}}]}}'
         )
 
-    # Validate cost_items
+    # Валидация cost_items
     for comp in costs.get("components", []):
         for ci in comp.get("cost_items", []):
             if not isinstance(ci, dict):
                 continue
             if ci.get("category", "") not in VALID_COST_CATEGORIES:
                 return (
-                    f"❌ Invalid cost category: '{ci.get('category')}'.\n"
-                    f"Valid categories: {', '.join(sorted(VALID_COST_CATEGORIES))}"
+                    f"❌ Недопустимая категория затрат: '{ci.get('category')}'.\n"
+                    f"Допустимые категории: {', '.join(sorted(VALID_COST_CATEGORIES))}"
                 )
             if ci.get("magnitude", "Medium") not in VALID_MAGNITUDES:
                 return (
-                    f"❌ Invalid magnitude in costs: '{ci.get('magnitude')}'.\n"
-                    f"Valid values: {', '.join(VALID_MAGNITUDES)}"
+                    f"❌ Недопустимый magnitude в costs: '{ci.get('magnitude')}'.\n"
+                    f"Допустимые значения: {', '.join(VALID_MAGNITUDES)}"
                 )
 
-    # Parse risks
+    # Парсинг рисков
     try:
         risks_input = json.loads(risks_json) if risks_json.strip() else []
         if not isinstance(risks_input, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse risks_json: {e}\n\n"
-            f"Expected a JSON list. Pass '[]' to use risks from 6.3."
+            f"❌ Ошибка парсинга risks_json: {e}\n\n"
+            f"Ожидается JSON-список. Передай '[]' для использования рисков из 6.3."
         )
 
-    # Validate risk_level
+    # Валидация risk_level
     for r in risks_input:
         if not isinstance(r, dict):
             continue
         if r.get("risk_level", "Low") not in VALID_RISK_LEVELS:
             return (
-                f"❌ Invalid risk_level: '{r.get('risk_level')}'.\n"
-                f"Valid values: {', '.join(VALID_RISK_LEVELS)}"
+                f"❌ Недопустимый risk_level: '{r.get('risk_level')}'.\n"
+                f"Допустимые значения: {', '.join(VALID_RISK_LEVELS)}"
             )
 
-    # Graceful degradation: read risks from 6.3 if risks_input is empty
+    # Graceful degradation: читаем риски из 6.3 если risks_input пуст
     risks_source = "manual"
     risks = risks_input
     if not risks:
@@ -499,20 +499,20 @@ def add_value_assessment(
             risks = option_risks if isinstance(option_risks, list) else []
             risks_source = "6.3_file" if risks else "none"
 
-    # Load design_options to get the option data
+    # Загружаем design_options для получения данных варианта
     do_data = _load_design_options(project_id)
     option_meta = None
     if do_data:
         option_meta = next((o for o in do_data.get("options", []) if o["option_id"] == option_id), None)
 
     if option_meta is None:
-        # Graceful degradation: option not found, but don't block
+        # Graceful degradation: вариант не найден, но не блокируем
         option_meta = {"option_id": option_id, "improvement_opportunities": []}
 
-    # Load context for Alignment_Score
+    # Загружаем контекст для Alignment_Score
     context = _load_context(project_id)
 
-    # Build the assessment
+    # Формируем assessment
     assessment = {
         "option_id": option_id,
         "benefits": benefits,
@@ -523,37 +523,37 @@ def add_value_assessment(
         "assessed_at": str(date.today()),
     }
 
-    # Compute the Value Score
+    # Вычисляем Value Score
     score_data = _calc_value_score(assessment, option_meta, context)
     assessment["value_score"] = score_data["value_score"]
     assessment["score_breakdown"] = score_data["score_breakdown"]
 
-    # Save
+    # Сохраняем
     rec_data = _load_recommendation(project_id)
     is_update = option_id in rec_data.get("value_assessments", {})
     rec_data.setdefault("value_assessments", {})[option_id] = assessment
     _save_recommendation(rec_data)
 
-    action = "updated" if is_update else "added"
+    action = "обновлена" if is_update else "добавлена"
     score = score_data["value_score"]
     bd = score_data["score_breakdown"]
     label = _score_label(score)
 
     lines = [
-        f"✅ Value assessment **{action}** — option `{option_id}`",
+        f"✅ Оценка ценности **{action}** — вариант `{option_id}`",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Option | `{option_id}` |",
-        f"| Benefits | {len(benefits)} |",
-        f"| Cost components | {len(costs.get('components', []))} |",
-        f"| Risks | {len(risks)} ({risks_source}) |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Вариант | `{option_id}` |",
+        f"| Выгод | {len(benefits)} |",
+        f"| Компонентов затрат | {len(costs.get('components', []))} |",
+        f"| Рисков | {len(risks)} ({risks_source}) |",
         f"| **Value Score** | **{score}** — {label} |",
         "",
         "**Score Breakdown:**",
         "",
-        f"| Component | Value | Weight |",
-        f"|-----------|-------|--------|",
+        f"| Составляющая | Значение | Вес |",
+        f"|-------------|---------|-----|",
         f"| Benefits Score | {bd['benefits_score']} | ×2.0 = {round(bd['benefits_score']*2, 2)} |",
         f"| Alignment Score | {bd['alignment_score']} | ×1.5 = {round(bd['alignment_score']*1.5, 2)} |",
         f"| Cost Score | -{bd['cost_score']} | ×1.5 = -{round(bd['cost_score']*1.5, 2)} |",
@@ -564,15 +564,15 @@ def add_value_assessment(
 
     if not context:
         lines += [
-            "> ℹ️ **Alignment Score = 0** — business_context.json (7.3) not found.",
-            "> To compute Alignment accurately, create the business context in task 7.3.",
+            "> ℹ️ **Alignment Score = 0** — файл business_context.json (7.3) не найден.",
+            "> Для точного расчёта Alignment создай бизнес-контекст в задаче 7.3.",
             "",
         ]
 
     if risks_source == "none":
         lines += [
-            "> ℹ️ **No risks specified.** Risk Penalty = 0.",
-            "> It's recommended to add risks via the `risks_json` parameter or create a risks file in task 6.3.",
+            "> ℹ️ **Риски не указаны.** Risk Penalty = 0.",
+            "> Рекомендуется добавить риски через параметр `risks_json` или создать файл рисков в задаче 6.3.",
             "",
         ]
     elif risks_source == "6.3_file":
@@ -592,16 +592,16 @@ def add_value_assessment(
             "",
         ]
 
-    # Count how many options have been assessed
+    # Считаем сколько вариантов оценено
     total_assessed = len(rec_data.get("value_assessments", {}))
     do_options_count = len(do_data.get("options", [])) if do_data else "?"
 
     lines += [
         "---",
         "",
-        f"Options assessed: **{total_assessed}** of {do_options_count}",
+        f"Оценено вариантов: **{total_assessed}** из {do_options_count}",
         "",
-        "**Next steps:**",
+        "**Следующие шаги:**",
     ]
 
     if isinstance(do_options_count, int) and total_assessed < do_options_count:
@@ -613,11 +613,11 @@ def add_value_assessment(
             next_opt = remaining_options[0]
             lines.append(
                 f"`add_value_assessment(project_id='{project_id}', option_id='{next_opt}', ...)` "
-                f"— assess the next option."
+                f"— оцени следующий вариант."
             )
     else:
         lines.append(
-            f"`compare_value(project_id='{project_id}')` — compare all options and determine the winner."
+            f"`compare_value(project_id='{project_id}')` — сравни все варианты и определи winner."
         )
 
     return "\n".join(lines)
@@ -636,15 +636,15 @@ def compare_value(
     BABOK 7.6 — Builds an automatic Value Score matrix of all assessed options.
     Value Score formula = Benefits×2.0 + Alignment×1.5 - Cost×1.5 - Risk×1.0.
 
-    Reads all value_assessments from {project}_recommendation.json.
-    Reads business_context (7.3) for Alignment_Score (optional).
-    Saves the result to the `comparison` section of recommendation.json.
+    Читает все value_assessments из {project}_recommendation.json.
+    Читает business_context (7.3) для Alignment_Score (опционально).
+    Сохраняет результат в секцию `comparison` файла recommendation.json.
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        A Value Score matrix with ranking and winner.
+        Value Score матрица с ranking и winner.
     """
     logger.info(f"compare_value: project_id='{project_id}'")
 
@@ -653,11 +653,11 @@ def compare_value(
 
     if not assessments:
         return (
-            f"⚠️ No value assessments for project `{project_id}`.\n\n"
-            f"First call `add_value_assessment` for each design option."
+            f"⚠️ Нет оценок ценности для проекта `{project_id}`.\n\n"
+            f"Сначала вызови `add_value_assessment` для каждого варианта дизайна."
         )
 
-    # Load context and design_options to recompute with the current context
+    # Загружаем контекст и design_options для пересчёта с актуальным context
     context = _load_context(project_id)
     do_data = _load_design_options(project_id)
 
@@ -677,11 +677,11 @@ def compare_value(
         scores[option_id] = score_data["value_score"]
         breakdowns[option_id] = score_data["score_breakdown"]
 
-        # Update the score in the assessment
+        # Обновляем score в assessment
         assessment["value_score"] = score_data["value_score"]
         assessment["score_breakdown"] = score_data["score_breakdown"]
 
-    # Ranking: from high to low
+    # Ranking: от высокого к низкому
     ranking = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)
     winner = ranking[0] if ranking else None
 
@@ -698,24 +698,24 @@ def compare_value(
     _save_recommendation(rec_data)
 
     lines = [
-        f"<!-- BABOK 7.6 — Value Comparison | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.6 — Value Comparison | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 📊 Value Score Matrix — {project_id}",
+        f"# 📊 Value Score Матрица — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Options:** {len(scores)}  ",
+        f"**Дата:** {date.today()}  ",
+        f"**Вариантов:** {len(scores)}  ",
         f"**Winner:** `{winner}`",
         "",
         "---",
         "",
-        "## Value Score summary table",
+        "## Сводная таблица Value Score",
         "",
     ]
 
-    # Table header
+    # Заголовок таблицы
     lines += [
-        "| Rank | Option | Benefits | Alignment | Cost | Risk | **Score** | Interpretation |",
-        "|------|--------|----------|-----------|------|------|-----------|----------------|",
+        "| Место | Вариант | Benefits | Alignment | Cost | Risk | **Score** | Интерпретация |",
+        "|-------|---------|----------|-----------|------|------|-----------|---------------|",
     ]
 
     for rank, option_id in enumerate(ranking, 1):
@@ -732,7 +732,7 @@ def compare_value(
 
     lines += [
         "",
-        "> **Formula:** Score = Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk×1.0",
+        "> **Формула:** Score = Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk×1.0",
         "",
     ]
 
@@ -761,7 +761,7 @@ def compare_value(
     lines += [
         "---",
         "",
-        "## Detailed breakdown",
+        "## Детальный breakdown",
         "",
     ]
 
@@ -771,7 +771,7 @@ def compare_value(
         is_winner = option_id == winner
         winner_marker = " 🏆 **WINNER**" if is_winner else ""
 
-        # Get the option title
+        # Получаем название варианта
         opt_title = ""
         if do_data:
             opt = next((o for o in do_data.get("options", []) if o["option_id"] == option_id), None)
@@ -781,8 +781,8 @@ def compare_value(
         lines += [
             f"### `{option_id}`{opt_title}{winner_marker}",
             "",
-            f"| Component | Raw | Weight | Contribution |",
-            f"|-----------|-----|--------|--------------|",
+            f"| Составляющая | Raw | Вес | Вклад |",
+            f"|-------------|-----|-----|-------|",
             f"| Benefits Score | {bd['benefits_score']} | ×2.0 | +{round(bd['benefits_score']*2, 2)} |",
             f"| Alignment Score | {bd['alignment_score']} | ×1.5 | +{round(bd['alignment_score']*1.5, 2)} |",
             f"| Cost Score | {bd['cost_score']} | ×1.5 | -{round(bd['cost_score']*1.5, 2)} |",
@@ -791,11 +791,11 @@ def compare_value(
             "",
         ]
 
-        # Show the option's benefits
+        # Показываем выгоды варианта
         assessment = assessments.get(option_id, {})
         benefits = assessment.get("benefits", [])
         if benefits:
-            lines.append("**Benefits:**")
+            lines.append("**Выгоды:**")
             type_icons = {
                 "financial": "💰",
                 "operational": "⚙️",
@@ -813,22 +813,22 @@ def compare_value(
 
         risks = assessment.get("risks", [])
         if risks:
-            lines.append(f"**Risks ({len(risks)}):** maximum level: {int(bd['risk_penalty'])} → {['Low', 'Medium', 'High', 'Critical'][int(min(bd['risk_penalty'], 3))]}")
+            lines.append(f"**Риски ({len(risks)}):** максимальный уровень: {int(bd['risk_penalty'])} → {['Low', 'Medium', 'High', 'Critical'][int(min(bd['risk_penalty'], 3))]}")
             lines.append("")
 
     if not context:
         lines += [
-            "> ℹ️ **Alignment Score = 0 for all options** — business_context.json (7.3) not found.",
-            "> This lowers the Score for options with many improvement_opportunities.",
+            "> ℹ️ **Alignment Score = 0 для всех вариантов** — business_context.json (7.3) не найден.",
+            "> Это занижает Score для вариантов с большим количеством improvement_opportunities.",
             "",
         ]
 
     lines += [
         "---",
         "",
-        "**Next step:**",
+        "**Следующий шаг:**",
         f"`save_recommendation(project_id='{project_id}', recommendation_type='recommend_option', "
-        f"recommended_option_id='{winner}', ...)` — save the final recommendation.",
+        f"recommended_option_id='{winner}', ...)` — сохрани финальную рекомендацию.",
     ]
 
     return "\n".join(lines)
@@ -847,18 +847,18 @@ def check_value_readiness(
     BABOK 7.6 — Optional pre-flight check before save_recommendation.
     only informs (severity warning/info), does not block.
 
-    What it checks:
-    - All options from design_options.json have a value assessment
-    - Each assessment has at least one benefit and one cost_item
-    - compare_value was called (the comparison field exists)
-    - Critical architecture gaps from 7.4 (if any — warning)
-    - Unallocated req from 7.5 (if any — info)
+    Что проверяет:
+    - Все варианты из design_options.json имеют value assessment
+    - У каждого assessment есть хотя бы одна выгода и один cost_item
+    - compare_value был вызван (поле comparison существует)
+    - Архитектурные critical gaps из 7.4 (если есть — warning)
+    - Нераспределённые req из 7.5 (если есть — info)
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        A Readiness Report in Markdown (not saved via save_artifact).
+        Readiness Report в Markdown (не сохраняется через save_artifact).
     """
     logger.info(f"check_value_readiness: project_id='{project_id}'")
 
@@ -870,27 +870,27 @@ def check_value_readiness(
     warnings = []
     infos = []
 
-    # Check 1: options exist
+    # Проверка 1: наличие вариантов
     if not do_data:
         issues.append(
-            "❌ **design_options.json not found** — the task 7.5 file is missing. "
-            "Make sure task 7.5 is complete."
+            "❌ **design_options.json не найден** — файл задачи 7.5 отсутствует. "
+            "Убедись что задача 7.5 завершена."
         )
     else:
         options = do_data.get("options", [])
         if not options:
-            issues.append("❌ **No design options** in design_options.json.")
+            issues.append("❌ **Нет вариантов дизайна** в design_options.json.")
         else:
-            # Check 2: all options assessed
+            # Проверка 2: все варианты оценены
             assessments = rec_data.get("value_assessments", {})
             not_assessed = [o["option_id"] for o in options if o["option_id"] not in assessments]
             if not_assessed:
                 issues.append(
-                    f"❌ **Not all options assessed**: {not_assessed}.\n"
-                    f"  Call `add_value_assessment` for each."
+                    f"❌ **Не все варианты оценены**: {not_assessed}.\n"
+                    f"  Вызови `add_value_assessment` для каждого."
                 )
 
-            # Check 3: completeness of each assessment
+            # Проверка 3: полнота каждой оценки
             for option_id, assessment in assessments.items():
                 benefits = assessment.get("benefits", [])
                 costs = assessment.get("costs", {})
@@ -900,28 +900,28 @@ def check_value_readiness(
 
                 if not benefits:
                     warnings.append(
-                        f"⚠️ **`{option_id}`**: no benefits — benefits is empty. "
-                        f"Value Score may be understated."
+                        f"⚠️ **`{option_id}`**: нет выгод — benefits пуст. "
+                        f"Value Score может быть занижен."
                     )
                 if not cost_items:
                     warnings.append(
-                        f"⚠️ **`{option_id}`**: no cost items — cost_items is empty. "
-                        f"Cost Score = 0, which will overstate the final Score."
+                        f"⚠️ **`{option_id}`**: нет статей затрат — cost_items пуст. "
+                        f"Cost Score = 0, что завысит итоговый Score."
                     )
 
-            # Check 4: compare_value was called
+            # Проверка 4: compare_value вызван
             if "comparison" not in rec_data:
                 issues.append(
-                    "❌ **compare_value not called** — the `comparison` field is missing. "
-                    "Call `compare_value` before save_recommendation."
+                    "❌ **compare_value не вызван** — поле `comparison` отсутствует. "
+                    "Вызови `compare_value` перед save_recommendation."
                 )
 
-        # Check 5: unallocated req
+        # Проверка 5: нераспределённые req
         allocation = do_data.get("allocation", {})
         if not allocation:
             infos.append(
-                "ℹ️ **Allocation is empty** — req are not allocated to versions. "
-                "It's recommended to run `allocate_requirements` in task 7.5."
+                "ℹ️ **Allocation пуст** — req не распределены по версиям. "
+                "Рекомендуется запустить `allocate_requirements` в задаче 7.5."
             )
 
     # Check 6: critical gaps from architecture 7.4.
@@ -939,44 +939,44 @@ def check_value_readiness(
                     f"Make sure this gap is accounted for in the value assessment."
                 )
 
-    # Summary
+    # Итог
     total_issues = len(issues)
     total_warnings = len(warnings)
     total_infos = len(infos)
 
     status_icon = "✅" if total_issues == 0 else "⚠️" if total_warnings > 0 else "❌"
-    status_text = "Ready for recommendation" if total_issues == 0 else "There are issues"
+    status_text = "Готово к рекомендации" if total_issues == 0 else "Есть замечания"
 
     lines = [
         f"# {status_icon} Value Readiness Report — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Status:** {status_text}",
+        f"**Дата:** {date.today()}  ",
+        f"**Статус:** {status_text}",
         "",
-        f"| Type | Count |",
-        f"|------|-------|",
-        f"| ❌ Critical (block the recommendation) | {total_issues} |",
-        f"| ⚠️ Warnings | {total_warnings} |",
-        f"| ℹ️ Info | {total_infos} |",
+        f"| Тип | Количество |",
+        f"|-----|-----------|",
+        f"| ❌ Критические (блокируют рекомендацию) | {total_issues} |",
+        f"| ⚠️ Предупреждения | {total_warnings} |",
+        f"| ℹ️ Информационные | {total_infos} |",
         "",
-        "> ℹ️ This tool only informs — it does not block `save_recommendation`.",
+        "> ℹ️ Этот инструмент только информирует — он не блокирует `save_recommendation`.",
         "",
     ]
 
     if issues:
-        lines += ["---", "", "## ❌ Critical issues", ""]
+        lines += ["---", "", "## ❌ Критические замечания", ""]
         for issue in issues:
             lines.append(f"- {issue}")
         lines.append("")
 
     if warnings:
-        lines += ["---", "", "## ⚠️ Warnings", ""]
+        lines += ["---", "", "## ⚠️ Предупреждения", ""]
         for warning in warnings:
             lines.append(f"- {warning}")
         lines.append("")
 
     if infos:
-        lines += ["---", "", "## ℹ️ Info", ""]
+        lines += ["---", "", "## ℹ️ Информационные замечания", ""]
         for info in infos:
             lines.append(f"- {info}")
         lines.append("")
@@ -985,16 +985,16 @@ def check_value_readiness(
         lines += [
             "---",
             "",
-            "✅ All checks passed. The data is ready for the final recommendation.",
+            "✅ Все проверки пройдены. Данные готовы для финальной рекомендации.",
             "",
         ]
 
     lines += [
         "---",
         "",
-        "**Next step:**",
+        "**Следующий шаг:**",
         f"`save_recommendation(project_id='{project_id}', recommendation_type='...', ...)` "
-        f"— save the final Recommendation Document.",
+        f"— сохрани финальный Recommendation Document.",
     ]
 
     return "\n".join(lines)
@@ -1021,109 +1021,109 @@ def save_recommendation(
     mandatory recommendation_type parameter with 4 outcomes.
     Idempotent: calling again updates the recommendation.
 
-    Four legitimate outcomes per BABOK:
-    - recommend_option    — recommend one specific option
-    - recommend_parallel  — implement two options in parallel (pilot + main)
-    - recommend_reanalyze — no option fits, a new analysis is needed
-    - no_action           — the change is not justified, benefits < costs + risks
+    Четыре легитимных исхода по BABOK:
+    - recommend_option    — рекомендовать один конкретный вариант
+    - recommend_parallel  — реализовать два варианта параллельно (пилот + основное)
+    - recommend_reanalyze — ни один вариант не подходит, нужен новый анализ
+    - no_action           — изменение не оправдано, выгоды < затраты + риски
 
-    Generates 7_6_recommendation_*.md via save_artifact.
-    success_metrics become the baseline for Chapter 8 (Solution Evaluation).
+    Generates 7_6_recommendation_*.md через save_artifact.
+    success_metrics становятся baseline для Главы 8 (Solution Evaluation).
 
     Args:
-        project_id:               Project identifier.
-        recommendation_type:      Recommendation type:
+        project_id:               Идентификатор проекта.
+        recommendation_type:      Тип рекомендации:
                                   recommend_option | recommend_parallel |
                                   recommend_reanalyze | no_action
-        rationale:                Rationale for the recommendation (required for all types).
-                                  For recommend_reanalyze: what exactly is unsatisfactory and why.
-                                  For no_action: why the change is not justified.
-        recommended_option_id:    ID of the recommended option (required for recommend_option).
-                                  Example: 'OPT-002'
-        parallel_option_ids_json: JSON list of option IDs for parallel implementation
-                                  (for recommend_parallel). Example: '["OPT-001", "OPT-002"]'
-        success_metrics_json:     JSON list of success metrics (required for recommend_option
-                                  and recommend_parallel). Become the baseline for Chapter 8.
-                                  Format: '[{"metric": "Request processing time",
-                                             "baseline": "2 hours", "target": "15 minutes",
-                                             "measurement_method": "CRM monitoring"}]'
-        risks_acknowledged_json:  JSON list of acknowledged risk IDs.
-                                  Example: '["RSK-001", "RSK-002"]'
-        notes:                    Additional notes (optional).
+        rationale:                Обоснование рекомендации (обязательно для всех типов).
+                                  Для recommend_reanalyze: что именно не устраивает и почему.
+                                  Для no_action: почему изменение не оправдано.
+        recommended_option_id:    ID рекомендуемого варианта (обязательно для recommend_option).
+                                  Пример: 'OPT-002'
+        parallel_option_ids_json: JSON-список ID вариантов для параллельной реализации
+                                  (для recommend_parallel). Пример: '["OPT-001", "OPT-002"]'
+        success_metrics_json:     JSON-список метрик успеха (обязательно для recommend_option
+                                  и recommend_parallel). Становятся baseline для Главы 8.
+                                  Формат: '[{"metric": "Время обработки заявки",
+                                             "baseline": "2 часа", "target": "15 минут",
+                                             "measurement_method": "Мониторинг CRM"}]'
+        risks_acknowledged_json:  JSON-список ID рисков принятых к сведению.
+                                  Пример: '["RSK-001", "RSK-002"]'
+        notes:                    Дополнительные заметки (необязательно).
 
     Returns:
-        The final Recommendation Document + a save confirmation.
+        Финальный Recommendation Document + подтверждение сохранения.
     """
     logger.info(
         f"save_recommendation: project_id='{project_id}', "
         f"recommendation_type='{recommendation_type}'"
     )
 
-    # Validate recommendation_type
+    # Валидация recommendation_type
     if recommendation_type not in VALID_RECOMMENDATION_TYPES:
         return (
-            f"❌ Invalid recommendation_type: '{recommendation_type}'.\n\n"
-            f"Valid values:\n"
-            f"- `recommend_option` — recommend one option\n"
-            f"- `recommend_parallel` — implement options in parallel\n"
-            f"- `recommend_reanalyze` — a new round of analysis is needed\n"
-            f"- `no_action` — the change is not justified"
+            f"❌ Недопустимый recommendation_type: '{recommendation_type}'.\n\n"
+            f"Допустимые значения:\n"
+            f"- `recommend_option` — рекомендовать один вариант\n"
+            f"- `recommend_parallel` — реализовать варианты параллельно\n"
+            f"- `recommend_reanalyze` — нужен новый раунд анализа\n"
+            f"- `no_action` — изменение не оправдано"
         )
 
     if not rationale.strip():
-        return "❌ rationale cannot be empty — a rationale is required for any recommendation type."
+        return "❌ rationale не может быть пустым — обоснование обязательно для любого типа рекомендации."
 
-    # Validate recommended_option_id for recommend_option
+    # Валидация recommended_option_id для recommend_option
     if recommendation_type == "recommend_option" and not recommended_option_id.strip():
         return (
-            "❌ `recommend_option` requires the `recommended_option_id` parameter.\n"
-            "Specify a design option ID, for example: 'OPT-002'."
+            "❌ Для `recommend_option` обязателен параметр `recommended_option_id`.\n"
+            "Укажи ID варианта дизайна, например: 'OPT-002'."
         )
 
-    # Parse parallel_option_ids
+    # Парсинг parallel_option_ids
     try:
         parallel_ids = json.loads(parallel_option_ids_json) if parallel_option_ids_json.strip() else []
         if not isinstance(parallel_ids, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse parallel_option_ids_json: {e}\n\n"
-            f"Expected a JSON list: '[\"OPT-001\", \"OPT-002\"]'"
+            f"❌ Ошибка парсинга parallel_option_ids_json: {e}\n\n"
+            f"Ожидается JSON-список: '[\"OPT-001\", \"OPT-002\"]'"
         )
 
-    # Parse success_metrics
+    # Парсинг success_metrics
     try:
         success_metrics = json.loads(success_metrics_json) if success_metrics_json.strip() else []
         if not isinstance(success_metrics, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse success_metrics_json: {e}\n\n"
-            f"Expected a JSON list of metrics:\n"
+            f"❌ Ошибка парсинга success_metrics_json: {e}\n\n"
+            f"Ожидается JSON-список метрик:\n"
             f'[{{"metric": "...", "baseline": "...", "target": "...", "measurement_method": "..."}}]'
         )
 
-    # Warning: success_metrics are required for recommend_option and recommend_parallel
+    # Предупреждение: success_metrics обязательны для recommend_option и recommend_parallel
     metrics_warning = ""
     if recommendation_type in ("recommend_option", "recommend_parallel") and not success_metrics:
         metrics_warning = (
-            "\n\n> ⚠️ **It's recommended to specify success_metrics** for `recommend_option` "
-            "and `recommend_parallel`.\n"
-            "> The metrics become the baseline for Chapter 8 (Solution Evaluation)."
+            "\n\n> ⚠️ **Рекомендуется указать success_metrics** для `recommend_option` "
+            "и `recommend_parallel`.\n"
+            "> Метрики становятся baseline для Главы 8 (Solution Evaluation)."
         )
 
-    # Parse risks_acknowledged
+    # Парсинг risks_acknowledged
     try:
         risks_acknowledged = json.loads(risks_acknowledged_json) if risks_acknowledged_json.strip() else []
         if not isinstance(risks_acknowledged, list):
-            raise ValueError("Expected a list")
+            raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse risks_acknowledged_json: {e}\n\n"
-            f"Expected a JSON list of risk IDs: '[\"RSK-001\", \"RSK-002\"]'"
+            f"❌ Ошибка парсинга risks_acknowledged_json: {e}\n\n"
+            f"Ожидается JSON-список ID рисков: '[\"RSK-001\", \"RSK-002\"]'"
         )
 
-    # Load data
+    # Загружаем данные
     rec_data = _load_recommendation(project_id)
     assessments = rec_data.get("value_assessments", {})
     comparison = rec_data.get("comparison", {})
@@ -1131,20 +1131,20 @@ def save_recommendation(
     context = _load_context(project_id)
     arch = _load_architecture(project_id)
 
-    # Check that option_id exists (for recommend_option)
+    # Проверяем что option_id существует (для recommend_option)
     if recommended_option_id:
         known_options = list(assessments.keys())
         if do_data:
             known_options = [o["option_id"] for o in do_data.get("options", [])]
         if recommended_option_id not in known_options and known_options:
             return (
-                f"❌ Option `{recommended_option_id}` not found.\n\n"
-                f"Known options: {', '.join(known_options)}"
+                f"❌ Вариант `{recommended_option_id}` не найден.\n\n"
+                f"Известные варианты: {', '.join(known_options)}"
             )
 
     is_update = "recommendation" in rec_data
 
-    # Build the recommendation
+    # Формируем recommendation
     recommendation = {
         "recommendation_type": recommendation_type,
         "recommended_option_id": recommended_option_id,
@@ -1161,27 +1161,27 @@ def save_recommendation(
     _save_recommendation(rec_data)
 
     # ------------------------------------------------------------------
-    # Generate the Recommendation Document
+    # Генерируем Recommendation Document
     # ------------------------------------------------------------------
 
     type_icons = {
-        "recommend_option": "✅ Recommendation: implement the option",
-        "recommend_parallel": "🔀 Recommendation: parallel implementation",
-        "recommend_reanalyze": "🔄 Recommendation: re-analyze",
-        "no_action": "⛔ Recommendation: do not implement",
+        "recommend_option": "✅ Рекомендация: реализовать вариант",
+        "recommend_parallel": "🔀 Рекомендация: параллельная реализация",
+        "recommend_reanalyze": "🔄 Рекомендация: пересмотр анализа",
+        "no_action": "⛔ Рекомендация: не реализовывать",
     }
     rec_title = type_icons.get(recommendation_type, recommendation_type)
 
     doc_lines = [
-        f"<!-- BABOK 7.6 — Recommendation Document | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.6 — Recommendation Document | Проект: {project_id} | {date.today()} -->",
         "",
         f"# 📋 Recommendation Document",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Project | {project_id} |",
-        f"| Date | {date.today()} |",
-        f"| Recommendation type | **{rec_title}** |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Проект | {project_id} |",
+        f"| Дата | {date.today()} |",
+        f"| Тип рекомендации | **{rec_title}** |",
     ]
 
     if recommended_option_id:
@@ -1190,10 +1190,10 @@ def save_recommendation(
             opt = next((o for o in do_data.get("options", []) if o["option_id"] == recommended_option_id), None)
             if opt:
                 opt_title = f" — {opt['title']}"
-        doc_lines.append(f"| Recommended option | `{recommended_option_id}`{opt_title} |")
+        doc_lines.append(f"| Рекомендуемый вариант | `{recommended_option_id}`{opt_title} |")
 
     if parallel_ids:
-        doc_lines.append(f"| Parallel options | {', '.join(f'`{i}`' for i in parallel_ids)} |")
+        doc_lines.append(f"| Параллельные варианты | {', '.join(f'`{i}`' for i in parallel_ids)} |")
 
     doc_lines += ["", "---", ""]
 
@@ -1206,26 +1206,26 @@ def save_recommendation(
     ]
 
     if notes:
-        doc_lines += [f"**Notes:** {notes}", ""]
+        doc_lines += [f"**Примечания:** {notes}", ""]
 
     doc_lines += ["---", ""]
 
-    # Value assessment per option
+    # Value Assessment по каждому варианту
     if assessments:
         doc_lines += [
-            "## Value assessment of options",
+            "## Оценка ценности вариантов",
             "",
         ]
 
         ranking = comparison.get("ranking", list(assessments.keys()))
         scores = comparison.get("scores", {})
 
-        # Summary table
+        # Сводная таблица
         doc_lines += [
-            "### Value Score summary table",
+            "### Сводная таблица Value Score",
             "",
-            "| Rank | Option | Value Score | Interpretation |",
-            "|------|--------|-------------|----------------|",
+            "| Место | Вариант | Value Score | Интерпретация |",
+            "|-------|---------|-------------|---------------|",
         ]
         for rank, opt_id in enumerate(ranking, 1):
             score = scores.get(opt_id, assessments.get(opt_id, {}).get("value_score", "—"))
@@ -1237,13 +1237,13 @@ def save_recommendation(
 
         doc_lines += [""]
 
-        # Details per option
+        # Детали по каждому варианту
         for opt_id in ranking:
             assessment = assessments[opt_id]
             score = assessment.get("value_score", "—")
             bd = assessment.get("score_breakdown", {})
             is_rec = (opt_id == recommended_option_id) or (opt_id in parallel_ids)
-            rec_marker = " ⭐ **RECOMMENDED**" if is_rec else ""
+            rec_marker = " ⭐ **РЕКОМЕНДУЕТСЯ**" if is_rec else ""
 
             opt_title = ""
             if do_data:
@@ -1260,8 +1260,8 @@ def save_recommendation(
 
             if bd:
                 doc_lines += [
-                    f"| Component | Value | Weight | Contribution |",
-                    f"|-----------|-------|--------|--------------|",
+                    f"| Составляющая | Значение | Вес | Вклад |",
+                    f"|-------------|---------|-----|-------|",
                     f"| Benefits Score | {bd.get('benefits_score', '—')} | ×2.0 | +{round(bd.get('benefits_score', 0)*2, 2)} |",
                     f"| Alignment Score | {bd.get('alignment_score', '—')} | ×1.5 | +{round(bd.get('alignment_score', 0)*1.5, 2)} |",
                     f"| Cost Score | {bd.get('cost_score', '—')} | ×1.5 | -{round(bd.get('cost_score', 0)*1.5, 2)} |",
@@ -1269,10 +1269,10 @@ def save_recommendation(
                     "",
                 ]
 
-            # Benefits
+            # Выгоды
             benefits = assessment.get("benefits", [])
             if benefits:
-                doc_lines.append("**Benefits:**")
+                doc_lines.append("**Выгоды:**")
                 type_icons_map = {
                     "financial": "💰 Financial",
                     "operational": "⚙️ Operational",
@@ -1290,10 +1290,10 @@ def save_recommendation(
                     )
                 doc_lines.append("")
 
-            # Risks
+            # Риски
             risks = assessment.get("risks", [])
             if risks:
-                doc_lines.append("**Risks:**")
+                doc_lines.append("**Риски:**")
                 for r in risks:
                     doc_lines.append(
                         f"- `{r.get('risk_id', '?')}` — {r.get('description', '')} "
@@ -1306,10 +1306,10 @@ def save_recommendation(
     # Success Metrics
     if success_metrics:
         doc_lines += [
-            "## Success Metrics (baseline for Chapter 8)",
+            "## Success Metrics (baseline для Главы 8)",
             "",
-            "| Metric | Baseline | Target | Measurement method |",
-            "|--------|----------|--------|--------------------|",
+            "| Метрика | Baseline | Target | Метод измерения |",
+            "|---------|----------|--------|----------------|",
         ]
         for m in success_metrics:
             doc_lines.append(
@@ -1318,16 +1318,16 @@ def save_recommendation(
             )
         doc_lines += [
             "",
-            "> 📌 These metrics become the baseline for Chapter 8 (Solution Evaluation).",
+            "> 📌 Эти метрики становятся baseline для Главы 8 (Solution Evaluation).",
             "",
             "---",
             "",
         ]
 
-    # Acknowledged risks
+    # Учтённые риски
     if risks_acknowledged:
         doc_lines += [
-            "## Risks acknowledged",
+            "## Риски, принятые к сведению",
             "",
             f"{', '.join(f'`{r}`' for r in risks_acknowledged)}",
             "",
@@ -1335,55 +1335,55 @@ def save_recommendation(
             "",
         ]
 
-    # Architecture gaps warning
+    # Architecture gaps предупреждение
     if arch:
         critical_gaps = arch.get("gaps", {}).get("critical", [])
         if critical_gaps:
             doc_lines += [
-                "## ⚠️ Architecture gaps (for awareness)",
+                "## ⚠️ Архитектурные gaps (к сведению)",
                 "",
-                f"> Found **{len(critical_gaps)} critical architecture gap(s)** from task 7.4.",
-                "> Accounted for in the analysis.",
+                f"> Выявлено **{len(critical_gaps)} критических архитектурных gap(ов)** из задачи 7.4.",
+                "> Учтены в анализе.",
                 "",
                 "---",
                 "",
             ]
 
-    # Artifact handoff
+    # Передача артефакта
     doc_lines += [
-        "## Artifact handoff",
+        "## Передача артефакта",
         "",
-        "| Direction | Purpose |",
-        "|-----------|---------|",
-        "| → **6.4** Define Change Strategy | The recommendation as an input artifact for the change strategy |",
-        "| → **Chapter 8** Solution Evaluation | success_metrics become the baseline for solution evaluation |",
-        "| → **4.4** Communicate | Communicate the decision to stakeholders |",
+        "| Направление | Назначение |",
+        "|-------------|-----------|",
+        "| → **6.4** Define Change Strategy | Рекомендация как входной артефакт стратегии изменений |",
+        "| → **Глава 8** Solution Evaluation | success_metrics становятся baseline оценки решения |",
+        "| → **4.4** Communicate | Коммуникация решения стейкхолдерам |",
     ]
 
     content = "\n".join(doc_lines)
     save_artifact(content, prefix="7_6_recommendation", project_id=project_id)
 
-    # Response to the user
-    action = "updated" if is_update else "created"
+    # Ответ пользователю
+    action = "обновлена" if is_update else "создана"
 
     result_lines = [
         f"✅ Recommendation Document **{action}** — **{project_id}**",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Type | `{recommendation_type}` |",
-        f"| Date | {date.today()} |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Тип | `{recommendation_type}` |",
+        f"| Дата | {date.today()} |",
     ]
 
     if recommended_option_id:
-        result_lines.append(f"| Recommended option | `{recommended_option_id}` |")
+        result_lines.append(f"| Рекомендуемый вариант | `{recommended_option_id}` |")
 
     if parallel_ids:
-        result_lines.append(f"| Parallel options | {', '.join(parallel_ids)} |")
+        result_lines.append(f"| Параллельные варианты | {', '.join(parallel_ids)} |")
 
     result_lines += [
         f"| Success Metrics | {len(success_metrics)} |",
-        f"| Risks acknowledged | {len(risks_acknowledged)} |",
+        f"| Рисков принято к сведению | {len(risks_acknowledged)} |",
         "",
     ]
 
@@ -1392,14 +1392,14 @@ def save_recommendation(
 
     result_lines += [
         "",
-        "Recommendation Document saved via `save_artifact` (prefix: `7_6_recommendation`).",
+        "Recommendation Document сохранён через `save_artifact` (префикс: `7_6_recommendation`).",
         "",
         "---",
         "",
-        "**Next steps:**",
-        "- → **6.4** Define Change Strategy — hand off the recommendation as an input artifact",
-        "- → **Chapter 8** Solution Evaluation — use success_metrics as the baseline",
-        "- → **4.4** `prepare_communication_package` — communicate the decision to stakeholders",
+        "**Следующие шаги:**",
+        "- → **6.4** Define Change Strategy — передай рекомендацию как входной артефакт",
+        "- → **Глава 8** Solution Evaluation — используй success_metrics как baseline",
+        "- → **4.4** `prepare_communication_package` — коммуникация решения стейкхолдерам",
     ]
 
     return "\n".join(result_lines)

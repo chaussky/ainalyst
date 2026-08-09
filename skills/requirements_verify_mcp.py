@@ -50,60 +50,60 @@ APPROVAL_OUTCOME_STATUSES = {"approved", "conditional_approved", "rejected"}
 
 
 # ---------------------------------------------------------------------------
-# Dictionaries and patterns (ADR-027: rule-based)
+# Словари и паттерны (ADR-027: rule-based)
 # ---------------------------------------------------------------------------
 
 ATOMICITY_SIGNALS = [
-    " and ", " as well as ", " plus ",
-    " in addition ", " additionally ", " also ",
-    " besides ", " moreover ", " furthermore ",
-    " along with ", " together with ",
+    " и ", " а также ", " а так же ",
+    " а ещё ", " а еще ", " плюс к этому ",
+    " кроме того ", " помимо этого ", " вдобавок ",
+    " одновременно с ", " вместе с тем ",
 ]
 
 AMBIGUITY_SIGNALS = [
-    "fast", "quick", "quickly", "faster",
-    "slow", "slowly",
-    "convenient", "conveniently", "user-friendly", "user friendly",
-    "easy", "easily", "simple",
-    "good", "nice",
-    "high-quality", "high quality", "quality",
-    "efficient", "efficiently",
-    "optimal", "optimally",
-    "often", "rarely", "periodically", "sometimes",
-    "usually", "as a rule", "in most cases", "frequently",
-    "should try to", "if possible", "where possible",
-    "in a timely manner", "as soon as possible", "as fast as possible",
-    "if necessary", "desirable", "preferably", "recommended",
-    "acceptable", "allowed",
-    "small", "large", "significant", "substantial",
-    "enough", "sufficient", "adequate", "appropriate",
-    "on time", "promptly", "without delays", "swiftly",
-    "and/or", "modern", "up-to-date", "standard", "typical",
+    "быстро", "быстрый", "быстрая", "быстрое", "быстрее",
+    "медленно", "медленный",
+    "удобно", "удобный", "удобная", "удобное", "удобен",
+    "легко", "легкий", "лёгкий", "легкая", "лёгкая",
+    "хорошо", "хороший", "хорошая", "хорошее",
+    "качественно", "качественный",
+    "эффективно", "эффективный",
+    "оптимально", "оптимальный",
+    "часто", "редко", "периодически", "иногда",
+    "обычно", "как правило", "в большинстве случаев", "зачастую",
+    "должен стараться", "по возможности", "по мере возможности",
+    "в разумные сроки", "в кратчайшие сроки", "максимально быстро",
+    "при необходимости", "желательно", "предпочтительно", "рекомендуется",
+    "допустимо", "допускается",
+    "небольшой", "крупный", "значительный", "существенный",
+    "достаточно", "достаточный", "адекватный", "приемлемый",
+    "вовремя", "своевременно", "без задержек", "оперативно",
+    "и/или", "современный", "актуальный", "стандартный", "типовой",
 ]
 
 CONCISENESS_SIGNALS = [
-    "implement via", "implement using", "use the technology",
-    "use the framework", "write code", "create a table in the database",
-    "use rest", "use api", "call the method",
-    "previously was", "historically", "in the previous version",
+    "реализовать через", "реализовать с помощью", "использовать технологию",
+    "использовать фреймворк", "написать код", "создать таблицу в базе",
+    "использовать rest", "использовать api", "вызвать метод",
+    "ранее было", "исторически", "в предыдущей версии",
 ]
 
 MEASURABILITY_PATTERNS = [
-    r'\d+\s*(?:ms|s\b|sec|min|hr|hour|%|mb|gb|tb|rpm|rps|tps)',
-    r'no more than \d+', r'no less than \d+', r'up to \d+', r'from \d+',
-    r'\d+\s*seconds?', r'\d+\s*minutes?', r'\d+\s*users?',
-    r'100\s*%', r'0 errors', r'zero', r'fully',
-    r'\d+\s*requests?', r'\d+\s*transactions?',
+    r'\d+\s*(?:мс|ms|с\b|сек|мин|час|%|мб|гб|тб|rpm|rps|tps)',
+    r'не более \d+', r'не менее \d+', r'до \d+', r'от \d+',
+    r'\d+\s*секунд', r'\d+\s*минут', r'\d+\s*пользовател',
+    r'100\s*%', r'0 ошибок', r'нулевой', r'полностью',
+    r'\d+\s*запрос', r'\d+\s*транзакц',
 ]
 
 CONDITION_PATTERNS = [
-    r'if ', r'when ', r'upon ', r'in case ', r'provided that ',
-    r'unless ', r'whenever ',
+    r'если ', r'когда ', r'при ', r'в случае ', r'при условии ',
+    r'if ', r'when ', r'unless ',
 ]
 
 
 # ---------------------------------------------------------------------------
-# Utilities — repository 5.1
+# Утилиты — репозиторий 5.1
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_id: str) -> str:
@@ -138,7 +138,7 @@ def _find_req(repo: dict, req_id: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Utilities — issues file (ADR-028)
+# Утилиты — файл issues (ADR-028)
 # ---------------------------------------------------------------------------
 
 def _issues_path(project_id: str) -> str:
@@ -179,7 +179,7 @@ def _next_issue_id(data: dict) -> str:
 
 
 def _open_issues_for_req(data: dict, req_id: str) -> list:
-    """Returns the list of open issues for the given req_id."""
+    """Возвращает список открытых issues для данного req_id."""
     return [
         v for v in data["issues"].values()
         if v.get("req_id") == req_id and v.get("status") == "open"
@@ -187,7 +187,7 @@ def _open_issues_for_req(data: dict, req_id: str) -> list:
 
 
 def _open_blockers_for_req(data: dict, req_id: str) -> list:
-    """Returns the list of open blocker issues for req_id."""
+    """Возвращает список открытых blocker-issues для req_id."""
     return [
         v for v in data["issues"].values()
         if v.get("req_id") == req_id
@@ -197,12 +197,12 @@ def _open_blockers_for_req(data: dict, req_id: str) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Utilities — specs directory (7.1)
+# Утилиты — specs-директория (7.1)
 # ---------------------------------------------------------------------------
 
 def _specs_dir(project_id: str) -> str:
-    # issue #1: specs live in data/<project>/specs/, with a fallback to legacy layouts.
-    # Single source of truth — common.specs_dir.
+    # issue #1: спеки в data/<project>/specs/, с fallback на legacy-раскладки.
+    # Единый источник истины — common.specs_dir.
     return specs_dir(project_id)
 
 
@@ -264,57 +264,57 @@ def _enrich_req_from_spec(req: dict, project_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Rule-based checks (ADR-027)
+# Rule-based проверки (ADR-027)
 # ---------------------------------------------------------------------------
 
 def _check_atomicity(text: str) -> dict:
-    """Checks atomicity based on signal words."""
+    """Проверяет атомарность по сигнальным словам."""
     text_lower = text.lower()
     found = [s.strip() for s in ATOMICITY_SIGNALS if s in text_lower]
     if len(found) >= 2:
         return {"passed": False, "signals_found": found,
-                "note": f"Found {len(found)} conjunction signals — the requirement may be compound"}
+                "note": f"Найдено {len(found)} соединительных сигнала — возможно требование составное"}
     elif len(found) == 1:
         return {"passed": True, "signals_found": found,
-                "note": "One signal — check the context: it may be a list of values, not two requirements"}
+                "note": "Один сигнал — проверь контекст: может быть перечисление значений, а не два требования"}
     return {"passed": True, "signals_found": [], "note": None}
 
 
 def _check_ambiguity(text: str) -> dict:
-    """Checks unambiguousness based on signal words."""
+    """Проверяет однозначность по словам-сигналам."""
     text_lower = text.lower()
     found = [s for s in AMBIGUITY_SIGNALS if s in text_lower]
     if found:
         return {"passed": False, "signals_found": found,
-                "note": f"Found words without measurable criteria: {', '.join(repr(s) for s in found[:5])}"}
+                "note": f"Найдены слова без измеримых критериев: {', '.join(repr(s) for s in found[:5])}"}
     return {"passed": True, "signals_found": [], "note": None}
 
 
 def _check_testability_us(title: str, ac_count: int, ac_texts: list) -> dict:
-    """User Story testability: checks AC."""
+    """Тестируемость User Story: проверка AC."""
     if ac_count < 2:
         return {"passed": False, "issue": "missing_ac", "ac_count": ac_count,
-                "note": f"User Story contains {ac_count} AC, at least 2 are required"}
-    # Check the AC for ambiguity
+                "note": f"User Story содержит {ac_count} AC, требуется минимум 2"}
+    # Проверяем AC на неоднозначность
     ac_full = " ".join(ac_texts).lower()
     ambiguous_in_ac = [s for s in AMBIGUITY_SIGNALS if s in ac_full]
     if ambiguous_in_ac:
         return {"passed": True, "issue": None, "ac_count": ac_count,
-                "note": f"AC contain signal words: {', '.join(repr(s) for s in ambiguous_in_ac[:3])} — clarification recommended"}
+                "note": f"AC содержат слова-сигналы: {', '.join(repr(s) for s in ambiguous_in_ac[:3])} — рекомендуется уточнить"}
     return {"passed": True, "issue": None, "ac_count": ac_count, "note": None}
 
 
 def _check_testability_fr(description: str, req_type: str) -> dict:
-    """FR/NFR/BR testability: checks for the presence of a measurable criterion."""
+    """Тестируемость FR/NFR/BR: проверка наличия измеримого критерия."""
     desc_lower = description.lower()
 
     if req_type == "business_rule":
-        # BR: the presence of a condition is enough
+        # BR: достаточно наличия условия
         has_condition = any(re.search(p, desc_lower) for p in CONDITION_PATTERNS)
         if has_condition:
             return {"passed": True, "issue": None, "note": None}
         return {"passed": True, "issue": None,
-                "note": "BR without an explicit condition — check whether the context in which the rule applies is clear"}
+                "note": "BR без явного условия — проверь: ясно ли при каком контексте правило применяется"}
 
     # functional / non_functional
     has_measure = any(re.search(p, desc_lower) for p in MEASURABILITY_PATTERNS)
@@ -322,46 +322,46 @@ def _check_testability_fr(description: str, req_type: str) -> dict:
         return {"passed": True, "issue": None, "note": None}
     return {
         "passed": False, "issue": "not_testable",
-        "note": "No measurable criterion — add a numeric value, a metric, or a clear binary condition"
+        "note": "Нет измеримого критерия — добавь числовое значение, метрику или чёткое бинарное условие"
     }
 
 
 def _check_testability_uc(exc_scenarios: str) -> dict:
-    """UC testability: presence of exception scenarios."""
+    """Тестируемость UC: наличие сценариев исключений."""
     if exc_scenarios and exc_scenarios.strip():
         return {"passed": True, "issue": None, "note": None}
     return {"passed": False, "issue": "not_testable",
-            "note": "Use Case without exception scenarios — boundary-condition testing is impossible"}
+            "note": "Use Case без сценариев исключений — тестирование граничных условий невозможно"}
 
 
 def _check_prioritized(priority: str) -> dict:
-    """Checks for the presence of a priority."""
+    """Проверяет наличие приоритета."""
     if priority and priority.strip() and priority.lower() not in ("", "none", "null", "-"):
         return {"passed": True, "priority": priority, "note": None}
     return {"passed": False, "priority": None,
-            "note": "Priority not set — fill it in via the 5.3 tools (Prioritize Requirements)"}
+            "note": "Приоритет не задан — заполни через инструменты 5.3 (Prioritize Requirements)"}
 
 
 def _check_conciseness(title: str, description: str, req_type: str) -> dict:
-    """Checks conciseness: length and signals of redundancy."""
+    """Проверяет краткость: длина и сигналы лишнего."""
     warnings = []
 
-    # Title length
+    # Длина title
     if req_type == "user_story" and len(title) > 100:
-        warnings.append(f"Story title is {len(title)} characters long — recommended ≤ 100")
+        warnings.append(f"Название истории длиной {len(title)} символов — рекомендуется ≤ 100")
     elif len(title) > 150:
-        warnings.append(f"Title is {len(title)} characters long — recommended ≤ 150")
+        warnings.append(f"Название длиной {len(title)} символов — рекомендуется ≤ 150")
 
-    # Description length
+    # Длина description
     if description and len(description) > 800:
-        warnings.append(f"Description is {len(description)} characters long — recommended ≤ 800, "
-                        f"the requirement may be compound")
+        warnings.append(f"Описание длиной {len(description)} символов — рекомендуется ≤ 800, "
+                        f"возможно требование составное")
 
-    # Implementation signals in the requirement description
+    # Сигналы реализации в описании требования
     desc_lower = description.lower() if description else ""
     impl_signals = [s for s in CONCISENESS_SIGNALS if s in desc_lower]
     if impl_signals:
-        warnings.append(f"Possible implementation description: {', '.join(repr(s) for s in impl_signals[:2])}")
+        warnings.append(f"Возможное описание реализации: {', '.join(repr(s) for s in impl_signals[:2])}")
 
     if warnings:
         return {"passed": True, "warning": " | ".join(warnings)}
@@ -369,15 +369,15 @@ def _check_conciseness(title: str, description: str, req_type: str) -> dict:
 
 
 def _check_group_b(req: dict, repo: dict) -> dict:
-    """Group B: consistency and completeness via the 5.1 repository data."""
+    """Группа B: согласованность и полнота через данные репозитория 5.1."""
     req_id = req["id"]
     result = {}
 
-    # Completeness: presence of source_artifact
+    # Полнота: наличие source_artifact
     has_source = bool(req.get("source_artifact", "").strip())
-    # Presence of owner
+    # Наличие owner
     has_owner = bool(req.get("owner", "").strip())
-    # Presence of at least one link in the graph
+    # Наличие хотя бы одной связи в графе
     has_links = any(
         lnk.get("from") == req_id or lnk.get("to") == req_id
         for lnk in repo.get("links", [])
@@ -389,19 +389,19 @@ def _check_group_b(req: dict, repo: dict) -> dict:
         "warnings": [],
     }
     if not has_source:
-        result["complete"]["warnings"].append("No traceability to the 4.3 artifact (source_artifact is empty)")
+        result["complete"]["warnings"].append("Нет трассировки к артефакту 4.3 (source_artifact пустой)")
     if not has_links:
-        result["complete"]["warnings"].append("No links in repository 5.1 — isolated requirement")
+        result["complete"]["warnings"].append("Нет связей в репозитории 5.1 — изолированное требование")
     if not has_owner:
-        result["complete"]["warnings"].append("No owner specified — who is responsible for this requirement?")
+        result["complete"]["warnings"].append("Не указан owner — кто отвечает за это требование?")
 
-    # Consistency: look at the req status
+    # Согласованность: смотрим на статус req
     req_status = req.get("status", "draft")
     conflict_statuses = {"conflict", "rejected", "superseded"}
     if req_status in conflict_statuses:
         result["consistent"] = {
             "status": "needs_review",
-            "note": f"Requirement in status '{req_status}' — check for conflicts"
+            "note": f"Требование в статусе '{req_status}' — проверь наличие конфликтов"
         }
     else:
         result["consistent"] = {"status": "ok", "note": None}
@@ -410,14 +410,14 @@ def _check_group_b(req: dict, repo: dict) -> dict:
 
 
 def _check_single_req(req: dict, repo: dict) -> dict:
-    """Runs all checks for a single requirement. Returns a structured result."""
+    """Выполняет все проверки для одного требования. Возвращает структурированный результат."""
     req_id = req["id"]
     req_type = req.get("type", "")
     title = req.get("title", "")
-    # description may be in the req itself or we need to read the file — MCP stores only metadata.
-    # By the 5.1 architecture, desc is not stored in the repo (only id, type, title, status, priority...).
-    # Text checks are done on the title (which we have) + on the fields available in the repo.
-    description = req.get("description", "")  # may be empty
+    # description может быть в самом req или нам нужно читать файл — MCP хранит только мета.
+    # По архитектуре 5.1 desc не хранится в репо (только id, type, title, status, priority...).
+    # Проверки по тексту делаем по title (у нас есть) + по полям которые есть в репо.
+    description = req.get("description", "")  # может быть пустым
     priority = req.get("priority", "")
 
     checks = {}
@@ -425,13 +425,13 @@ def _check_single_req(req: dict, repo: dict) -> dict:
     majors = []
     minors = []
 
-    # --- Atomicity ---
+    # --- Атомарность ---
     text_for_atomicity = title + " " + description
     checks["atomic"] = _check_atomicity(text_for_atomicity)
     if not checks["atomic"]["passed"] and len(checks["atomic"]["signals_found"]) >= 2:
         majors.append("not_atomic")
 
-    # --- Unambiguousness ---
+    # --- Однозначность ---
     text_for_ambiguity = title + " " + description
     checks["unambiguous"] = _check_ambiguity(text_for_ambiguity)
     if not checks["unambiguous"]["passed"]:
@@ -474,26 +474,26 @@ def _check_single_req(req: dict, repo: dict) -> dict:
                                   "note": "Use Case scenarios not found in the 7.1 spec file — verify manually"}
 
     else:
-        # business_process, data_dictionary, erd — basic check by title
+        # business_process, data_dictionary, erd — базовая проверка по title
         checks["testable"] = {"passed": True, "issue": None,
-                               "note": f"Type '{req_type}' — testability is checked manually against the checklist"}
+                               "note": f"Тип '{req_type}' — тестируемость проверяется вручную по чеклисту"}
 
-    # --- Prioritization ---
+    # --- Приоритизированность ---
     checks["prioritized"] = _check_prioritized(priority)
     if not checks["prioritized"]["passed"]:
         minors.append("not_prioritized")
 
-    # --- Conciseness ---
+    # --- Краткость ---
     checks["concise"] = _check_conciseness(title, description, req_type)
     if checks["concise"].get("warning"):
         minors.append("conciseness_warning")
 
-    # --- Group B ---
+    # --- Группа B ---
     group_b = _check_group_b(req, repo)
     for w in group_b["complete"]["warnings"]:
         minors.append(f"completeness: {w[:30]}")
 
-    # --- Result ---
+    # --- Итог ---
     if blockers:
         overall = "issues_found"
     elif majors:
@@ -510,7 +510,7 @@ def _check_single_req(req: dict, repo: dict) -> dict:
         "current_status": req.get("status", "draft"),
         "checks": checks,
         "group_b": group_b,
-        "group_c_note": "Feasibility and Understandability — check manually against references/checklist_templates.md",
+        "group_c_note": "Выполнимость и Понятность — проверь вручную по references/checklist_templates.md",
         "overall": overall,
         "blockers": blockers,
         "majors": majors,
@@ -530,23 +530,23 @@ def check_req_quality(
     req_type: str = "",
 ) -> str:
     """
-    BABOK 7.2 — Checks requirements against the 9 BABOK quality characteristics.
-    Group A (rule-based): atomicity, unambiguousness, testability, prioritization, conciseness.
-    Group B (repository): consistency, completeness.
-    Group C: a reminder to go through the checklists manually.
+    BABOK 7.2 — Проверяет требования по 9 характеристикам качества BABOK.
+    Группа A (rule-based): атомарность, однозначность, тестируемость, приоритизированность, краткость.
+    Группа B (репозиторий): согласованность, полнота.
+    Группа C: напоминание пройти чеклисты вручную.
 
     MCP does the rule-based checks, Claude Code interprets and writes recommendations.
 
     Args:
-        project_id: Project identifier.
-        req_ids:    JSON list of IDs to check: '["US-001", "FR-001"]'.
-                    If empty — checks all reqs with status draft.
-        req_type:   Filter by type: user_story | functional | non_functional |
+        project_id: Идентификатор проекта.
+        req_ids:    JSON-список ID для проверки: '["US-001", "FR-001"]'.
+                    Если пустой — проверяет все req со статусом draft.
+        req_type:   Фильтр по типу: user_story | functional | non_functional |
                     business_rule | use_case | business_process | data_dictionary | erd.
-                    If empty — all types.
+                    Если пустой — все типы.
 
     Returns:
-        Structured check results for interpretation by Claude Code.
+        Структурированные результаты проверок для интерпретации Claude Code.
     """
     logger.info(f"check_req_quality: project_id='{project_id}', req_ids='{req_ids}', req_type='{req_type}'")
 
@@ -555,19 +555,19 @@ def check_req_quality(
 
     if not all_reqs:
         return (
-            f"⚠️ Repository 5.1 for project `{project_id}` is empty or not found.\n\n"
-            f"Make sure requirements were created via the 7.1 tools and the repository exists at:\n"
+            f"⚠️ Репозиторий 5.1 для проекта `{project_id}` пуст или не найден.\n\n"
+            f"Убедись что требования созданы через инструменты 7.1 и репозиторий существует по пути:\n"
             f"`governance_plans/{project_id.lower().replace(' ', '_')}_traceability_repo.json`"
         )
 
-    # Filter by ID
+    # Фильтрация по ID
     if req_ids.strip():
         try:
             ids_to_check = json.loads(req_ids)
             if not isinstance(ids_to_check, list):
                 raise ValueError
         except (json.JSONDecodeError, ValueError):
-            return f"❌ Error parsing req_ids: expected a JSON list, e.g.: '[\"US-001\", \"FR-001\"]'"
+            return f"❌ Ошибка парсинга req_ids: ожидается JSON-список, например: '[\"US-001\", \"FR-001\"]'"
         reqs_to_check = [r for r in all_reqs if r["id"] in ids_to_check]
         not_found = [i for i in ids_to_check if i not in {r["id"] for r in all_reqs}]
     else:
@@ -586,15 +586,15 @@ def check_req_quality(
         ]
         not_found = []
 
-    # Filter by type
+    # Фильтрация по типу
     if req_type.strip():
         reqs_to_check = [r for r in reqs_to_check if r.get("type", "") == req_type]
 
     if not reqs_to_check:
-        msg = f"ℹ️ No requirements to check in project `{project_id}`"
+        msg = f"ℹ️ Нет требований для проверки в проекте `{project_id}`"
         if req_type:
-            msg += f" (type: {req_type})"
-        msg += ".\n\nPerhaps all requirements already have the status `verified`."
+            msg += f" (тип: {req_type})"
+        msg += ".\n\nВозможно все требования уже имеют статус `verified`."
         return msg
 
     # Run the checks — enrich each req from its 7.1 spec file first (audit finding 7.2-A), so
@@ -602,7 +602,7 @@ def check_req_quality(
     enriched_reqs = [_enrich_req_from_spec(r, project_id) for r in reqs_to_check]
     results = [_check_single_req(r, repo) for r in enriched_reqs]
 
-    # Aggregation
+    # Агрегация
     passed_count = sum(1 for r in results if r["overall"] == "passed")
     warnings_count = sum(1 for r in results if r["overall"] == "warnings_only")
     issues_count = sum(1 for r in results if r["overall"] == "issues_found")
@@ -610,35 +610,35 @@ def check_req_quality(
     all_blockers = [(r["req_id"], b) for r in results for b in r["blockers"]]
     all_majors = [(r["req_id"], m) for r in results for m in r["majors"]]
 
-    # Build the report
+    # Формируем отчёт
     lines = [
-        f"<!-- BABOK 7.2 — Quality Check | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.2 — Quality Check | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 🔍 Requirements verification — {project_id}",
+        f"# 🔍 Верификация требований — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Checked:** {len(results)} requirements  ",
-        f"**Type filter:** {req_type or 'all types'}",
+        f"**Дата:** {date.today()}  ",
+        f"**Проверено:** {len(results)} требований  ",
+        f"**Фильтр по типу:** {req_type or 'все типы'}",
         "",
-        "## Summary",
+        "## Сводка",
         "",
-        "| Status | Count |",
+        "| Статус | Количество |",
         "|--------|-----------|",
-        f"| ✅ Passed all checks | {passed_count} |",
-        f"| ⚠️ Warnings only | {warnings_count} |",
-        f"| ❌ Issues found | {issues_count} |",
+        f"| ✅ Прошли все проверки | {passed_count} |",
+        f"| ⚠️ Только предупреждения | {warnings_count} |",
+        f"| ❌ Найдены проблемы | {issues_count} |",
         "",
     ]
 
     if not_found:
         lines += [
-            f"⚠️ Not found in the repository: {', '.join(f'`{i}`' for i in not_found)}",
+            f"⚠️ Не найдены в репозитории: {', '.join(f'`{i}`' for i in not_found)}",
             "",
         ]
 
     if all_blockers:
         lines += [
-            "## 🚨 Blockers (must be fixed before 5.5)",
+            "## 🚨 Блокеры (обязательно исправить перед 5.5)",
             "",
         ]
         for req_id, issue in all_blockers:
@@ -647,61 +647,61 @@ def check_req_quality(
 
     if all_majors:
         lines += [
-            "## ⚠️ Major issues (major)",
+            "## ⚠️ Серьёзные проблемы (major)",
             "",
         ]
         for req_id, issue in all_majors:
             lines.append(f"- `{req_id}`: {issue}")
         lines.append("")
 
-    # Details for each req
+    # Детали по каждому req
     lines += [
         "---",
         "",
-        "## Results per requirement",
+        "## Результаты по каждому требованию",
         "",
-        "*(Claude Code: for each req with issues_found — explain the problem and suggest a fix)*",
+        "*(Claude Code: для каждого req с issues_found — объясни проблему и предложи исправление)*",
         "",
     ]
 
     for r in results:
         icon = {"passed": "✅", "warnings_only": "⚠️", "issues_found": "❌"}.get(r["overall"], "❓")
         lines.append(f"### {icon} `{r['req_id']}` — {r['title']}")
-        lines.append(f"**Type:** {r['req_type']} | **Status:** {r['current_status']}")
+        lines.append(f"**Тип:** {r['req_type']} | **Статус:** {r['current_status']}")
         lines.append("")
 
-        # Group A
+        # Группа A
         checks = r["checks"]
 
         atomic = checks.get("atomic", {})
         mark = "✅" if atomic.get("passed") else "❌"
         note = f" _{atomic.get('note', '')}_" if atomic.get("note") else ""
-        lines.append(f"- {mark} **Atomicity**{note}")
+        lines.append(f"- {mark} **Атомарность**{note}")
 
         unamb = checks.get("unambiguous", {})
         mark = "✅" if unamb.get("passed") else "❌"
         signals = unamb.get("signals_found", [])
-        note = f" — signals: {', '.join(repr(s) for s in signals[:3])}" if signals else ""
-        lines.append(f"- {mark} **Unambiguousness**{note}")
+        note = f" — сигналы: {', '.join(repr(s) for s in signals[:3])}" if signals else ""
+        lines.append(f"- {mark} **Однозначность**{note}")
 
         testable = checks.get("testable", {})
         mark = "✅" if testable.get("passed") else "❌"
         note = f" — {testable.get('note', '')}" if testable.get("note") else ""
-        lines.append(f"- {mark} **Testability**{note}")
+        lines.append(f"- {mark} **Тестируемость**{note}")
 
         prioritized = checks.get("prioritized", {})
         mark = "✅" if prioritized.get("passed") else "⚠️"
         prio = prioritized.get("priority")
-        note = f" ({prio})" if prio else " — not set"
-        lines.append(f"- {mark} **Prioritization**{note}")
+        note = f" ({prio})" if prio else " — не задан"
+        lines.append(f"- {mark} **Приоритизированность**{note}")
 
         concise = checks.get("concise", {})
         warning = concise.get("warning")
         mark = "⚠️" if warning else "✅"
         note = f" — {warning}" if warning else ""
-        lines.append(f"- {mark} **Conciseness**{note}")
+        lines.append(f"- {mark} **Краткость**{note}")
 
-        # Group B
+        # Группа B
         group_b = r.get("group_b", {})
         complete = group_b.get("complete", {})
         consistent = group_b.get("consistent", {})
@@ -709,40 +709,40 @@ def check_req_quality(
         cons_ok = consistent.get("status") == "ok"
         mark = "✅" if cons_ok else "⚠️"
         cons_note = f" — {consistent.get('note', '')}" if not cons_ok else ""
-        lines.append(f"- {mark} **Consistency**{cons_note}")
+        lines.append(f"- {mark} **Согласованность**{cons_note}")
 
         comp_warnings = complete.get("warnings", [])
         mark = "✅" if not comp_warnings else "⚠️"
         comp_note = f" — {comp_warnings[0]}" if comp_warnings else ""
-        lines.append(f"- {mark} **Completeness**{comp_note}")
+        lines.append(f"- {mark} **Полнота**{comp_note}")
 
-        lines.append(f"- 📋 **Feasibility + Understandability** — check the checklist manually")
+        lines.append(f"- 📋 **Выполнимость + Понятность** — проверь чеклист вручную")
 
         if r["blockers"] or r["majors"]:
             lines.append("")
-            lines.append(f"> **Recommendation for Claude Code:** "
-                         f"Blockers: {r['blockers'] or 'none'} | "
-                         f"Majors: {r['majors'] or 'none'}")
-            lines.append("> Explain to the BA exactly what is violated and suggest a concrete rewording.")
+            lines.append(f"> **Рекомендация для Claude Code:** "
+                         f"Blockers: {r['blockers'] or 'нет'} | "
+                         f"Majors: {r['majors'] or 'нет'}")
+            lines.append("> Объясни BA что именно нарушено и предложи конкретную переформулировку.")
 
         lines.append("")
 
-    # Next steps
+    # Следующие шаги
     lines += [
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
     ]
 
     if issues_count > 0 or len(all_blockers) > 0:
-        lines.append("1. For each problem above: `open_verification_issue` with a description.")
-        lines.append("2. Fix the requirements (via the 7.1 tools or manually in the specs/ files).")
-        lines.append("3. Close the issues: `resolve_verification_issue`.")
-    lines.append(f"4. Check model consistency: `check_model_consistency(project_id='{project_id}')`.")
-    lines.append(f"5. Go through the Group C checklists from `references/checklist_templates.md`.")
-    lines.append(f"6. Verify the ready reqs: `mark_req_verified`.")
-    lines.append(f"7. Generate the report: `get_verification_report(project_id='{project_id}')`.")
+        lines.append("1. Для каждой проблемы выше: `open_verification_issue` с описанием.")
+        lines.append("2. Исправь требования (через инструменты 7.1 или вручную в файлах specs/).")
+        lines.append("3. Закрой issues: `resolve_verification_issue`.")
+    lines.append(f"4. Проверь согласованность моделей: `check_model_consistency(project_id='{project_id}')`.")
+    lines.append(f"5. Пройди чеклисты Группы C из `references/checklist_templates.md`.")
+    lines.append(f"6. Верифицируй готовые req: `mark_req_verified`.")
+    lines.append(f"7. Сгенерируй отчёт: `get_verification_report(project_id='{project_id}')`.")
 
     content = "\n".join(lines)
     save_artifact(content, prefix="7_2_quality_check", project_id=project_id)
@@ -762,54 +762,54 @@ def check_model_consistency(
     BABOK 7.2 — Cross-model verification: compares the .md and .puml files from 7.1.
     a separate tool for checking model consistency.
 
-    What it checks:
-      - Entities in the Data Dictionary (.md) vs the ERD (.puml): name mismatch
-      - Use Cases in repository 5.1 vs the UC Diagram (.puml): UC without an actor
-      - Business Process participants (.md) vs actors in the UC Diagram (.puml)
+    Что проверяет:
+      - Сущности в Data Dictionary (.md) vs ERD (.puml): рассинхрон имён
+      - Use Cases в репозитории 5.1 vs UC Diagram (.puml): UC без актора
+      - Участники Business Process (.md) vs акторы в UC Diagram (.puml)
 
-    Reads files from governance_plans/{project_id}_specs/ using the 7.1 templates.
+    Читает файлы из governance_plans/{project_id}_specs/ по шаблонам из 7.1.
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        A list of inconsistencies between models for interpretation by Claude Code.
+        Список несоответствий между моделями для интерпретации Claude Code.
     """
     logger.info(f"check_model_consistency: project_id='{project_id}'")
 
     specs_dir = _specs_dir(project_id)
     if not os.path.exists(specs_dir):
         return (
-            f"⚠️ Specifications directory not found: `{specs_dir}`\n\n"
-            f"Make sure the artifacts were created via the 7.1 tools "
+            f"⚠️ Директория со спецификациями не найдена: `{specs_dir}`\n\n"
+            f"Убедись что артефакты созданы через инструменты 7.1 "
             f"(`create_data_dictionary`, `create_erd`, `create_use_case`, `create_business_process`)."
         )
 
     all_files = glob.glob(os.path.join(specs_dir, "*.md")) + glob.glob(os.path.join(specs_dir, "*.puml"))
     if not all_files:
         return (
-            f"⚠️ Directory `{specs_dir}` has no .md or .puml files.\n"
-            f"Create specifications via the 7.1 tools."
+            f"⚠️ В директории `{specs_dir}` нет файлов .md или .puml.\n"
+            f"Создай спецификации через инструменты 7.1."
         )
 
     issues = []
 
-    # --- Parse DD: extract entity names ---
+    # --- Парсинг DD: извлечь имена сущностей ---
     dd_entities = set()
     dd_files = glob.glob(os.path.join(specs_dir, "dd_*.md"))
     for filepath in dd_files:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
-            # 7.1 template: "## Entity: EntityName"
-            for match in re.finditer(r"##\s+Entity:\s+(.+)", content):
+            # Шаблон 7.1: "## Сущность: EntityName"
+            for match in re.finditer(r"##\s+Сущность:\s+(.+)", content):
                 name = match.group(1).strip()
                 if name:
                     dd_entities.add(name)
         except IOError:
             pass
 
-    # --- Parse ERD .puml: extract entity names ---
+    # --- Парсинг ERD .puml: извлечь имена entity ---
     erd_entities = set()
     erd_files = glob.glob(os.path.join(specs_dir, "erd_*.puml"))
     for filepath in erd_files:
@@ -824,7 +824,7 @@ def check_model_consistency(
         except IOError:
             pass
 
-    # DD vs ERD: entities in DD but not in ERD and vice versa
+    # DD vs ERD: сущности в DD но не в ERD и наоборот
     if dd_entities and erd_entities:
         in_dd_not_erd = dd_entities - erd_entities
         in_erd_not_dd = erd_entities - dd_entities
@@ -832,18 +832,18 @@ def check_model_consistency(
             issues.append({
                 "type": "model_inconsistency",
                 "models": ["Data Dictionary", "ERD"],
-                "description": f"Entity '{name}' is in the Data Dictionary but missing from the ERD",
+                "description": f"Сущность '{name}' есть в Data Dictionary, но отсутствует в ERD",
                 "severity": "major",
             })
         for name in sorted(in_erd_not_dd):
             issues.append({
                 "type": "model_inconsistency",
                 "models": ["ERD", "Data Dictionary"],
-                "description": f"Entity '{name}' is in the ERD but missing from the Data Dictionary",
+                "description": f"Сущность '{name}' есть в ERD, но отсутствует в Data Dictionary",
                 "severity": "major",
             })
 
-    # --- Parse UC Diagram .puml: actors and UC aliases ---
+    # --- Парсинг UC Diagram .puml: акторы и UC aliases ---
     uc_diagram_actors = set()
     uc_diagram_usecases = set()
     uc_puml_files = glob.glob(os.path.join(specs_dir, "uc_diagram_*.puml"))
@@ -860,128 +860,128 @@ def check_model_consistency(
         except IOError:
             pass
 
-    # --- Parse UC .md files: primary actor ---
+    # --- Парсинг UC .md файлов: актор primary ---
     uc_spec_actors = {}  # uc_title -> primary_actor
     uc_md_files = glob.glob(os.path.join(specs_dir, "uc_*.md"))
     for filepath in uc_md_files:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
-            # From the table: | Actor (primary) | ActorName |
-            actor_match = re.search(r'\|\s*Actor \(primary\)\s*\|\s*(.+?)\s*\|', content)
-            # File heading: # UC-001 — Title
+            # Из таблицы: | Актор (primary) | ActorName |
+            actor_match = re.search(r'\|\s*Актор \(primary\)\s*\|\s*(.+?)\s*\|', content)
+            # Заголовок файла: # UC-001 — Title
             title_match = re.search(r'#\s+UC-\d+\s+—\s+(.+)', content)
             if actor_match and title_match:
                 uc_title = title_match.group(1).strip()
                 actor = actor_match.group(1).strip()
-                if actor and actor != "Value":
+                if actor and actor != "Значение":
                     uc_spec_actors[uc_title] = actor
         except IOError:
             pass
 
-    # UC actor from .md is present but not in the UC Diagram
+    # UC актора из .md есть, но не в UC Diagram
     for uc_title, actor in uc_spec_actors.items():
         if uc_diagram_actors and actor not in uc_diagram_actors:
             issues.append({
                 "type": "model_inconsistency",
                 "models": ["Use Case (.md)", "UC Diagram (.puml)"],
-                "description": f"Actor '{actor}' is mentioned in the UC specification '{uc_title}', "
-                               f"but missing from the UC Diagram",
+                "description": f"Актор '{actor}' упомянут в спецификации UC '{uc_title}', "
+                               f"но отсутствует в UC Diagram",
                 "severity": "minor",
             })
 
-    # UC from specs but not on the diagram (by title)
+    # UC из specs, но не на диаграмме (по title)
     if uc_diagram_usecases:
         for uc_title in uc_spec_actors:
             if uc_title not in uc_diagram_usecases:
                 issues.append({
                     "type": "model_inconsistency",
                     "models": ["Use Case (.md)", "UC Diagram (.puml)"],
-                    "description": f"Use Case '{uc_title}' is in the specification but not on the UC Diagram",
+                    "description": f"Use Case '{uc_title}' есть в спецификации, но не на UC Diagram",
                     "severity": "minor",
                 })
 
-    # --- Parse BP .md: participants ---
+    # --- Парсинг BP .md: участники ---
     bp_participants = set()
     bp_md_files = glob.glob(os.path.join(specs_dir, "bp_*.md"))
     for filepath in bp_md_files:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
-            # | Participants | Role1, Role2 |
-            p_match = re.search(r'\|\s*Participants\s*\|\s*(.+?)\s*\|', content)
+            # | Участники | Role1, Role2 |
+            p_match = re.search(r'\|\s*Участники\s*\|\s*(.+?)\s*\|', content)
             if p_match:
                 participants_str = p_match.group(1).strip()
                 for p in participants_str.split(","):
                     p = p.strip()
-                    if p and p != "Value":
+                    if p and p != "Значение":
                         bp_participants.add(p)
         except IOError:
             pass
 
-    # BP participants are present but not as actors in the UC Diagram
+    # BP участники есть, но не как акторы в UC Diagram
     if bp_participants and uc_diagram_actors:
         for participant in sorted(bp_participants):
             if participant not in uc_diagram_actors:
                 issues.append({
                     "type": "model_inconsistency",
                     "models": ["Business Process (.md)", "UC Diagram (.puml)"],
-                    "description": f"Participant '{participant}' is mentioned in the Business Process "
-                                   f"but not defined as an actor in the UC Diagram",
+                    "description": f"Участник '{participant}' упомянут в Business Process, "
+                                   f"но не определён как актор в UC Diagram",
                     "severity": "minor",
                 })
 
-    # --- Build the report ---
+    # --- Формируем отчёт ---
     lines = [
-        f"<!-- BABOK 7.2 — Model Consistency | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.2 — Model Consistency | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 🔗 Model consistency — {project_id}",
+        f"# 🔗 Согласованность моделей — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Specs directory:** `{specs_dir}`  ",
-        f"**Files checked:** {len(all_files)}",
+        f"**Дата:** {date.today()}  ",
+        f"**Директория specs:** `{specs_dir}`  ",
+        f"**Файлов проверено:** {len(all_files)}",
         "",
-        "## What was checked",
+        "## Что проверялось",
         "",
-        f"- Data Dictionary files: {len(dd_files)} (entities: {len(dd_entities)})",
-        f"- ERD files: {len(erd_files)} (entities: {len(erd_entities)})",
-        f"- UC Diagram files: {len(uc_puml_files)} (actors: {len(uc_diagram_actors)})",
-        f"- Use Case .md files: {len(uc_md_files)}",
-        f"- Business Process .md files: {len(bp_md_files)}",
+        f"- Data Dictionary файлов: {len(dd_files)} (сущностей: {len(dd_entities)})",
+        f"- ERD файлов: {len(erd_files)} (сущностей: {len(erd_entities)})",
+        f"- UC Diagram файлов: {len(uc_puml_files)} (акторов: {len(uc_diagram_actors)})",
+        f"- Use Case .md файлов: {len(uc_md_files)}",
+        f"- Business Process .md файлов: {len(bp_md_files)}",
         "",
     ]
 
     if not issues:
         lines += [
-            "## ✅ No inconsistencies found",
+            "## ✅ Несоответствий не найдено",
             "",
-            "All models are consistent with each other.",
+            "Все модели согласованы между собой.",
             "",
-            "**Note:** Parsing works against the standard 7.1 templates. "
-            "Non-standard file formatting may not be detected automatically — "
-            "a visual review is recommended.",
+            "**Примечание:** Парсинг работает по стандартным шаблонам из 7.1. "
+            "Нестандартное форматирование файлов может не обнаруживаться автоматически — "
+            "рекомендуется визуальная проверка.",
         ]
     else:
         major_issues = [i for i in issues if i["severity"] == "major"]
         minor_issues = [i for i in issues if i["severity"] == "minor"]
 
         lines += [
-            f"## Result: {len(issues)} inconsistencies",
+            f"## Результат: {len(issues)} несоответствий",
             "",
-            f"- 🔴 Major: {len(major_issues)}",
-            f"- 🟡 Minor: {len(minor_issues)}",
+            f"- 🔴 Серьёзных (major): {len(major_issues)}",
+            f"- 🟡 Незначительных (minor): {len(minor_issues)}",
             "",
         ]
 
         if major_issues:
-            lines += ["## 🔴 Major inconsistencies", ""]
+            lines += ["## 🔴 Серьёзные несоответствия", ""]
             for issue in major_issues:
                 models = " ↔ ".join(issue["models"])
                 lines.append(f"- **{models}:** {issue['description']}")
             lines.append("")
 
         if minor_issues:
-            lines += ["## 🟡 Minor inconsistencies", ""]
+            lines += ["## 🟡 Незначительные несоответствия", ""]
             for issue in minor_issues:
                 models = " ↔ ".join(issue["models"])
                 lines.append(f"- {models}: {issue['description']}")
@@ -990,11 +990,11 @@ def check_model_consistency(
         lines += [
             "---",
             "",
-            "## Next steps",
+            "## Следующие шаги",
             "",
-            "1. For each inconsistency: `open_verification_issue` with `issue_type='model_inconsistency'`.",
-            "2. Fix the relevant file in `governance_plans/{project}_specs/` (or recreate it via 7.1).",
-            "3. After fixing: `resolve_verification_issue`.",
+            "1. Для каждого несоответствия: `open_verification_issue` с `issue_type='model_inconsistency'`.",
+            "2. Исправь нужный файл в `governance_plans/{project}_specs/` (или пересоздай через 7.1).",
+            "3. После исправления: `resolve_verification_issue`.",
         ]
 
     content = "\n".join(lines)
@@ -1021,21 +1021,21 @@ def open_verification_issue(
     issues are stored in {project}_verification_issues.json.
 
     Args:
-        project_id:  Project identifier.
-        req_id:      ID of the requirement with the problem (US-001, FR-003, etc.).
-        issue_type:  Problem type:
-                     ambiguity         — vague statement
-                     not_testable      — no testing criterion
-                     not_atomic        — compound requirement
-                     missing_ac        — no Acceptance Criteria (for US)
-                     model_inconsistency — mismatch between models
-                     other             — other
-        description: Exactly what is violated and why it is a problem.
+        project_id:  Идентификатор проекта.
+        req_id:      ID требования с проблемой (US-001, FR-003 и т.д.).
+        issue_type:  Тип проблемы:
+                     ambiguity         — размытая формулировка
+                     not_testable      — нет критерия тестирования
+                     not_atomic        — требование составное
+                     missing_ac        — нет Acceptance Criteria (для US)
+                     model_inconsistency — рассинхрон между моделями
+                     other             — другое
+        description: Что именно нарушено и почему это проблема.
         severity:    blocker | major | minor
-        assigned_to: Whom to assign it to (a BA or stakeholder name). Empty by default.
+        assigned_to: Кому назначить (имя BA или stakeholder). По умолчанию пусто.
 
     Returns:
-        Confirmation with the ID of the created issue.
+        Подтверждение с ID созданного issue.
     """
     logger.info(f"open_verification_issue: project_id='{project_id}', req_id='{req_id}'")
 
@@ -1043,24 +1043,24 @@ def open_verification_issue(
                          "model_inconsistency", "other"}
     if issue_type not in valid_issue_types:
         return (
-            f"❌ Invalid issue_type: '{issue_type}'.\n"
-            f"Allowed values: {' | '.join(sorted(valid_issue_types))}"
+            f"❌ Недопустимый issue_type: '{issue_type}'.\n"
+            f"Допустимые значения: {' | '.join(sorted(valid_issue_types))}"
         )
 
     valid_severities = {"blocker", "major", "minor"}
     if severity not in valid_severities:
         return (
-            f"❌ Invalid severity: '{severity}'.\n"
-            f"Allowed values: blocker | major | minor"
+            f"❌ Недопустимый severity: '{severity}'.\n"
+            f"Допустимые значения: blocker | major | minor"
         )
 
     if not description.strip():
-        return "❌ description cannot be empty — describe exactly what is violated."
+        return "❌ description не может быть пустым — опиши что именно нарушено."
 
-    # Check that the req exists in the repository
+    # Проверяем что req существует в репозитории
     repo = _load_repo(project_id)
     req = _find_req(repo, req_id)
-    req_title = req["title"] if req else "(requirement not found in 5.1)"
+    req_title = req["title"] if req else "(требование не найдено в 5.1)"
 
     data = _load_issues(project_id)
     issue_id = _next_issue_id(data)
@@ -1081,7 +1081,7 @@ def open_verification_issue(
         "resolution_note": "",
     }
 
-    # Update statistics
+    # Обновляем статистику
     data["stats"]["open"] = sum(1 for v in data["issues"].values() if v["status"] == "open")
     data["stats"]["total"] = len(data["issues"])
     data["stats"]["closed"] = data["stats"]["total"] - data["stats"]["open"]
@@ -1089,29 +1089,29 @@ def open_verification_issue(
     _save_issues(data)
 
     lines = [
-        f"✅ Issue recorded: **{issue_id}**",
+        f"✅ Issue зафиксирован: **{issue_id}**",
         "",
-        f"| Field | Value |",
+        f"| Поле | Значение |",
         f"|------|----------|",
-        f"| Issue ID | `{issue_id}` |",
-        f"| Requirement | `{req_id}` — {req_title} |",
-        f"| Problem type | {issue_type} |",
+        f"| ID issue | `{issue_id}` |",
+        f"| Требование | `{req_id}` — {req_title} |",
+        f"| Тип проблемы | {issue_type} |",
         f"| Severity | {severity_labels[severity]} |",
-        f"| Assigned to | {assigned_to or '—'} |",
-        f"| Status | open |",
-        f"| Opened date | {date.today()} |",
+        f"| Назначено | {assigned_to or '—'} |",
+        f"| Статус | open |",
+        f"| Дата открытия | {date.today()} |",
         "",
-        f"**Description:** {description}",
+        f"**Описание:** {description}",
         "",
         "---",
         "",
-        "**Next step:** fix the requirement and call:",
+        "**Следующий шаг:** исправь требование и вызови:",
         f"`resolve_verification_issue(project_id='{project_id}', issue_id='{issue_id}', resolution_note='...')`",
     ]
 
     if severity == "blocker":
         lines.insert(1, "")
-        lines.insert(2, f"> 🚨 **Blocker:** `{req_id}` cannot be verified until this issue is closed.")
+        lines.insert(2, f"> 🚨 **Blocker:** `{req_id}` не может быть верифицирован до закрытия этого issue.")
 
     return "\n".join(lines)
 
@@ -1128,34 +1128,34 @@ def resolve_verification_issue(
     resolution_note: str,
 ) -> str:
     """
-    BABOK 7.2 — Closes a verification issue after the BA fixes it.
+    BABOK 7.2 — Закрывает verification issue после исправления BA.
 
     Args:
-        project_id:      Project identifier.
-        issue_id:        Issue ID: VI-001, VI-002, etc.
-        resolution_note: Exactly what was fixed (for the audit trail).
+        project_id:      Идентификатор проекта.
+        issue_id:        ID issue: VI-001, VI-002 и т.д.
+        resolution_note: Что именно было исправлено (для аудита).
 
     Returns:
-        Confirmation of closure + the status of remaining blockers for this req.
+        Подтверждение закрытия + статус оставшихся blockers по этому req.
     """
     logger.info(f"resolve_verification_issue: project_id='{project_id}', issue_id='{issue_id}'")
 
     if not resolution_note.strip():
-        return "❌ resolution_note cannot be empty — describe exactly what was fixed."
+        return "❌ resolution_note не может быть пустым — опиши что именно было исправлено."
 
     data = _load_issues(project_id)
 
     if issue_id not in data["issues"]:
         return (
-            f"❌ Issue `{issue_id}` not found in project `{project_id}`.\n"
-            f"Open issues: {', '.join(k for k, v in data['issues'].items() if v['status'] == 'open') or 'none'}"
+            f"❌ Issue `{issue_id}` не найден в проекте `{project_id}`.\n"
+            f"Открытые issues: {', '.join(k for k, v in data['issues'].items() if v['status'] == 'open') or 'нет'}"
         )
 
     issue = data["issues"][issue_id]
 
     if issue["status"] == "closed":
         return (
-            f"ℹ️ Issue `{issue_id}` is already closed ({issue.get('resolved_date', '?')}).\n"
+            f"ℹ️ Issue `{issue_id}` уже закрыт ({issue.get('resolved_date', '?')}).\n"
             f"Resolution: {issue.get('resolution_note', '—')}"
         )
 
@@ -1164,25 +1164,25 @@ def resolve_verification_issue(
     issue["resolved_date"] = str(date.today())
     issue["resolution_note"] = resolution_note
 
-    # Update statistics
+    # Обновляем статистику
     data["stats"]["open"] = sum(1 for v in data["issues"].values() if v["status"] == "open")
     data["stats"]["closed"] = sum(1 for v in data["issues"].values() if v["status"] == "closed")
 
     _save_issues(data)
 
-    # Check the remaining blockers for this req
+    # Проверяем оставшиеся blockers для этого req
     remaining_blockers = _open_blockers_for_req(data, req_id)
     remaining_all = _open_issues_for_req(data, req_id)
 
     lines = [
-        f"✅ Issue **{issue_id}** closed.",
+        f"✅ Issue **{issue_id}** закрыт.",
         "",
-        f"| Field | Value |",
+        f"| Поле | Значение |",
         f"|------|----------|",
-        f"| Requirement | `{req_id}` |",
-        f"| Type | {issue['issue_type']} |",
+        f"| Требование | `{req_id}` |",
+        f"| Тип | {issue['issue_type']} |",
         f"| Severity | {issue['severity']} |",
-        f"| Closed date | {date.today()} |",
+        f"| Дата закрытия | {date.today()} |",
         "",
         f"**Resolution:** {resolution_note}",
         "",
@@ -1191,16 +1191,16 @@ def resolve_verification_issue(
     ]
 
     if remaining_blockers:
-        lines.append(f"⚠️ `{req_id}` still has open **blockers**: "
+        lines.append(f"⚠️ По `{req_id}` остаются открытые **blockers**: "
                      f"{', '.join(b['issue_id'] for b in remaining_blockers)}")
-        lines.append(f"Verification of `{req_id}` is blocked until they are closed.")
+        lines.append(f"Верификация `{req_id}` заблокирована до их закрытия.")
     elif remaining_all:
-        lines.append(f"ℹ️ `{req_id}` still has open non-blocker issues: "
+        lines.append(f"ℹ️ По `{req_id}` остаются открытые non-blocker issues: "
                      f"{', '.join(i['issue_id'] for i in remaining_all)}")
-        lines.append(f"✅ No blockers — you can call `mark_req_verified` for `{req_id}`.")
+        lines.append(f"✅ Blockers отсутствуют — можно вызвать `mark_req_verified` для `{req_id}`.")
     else:
-        lines.append(f"✅ All issues for `{req_id}` are closed.")
-        lines.append(f"Next step: `mark_req_verified(project_id='{project_id}', req_ids='[\"{req_id}\"]')`")
+        lines.append(f"✅ Все issues по `{req_id}` закрыты.")
+        lines.append(f"Следующий шаг: `mark_req_verified(project_id='{project_id}', req_ids='[\"{req_id}\"]')`")
 
     return "\n".join(lines)
 
@@ -1217,8 +1217,8 @@ def mark_req_verified(
     force: bool = False,
 ) -> str:
     """
-    BABOK 7.2 — Sets the 'verified' status in repository 5.1.
-    Precondition: checks for open blocker issues.
+    BABOK 7.2 — Устанавливает статус 'verified' в репозитории 5.1.
+    Предусловие: проверяет наличие открытых blocker-issues.
 
     Args:
         project_id: Project identifier.
@@ -1231,7 +1231,7 @@ def mark_req_verified(
                     issue that is not actually resolved, corrupting the audit trail.
 
     Returns:
-        A result per req: successfully verified / a warning about blockers.
+        Результат по каждому req: успешно верифицировано / предупреждение о blockers.
     """
     logger.info(f"mark_req_verified: project_id='{project_id}', req_ids='{req_ids}'")
 
@@ -1240,7 +1240,7 @@ def mark_req_verified(
         if not isinstance(ids_list, list) or not ids_list:
             raise ValueError
     except (json.JSONDecodeError, ValueError):
-        return "❌ req_ids must be a non-empty JSON list: '[\"US-001\", \"FR-001\"]'"
+        return "❌ req_ids должен быть непустым JSON-списком: '[\"US-001\", \"FR-001\"]'"
 
     repo = _load_repo(project_id)
     data = _load_issues(project_id)
@@ -1254,11 +1254,11 @@ def mark_req_verified(
     for req_id in ids_list:
         req = _find_req(repo, req_id)
         if not req:
-            results.append(f"❌ `{req_id}` — not found in repository 5.1")
+            results.append(f"❌ `{req_id}` — не найден в репозитории 5.1")
             not_found_count += 1
             continue
 
-        # Check blockers
+        # Проверяем blockers
         blockers = _open_blockers_for_req(data, req_id)
         blocker_ids = [b["issue_id"] for b in blockers]
         if blockers and not force:
@@ -1327,7 +1327,7 @@ def mark_req_verified(
         _save_repo(repo)
 
     lines = [
-        f"# Verification result — {project_id}",
+        f"# Результат верификации — {project_id}",
         "",
         f"**Date:** {date.today()}  ",
         f"**Processed:** {len(ids_list)} requirements  ",
@@ -1336,7 +1336,7 @@ def mark_req_verified(
         f"**Blocked:** ⚠️ {blocked_count}  ",
         f"**Not found:** ❌ {not_found_count}",
         "",
-        "## Details",
+        "## Детали",
         "",
     ]
     lines.extend(results)
@@ -1367,8 +1367,8 @@ def mark_req_verified(
             "",
             "---",
             "",
-            f"✅ The `verified` status is set in repository 5.1.",
-            f"Next step: `get_verification_report(project_id='{project_id}')` for the summary report.",
+            f"✅ Статус `verified` установлен в репозитории 5.1.",
+            f"Следующий шаг: `get_verification_report(project_id='{project_id}')` для сводного отчёта.",
         ]
 
     return "\n".join(lines)
@@ -1384,22 +1384,22 @@ def get_verification_report(
     project_id: str,
 ) -> str:
     """
-    BABOK 7.2 — Generates a summary report on project verification.
+    BABOK 7.2 — Генерирует сводный отчёт по верификации проекта.
 
-    Contains:
-      - % verified out of all reqs
-      - Top problems by characteristic type
-      - List of reqs with open blocker issues
-      - Open issues with details
-      - Verdict: whether it is ready for Approve (5.5) and Validate (7.3)
+    Содержит:
+      - % verified из всех req
+      - Топ-проблемы по типам характеристик
+      - Список req с открытыми blocker-issues
+      - Открытые issues с деталями
+      - Вердикт: готово ли к Approve (5.5) и Validate (7.3)
 
-    Saves Markdown via save_artifact for handoff to 5.5 and 7.3.
+    Сохраняет Markdown через save_artifact для передачи в 5.5 и 7.3.
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        Verification Report in Markdown.
+        Verification Report в Markdown.
     """
     logger.info(f"get_verification_report: project_id='{project_id}'")
 
@@ -1407,7 +1407,7 @@ def get_verification_report(
     all_reqs = repo.get("requirements", [])
     data = _load_issues(project_id)
 
-    # Statistics by requirements
+    # Статистика по требованиям
     skip_statuses = {"deprecated", "superseded", "retired"}
     # Same rule as check_req_quality: only requirements are verified. Counting other
     # chapters' nodes in the denominator drove the verified percentage down and made
@@ -1423,8 +1423,8 @@ def get_verification_report(
 
     if total == 0:
         return (
-            f"⚠️ No active requirements in the repository for project `{project_id}`.\n"
-            f"Create requirements via the 7.1 tools before verification."
+            f"⚠️ Нет активных требований в репозитории проекта `{project_id}`.\n"
+            f"Создай требования через инструменты 7.1 перед верификацией."
         )
 
     verified = [r for r in active_reqs if r.get("status") == "verified"]
@@ -1462,38 +1462,38 @@ def get_verification_report(
 
     verified_pct = round(len(verified_reqs) / total * 100, 1) if total > 0 else 0.0
 
-    # Statistics by issues
+    # Статистика по issues
     all_issues = list(data["issues"].values())
     open_issues = [i for i in all_issues if i["status"] == "open"]
     open_blockers = [i for i in open_issues if i["severity"] == "blocker"]
     open_majors = [i for i in open_issues if i["severity"] == "major"]
 
-    # Top problems by type
+    # Топ-проблемы по типам
     from collections import Counter
     issue_type_counts = Counter(i["issue_type"] for i in all_issues)
     open_type_counts = Counter(i["issue_type"] for i in open_issues)
 
-    # reqs with open blockers
+    # req с open blockers
     blocked_req_ids = set(i["req_id"] for i in open_blockers)
 
-    # Readiness for 5.5
+    # Готовность к 5.5
     ready_for_approve = len(open_blockers) == 0 and verified_pct >= 80
-    ready_label = "✅ Ready for Approve (5.5)" if ready_for_approve else "❌ Not ready for Approve (5.5)"
+    ready_label = "✅ Готово к Approve (5.5)" if ready_for_approve else "❌ Не готово к Approve (5.5)"
 
     lines = [
-        f"<!-- BABOK 7.2 — Verification Report | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.2 — Verification Report | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 📋 Requirements verification report",
+        f"# 📋 Отчёт верификации требований",
         "",
-        f"**Project:** {project_id}  ",
-        f"**Report date:** {date.today()}  ",
-        f"**Readiness:** {ready_label}",
+        f"**Проект:** {project_id}  ",
+        f"**Дата отчёта:** {date.today()}  ",
+        f"**Готовность:** {ready_label}",
         "",
         "---",
         "",
-        "## Requirements summary",
+        "## Сводка по требованиям",
         "",
-        "| Metric | Value |",
+        "| Показатель | Значение |",
         "|------------|----------|",
         f"| Total active reqs | {total} |",
         f"| ✅ Passed verification | {len(verified_reqs)} ({verified_pct}%) |",
@@ -1503,31 +1503,31 @@ def get_verification_report(
         "",
     ]
 
-    # Progress bar (text)
+    # Прогресс-бар (текстовый)
     filled = int(verified_pct / 10)
     bar = "█" * filled + "░" * (10 - filled)
-    lines.append(f"**Verification progress:** `[{bar}]` {verified_pct}%")
+    lines.append(f"**Прогресс верификации:** `[{bar}]` {verified_pct}%")
     lines.append("")
 
-    # Issues summary
+    # Сводка по issues
     lines += [
-        "## Verification issues summary",
+        "## Сводка по issues верификации",
         "",
-        "| Metric | Value |",
+        "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Total issues | {len(all_issues)} |",
-        f"| 🚨 Open blockers | {len(open_blockers)} |",
-        f"| ⚠️ Open majors | {len(open_majors)} |",
-        f"| ✅ Closed issues | {data['stats'].get('closed', 0)} |",
+        f"| Всего issues | {len(all_issues)} |",
+        f"| 🚨 Открытых blockers | {len(open_blockers)} |",
+        f"| ⚠️ Открытых majors | {len(open_majors)} |",
+        f"| ✅ Закрытых issues | {data['stats'].get('closed', 0)} |",
         "",
     ]
 
-    # Top problems
+    # Топ-проблемы
     if issue_type_counts:
         lines += [
-            "## Top problems by type",
+            "## Топ-проблемы по типам",
             "",
-            "| Problem type | Total | Open |",
+            "| Тип проблемы | Всего | Открытых |",
             "|-------------|-------|----------|",
         ]
         for issue_type, count in issue_type_counts.most_common():
@@ -1535,12 +1535,12 @@ def get_verification_report(
             lines.append(f"| {issue_type} | {count} | {open_count} |")
         lines.append("")
 
-    # Reqs blocked for 5.5
+    # Req заблокированные для 5.5
     if blocked_req_ids:
         lines += [
-            "## 🚨 Requirements with open blockers",
+            "## 🚨 Требования с открытыми blockers",
             "",
-            "> These requirements cannot be approved (5.5) until the blockers are closed.",
+            "> Эти требования не могут быть одобрены (5.5) до закрытия blockers.",
             "",
         ]
         for req_id in sorted(blocked_req_ids):
@@ -1576,9 +1576,9 @@ def get_verification_report(
     # Open issues
     if open_issues:
         lines += [
-            "## Open issues",
+            "## Открытые issues",
             "",
-            "| Issue ID | Req | Type | Severity | Assigned | Date |",
+            "| Issue ID | Req | Тип | Severity | Назначен | Дата |",
             "|----------|-----|-----|----------|----------|------|",
         ]
         for issue in sorted(open_issues, key=lambda x: (x["severity"] != "blocker", x["opened_date"])):
@@ -1603,45 +1603,45 @@ def get_verification_report(
             lines.append(f"**{req_type}:** {', '.join(f'`{i}`' for i in sorted(ids))}")
         lines.append("")
 
-    # Verdict and next steps
+    # Вердикт и следующие шаги
     lines += [
         "---",
         "",
-        "## Verdict and next steps",
+        "## Вердикт и следующие шаги",
         "",
     ]
 
     if ready_for_approve:
         lines += [
-            "### ✅ Ready for handoff to the next tasks",
+            "### ✅ Готово к передаче в следующие задачи",
             "",
             f"- **5.5 Approve Requirements:** {len(verified)} reqs currently in status `verified` are ready for baseline "
             f"({len(verified_reqs)} have passed verification in total).",
             f"- **7.3 Validate Requirements:** the verified reqs are ready for validation with the business.",
             "",
-            "**Hand this report to 5.5:** use `prepare_approval_package` with a reference to this report.",
+            "**Передай этот отчёт в 5.5:** используй `prepare_approval_package` с ссылкой на данный отчёт.",
         ]
     else:
         reasons = []
         if open_blockers:
-            reasons.append(f"🚨 {len(open_blockers)} open blockers are not closed")
+            reasons.append(f"🚨 {len(open_blockers)} открытых blockers не закрыты")
         if verified_pct < 80:
-            reasons.append(f"📊 Only {verified_pct}% of reqs verified (recommended ≥ 80%)")
+            reasons.append(f"📊 Верифицировано только {verified_pct}% req (рекомендуется ≥ 80%)")
         if draft:
-            reasons.append(f"📝 {len(draft)} requirements are not yet verified")
+            reasons.append(f"📝 {len(draft)} требований ещё не верифицированы")
 
         lines += [
-            "### ❌ Not ready for 5.5 Approve",
+            "### ❌ Не готово к 5.5 Approve",
             "",
         ]
         for r in reasons:
             lines.append(f"- {r}")
         lines += [
             "",
-            "**Actions:**",
-            "1. Close all blocker issues via `resolve_verification_issue`.",
-            f"2. Verify the remaining reqs via `check_req_quality` -> `mark_req_verified`.",
-            f"3. Re-run `get_verification_report` for the updated status.",
+            "**Действия:**",
+            "1. Закрой все blocker issues через `resolve_verification_issue`.",
+            f"2. Верифицируй оставшиеся req через `check_req_quality` → `mark_req_verified`.",
+            f"3. Повтори `get_verification_report` для обновлённого статуса.",
         ]
 
     content = "\n".join(lines)

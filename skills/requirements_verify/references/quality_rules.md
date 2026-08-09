@@ -1,258 +1,262 @@
-# quality_rules.md — Rule-Based Requirements Verification Rules
+# quality_rules.md — Rule-Based Правила верификации требований
 
-Source: BABOK v3, section 7.2 (Verify Requirements).
-Used by: `check_req_quality` in `requirements_verify_mcp.py`.
+Источник: BABOK v3, раздел 7.2 (Verify Requirements).  
+Используется: `check_req_quality` в `requirements_verify_mcp.py`.
 
 ---
 
-## BABOK's 9 quality characteristics
+## 9 Характеристик качества BABOK
 
-BABOK v3 defines 9 requirements quality characteristics:
+BABOK v3 определяет 9 характеристик качества требований:
 
-| # | Characteristic | BABOK term | Group |
+| # | Характеристика | BABOK-термин | Группа |
 |---|---------------|-------------|--------|
-| 1 | Atomic | Atomic | A (rule-based) |
-| 2 | Unambiguous | Unambiguous | A (rule-based) |
-| 3 | Testable | Testable | A (rule-based) |
-| 4 | Prioritized | Prioritized | A (rule-based) |
-| 5 | Concise | Concise | A (rule-based) |
-| 6 | Consistent | Consistent | B (repository) |
-| 7 | Complete | Complete | B (repository) |
-| 8 | Feasible | Feasible | C (expert) |
-| 9 | Understandable | Understandable | C (expert) |
+| 1 | Атомарность | Atomic | A (rule-based) |
+| 2 | Однозначность | Unambiguous | A (rule-based) |
+| 3 | Тестируемость | Testable | A (rule-based) |
+| 4 | Приоритизированность | Prioritized | A (rule-based) |
+| 5 | Краткость | Concise | A (rule-based) |
+| 6 | Согласованность | Consistent | B (репозиторий) |
+| 7 | Полнота | Complete | B (репозиторий) |
+| 8 | Выполнимость | Feasible | C (экспертная) |
+| 9 | Понятность | Understandable | C (экспертная) |
 
 ---
 
-## Group A — Rule-Based (automatic via MCP)
+## Группа A — Rule-Based (автоматически через MCP)
 
-### 1. Atomic
+### 1. Атомарность (Atomic)
 
-**Definition:** A single requirement describes exactly one capability or characteristic of the system.
+**Определение:** Одно требование описывает ровно одну возможность или характеристику системы.
 
-**Note:** The detection lists below operate on English-language signal words. They are reproduced here exactly as implemented in `requirements_verify_mcp.py` — do not alter them when updating this document.
-
-**Violation signals (atomicity stop words):**
+**Сигналы нарушения (стоп-слова для атомарности):**
 ```python
 ATOMICITY_SIGNALS = [
-    " and ", " as well as ", " plus ",
-    " in addition ", " additionally ", " also ",
-    " besides ", " moreover ", " furthermore ",
-    " along with ", " together with ",
+    " и ", " и\n", " а также ", " а так же ",
+    " а ещё ", " а еще ", " плюс ", " кроме того ",
+    " помимо этого ", " вдобавок ", " одновременно с ",
 ]
 ```
 
-**Rule:** If the requirement text (title + description) contains 2+ stop words — flag `not_atomic`. A single stop word — a warning (it may be part of a single condition).
+**Правило:** Если в тексте требования (title + description) встречается 2+ стоп-слова — флаг `not_atomic`. Одно стоп-слово — предупреждение (может быть часть одного условия).
 
-**Exceptions:** The conjunction "and" in a list of field values (e.g., "fields First Name and Last Name") is not an atomicity violation if it doesn't describe two distinct system actions. MCP does not do semantic parsing — Claude Code interprets it.
+**Исключения:** Союз «и» в перечислении значений поля (например, «поля Имя и Фамилия») — не нарушение атомарности, если не описывает два разных действия системы. MCP не делает семантического разбора — Claude Code интерпретирует.
 
 ---
 
-### 2. Unambiguous
+### 2. Однозначность (Unambiguous)
 
-**Definition:** The requirement allows only one interpretation.
+**Определение:** Требование допускает только одну интерпретацию.
 
-**Ambiguity signal words:**
+**Слова-сигналы неоднозначности:**
 ```python
 AMBIGUITY_SIGNALS = [
-    # Speed/quality without a metric
-    "fast", "quick", "quickly", "faster",
-    "slow", "slowly",
-    "convenient", "conveniently", "user-friendly", "user friendly",
-    "easy", "easily", "simple",
-    "good", "nice",
-    "high-quality", "high quality", "quality",
-    "efficient", "efficiently",
-    "optimal", "optimally",
-    # Frequency without a value
-    "often", "rarely", "periodically", "sometimes",
-    "usually", "as a rule", "in most cases", "frequently",
-    # Vague obligations
-    "should try to", "if possible", "where possible",
-    "in a timely manner", "as soon as possible", "as fast as possible",
-    "if necessary", "desirable", "preferably", "recommended",
-    "acceptable", "allowed",
-    # Relative assessments
-    "small", "large", "significant", "substantial",
-    "enough", "sufficient", "adequate", "appropriate",
-    # Vague time references
-    "on time", "promptly", "without delays", "swiftly",
-    # Technical ambiguities
-    "and/or", "modern", "up-to-date", "standard", "typical",
+    # Скорость/качество без метрики
+    "быстро", "быстрый", "быстрая", "быстрое",
+    "медленно", "медленный",
+    "удобно", "удобный", "удобная", "удобное", "удобен",
+    "легко", "легкий", "лёгкий", "легкая", "лёгкая",
+    "хорошо", "хороший", "хорошая", "хорошее",
+    "качественно", "качественный",
+    "эффективно", "эффективный",
+    "оптимально", "оптимальный",
+    # Частота без указания
+    "часто", "редко", "периодически", "иногда", "регулярно",
+    "обычно", "как правило", "как правило,", "в большинстве случаев",
+    "как правило", "зачастую", "нередко",
+    # Неопределённые обязательства
+    "должен стараться", "по возможности", "по мере возможности",
+    "в разумные сроки", "в кратчайшие сроки", "максимально быстро",
+    "при необходимости", "в случае необходимости", "при наличии",
+    "желательно", "предпочтительно", "рекомендуется",
+    "допустимо", "допускается",
+    # Относительные оценки
+    "небольшой", "большой", "крупный", "значительный", "существенный",
+    "достаточно", "достаточный", "адекватный", "приемлемый",
+    "минимальный", "максимальный",  # без конкретного значения
+    # Размытые временные указания
+    "вовремя", "своевременно", "без задержек", "оперативно",
+    # Технические неоднозначности
+    "и/или", "и / или",
+    "современный", "актуальный", "последний",
+    "стандартный", "типовой", "обычный",
 ]
 ```
 
-**Rule:** If the requirement text contains at least one signal word — flag `ambiguous`. For every signal found — indicate exactly where (so Claude Code can give a specific recommendation).
+**Правило:** Если в тексте требования встречается хотя бы одно слово-сигнал — флаг `ambiguous`. Для каждого найденного сигнала — указание где именно (чтобы Claude Code мог дать конкретную рекомендацию).
 
 ---
 
-### 3. Testable
+### 3. Тестируемость (Testable)
 
-**Definition:** A test with an unambiguous pass/fail result can be written for the requirement.
+**Определение:** Для требования можно написать тест с однозначным результатом pass/fail.
 
-**Rules by requirement type:**
+**Правила по типу требования:**
 
-#### User Story (type: user_story)
-- **Critical:** Presence of Acceptance Criteria (AC) — at least 2 AC.
-- **Flag:** `missing_ac` if AC are absent or fewer than 2.
-- **Warning:** If the AC text contains ambiguity signal words from the list above.
+#### User Story (тип: user_story)
+- **Критично:** Наличие Acceptance Criteria (AC) — минимум 2 AC.
+- **Флаг:** `missing_ac` если AC отсутствуют или меньше 2.
+- **Предупреждение:** Если в тексте AC встречаются слова-сигналы неоднозначности из списка выше.
 
-#### Functional Requirement (type: functional)
-- **Critical:** Presence of a measurable criterion — a number or a clear binary condition.
-- **Measurability presence signals:**
+#### Functional Requirement (тип: functional)
+- **Критично:** Наличие измеримого критерия — числа или чёткого бинарного условия.
+- **Сигналы наличия измеримости:**
   ```
   MEASURABILITY_PATTERNS = [
-      r'\d+\s*(?:ms|s\b|sec|min|hr|hour|%|mb|gb|tb|rpm|rps|tps)',
-      r'no more than \d+', r'no less than \d+', r'up to \d+', r'from \d+',
-      r'\d+\s*seconds?', r'\d+\s*minutes?', r'\d+\s*users?',
-      r'100\s*%', r'0 errors', r'zero', r'fully',
-      r'\d+\s*requests?', r'\d+\s*transactions?',
+      r'\d+\s*(?:мс|с|сек|мин|час|%|мб|гб|тб|rpm|rps|tps|запрос)',
+      r'не более \d+', r'не менее \d+', r'до \d+', r'от \d+',
+      r'\d+ секунд', r'\d+ минут', r'\d+ пользовател',
+      r'100%', r'0 ошибок', r'нулевой', r'полностью',
   ]
   ```
-- **Flag:** `not_testable` if no pattern is found in the description.
+- **Флаг:** `not_testable` если ни один паттерн не найден в description.
 
-#### Non-Functional Requirement (type: non_functional)
-- **Critical:** Must have a metric + a numeric value + a measurement condition.
-- **Flag:** `not_testable` if there is no numeric value.
+#### Non-Functional Requirement (тип: non_functional)
+- **Критично:** Должна быть метрика + числовое значение + условие измерения.
+- **Флаг:** `not_testable` если нет числового значения.
 
-#### Business Rule (type: business_rule)
-- **Looser:** A rule is considered testable if it contains a clear condition (if/when/upon/in case).
-- **Warning** if there is no condition.
+#### Business Rule (тип: business_rule)
+- **Мягче:** Правило считается тестируемым если содержит чёткое условие (если/when/при/в случае).
+- **Предупреждение** если нет условия.
 
-#### Use Case (type: use_case)
-- **Critical:** Presence of at least one exception/alternative scenario.
-- **Flag:** `not_testable` if exc_scenarios is empty (meaning the UC has no boundary conditions).
-
----
-
-### 4. Prioritized
-
-**Definition:** Every requirement has a priority for scope decisions.
-
-**Rule:** We check the `priority` field in the 5.1 repository.
-- Values `High | Medium | Low` — OK.
-- An empty value `""` or a missing field — flag `not_prioritized`.
-
-**Additionally:** If task 5.3 (Prioritize) has been run, the requirement may have a priority from MoSCoW or WSJF. The flag is cleared by any non-empty priority.
+#### Use Case (тип: use_case)
+- **Критично:** Наличие хотя бы одного исключения/альтернативного сценария.
+- **Флаг:** `not_testable` если exc_scenarios пустые (что означает — UC без граничных условий).
 
 ---
 
-### 5. Concise
+### 4. Приоритизированность (Prioritized)
 
-**Definition:** The requirement contains no extraneous information, implementation explanations, change history, or duplicate wording.
+**Определение:** Каждое требование имеет приоритет для принятия решений об объёме.
 
-**Rules (heuristics):**
+**Правило:** Проверяем поле `priority` в репозитории 5.1.
+- Значения `High | Medium | Low` — OK.
+- Пустое значение `""` или отсутствие поля — флаг `not_prioritized`.
 
-**Length:** Too long — a possible sign of an atomicity violation or extraneous content.
-- User Story title: recommended ≤ 100 characters (warning if exceeded).
-- Functional Requirement description: recommended ≤ 500 characters (warning).
+**Дополнительно:** Если задача 5.3 (Prioritize) запускалась, у требования может быть приоритет из MoSCoW или WSJF. Флаг снимается при любом непустом priority.
 
-**Conciseness violation signals:**
+---
+
+### 5. Краткость (Concise)
+
+**Определение:** Требование не содержит лишней информации, объяснений реализации, истории изменений или дублирующих слов.
+
+**Правила (эвристики):**
+
+**Длина:** Слишком длинное — возможный признак нарушения атомарности или включения лишнего.
+- User Story title: рекомендуется ≤ 100 символов (предупреждение при превышении).
+- Functional Requirement description: рекомендуется ≤ 500 символов (предупреждение).
+
+**Сигналы нарушения краткости:**
 ```python
 CONCISENESS_SIGNALS = [
-    # Explaining the solution instead of the need
-    "implement via", "implement using", "use the technology",
-    "use the framework", "write code", "create a table in the database",
-    "use rest", "use api", "call the method",
-    # Historical background (not needed in a requirement)
-    "previously was", "historically", "in the previous version",
+    # Объяснение решения вместо потребности
+    "реализовать через", "реализовать с помощью", "использовать технологию",
+    "использовать фреймворк", "написать код", "создать таблицу в базе",
+    "использовать REST", "использовать API", "вызвать метод",
+    # Историческая справка (не нужна в требовании)
+    "ранее", "до этого", "исторически", "изначально было",
+    "в предыдущей версии",
+    # Дублирование очевидного
+    "система должна быть системой", "функция функционирует",
 ]
 ```
 
-**Rule:** A warning (not a blocker) when signals are found or the length is exceeded. Conciseness is the only characteristic without a blocking flag (it's subjective — Claude Code interprets it).
+**Правило:** Предупреждение (не блокер) при нахождении сигналов или превышении длины. Краткость — единственная характеристика без блокирующего флага (субъективна, Claude Code интерпретирует).
 
 ---
 
-## Group B — Analysis of the 5.1 Repository (via MCP)
+## Группа B — Анализ репозитория 5.1 (через MCP)
 
-### 6. Consistent
+### 6. Согласованность (Consistent)
 
-**Definition:** The requirement does not contradict other requirements in the project.
+**Определение:** Требование не противоречит другим требованиям проекта.
 
-**What MCP checks:**
-- Presence of requirements with a `conflict` status in the 5.1 repository (if the BA has already flagged it).
-- Presence of `conflict`-type links (a non-standard type — if the BA added it manually).
-- Presence of `rejected` requirements flagged as conflicting.
+**Что проверяет MCP:**
+- Наличие требований в статусе `conflict` в репозитории 5.1 (если BA уже пометил).
+- Наличие связей типа `conflict` (нестандартный тип — если BA добавил вручную).
+- Наличие требований в статусе `rejected` с пометкой конфликта.
 
-**What Claude Code checks (semantics):**
-- Claude Code reads the full list of reqs and identifies logical contradictions by meaning.
-- Example: "The system shall retain all data forever" + "Data is deleted after 90 days" — an explicit conflict.
+**Что проверяет Claude Code (семантика):**
+- Claude Code читает список всех req и выявляет логические противоречия по смыслу.
+- Пример: «Система должна сохранять все данные вечно» + «Данные удаляются через 90 дней» — явный конфликт.
 
-**What MCP returns:**
-- A list of requirements with suspicious statuses.
-- The link graph — neighboring nodes via `depends`/`derives` for Claude Code to analyze.
-
----
-
-### 7. Complete
-
-**Definition:** The requirement contains all the information necessary for understanding and implementation.
-
-**What MCP checks (coverage):**
-- % of requirements without a source_artifact (not traced to 4.3).
-- % of requirements without links in the 5.1 graph (isolated nodes).
-- List of `draft`-status reqs without an owner.
-
-**Complement to the 7.1 coverage matrix:**
-- `build_coverage_matrix` (7.1) checks coverage of business objectives.
-- `check_req_quality` (7.2) checks the internal completeness of each req.
-- No duplication — these are different levels of analysis.
+**Что возвращает MCP:**
+- Список requirements с подозрительными статусами.
+- Граф связей — соседние nodes через `depends`/`derives` для анализа Claude Code.
 
 ---
 
-## Group C — Expert Checks (checklists, Claude Code)
+### 7. Полнота (Complete)
 
-### 8. Feasible
+**Определение:** Требование содержит всю необходимую информацию для понимания и реализации.
 
-**Definition:** The requirement is achievable within known constraints (budget, schedule, technology).
+**Что проверяет MCP (coverage):**
+- % требований без source_artifact (не трассированы к 4.3).
+- % требований без связей в графе 5.1 (изолированные node).
+- Список req в статусе `draft` без owner.
 
-**Why it isn't automated:**
-- Requires knowledge of the project's budget and technical constraints.
-- Requires expert assessment of implementation complexity.
-- The BA consults with the development team.
-
-**Hints for the BA (in SKILL.md and checklist_templates.md):**
-- Has this type of functionality been implemented in the team's past projects?
-- Are there ready-made libraries/solutions?
-- Complexity estimate: S/M/L/XL.
-- Does it fit the technology stack?
+**Дополнение к coverage matrix 7.1:**
+- `build_coverage_matrix` (7.1) проверяет покрытие бизнес-целей.
+- `check_req_quality` (7.2) проверяет внутреннюю полноту каждого req.
+- Не дублируем — разные уровни анализа.
 
 ---
 
-### 9. Understandable
+## Группа C — Экспертные (чеклисты, Claude Code)
 
-**Definition:** The requirement is understandable to the target audience without additional explanation.
+### 8. Выполнимость (Feasible)
 
-**Why it isn't automated:**
-- Depends on the audience (developer ≠ business sponsor).
-- Requires a reader's judgment, not pattern matching.
+**Определение:** Требование реализуемо в рамках известных ограничений (бюджет, сроки, технологии).
 
-**Hints for the BA:**
-- Read the requirement to someone unfamiliar with it — do they have questions?
-- Is there any jargon specific to a single department?
-- Are all abbreviations defined on first use?
+**Почему не автоматизируется:**
+- Требует знания бюджета и технических ограничений проекта.
+- Требует экспертной оценки сложности реализации.
+- BA консультируется с командой разработки.
+
+**Подсказки BA (в SKILL.md и checklist_templates.md):**
+- Был ли этот тип функционала реализован в прошлых проектах команды?
+- Есть ли готовые библиотеки/решения?
+- Оценка сложности: S/M/L/XL.
+- Вписывается ли в технический стек?
 
 ---
 
-## Severity matrix by characteristic
+### 9. Понятность (Understandable)
 
-| Characteristic | Violation | Severity | Recommended issue_type |
+**Определение:** Требование понятно целевой аудитории без дополнительных объяснений.
+
+**Почему не автоматизируется:**
+- Зависит от аудитории (разработчик ≠ бизнес-заказчик).
+- Требует читательской оценки, не паттерн-матчинга.
+
+**Подсказки BA:**
+- Прочитай требование незнакомому человеку — есть ли вопросы?
+- Нет ли жаргона специфичного для одного отдела?
+- Определены ли все аббревиатуры при первом упоминании?
+
+---
+
+## Матрица severity по характеристикам
+
+| Характеристика | Нарушение | Severity | Рекомендуемый issue_type |
 |---------------|-----------|---------|--------------------------|
-| Atomic | 2+ stop words | major | not_atomic |
-| Unambiguous | 1+ signal | major | ambiguity |
-| Testable (US without AC) | 0-1 AC | blocker | missing_ac |
-| Testable (FR without a metric) | no number | major | not_testable |
-| Prioritized | no priority | minor | other |
-| Concise | length exceeded | minor | other |
-| Consistent | conflicting statuses | major | other |
-| Complete | no source_artifact | minor | other |
-| Feasible | checklist | — | BA checklist |
-| Understandable | checklist | — | BA checklist |
+| Атомарность | 2+ стоп-слова | major | not_atomic |
+| Однозначность | 1+ сигнал | major | ambiguity |
+| Тестируемость (US без AC) | 0-1 AC | blocker | missing_ac |
+| Тестируемость (FR без метрики) | нет числа | major | not_testable |
+| Приоритизированность | нет priority | minor | other |
+| Краткость | превышение | minor | other |
+| Согласованность | конфликт в статусах | major | other |
+| Полнота | нет source_artifact | minor | other |
+| Выполнимость | чеклист | — | чеклист BA |
+| Понятность | чеклист | — | чеклист BA |
 
 ---
 
-## Result aggregation rules
+## Правила агрегации результатов
 
-`check_req_quality` returns the following for each req:
+`check_req_quality` возвращает для каждого req:
 
 ```json
 {
@@ -261,16 +265,16 @@ CONCISENESS_SIGNALS = [
   "title": "...",
   "checks": {
     "atomic": {"passed": true, "signals_found": [], "warning": null},
-    "unambiguous": {"passed": false, "signals_found": ["fast", "convenient"], "warning": null},
+    "unambiguous": {"passed": false, "signals_found": ["быстро", "удобно"], "warning": null},
     "testable": {"passed": false, "issue": "missing_ac", "ac_count": 1},
     "prioritized": {"passed": true, "priority": "High"},
-    "concise": {"passed": true, "warning": "title length 110 characters"}
+    "concise": {"passed": true, "warning": "title длина 110 символов"}
   },
   "group_b": {
     "consistent": {"status": "needs_review", "notes": ""},
     "complete": {"has_source": true, "has_links": false, "has_owner": false}
   },
-  "group_c_checklist": "see checklist_templates.md",
+  "group_c_checklist": "см. checklist_templates.md",
   "overall": "issues_found",
   "blockers": ["missing_ac"],
   "majors": ["ambiguity"],
@@ -278,7 +282,7 @@ CONCISENESS_SIGNALS = [
 }
 ```
 
-**`overall` statuses:**
-- `passed` — all checks OK
-- `warnings_only` — only minor/warnings
-- `issues_found` — there are majors or blockers
+**overall статусы:**
+- `passed` — все проверки OK
+- `warnings_only` — только minor/предупреждения
+- `issues_found` — есть major или blocker

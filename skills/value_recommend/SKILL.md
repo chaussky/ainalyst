@@ -1,52 +1,52 @@
 ---
 name: value_recommend
 description: >
-  BABOK 7.6 skill — Analyze Potential Value and Recommend Solution. Use this
-  skill when the BA wants to assess the ROI of design options from 7.5, compare
-  them by value, and produce a formal recommendation for the sponsor.
-  Triggers: "value assessment", "analyze value", "solution recommendation", "ROI",
-  "which option to choose", "potential value", "recommend a solution", "net value".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 7.6 — Анализ потенциальной ценности и рекомендация решения. Используй
+  этот скилл когда BA хочет оценить ROI вариантов дизайна из 7.5, сравнить их по
+  ценности и сформировать официальную рекомендацию спонсору.
+  Триггеры: «оценка ценности», «analyze value», «рекомендация решения», «ROI»,
+  «какой вариант выбрать», «potential value», «рекомендовать решение», «net value».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: Analyze Potential Value and Recommend Solution (BABOK 7.6)
 
-## What this task is about
+## Суть задачи
 
-You help the BA assess the potential value of each design option from 7.5
-and produce a formal recommendation for the sponsor.
+Ты помогаешь BA оценить потенциальную ценность каждого варианта дизайна из 7.5
+и сформировать официальную рекомендацию спонсору.
 
-**Value = Benefits − Costs − Risks**
+**Ценность = Выгоды − Затраты − Риски**
 
-This is the final task of Chapter 7. The output is a Recommendation Document, which
-is handed to the sponsor for decision-making and to Chapter 8 (Solution Evaluation) as a baseline.
+Это финальная задача Главы 7. Результат — Recommendation Document, который передаётся
+спонсору для принятия решения и в Главу 8 (Solution Evaluation) как baseline.
 
 ---
 
-## Four legitimate outcomes
+## Четыре легитимных исхода
 
-| Type | When |
+| Тип | Когда |
 |-----|-------|
-| `recommend_option` | One option is clearly better |
-| `recommend_parallel` | Two options are implemented in parallel |
-| `recommend_reanalyze` | No option fits — a new analysis is needed |
-| `no_action` | The change is not justified — benefits < costs + risks |
+| `recommend_option` | Один вариант явно лучше |
+| `recommend_parallel` | Два варианта реализуются параллельно |
+| `recommend_reanalyze` | Ни один вариант не подходит — нужен новый анализ |
+| `no_action` | Изменение не оправдано — выгоды < затрат + рисков |
 
 ---
 
-## Pipeline (standard)
+## Пайплайн (стандартный)
 
 ```
-1. add_value_assessment(OPT-001)   — assess each option
-2. add_value_assessment(OPT-002)   — repeat for each
-3. compare_value()                 — automatic scoring
-4. [check_value_readiness()]       — optional pre-flight check
-5. save_recommendation()           — final Recommendation Document
+1. add_value_assessment(OPT-001)   — оценить каждый вариант
+2. add_value_assessment(OPT-002)   — повторить для каждого
+3. compare_value()                 — автоматический скоринг
+4. [check_value_readiness()]       — опциональная pre-flight проверка
+5. save_recommendation()           — финальный Recommendation Document
 ```
 
 ---
 
-## When to read references/
+## Когда читать references/
 
 Read `references/value_assessment_guide.md` when:
 - The BA asks how to classify a benefit or cost type
@@ -56,45 +56,45 @@ Read `references/value_assessment_guide.md` when:
 
 ---
 
-## MCP tools
+## MCP-инструменты
 
 ### `add_value_assessment`
-Assess one design option: benefits, costs, risks.
-- Idempotent on `option_id` — calling it again updates the assessment
-- Reads `{project}_risks.json` if it exists (from 6.3)
-- Called once for each option from 7.5
+Оценить один вариант дизайна: выгоды, затраты, риски.
+- Идемпотентен по `option_id` — повторный вызов обновляет оценку
+- Читает `{project}_risks.json` если существует (из 6.3)
+- Вызывается по одному разу на каждый вариант из 7.5
 
 ### `compare_value`
-Automatic Value Score matrix across all options.
-- Formula: Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0
-- Reads business_context for Alignment_Score (optional)
-- Outputs ranking and winner
+Автоматическая Value Score матрица по всем вариантам.
+- Формула: Benefits×2.0 + Alignment×1.5 − Cost×1.5 − Risk_Penalty×1.0
+- Читает business_context для Alignment_Score (опционально)
+- Выводит ranking и winner
 
 ### `check_value_readiness`
-Optional pre-flight check before `save_recommendation`.
-- Checks completeness of assessments and data correctness
-- Informational only — does not block
-- Useful for complex projects with 3+ options
+Опциональная pre-flight проверка перед `save_recommendation`.
+- Проверяет полноту оценок и корректность данных
+- Только информирует — не блокирует
+- Полезна при сложных проектах с 3+ вариантами
 
 ### `save_recommendation`
-Final Recommendation Document.
-- Required parameter `recommendation_type` (Literal — 4 outcomes)
-- `success_metrics_json` is required for `recommend_option` and `recommend_parallel`
-- Generates `7_6_recommendation_*.md` via save_artifact
+Финальный Recommendation Document.
+- Обязательный параметр `recommendation_type` (Literal — 4 исхода)
+- `success_metrics_json` обязателен для `recommend_option` и `recommend_parallel`
+- Генерирует `7_6_recommendation_*.md` через save_artifact
 
 ---
 
-## Tips for the BA
+## Советы BA
 
-- Start with `add_value_assessment` for each option before drawing conclusions
-- `no_action` and `recommend_reanalyze` don't need `recommended_option_id`
-- Success metrics must be measurable — "improve NPS" doesn't qualify, "NPS > 8" does
-- Risks can be passed manually if the 6.3 file doesn't exist
+- Начни с `add_value_assessment` для каждого варианта прежде чем делать выводы
+- Для `no_action` и `recommend_reanalyze` не нужен `recommended_option_id`
+- Success metrics должны быть измеримыми — "улучшить NPS" не подходит, "NPS > 8" — да
+- Риски можно передать вручную если файл 6.3 не существует
 
 ---
 
-## Task files
+## Файлы задачи
 
-- Reads: `{project}_design_options.json` (7.5), `{project}_business_context.json` (7.3),
-  `{project}_architecture.json` (7.4), `{project}_risks.json` (6.3, optional)
-- Writes: `{project}_recommendation.json`, `7_6_recommendation_*.md`
+- Читает: `{project}_design_options.json` (7.5), `{project}_business_context.json` (7.3),
+  `{project}_architecture.json` (7.4), `{project}_risks.json` (6.3, опционально)
+- Пишет: `{project}_recommendation.json`, `7_6_recommendation_*.md`

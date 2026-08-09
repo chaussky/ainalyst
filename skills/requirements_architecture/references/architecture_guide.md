@@ -1,23 +1,23 @@
-# architecture_guide.md — Requirements Architecture (BABOK 7.4)
+# architecture_guide.md — Архитектура требований (BABOK 7.4)
 
-## What requirements architecture is
+## Что такое архитектура требований
 
-**Requirements architecture** is the organization of requirements into a connected structure, where each
-requirement has its place and it's clear how it relates to the others.
+**Архитектура требований** — это организация требований в связную структуру, где каждое
+требование занимает своё место и понятно как оно соотносится с другими.
 
-It's the answer to the question: **"How do our requirements form a coherent picture?"**
+Это ответ на вопрос: **«Как наши требования образуют цельную картину?»**
 
-BABOK defines two key concepts:
+BABOK определяет два ключевых понятия:
 
-| Concept | Definition | Example |
-|---------|------------|---------|
-| **Viewpoint** | The perspective from which a stakeholder looks at the system | "Business Processes", "Data", "Users" |
-| **View** | A specific subset of requirements for a given viewpoint | All BP artifacts, all FR artifacts |
+| Понятие | Определение | Пример |
+|---------|-------------|--------|
+| **Viewpoint** (точка зрения) | Перспектива, с которой стейкхолдер смотрит на систему | «Бизнес-процессы», «Данные», «Пользователи» |
+| **View** (представление) | Конкретное подмножество требований для данной точки зрения | Все BP-артефакты, все FR-артефакты |
 
-**Key principle:** different stakeholders have different interests. A CFO looks at the
-system through the lens of business processes and objectives, a developer through functionality,
-a data architect through information objects. Requirements architecture ensures that
-each stakeholder sees "their" part of the picture, while the BA sees the whole.
+**Ключевой принцип:** у разных стейкхолдеров разные интересы. Финансовый директор смотрит на
+систему через призму бизнес-процессов и целей, разработчик — через функциональность,
+архитектор данных — через информационные объекты. Архитектура требований обеспечивает, чтобы
+каждый стейкхолдер видел «свою» часть картины, а BA видел целое.
 
 ---
 
@@ -58,16 +58,16 @@ artifact type:
 
 ---
 
-## Custom viewpoints
+## Кастомные точки зрения
 
-The standard five viewpoints cover most projects. However, regulatory,
-financial, and healthcare projects may require additional ones:
+Стандартные пять точек зрения покрывают большинство проектов. Однако в регуляторных,
+финансовых и медицинских проектах могут потребоваться дополнительные:
 
-**Examples of custom viewpoints:**
-- **Security and Access** — requirements for authentication, authorization, encryption
-- **Audit and Compliance** — requirements for logging, SOX, GDPR, local data-protection law
-- **Integrations** — requirements for APIs, integration scenarios
-- **Data Migration** — requirements for migrating historical data
+**Примеры кастомных точек зрения:**
+- **Безопасность и доступ** — требования к аутентификации, авторизации, шифрованию
+- **Аудит и соответствие** — требования к логированию, SOX, GDPR, 152-ФЗ
+- **Интеграции** — требования к API, интеграционным сценариям
+- **Миграция данных** — требования к переносу исторических данных
 
 **Key distinction:** custom viewpoints are defined via specific req_ids,
 not via artifact types. This is because "Security" is not a separate requirement type,
@@ -75,11 +75,11 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 
 ---
 
-## Architecture gaps
+## Архитектурные разрывы
 
-`check_architecture_gaps` checks the architecture at two levels:
+`check_architecture_gaps` проверяет архитектуру на двух уровнях:
 
-### Level 1: Coverage matrix
+### Уровень 1: Матрица покрытия
 
 **What's checked:**
 - Is there a stakeholder from the 4.2 registry with no recorded tie to any requirement?
@@ -157,9 +157,9 @@ recorded a name ("Ivan Petrov"); the registry ties the two together, so either r
 the same person. An exact match is evidence; a partial one ("Priya" against "Priya Nair")
 is a heuristic, for the same reason a shared title word is.
 
-### Level 2: Semantic gaps
+### Уровень 2: Семантические разрывы
 
-Checks that go beyond the matrix — based on the links in the 5.1 repository:
+Проверки, выходящие за рамки матрицы — на основе связей в репозитории 5.1:
 
 | Gap | Severity | Explanation |
 |-----|----------|--------------|
@@ -167,79 +167,79 @@ Checks that go beyond the matrix — based on the links in the 5.1 repository:
 | NFR with no FR | warning | A non-functional constraint is left "hanging" with no link to a function |
 | FR with no UC or US | info | A function is described, but the usage scenario isn't documented |
 
-**⚠️ Important about level 2:** semantic gap checks depend on how complete the 5.1 graph is.
-If the BA has added few links in traceability, there will be many false positives (an FR with no UC, not
-because the UC wasn't written, but because the link wasn't added). Interpret the results
-with this context in mind.
+**⚠️ Важно об уровне 2:** проверки семантических разрывов зависят от полноты графа 5.1.
+Если BA добавил мало связей в трассировку — будет много ложных срабатываний (FR без UC не
+потому что UC не написан, а потому что связь не добавлена). Интерпретируй результаты
+с учётом этого контекста.
 
 ---
 
-## Requirements architecture frameworks
+## Фреймворки архитектуры требований
 
-BABOK describes several conceptual frameworks. The platform uses a simplified
-approach: automatic mapping + custom viewpoints. For reference — the main frameworks:
+BABOK описывает несколько концептуальных фреймворков. На платформе используется упрощённый
+подход: автоматический маппинг + кастомные точки зрения. Для справки — основные фреймворки:
 
 ### Business Analysis Core Concept Model (BACCM)
-Six interconnected concepts: Change, Need, Solution, Context, Stakeholder, Value.
-Used as a philosophical foundation, not as an operational tool.
+Шесть взаимосвязанных концепций: Изменение, Нужда, Решение, Контекст, Стейкхолдер, Ценность.
+Используется как философская основа, не как операционный инструмент.
 
-### Zachman Framework (simplified)
-A matrix of "who, what, where, when, why, how" × "context, concept, logic, physics".
-Useful for Enterprise Architecture, excessive for a typical IT project.
+### Zachman Framework (упрощённый)
+Матрица «кто, что, где, когда, почему, как» × «контекст, концепция, логика, физика».
+Полезен для Enterprise Architecture, избыточен для типичного IT-проекта.
 
 ### Agile: Story Map
-Horizontal axis — user activities (epics),
-vertical axis — level of detail (US). Works well in Scrum/Kanban.
+Горизонтальная ось — пользовательские активности (эпики),
+вертикальная — детализация (US). Хорошо работает в Scrum/Kanban.
 
-**In practice:** for most projects, the platform's five standard viewpoints
-are enough. Frameworks are needed when working in a large enterprise context.
+**На практике:** для большинства проектов достаточно пяти стандартных точек зрения
+платформы. Фреймворки нужны при работе в крупном корпоративном контексте.
 
 ---
 
-## Architecture snapshots
+## Снапшоты архитектуры
 
 By analogy with the baseline in 5.5, task 7.4 supports snapshots:
 
-**When to take a snapshot:**
-- Before handing the architecture off to 7.5 (Design Options)
-- After a substantial scope change (Change Request)
-- At the end of each iteration in Agile projects
+**Когда делать снапшот:**
+- Перед передачей архитектуры в 7.5 (Design Options)
+- После существенного изменения скоупа (Change Request)
+- По завершении каждой итерации в Agile-проектах
 
-**What a snapshot captures:**
-- The set of viewpoints (automatic + custom)
-- Views — which requirements belong to each viewpoint
-- Open gaps at the time of the snapshot
-- Version (v1.0, v1.1) and notes
-
----
-
-## Links to other tasks
-
-| Task | Role in 7.4 |
-|------|-------------|
-| **5.1** (Traceability) | Link graph — basis for level-2 BFS gap analysis |
-| **4.2** (Conduct Elicitation) | Stakeholder registry — coverage check at level 1 |
-| **7.1** (Specification) | Artifact repository — source for automatic viewpoint mapping |
-| **7.3** (Validate) | business_context — BG for the coverage matrix |
-| **4.4** (Communicate) | Architecture Document is handed off as a communication artifact |
-| **7.5** (Design Options) | Architecture Document — input artifact for solution design |
+**Что фиксирует снапшот:**
+- Состав viewpoints (автоматические + кастомные)
+- Views — какие req входят в каждую точку зрения
+- Открытые разрывы на момент снапшота
+- Версия (v1.0, v1.1) и примечания
 
 ---
 
-## Patterns of common architecture problems
+## Связь с другими задачами
 
-### "Islands of requirements"
-Several isolated clusters of requirements with no links between them. Sign: the 5.1 graph is disconnected.
-What to do: check links via `run_impact_analysis` (5.1), add traceability.
+| Задача | Роль в 7.4 |
+|--------|-----------|
+| **5.1** (Traceability) | Граф связей — основа для BFS-анализа разрывов уровня 2 |
+| **4.2** (Conduct Elicitation) | Реестр стейкхолдеров — проверка покрытия в уровне 1 |
+| **7.1** (Specification) | Репозиторий артефактов — источник для автоматического viewpoint-маппинга |
+| **7.3** (Validate) | business_context — BG для матрицы покрытия |
+| **4.4** (Communicate) | Architecture Document передаётся как артефакт для коммуникации |
+| **7.5** (Design Options) | Architecture Document — входной артефакт для дизайна решения |
 
-### "Skewed toward functionality"
-Lots of FR/NFR, little BP/US/UC. The developer sees what to do, but the business doesn't see the context.
-What to do: create BP and US/UC for key functions.
+---
 
-### "Data without processes"
-ERD + DD are well described, but there's no BP describing how the data is created and used.
-What to do: create BP for key data flows.
+## Паттерны типичных архитектурных проблем
 
-### "Orphaned NFRs"
-NFRs aren't linked to specific FRs. "The system must work fast" — relative to what exactly?
-What to do: for each NFR, add a `satisfies` link to specific FRs in 5.1.
+### «Острова требований»
+Несколько изолированных кластеров req без связей между собой. Признак: граф 5.1 несвязный.
+Что делать: проверить связи через `run_impact_analysis` (5.1), добавить трассировку.
+
+### «Перекос в сторону функциональности»
+Много FR/NFR, мало BP/US/UC. Разработчик видит что делать, но бизнес не видит контекст.
+Что делать: создать BP и US/UC для ключевых функций.
+
+### «Данные без процессов»
+Хорошо описан ERD + DD, но нет BP описывающих как данные создаются и используются.
+Что делать: создать BP для ключевых data flows.
+
+### «Бесхозные NFR»
+NFR не привязаны к конкретным FR. «Система должна работать быстро» — к чему именно?
+Что делать: для каждого NFR добавить связь `satisfies` к конкретным FR в 5.1.

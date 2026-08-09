@@ -1,292 +1,292 @@
-# Elicitation Techniques (BABOK 4.1)
+# Техники выявления требований (BABOK 4.1)
 
-A detailed description of each technique: when to use it, how to prepare,
-what questions to ask.
-
----
-
-## Contents
-
-1. [Interview](#1-interview)
-2. [Survey](#2-survey)
-3. [Workshop](#3-workshop)
-4. [Brainstorming](#4-brainstorming)
-5. [Document Analysis](#5-document-analysis)
-6. [Observation](#6-observation)
-7. [Prototyping](#7-prototyping)
-8. [Focus Group](#8-focus-group)
-9. [Benchmarking](#9-benchmarking)
+Детальное описание каждой техники: когда использовать, как подготовиться, 
+какие вопросы задавать.
 
 ---
 
-## 1. Interview
+## Содержание
 
-**When to use:**
-- You need depth, not coverage
-- The stakeholder has unique expertise
-- The topic is sensitive (conflicts, risks, politics)
-- You need to understand motivation and context, not just facts
+1. [Интервью](#1-интервью)
+2. [Анкетирование](#2-анкетирование)
+3. [Воркшоп](#3-воркшоп)
+4. [Мозговой штурм](#4-мозговой-штурм)
+5. [Анализ документов](#5-анализ-документов)
+6. [Наблюдение](#6-наблюдение)
+7. [Прототипирование](#7-прототипирование)
+8. [Фокус-группа](#8-фокус-группа)
+9. [Бенчмаркинг](#9-бенчмаркинг)
 
-**Two types:**
+---
 
-| Type | When | Characteristics |
+## 1. Интервью
+
+**Когда использовать:**
+- Нужна глубина, а не охват
+- Стейкхолдер обладает уникальной экспертизой
+- Тема чувствительная (конфликты, риски, политика)
+- Нужно понять мотивацию и контекст, а не только факты
+
+**Два типа:**
+
+| Тип | Когда | Особенности |
 | :--- | :--- | :--- |
-| **Structured** | Need comparable answers, multiple respondents | Fixed list of questions, strict order |
-| **Unstructured** | Exploratory phase, one key expert | Follow the stakeholder, questions emerge from answers |
+| **Структурированное** | Нужна сопоставимость ответов, несколько респондентов | Фиксированный список вопросов, строгий порядок |
+| **Неструктурированное** | Исследовательская фаза, один ключевой эксперт | Следуем за стейкхолдером, вопросы рождаются из ответов |
 
-**Preparation:**
+**Подготовка:**
 
-1. Define the interview goal — one sentence: "By the end of the interview I must understand X"
-2. Draft a list of topics (no more than 5–7 for a 60-minute interview)
-3. For each topic — 2–3 open-ended questions
-4. Prepare follow-up probing questions (see below)
-5. Agree on time, format (in-person / online), duration
+1. Определи цель интервью — одно предложение: "По итогам интервью я должен понять X"
+2. Составь список тем (не более 5–7 для 60-минутного интервью)
+3. К каждой теме — 2–3 открытых вопроса
+4. Подготовь уточняющие вопросы-зонды (см. ниже)
+5. Согласуй время, формат (лично / онлайн), продолжительность
 
-**Question structure:**
+**Структура вопросов:**
 
 ```
-Opening (context and trust):
-→ "Can you describe what a typical workday looks like for [topic]?"
-→ "How long have you been working with [process / system]?"
+Открывающие (контекст и доверие):
+→ "Расскажите, как выглядит ваш типичный рабочий день в части [тема]?"
+→ "Как давно вы работаете с [процесс / система]?"
 
-Core (the substance):
-→ "What works well in the current process?"
-→ "What causes the most difficulty?"
-→ "If you could change one thing — what would it be?"
-→ "What outcome would mean success for this project, to you?"
+Основные (суть):
+→ "Что работает хорошо в текущем процессе?"
+→ "Что вызывает наибольшие трудности?"
+→ "Если бы вы могли изменить одну вещь — что бы это было?"
+→ "Какой результат будет для вас означать успех проекта?"
 
-Follow-up probes (going deeper):
-→ "Can you give a specific example?"
-→ "How often does that happen?"
-→ "What happens next in that case?"
-→ "Who else is involved at that point?"
+Уточняющие зонды (углубление):
+→ "Можете привести конкретный пример?"
+→ "Как часто это происходит?"
+→ "Что происходит дальше в этом случае?"
+→ "Кто ещё вовлечён в этот момент?"
 
-Closing:
-→ "Is there anything important we haven't talked about?"
-→ "Who else do you think we should talk to?"
+Закрывающие:
+→ "Есть ли что-то важное, о чём мы не поговорили?"
+→ "К кому ещё, по вашему мнению, стоит обратиться?"
 ```
 
-**Tips:**
-- Silence is your tool. Don't rush to fill pauses.
-- One question at a time. Compound questions ("How and why...?") confuse people.
-- Take notes or record (with consent). Transcribe right after.
-- The stakeholder should talk 80% of the time, you 20%.
+**Советы:**
+- Молчание — твой инструмент. Не торопись заполнять паузы.
+- Один вопрос за раз. Составные вопросы ("А как и почему...?") путают.
+- Веди заметки или записывай (с согласия). После — транскрибируй сразу.
+- 80% времени говорит стейкхолдер, 20% — ты.
 
 ---
 
-## 2. Survey
+## 2. Анкетирование
 
-**When to use:**
-- Many respondents (10+), need coverage
-- Need standardized, comparable data
-- Stakeholders are geographically distributed
-- Need quantitative confirmation of hypotheses
+**Когда использовать:**
+- Много респондентов (10+), нужен охват
+- Нужны стандартизированные, сопоставимые данные
+- Стейкхолдеры географически распределены
+- Нужно количественное подтверждение гипотез
 
-**Important:** questions can't be adjusted mid-flight — wording errors
-will only surface at the end. So question quality is critical.
+**Важно:** вопросы нельзя скорректировать в процессе — ошибки в формулировках
+обнаружатся только в конце. Поэтому качество вопросов критично.
 
-**Preparing a survey:**
+**Подготовка анкеты:**
 
-**Step 1 — Define what you want to measure**
-Every question must answer a specific objective. If it's unclear why a question is there — remove it.
+**Шаг 1 — Определи, что хочешь измерить**
+Каждый вопрос должен давать ответ на конкретную цель. Если непонятно зачем вопрос — удали.
 
-**Step 2 — Choose question types**
+**Шаг 2 — Выбери типы вопросов**
 
-| Type | When to use | Example |
+| Тип | Когда использовать | Пример |
 | :--- | :--- | :--- |
-| Closed (Yes/No) | Fact, presence/absence | "Do you use the current system daily?" |
-| Scale (1–5, 1–10) | Satisfaction rating, frequency | "Rate the interface's usability from 1 to 5" |
-| Multiple choice | Categories, options | "Which features do you use most often?" |
-| Open-ended | Opinion, ideas, details | "What would you like to improve?" |
-| Ranking | Priorities | "Rank the features by importance" |
+| Закрытый (Да/Нет) | Факт, наличие/отсутствие | "Вы используете текущую систему ежедневно?" |
+| Шкала (1–5, 1–10) | Оценка удовлетворённости, частоты | "Оцените удобство интерфейса от 1 до 5" |
+| Множественный выбор | Категории, варианты | "Какие функции вы используете чаще всего?" |
+| Открытый | Мнение, идеи, детали | "Что бы вы хотели улучшить?" |
+| Ранжирование | Приоритеты | "Расставьте функции по важности" |
 
-**Step 3 — Question quality checklist**
+**Шаг 3 — Чеклист качества вопросов**
 
-Before sending, check every question:
+Перед отправкой проверь каждый вопрос:
 
-- [ ] The question is clear without additional explanation
-- [ ] One question — one idea (no "and" acting as a logical fork)
-- [ ] No leading wording ("Do you agree the system is inconvenient?")
-- [ ] No professional jargon the respondent won't understand
-- [ ] Closed questions have an "Other / Not sure" option
-- [ ] Scales are symmetric (not "Bad / OK / Great / Awesome")
-- [ ] The survey takes no longer than 10–12 minutes to complete (up to 15 questions)
+- [ ] Вопрос понятен без дополнительных объяснений
+- [ ] Один вопрос — одна мысль (нет "и" как логической развилки)
+- [ ] Нет наводящих формулировок ("Согласны ли вы, что система неудобна?")
+- [ ] Нет профессионального жаргона, непонятного респонденту
+- [ ] Закрытые вопросы имеют вариант "Другое / Затрудняюсь ответить"
+- [ ] Шкалы симметричны (не "Плохо / Нормально / Отлично / Супер")
+- [ ] Анкета не длиннее 10–12 минут заполнения (до 15 вопросов)
 
-**Step 4 — Test the survey**
+**Шаг 4 — Тестирование анкеты**
 
-Mandatory! Give the survey to 2–3 people not involved with the project.
-Ask them to flag: what's unclear, what's annoying, how long it took.
+Обязательно! Дай анкету 2–3 людям, не связанным с проектом.
+Попроси отметить: что непонятно, что раздражает, сколько времени заняло.
 
-**Step 5 — Distribution**
+**Шаг 5 — Рассылка**
 
-Via Google Forms: use the MCP tool `create_google_form`.
-The cover message must include:
-- The survey's purpose (1–2 sentences)
-- How long it will take
-- The deadline
-- Who to contact with questions
+Через Google Forms: используй MCP-инструмент `create_google_form`.
+В сопроводительном письме обязательно укажи:
+- Цель опроса (1–2 предложения)
+- Сколько времени займёт
+- Дедлайн
+- Кому писать с вопросами
 
-**Step 6 — Process the results**
+**Шаг 6 — Обработка результатов**
 
-Use the MCP tool `get_form_responses` to retrieve and structure the answers.
+Используй MCP-инструмент `get_form_responses` для получения и структурирования ответов.
 
 ---
 
-## 3. Workshop
+## 3. Воркшоп
 
-**When to use:**
-- Need alignment across several stakeholder groups
-- Requirements conflict and a compromise is needed
-- Need to gather a large amount of information quickly
-- Joint solution development (buy-in) matters
+**Когда использовать:**
+- Нужно согласование между несколькими группами стейкхолдеров
+- Требования конфликтуют и нужно найти компромисс
+- Нужно быстро собрать большой объём информации
+- Важна совместная выработка решения (buy-in)
 
-**Preparation:**
+**Подготовка:**
 
-1. Define the workshop's goal and expected outcome
-2. Draft a list of participants (6–10 people is optimal)
-3. Assign roles: facilitator, scribe, timekeeper
-4. Prepare an agenda with time slots
-5. Prepare materials: templates, sticky notes, a board (Miro / physical)
+1. Определи цель и ожидаемый результат воркшопа
+2. Составь список участников (оптимально 6–10 человек)
+3. Назначь роли: фасилитатор, секретарь, таймкипер
+4. Подготовь повестку с тайм-слотами
+5. Подготовь материалы: шаблоны, стикеры, доску (Miro / физическую)
 
-**Workshop agenda template:**
+**Шаблон повестки воркшопа:**
 
 ```
-## Workshop agenda: [name]
-**Date / time:**
-**Participants:**
-**Facilitator:**
-**Goal:** By the end of the workshop we must have [outcome]
+## Повестка воркшопа: [название]
+**Дата / время:** 
+**Участники:** 
+**Фасилитатор:** 
+**Цель:** По итогам воркшопа мы должны получить [результат]
 
-| Time | Block | Format | Owner |
+| Время | Блок | Формат | Ответственный |
 | :--- | :--- | :--- | :--- |
-| 09:00–09:10 | Opening, goals, ground rules | Presentation | Facilitator |
-| 09:10–09:30 | Context and current state | Discussion | Everyone |
-| 09:30–10:00 | [Main topic 1] | Group work | Facilitator |
-| 10:00–10:30 | [Main topic 2] | Brainstorming | Everyone |
-| 10:30–10:45 | Prioritizing outcomes | Voting | Everyone |
-| 10:45–11:00 | Recording agreements, next steps | Wrap-up | Scribe |
+| 09:00–09:10 | Открытие, цели, правила | Презентация | Фасилитатор |
+| 09:10–09:30 | Контекст и текущее состояние | Обсуждение | Все |
+| 09:30–10:00 | [Основная тема 1] | Работа в группах | Фасилитатор |
+| 10:00–10:30 | [Основная тема 2] | Мозговой штурм | Все |
+| 10:30–10:45 | Приоритизация результатов | Голосование | Все |
+| 10:45–11:00 | Фиксация договорённостей, next steps | Подведение итогов | Секретарь |
 ```
 
-**Rules of a good workshop:**
-- Announce ground rules at the start: one person speaks, no criticizing ideas, phones away
-- Capture everything in plain view (flipchart, shared board)
-- Parking lot — a dedicated space for important but off-topic questions
-- The outcome of a workshop is a concrete list of agreements and next steps
+**Правила хорошего воркшопа:**
+- Объяви правила в начале: один говорит, нет критики идей, телефоны убраны
+- Фиксируй всё на виду (флипчарт, общая доска)
+- Parking lot — отдельное место для важных но оффтопных вопросов
+- Итог воркшопа — конкретный список договорённостей и next steps
 
 ---
 
-## 4. Brainstorming
+## 4. Мозговой штурм
 
-**When to use:**
-- Need ideas without constraints or criticism
-- Exploratory phase, the problem isn't yet defined
-- Usually as part of a workshop (20–30 minutes)
+**Когда использовать:**
+- Нужны идеи без ограничений и критики
+- Исследовательская фаза, проблема не определена
+- Обычно как часть воркшопа (20–30 минут)
 
-**Rules:**
-- No criticism during idea generation
-- Quantity matters more than quality at first
-- Building on others' ideas is encouraged
-- All ideas are recorded, none are lost
+**Правила:**
+- Запрет критики во время генерации идей
+- Количество важнее качества на первом этапе
+- Можно развивать идеи других участников
+- Все идеи фиксируются, ни одна не теряется
 
-**Process:**
-1. Frame the question ("How might we...?")
-2. Silent generation — everyone writes their own ideas (5 min)
-3. Share-out — everyone reads theirs out, the facilitator records them
-4. Group similar ideas
-5. Prioritize (dot voting or MoSCoW)
+**Процесс:**
+1. Сформулируй вопрос ("Как мы можем...?")
+2. Тихая генерация — каждый пишет идеи сам (5 мин)
+3. Огласка — каждый зачитывает, фасилитатор фиксирует
+4. Группировка похожих идей
+5. Приоритизация (dot voting или MoSCoW)
 
 ---
 
-## 5. Document Analysis
+## 5. Анализ документов
 
-**When to use:**
-- A legacy system, regulations, or instructions exist
-- Need to understand the current as-is state
-- Stakeholders are hard to reach
-- As preparation for an interview (to avoid asking basic questions)
+**Когда использовать:**
+- Есть legacy-система, регламенты, инструкции
+- Нужно понять текущее состояние "как есть"
+- Стейкхолдеры труднодоступны
+- Как подготовка к интервью (чтобы не задавать базовые вопросы)
 
-**What to look for in documents:**
+**Что искать в документах:**
 
-| Document type | What we extract |
+| Тип документа | Что извлекаем |
 | :--- | :--- |
-| Regulations / instructions | Current rules and processes |
-| Reports / dashboards | Metrics, KPIs, pain points |
-| Complaints / support tickets | Real user problems |
-| Meeting minutes | Previously made decisions |
-| Technical specifications | Constraints of the current system |
+| Регламенты / инструкции | Текущие правила и процессы |
+| Отчёты / дашборды | Метрики, KPI, болевые точки |
+| Жалобы / тикеты поддержки | Реальные проблемы пользователей |
+| Протоколы встреч | Ранее принятые решения |
+| Технические спецификации | Ограничения текущей системы |
 
-**Document analysis checklist:**
-- [ ] Document date — is it current?
-- [ ] Who's the author — how authoritative is the source?
-- [ ] Does the document match actual practice?
-- [ ] What requirements can be extracted from it?
-- [ ] What questions does it raise for the follow-up interview?
+**Чеклист анализа документа:**
+- [ ] Дата документа — актуален ли?
+- [ ] Кто автор — насколько авторитетен источник?
+- [ ] Соответствует ли документ реальной практике?
+- [ ] Какие требования из него можно извлечь?
+- [ ] Какие вопросы он порождает для последующего интервью?
 
 ---
 
-## 6. Observation
+## 6. Наблюдение
 
-**When to use:**
-- Stakeholders can't clearly describe their work ("I just do it")
-- Need to understand the real process, not the documented one
-- Suspect a gap between "how it should be" and "how it actually is"
+**Когда использовать:**
+- Стейкхолдеры не могут чётко описать свою работу ("просто делаю и всё")
+- Нужно понять реальный процесс, а не задокументированный
+- Есть подозрение на расхождение между тем "как должно быть" и "как есть"
 
-**Two types:**
+**Два типа:**
 
-| Type | Description |
+| Тип | Описание |
 | :--- | :--- |
-| **Passive (shadowing)** | The BA observes silently, without intervening |
-| **Active** | The BA asks questions as the work happens |
+| **Пассивное (shadowing)** | BA наблюдает молча, не вмешивается |
+| **Активное** | BA задаёт вопросы по ходу работы |
 
-**What to record:**
-- Sequence of actions
-- Tools and systems used
-- Deviations from the regulation (and why)
-- Bottlenecks and pain points
-- Informal practices (users' "workarounds")
+**Что фиксировать:**
+- Последовательность действий
+- Используемые инструменты и системы
+- Отклонения от регламента (и почему)
+- Узкие места и раздражители
+- Неформальные практики ("лайфхаки" пользователей)
 
 ---
 
-## 7. Prototyping
+## 7. Прототипирование
 
-**When to use:**
-- Requirements are vague and stakeholders struggle to articulate them
-- Need to quickly validate a hypothesis about the solution
-- High risk of misunderstanding
+**Когда использовать:**
+- Требования размыты и стейкхолдерам сложно их сформулировать
+- Нужно быстро проверить гипотезу о решении
+- Высокий риск неправильного понимания
 
-**Types of prototypes:**
+**Типы прототипов:**
 
-| Type | Tools | When |
+| Тип | Инструменты | Когда |
 | :--- | :--- | :--- |
-| Paper (wireframe) | Pencil, paper | Earliest stage |
-| Digital lo-fi | Figma, Miro, draw.io | Discussion with the business |
-| Interactive hi-fi | Figma, Marvel | Validation with users |
+| Бумажный (wireframe) | Карандаш, бумага | Самая ранняя стадия |
+| Цифровой lo-fi | Figma, Miro, draw.io | Обсуждение с бизнесом |
+| Интерактивный hi-fi | Figma, Marvel | Валидация с пользователями |
 
-**Important:** a prototype is a conversation tool, not a technical specification.
-Tell the stakeholder explicitly: "This isn't the final design, it's a way to discuss requirements."
-
----
-
-## 8. Focus Group
-
-**When to use:**
-- Need the opinion of a group of end users
-- Group dynamics and discussion matter
-- Researching perception of a product / process
-
-**Difference from a workshop:** a focus group explores opinions, a workshop produces decisions.
-
-**Optimal composition:** 6–8 participants, one moderator, one observer/scribe.
+**Важно:** прототип — инструмент разговора, не техническое задание.
+Явно скажи стейкхолдеру: "Это не финальный дизайн, это способ обсудить требования."
 
 ---
 
-## 9. Benchmarking
+## 8. Фокус-группа
 
-**When to use:**
-- Need to compare against industry practices or competitors
-- No internal expertise on the topic
-- Need to justify the choice of approach
+**Когда использовать:**
+- Нужно мнение группы конечных пользователей
+- Важна групповая динамика и обсуждение
+- Исследование восприятия продукта / процесса
 
-**Sources:** industry reports, case studies, open standards, competitive analysis.
+**Отличие от воркшопа:** фокус-группа исследует мнения, воркшоп вырабатывает решения.
 
-**Outcome:** a list of best practices with an assessment of applicability to the current context.
+**Оптимальный состав:** 6–8 участников, один модератор, один наблюдатель-секретарь.
+
+---
+
+## 9. Бенчмаркинг
+
+**Когда использовать:**
+- Нужно сравнить с отраслевыми практиками или конкурентами
+- Нет внутренней экспертизы по теме
+- Нужно обосновать выбор подхода
+
+**Источники:** отраслевые отчёты, кейсы, открытые стандарты, конкурентный анализ.
+
+**Результат:** список лучших практик с оценкой применимости к текущему контексту.

@@ -1,141 +1,141 @@
 ---
 name: requirements_assess_changes
 description: >
-  BABOK 5.4 skill — Assess Requirements Changes (Change Request). Use this skill
-  when a request to change requirements comes in: you need to assess impact, run a
-  consequence analysis, score the CR, and produce a recommendation (Approve/Defer/Reject).
-  Triggers: "change request", "CR", "request for change", "impact analysis",
-  "assess requirements changes", "assess change", "change to requirements", "new CR".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 5.4 — Оценка изменений требований (Change Request). Используй этот скилл
+  когда поступил запрос на изменение требований: нужно оценить impact, провести анализ
+  последствий, проскорить CR и сформировать рекомендацию (Approve/Defer/Reject).
+  Триггеры: «change request», «CR», «запрос на изменение», «impact analysis»,
+  «оценка изменений», «assess change», «изменение требований», «новый CR».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL: BABOK 5.4 — Assess Requirements Changes
-**Task:** assess the consequences of a proposed change to requirements and designs (Change Request).
-**MCP server:** `requirements_assess_changes_mcp.py`
+**Задача:** оценка последствий предлагаемого изменения требований и дизайнов (Change Request).
+**MCP-сервер:** `requirements_assess_changes_mcp.py`
 **Reference:** `references/cr_assessment_guide.md`
 
 ---
 
-## What this task is about
+## Суть задачи
 
-5.4 is the **change gatekeeper**. Every CR goes through four steps:
+5.4 — **привратник изменений**. Каждый CR проходит через четыре шага:
 `open_cr` → `run_cr_impact` → `score_cr` → `resolve_cr`
 
-**What the BA does in 5.4:**
-- Registers the CR and determines the formality level
-- Analyzes impact via the 5.1 traceability graph
-- Scores the CR along five axes (Benefit / Cost / Impact / Schedule / Urgency)
-- Receives a recommendation and hands it off for a decision to the authorized stakeholder
-- Records the decision with rationale, updates requirement statuses
+**Что делает BA в 5.4:**
+- Регистрирует CR и определяет уровень формальности
+- Анализирует влияние через граф трассировки 5.1
+- Оценивает CR по пяти осям (Benefit / Cost / Impact / Schedule / Urgency)
+- Получает рекомендацию и передаёт на решение уполномоченному стейкхолдеру
+- Фиксирует решение с rationale, обновляет статусы требований
 
-**What 5.4 does NOT do:**
-- It does not make the final decision — it only provides a recommendation
-- It does not change the content of requirements (that's the BA via 5.2, after Approved)
-- It does not re-prioritize requirements (that's 5.3 — run it after resolve_cr)
-- It does not formally approve requirements (that's 5.5)
+**Что 5.4 НЕ делает:**
+- Не принимает финальное решение — только даёт рекомендацию
+- Не вносит изменения в содержание требований (это BA через 5.2 после Approved)
+- Не переприоритизирует требования (это 5.3 — запустить после resolve_cr)
+- Не согласовывает требования формально (это 5.5)
 
-**Output of 5.4:** a CR Decision Record → feeds into **4.4 (communication)** and **5.5 (approval/audit)**.
+**Результат 5.4:** CR Decision Record → уходит в **4.4 (коммуникация)** и **5.5 (аудит)**.
 
 ---
 
-## Inputs from other tasks
+## Входы из других задач
 
-| Task | What it provides |
+| Задача | Что даёт |
 |--------|----------|
-| **5.1** | Traceability graph → BFS traversal for impact analysis |
-| **5.2** | Requirements stability → risk flags for volatile requirements |
-| **5.3** | Priorities → check for CR conflicts with Must/Won't |
-| **3.3** | Governance approach → who is authorized to decide on CRs |
-| **4.5** | Decision Log → where the final decision is recorded |
+| **5.1** | Граф трассировки → BFS-обход для impact analysis |
+| **5.2** | Стабильность требований → флаги риска для волатильных |
+| **5.3** | Приоритеты → проверка конфликтов CR с Must/Won't |
+| **3.3** | Governance approach → кто уполномочен принимать решения по CR |
+| **4.5** | Decision Log → куда записывается финальное решение |
 
 ---
 
-## When this skill activates
+## Когда активируется этот скилл
 
-- A stakeholder requests a new piece of functionality
-- A change in business strategy or scope is identified
-- Legislative/regulatory requirements have changed
-- A developer has identified a technical constraint requiring a requirements review
-- New data has emerged that changes the understanding of the business need
-- Testing has revealed a mismatch between requirements and reality
-
----
-
-## Four pipeline steps
-
-### Step 1 — Open the CR (`open_cr`)
-
-**When:** a change request has been received and needs to be registered.
-
-Algorithm:
-1. Determine the type of change: new requirement / change to an existing one / removal / architectural
-2. Identify the initiator and the affected areas
-3. Determine the formality level (read `references/cr_assessment_guide.md` → "Assessment formality"):
-   - Predictive + close to release → high formality
-   - Agile + start of iteration → standard
-   - Regulatory CR → always high, Urgency = Critical automatically
-4. Call `open_cr`
-
-Result: the CR is registered as a node in the 5.1 repository, status `open`.
-
-> 📌 A CR is a new node type in the 5.1 repository. It is linked to affected requirements
-> via a `modifies` relation (added in `run_cr_impact`).
+- Стейкхолдер запрашивает добавление новой функциональности
+- Обнаружено изменение бизнес-стратегии или скоупа
+- Изменились законодательные/нормативные требования
+- Разработчик выявил техническое ограничение, требующее пересмотра требований
+- Появились новые данные меняющие понимание бизнес-потребности
+- Тестирование выявило несоответствие требований реальности
 
 ---
 
-### Step 2 — Impact analysis (`run_cr_impact`)
+## Четыре шага pipeline
 
-**When:** the CR is open and you need to understand the scope of the change.
+### Шаг 1 — Открыть CR (`open_cr`)
 
-Algorithm:
-1. Call `run_cr_impact` with the CR ID and the list of target requirements
-2. The tool performs a BFS traversal of the 5.1 graph starting from each target requirement
-3. Review the result:
-   - List of affected requirements by relation type
-   - `depends` → what will lose meaning
-   - `verifies` → which tests need to be rewritten
-   - `satisfies` → which code needs to be reworked
-   - `derives` → which child requirements are affected
-4. Check: are there any affected requirements with no traceability to a BR?
-5. Check: are there any volatile requirements among those affected (from 5.2)?
+**Когда:** получен запрос на изменение, нужно его зарегистрировать.
 
-> 📌 If the scope turns out unexpectedly large, notify the initiator before score_cr.
-> Many CRs get withdrawn from consideration at exactly this step.
+Алгоритм:
+1. Определить тип изменения: новое требование / изменение существующего / удаление / архитектурное
+2. Определить инициатора и затронутые области
+3. Определить уровень формальности (читай `references/cr_assessment_guide.md` → «Формальность оценки»):
+   - Predictive + близко к релизу → высокая формальность
+   - Agile + начало итерации → стандартная
+   - Регуляторный CR → всегда высокая, Urgency = Critical автоматически
+4. Вызвать `open_cr`
+
+Результат: CR зарегистрирован как узел в репозитории 5.1, статус `open`.
+
+> 📌 CR — новый тип узла в репозитории 5.1. Связывается с затронутыми требованиями
+> через связь типа `modifies` (добавляется в `run_cr_impact`).
 
 ---
 
-### Step 3 — Score the CR (`score_cr`)
+### Шаг 2 — Анализ влияния (`run_cr_impact`)
 
-**When:** impact analysis is complete and the real scope is known.
+**Когда:** CR открыт, нужно понять масштаб изменения.
 
-Algorithm:
-1. The technical axes are filled in automatically (Impact + Schedule from step 2)
-2. Enter the business axes manually:
-   - **Benefit**: High / Medium / Low — what does the business gain?
-   - **Cost**: Low / Medium / High — full cost including opportunity cost
-   - **Urgency**: Critical / High / Normal — how urgent is it?
-3. Call `score_cr`
-4. Receive:
-   - A numeric CR Score and a preliminary verdict (Approve/Modify/Defer/Reject)
-   - A narrative rationale from Claude that accounts for context
-   - Automated checks (traceability to the need, conflicts with priorities)
+Алгоритм:
+1. Вызвать `run_cr_impact` с ID CR и списком целевых требований
+2. Инструмент выполняет BFS-обход графа 5.1 от каждого целевого требования
+3. Изучить результат:
+   - Список затронутых требований по типам связей
+   - `depends` → что потеряет смысл
+   - `verifies` → какие тесты нужно переписать
+   - `satisfies` → какой код нужно переделать
+   - `derives` → какие дочерние требования затронуты
+4. Проверить: есть ли среди затронутых требования без трассировки к BR?
+5. Проверить: есть ли среди затронутых волатильные требования (из 5.2)?
 
-**Scoring scale:**
+> 📌 Если масштаб неожиданно большой — сообщи инициатору до score_cr.
+> Многие CR снимаются с рассмотрения именно на этом шаге.
+
+---
+
+### Шаг 3 — Скоринг CR (`score_cr`)
+
+**Когда:** impact analysis завершён, известен реальный масштаб.
+
+Алгоритм:
+1. Технические оси заполнены автоматически (Impact + Schedule из шага 2)
+2. Ввести бизнес-оси вручную:
+   - **Benefit**: High / Medium / Low — что получает бизнес?
+   - **Cost**: Low / Medium / High — полная стоимость включая альтернативные затраты
+   - **Urgency**: Critical / High / Normal — насколько срочно?
+3. Вызвать `score_cr`
+4. Получить:
+   - Числовой CR Score и предварительный вердикт (Approve/Modify/Defer/Reject)
+   - Текстовое обоснование Claude с учётом контекста
+   - Автоматические проверки (трассировка к потребности, конфликты с приоритетами)
+
+**Шкала скоринга:**
 - ≥ 8.0 → ✅ Approve
 - 4.0–7.9 → 🟡 Modify
 - 1.0–3.9 → ⏳ Defer
 - < 1.0 → ❌ Reject
 
-> 📌 The formula yields a preliminary verdict. Claude can adjust it
-> with an explicit reason. The BA makes the final decision on what gets submitted for approval.
+> 📌 Формула — предварительный вердикт. Claude может скорректировать
+> с явной причиной. BA принимает финальное решение о том, что передать на одобрение.
 
-For details on the axes: `references/cr_assessment_guide.md` → "Five impact analysis axes"
+Справка по осям: `references/cr_assessment_guide.md` → «Пять осей анализа влияния»
 
 ---
 
-### Step 4 — Record the decision (`resolve_cr`)
+### Шаг 4 — Зафиксировать решение (`resolve_cr`)
 
-**When:** the authorized stakeholder has made a decision.
+**Когда:** решение принято уполномоченным стейкхолдером.
 
 Algorithm:
 1. Obtain the decision from the authorized party (per governance 3.3 — `score_cr`
@@ -144,72 +144,72 @@ Algorithm:
    the CR Decision Record; it never blocks and never rewrites the name)
 2. Call `resolve_cr` with parameters:
    - `decision`: Approved / Approved_with_Modification / Deferred / Rejected
-   - `decided_by`: who made the decision
-   - `rationale`: justification (required — for audit purposes)
-3. The tool automatically:
-   - On Approved: changes the status of affected requirements to `under_change`
-   - Generates a CR Decision Record (Markdown) → `save_artifact`
-   - Updates the status of the CR node in the 5.1 repository
-4. After Approved: update the content of requirements via `update_requirement` (5.2)
-5. After Approved: run `start_prioritization_session` (5.3) if priorities are affected
-6. Send the CR Decision Record via `prepare_communication_package` (4.4)
+   - `decided_by`: кто принял решение
+   - `rationale`: обоснование (обязательно — для аудита)
+3. Инструмент автоматически:
+   - При Approved: меняет статус затронутых требований на `under_change`
+   - Генерирует CR Decision Record (Markdown) → `save_artifact`
+   - Обновляет статус CR-узла в репозитории 5.1
+4. После Approved: обновить содержание требований через `update_requirement` (5.2)
+5. После Approved: запустить `start_prioritization_session` (5.3) если приоритеты затронуты
+6. CR Decision Record отправить через `prepare_communication_package` (4.4)
 
-> 📌 Rejected and Deferred CRs are not deleted from the repository.
-> CR history is part of the project's audit trail.
+> 📌 Rejected и Deferred CR не удаляются из репозитория.
+> История CR — часть audit trail проекта.
 
 ---
 
-## MCP tools
+## MCP-инструменты
 
-| Tool | Step | What it does |
+| Инструмент | Шаг | Что делает |
 |------------|-----|-----------|
-| `open_cr` | 1 | Register the CR in the 5.1 repository |
-| `run_cr_impact` | 2 | BFS traversal of the graph, build the list of affected items, create `modifies` relations |
-| `score_cr` | 3 | Calculate the CR Score, get a recommendation + automated checks |
-| `resolve_cr` | 4 | Record the decision, update statuses, generate the Decision Record |
+| `open_cr` | 1 | Зарегистрировать CR в репозитории 5.1 |
+| `run_cr_impact` | 2 | BFS-обход графа, построить список затронутых, создать `modifies`-связи |
+| `score_cr` | 3 | Рассчитать CR Score, получить рекомендацию + автопроверки |
+| `resolve_cr` | 4 | Зафиксировать решение, обновить статусы, сгенерировать Decision Record |
 
 ---
 
-## Mapping from 5.1 — relation types during impact analysis
+## Mapping из 5.1 — типы связей при impact analysis
 
-| Relation type | What it means for a CR |
+| Тип связи | Что означает при CR |
 |-----------|---------------------|
-| `depends` | The dependent requirement may lose its meaning |
-| `verifies` | Test cases need to be reviewed/rewritten |
-| `satisfies` | The code component needs to be reworked |
-| `derives` | Child requirements may inherit the change |
-| `modifies` | Direct CR → changed-requirement link (created in step 2) |
+| `depends` | Зависимое требование может потерять смысл |
+| `verifies` | Тест-кейсы нужно пересмотреть/переписать |
+| `satisfies` | Компонент кода нужно переделать |
+| `derives` | Дочерние требования могут унаследовать изменение |
+| `modifies` | Прямая связь CR → изменяемое требование (создаётся в шаге 2) |
 
 ---
 
-## Mapping from 5.2 — stability as a risk factor
+## Mapping из 5.2 — стабильность как фактор риска
 
-| Stability (from 5.2) | Behavior in 5.4 |
+| Stability (из 5.2) | Поведение в 5.4 |
 |--------------------|----------------|
-| `Stable` (version < 1.3) | No additional flags |
-| `Volatile` (version 1.3) | 🟡 Warning: unstable requirement + CR = double uncertainty |
-| `Volatile` (version ≥ 1.4) | 🔴 High risk: recommend stabilizing the requirement before the CR |
+| `Stable` (версия < 1.3) | Без дополнительных флагов |
+| `Volatile` (версия 1.3) | 🟡 Предупреждение: нестабильное требование + CR = двойная неопределённость |
+| `Volatile` (версия ≥ 1.4) | 🔴 Высокий риск: рекомендуется стабилизировать требование перед CR |
 
 ---
 
-## Common BA questions
+## Типичные вопросы BA
 
-**"The CR is small — do I still need to go through all four steps?"**
-Yes — all four steps. For a small CR, the pipeline moves through quickly.
-Impact often turns out larger than expected — the graph will show it.
+**«CR маленький — нужно ли проходить все четыре шага?»**
+Да — все четыре шага. Для малого CR pipeline проходится быстро.
+Impact часто оказывается больше ожидаемого — граф это покажет.
 
-**"Who can be `decided_by`?"**
-Determined in task 3.3 (Governance). Usually: the sponsor, the Product Owner, or the CCB.
-If unclear, check with the Project Manager.
+**«Кто может быть `decided_by`?»**
+Определяется в задаче 3.3 (Governance). Обычно: Спонсор, Product Owner, или CCB.
+Если unclear — уточни у Project Manager.
 
-**"What if several CRs affect the same requirements?"**
-Assess them together: pass `related_cr_ids` to `open_cr`.
-The combined impact can be non-linear — it's better to see the whole picture.
+**«Что делать если несколько CR затрагивают одни и те же требования?»**
+Оценивать совместно: передай `related_cr_ids` в `open_cr`.
+Суммарный impact может быть нелинейным — лучше видеть картину целиком.
 
-**"After a CR is Approved, when should I update the requirements in 5.2?"**
-Right after `resolve_cr`. The `under_change` status means "the requirement is in the process of being changed."
-Don't leave requirements in `under_change` for longer than one iteration.
+**«После Approved CR — когда обновлять требования в 5.2?»**
+Сразу после `resolve_cr`. Статус `under_change` означает «требование в процессе изменения».
+Не оставляй требования в `under_change` дольше одной итерации.
 
-**"Do I need to re-prioritize after a CR?"**
-If the CR changes Must/Won't items or adds new requirements — yes, run 5.3.
-`resolve_cr` will explicitly flag it if conflicts with priorities are detected.
+**«Нужно ли переприоритизировать после CR?»**
+Если CR меняет Must/Won't или добавляет новые требования — да, запускай 5.3.
+`resolve_cr` явно укажет если обнаружены конфликты с приоритетами.

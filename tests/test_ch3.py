@@ -1,16 +1,16 @@
 """
-tests/test_ch3.py — Tests for task 3 (Business Analysis Planning)
+tests/test_ch3.py — Тесты задачи 3 (Business Analysis Planning)
 
-Coverage:
-  - suggest_ba_approach            (14 tests)
-  - plan_stakeholder_engagement    (14 tests)
-  - plan_ba_governance             (12 tests)
-  - plan_information_management    (12 tests)
-  - evaluate_ba_performance        (11 tests)
-  - save_ba_plan                   (10 tests)
-  - Utilities (_safe, _classify_stakeholder, _load/_save_plan)  (7 tests)
-  - Integration pipeline tests  (8 tests)
-Total: ~88 tests
+Покрытие:
+  - suggest_ba_approach            (14 тестов)
+  - plan_stakeholder_engagement    (14 тестов)
+  - plan_ba_governance             (12 тестов)
+  - plan_information_management    (12 тестов)
+  - evaluate_ba_performance        (11 тестов)
+  - save_ba_plan                   (10 тестов)
+  - Утилиты (_safe, _classify_stakeholder, _load/_save_plan)  (7 тестов)
+  - Интеграционные pipeline-тесты  (8 тестов)
+Итого: ~88 тестов
 """
 
 import json
@@ -39,7 +39,7 @@ from skills.planning_mcp import (
 )
 
 # ---------------------------------------------------------------------------
-# Constants
+# Константы
 # ---------------------------------------------------------------------------
 
 PROJECT = "test_project_ch3"
@@ -65,8 +65,8 @@ def _make_approach(project_id: str = PROJECT, **kwargs):
 
 def _make_stakeholders(project_id: str = PROJECT, **kwargs):
     stakeholders = [
-        {"name": "Sponsor", "role": "CEO", "influence": "High", "interest": "High", "attitude": "Champion"},
-        {"name": "User", "role": "End User", "influence": "Low", "interest": "High", "attitude": "Neutral"},
+        {"name": "Спонсор", "role": "CEO", "influence": "High", "interest": "High", "attitude": "Champion"},
+        {"name": "Пользователь", "role": "End User", "influence": "Low", "interest": "High", "attitude": "Neutral"},
     ]
     params = dict(
         project_id=project_id,
@@ -99,7 +99,7 @@ def _make_info_mgmt(project_id: str = PROJECT, **kwargs):
 def _make_performance(project_id: str = PROJECT, **kwargs):
     params = dict(
         project_id=project_id,
-        current_issues_json='["no templates", "weak traceability"]',
+        current_issues_json='["нет шаблонов", "слабая трассировка"]',
     )
     params.update(kwargs)
     return evaluate_ba_performance(**params)
@@ -115,7 +115,7 @@ def _setup_full_pipeline(project_id: str = PROJECT) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Utilities
+# Утилиты
 # ---------------------------------------------------------------------------
 
 class TestUtils(BaseMCPTest):
@@ -177,7 +177,7 @@ class TestSuggestBaApproach(BaseMCPTest):
         self.assertIn("Hybrid", plan["ba_approach"]["recommended_approach"])
 
     def test_regulatory_no_override_predictive(self):
-        """Predictive + regulatory → stays Predictive (override only for Agile/Hybrid)."""
+        """Predictive + regulatory → остаётся Predictive (override только для Agile/Hybrid)."""
         _make_approach(change_frequency="Low", uncertainty="Low", regulatory_need=True)
         plan = _load()
         self.assertIn("Predictive", plan["ba_approach"]["recommended_approach"])
@@ -189,9 +189,9 @@ class TestSuggestBaApproach(BaseMCPTest):
         self.assertGreater(len(plan["ba_approach"]["techniques"]), 0)
 
     def test_ba_notes_saved(self):
-        _make_approach(ba_notes="Hard Q2 deadline")
+        _make_approach(ba_notes="Жёсткий дедлайн Q2")
         plan = _load()
-        self.assertEqual(plan["ba_approach"]["ba_notes"], "Hard Q2 deadline")
+        self.assertEqual(plan["ba_approach"]["ba_notes"], "Жёсткий дедлайн Q2")
 
     def test_decided_on_today(self):
         _make_approach()
@@ -211,7 +211,7 @@ class TestSuggestBaApproach(BaseMCPTest):
 
     def test_output_contains_techniques(self):
         result = _make_approach()
-        self.assertIn("BABOK techniques", result)
+        self.assertIn("Техники BABOK", result)
 
     def test_output_contains_next_step(self):
         result = _make_approach()
@@ -243,15 +243,15 @@ class TestPlanStakeholderEngagement(BaseMCPTest):
         plan = _load()
         stakeholders = plan["stakeholder_engagement"]["stakeholders"]
         names = [s["name"] for s in stakeholders]
-        self.assertIn("Sponsor", names)
-        sponsor = next(s for s in stakeholders if s["name"] == "Sponsor")
+        self.assertIn("Спонсор", names)
+        sponsor = next(s for s in stakeholders if s["name"] == "Спонсор")
         self.assertEqual(sponsor["quadrant"], "Key Players")
 
     def test_subjects_quadrant(self):
         _make_stakeholders()
         plan = _load()
         user = next(s for s in plan["stakeholder_engagement"]["stakeholders"]
-                    if s["name"] == "User")
+                    if s["name"] == "Пользователь")
         self.assertEqual(user["quadrant"], "Subjects")
 
     def test_invalid_json(self):
@@ -278,7 +278,7 @@ class TestPlanStakeholderEngagement(BaseMCPTest):
 
     def test_blocker_warning(self):
         stakeholders = [
-            {"name": "Blocker", "role": "CTO", "influence": "High", "interest": "Low", "attitude": "Blocker"}
+            {"name": "Блокер", "role": "CTO", "influence": "High", "interest": "Low", "attitude": "Blocker"}
         ]
         result = plan_stakeholder_engagement(PROJECT, json.dumps(stakeholders))
         self.assertIn("Blockers", result)
@@ -287,7 +287,7 @@ class TestPlanStakeholderEngagement(BaseMCPTest):
         _make_stakeholders()
         plan = _load()
         sponsor = next(s for s in plan["stakeholder_engagement"]["stakeholders"]
-                       if s["name"] == "Sponsor")
+                       if s["name"] == "Спонсор")
         self.assertIn("comm_frequency", sponsor)
         self.assertTrue(len(sponsor["comm_frequency"]) > 0)
 
@@ -302,12 +302,12 @@ class TestPlanStakeholderEngagement(BaseMCPTest):
 
     def test_contact_field_saved(self):
         stakeholders = [
-            {"name": "Ivan", "role": "PM", "influence": "High", "interest": "High",
+            {"name": "Иван", "role": "PM", "influence": "High", "interest": "High",
              "attitude": "Champion", "contact": "ivan@test.com"}
         ]
         _make_stakeholders(stakeholders_json=json.dumps(stakeholders))
         plan = _load()
-        ivan = next(s for s in plan["stakeholder_engagement"]["stakeholders"] if s["name"] == "Ivan")
+        ivan = next(s for s in plan["stakeholder_engagement"]["stakeholders"] if s["name"] == "Иван")
         self.assertEqual(ivan["contact"], "ivan@test.com")
 
 
@@ -335,7 +335,7 @@ class TestPlanBaGovernance(BaseMCPTest):
     def test_low_criticality(self):
         _make_governance(project_criticality="Low")
         plan = _load()
-        self.assertIn("Minimal", plan["governance"]["change_control"])
+        self.assertIn("Минимальный", plan["governance"]["change_control"])
 
     def test_decision_makers_saved(self):
         _make_governance(decision_makers_json='["Sponsor", "PO", "Lead BA"]')
@@ -352,7 +352,7 @@ class TestPlanBaGovernance(BaseMCPTest):
         self.assertIn("❌", result)
 
     def test_custom_change_control(self):
-        custom = "All CRs via a weekly meeting"
+        custom = "Все CR через weekly meeting"
         _make_governance(change_control_process=custom)
         plan = _load()
         self.assertEqual(plan["governance"]["change_control"], custom)
@@ -403,7 +403,7 @@ class TestPlanInformationManagement(BaseMCPTest):
         _make_info_mgmt(traceability_level="High")
         plan = _load()
         desc = plan["information_management"]["traceability_description"]
-        self.assertIn("Full", desc)
+        self.assertIn("Полная", desc)
 
     def test_artifact_types_saved(self):
         _make_info_mgmt(artifact_types_json='["User Story", "BRD"]')
@@ -425,9 +425,9 @@ class TestPlanInformationManagement(BaseMCPTest):
         self.assertIn("BA", plan["information_management"]["access_rules"])
 
     def test_custom_access_rules(self):
-        _make_info_mgmt(access_rules="BA and PM only")
+        _make_info_mgmt(access_rules="Только BA и PM")
         plan = _load()
-        self.assertEqual(plan["information_management"]["access_rules"], "BA and PM only")
+        self.assertEqual(plan["information_management"]["access_rules"], "Только BA и PM")
 
     def test_output_contains_next_step(self):
         result = _make_info_mgmt()
@@ -461,29 +461,29 @@ class TestEvaluateBaPerformance(BaseMCPTest):
         self.assertGreater(len(recs), 0)
 
     def test_known_issue_matched(self):
-        _make_performance(current_issues_json='["no templates"]')
+        _make_performance(current_issues_json='["нет шаблонов"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("template" in r.lower() for r in recs))
+        self.assertTrue(any("шаблон" in r.lower() for r in recs))
 
     def test_traceability_issue_matched(self):
-        _make_performance(current_issues_json='["weak traceability"]')
+        _make_performance(current_issues_json='["слабая трассировка"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("traceability" in r.lower() for r in recs))
+        self.assertTrue(any("трассировк" in r.lower() for r in recs))
 
     def test_unknown_issue_flagged(self):
-        _make_performance(current_issues_json='["mysterious problem XYZ"]')
+        _make_performance(current_issues_json='["загадочная проблема XYZ"]')
         plan = _load()
         recs = [r["recommendation"] for r in plan["performance"]["recommendations"]]
-        self.assertTrue(any("manual analysis" in r.lower() for r in recs))
+        self.assertTrue(any("ручного анализа" in r for r in recs))
 
     def test_empty_issues(self):
         _make_performance(current_issues_json="[]")
         plan = _load()
         recs = plan["performance"]["recommendations"]
         self.assertEqual(len(recs), 1)
-        self.assertIn("retrospective", recs[0]["recommendation"].lower())
+        self.assertIn("ретроспективу", recs[0]["recommendation"])
 
     def test_metrics_saved(self):
         metrics = [{"name": "Defect Rate", "baseline": "15%", "target": "5%"}]
@@ -506,14 +506,14 @@ class TestEvaluateBaPerformance(BaseMCPTest):
         self.assertIn("2", result)
 
     def test_multiple_known_issues(self):
-        issues = ["no templates", "weak traceability", "scope creep"]
+        issues = ["нет шаблонов", "слабая трассировка", "scope creep"]
         _make_performance(current_issues_json=json.dumps(issues))
         plan = _load()
         self.assertEqual(len(plan["performance"]["current_issues"]), 3)
 
 
 # ---------------------------------------------------------------------------
-# save_ba_plan (finalization)
+# save_ba_plan (финализация)
 # ---------------------------------------------------------------------------
 
 class TestCh3AuditRegressions(BaseMCPTest):
@@ -674,14 +674,14 @@ class TestSaveBaPlan(BaseMCPTest):
     def test_full_plan_success(self):
         _setup_full_pipeline()
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             result = save_ba_plan(PROJECT)
         self.assertIn("✅", result)
 
     def test_save_artifact_called(self):
         _setup_full_pipeline()
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             save_ba_plan(PROJECT)
             mock_sa.assert_called_once()
 
@@ -700,7 +700,7 @@ class TestSaveBaPlan(BaseMCPTest):
         self.assertEqual(plan["finalized_on"], TODAY)
 
     def test_empty_plan_warning(self):
-        # Create an empty plan
+        # Создаём пустой план
         empty = {"project_id": "empty_ch3", "created": TODAY, "updated": TODAY,
                  "ba_approach": {}, "stakeholder_engagement": {},
                  "governance": {}, "information_management": {}, "performance": {}}
@@ -715,7 +715,7 @@ class TestSaveBaPlan(BaseMCPTest):
             mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
         self.assertIn("3.1", captured["content"])
-        self.assertIn("Approach", captured["content"])
+        self.assertIn("Подход", captured["content"])
 
     def test_markdown_contains_stakeholders(self):
         _setup_full_pipeline()
@@ -723,7 +723,7 @@ class TestSaveBaPlan(BaseMCPTest):
         with patch("skills.planning_mcp.save_artifact") as mock_sa:
             mock_sa.side_effect = lambda c, n, project_id=None: captured.update({"content": c}) or "✅"
             save_ba_plan(PROJECT)
-        self.assertIn("Sponsor", captured["content"])
+        self.assertIn("Спонсор", captured["content"])
 
     def test_markdown_contains_governance(self):
         _setup_full_pipeline()
@@ -749,13 +749,13 @@ class TestSaveBaPlan(BaseMCPTest):
 
 
 # ---------------------------------------------------------------------------
-# Integration pipeline tests
+# Интеграционные pipeline-тесты
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_json_structure(self):
-        """All 5 sections are filled after the full pipeline."""
+        """Все 5 секций заполнены после полного пайплайна."""
         _setup_full_pipeline()
         plan = _load()
         self.assertIn("ba_approach", plan)
@@ -794,7 +794,7 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("Predictive", plan_b["ba_approach"]["recommended_approach"])
 
     def test_later_step_does_not_overwrite_earlier(self):
-        """plan_ba_governance must not overwrite ba_approach."""
+        """plan_ba_governance не должен затирать ba_approach."""
         _make_approach()
         _make_governance()
         plan = _load()
@@ -802,12 +802,12 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("project_criticality", plan["governance"])
 
     def test_stakeholder_data_in_plan_for_downstream(self):
-        """Stakeholder data is available from JSON for use in 4.x."""
+        """Данные стейкхолдеров доступны из JSON для использования в 4.x."""
         _setup_full_pipeline()
         plan = _load()
         stakeholders = plan["stakeholder_engagement"]["stakeholders"]
         self.assertGreater(len(stakeholders), 0)
-        # Each stakeholder has the fields needed for 4.x
+        # Каждый стейкхолдер имеет нужные поля для 4.x
         for s in stakeholders:
             self.assertIn("name", s)
             self.assertIn("role", s)
@@ -815,7 +815,7 @@ class TestPipeline(BaseMCPTest):
             self.assertIn("comm_frequency", s)
 
     def test_governance_fields_for_downstream_55(self):
-        """Governance contains the fields needed for 5.5 (approval, escalation)."""
+        """Governance содержит поля нужные для 5.5 (approval, escalation)."""
         _setup_full_pipeline()
         plan = _load()
         gov = plan["governance"]

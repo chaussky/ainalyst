@@ -1,17 +1,17 @@
 """
 BABOK 4.5 — Manage Stakeholder Collaboration
-MCP tools for managing collaboration with stakeholders.
+MCP-инструменты для управления сотрудничеством с заинтересованными сторонами.
 
-Tools:
-  - log_decision               — record a decision made (Decision Log)
-  - save_meeting_notes         — save meeting notes with action items
-  - update_engagement_status   — record a change in stakeholder engagement
+Инструменты:
+  - log_decision               — зафиксировать принятое решение (Decision Log)
+  - save_meeting_notes         — сохранить протокол встречи с action items
+  - update_engagement_status   — зафиксировать изменение вовлечённости стейкхолдера
 
-Architecture note:
-  update_engagement_status (4.5) and update_stakeholder_registry (4.2) are distinct tools.
-  4.2 registers a stakeholder / updates the base profile.
-  4.5 records an engagement change with history: before/after, cause, BA action.
-  The split is intentional — they could be merged later if practice shows it's redundant.
+Примечание по архитектуре:
+  update_engagement_status (4.5) и update_stakeholder_registry (4.2) — разные инструменты.
+  4.2 регистрирует стейкхолдера / обновляет базовый профайл.
+  4.5 фиксирует изменение вовлечённости с историей: было/стало, причина, действие BA.
+  Разделение намеренное — в будущем можно объединить если практика покажет избыточность.
 
   BOTH write to the living registry. They used not to: 4.5 wrote only a
   Markdown report, so "became a Blocker" never reached the registry that 7.4 reads and
@@ -133,48 +133,48 @@ def log_decision(
     decision_maker: str,
     participants_json: str,
     decision_type: Literal[
-        "Requirement",
-        "Priority",
-        "Architectural",
-        "Process",
+        "Требование",
+        "Приоритет",
+        "Архитектурное",
+        "Процессное",
         "Scope",
-        "Other",
+        "Другое",
     ],
     affected_artifacts_json: str,
     rationale: str,
     risks: str,
 ) -> str:
     """
-    BABOK 4.5 — Records a decision made in the Decision Log.
-    Provides traceability: why the requirements ended up the way they are.
+    BABOK 4.5 — Фиксирует принятое решение в Decision Log.
+    Обеспечивает трассировку: почему требования именно такие.
 
     Args:
-        project_name:           Project name.
-        decision_date:          Decision date DD.MM.YYYY.
-        decision_statement:     The decision in one sentence — clear and unambiguous.
-        context:                Context: what was discussed, what problem was being solved.
-        alternatives_json:      Alternatives considered. Format:
+        project_name:           Название проекта.
+        decision_date:          Дата принятия решения ДД.ММ.ГГГГ.
+        decision_statement:     Решение одним предложением — чётко и однозначно.
+        context:                Контекст: что обсуждалось, какая проблема решалась.
+        alternatives_json:      Рассмотренные альтернативы. Формат:
                                 [
                                   {
-                                    "option": "Option description",
-                                    "pros": "Pros",
-                                    "cons": "Cons",
-                                    "rejected_reason": "Why rejected, or ''"
+                                    "option": "Описание варианта",
+                                    "pros": "Плюсы",
+                                    "cons": "Минусы",
+                                    "rejected_reason": "Почему отклонён или ''"
                                   }
                                 ]
-        decision_maker:         Who made the final decision (role or name).
-        participants_json:      Discussion participants. Format:
-                                [{"name": "name or role", "position": "position on the decision"}]
-        decision_type:          Decision type.
-        affected_artifacts_json: Affected artifacts. Format:
-                                [{"artifact": "name or path", "impact": "how it changes"}]
-        rationale:              Rationale for the chosen decision.
-        risks:                  Risks of the decision made, or '' if none.
+        decision_maker:         Кто принял финальное решение (роль или имя).
+        participants_json:      Участники обсуждения. Формат:
+                                [{"name": "имя или роль", "position": "позиция по решению"}]
+        decision_type:          Тип решения.
+        affected_artifacts_json: Затронутые артефакты. Формат:
+                                [{"artifact": "название или путь", "impact": "как меняется"}]
+        rationale:              Обоснование выбранного решения.
+        risks:                  Риски принятого решения или '' если нет.
 
     Returns:
-        Path to the saved Decision Log entry.
+        Путь к сохранённой записи Decision Log.
     """
-    logger.info(f"4.5 Decision Log: project='{project_name}', type='{decision_type}'")
+    logger.info(f"4.5 Decision Log: проект='{project_name}', тип='{decision_type}'")
 
     alternatives, error = parse_json_dict_list(
         alternatives_json, "alternatives_json",
@@ -196,45 +196,45 @@ def log_decision(
 
     today = date.today().strftime("%d.%m.%Y")
 
-    # Generate the decision ID based on the date
+    # Генерируем ID решения на основе даты
     decision_id = f"DEC-{decision_date.replace('.', '')}"
 
     lines = []
     lines.append(f"# Decision Log — {decision_id}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Date:** {decision_date}  ")
-    lines.append(f"**Type:** {decision_type}  ")
-    lines.append(f"**Decision maker:** {decision_maker}\n")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Дата:** {decision_date}  ")
+    lines.append(f"**Тип:** {decision_type}  ")
+    lines.append(f"**Принял решение:** {decision_maker}\n")
     lines.append("---\n")
 
-    lines.append("## Decision\n")
+    lines.append("## Решение\n")
     lines.append(f"> {decision_statement}\n")
 
     lines.append("---\n")
-    lines.append("## Context\n")
+    lines.append("## Контекст\n")
     lines.append(f"{context}\n")
 
     lines.append("---\n")
-    lines.append("## Rationale\n")
+    lines.append("## Обоснование\n")
     lines.append(f"{rationale}\n")
 
     if alternatives:
         lines.append("---\n")
-        lines.append("## Alternatives Considered\n")
+        lines.append("## Рассмотренные альтернативы\n")
         for i, alt in enumerate(alternatives, 1):
-            lines.append(f"### Option {i}: {alt.get('option', '—')}\n")
+            lines.append(f"### Вариант {i}: {alt.get('option', '—')}\n")
             if alt.get("pros"):
-                lines.append(f"- **Pros:** {alt['pros']}  ")
+                lines.append(f"- **Плюсы:** {alt['pros']}  ")
             if alt.get("cons"):
-                lines.append(f"- **Cons:** {alt['cons']}  ")
+                lines.append(f"- **Минусы:** {alt['cons']}  ")
             if alt.get("rejected_reason"):
-                lines.append(f"- **Why rejected:** {alt['rejected_reason']}\n")
+                lines.append(f"- **Почему отклонён:** {alt['rejected_reason']}\n")
             else:
                 lines.append("")
 
     lines.append("---\n")
-    lines.append("## Discussion Participants\n")
-    lines.append("| Participant | Position |")
+    lines.append("## Участники обсуждения\n")
+    lines.append("| Участник | Позиция |")
     lines.append("|---|---|")
     for p in participants:
         lines.append(f"| {p.get('name', '—')} | {p.get('position', '—')} |")
@@ -242,37 +242,37 @@ def log_decision(
 
     if artifacts:
         lines.append("---\n")
-        lines.append("## Affected Artifacts\n")
+        lines.append("## Затронутые артефакты\n")
         for a in artifacts:
             lines.append(f"- **{a.get('artifact', '—')}**: {a.get('impact', '—')}")
         lines.append("")
 
     if risks:
         lines.append("---\n")
-        lines.append("## Risks of This Decision\n")
+        lines.append("## Риски решения\n")
         lines.append(f"{risks}\n")
 
     lines.append("---\n")
-    lines.append(f"*BABOK 4.5 — Decision Log {decision_id}. Project: {project_name}. Recorded: {today}.*\n")
+    lines.append(f"*BABOK 4.5 — Decision Log {decision_id}. Проект: {project_name}. Зафиксировано: {today}.*\n")
 
     content = "\n".join(lines)
     meta = (
         f"<!--\n"
         f"  BABOK 4.5 — Decision Log\n"
         f"  ID: {decision_id}\n"
-        f"  Project: {project_name}\n"
-        f"  Type: {decision_type}\n"
+        f"  Проект: {project_name}\n"
+        f"  Тип: {decision_type}\n"
         f"  Decision maker: {decision_maker}\n"
-        f"  Date: {decision_date}\n"
-        f"  Alternatives considered: {len(alternatives)}\n"
-        f"  Recorded: {today}\n"
+        f"  Дата: {decision_date}\n"
+        f"  Альтернатив рассмотрено: {len(alternatives)}\n"
+        f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
     return save_artifact(meta + content, prefix="4_5_decision_log", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
-# 4.5.2 — Meeting Notes
+# 4.5.2 — Протокол встречи
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -281,13 +281,13 @@ def save_meeting_notes(
     project_name: str,
     meeting_date: str,
     meeting_type: Literal[
-        "Interview",
-        "Workshop",
-        "Status Meeting",
-        "Facilitation Session",
-        "1-on-1 Meeting",
-        "Presentation",
-        "Other",
+        "Интервью",
+        "Воркшоп",
+        "Статус-митинг",
+        "Фасилитационная сессия",
+        "Встреча 1-на-1",
+        "Презентация",
+        "Другое",
     ],
     participants_json: str,
     agenda_json: str,
@@ -299,39 +299,39 @@ def save_meeting_notes(
     next_meeting: str,
 ) -> str:
     """
-    BABOK 4.5 — Saves structured meeting notes.
-    Used after any meeting within the project.
+    BABOK 4.5 — Сохраняет структурированный протокол встречи.
+    Используется после любой встречи в рамках проекта.
 
     Args:
-        project_name:       Project name.
-        meeting_date:       Meeting date DD.MM.YYYY.
-        meeting_type:       Meeting type.
-        participants_json:  Participants. Format:
-                            [{"name": "name or role", "department": "department or ''"}]
-        agenda_json:        Agenda. Format:
-                            [{"item": "agenda item", "owner": "who led it"}]
-        discussion_summary: Brief discussion summary — key points,
-                            important statements, context of agreements.
-        decisions_json:     Decisions made. Format:
-                            [{"decision": "statement", "decision_maker": "who"}]
-                            Empty list [] if no decisions were made.
-        action_items_json:  Action items. Format:
+        project_name:       Название проекта.
+        meeting_date:       Дата встречи ДД.ММ.ГГГГ.
+        meeting_type:       Тип встречи.
+        participants_json:  Участники. Формат:
+                            [{"name": "имя или роль", "department": "отдел или ''"}]
+        agenda_json:        Повестка. Формат:
+                            [{"item": "пункт повестки", "owner": "кто вёл"}]
+        discussion_summary: Краткое резюме обсуждения — ключевые моменты,
+                            важные высказывания, контекст договорённостей.
+        decisions_json:     Принятые решения. Формат:
+                            [{"decision": "формулировка", "decision_maker": "кто"}]
+                            Пустой список [] если решений не было.
+        action_items_json:  Action items. Формат:
                             [
                               {
-                                "action": "What to do",
-                                "owner": "Who does it",
-                                "deadline": "DD.MM.YYYY or ''",
-                                "priority": "High | Medium | Low"
+                                "action": "Что сделать",
+                                "owner": "Кто делает",
+                                "deadline": "ДД.ММ.ГГГГ или ''",
+                                "priority": "Высокий | Средний | Низкий"
                               }
                             ]
-        open_questions:     Questions that remained open — text or ''.
-        risks_identified:   Risks identified during the meeting — text or ''.
-        next_meeting:       When the next meeting is and what to discuss, or ''.
+        open_questions:     Вопросы которые остались открытыми — текст или ''.
+        risks_identified:   Риски выявленные в ходе встречи — текст или ''.
+        next_meeting:       Когда следующая встреча и что обсудить — или ''.
 
     Returns:
-        Path to the saved meeting notes.
+        Путь к сохранённому протоколу встречи.
     """
-    logger.info(f"4.5 Meeting notes: project='{project_name}', type='{meeting_type}'")
+    logger.info(f"4.5 Протокол встречи: проект='{project_name}', тип='{meeting_type}'")
 
     participants, error = parse_json_dict_list(
         participants_json, "participants_json",
@@ -360,41 +360,41 @@ def save_meeting_notes(
     today = date.today().strftime("%d.%m.%Y")
 
     lines = []
-    lines.append(f"# Meeting Notes — {meeting_type}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Date:** {meeting_date}  ")
-    lines.append(f"**Type:** {meeting_type}  ")
-    lines.append(f"**Participants:** {', '.join(p.get('name', '—') for p in participants)}\n")
+    lines.append(f"# Протокол встречи — {meeting_type}\n")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Дата:** {meeting_date}  ")
+    lines.append(f"**Тип:** {meeting_type}  ")
+    lines.append(f"**Участники:** {', '.join(p.get('name', '—') for p in participants)}\n")
     lines.append("---\n")
 
     if agenda:
-        lines.append("## Agenda\n")
+        lines.append("## Повестка\n")
         for i, item in enumerate(agenda, 1):
             owner = f" *({item['owner']})*" if item.get("owner") else ""
             lines.append(f"{i}. {item.get('item', '—')}{owner}")
         lines.append("")
 
     lines.append("---\n")
-    lines.append("## Discussion Summary\n")
+    lines.append("## Резюме обсуждения\n")
     lines.append(f"{discussion_summary}\n")
 
     if decisions:
         lines.append("---\n")
-        lines.append("## Decisions Made\n")
+        lines.append("## Принятые решения\n")
         for i, d in enumerate(decisions, 1):
-            dm = f" *(decision maker: {d['decision_maker']})*" if d.get("decision_maker") else ""
-            lines.append(f"**D{i}.** {d.get('decision', '—')}{dm}")
+            dm = f" *(решение: {d['decision_maker']})*" if d.get("decision_maker") else ""
+            lines.append(f"**Р{i}.** {d.get('decision', '—')}{dm}")
         lines.append("")
 
     if action_items:
         lines.append("---\n")
         lines.append("## Action Items\n")
-        lines.append("| # | Action | Owner | Deadline | Priority |")
+        lines.append("| # | Действие | Кто | Срок | Приоритет |")
         lines.append("|---|---|---|---|---|")
         for i, item in enumerate(action_items, 1):
             deadline = item.get("deadline") or "—"
-            priority = item.get("priority", "Medium")
-            priority_icon = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(priority, "🟡")
+            priority = item.get("priority", "Средний")
+            priority_icon = {"Высокий": "🔴", "Средний": "🟡", "Низкий": "🟢"}.get(priority, "🟡")
             lines.append(
                 f"| {i} | {item.get('action', '—')} "
                 f"| {item.get('owner', '—')} "
@@ -405,40 +405,40 @@ def save_meeting_notes(
 
     if open_questions:
         lines.append("---\n")
-        lines.append("## Open Questions\n")
+        lines.append("## Открытые вопросы\n")
         lines.append(f"{open_questions}\n")
 
     if risks_identified:
         lines.append("---\n")
-        lines.append("## Risks Identified\n")
+        lines.append("## Выявленные риски\n")
         lines.append(f"{risks_identified}\n")
 
     if next_meeting:
         lines.append("---\n")
-        lines.append("## Next Meeting\n")
+        lines.append("## Следующая встреча\n")
         lines.append(f"{next_meeting}\n")
 
     lines.append("---\n")
-    lines.append(f"*BABOK 4.5 — Meeting Notes. Project: {project_name}. Recorded: {today}.*\n")
+    lines.append(f"*BABOK 4.5 — Meeting Notes. Проект: {project_name}. Зафиксировано: {today}.*\n")
 
     content = "\n".join(lines)
     meta = (
         f"<!--\n"
         f"  BABOK 4.5 — Meeting Notes\n"
-        f"  Project: {project_name}\n"
-        f"  Type: {meeting_type}\n"
-        f"  Date: {meeting_date}\n"
-        f"  Participants: {len(participants)}\n"
-        f"  Decisions: {len(decisions)}\n"
+        f"  Проект: {project_name}\n"
+        f"  Тип: {meeting_type}\n"
+        f"  Дата: {meeting_date}\n"
+        f"  Участников: {len(participants)}\n"
+        f"  Решений: {len(decisions)}\n"
         f"  Action items: {len(action_items)}\n"
-        f"  Recorded: {today}\n"
+        f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
     return save_artifact(meta + content, prefix="4_5_meeting_notes", project_id=project_name)
 
 
 # ---------------------------------------------------------------------------
-# 4.5.3 — Update stakeholder engagement status
+# 4.5.3 — Обновление статуса вовлечённости стейкхолдера
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -449,8 +449,8 @@ def update_engagement_status(
     change_date: str,
     attitude_before: Literal["Champion", "Neutral", "Blocker"],
     attitude_after: Literal["Champion", "Neutral", "Blocker"],
-    engagement_level_before: Literal["Active", "Passive", "Absent"],
-    engagement_level_after: Literal["Active", "Passive", "Absent"],
+    engagement_level_before: Literal["Активный", "Пассивный", "Отсутствует"],
+    engagement_level_after: Literal["Активный", "Пассивный", "Отсутствует"],
     signal_observed: str,
     probable_cause: str,
     ba_action_taken: str,
@@ -459,111 +459,111 @@ def update_engagement_status(
     escalation_to: str,
 ) -> str:
     """
-    BABOK 4.5 — Records a change in stakeholder engagement.
-    Maintains a history of changes: before/after, cause, BA action.
+    BABOK 4.5 — Фиксирует изменение вовлечённости стейкхолдера.
+    Ведёт историю изменений: было/стало, причина, действие BA.
 
-    Difference from update_stakeholder_registry (4.2):
-    - 4.2 registers a new stakeholder or updates the base profile
-    - 4.5 records the dynamics: what changed, why, what the BA did
+    Отличие от update_stakeholder_registry (4.2):
+    - 4.2 регистрирует нового стейкхолдера или обновляет базовый профайл
+    - 4.5 фиксирует динамику: что изменилось, почему, что BA сделал
 
     Args:
-        project_name:             Project name.
-        stakeholder_role:         Stakeholder role.
-        change_date:              Date the change was observed, DD.MM.YYYY.
-        attitude_before:          Attitude before the change.
-        attitude_after:           Attitude after the change.
-        engagement_level_before:  Engagement level before.
-        engagement_level_after:   Engagement level after.
-        signal_observed:          What exactly the BA observed — concrete behavior.
-        probable_cause:           Probable cause of the change (BA's hypothesis).
-        ba_action_taken:          What the BA has already done in response.
-        ba_action_planned:        What the BA plans to do next.
-        escalation_needed:        True if escalation is required.
-        escalation_to:            Who to escalate to, or '' if not needed.
+        project_name:             Название проекта.
+        stakeholder_role:         Роль стейкхолдера.
+        change_date:              Дата когда изменение замечено ДД.ММ.ГГГГ.
+        attitude_before:          Отношение до изменения.
+        attitude_after:           Отношение после изменения.
+        engagement_level_before:  Уровень вовлечённости до.
+        engagement_level_after:   Уровень вовлечённости после.
+        signal_observed:          Что именно наблюдал BA — конкретное поведение.
+        probable_cause:           Вероятная причина изменения (версия BA).
+        ba_action_taken:          Что BA уже сделал в ответ.
+        ba_action_planned:        Что BA планирует сделать далее.
+        escalation_needed:        True если требуется эскалация.
+        escalation_to:            Кому эскалировать или '' если не нужно.
 
     Returns:
-        Path to the saved engagement-status change record.
+        Путь к сохранённой записи об изменении вовлечённости.
     """
-    logger.info(f"4.5 Engagement status: project='{project_name}', stakeholder='{stakeholder_role}'")
+    logger.info(f"4.5 Статус вовлечённости: проект='{project_name}', стейкхолдер='{stakeholder_role}'")
 
     today = date.today().strftime("%d.%m.%Y")
 
-    # Determine the direction of change
+    # Определяем направление изменения
     attitude_values = {"Champion": 3, "Neutral": 2, "Blocker": 1}
-    engagement_values = {"Active": 3, "Passive": 2, "Absent": 1}
+    engagement_values = {"Активный": 3, "Пассивный": 2, "Отсутствует": 1}
 
     attitude_delta = attitude_values.get(attitude_after, 2) - attitude_values.get(attitude_before, 2)
     engagement_delta = engagement_values.get(engagement_level_after, 2) - engagement_values.get(engagement_level_before, 2)
 
     if attitude_delta > 0 or engagement_delta > 0:
-        trend = "📈 Improving"
+        trend = "📈 Улучшение"
     elif attitude_delta < 0 or engagement_delta < 0:
-        trend = "📉 Declining"
+        trend = "📉 Ухудшение"
     else:
-        trend = "➡️ No change"
+        trend = "➡️ Без изменений"
 
     attitude_icons = {"Champion": "🟢", "Neutral": "🟡", "Blocker": "🔴"}
 
     lines = []
-    lines.append(f"# Engagement Change — {stakeholder_role}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Stakeholder:** {stakeholder_role}  ")
-    lines.append(f"**Date of change:** {change_date}  ")
-    lines.append(f"**Trend:** {trend}\n")
+    lines.append(f"# Изменение вовлечённости — {stakeholder_role}\n")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Стейкхолдер:** {stakeholder_role}  ")
+    lines.append(f"**Дата изменения:** {change_date}  ")
+    lines.append(f"**Тренд:** {trend}\n")
     lines.append("---\n")
 
-    lines.append("## Dynamics\n")
-    lines.append("| Parameter | Before | After |")
+    lines.append("## Динамика\n")
+    lines.append("| Параметр | Было | Стало |")
     lines.append("|---|---|---|")
     lines.append(
-        f"| Attitude | {attitude_icons.get(attitude_before, '—')} {attitude_before} "
+        f"| Отношение | {attitude_icons.get(attitude_before, '—')} {attitude_before} "
         f"| {attitude_icons.get(attitude_after, '—')} {attitude_after} |"
     )
     lines.append(
-        f"| Engagement | {engagement_level_before} | {engagement_level_after} |\n"
+        f"| Вовлечённость | {engagement_level_before} | {engagement_level_after} |\n"
     )
 
     lines.append("---\n")
-    lines.append("## Signal Observed\n")
+    lines.append("## Наблюдаемый сигнал\n")
     lines.append(f"{signal_observed}\n")
 
     lines.append("---\n")
-    lines.append("## Probable Cause\n")
+    lines.append("## Вероятная причина\n")
     lines.append(f"{probable_cause}\n")
 
     lines.append("---\n")
-    lines.append("## BA Actions\n")
+    lines.append("## Действия BA\n")
     if ba_action_taken:
-        lines.append(f"**Already done:** {ba_action_taken}  ")
-    lines.append(f"**Planned:** {ba_action_planned}\n")
+        lines.append(f"**Уже сделано:** {ba_action_taken}  ")
+    lines.append(f"**Планируется:** {ba_action_planned}\n")
 
     if escalation_needed:
         lines.append("---\n")
-        lines.append("## ⚠️ Escalation Required\n")
-        lines.append(f"**To whom:** {escalation_to or 'not specified'}  ")
+        lines.append("## ⚠️ Требуется эскалация\n")
+        lines.append(f"**Кому:** {escalation_to or 'не указано'}  ")
         lines.append(
-            "\n*Recommendation: record the escalation in the meeting notes "
-            "via `save_meeting_notes`.*\n"
+            "\n*Рекомендация: зафиксировать факт эскалации в протоколе встречи "
+            "через `save_meeting_notes`.*\n"
         )
 
     lines.append("---\n")
     lines.append(
         f"*BABOK 4.5 — Engagement Status Update. "
-        f"Project: {project_name}. Recorded: {today}.*\n"
+        f"Проект: {project_name}. Зафиксировано: {today}.*\n"
     )
 
     content = "\n".join(lines)
     meta = (
         f"<!--\n"
         f"  BABOK 4.5 — Engagement Status\n"
-        f"  Project: {project_name}\n"
-        f"  Stakeholder: {stakeholder_role}\n"
+        f"  Проект: {project_name}\n"
+        f"  Стейкхолдер: {stakeholder_role}\n"
         f"  Attitude: {attitude_before} → {attitude_after}\n"
-        f"  Engagement: {engagement_level_before} → {engagement_level_after}\n"
-        f"  Trend: {trend}\n"
-        f"  Escalation: {escalation_needed}\n"
-        f"  Date: {change_date}\n"
-        f"  Recorded: {today}\n"
+        f"  Вовлечённость: {engagement_level_before} → {engagement_level_after}\n"
+        f"  Тренд: {trend}\n"
+        f"  Эскалация: {escalation_needed}\n"
+        f"  Дата: {change_date}\n"
+        f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )
     artifact = save_artifact(meta + content, prefix="4_5_engagement_status",

@@ -1,9 +1,9 @@
 """
-tests/conftest.py — shared utilities and fixtures for all tests.
+tests/conftest.py — общие утилиты и фикстуры для всех тестов.
 
-Mocking strategy:
-  All external dependencies (mcp, pydantic, atlassian) are mocked at the sys.modules
-  level in the setup_mocks() function — called once before the first import of project modules.
+Стратегия мокинга:
+  Все внешние зависимости (mcp, pydantic, atlassian) мокаются на уровне sys.modules
+  в функции setup_mocks() — вызывается один раз перед первым импортом модулей проекта.
 """
 
 import json
@@ -15,17 +15,17 @@ import unittest
 from unittest.mock import MagicMock
 from datetime import date
 
-# Add the project root to the path
+# Добавляем корень проекта в path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 
 def setup_mocks():
     """
-    Mocks all external dependencies before importing project modules.
-    Call once at the start of a test file.
+    Мокает все внешние зависимости до импорта модулей проекта.
+    Вызывать один раз в начале тестового файла.
     """
-    # FastMCP: the @mcp.tool() decorator must return the function as-is
+    # FastMCP: декоратор @mcp.tool() должен возвращать функцию как есть
     mock_instance = MagicMock()
     mock_instance.tool = lambda: (lambda f: f)
 
@@ -38,7 +38,7 @@ def setup_mocks():
     sys.modules.setdefault("mcp.server", MagicMock())
     sys.modules["mcp.server.fastmcp"] = fastmcp_mod
 
-    # Pydantic: a minimal BaseModel
+    # Pydantic: минимальный BaseModel
     if "pydantic" not in sys.modules:
         pydantic_mock = MagicMock()
 
@@ -56,17 +56,17 @@ def setup_mocks():
     # Atlassian Confluence
     sys.modules.setdefault("atlassian", MagicMock())
 
-    # markdown2 — returns the input text as HTML (enough for the tests)
+    # markdown2 — возвращает входной текст как HTML (достаточно для тестов)
     markdown2_mock = MagicMock()
     markdown2_mock.markdown = lambda text, **kwargs: f"<p>{text}</p>" if text else ""
     sys.modules["markdown2"] = markdown2_mock
 
-    # Patch save_artifact in common
+    # Патчим save_artifact в common
     import skills.common as common_mod
-    common_mod.save_artifact = MagicMock(return_value="✅ Saved")
+    common_mod.save_artifact = MagicMock(return_value="✅ Сохранено")
 
 
-# Apply the mocks immediately on importing conftest
+# Применяем моки сразу при импорте conftest
 setup_mocks()
 
 
@@ -97,7 +97,7 @@ def make_test_repo(project_name: str = "test_project") -> dict:
             {
                 "id": "BR-001",
                 "type": "business",
-                "title": "Reduce request processing time",
+                "title": "Снизить время обработки заявки",
                 "version": "1.0",
                 "status": "confirmed",
                 "source_artifact": "governance_plans/4_3_test.md",
@@ -106,7 +106,7 @@ def make_test_repo(project_name: str = "test_project") -> dict:
             {
                 "id": "FR-001",
                 "type": "solution",
-                "title": "The system automatically distributes requests",
+                "title": "Система автоматически распределяет заявки",
                 "version": "1.0",
                 "status": "confirmed",
                 "source_artifact": "governance_plans/4_3_test.md",
@@ -115,7 +115,7 @@ def make_test_repo(project_name: str = "test_project") -> dict:
             {
                 "id": "FR-002",
                 "type": "solution",
-                "title": "Notifications on request status change",
+                "title": "Уведомления о смене статуса заявки",
                 "version": "1.0",
                 "status": "draft",
                 "source_artifact": "governance_plans/4_3_test.md",
@@ -124,7 +124,7 @@ def make_test_repo(project_name: str = "test_project") -> dict:
             {
                 "id": "TC-001",
                 "type": "test",
-                "title": "Auto-distribution test",
+                "title": "Тест автораспределения",
                 "version": "1.0",
                 "status": "draft",
                 "added": str(date.today()),
@@ -135,14 +135,14 @@ def make_test_repo(project_name: str = "test_project") -> dict:
                 "from": "FR-001",
                 "to": "BR-001",
                 "relation": "derives",
-                "rationale": "FR derives from the business requirement",
+                "rationale": "FR вытекает из бизнес-требования",
                 "added": str(date.today()),
             },
             {
                 "from": "TC-001",
                 "to": "FR-001",
                 "relation": "verifies",
-                "rationale": "The test verifies the requirement",
+                "rationale": "Тест проверяет требование",
                 "added": str(date.today()),
             },
         ],
@@ -185,7 +185,7 @@ def load_test_repo(project_name: str, governance_dir: str = "governance_plans/da
 
 
 def list_data_files(suffix: str = ".json", base: str = "governance_plans/data") -> list:
-    """Recursively lists files in data/ (including project subfolders, issue #1)."""
+    """Рекурсивно перечисляет файлы в data/ (включая подпапки проекта, issue #1)."""
     out = []
     for root, _dirs, files in os.walk(base):
         for f in files:
@@ -196,8 +196,8 @@ def list_data_files(suffix: str = ".json", base: str = "governance_plans/data") 
 
 class BaseMCPTest(unittest.TestCase):
     """
-    Base class for testing MCP tools.
-    Creates a temporary directory and switches into it (all files are written there).
+    Базовый класс для тестирования MCP-инструментов.
+    Создаёт временную директорию и переходит в неё (все файлы пишутся там).
     """
 
     def setUp(self):

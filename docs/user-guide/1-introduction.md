@@ -2,145 +2,145 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 
 ---
 
-# Introduction
+# Введение
 
 ---
 
-## Why This Exists
+## Зачем это всё
 
-Picture two business analysts. The first has five years of experience, knows BABOK by heart, and intuitively senses what to do at every stage of a project. The second is just starting out, or has spent years working "by feel," without a rigorous methodology. Both face the same challenges: stakeholders say different things, requirements keep changing, there's never enough time, and documentation piles up faster than anyone can make sense of it.
+Представьте двух бизнес-аналитиков. Первый работает пять лет, знает BABOK наизусть и интуитивно чувствует, что нужно делать на каждом этапе проекта. Второй — только начинает или давно работает «по наитию», без строгой методологии. Оба сталкиваются с одними и теми же вызовами: стейкхолдеры говорят разное, требования меняются, времени всегда не хватает, а документация накапливается быстрее, чем её успевают осмыслить.
 
-**AInalyst is built for everyone who works with requirements.**
+**AIналитик создан для всех, кто работает с требованиями.**
 
-The platform helps business analysts work according to the BABOK v3 methodology: thoroughly, consistently, and without wasted effort. For those who know BABOK well, it removes the routine work and speeds things up. For those less familiar with it, the platform becomes a reliable guide: step by step, task by task, with no risk of missing something important.
+Платформа помогает бизнес-аналитикам работать по методологии BABOK v3 — полно, последовательно и без лишних усилий. Для тех, кто хорошо знает BABOK, она снимает рутину и ускоряет работу. Для тех, кто ориентируется в нём хуже, — становится надёжным проводником: шаг за шагом, задача за задачей, без риска пропустить что-то важное.
 
-But business analysts aren't the platform's only audience.
+Но бизнес-аналитики — не единственная аудитория платформы.
 
-**Product managers, project managers, and CTOs.** Sometimes a project has no dedicated business analyst, and a product manager, project manager, or technical director takes on those responsibilities instead. They usually have a high-level understanding of the product and the business processes, but not deep expertise in requirements analysis methodology. AInalyst steps in to help: it guides them through the process, asks the right questions at the right moment, points out what's important not to miss, and generates the necessary artifacts.
+**Продакты, проджекты и технические директора.** Иногда на проекте нет выделенного бизнес-аналитика, и его функции берут на себя product manager, project manager или технический директор. У них есть высокоуровневое понимание продукта и бизнес-процессов — но нет глубоких компетенций в методологии анализа требований. AIналитик подставляет им плечо: проведёт по процессу, задаст нужные вопросы в нужный момент, подскажет, что важно не упустить, и сгенерирует необходимые артефакты.
 
-**Startup founders and new-product owners.** When budgets are tight, hiring a business analyst isn't always an option. But well-gathered requirements are the difference between a product that works and a product that has to be rebuilt. AInalyst helps gather requirements in a structured way and hand them off to the development team in a form they can actually work with.
+**Стартаперы и основатели новых продуктов.** Когда бюджет ограничен, нанимать бизнес-аналитика не всегда возможно. Но грамотно собранные требования — это разница между продуктом, который работает, и продуктом, который приходится переделывать. AIналитик помогает структурированно собрать требования и передать их команде разработки в том виде, в котором с ними можно работать.
 
-The platform covers four key areas of business analyst work:
-- **Business analysis planning** (BABOK Chapter 3)
-- **Elicitation and collaboration** with stakeholders (Chapter 4)
-- **Requirements life cycle management** (Chapter 5)
-- **Strategy analysis** of current and future state (Chapter 6)
-- **Requirements analysis and design** (Chapter 7)
+Платформа покрывает четыре ключевые области работы бизнес-аналитика:
+- **Планирование** бизнес-анализа (Глава 3 BABOK)
+- **Выявление и сотрудничество** со стейкхолдерами (Глава 4)
+- **Управление жизненным циклом требований** (Глава 5)
+- **Стратегический анализ** текущего и будущего состояния (Глава 6)
+- **Анализ требований и дизайн** (Глава 7)
 
-You're not just getting an AI assistant that answers questions. You're getting a structured environment that walks you through BABOK best practices, tells you what to do next, warns you about risks, and takes on all the technical work with artifacts.
+Вы получаете не просто AI-ассистента, который отвечает на вопросы. Вы получаете структурированную среду, которая ведёт вас по лучшим практикам BABOK, подсказывает что делать дальше, предупреждает о рисках и берёт на себя всю техническую работу с артефактами.
 
 ---
 
-## How It Works
+## Как это работает
 
-At the core of the platform is Claude, a large language model (LLM) from Anthropic. Of course, you could simply open a regular chat with Claude and ask it questions. That works. But this approach has a fundamental limitation: if you don't know what to ask and in what order, the chat becomes a smart but unstructured conversation partner. It will answer your question, but it won't tell you whether that's the right question for this point in the project.
+В основе платформы — большая языковая модель (LLM) Claude от Anthropic. Конечно, вы можете просто открыть обычный чат с Claude и задавать ему вопросы. Это работает. Но у такого подхода есть принципиальное ограничение: если вы сами не знаете, что спросить и в какой последовательности, — чат превращается в умного, но неструктурированного собеседника. Он ответит на ваш вопрос, но не скажет, правильный ли это вопрос для данного момента проекта.
 
 AInalyst solves this problem through three layers:
 
-**Claude Code**, an AI agent that doesn't just respond but acts: it reads files, runs commands, manages the project, and guides you through the process. It's the entry point for all your work with the platform.
+**Claude Code** — AI-агент, который не просто отвечает, а действует: читает файлы, выполняет команды, управляет проектом и ведёт вас по процессу. Именно он является точкой входа для всей вашей работы с платформой.
 
-**Skills**, 21 specialized modules, each of which deeply "knows" a specific BABOK task: how to carry it out correctly, what to pay attention to, which artifacts to create. This is built-in methodology expertise.
+**Skills (скиллы)** — 21 специализированный модуль, каждый из которых глубоко «знает» конкретную задачу BABOK: как её правильно выполнить, на что обратить внимание, какие артефакты создать. Это встроенная экспертиза методологии.
 
 **MCP tools**, 22 servers with 114 tools that perform specific analytical operations: building stakeholder registries, analyzing interview transcripts, creating traceability matrices, assessing risks, drafting requirements specifications.
 
-Together, these three layers create something a regular chat can't offer: a clear working framework that carries you from the start of the project to the final artifact. The platform knows the methodology; you just need to know your project.
+Вместе эти три слоя создают то, чего не даёт обычный чат: чёткую канву работы, по которой вы движетесь от начала проекта до финального артефакта. Платформа знает методологию — вам нужно знать свой проект.
 
 ---
 
-## You Don't Need to Memorize Anything
+## Вам не нужно ничего запоминать
 
-This is, perhaps, the most important thing to understand about AInalyst.
+Это, пожалуй, самое важное, что нужно понять про AIналитика.
 
-**You don't need to know the names of the skills. You don't need to know the names of the MCP tools. You don't need to remember any commands.**
+**Вам не нужно знать названия скиллов. Не нужно знать названия MCP-инструментов. Не нужно помнить команды.**
 
-Just talk to AInalyst in plain language:
+Просто разговаривайте с AIналитиком на человеческом языке:
 
-> *"I need to get ready for an interview with the CFO"*
+> *«Мне нужно подготовиться к интервью с финансовым директором»*
 
-> *"I have a meeting transcript, I need to elicit requirements from it"*
+> *«У меня есть транскрипт встречи, нужно выявить требования»*
 
-> *"A change request just came in, help me assess it"*
+> *«Пришёл запрос на изменение, помоги оценить»*
 
-AInalyst will figure out on its own which skill and which tools are needed, and run them. You talk, the platform works.
+AIналитик сам определит, какой скилл и какие инструменты нужны, и запустит их. Вы общаетесь — платформа работает.
 
 ---
 
-## Your Area of Responsibility
+## Ваша зона ответственности
 
-The platform takes care of the methodology and the technical work. But three things remain your responsibility.
+Платформа берёт на себя методологию и техническую работу. Но три вещи остаются за вами.
 
-### Inputs and Results
+### Входные данные и результаты
 
-All input information (interview transcripts, meeting minutes, business documents, regulations) goes into the **`inputs/`** folder. Just copy the files there and tell AInalyst what to process.
+Вся входная информация — транскрипты интервью, протоколы встреч, бизнес-документы, регламенты — кладётся в папку **`inputs/`**. Просто скопируйте файлы туда и скажите AIналитику что обработать.
 
-The platform saves all its output to the **`governance_plans/reports/`** folder in Markdown format. These are your working artifacts: plans, registries, specifications, minutes. If you need a PDF, convert the Markdown file with any tool you like (for example, the "Print to PDF" option in VS Code), or just ask AInalyst to convert it.
+Все результаты работы платформа сохраняет в папку **`governance_plans/reports/`** в формате Markdown. Это ваши рабочие артефакты: планы, реестры, спецификации, протоколы. Если вам нужен PDF — воспользуйтесь утилитой `export_pdf.py`.
 
-The **`governance_plans/data/`** folder is internal. It holds the JSON files the platform uses internally: the requirements graph, prioritization data, assessment results. You don't need to go in there; it's the platform's internal "memory" of the project.
+Папка **`governance_plans/data/`** — служебная. Там хранятся JSON-файлы, которые платформа использует внутри: граф требований, данные приоритизации, результаты оценок. Вам туда заходить не нужно — это внутренняя «память» платформы о проекте.
 
 **If one of those files gets damaged.** The platform keeps the **last five versions** of every internal file in `governance_plans/.history/`, and it replaces a file in one step — so an interruption (Ctrl+C, a full disk, a laptop running out of battery) leaves the previous version whole rather than a half-written one. If a tool ever reports that a file cannot be read, its message names the folder and the file; copy the newest matching version from `.history/` back over it. One caveat, and the message says it too: the newest copy is the project **as it stood before the most recent change**, so that one change is the thing it cannot give back. Tell AInalyst — it will do the restore for you and say what was recovered.
 
 ### Context and Decisions
 
-AInalyst will ask you questions at key moments: when you need to choose a methodology, set priorities, approve requirements, or assess risks. It will give recommendations and warn you about the consequences, but the final decision is always yours. That's how it should be: methodology helps you make a good decision, but it doesn't make the decision for you.
+AIналитик будет задавать вам вопросы в ключевые моменты: когда нужно выбрать методологию, расставить приоритеты, утвердить требования или оценить риски. Он даст рекомендации и предупредит о последствиях — но финальное решение всегда за вами. Это правильно: методология помогает принять хорошее решение, но не принимает его вместо аналитика.
 
-### Phase Management
+### Управление фазами
 
-The platform runs in **active-phase mode**: at any given moment, only the MCP tools needed for the current stage of the project are loaded. This matters a great deal: LLMs have a limited context window, and loading all 22 MCP servers at once would degrade the quality of the platform's work.
+Платформа работает в режиме **активной фазы**: в каждый момент загружены только те MCP-инструменты, которые нужны для текущего этапа проекта. Это принципиально важно — у LLM-моделей есть ограниченное контекстное окно, и загрузка всех 22 MCP-серверов одновременно привела бы к деградации качества работы.
 
-Five phases are available:
+Доступны пять фаз:
 
-| Phase | When to use |
+| Фаза | Когда использовать |
 |------|-------------------|
-| `planning` | New project, BA plan, stakeholder map |
-| `elicitation` | Interviews, workshops, meeting minutes |
-| `lifecycle` | Traceability, prioritization, CRs, requirements approval |
-| `analysis` | as-is / to-be analysis, gap analysis, risks, change strategy |
-| `design` | Specification, verification, validation, design options |
+| `planning` | Старт проекта, план BA, карта стейкхолдеров |
+| `elicitation` | Интервью, воркшопы, протоколы встреч |
+| `lifecycle` | Трассировка, приоритизация, CR, утверждение требований |
+| `analysis` | Анализ as-is / to-be, GAP-анализ, риски, стратегия изменения |
+| `design` | Спецификация, верификация, валидация, варианты решения |
 
-AInalyst keeps track of phases and will tell you when it's time to switch. But you can also do it yourself; the simplest way is to just tell it:
+AIналитик следит за фазами и сам подскажет, когда нужно переключиться. Но вы можете сделать это самостоятельно — самый простой способ написать ему:
 
-> *"Switch to the analysis phase"*
+> *«Переключи на фазу analysis»*
 
-AInalyst will run the command itself. If you'd rather do it manually in the terminal:
+И AIналитик сам выполнит команду. Если хотите сделать это вручную в терминале:
 
 ```bash
-python phase.py <phase_name>
+python phase.py <название_фазы>
 ```
 
-For example: `python phase.py elicitation`
+Например: `python phase.py elicitation`
 
-After switching phases, you'll need to restart the session with the `/restart` command. AInalyst will remind you to do this.
+После смены фазы потребуется перезапустить сессию командой `/restart` — AIналитик об этом напомнит.
 
 ---
 
-## Installing the Platform
+## Установка платформы
 
-To work with AInalyst you'll need:
+Для работы с AIналитиком вам понадобятся:
 
-1. **Python 3.10+**: make sure it's installed on your computer
-2. **pip**: the Python package manager (usually comes bundled with Python)
+1. **Python 3.10+** — убедитесь, что установлен на вашем компьютере
+2. **pip** — менеджер пакетов Python (обычно идёт вместе с Python)
 
-Installation:
+Установка:
 
 ```bash
-# 1. Clone the repository
+# 1. Скачайте репозиторий
 git clone https://github.com/chaussky/ainalyst.git
 cd ainalyst
 
-# 2. Install dependencies
+# 2. Установите зависимости
 pip install -r requirements.txt
 
-# 3. Configure environment variables
+# 3. Настройте переменные окружения
 cp .env.example .env
-# Open .env and fill in the API keys
+# Откройте .env и заполните API-ключи
 ```
 
-After that, open the project folder in AInalyst and start talking. The platform is ready to go.
+После этого откройте папку проекта в AIналитике и начните разговор. Платформа готова к работе.
 
 ---
 
-*Further in this guide, you'll find a detailed description of each BABOK chapter the platform covers: what tasks it solves, what artifacts it creates, and how to work with it at every stage of the project.*
+*Дальше в этом руководстве вы найдёте подробное описание каждой главы BABOK, которую покрывает платформа: какие задачи она решает, какие артефакты создаёт и как с ней работать на каждом этапе проекта.*

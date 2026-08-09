@@ -11,7 +11,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# Logging setup (stderr — does not interfere with the JSON-RPC protocol)
+# Настройка логирования (stderr — не мешает протоколу JSON-RPC)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -20,8 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger("BABOK_Toolkit")
 
 BASE_DIR = "governance_plans"
-DATA_DIR = os.path.join(BASE_DIR, "data")      # JSON: machine-readable files for MCP
-REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: documents for humans
+DATA_DIR = os.path.join(BASE_DIR, "data")      # JSON: машиночитаемые файлы для MCP
+REPORTS_DIR = os.path.join(BASE_DIR, "reports") # Markdown: документы для людей
 
 # Root node types in the 5.1 traceability graph — the things a requirement traces UP to.
 # 6.1 registers needs as `business_need`, 6.2 registers goals as `business_goal`, and
@@ -186,23 +186,23 @@ MUST_PRIORITIES = {"Must", "High"}
 
 
 def _ensure_dirs():
-    """Creates all required folders if they don't exist."""
+    """Создаёт все нужные папки если их нет."""
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(REPORTS_DIR, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
-# Artifact layout in per-project subdirectories (issue #1)
+# Раскладка артефактов по подкаталогам проекта (issue #1)
 # ---------------------------------------------------------------------------
 
 _PID_DISALLOWED = re.compile(r"[^a-z0-9_-]+")
 
 
 def normalize_project_id(project_id: str) -> str:
-    """Safe project name for use as a directory name.
+    """Безопасное имя проекта для использования как имя каталога.
 
-    Protects against path traversal: strips '/', '\\', '..', absolute paths;
-    keeps only the whitelist [a-z0-9_-]. Empty result → '_unknown'.
+    Защита от path traversal: убирает '/', '\\', '..', абсолютные пути;
+    оставляет whitelist [a-z0-9_-]. Пустой результат → '_unknown'.
     """
     if not project_id:
         return "_unknown"
@@ -569,11 +569,11 @@ def parse_json_dict(raw: str, field: str, required: bool = False,
 
 
 class Stakeholder(BaseModel):
-    """Stakeholder model for the engagement matrix."""
-    name: str = Field(..., description="Stakeholder name or role")
-    influence: str = Field(..., pattern="^(Low|Medium|High)$", description="Level of influence")
-    interest: str = Field(..., pattern="^(Low|Medium|High)$", description="Level of interest")
-    attitude: Optional[str] = Field("Neutral", description="Attitude toward the project: Neutral / Champion / Blocker")
+    """Модель стейкхолдера для матрицы вовлечения."""
+    name: str = Field(..., description="Имя или роль стейкхолдера")
+    influence: str = Field(..., pattern="^(Low|Medium|High)$", description="Уровень влияния")
+    interest: str = Field(..., pattern="^(Low|Medium|High)$", description="Уровень интереса")
+    attitude: Optional[str] = Field("Neutral", description="Отношение к проекту: Neutral / Champion / Blocker")
 
 
 _FILENAME_ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
@@ -2036,10 +2036,10 @@ def planned_prioritization(plan) -> dict:
 
 
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
-    """Saves a Markdown artifact to reports/ and returns the path.
+    """Сохраняет Markdown-артефакт в reports/ и возвращает путь.
 
-    If project_id is provided, the artifact is written to reports/<project_id>/ (issue #1).
-    Without project_id, the default behavior is preserved (flat reports/).
+    Если передан project_id — артефакт пишется в reports/<project_id>/ (issue #1).
+    Без project_id сохраняется поведение по умолчанию (плоский reports/).
     """
     # The project_id guard runs BEFORE any directory is made. `_ensure_dirs()` used to
     # come first, so a refused call still left the root governance_plans/{data,reports}
@@ -2066,13 +2066,13 @@ def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-    logger.info(f"Artifact saved: {filepath}")
-    return f"\n\n✅ Artifact saved: `{filepath}`"
+    logger.info(f"Артефакт сохранен: {filepath}")
+    return f"\n\n✅ Артефакт сохранен: `{filepath}`"
 
 
 # ---------------------------------------------------------------------------
-# Shared matrices — used in planning.py and planning_mcp.py
-# Single source of truth (ADR-REVIEW-5)
+# Shared matrices — используются в planning.py и planning_mcp.py
+# Единственный источник истины (ADR-REVIEW-п5)
 # ---------------------------------------------------------------------------
 
 APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
@@ -2089,17 +2089,17 @@ APPROACH_MATRIX: dict[tuple[str, str], tuple[str, list[str]]] = {
 
 REGULATORY_OVERRIDE: dict[str, str] = {
     "Adaptive (Agile)": "Hybrid (Agile + compliance gates)",
-    "Hybrid":           "Hybrid (with strengthened governance)",
+    "Hybrid":           "Hybrid (с усиленным Governance)",
 }
 
 QUADRANT_STRATEGIES: dict[tuple[str, str], tuple[str, str, str]] = {
-    ("High", "High"):     ("Key Players",     "Manage Closely — involve in every decision",        "Weekly"),
-    ("High", "Medium"):   ("Context Setters", "Keep Satisfied — inform about key milestones",       "At milestones"),
-    ("High", "Low"):      ("Context Setters", "Keep Satisfied — inform about key milestones",       "At milestones"),
-    ("Medium", "High"):   ("Subjects",        "Keep Informed — demos, Sprint Review",               "Bi-weekly"),
-    ("Low",  "High"):     ("Subjects",        "Keep Informed — demos, Sprint Review",               "Bi-weekly"),
-    ("Medium", "Medium"): ("Subjects",        "Keep Informed — regular updates",                    "Monthly"),
-    ("Medium", "Low"):    ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
-    ("Low",  "Medium"):   ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
-    ("Low",  "Low"):      ("Crowd",           "Monitor — general broadcast, low priority",          "Quarterly"),
+    ("High", "High"):     ("Key Players",     "Manage Closely — вовлекать в каждое решение",       "Еженедельно"),
+    ("High", "Medium"):   ("Context Setters", "Keep Satisfied — информировать о ключевых вехах",   "При вехах"),
+    ("High", "Low"):      ("Context Setters", "Keep Satisfied — информировать о ключевых вехах",   "При вехах"),
+    ("Medium", "High"):   ("Subjects",        "Keep Informed — демонстрации, Sprint Review",        "Bi-weekly"),
+    ("Low",  "High"):     ("Subjects",        "Keep Informed — демонстрации, Sprint Review",        "Bi-weekly"),
+    ("Medium", "Medium"): ("Subjects",        "Keep Informed — регулярные обновления",              "Ежемесячно"),
+    ("Medium", "Low"):    ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
+    ("Low",  "Medium"):   ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
+    ("Low",  "Low"):      ("Crowd",           "Monitor — общая рассылка, низкий приоритет",         "Квартально"),
 }

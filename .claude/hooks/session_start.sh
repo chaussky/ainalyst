@@ -1,16 +1,16 @@
 #!/bin/bash
-# SessionStart hook: loads the AInalyst project context for the BA
-# Whatever is printed to stdout is added as context that Claude sees at the start of the session
+# SessionStart hook — загружает контекст проекта AInalyst для BA
+# Вывод в stdout добавляется как контекст который Claude видит в начале сессии
 
 REPORTS_DIR="$CLAUDE_PROJECT_DIR/governance_plans/reports"
 DATA_DIR="$CLAUDE_PROJECT_DIR/governance_plans/data"
 
-echo "=== AInalyst project context ==="
+echo "=== AInalyst — Контекст проекта ==="
 echo ""
 
-# Show which projects already exist (from the JSON files in data/)
+# Показываем какие проекты уже есть (по JSON файлам в data/)
 if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
-    echo "📁 Active projects:"
+    echo "📁 Активные проекты:"
     find "$DATA_DIR" -name '*.json' 2>/dev/null | \
         sed 's/.*\///' | \
         sed 's/_traceability_repo\.json//' | \
@@ -26,14 +26,14 @@ if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
         while read proj; do echo "   • $proj"; done
     echo ""
 else
-    echo "📁 No projects yet. Start with a new project."
-    echo "   Example: \"Starting a new project: HR automation at a bank\""
+    echo "📁 Проектов пока нет. Начните с нового проекта."
+    echo "   Пример: «Начинаю новый проект — автоматизация HR в банке»"
     echo ""
 fi
 
-# Show the most recently saved reports
+# Показываем последние сохранённые отчёты
 if [ -d "$REPORTS_DIR" ] && [ "$(ls -A $REPORTS_DIR 2>/dev/null)" ]; then
-    echo "📄 Latest artifacts in reports/:"
+    echo "📄 Последние артефакты в reports/:"
     find "$REPORTS_DIR" -name '*.md' 2>/dev/null | xargs -r ls -t 2>/dev/null | head -5 | \
         while read f; do
             echo "   • $(basename $f)"
@@ -41,17 +41,19 @@ if [ -d "$REPORTS_DIR" ] && [ "$(ls -A $REPORTS_DIR 2>/dev/null)" ]; then
     echo ""
 fi
 
-echo "💡 Just describe your task in plain language, and I'll pick the right skill and tool."
-echo "   Voice mode: /voice (hold space to talk, release to send)"
-echo "   Plan mode: Shift+Tab twice (discuss the approach before acting)"
+echo "💡 Просто опишите задачу на русском — я подберу нужный скилл и инструмент."
+echo "   Голосовой режим: /voice (держи пробел — говори, отпусти — отправь)"
+echo "   Плановый режим: Shift+Tab дважды (обсудить подход перед действием)"
+echo "   Экспорт в PDF:  python export_pdf.py [файл.md | --all] [--force]"
+echo "   Канал проекта:  https://t.me/platform_ainalyst"
 echo ""
 
-# Show files ready for processing in inputs/
+# Показываем файлы готовые к обработке в inputs/
 INPUTS_DIR="$CLAUDE_PROJECT_DIR/inputs"
 INPUT_FILES=$(find "$INPUTS_DIR" -maxdepth 1 \( -name "*.txt" -o -name "*.md" -o -name "*.pdf" -o -name "*.docx" \) ! -name "README*" 2>/dev/null)
 if [ -d "$INPUTS_DIR" ] && [ -n "$INPUT_FILES" ]; then
-    echo "📂 Files ready for processing (inputs/):"
+    echo "📂 Файлы готовые к обработке (inputs/):"
     echo "$INPUT_FILES" | while read f; do echo "   • $(basename $f)"; done
-    echo "   Say: \"Process this material: inputs/FILENAME\""
+    echo "   Скажите: «Обработай материал: inputs/ИМЯ_ФАЙЛА»"
     echo ""
 fi

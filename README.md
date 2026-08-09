@@ -1,68 +1,69 @@
-# AInalyst: AI assistant for business analysts (BABOK v3)
-
-**🇷🇺 Русскоязычная версия в ветке [`ru`](../../tree/ru).**
+# AI Платформа AIналитик / AI-powered Platform AInalyst
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-1556%20passed-brightgreen.svg)](tests/)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-required-orange.svg)](https://claude.ai)
+[![Telegram](https://img.shields.io/badge/Telegram-канал-blue?logo=telegram)](https://t.me/platform_ainalyst)
 ![Status: Beta](https://img.shields.io/badge/status-beta-orange)
 
-**AInalyst** is an AI assistant that works alongside you like a seasoned analyst colleague. It knows the BABOK v3 methodology, runs interviews, builds stakeholder maps, traces requirements, and produces artifacts. You describe the task in your own words, and AInalyst proposes the next step, asks clarifying questions, and gets the work done.
+Вопросы, обновления, обсуждение — в Телеграм-канале **[t.me/platform_ainalyst](https://t.me/platform_ainalyst)**.
+
+**AIналитик** (AInalyst) — это AI-ассистент, который работает рядом с вами как опытный коллега-аналитик. Он знает методологию BABOK v3, умеет вести интервью, строить карты стейкхолдеров, трассировать требования и оформлять артефакты. Вы описываете задачу своими словами — AIналитик предлагает следующий шаг, задаёт уточняющие вопросы и делает работу.
 
 ---
-> ⚠️ **Note:** The project is in **Public Beta**. We are actively testing the BABOK working logic on real projects.
+> ⚠️ **Важно:** Проект находится в стадии **Public Beta**. Мы активно тестируем логику работы с BABOK в реальных проектах. 
 ---
 
-## How it works
+## Как это устроено
 
 At the core of the platform is Anthropic's Claude large language model. One level up is Claude Code, an AI agent that doesn't just answer but acts: it reads files, runs tools, and guides you through the process. One level higher still is a set of 21 skills and 22 MCP servers with 114 tools that cover every task in BABOK chapters 3, 4, 5, 6, and 7.
 
-Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when that skill should fire. When a business analyst types something into the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know exactly what happened under the hood. And they don't need to: they see the result.
+Каждый скилл написан по строгой спецификации и содержит YAML-заголовок с триггерами — смысловыми паттернами, которые описывают когда именно этот скилл должен сработать. Когда бизнес-аналитик пишет что-то в чат, AIналитик анализирует запрос, сопоставляет его с триггерами, активирует нужный скилл — и тот вызывает соответствующие инструменты из MCP-серверов. Бизнес-аналитик не знает что именно произошло под капотом. Ему это и не нужно: он видит результат.
 
-### What this means in practice
+### Что это даёт на практике
 
-**Reduced cognitive load.** A project may run for months, with stakeholders, decisions, requirements, and change history piling up. Holding it all in your head is impossible. AInalyst records every step in structured artifacts. At any moment you can ask "what approvals are open right now" or "why was this decision made," and get an answer immediately.
+**Снижение когнитивной нагрузки.** Проект может идти месяцами — стейкхолдеры, решения, требования, история изменений. Удержать всё в голове невозможно. AIналитик фиксирует каждый шаг в структурированных артефактах. В любой момент можно спросить «что сейчас открыто по согласованиям» или «почему было принято это решение» — и получить ответ немедленно.
 
-**Methodological safety net.** BABOK is 500 pages of structured expertise. AInalyst builds it into the process: it won't let you skip an important step, warns about risks, and suggests the next action. A BA who isn't well versed in the methodology works with the platform just as confidently as a seasoned specialist.
-
----
-
-## Who it's built for
-
-**The experienced business analyst** gets a tool that takes the routine off their plate: it structures transcripts, builds traceability matrices, and generates communication packages for different audiences, freeing up time for analysis, interpretation, and decision-making.
-
-**The junior BA** gets a dependable guide. The platform doesn't judge you for not knowing BABOK; it helps you do it right: it asks the right questions, explains why a wording failed validation, and shows what a good requirement should look like.
-
-**A product or project manager** with no dedicated BA gains the ability to work to a professional methodology without having to study it specifically. The platform adapts its language to the person it's talking to and takes on the role of methodologist.
-
-**A startup or small team** with no budget for an in-house analyst gets a structured environment for working with requirements from day one, instead of chaos across Notion and messaging apps.
+**Методологическая страховка.** BABOK — это 500 страниц структурированной экспертизы. AIналитик встроил её в процесс: не даёт пропустить важный шаг, предупреждает о рисках и подсказывает следующее действие. BA, который плохо ориентируется в методологии, работает с платформой так же уверенно, как опытный специалист.
 
 ---
 
-## Use cases for AInalyst
+## Для кого это сделано
 
-The platform covers a broad range of business analysis tasks, from preparing for interviews and prioritizing requirements to strategy analysis and preparing recommendations for leadership. Here are a few examples of how it works in practice.
+**Опытный бизнес-аналитик** получает инструмент, который снимает рутину: структурирует транскрипты, строит матрицы трассировки, генерирует коммуникационные пакеты для разных аудиторий — и освобождает время для анализа, интерпретации и принятия решений.
 
-### Impact analysis for a sudden change request
+**Начинающий BA** получает надёжного проводника. Платформа не осуждает за незнание BABOK — она помогает сделать правильно: задаёт нужные вопросы, объясняет почему формулировка не прошла валидацию, показывает как должно выглядеть хорошее требование.
 
-> **For:** Business analysts on active projects
-> **Pain:** A change request "sounds simple," but half the project's artifacts hang off it
+**Продакт- или проджект-менеджер** без выделенного BA получает возможность работать по профессиональной методологии, не изучая её специально. Платформа адаптирует язык под собеседника и берёт на себя роль методолога.
 
-A BA receives a request from the commercial director: add real-time CO₂ emissions calculation for routes. Sounds straightforward. The business analyst opens AInalyst:
+**Стартап или небольшая команда** без бюджета на штатного аналитика получают структурированную среду для работы с требованиями с первого дня — вместо хаоса в Notion и мессенджерах.
 
-> "Open a change request: the commercial director wants to add real-time CO₂ emissions calculation."
+---
 
-AInalyst runs a BFS traversal of the traceability graph and, in seconds, finds 11 affected artifacts, including a conflict with NFR-003 (API response time). It produces an assessment: accept on the condition that the "real-time" requirement is dropped. It prepares the arguments for the meeting with the director.
+## Use cases: Варианты использования AI Платформы AIналитик
 
-The BA shows up not with a refusal, but with data and an alternative. The CR is accepted in a form that doesn't create technical debt. And nobody "forgot" about three test cases and the architectural decision on caching.
+Платформа охватывает широкий спектр задач бизнес-анализа — от подготовки к интервью и приоритизации требований до стратегического анализа и подготовки рекомендаций для руководства. Вот несколько примеров того, как это работает на практике.
+
+### Impact Analysis при внезапном Change Request
+
+> **Для кого:** Бизнес-аналитики на активных проектах
+> **Боль:** Change Request «звучит просто» — но за ним тянется половина артефактов проекта
+
+BA получает от коммерческого директора запрос: добавить расчёт CO₂-эмиссии для маршрутов в реальном времени. Звучит несложно. Бизнес-аналитик открывает AIналитик:
+
+> «Открой Change Request: коммерческий директор просит добавить расчёт CO₂-эмиссии в реальном времени.»
+
+AIналитик запускает BFS-обход графа трассировки и за секунды находит 11 затронутых артефактов — включая конфликт с NFR-003 (время отклика API). Выдаёт оценку: принять с условием, убрать требование «реального времени». Готовит аргументы для встречи с директором.
+
+BA приходит не с отказом, а с данными и альтернативой. CR принят в варианте, который не создаёт технического долга. И никто не «забыл» про три тест-кейса и архитектурное решение по кэшированию.
 
 ---
 
 ### Four prioritization methods for different contexts
 
-> **For:** Business analysts on projects with competing requirements
-> **Pain:** Prioritization is done "by gut feeling," with no defensible result
+> **Для кого:** Бизнес-аналитики на проектах с конкурирующими требованиями
+> **Боль:** Приоритизация делается «по ощущениям» — без защищаемого результата
 
 A BA is running four projects at once, each with a different context. AInalyst picks the right method for each:
 
@@ -71,42 +72,42 @@ A BA is running four projects at once, each with a different context. AInalyst p
 - **Workshop with three non-technical directors** → Impact/Effort Matrix. Visual, no formulas, engages everyone in the room.
 - **Everything came back "Must", and the sprint holds 40 points** → Time Boxing/Budgeting. The capacity does the cutting, and the report names what was left out and what it would have cost.
 
-In the third case, AInalyst spots a dependency violation right there in the workshop, while the directors are still in the room, rather than at sprint planning, when changing anything is already painful.
+В третьем случае AIналитик обнаруживает dependency violation прямо на воркшопе, пока директора ещё в комнате — а не на планировании спринта, когда менять что-либо уже болезненно.
 
 ---
 
-### Requirements verification: a junior BA performing like a senior
+### Верификация требований: Junior BA работает как Senior
 
-> **For:** Junior BAs, team leads, heads of the business analysis practice
-> **Pain:** Requirements go into development "raw," and wording problems only surface during testing
+> **Для кого:** Junior BA, тимлиды, руководители практики бизнес-анализа
+> **Боль:** Требования уходят в разработку «сырыми» — и проблемы формулировок вскрываются уже в тестировании
 
-A business analyst wrote 40 requirements for a credit scoring module, reread them several times, and was satisfied. Before handing them off to development, they run them through AInalyst:
+Бизнес-аналитик написал 40 требований к модулю кредитной оценки, несколько раз перечитал, остался доволен. Перед передачей в разработку прогоняет через AIналитик:
 
-> "Check the quality of the requirements for the credit scoring module. All 40 of them, file requirements_credit_v3.md."
+> «Проверь качество требований по модулю кредитной оценки. Все 40 штук, файл requirements_credit_v3.md.»
 
-AInalyst checks them against the 9 BABOK characteristics: of the 40 requirements, 29 are sound and 11 have issues. It finds 6 cases of ambiguity, 3 non-atomic requirements, and 2 requirements with no acceptance criteria. For each case it shows how to reword it, explaining why the original version doesn't work.
+AIналитик проверяет по 9 характеристикам BABOK: из 40 требований — 29 корректных, 11 с замечаниями. Находит 6 случаев ambiguity, 3 неатомарных требования, 2 требования без критериев приёмки. По каждому случаю показывает как переформулировать — с объяснением почему исходная версия не работает.
 
-The 11 problems are found minutes before handoff, not after. And for a junior BA this isn't just a document fix; it's learning on real material: after ten sessions like this, requirement quality shifts to the level of habit.
-
----
-
-You can find more use cases in the [`use-cases.md`](docs/use-cases/use-cases.md) file.
+11 проблем найдены за минуты до передачи, а не после. И для Junior BA это не просто исправление документа — это обучение на реальном материале: после десяти таких сессий качество требований меняется на уровне привычки.
 
 ---
 
-## What you'll need
-
-Before installing, make sure your machine has:
-
-- **Python 3.10 or newer.** If you're not sure, check with `python --version` in the terminal
-- **VS Code.** Download it at [code.visualstudio.com](https://code.visualstudio.com)
-- **An Anthropic account.** A Pro plan or higher, available at [claude.ai](https://claude.ai)
+Больше вариантов вы сможете узнать, ознакомившись с файлом [`use-cases.md`](docs/use-cases/use-cases.md).
 
 ---
 
-## Installation
+## Что вам понадобится
 
-Download the project and install the dependencies:
+Перед установкой убедитесь, что на компьютере есть:
+
+- **Python 3.10 или новее** — если не уверены, проверьте командой `python --version` в терминале
+- **VS Code** — скачать на [code.visualstudio.com](https://code.visualstudio.com)
+- **Учётная запись Anthropic** — план Pro или выше, можно оформить на [claude.ai](https://claude.ai)
+
+---
+
+## Установка
+
+Скачайте проект и установите зависимости:
 
 ```bash
 git clone https://github.com/chaussky/ainalyst.git
@@ -114,68 +115,68 @@ cd ainalyst
 pip install -r requirements.txt
 ```
 
-If you have access to Confluence, set up the connection:
+Если у вас есть доступ к Confluence, настройте подключение:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` in any editor and paste in your Confluence URL, login, and API token. Instructions for obtaining a token are right there in the comments in `.env.example`.
+Откройте `.env` в любом редакторе и вставьте URL вашего Confluence, логин и API-токен. Как получить токен — написано прямо в `.env.example` в комментариях.
 
 ---
 
-## First run via VS Code
+## Первый запуск через VS Code
 
-The most convenient way to work with AInalyst is through VS Code: the chat with Claude opens right inside the editor, next to your project files.
+Работать с AIналитик (AInalyst) удобнее всего через VS Code — чат с Claude открывается прямо в редакторе, рядом с файлами проекта.
 
-**Step 1. Install the Claude Code extension.**
+**Шаг 1. Установите расширение Claude Code.**
 
-Open VS Code, go to the Extensions tab (`Ctrl+Shift+X`), search for **Claude Code**, and click Install. After installation, VS Code will prompt you to sign in to your Anthropic account; follow the on-screen instructions.
+Откройте VS Code, перейдите во вкладку Extensions (`Ctrl+Shift+X`), найдите **Claude Code** и нажмите Install. После установки VS Code попросит войти в Anthropic-аккаунт — следуйте инструкциям на экране.
 
-**Step 2. Open the project folder.**
+**Шаг 2. Откройте папку проекта.**
 
-`File → Open Folder` → select the `ainalyst` folder. This matters: Claude Code needs to see the project root, otherwise it won't pick up the settings.
+`File → Open Folder` → выберите папку `ainalyst`. Это важно: Claude Code должен видеть корень проекта, иначе он не подхватит настройки.
 
-**Step 3. Launch Claude Code.**
+**Шаг 3. Запустите Claude Code.**
 
-Press `Ctrl+Shift+P`, type **Claude Code: Open**, and press Enter. The chat panel will open on the right.
+Нажмите `Ctrl+Shift+P`, введите **Claude Code: Open** и нажмите Enter. Справа откроется панель чата.
 
-**Step 4. Get started.**
+**Шаг 4. Начните работу.**
 
-Just type what you need to do, for example:
+Просто напишите, что нужно сделать, например:
 
-> *"We're starting a new project. The client is Acme Corp; we need to automate the contract approval process."*
+> *«Начинаем новый проект. Заказчик — ООО "Ромашка", нужно автоматизировать процесс согласования договоров.»*
 
-Claude will ask clarifying questions and suggest where to begin.
+Claude спросит уточняющие вопросы и сам предложит с чего начать.
 
 ---
 
-## How phases work
+## Как работают фазы
 
-AInalyst is built so that, at any given moment, only the tools for the relevant BABOK chapter are loaded. This is by design: if everything were loaded at once, Claude would spend a lot of "memory" on tools it doesn't currently need and would perform worse.
+AIналитик (AInalyst) устроен так, что в каждый момент загружены только инструменты нужной главы BABOK. Это сделано намеренно: если загрузить всё сразу, Claude тратит много «памяти» на инструменты, которые сейчас не нужны, и работает хуже.
 
-At the start of a new project, the `planning` phase is active: the Chapter 3 tools. AInalyst will tell you when it's time to switch.
+В начале нового проекта активна фаза `planning` — инструменты Главы 3. AIналитик сам подскажет когда пора переключаться.
 
-Switching is done through the VS Code integrated terminal (`` Ctrl+` ``):
+Переключение делается через встроенный терминал VS Code (`` Ctrl+` ``):
 
 ```bash
 python phase.py elicitation
 ```
 
-After that, AInalyst will ask you to enter `/restart`, which it needs in order to reload with the new tools. Your entire conversation history is preserved.
+После этого AIналитик попросит вас ввести `/restart` — это нужно чтобы он перезагрузился с новыми инструментами. Вся история разговора при этом сохраняется.
 
-Here are all the available phases:
+Вот все доступные фазы:
 
-| Phase | BABOK chapter | When to use |
+| Фаза | Глава BABOK | Когда использовать |
 |------|-------------|-------------------|
-| `planning` | Ch. 3 | New project, BA plan, stakeholder map |
-| `elicitation` | Ch. 4 | Interviews, workshops, meeting minutes |
-| `lifecycle` | Ch. 5 | Traceability, prioritization, CRs, approval |
-| `analysis` | Ch. 6 | As-is / to-be analysis, gap, risks, strategy |
-| `design` | Ch. 7 | Specification, verification, validation, design |
-| `full` | All | Only when you need tools from different chapters |
+| `planning` | Гл. 3 | Новый проект, план BA, карта стейкхолдеров |
+| `elicitation` | Гл. 4 | Интервью, воркшопы, протоколы встреч |
+| `lifecycle` | Гл. 5 | Трассировка, приоритизация, CR, утверждение |
+| `analysis` | Гл. 6 | Анализ as-is / to-be, GAP, риски, стратегия |
+| `design` | Гл. 7 | Спецификация, верификация, валидация, дизайн |
+| `full` | Все | Только если нужны инструменты из разных глав |
 
-To see which phase is active right now:
+Посмотреть, какая фаза активна прямо сейчас:
 
 ```bash
 python phase.py
@@ -183,114 +184,140 @@ python phase.py
 
 ---
 
-## Input materials
+## Входные материалы
 
-Drop any input file into the `inputs/` folder and tell AInalyst:
+Положите любой входной файл в папку `inputs/` и скажите AIналитику:
 
-> *"Process this material. File: inputs/ivanov_21mar.txt"*
+> *«Обработай материал. Файл: inputs/ivanov_21mar.txt»*
 
-AInalyst will read the file, extract requirements, risks, and open questions, and save the result as an artifact. Any kind of source works: interview and workshop transcripts, business rules, regulations, technical specifications. The supported formats are `.txt`, `.md`, `.pdf`, and `.docx`.
+AIналитик прочитает файл, извлечёт требования, риски и открытые вопросы, и сохранит результат как артефакт. Подходят любые типы источников: транскрипты интервью и воркшопов, бизнес-правила, регламенты, технические спецификации. Поддерживаются форматы `.txt`, `.md`, `.pdf` и `.docx`.
 
 ---
 
-## Deliverables and publishing artifacts
+## Результаты работы и публикация артефактов
 
-All the artifacts AInalyst creates as it works are saved in the `governance_plans/reports/` folder in Markdown format. These are official project documents: BA plans, stakeholder maps, interview minutes, requirements specifications.
+Все артефакты, которые создаёт AIналитик в процессе работы, сохраняются в папке `governance_plans/reports/` в формате Markdown. Это официальные документы проекта — планы BA, карты стейкхолдеров, протоколы интервью, спецификации требований.
 
-The most convenient way to share them with the team is to publish them directly to Confluence. AInalyst can do this itself: just tell it "publish this artifact to Confluence," and the document will appear on the right page in your space. The Confluence integration is always available, in any phase; just fill in the `.env` file with your details.
+Самый удобный способ передать их команде — опубликовать прямо в Confluence. AIналитик (AInalyst) умеет это делать сам: достаточно сказать ему «опубликуй этот артефакт в Confluence» — и документ появится на нужной странице вашего пространства. Интеграция с Confluence активна всегда, в любой фазе — просто заполните `.env` файл с вашими данными.
 
-If you don't have Confluence, send the `.md` file from `reports/` to a colleague directly, or open it in VS Code and copy the contents wherever you like.
+Если Confluence у вас нет — отправьте `.md` файл из `reports/` коллеге напрямую или откройте его в VS Code и скопируйте содержимое куда удобно.
 
-**Need a PDF?** AInalyst produces Markdown artifacts. To get a PDF, use any tool you like: `pandoc`, the "Print to PDF" option in a Markdown editor such as VS Code, or simply ask the assistant to convert a file.
+В папке `governance_plans/data/` хранятся внутренние данные в формате JSON — это «память» системы между сессиями: граф требований, данные приоритизации, результаты оценок. Редактировать их вручную не нужно.
 
-The `governance_plans/data/` folder holds internal data in JSON format. This is the system's "memory" between sessions: the requirements graph, prioritization data, assessment results. There's no need to edit these by hand.
+---
+
+## Экспорт отчётов в PDF
+
+По умолчанию все артефакты сохраняются в формате Markdown — это удобно для работы внутри проекта и хранения в git. Для передачи стейкхолдеру в виде готового файла есть отдельная утилита:
+
+```bash
+# Один файл
+python export_pdf.py <имя файла>
+
+# Все отчёты сразу
+python export_pdf.py --all
+
+# Все отчёты, перезаписать существующие PDF
+python export_pdf.py --all --force
+```
+
+PDF появятся рядом с `.md` файлами в папке `governance_plans/reports/`. В git они не попадают — только локально.
+
+При первом использовании убедитесь что установлена библиотека: `pip install reportlab`
 
 Those files are replaced in a single step, so an interrupted write leaves the previous version whole instead of a truncated one, and the **last five versions of each are kept in `governance_plans/.history/`**. If a tool ever reports that a file cannot be read, its message names both the file and that folder — the newest copy there is the project as it stood before the most recent change.
 
 ---
 
-## If something goes wrong
+## Если что-то пошло не так
 
-If Claude is responding oddly or can't see the tools you need, the wrong phase is probably active. Check it:
+Если Claude отвечает странно или не видит нужных инструментов — скорее всего активна не та фаза. Проверьте:
 
 ```bash
 python phase.py
 ```
 
-And switch to the one you need. After `/restart`, everything will fall back into place.
+И переключитесь на нужную. После `/restart` всё встанет на место.
 
 ---
 
-## The business analyst's responsibilities
+## Ответственность бизнес-аналитика
 
-The platform takes on the methodology, tool selection, and artifact creation. A few simple but important things remain with the business analyst.
+Платформа берёт на себя методологию, выбор инструментов и формирование артефактов. За бизнес-аналитиком остаётся несколько простых, но важных вещей.
 
-**Managing phases.** Keep an eye on which phase is currently active and switch it as the project progresses. You can do this manually in the terminal (`python phase.py <phase>`) or just ask AInalyst, and it will run the command for you.
+**Управление фазами.** Следите за тем, какая фаза сейчас активна, и переключайте её по мере продвижения проекта. Это можно сделать вручную в терминале (`python phase.py <фаза>`) или просто попросить AIналитика — он сам выполнит команду.
 
-**Talking to AInalyst.** Phrase your tasks freely in the chat: describe the context, ask questions, clarify details. You don't need to know tool names or commands; it's enough to explain what needs to be done.
+**Общение с AIналитиком.** Формулируйте задачи в свободной форме в чате: описывайте контекст, задавайте вопросы, уточняйте детали. Не нужно знать названия инструментов или команды — достаточно объяснить что нужно сделать.
 
-**Answering clarifying questions.** AInalyst will ask follow-up questions at key moments: when it's time to choose a methodology, set priorities, or confirm a decision. Answer them: the quality of your answers determines the quality of the result.
+**Ответы на уточняющие вопросы.** AIналитик будет задавать встречные вопросы в ключевые моменты — когда нужно выбрать методологию, расставить приоритеты или подтвердить решение. Отвечайте на них: от качества ваших ответов зависит качество результата.
 
-**Input materials.** Put all your working documents (interview transcripts, regulations, business rules, specifications) into the `inputs/` folder before processing.
+**Входные материалы.** Кладите все рабочие документы — транскрипты интервью, регламенты, бизнес-правила, спецификации — в папку `inputs/` перед обработкой.
 
-**Deliverables.** Collect finished artifacts from the `governance_plans/reports/` folder. That's where all the official project documents live: plans, registries, minutes, specifications.
+**Результаты.** Готовые артефакты забирайте из папки `governance_plans/reports/`. Там хранятся все официальные документы проекта: планы, реестры, протоколы, спецификации.
 
-**Decision-making.** AInalyst gives recommendations, warns about risks, and offers options, but the final decision is always yours. The platform helps you make a good decision; it doesn't make it for you.
+**Принятие решений.** AIналитик даёт рекомендации, предупреждает о рисках и предлагает варианты — но финальное решение всегда за вами. Платформа помогает принять хорошее решение, но не принимает его вместо аналитика.
 
 ---
 
-## For developers
+## Для разработчиков
 
-Run the tests:
+Запустить тесты:
 
 ```bash
 pip install -r requirements-dev.txt
 pytest tests/
 ```
 
-The project structure is described in `CLAUDE.md`, which also contains instructions for Claude on working with the platform.
+Структура проекта описана в `CLAUDE.md` — там же инструкция для Claude по работе с платформой.
 
-Project documentation:
-- `docs/user-guide/`: user guide covering all BABOK chapters
-- `docs/use-cases/use-cases.md`: real-world scenarios for using the platform
-- `docs/developer-guide/developer-guide.md`: technical architecture and the inner workings of the MCP servers, skills, and hooks
-
----
-
-## Contributing
-
-We welcome contributions from the community! Before submitting a pull request, please:
-
-1. Read [CLA.md](CLA.md), the Contributor License Agreement. By submitting a PR, you automatically accept its terms.
-2. Make sure all tests pass: `pytest tests/`
-3. If you're adding a new MCP server or skill, add the corresponding tests to `tests/`.
-4. For larger changes, we recommend opening an Issue first to discuss the approach.
-
-For questions, issues, and feature requests, use [GitHub Issues](../../issues). For other inquiries, email chaussky@gmail.com.
+Документация проекта:
+- `docs/user-guide/` — пользовательское руководство по всем главам BABOK
+- `docs/use-cases/use-cases.md` — реальные сценарии использования платформы
+- `docs/developer-guide/developer-guide.md` — техническая архитектура, устройство MCP-серверов, скиллов и хуков
 
 ---
 
-## License and commercial use
+## Вклад в проект
+
+Мы рады вкладу сообщества! Прежде чем отправить pull request, пожалуйста:
+
+1. Ознакомьтесь с [CLA.md](CLA.md) — Contributor License Agreement. Отправляя PR, вы автоматически принимаете его условия.
+2. Убедитесь что все тесты проходят: `pytest tests/`
+3. Если добавляете новый MCP-сервер или скилл — добавьте соответствующие тесты в `tests/`.
+4. Для крупных изменений рекомендуем сначала открыть Issue и обсудить подход.
+
+По вопросам сотрудничества, коммерческой разработки и кастомных интеграций — пишите на chaussky@gmail.com.
+
+---
+
+## Лицензия и коммерческое использование
 Copyright (c) 2026 Anatoly Chaussky
 
-AInalyst is distributed under the **GNU AGPL v3** license.
+AI Платформа AIналитик (AI-powered Platform AInalyst) распространяется под лицензией **GNU AGPL v3**.
 
-**Free for:**
-- Business analysts using the platform locally for their own work
-- Companies deploying the platform within their own infrastructure for their own analysts
+**Бесплатно для:**
+- Бизнес-аналитиков, использующих платформу локально для своей работы
+- Компаний, развёртывающих платформу внутри своего контура для собственных аналитиков
 
-**A commercial license is required for:**
-- Building SaaS services on top of the platform
-- Embedding the code in closed-source commercial products
-- Developing paid graphical interfaces on top of the platform
-- Enterprise agreements with guarantees and support
+**Коммерческая лицензия требуется для:**
+- Создания SaaS-сервисов на базе платформы
+- Встраивания кода в коммерческие продукты с закрытым исходным кодом
+- Разработки платных графических интерфейсов поверх платформы
+- Корпоративных соглашений с гарантиями и поддержкой
 
-For production, SaaS, or proprietary use, see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) (commercial license; contact chaussky@gmail.com).
+Подробности — в файле [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
-The change history is in [CHANGELOG.md](CHANGELOG.md).
+История изменений — в файле [CHANGELOG.md](CHANGELOG.md).
 
-For questions about commercial licensing, custom development (additional MCP servers), or deployment in a closed/air-gapped environment with local models:
+По вопросам коммерческого лицензирования, кастомной разработки (дополнительные MCP-серверы) или развёртывания в закрытом контуре с локальными моделями:
 
-**Anatoly Chaussky**  
-Email: chaussky@gmail.com  
-LinkedIn: https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Анатолий Чаусский / Anatoly Chaussky**  
+Email: chaussky@gmail.com
+
+---
+
+## Сообщество
+
+Присоединяйтесь к Телеграм-каналу проекта — там анонсы обновлений, советы по использованию, разбор реальных кейсов и обсуждение с другими пользователями:
+
+**→ [t.me/platform_ainalyst](https://t.me/platform_ainalyst)**

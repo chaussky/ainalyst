@@ -1,20 +1,20 @@
 """
-tests/test_ch6_62.py — Tests for BABOK 6.2 Define Future State.
+tests/test_ch6_62.py — Тесты для BABOK 6.2 Define Future State.
 
-Structure:
-  - Unit (10): utilities _safe, _next_goal_id, _validate_smart, _load/_save helpers
-  - scope_future_state (12): initiative types, depth, custom elements, with/without 6.1
-  - capture_future_state_element (11): success, update, out of scope, UX pattern 6.1, validation
-  - define_goals_and_objectives (13): SMART validation, registration in 5.1, BN→BG links
-  - capture_constraints (9): categories, statuses, update, validation
-  - run_gap_analysis (10): with 6.1, without 6.1, change types, complexity
-  - assess_potential_value (10): benefit types, validation, value profile
-  - check_future_state_completeness (10): complete, partial, no scope, verdicts
-  - save_future_state (8): finalization, push_to_business_context, no scope
-  - Pipeline (7): full, without 6.1, scope+goals only, gap without current state
-  - Integration 7.3 from_strategy_project_id (8): ADR-065 pre-fill
+Структура:
+  - Unit (10): утилиты _safe, _next_goal_id, _validate_smart, _load/_save helpers
+  - scope_future_state (12): типы инициатив, глубина, custom elements, с/без 6.1
+  - capture_future_state_element (11): успех, обновление, вне скоупа, UX-паттерн 6.1, валидация
+  - define_goals_and_objectives (13): SMART-валидация, регистрация в 5.1, связи BN→BG
+  - capture_constraints (9): категории, статусы, обновление, валидация
+  - run_gap_analysis (10): с 6.1, без 6.1, типы изменений, сложность
+  - assess_potential_value (10): типы выгод, валидация, профиль ценности
+  - check_future_state_completeness (10): полный, частичный, без скоупа, вердикты
+  - save_future_state (8): финализация, push_to_business_context, без скоупа
+  - Pipeline (7): полный, без 6.1, только скоуп+цели, gap без текущего состояния
+  - Интеграция 7.3 from_strategy_project_id (8): ADR-065 предзаполнение
 
-Total: ~108 tests
+Итого: ~108 тестов
 """
 
 import json
@@ -56,7 +56,7 @@ PROJECT = "test_project"
 
 
 # ---------------------------------------------------------------------------
-# Helper functions
+# Вспомогательные функции
 # ---------------------------------------------------------------------------
 
 def _scope(project=PROJECT, initiative="process_improvement", depth="standard",
@@ -71,7 +71,7 @@ def _scope(project=PROJECT, initiative="process_improvement", depth="standard",
 
 
 def _capture(project=PROJECT, element="capabilities",
-             description="Automated approval process in 2 hours",
+             description="Автоматизированный процесс согласования за 2 часа",
              target_metrics='{"processing_time": "2 hours"}',
              linked_bn='["BN-001"]', sources='["elicitation"]', notes=""):
     return capture_future_state_element(
@@ -85,9 +85,9 @@ def _capture(project=PROJECT, element="capabilities",
     )
 
 
-def _goal(project=PROJECT, title="Reduce request processing time",
-          description="Achieve processing speed of 2 hours instead of 8",
-          objectives='[{"title":"Time","metric":"hours","baseline":"8 hours","target":"2 hours","deadline":"2025-12-31"}]',
+def _goal(project=PROJECT, title="Сократить время обработки заявок",
+          description="Достичь скорости обработки 2 часа вместо 8",
+          objectives='[{"title":"Время","metric":"часы","baseline":"8 часов","target":"2 часа","deadline":"2025-12-31"}]',
           linked_bn='["BN-001"]', register=True):
     return define_goals_and_objectives(
         project_id=project,
@@ -99,8 +99,8 @@ def _goal(project=PROJECT, title="Reduce request processing time",
     )
 
 
-def _constraint(project=PROJECT, title="Project budget",
-                category="budget", description="Budget is limited to 5M USD",
+def _constraint(project=PROJECT, title="Бюджет проекта",
+                category="budget", description="Бюджет ограничен 5 млн руб.",
                 status="confirmed", linked="[]"):
     return capture_constraints(
         project_id=project,
@@ -113,8 +113,8 @@ def _constraint(project=PROJECT, title="Project budget",
 
 
 def _value(project=PROJECT,
-           benefits='[{"benefit_title":"Process acceleration","benefit_type":"operational","magnitude":"high","confidence":"medium","description":"Text"}]',
-           investment="medium", summary="High value at medium investment level"):
+           benefits='[{"benefit_title":"Ускорение процесса","benefit_type":"operational","magnitude":"high","confidence":"medium","description":"Текст"}]',
+           investment="medium", summary="Высокая ценность при среднем уровне инвестиций"):
     return assess_potential_value(
         project_id=project,
         benefits_json=benefits,
@@ -124,14 +124,14 @@ def _value(project=PROJECT,
 
 
 def _save_current_state_data(project=PROJECT):
-    """Saves 6.1 test data for integration testing."""
+    """Сохраняет тестовые данные 6.1 для проверки интеграции."""
     os.makedirs("governance_plans/data", exist_ok=True)
     # current_state_scope
     scope_data = {
         "project_id": project,
         "initiative_type": "process_improvement",
         "analysis_depth": "standard",
-        "known_problems": "Processing time increased from 2 to 8 hours",
+        "known_problems": "Время обработки выросло с 2 до 8 часов",
         "elements_in_scope": ["business_needs", "capabilities", "technology", "policies"],
         "session_ids_imported": [],
         "created": str(date.today()),
@@ -145,8 +145,8 @@ def _save_current_state_data(project=PROJECT):
         "project_id": project,
         "elements": {
             "capabilities": {
-                "description": "Manual approval process, 8 hours, 3 levels",
-                "pain_points": ["Slow", "Many errors", "No notifications"],
+                "description": "Ручной процесс согласования, 8 часов, 3 уровня",
+                "pain_points": ["Медленно", "Много ошибок", "Нет уведомлений"],
                 "metrics": {"processing_time": "8 hours", "error_rate": "12%"},
                 "sources": ["interview"],
                 "notes": "",
@@ -167,21 +167,21 @@ def _save_current_state_data(project=PROJECT):
         "needs": [
             {
                 "id": "BN-001",
-                "need_title": "Speed up request processing",
-                "description": "Processing time grew from 2 to 8 hours",
+                "need_title": "Ускорить обработку заявок",
+                "description": "Время выросло с 2 до 8 часов",
                 "need_type": "problem",
                 "priority": "High",
-                "source": "Director",
+                "source": "Директор",
                 "root_cause_ids": [],
                 "created": str(date.today()),
             },
             {
                 "id": "BN-002",
-                "need_title": "Reduce error rate",
-                "description": "Errors account for 12%",
+                "need_title": "Снизить уровень ошибок",
+                "description": "Ошибки составляют 12%",
                 "need_type": "problem",
                 "priority": "Medium",
-                "source": "Director",
+                "source": "Директор",
                 "root_cause_ids": [],
                 "created": str(date.today()),
             },
@@ -194,21 +194,21 @@ def _save_current_state_data(project=PROJECT):
 
 
 def _save_future_state_goals(project=PROJECT):
-    """Saves 6.2 goals test data for 7.3 integration testing."""
+    """Сохраняет тестовые данные 6.2 goals для проверки интеграции 7.3."""
     os.makedirs("governance_plans/data", exist_ok=True)
     goals_data = {
         "project_id": project,
         "goals": [
             {
                 "id": "BG-001",
-                "goal_title": "Reduce processing time to 2 hours",
-                "description": "Automate the approval workflow",
+                "goal_title": "Сократить время обработки до 2 часов",
+                "description": "Автоматизировать согласование",
                 "objectives": [
                     {
-                        "title": "Processing time",
-                        "metric": "hours",
-                        "baseline": "8 hours",
-                        "target": "2 hours",
+                        "title": "Время обработки",
+                        "metric": "часы",
+                        "baseline": "8 часов",
+                        "target": "2 часа",
                         "deadline": "2025-12-31",
                     }
                 ],
@@ -225,7 +225,7 @@ def _save_future_state_goals(project=PROJECT):
 
 
 def _full_pipeline(project=PROJECT, with_current_state=True):
-    """Runs the full 6.2 pipeline."""
+    """Запускает полный pipeline 6.2."""
     if with_current_state:
         _save_current_state_data(project)
 
@@ -238,7 +238,7 @@ def _full_pipeline(project=PROJECT, with_current_state=True):
     _scope(project=project)
     _capture(project=project, element="capabilities")
     _capture(project=project, element="technology",
-             description="Cloud platform with API integration")
+             description="Облачная платформа с API-интеграцией")
     _goal(project=project)
     _constraint(project=project)
     run_gap_analysis(project_id=project)
@@ -246,7 +246,7 @@ def _full_pipeline(project=PROJECT, with_current_state=True):
 
 
 # ---------------------------------------------------------------------------
-# Unit tests
+# Unit-тесты
 # ---------------------------------------------------------------------------
 
 class TestUtils(BaseMCPTest):
@@ -273,22 +273,22 @@ class TestUtils(BaseMCPTest):
         self.assertEqual(_next_goal_id(goals_data), "BG-006")
 
     def test_validate_smart_ok(self):
-        objectives = [{"title": "KPI", "metric": "hours", "baseline": "8", "target": "2", "deadline": "2025-12-31"}]
-        issues = _validate_smart("Reduce request processing time", "Achieve speed", objectives)
+        objectives = [{"title": "KPI", "metric": "часы", "baseline": "8", "target": "2", "deadline": "2025-12-31"}]
+        issues = _validate_smart("Сократить время обработки заявок", "Достичь скорости", objectives)
         self.assertEqual(issues, [])
 
     def test_validate_smart_no_kpi(self):
-        issues = _validate_smart("Improve process", "Description", [])
+        issues = _validate_smart("Улучшить процесс", "Описание", [])
         self.assertTrue(any("Measurable" in i for i in issues))
 
     def test_validate_smart_no_target(self):
-        objectives = [{"title": "KPI", "metric": "hours", "baseline": "8"}]
-        issues = _validate_smart("Reduce processing time", "Description", objectives)
+        objectives = [{"title": "KPI", "metric": "часы", "baseline": "8"}]
+        issues = _validate_smart("Сократить время обработки", "Описание", objectives)
         self.assertTrue(any("target" in i for i in issues))
 
     def test_validate_smart_no_deadline(self):
-        objectives = [{"title": "KPI", "metric": "hours", "baseline": "8", "target": "2"}]
-        issues = _validate_smart("Reduce processing time", "Description", objectives)
+        objectives = [{"title": "KPI", "metric": "часы", "baseline": "8", "target": "2"}]
+        issues = _validate_smart("Сократить время обработки", "Описание", objectives)
         self.assertTrue(any("Time-bound" in i for i in issues))
 
 
@@ -343,20 +343,20 @@ class TestScopeFutureState(BaseMCPTest):
         r = _scope(depth="deep")
         scope = _load_scope(PROJECT)
         self.assertEqual(scope["analysis_depth"], "deep")
-        self.assertIn("UPDATED", r)
+        self.assertIn("ОБНОВЛЁН", r)
 
     def test_scope_with_known_goals(self):
-        r = _scope(goals="We want to speed up processing 4x")
-        self.assertIn("Known goals", r)
+        r = _scope(goals="Хотим ускорить обработку в 4 раза")
+        self.assertIn("Известные цели", r)
 
     def test_scope_with_current_state_data(self):
         _save_current_state_data()
         r = _scope()
-        self.assertIn("6.1 found", r)
+        self.assertIn("6.1 найдены", r)
 
     def test_scope_without_current_state(self):
         r = _scope()
-        self.assertIn("No 6.1 data found", r)
+        self.assertIn("6.1 не найдены", r)
 
     def test_scope_market_opportunity_all_elements(self):
         _scope(initiative="market_opportunity", depth="standard")
@@ -380,16 +380,16 @@ class TestCaptureFutureStateElement(BaseMCPTest):
         self.assertIn("capabilities", r)
 
     def test_capture_saves_to_state(self):
-        _capture(element="capabilities", description="New automated process")
+        _capture(element="capabilities", description="Новый автоматизированный процесс")
         state = _load_state(PROJECT)
         self.assertIn("capabilities", state["elements"])
-        self.assertEqual(state["elements"]["capabilities"]["description"], "New automated process")
+        self.assertEqual(state["elements"]["capabilities"]["description"], "Новый автоматизированный процесс")
 
     def test_capture_update_existing(self):
-        _capture(element="technology", description="First version")
-        _capture(element="technology", description="Updated description")
+        _capture(element="technology", description="Первая версия")
+        _capture(element="technology", description="Обновлённое описание")
         state = _load_state(PROJECT)
-        self.assertEqual(state["elements"]["technology"]["description"], "Updated description")
+        self.assertEqual(state["elements"]["technology"]["description"], "Обновлённое описание")
         self.assertFalse(state["elements"]["technology"]["draft"])
 
     def test_capture_empty_description_error(self):
@@ -401,14 +401,14 @@ class TestCaptureFutureStateElement(BaseMCPTest):
     def test_capture_invalid_target_metrics_json(self):
         r = capture_future_state_element(
             project_id=PROJECT, element="capabilities",
-            description="Description", target_metrics="not_json"
+            description="Описание", target_metrics="not_json"
         )
         self.assertIn("❌", r)
 
     def test_capture_invalid_linked_bn_json(self):
         r = capture_future_state_element(
             project_id=PROJECT, element="capabilities",
-            description="Description", linked_business_needs="not_json"
+            description="Описание", linked_business_needs="not_json"
         )
         self.assertIn("❌", r)
 
@@ -425,21 +425,21 @@ class TestCaptureFutureStateElement(BaseMCPTest):
     def test_capture_shows_current_state_context(self):
         _save_current_state_data()
         r = _capture(element="capabilities")
-        self.assertIn("current state", r.lower())
+        self.assertIn("текущее состояние", r.lower())
 
     def test_capture_out_of_scope_warning(self):
         r = capture_future_state_element(
             project_id=PROJECT,
-            element="external",  # not in the standard process_improvement scope
-            description="External partners",
+            element="external",  # не в стандартном скоупе process_improvement
+            description="Внешние партнёры",
         )
-        # Should save but warn
+        # Должно сохранить, но предупредить
         state = _load_state(PROJECT)
         self.assertIn("external", state["elements"])
 
     def test_capture_progress_shown(self):
         r = _capture(element="capabilities")
-        self.assertIn("Progress", r)
+        self.assertIn("Прогресс", r)
 
 
 # ---------------------------------------------------------------------------
@@ -464,8 +464,8 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
         self.assertEqual(goals_data["goals"][0]["id"], "BG-001")
 
     def test_goal_sequential_ids(self):
-        _goal(title="Goal 1")
-        _goal(title="Goal 2")
+        _goal(title="Цель 1")
+        _goal(title="Цель 2")
         goals_data = _load_goals(PROJECT)
         ids = [g["id"] for g in goals_data["goals"]]
         self.assertIn("BG-001", ids)
@@ -473,30 +473,30 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
     def test_goal_smart_valid(self):
         r = _goal()
-        self.assertIn("SMART criteria met", r)
+        self.assertIn("SMART-критерии соблюдены", r)
         goals_data = _load_goals(PROJECT)
         self.assertTrue(goals_data["goals"][0]["smart_validated"])
 
     def test_goal_smart_no_kpi_warning(self):
         r = define_goals_and_objectives(
             project_id=PROJECT,
-            goal_title="Improve process",
-            description="Description",
+            goal_title="Улучшить процесс",
+            description="Описание",
             objectives_json="[]",
         )
-        self.assertIn("SMART notes", r)
+        self.assertIn("SMART-замечания", r)
 
     def test_goal_empty_title_error(self):
         r = define_goals_and_objectives(
-            project_id=PROJECT, goal_title="", description="Description",
+            project_id=PROJECT, goal_title="", description="Описание",
             objectives_json="[]"
         )
         self.assertIn("❌", r)
 
     def test_goal_invalid_objectives_json(self):
         r = define_goals_and_objectives(
-            project_id=PROJECT, goal_title="Goal",
-            description="Description", objectives_json="not_json"
+            project_id=PROJECT, goal_title="Цель",
+            description="Описание", objectives_json="not_json"
         )
         self.assertIn("❌", r)
 
@@ -556,7 +556,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
     def test_goal_register_false_no_repo_needed(self):
         r = _goal(register=False)
         self.assertIn("BG-001", r)
-        # Without repository there should be no error
+        # Без репозитория не должно быть ошибки
 
     def test_goal_linked_bn_stored(self):
         _goal(linked_bn='["BN-001","BN-002"]')
@@ -567,7 +567,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
         _goal()
         goals_data = _load_goals(PROJECT)
         objectives = goals_data["goals"][0]["objectives"]
-        self.assertEqual(objectives[0]["target"], "2 hours")
+        self.assertEqual(objectives[0]["target"], "2 часа")
 
 
 # ---------------------------------------------------------------------------
@@ -579,58 +579,58 @@ class TestCaptureConstraints(BaseMCPTest):
     def test_constraint_basic_success(self):
         r = _constraint()
         self.assertIn("✅", r)
-        self.assertIn("Project budget", r)
+        self.assertIn("Бюджет", r)
 
     def test_constraint_saved_to_state(self):
-        _constraint(title="Budget", category="budget", description="5M USD")
+        _constraint(title="Бюджет", category="budget", description="5 млн")
         state = _load_state(PROJECT)
         self.assertEqual(len(state["constraints"]), 1)
-        self.assertEqual(state["constraints"][0]["title"], "Budget")
+        self.assertEqual(state["constraints"][0]["title"], "Бюджет")
 
     def test_constraint_multiple_categories(self):
-        _constraint(title="Budget", category="budget")
-        _constraint(title="Deadline", category="time", description="Launch by 01.04")
-        _constraint(title="Compliance-152", category="compliance", description="Regulatory compliance")
+        _constraint(title="Бюджет", category="budget")
+        _constraint(title="Дедлайн", category="time", description="Запуск до 01.04")
+        _constraint(title="152-ФЗ", category="compliance", description="Соответствие")
         state = _load_state(PROJECT)
         self.assertEqual(len(state["constraints"]), 3)
 
     def test_constraint_assumed_status_warning(self):
         r = _constraint(status="assumed")
-        self.assertIn("assumption", r.lower())
+        self.assertIn("предположение", r.lower())
 
     def test_constraint_confirmed_status(self):
         r = _constraint(status="confirmed")
-        self.assertIn("Confirmed", r)
+        self.assertIn("Подтверждено", r)
 
     def test_constraint_empty_title_error(self):
         r = capture_constraints(
             project_id=PROJECT, constraint_title="",
-            category="budget", description="Description", status="confirmed"
+            category="budget", description="Описание", status="confirmed"
         )
         self.assertIn("❌", r)
 
     def test_constraint_empty_description_error(self):
         r = capture_constraints(
-            project_id=PROJECT, constraint_title="Budget",
+            project_id=PROJECT, constraint_title="Бюджет",
             category="budget", description="", status="confirmed"
         )
         self.assertIn("❌", r)
 
     def test_constraint_invalid_linked_elements(self):
         r = capture_constraints(
-            project_id=PROJECT, constraint_title="Constraint",
-            category="other", description="Description", status="confirmed",
+            project_id=PROJECT, constraint_title="Ограничение",
+            category="other", description="Описание", status="confirmed",
             linked_elements='["unknown_element"]'
         )
         self.assertIn("❌", r)
 
     def test_constraint_update_existing(self):
-        _constraint(title="Budget", description="First description")
-        _constraint(title="Budget", description="Updated description")
+        _constraint(title="Бюджет", description="Первое описание")
+        _constraint(title="Бюджет", description="Обновлённое описание")
         state = _load_state(PROJECT)
-        budget_items = [c for c in state["constraints"] if c["title"] == "Budget"]
+        budget_items = [c for c in state["constraints"] if c["title"] == "Бюджет"]
         self.assertEqual(len(budget_items), 1)
-        self.assertEqual(budget_items[0]["description"], "Updated description")
+        self.assertEqual(budget_items[0]["description"], "Обновлённое описание")
 
 
 # ---------------------------------------------------------------------------
@@ -642,13 +642,13 @@ class TestRunGapAnalysis(BaseMCPTest):
     def setUp(self):
         super().setUp()
         _scope()
-        _capture(element="capabilities", description="Automated process")
-        _capture(element="technology", description="Cloud platform")
+        _capture(element="capabilities", description="Автоматизированный процесс")
+        _capture(element="technology", description="Облачная платформа")
 
     def test_gap_basic_success(self):
         r = run_gap_analysis(project_id=PROJECT)
         self.assertIn("✅", r)
-        self.assertIn("Gap analysis completed", r)
+        self.assertIn("Gap-анализ проведён", r)
 
     def test_gap_creates_file(self):
         run_gap_analysis(project_id=PROJECT)
@@ -691,15 +691,15 @@ class TestRunGapAnalysis(BaseMCPTest):
         self.assertTrue(state["gap_analysis_done"])
 
     def test_gap_no_elements_error(self):
-        # Empty project
+        # Пустой project
         r = run_gap_analysis(project_id="empty_project")
         self.assertIn("⚠️", r)
 
     def test_gap_summary_in_report(self):
         run_gap_analysis(project_id=PROJECT)
-        # Verify that the type summary is present in the report
+        # Проверяем что сводка по типам есть в отчёте
         r = run_gap_analysis(project_id=PROJECT)
-        self.assertIn("summary", r.lower())
+        self.assertIn("Сводка", r)
 
     def test_gap_complexity_assigned(self):
         _save_current_state_data()
@@ -718,7 +718,7 @@ class TestAssessPotentialValue(BaseMCPTest):
     def test_value_basic_success(self):
         r = _value()
         self.assertIn("✅", r)
-        self.assertIn("Potential value assessed", r)
+        self.assertIn("Потенциальная ценность оценена", r)
 
     def test_value_saved_to_state(self):
         _value()
@@ -728,29 +728,29 @@ class TestAssessPotentialValue(BaseMCPTest):
 
     def test_value_multiple_benefits(self):
         benefits = json.dumps([
-            {"benefit_title": "Acceleration", "benefit_type": "operational", "magnitude": "high", "confidence": "medium"},
-            {"benefit_title": "Cost reduction", "benefit_type": "financial", "magnitude": "medium", "confidence": "high"},
+            {"benefit_title": "Ускорение", "benefit_type": "operational", "magnitude": "high", "confidence": "medium"},
+            {"benefit_title": "Снижение затрат", "benefit_type": "financial", "magnitude": "medium", "confidence": "high"},
         ])
         r = assess_potential_value(project_id=PROJECT, benefits_json=benefits, investment_level="medium")
         self.assertIn("✅", r)
 
     def test_value_invalid_benefit_type(self):
         benefits = json.dumps([
-            {"benefit_title": "Acceleration", "benefit_type": "unknown_type", "magnitude": "high", "confidence": "medium"}
+            {"benefit_title": "Ускорение", "benefit_type": "unknown_type", "magnitude": "high", "confidence": "medium"}
         ])
         r = assess_potential_value(project_id=PROJECT, benefits_json=benefits, investment_level="medium")
         self.assertIn("❌", r)
 
     def test_value_invalid_magnitude(self):
         benefits = json.dumps([
-            {"benefit_title": "Acceleration", "benefit_type": "operational", "magnitude": "extreme", "confidence": "medium"}
+            {"benefit_title": "Ускорение", "benefit_type": "operational", "magnitude": "extreme", "confidence": "medium"}
         ])
         r = assess_potential_value(project_id=PROJECT, benefits_json=benefits, investment_level="medium")
         self.assertIn("❌", r)
 
     def test_value_invalid_confidence(self):
         benefits = json.dumps([
-            {"benefit_title": "Acceleration", "benefit_type": "operational", "magnitude": "high", "confidence": "very_high"}
+            {"benefit_title": "Ускорение", "benefit_type": "operational", "magnitude": "high", "confidence": "very_high"}
         ])
         r = assess_potential_value(project_id=PROJECT, benefits_json=benefits, investment_level="medium")
         self.assertIn("❌", r)
@@ -774,12 +774,12 @@ class TestAssessPotentialValue(BaseMCPTest):
             benefits_json='[{"benefit_title":"B","benefit_type":"operational","magnitude":"high","confidence":"high"}]',
             investment_level="low",
         )
-        self.assertIn("Attractive", r)
+        self.assertIn("Привлекательный", r)
 
     def test_value_summary_stored(self):
-        _value(summary="Very attractive value profile")
+        _value(summary="Очень привлекательный профиль")
         state = _load_state(PROJECT)
-        self.assertEqual(state["potential_value"]["value_summary"], "Very attractive value profile")
+        self.assertEqual(state["potential_value"]["value_summary"], "Очень привлекательный профиль")
 
 
 # ---------------------------------------------------------------------------
@@ -797,13 +797,13 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _scope()
         r = check_future_state_completeness(project_id=PROJECT)
         self.assertIn("⚠️", r)
-        self.assertNotIn("✅ Analysis ready for finalization", r)
+        self.assertNotIn("✅ Все проверки пройдены", r)
 
     def test_check_no_goals_warning(self):
         _scope()
         _capture()
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("goal", r.lower())
+        self.assertIn("цел", r.lower())
 
     def test_check_no_gap_warning(self):
         _scope()
@@ -819,7 +819,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _capture()
         _goal()
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("constraint", r.lower())
+        self.assertIn("ограничен", r.lower())
 
     def test_check_readiness_percentage(self):
         _scope()
@@ -831,7 +831,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _save_current_state_data()
         _scope()
         _capture()
-        _goal(linked_bn='["BN-001"]')  # BN-002 not linked
+        _goal(linked_bn='["BN-001"]')  # BN-002 не привязан
         _constraint()
         run_gap_analysis(project_id=PROJECT)
         _value()
@@ -843,15 +843,15 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _capture()
         define_goals_and_objectives(
             project_id=PROJECT,
-            goal_title="Improve something",
-            description="Description",
+            goal_title="Улучшить что-то",
+            description="Описание",
             objectives_json="[]",
         )
         r = check_future_state_completeness(project_id=PROJECT)
         self.assertIn("KPI", r)
 
     def test_check_all_passed(self):
-        # Scope with 2 elements, both filled
+        # Скоуп с 2 элементами, оба заполнены
         scope_future_state(
             project_id=PROJECT,
             initiative_type="process_improvement",
@@ -859,7 +859,7 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
             elements_in_scope='["capabilities","technology"]',
         )
         _capture(element="capabilities")
-        _capture(element="technology", description="Cloud platform")
+        _capture(element="technology", description="Облачная платформа")
         _goal()
         _constraint()
         run_gap_analysis(project_id=PROJECT)
@@ -873,9 +873,9 @@ class TestCheckFutureStateCompleteness(BaseMCPTest):
         _goal()
         _constraint()
         run_gap_analysis(project_id=PROJECT)
-        # Without value assessment
+        # Без value assessment
         r = check_future_state_completeness(project_id=PROJECT)
-        self.assertIn("value", r.lower())
+        self.assertIn("ценность", r.lower())
 
 
 # ---------------------------------------------------------------------------
@@ -939,32 +939,32 @@ class TestTheDocumentAgreesWithTheGraph(BaseMCPTest):
 class TestSaveFutureState(BaseMCPTest):
 
     def test_save_no_scope_error(self):
-        r = save_future_state(project_id=PROJECT, project_title="Test")
+        r = save_future_state(project_id=PROJECT, project_title="Тест")
         self.assertIn("⚠️", r)
 
     def test_save_basic_success(self):
         _full_pipeline()
-        r = save_future_state(project_id=PROJECT, project_title="Acceleration Project")
+        r = save_future_state(project_id=PROJECT, project_title="Проект Ускорения")
         self.assertIn("✅", r)
-        self.assertIn("Acceleration Project", r)
+        self.assertIn("Проект Ускорения", r)
 
     def test_save_creates_report_artifact(self):
         from unittest.mock import patch
         _full_pipeline()
         with patch("skills.future_state_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
-            save_future_state(project_id=PROJECT, project_title="Project")
+            mock_sa.return_value = "✅ Сохранено"
+            save_future_state(project_id=PROJECT, project_title="Проект")
             mock_sa.assert_called()
 
     def test_save_statistics_in_response(self):
         _full_pipeline()
-        r = save_future_state(project_id=PROJECT, project_title="Project")
-        self.assertIn("Statistics", r)
-        self.assertIn("Gap analysis", r)
+        r = save_future_state(project_id=PROJECT, project_title="Проект")
+        self.assertIn("Статистика", r)
+        self.assertIn("Gap-анализ", r)
 
     def test_save_push_to_business_context(self):
         _full_pipeline()
-        r = save_future_state(project_id=PROJECT, project_title="Project",
+        r = save_future_state(project_id=PROJECT, project_title="Проект",
                               push_to_business_context=True)
         self.assertIn("7.3", r)
         self.assertIn("from_strategy_project_id", r)
@@ -972,46 +972,46 @@ class TestSaveFutureState(BaseMCPTest):
     def test_save_draft_warning(self):
         _scope()
         state = _load_state(PROJECT)
-        state["elements"]["capabilities"] = {"description": "Draft", "draft": True, "last_updated": str(date.today())}
+        state["elements"]["capabilities"] = {"description": "Черновик", "draft": True, "last_updated": str(date.today())}
         from skills.future_state_mcp import _save_state
         _save_state(state)
-        r = save_future_state(project_id=PROJECT, project_title="Project")
-        self.assertIn("Drafts", r)
+        r = save_future_state(project_id=PROJECT, project_title="Проект")
+        self.assertIn("Черновик", r)
 
     def test_save_analyst_notes_in_report(self):
         from unittest.mock import patch
         _full_pipeline()
         with patch("skills.future_state_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             save_future_state(
-                project_id=PROJECT, project_title="Project",
-                analyst_notes="Important analyst note"
+                project_id=PROJECT, project_title="Проект",
+                analyst_notes="Важное замечание аналитика"
             )
             call_args = mock_sa.call_args
             report = call_args[0][0]
-            self.assertIn("Important analyst note", report)
+            self.assertIn("Важное замечание аналитика", report)
 
     def test_save_next_steps_in_response(self):
         _full_pipeline()
-        r = save_future_state(project_id=PROJECT, project_title="Project")
+        r = save_future_state(project_id=PROJECT, project_title="Проект")
         self.assertIn("6.4", r)
         self.assertIn("7.3", r)
 
 
 # ---------------------------------------------------------------------------
-# Pipeline tests
+# Pipeline-тесты
 # ---------------------------------------------------------------------------
 
 class TestPipeline(BaseMCPTest):
 
     def test_full_pipeline_with_61(self):
         _full_pipeline(with_current_state=True)
-        r = save_future_state(project_id=PROJECT, project_title="Full Pipeline")
+        r = save_future_state(project_id=PROJECT, project_title="Полный Pipeline")
         self.assertIn("✅", r)
 
     def test_pipeline_without_61(self):
         _full_pipeline(with_current_state=False)
-        r = save_future_state(project_id=PROJECT, project_title="Pipeline without 6.1")
+        r = save_future_state(project_id=PROJECT, project_title="Pipeline без 6.1")
         self.assertIn("✅", r)
 
     def test_pipeline_gap_without_current_state_new_type(self):
@@ -1030,8 +1030,8 @@ class TestPipeline(BaseMCPTest):
         save_test_repo(repo, "governance_plans/data")
 
         _scope()
-        _goal(title="Goal 1", register=True)
-        _goal(title="Goal 2", register=True)
+        _goal(title="Цель 1", register=True)
+        _goal(title="Цель 2", register=True)
 
         with open(data_file(_safe(PROJECT), "traceability_repo.json")) as f:
             updated_repo = json.load(f)
@@ -1041,7 +1041,7 @@ class TestPipeline(BaseMCPTest):
         self.assertIn("BG-002", ids)
 
     def test_pipeline_completeness_all_green_after_full(self):
-        # Explicitly restrict scope to only the elements we fill in
+        # Явно ограничиваем скоуп только теми элементами что заполняем
         scope_future_state(
             project_id=PROJECT,
             initiative_type="process_improvement",
@@ -1055,7 +1055,7 @@ class TestPipeline(BaseMCPTest):
         repo["links"] = []
         save_test_repo(repo, "governance_plans/data")
         _capture(element="capabilities")
-        _capture(element="technology", description="Cloud platform")
+        _capture(element="technology", description="Облачная платформа")
         _goal(linked_bn='["BN-001","BN-002"]')
         _constraint()
         run_gap_analysis(project_id=PROJECT)
@@ -1065,27 +1065,27 @@ class TestPipeline(BaseMCPTest):
 
     def test_pipeline_multiple_constraints_stored(self):
         _scope()
-        _constraint(title="Budget", category="budget")
-        _constraint(title="Deadline", category="time", description="Q4 2025")
-        _constraint(title="Compliance-152", category="compliance", description="Regulatory compliance")
+        _constraint(title="Бюджет", category="budget")
+        _constraint(title="Срок", category="time", description="Q4 2025")
+        _constraint(title="152-ФЗ", category="compliance", description="Соответствие")
         state = _load_state(PROJECT)
         self.assertEqual(len(state["constraints"]), 3)
 
     def test_pipeline_scope_and_goals_only_no_error(self):
-        """Minimal pipeline: only scope and one goal — must not raise exceptions."""
+        """Минимальный pipeline: только скоуп и одна цель — не должно быть исключений."""
         try:
             _scope()
             _goal()
             r = check_future_state_completeness(project_id=PROJECT)
-            # Should work without exceptions — return warnings, not crash
+            # Должно работать без исключений — вернуть предупреждения, не краш
             self.assertIn("⚠️", r)
-            self.assertIn("Warnings", r)
+            self.assertIn("Предупреждения", r)
         except Exception as e:
-            self.fail(f"pipeline without errors must not raise exceptions: {e}")
+            self.fail(f"pipeline без ошибок не должен вызывать исключений: {e}")
 
 
 # ---------------------------------------------------------------------------
-# Integration 7.3 from_strategy_project_id (ADR-065)
+# Интеграция 7.3 from_strategy_project_id (ADR-065)
 # ---------------------------------------------------------------------------
 
 class TestIntegration73(BaseMCPTest):
@@ -1095,7 +1095,7 @@ class TestIntegration73(BaseMCPTest):
         _scope()
         state_data = {
             "project_id": PROJECT,
-            "elements": {"capabilities": {"description": "Automated process", "draft": False}},
+            "elements": {"capabilities": {"description": "Авто-процесс", "draft": False}},
             "constraints": [],
             "potential_value": None,
             "gap_analysis_done": False,
@@ -1119,8 +1119,8 @@ class TestIntegration73(BaseMCPTest):
         r = set_business_context(
             project_id=PROJECT,
             business_goals_json="[]",
-            future_state="Future state",
-            solution_scope="Scope",
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_strategy_project_id=PROJECT,
         )
         self.assertIn("6.2", r)
@@ -1129,7 +1129,7 @@ class TestIntegration73(BaseMCPTest):
         _scope()
         state_data = {
             "project_id": PROJECT,
-            "elements": {"capabilities": {"description": "Automated process in 2 hours", "draft": False}},
+            "elements": {"capabilities": {"description": "Авто-процесс за 2 часа", "draft": False}},
             "constraints": [],
             "potential_value": None,
             "gap_analysis_done": False,
@@ -1151,7 +1151,7 @@ class TestIntegration73(BaseMCPTest):
 
         r = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-001","title":"Goal"}]',
+            business_goals_json='[{"id":"BG-001","title":"Цель"}]',
             future_state="",
             solution_scope="",
             from_strategy_project_id=PROJECT,
@@ -1159,13 +1159,13 @@ class TestIntegration73(BaseMCPTest):
         self.assertIn("6.2", r)
 
     def test_from_strategy_fallback_to_61_bn(self):
-        """If 6.2 is absent but 6.1 exists — pre-fills from BN."""
+        """Если 6.2 нет но есть 6.1 — предзаполняет из BN."""
         _save_current_state_data()
         r = set_business_context(
             project_id=PROJECT,
             business_goals_json="[]",
-            future_state="Future state",
-            solution_scope="Scope",
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_strategy_project_id=PROJECT,
         )
         # R1-1: prefilled objectives keep the REAL business-need id (BN-001), not a
@@ -1175,9 +1175,9 @@ class TestIntegration73(BaseMCPTest):
     def test_from_strategy_no_data_warning(self):
         r = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-001","title":"Goal"}]',
-            future_state="Future state",
-            solution_scope="Scope",
+            business_goals_json='[{"id":"BG-001","title":"Цель"}]',
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_strategy_project_id="nonexistent_project",
         )
         self.assertIn("⚠️", r)
@@ -1187,20 +1187,20 @@ class TestIntegration73(BaseMCPTest):
         r = set_business_context(
             project_id=PROJECT,
             business_goals_json="[]",
-            future_state="Future state",
-            solution_scope="Scope",
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_current_state_project_id=PROJECT,
         )
-        self.assertIn("deprecated", r.lower())
+        self.assertIn("устарел", r.lower())
 
     def test_deprecated_still_works(self):
-        """Deprecated parameter still works but shows a warning."""
+        """Deprecated параметр работает, но показывает предупреждение."""
         _save_current_state_data()
         r = set_business_context(
             project_id=PROJECT,
             business_goals_json="[]",
-            future_state="Future state",
-            solution_scope="Scope",
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_current_state_project_id=PROJECT,
         )
         # Should pre-fill (with the real BN id, R1-1) and warn
@@ -1208,13 +1208,13 @@ class TestIntegration73(BaseMCPTest):
         self.assertIn("deprecated", r.lower())
 
     def test_from_strategy_does_not_override_explicit_goals(self):
-        """from_strategy_project_id does not override explicitly passed goals."""
+        """from_strategy_project_id не перебивает явно переданные goals."""
         _save_future_state_goals()
         r = set_business_context(
             project_id=PROJECT,
-            business_goals_json='[{"id":"BG-999","title":"Explicit goal"}]',
-            future_state="Future state",
-            solution_scope="Scope",
+            business_goals_json='[{"id":"BG-999","title":"Явная цель"}]',
+            future_state="Будущее",
+            solution_scope="Скоуп",
             from_strategy_project_id=PROJECT,
         )
         self.assertIn("BG-999", r)

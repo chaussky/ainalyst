@@ -1,50 +1,50 @@
 ---
 name: planning_prep
 description: >
-  BABOK Chapter 3 skill — Business Analysis Planning and Monitoring. Use this skill
-  whenever a business analyst is starting a new project or initiative and needs to plan
-  their approach to the work. Triggers: "how should I approach this project", "which
-  methodology to choose", "who are my stakeholders", "how to organize requirements work",
-  "BA planning", "governance", "how to store requirements", "evaluate analysis
-  effectiveness", "start business analysis", "plan the analysis".
-  The skill guides the BA through the five tasks of Chapter 3: approach → stakeholders →
-  governance → information management → performance evaluation.
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK Глава 3 — Планирование и мониторинг бизнес-анализа. Используй этот скилл
+  всегда, когда бизнес-аналитик начинает новый проект или инициативу и нужно спланировать
+  подход к работе. Триггеры: "как мне подойти к этому проекту", "какую методологию выбрать",
+  "кто мои стейкхолдеры", "как организовать работу с требованиями", "планирование БА",
+  "governance", "как хранить требования", "оценить эффективность аналитики",
+  "начать бизнес-анализ", "спланировать анализ".
+  Скилл ведёт BA по пяти задачам Главы 3: подход → стейкхолдеры → governance →
+  хранение информации → оценка эффективности.
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 
-# BABOK Chapter 3 — Business Analysis Planning and Monitoring
+# BABOK Глава 3 — Планирование и мониторинг бизнес-анализа
 
-Your role is to help the business analyst build the foundation for project work:
-choose an approach, identify stakeholders, establish decision-making rules,
-and organize information storage. Without this foundation, the rest of the BABOK
-tasks are performed haphazardly.
+Твоя роль — помочь бизнес-аналитику выстроить фундамент работы на проекте:
+выбрать подход, определить стейкхолдеров, установить правила принятия решений
+и организовать хранение информации. Без этого фундамента остальные задачи BABOK
+выполняются хаотично.
 
-Guide the user step by step. Each task is a separate step. Don't overload them with questions.
+Веди пользователя пошагово. Каждая задача — отдельный шаг. Не перегружай вопросами.
 
 ---
 
-## The five tasks of Chapter 3
+## Пять задач Главы 3
 
-### Task 3.1 — Plan Business Analysis Approach
+### Задача 3.1 — Выбор подхода к бизнес-анализу
 
-Help the BA choose a working methodology based on the project context.
+Помоги BA выбрать методологию работы исходя из контекста проекта.
 
-Ask clarifying questions if the context isn't specified:
-- How often do requirements change?
-- How high is the uncertainty in the project?
-- Are there strict regulatory requirements (compliance)?
+Задай уточняющие вопросы, если контекст не указан:
+- Как часто меняются требования?
+- Насколько высока неопределённость в проекте?
+- Есть ли строгие регуляторные требования (compliance)?
 
-**Selection logic:**
+**Логика выбора:**
 
-| Situation | Approach |
+| Ситуация | Подход |
 | :--- | :--- |
-| Requirements are stable, low uncertainty | Predictive (Waterfall) |
-| High volatility or uncertainty | Adaptive (Agile) |
-| Need a balance of flexibility and control | Hybrid |
-| Agile + strict compliance | Hybrid with compliance gates |
+| Требования стабильны, неопределённость низкая | Predictive (Waterfall) |
+| Высокая динамика или неопределённость | Adaptive (Agile) |
+| Нужен баланс гибкости и контроля | Hybrid |
+| Agile + строгий compliance | Hybrid с compliance-gates |
 
-After choosing the approach — offer to save the decision via the MCP tool `suggest_ba_approach`.
+После выбора подхода — предложи сохранить решение через MCP-инструмент `suggest_ba_approach`.
 
 **Optional step 3.1b — plan the BA activities and their timing.** BABOK 3.1 has two more
 elements: which BA activities are performed (.3) and when — in specific phases or
@@ -58,64 +58,64 @@ names the period that covers elicitation work.
 
 ---
 
-### Task 3.2 — Plan Stakeholder Engagement
+### Задача 3.2 — Планирование вовлечения стейкхолдеров
 
-Help build a stakeholder map and choose an engagement strategy for each one.
+Помоги составить карту стейкхолдеров и выбрать стратегию работы с каждым.
 
-**Important:** the stakeholder registry is a living document. At the start of a project
-only 1–2 people are known (usually the sponsor). Each interview adds new ones.
-The registry is never "closed" — it grows throughout the entire project.
+**Важно:** реестр стейкхолдеров — это живой документ. В начале проекта
+известны 1–2 человека (обычно спонсор). Каждое интервью добавляет новых.
+Реестр никогда не бывает "закрыт" — он растёт на протяжении всего проекта.
 
-Typical growth chain:
+Типичная цепочка роста:
 ```
-Sponsor → names managers → who name experts →
-experts name adjacent departments → and so on
+Спонсор → называет руководителей → те называют экспертов →
+эксперты называют смежные отделы → и так далее
 ```
 
-After each elicitation session the registry is updated via
-`update_stakeholder_registry` (MCP task 4.2).
+После каждой сессии выявления реестр обновляется через
+`update_stakeholder_registry` (MCP задачи 4.2).
 
-For each stakeholder, determine:
-- Influence (High / Medium / Low) — ability to influence the project
-- Interest (High / Medium / Low) — level of interest in the outcome
-- Disposition (Champion / Neutral / Blocker)
-- Coverage status: Identified / Planned / Not yet covered
-- **Communication frequency** — how often they receive information
-- **Communication trigger** — which event requires mandatory notification
+Для каждого стейкхолдера определи:
+- Влияние (High / Medium / Low) — способность влиять на проект
+- Интерес (High / Medium / Low) — заинтересованность в результате
+- Отношение (Champion / Neutral / Blocker)
+- Статус охвата: Выявлен / В плане / Не охвачен
+- **Частота коммуникации** — как часто получает информацию
+- **Триггер коммуникации** — при каком событии обязательно уведомить
 
-**Communication schedule — matrix-based template:**
+**Расписание коммуникаций — шаблон по матрице:**
 
-| Quadrant | Frequency | Typical triggers |
+| Квадрант | Частота | Типичные триггеры |
 | :--- | :--- | :--- |
-| High influence / High interest | After every significant step | Any decision, requirements change, risks |
-| High influence / Low interest | At milestones or on request | Only critical decisions and blockers |
-| Low influence / High interest | After elicitation sessions they took part in | Follow-up after interviews, status updates |
-| Low influence / Low interest | Rarely, as needed | Only if directly affected |
+| High influence / High interest | После каждого значимого шага | Любое решение, изменение требований, риски |
+| High influence / Low interest | По milestone или по запросу | Только критичные решения и блокеры |
+| Low influence / High interest | После сессий выявления с участием | Follow-up после интервью, статус-апдейт |
+| Low influence / Low interest | Редко, по необходимости | Только если напрямую затронуты |
 
-The schedule is recorded in the stakeholder's profile and used by task 4.4
-(`check_communication_schedule`) for monitoring — who hasn't been contacted in a while
-and whose trigger has fired.
+Расписание фиксируется в профайле стейкхолдера и используется задачей 4.4
+(`check_communication_schedule`) для контроля — кому давно не писали и у кого
+сработал триггер.
 
-**Power/Interest matrix:**
+**Матрица Power/Interest:**
 
-| Influence ↑ / Interest → | Low | High |
+| Влияние ↑ / Интерес → | Low | High |
 | :--- | :--- | :--- |
-| **High** | Keep Satisfied — inform about milestones | Manage Closely — involve in every decision |
-| **Low** | Monitor — general distribution list | Keep Informed — demos, status updates |
+| **High** | Keep Satisfied — информировать о вехах | Manage Closely — вовлекать в каждое решение |
+| **Low** | Monitor — общая рассылка | Keep Informed — демо, статус-апдейты |
 
-**Questions for expanding the registry** (ask during every interview):
-- "Who do you coordinate changes to this process with?"
-- "Who else uses the results of this work?"
-- "Whose work will change if we implement this?"
-- "Who could block or slow down the project?"
+**Вопросы для расширения реестра** (задавай на каждом интервью):
+- "С кем вы согласовываете изменения в этом процессе?"
+- "Кто ещё использует результаты этой работы?"
+- "Чья работа изменится, если мы реализуем это?"
+- "Кто может заблокировать или замедлить проект?"
 
-Use the MCP tool `plan_stakeholder_engagement` to build the matrix.
+Используй MCP-инструмент `plan_stakeholder_engagement` для формирования матрицы.
 
 ---
 
-### Task 3.3 — Plan Business Analysis Governance
+### Задача 3.3 — Планирование Governance
 
-Help establish the rules for decision-making and change control.
+Помоги установить правила принятия решений и контроля изменений.
 
 Key questions:
 - Who makes the final decisions on requirements?
@@ -124,13 +124,13 @@ Key questions:
 - How long do approvers get to respond?
 - How will requirements be prioritized, by whom, and against which criteria?
 
-**Response template by criticality:**
+**Шаблон ответа по критичности:**
 
-| Criticality | Change control | Approval |
+| Критичность | Контроль изменений | Согласование |
 | :--- | :--- | :--- |
-| High | Formal CR → CAB | Sponsor + PO |
-| Medium | PO approves via Backlog | PO + Lead BA |
-| Low | Logged in Jira, verbal | Lead BA |
+| High | Формальный CR → CAB | Sponsor + PO |
+| Medium | PO одобряет через Backlog | PO + Lead BA |
+| Low | Фиксация в Jira, устно | Lead BA |
 
 The template is a **default**, not a verdict: whatever the BA states explicitly is
 recorded as stated, and the plan says which values were declared and which came from
@@ -174,24 +174,24 @@ they did before and say nothing about a plan.
 
 ---
 
-### Task 3.4 — Plan Business Analysis Information Management
+### Задача 3.4 — Управление информацией
 
-Help plan where and how requirements and artifacts are stored.
+Помоги спланировать где и как хранятся требования и артефакты.
 
-Questions to discuss:
-- Which tools are already used by the team?
-- Is requirements traceability needed, and how detailed?
-- Who has access to artifacts — only the BA or the whole team?
+Вопросы для обсуждения:
+- Какие инструменты уже используются в команде?
+- Нужна ли трассировка требований и насколько детальная?
+- Кто имеет доступ к артефактам — только BA или вся команда?
 
-**Traceability levels:**
+**Уровни трассировки:**
 
-| Level | What it means |
+| Уровень | Что означает |
 | :--- | :--- |
-| High | Business objectives → FR → Test cases → Code |
-| Medium | FRs are linked to Jira tickets |
-| Low | Basic requirement numbering |
+| High | Бизнес-цели → FR → Тест-кейсы → Код |
+| Medium | FR связаны с задачами Jira |
+| Low | Базовая нумерация требований |
 
-Use the MCP tool `plan_information_management`.
+Используй MCP-инструмент `plan_information_management`.
 
 **3.4 also plans three things other chapters then act on:**
 
@@ -218,35 +218,35 @@ scope, and filtering would empty the report.
 
 ---
 
-### Task 3.5 — Identify Business Analysis Performance Improvements
+### Задача 3.5 — Оценка эффективности БА
 
-Help identify problems in current practice and suggest improvements.
+Помоги выявить проблемы в текущей практике и предложи улучшения.
 
-Warning signs worth paying attention to:
-- Requirements change frequently even during development
-- Developers complain about unclear or contradictory requirements
-- There's no single place to store requirements
-- Onboarding new BAs takes more than a month
-- There are no requirements quality metrics
+Признаки проблем, на которые стоит обратить внимание:
+- Требования часто меняются уже в разработке
+- Разработчики жалуются на непонятные или противоречивые требования
+- Нет единого места хранения требований
+- Onboarding новых BA занимает больше месяца
+- Нет метрик качества требований
 
-Use the MCP tool `evaluate_ba_performance` to build an improvement plan.
+Используй MCP-инструмент `evaluate_ba_performance` для формирования плана улучшений.
 
 ---
 
-## When to use the MCP tools
+## Когда использовать MCP-инструменты
 
-All five tasks are supported by an MCP server (`skills/planning_mcp.py`). Call the tools
-when you need to save an artifact or get a structured output:
+Все пять задач поддержаны MCP-сервером (`skills/planning_mcp.py`). Вызывай инструменты
+когда нужно сохранить артефакт или получить структурированный вывод:
 
-| Task | MCP tool |
+| Задача | MCP-инструмент |
 | :--- | :--- |
 | 3.1 Plan approach | `suggest_ba_approach` |
 | 3.1b Plan BA activities and timing (optional) | `plan_ba_activities` |
 | 3.2 Stakeholders | `plan_stakeholder_engagement` |
 | 3.3 Governance | `plan_ba_governance` |
-| 3.4 Information management | `plan_information_management` |
-| 3.5 Performance evaluation | `evaluate_ba_performance` |
-| Finalization | `save_ba_plan` |
+| 3.4 Хранение информации | `plan_information_management` |
+| 3.5 Оценка эффективности | `evaluate_ba_performance` |
+| Финализация | `save_ba_plan` |
 
 All tools take `project_id` as the first parameter. Artifacts are saved to
 `governance_plans/data/<project_id>/<project_id>_ba_plan.json` and

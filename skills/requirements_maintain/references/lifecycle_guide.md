@@ -1,6 +1,6 @@
-# Reference: Requirements Life Cycle and Attributes (BABOK 5.2)
+# Справочник: Жизненный цикл и атрибуты требований (BABOK 5.2)
 
-## Status life cycle — full model
+## Жизненный цикл статусов — полная модель
 
 ```
          ┌─────────────────────────────────────────┐
@@ -10,149 +10,149 @@
      [on_hold]  [superseded]  [deprecated]
 ```
 
-| Status | Meaning | Who changes it | Trigger |
+| Статус | Смысл | Кто меняет | Триггер |
 |--------|-------|-----------|---------|
-| `draft` | Requirement captured, not yet reviewed | BA | After 4.2 |
-| `confirmed` | BA has reviewed internally, ready for sign-off | BA | After 4.3 |
-| `approved` | Formally signed off by stakeholders | BA + stakeholder | After 5.5 |
-| `implemented` | Implemented in the solution | BA/Dev | After component delivery |
-| `on_hold` | Frozen — awaiting a decision or resources | BA | Team decision |
-| `deprecated` | Outdated, but preserved in history | BA | After a CR or review |
-| `superseded` | Replaced by another requirement (specify which) | BA | During restructuring |
-| `retired` | Project closed, requirement archived | BA | Initiative closure |
+| `draft` | Требование зафиксировано, ещё не проверено | BA | После 4.2 |
+| `confirmed` | BA проверил внутренне, готово к согласованию | BA | После 4.3 |
+| `approved` | Формально согласовано стейкхолдерами | BA + стейкхолдер | После 5.5 |
+| `implemented` | Реализовано в решении | BA/Dev | После сдачи компонента |
+| `on_hold` | Заморожено — ждёт решения или ресурсов | BA | Решение команды |
+| `deprecated` | Устарело, но сохраняется в истории | BA | После CR или пересмотра |
+| `superseded` | Заменено другим требованием (указывается чем) | BA | При реструктуризации |
+| `retired` | Проект завершён, требование в архиве | BA | Закрытие инициативы |
 
-**Important:** status can move backward. `approved → on_hold` when a budget freeze hits is normal.
+**Важно:** статус может идти назад. `approved → on_hold` при заморозке бюджета — нормально.
 
 ---
 
-## Requirement attributes — full set
+## Атрибуты требования — полный набор
 
-### Required (all presets)
+### Обязательные (все пресеты)
 
-| Attribute | Type | Description |
+| Атрибут | Тип | Описание |
 |---------|-----|----------|
-| `id` | string | Unique identifier: BR-001, FR-007, NFR-003 |
+| `id` | string | Уникальный идентификатор: BR-001, FR-007, NFR-003 |
 | `type` | enum | business / stakeholder / solution / transition |
-| `title` | string | Short name |
-| `status` | enum | see life cycle above |
+| `title` | string | Краткое название |
+| `status` | enum | см. жизненный цикл выше |
 | `version` | string | 1.0, 1.1, 2.0 — major.minor |
-| `source` | string | Reference to the 4.3 artifact or the source stakeholder |
+| `source` | string | Ссылка на артефакт 4.3 или стейкхолдера-источника |
 
-### Extended (Standard and Full)
+### Расширенные (Standard и Full)
 
-| Attribute | Type | Description |
+| Атрибут | Тип | Описание |
 |---------|-----|----------|
-| `priority` | enum | High / Medium / Low — updated in 5.3 |
-| `owner` | string | Who is responsible for keeping this requirement current |
+| `priority` | enum | High / Medium / Low — обновляется в 5.3 |
+| `owner` | string | Кто отвечает за актуальность этого требования |
 | `stability` | enum | Stable / Volatile / Unknown |
-| `reuse_candidate` | bool | Candidate for reuse in other initiatives |
+| `reuse_candidate` | bool | Кандидат на повторное использование в других инициативах |
 | `reuse_scope` | enum | initiative / program / division / enterprise |
 | `complexity` | enum | Low / Medium / High |
-| `last_reviewed` | date | Date of the last currency review |
+| `last_reviewed` | date | Дата последней проверки актуальности |
 
 ---
 
-## Versioning — rules
+## Версионность — правила
 
-### When to change the version
+### Когда менять версию
 
-| Change | Minor (1.0 → 1.1) | Major (1.0 → 2.0) |
+| Изменение | Minor (1.0 → 1.1) | Major (1.0 → 2.0) |
 |-----------|-------------------|-------------------|
-| Wording clarification without a change in meaning | ✅ | — |
-| Change to acceptance criteria | ✅ | — |
-| Change in the meaning/substance of the requirement | — | ✅ |
-| Merging two requirements into one | — | ✅ |
-| Splitting a requirement into several | — | ✅ (+ new IDs) |
-| Status change without a change in content | no version change | — |
+| Уточнение формулировки без изменения смысла | ✅ | — |
+| Изменение критериев приёмки | ✅ | — |
+| Изменение смысла/сути требования | — | ✅ |
+| Слияние двух требований в одно | — | ✅ |
+| Разделение требования на несколько | — | ✅ (+ новые ID) |
+| Смена статуса без изменения содержания | нет изменения версии | — |
 
-### Version vs. status
-Version reflects **content**. Status reflects **state in the process**.
-Status `approved → on_hold` — the version does not change.
-Rewording FR-007 — version 1.0 → 1.1, status may remain `confirmed`.
+### Версия vs статус
+Версия отражает **содержание**. Статус отражает **состояние в процессе**.
+Статус `approved → on_hold` — версия не меняется.
+Переформулировали FR-007 — версия 1.0 → 1.1, статус может остаться `confirmed`.
 
 ---
 
-## Volatility — signals and thresholds
+## Волатильность — сигналы и пороги
 
-Volatility = number of versions over the requirement's lifetime.
+Волатильность = количество версий за время жизни требования.
 
-| Version | Signal | BA action |
+| Версия | Сигнал | Действие BA |
 |--------|--------|-------------|
-| 1.0 – 1.1 | Normal | — |
-| 1.2 – 1.3 | Caution — requirement is unstable | Check the source of the instability |
-| 1.4+ | 🔴 Alert — high volatility | Discuss with the owner; the problem may run deeper |
+| 1.0 – 1.1 | Норма | — |
+| 1.2 – 1.3 | Внимание — требование нестабильно | Проверить источник нестабильности |
+| 1.4+ | 🔴 Тревога — высокая волатильность | Обсудить с владельцем, возможно проблема глубже |
 
-**Causes of high volatility:**
-- The requirement was poorly elicited (go back to 4.2)
-- The stakeholder hasn't settled on the need
-- The business context is unstable (external changes)
-- The requirement is too detailed — tied to a specific solution
+**Причины высокой волатильности:**
+- Требование было плохо выявлено (вернуться к 4.2)
+- Стейкхолдер не определился с потребностью
+- Бизнес-контекст нестабилен (внешние изменения)
+- Требование слишком детальное — привязано к конкретному решению
 
 ---
 
-## Reuse — criteria and levels
+## Повторное использование — критерии и уровни
 
-### Criteria for a good reuse candidate
+### Критерии хорошего кандидата на reuse
 
-✅ Worded without ties to a specific tool or department
-✅ High level of abstraction (a business rule, not a screen form)
-✅ Status `approved` or `implemented` — proven in practice
-✅ Low volatility (version 1.0 – 1.1)
-✅ Belongs to type `business` or `stakeholder` (not tied to a specific solution)
+✅ Сформулировано без привязки к конкретному инструменту или подразделению
+✅ Высокий уровень абстракции (бизнес-правило, а не экранная форма)
+✅ Статус `approved` или `implemented` — проверено практикой
+✅ Низкая волатильность (версия 1.0 – 1.1)
+✅ Относится к типу `business` или `stakeholder` (не к конкретному решению)
 
-❌ Contains references to specific systems ("in SAP," "in module X")
-❌ High volatility
-❌ Status `deprecated` or `superseded`
+❌ Содержит ссылки на конкретные системы ("в SAP", "в модуле X")
+❌ Высокая волатильность
+❌ Статус `deprecated` или `superseded`
 
-### Levels of reuse
+### Уровни повторного использования
 
-| Level | reuse_scope | Example |
+| Уровень | reuse_scope | Пример |
 |---------|-------------|--------|
-| Within the initiative | `initiative` | FR reused in another component |
-| Similar initiatives | `program` | Authorization requirement shared across several projects |
-| Other departments | `division` | Calculation business rules shared across a department |
-| Entire organization | `enterprise` | Corporate security standards |
+| Внутри инициативы | `initiative` | FR переиспользован в другом компоненте |
+| Похожие инициативы | `program` | Требование к авторизации в нескольких проектах |
+| Другие подразделения | `division` | Бизнес-правила расчёта, общие для отдела |
+| Вся организация | `enterprise` | Корпоративные стандарты безопасности |
 
 ---
 
-## Hooks for external stores
+## Хуки для внешних хранилищ
 
-5.2 supports export and import via external systems.
-The implementation lives in a separate module, `integrations/confluence_mcp.py`.
+5.2 предусматривает экспорт и импорт через внешние системы.
+Реализация — в отдельном модуле `integrations/confluence_mcp.py`.
 
-### Export hook signature (stub)
+### Сигнатура хука экспорта (заглушка)
 ```python
 def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
     """
-    Called after every save of a 5.2 artifact.
-    Returns: {"status": "local_only"} — until the integration is connected.
-    Once confluence_mcp is present: {"status": "synced", "url": "..."}
+    Вызывается после каждого сохранения артефакта 5.2.
+    Возвращает: {"status": "local_only"} — до подключения интеграции.
+    При наличии confluence_mcp: {"status": "synced", "url": "..."}
     """
-    return {"status": "local_only", "note": "Connect confluence_mcp to enable sync"}
+    return {"status": "local_only", "note": "Подключи confluence_mcp для синхронизации"}
 ```
 
-### When the hook is called
-- After `update_requirement` — status or attributes were updated
-- After `deprecate_requirements` — requirements were marked outdated
-- After `check_requirements_health` — repository health report (optional)
+### Когда вызывается хук
+- После `update_requirement` — обновился статус или атрибуты
+- После `deprecate_requirements` — требования помечены устаревшими
+- После `check_requirements_health` — отчёт о здоровье репозитория (опционально)
 
 ---
 
-## Integration with other BABOK tasks
+## Интеграция с другими задачами BABOK
 
-| From | What is passed to 5.2 |
+| Откуда | Что передаётся в 5.2 |
 |--------|----------------------|
-| 4.2 | Initial attributes: source, initial status=draft |
+| 4.2 | Первичные атрибуты: source, первоначальный status=draft |
 | 4.3 | status → confirmed, quality-checked |
-| 5.1 | JSON repository — 5.2 works with the same file |
-| 5.3 | priority is updated after prioritization |
-| 5.4 | On a CR: status and version of affected requirements are updated |
-| 5.5 | status → approved after formal sign-off |
+| 5.1 | JSON-репозиторий — 5.2 работает с тем же файлом |
+| 5.3 | priority обновляется после приоритизации |
+| 5.4 | При CR: status и version затронутых требований обновляются |
+| 5.5 | status → approved после формального согласования |
 
-| To | What 5.2 provides |
+| Куда | Что даёт 5.2 |
 |------|--------------|
-| 5.3 | Current attributes (stability, priority) for correct prioritization |
-| 5.4 | Version history for assessing CR impact |
-| 5.5 | Clean registry, free of orphans and deprecated items, for the approval package |
-| 6.x | Reuse candidates for User Stories and Use Cases |
-| Confluence | Maintained requirements via the export hook |
+| 5.3 | Актуальные атрибуты (stability, priority) для правильной приоритизации |
+| 5.4 | История версий для оценки влияния CR |
+| 5.5 | Чистый реестр без orphan и deprecated для пакета согласования |
+| 6.x | Reuse-кандидаты для User Stories и Use Cases |
+| Confluence | Поддерживаемые требования через хук экспорта |

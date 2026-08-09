@@ -1,10 +1,10 @@
 """
-tests/test_ch4_45.py — Tests for Chapter 4.5: Manage Stakeholder Collaboration
-MCP file: skills/elicitation_collaborate_mcp.py
-Tools: log_decision, save_meeting_notes, update_engagement_status
+tests/test_ch4_45.py — Тесты для Главы 4.5: Manage Stakeholder Collaboration
+MCP-файл: skills/elicitation_collaborate_mcp.py
+Инструменты: log_decision, save_meeting_notes, update_engagement_status
 
-Strategy: BaseMCPTest (tmpdir + chdir), setup_mocks() before imports,
-save_artifact is patched via patch() per ADR-068.
+Стратегия: BaseMCPTest (tmpdir + chdir), setup_mocks() до импортов,
+save_artifact патчится через patch() по правилу ADR-068.
 """
 
 import json
@@ -23,53 +23,53 @@ import skills.elicitation_collaborate_mcp as mod45
 
 
 # ---------------------------------------------------------------------------
-# Helper data
+# Вспомогательные данные
 # ---------------------------------------------------------------------------
 
 ALTERNATIVES_SOAP_VS_REST = json.dumps([
     {
         "option": "SOAP",
-        "reason_rejected": "An outdated standard, no support in modern client libraries",
+        "reason_rejected": "Устаревший стандарт, нет поддержки в новых клиентских библиотеках",
     },
     {
         "option": "GraphQL",
-        "reason_rejected": "Overkill for the task; 1C v8.3 doesn't support it natively",
+        "reason_rejected": "Избыточно для задачи; 1С v8.3 не поддерживает нативно",
     },
 ])
 
 PARTICIPANTS_TECH = json.dumps([
-    {"name": "Sergey Krasnov", "position": "Proposed REST API"},
-    {"name": "Petr Sidorov", "position": "Confirmed feasibility"},
-    {"name": "Anna BA", "position": "Recorded the decision"},
+    {"name": "Сергей Краснов", "position": "Предложил REST API"},
+    {"name": "Пётр Сидоров", "position": "Подтвердил реализуемость"},
+    {"name": "Анна BA", "position": "Зафиксировала решение"},
 ])
 
 PARTICIPANTS_WORKSHOP = json.dumps([
-    {"name": "Ivan Ivanov", "position": "Business representative"},
-    {"name": "Anna BA", "position": "Facilitator"},
-    {"name": "Petr Sidorov", "position": "Developer"},
-    {"name": "Sergey Krasnov", "position": "Architect"},
+    {"name": "Иван Иванов", "position": "Представитель бизнеса"},
+    {"name": "Анна BA", "position": "Фасилитатор"},
+    {"name": "Пётр Сидоров", "position": "Разработчик"},
+    {"name": "Сергей Краснов", "position": "Архитектор"},
 ])
 
 AGENDA_WORKSHOP = json.dumps([
-    {"item": "Review of requirements FR-001–FR-010", "owner": "Anna BA"},
-    {"item": "1C integration questions", "owner": "Sergey Krasnov"},
-    {"item": "MVP prioritization", "owner": "Ivan Ivanov"},
+    {"item": "Обзор требований FR-001–FR-010", "owner": "Анна BA"},
+    {"item": "Вопросы интеграции с 1С", "owner": "Сергей Краснов"},
+    {"item": "Приоритизация МВП", "owner": "Иван Иванов"},
 ])
 
 DECISIONS_WORKSHOP = json.dumps([
     {
-        "decision": "REST API via /api/v1/1c/sync, batch every 15 minutes",
-        "decision_maker": "Sergey Krasnov",
+        "decision": "REST API через /api/v1/1c/sync, батч каждые 15 минут",
+        "decision_maker": "Сергей Краснов",
     },
     {
-        "decision": "Move FR-007 out of MVP scope, implement in v2.0",
-        "decision_maker": "Ivan Ivanov",
+        "decision": "FR-007 вынести за скоуп МВП, реализовать в v2.0",
+        "decision_maker": "Иван Иванов",
     },
 ])
 
 ACTION_ITEMS_WORKSHOP = json.dumps([
-    {"task": "Update FR-007 — mark as out of MVP scope", "owner": "Anna BA", "due": "2025-03-21"},
-    {"task": "Prepare Swagger for the 1C integration", "owner": "Petr Sidorov", "due": "2025-03-28"},
+    {"task": "Обновить FR-007 — пометить как out of scope МВП", "owner": "Анна BA", "due": "2025-03-21"},
+    {"task": "Подготовить Swagger для 1С интеграции", "owner": "Пётр Сидоров", "due": "2025-03-28"},
 ])
 
 
@@ -78,129 +78,129 @@ ACTION_ITEMS_WORKSHOP = json.dumps([
 # ---------------------------------------------------------------------------
 
 class TestLogDecision(BaseMCPTest):
-    """Tests for 4.5: log_decision."""
+    """Тесты для 4.5: log_decision."""
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
             "decision_date": "2025-03-19",
-            "decision_statement": "Use REST API for the integration with 1C v8.3",
-            "context": "We need to choose the integration protocol with the corporate ERP",
+            "decision_statement": "Использовать REST API для интеграции с 1С v8.3",
+            "context": "Нужно выбрать протокол интеграции с корпоративной ERP",
             "alternatives_json": ALTERNATIVES_SOAP_VS_REST,
-            "decision_maker": "Architect Sergey Krasnov",
+            "decision_maker": "Архитектор Сергей Краснов",
             "participants_json": PARTICIPANTS_TECH,
-            "decision_type": "Architectural",
+            "decision_type": "Архитектурное",
             "affected_artifacts_json": json.dumps([
-                {"artifact": "FR-001", "impact": "Update the wording — add REST API"},
-                {"artifact": "NFR-002", "impact": "Add API security requirements"},
+                {"artifact": "FR-001", "impact": "Обновить формулировку — добавить REST API"},
+                {"artifact": "NFR-002", "impact": "Добавить требования к безопасности API"},
             ]),
-            "rationale": "REST is better documented, supported by modern libraries, feasible on 1C v8.3+",
-            "risks": "Compatibility with the specific 1C version must be validated on the vendor's side",
+            "rationale": "REST лучше документирован, поддерживается современными библиотеками, реализуем на 1С v8.3+",
+            "risks": "Нужна валидация совместимости с конкретной версией 1С на стороне вендора",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod45.log_decision(**kwargs)
 
-    # --- happy path across all decision types ---
+    # --- happy path по всем типам решений ---
 
     def test_type_requirement(self):
-        """Decision type: Requirement."""
+        """Тип решения: Требование."""
         result = self._call(
-            decision_type="Requirement",
-            decision_statement="FR-007 is moved out of MVP scope",
-            rationale="Not critical for launch",
+            decision_type="Требование",
+            decision_statement="FR-007 выносится за скоуп МВП",
+            rationale="Не критично для запуска",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_priority(self):
-        """Decision type: Priority."""
+        """Тип решения: Приоритет."""
         result = self._call(
-            decision_type="Priority",
+            decision_type="Приоритет",
             decision_statement="FR-001 — Must Have, FR-007 — Could Have",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_architectural(self):
-        """Decision type: Architectural."""
-        result = self._call(decision_type="Architectural")
+        """Тип решения: Архитектурное."""
+        result = self._call(decision_type="Архитектурное")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_process(self):
-        """Decision type: Process."""
+        """Тип решения: Процессное."""
         result = self._call(
-            decision_type="Process",
-            decision_statement="Approve requirements at weekly meetings",
+            decision_type="Процессное",
+            decision_statement="Утверждать требования на еженедельных встречах",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_scope(self):
-        """Decision type: Scope."""
+        """Тип решения: Scope."""
         result = self._call(
             decision_type="Scope",
-            decision_statement="The analytics module is moved to v2.0",
+            decision_statement="Модуль аналитики выносится в v2.0",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_other(self):
-        """Decision type: Other."""
-        result = self._call(decision_type="Other")
+        """Тип решения: Другое."""
+        result = self._call(decision_type="Другое")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     # --- edge cases ---
 
     def test_no_alternatives(self):
-        """There were no alternatives — the only option."""
+        """Не было альтернатив — единственный вариант."""
         result = self._call(
             alternatives_json=json.dumps([]),
-            rationale="The only technically available option",
+            rationale="Единственный технически доступный вариант",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_affected_artifacts(self):
-        """The decision doesn't affect artifacts directly."""
+        """Решение не затрагивает артефакты напрямую."""
         result = self._call(affected_artifacts_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_risks(self):
-        """No risks."""
+        """Нет рисков."""
         result = self._call(risks="")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_single_participant(self):
-        """Only one participant (a sole decision)."""
+        """Только один участник (единоличное решение)."""
         result = self._call(
             participants_json=json.dumps([
-                {"name": "Director", "position": "Made the decision alone"}
+                {"name": "Директор", "position": "Принял решение единолично"}
             ])
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact is called exactly once."""
+        """save_artifact вызывается ровно один раз."""
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             mod45.log_decision(
                 project_name="crm_upgrade",
                 decision_date="2025-03-19",
                 decision_statement="REST API",
-                context="Protocol choice",
+                context="Выбор протокола",
                 alternatives_json=ALTERNATIVES_SOAP_VS_REST,
-                decision_maker="Architect",
+                decision_maker="Архитектор",
                 participants_json=PARTICIPANTS_TECH,
-                decision_type="Architectural",
+                decision_type="Архитектурное",
                 affected_artifacts_json=json.dumps([]),
-                rationale="The best choice",
+                rationale="Лучший выбор",
                 risks="",
             )
             mock_sa.assert_called_once()
@@ -228,127 +228,127 @@ class TestLogDecision(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestSaveMeetingNotes(BaseMCPTest):
-    """Tests for 4.5: save_meeting_notes."""
+    """Тесты для 4.5: save_meeting_notes."""
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
             "meeting_date": "2025-03-19",
-            "meeting_type": "Workshop",
+            "meeting_type": "Воркшоп",
             "participants_json": PARTICIPANTS_WORKSHOP,
             "agenda_json": AGENDA_WORKSHOP,
-            "discussion_summary": "Reviewed FR-001–FR-010. Agreed on REST API. Moved FR-007 to v2.0.",
+            "discussion_summary": "Разобрали FR-001–FR-010. Согласовали REST API. FR-007 вынесли в v2.0.",
             "decisions_json": DECISIONS_WORKSHOP,
             "action_items_json": ACTION_ITEMS_WORKSHOP,
-            "open_questions": "Does the API need OAuth authorization, or is an API key enough?",
-            "risks_identified": "The 1C vendor hasn't confirmed compatibility — a delay risk",
+            "open_questions": "Нужна ли авторизация для API через OAuth или достаточно API key?",
+            "risks_identified": "Вендор 1С не подтвердил совместимость — риск задержки",
             "next_meeting": "2025-03-26",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod45.save_meeting_notes(**kwargs)
 
-    # --- happy path across all meeting types ---
+    # --- happy path по всем типам встреч ---
 
     def test_type_interview(self):
-        """Meeting type: Interview."""
-        result = self._call(meeting_type="Interview")
+        """Тип встречи: Интервью."""
+        result = self._call(meeting_type="Интервью")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_workshop(self):
-        """Meeting type: Workshop."""
-        result = self._call(meeting_type="Workshop")
+        """Тип встречи: Воркшоп."""
+        result = self._call(meeting_type="Воркшоп")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_status_meeting(self):
-        """Meeting type: Status Meeting."""
+        """Тип встречи: Статус-митинг."""
         result = self._call(
-            meeting_type="Status Meeting",
-            discussion_summary="Discussed progress: 70% of requirements collected",
+            meeting_type="Статус-митинг",
+            discussion_summary="Обсудили прогресс: 70% требований собрано",
             decisions_json=json.dumps([]),
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_facilitation(self):
-        """Meeting type: Facilitation Session."""
-        result = self._call(meeting_type="Facilitation Session")
+        """Тип встречи: Фасилитационная сессия."""
+        result = self._call(meeting_type="Фасилитационная сессия")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_one_on_one(self):
-        """Meeting type: 1-on-1 Meeting."""
+        """Тип встречи: Встреча 1-на-1."""
         result = self._call(
-            meeting_type="1-on-1 Meeting",
+            meeting_type="Встреча 1-на-1",
             participants_json=json.dumps([
-                {"name": "Ivan Ivanov", "position": "Director"},
-                {"name": "Anna BA", "position": "Analyst"},
+                {"name": "Иван Иванов", "position": "Директор"},
+                {"name": "Анна BA", "position": "Аналитик"},
             ]),
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_presentation(self):
-        """Meeting type: Presentation."""
+        """Тип встречи: Презентация."""
         result = self._call(
-            meeting_type="Presentation",
-            discussion_summary="Presented the requirements to the sponsor. Approved.",
+            meeting_type="Презентация",
+            discussion_summary="Представили требования спонсору. Одобрено.",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_type_other(self):
-        """Meeting type: Other."""
-        result = self._call(meeting_type="Other")
+        """Тип встречи: Другое."""
+        result = self._call(meeting_type="Другое")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     # --- edge cases ---
 
     def test_no_decisions(self):
-        """A meeting without decisions (discussion only)."""
+        """Встреча без решений (только обсуждение)."""
         result = self._call(decisions_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_action_items(self):
-        """No action items after the meeting."""
+        """Нет задач по итогам встречи."""
         result = self._call(action_items_json=json.dumps([]))
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_open_questions(self):
-        """All questions are closed."""
+        """Все вопросы закрыты."""
         result = self._call(open_questions="")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_next_meeting(self):
-        """No next meeting."""
+        """Нет следующей встречи."""
         result = self._call(next_meeting="")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_no_risks(self):
-        """No identified risks."""
+        """Нет выявленных рисков."""
         result = self._call(risks_identified="")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact is called exactly once."""
+        """save_artifact вызывается ровно один раз."""
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             mod45.save_meeting_notes(
                 project_name="crm_upgrade",
                 meeting_date="2025-03-19",
-                meeting_type="Workshop",
+                meeting_type="Воркшоп",
                 participants_json=PARTICIPANTS_WORKSHOP,
                 agenda_json=AGENDA_WORKSHOP,
-                discussion_summary="Requirements discussion",
+                discussion_summary="Обсуждение требований",
                 decisions_json=DECISIONS_WORKSHOP,
                 action_items_json=ACTION_ITEMS_WORKSHOP,
                 open_questions="",
@@ -384,30 +384,30 @@ class TestSaveMeetingNotes(BaseMCPTest):
 # ---------------------------------------------------------------------------
 
 class TestUpdateEngagementStatus(BaseMCPTest):
-    """Tests for 4.5: update_engagement_status."""
+    """Тесты для 4.5: update_engagement_status."""
 
     def _call(self, **overrides):
         defaults = {
             "project_name": "crm_upgrade",
-            "stakeholder_role": "Sales Director",
+            "stakeholder_role": "Директор по продажам",
             "change_date": "2025-03-19",
             "attitude_before": "Champion",
             "attitude_after": "Neutral",
-            "engagement_level_before": "Active",
-            "engagement_level_after": "Passive",
-            "signal_observed": "Missed two status meetings, hasn't answered emails for 5 days",
-            "probable_cause": "A suspected reorganization in his department",
-            "ba_action_taken": "Messaged him directly, scheduled a 1-on-1 meeting",
-            "ba_action_planned": "Find out the reason for the change in position, escalation may be needed",
+            "engagement_level_before": "Активный",
+            "engagement_level_after": "Пассивный",
+            "signal_observed": "Пропустил два статус-митинга, не отвечает на письма 5 дней",
+            "probable_cause": "Предполагаемая реорганизация в его отделе",
+            "ba_action_taken": "Написал в мессенджер напрямую, назначил встречу 1-на-1",
+            "ba_action_planned": "Выяснить причину изменения позиции, возможно нужна эскалация",
             "escalation_needed": False,
             "escalation_to": "",
         }
         kwargs = {**defaults, **overrides}
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             return mod45.update_engagement_status(**kwargs)
 
-    # --- happy path — all attitude transition combinations ---
+    # --- happy path — все комбинации переходов attitude ---
 
     def test_champion_to_neutral(self):
         """Champion → Neutral."""
@@ -416,11 +416,11 @@ class TestUpdateEngagementStatus(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_champion_to_blocker(self):
-        """Champion → Blocker (a critical transition)."""
+        """Champion → Blocker (критический переход)."""
         result = self._call(
             attitude_before="Champion",
             attitude_after="Blocker",
-            signal_observed="Publicly voiced disagreement at the board meeting",
+            signal_observed="Публично выразил несогласие на совете директоров",
             escalation_needed=True,
             escalation_to="PM → Steering Committee",
         )
@@ -428,14 +428,14 @@ class TestUpdateEngagementStatus(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_neutral_to_champion(self):
-        """Neutral → Champion (a positive transition)."""
+        """Neutral → Champion (позитивный переход)."""
         result = self._call(
             attitude_before="Neutral",
             attitude_after="Champion",
-            engagement_level_before="Passive",
-            engagement_level_after="Active",
-            signal_observed="Started actively suggesting improvements, brought in additional stakeholders",
-            ba_action_taken="Engaged in a detailed discussion of the dashboard requirements",
+            engagement_level_before="Пассивный",
+            engagement_level_after="Активный",
+            signal_observed="Начал активно предлагать улучшения, привлёк дополнительных стейкхолдеров",
+            ba_action_taken="Вовлёк в детальное обсуждение требований к дашбордам",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
@@ -452,23 +452,23 @@ class TestUpdateEngagementStatus(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_blocker_to_neutral(self):
-        """Blocker → Neutral (the situation improves)."""
+        """Blocker → Neutral (улучшение ситуации)."""
         result = self._call(
             attitude_before="Blocker",
             attitude_after="Neutral",
-            signal_observed="After a meeting with the PM, agreed to a compromise",
-            ba_action_taken="Organized a meeting between the PM and the stakeholder",
+            signal_observed="После встречи с PM согласился на компромисс",
+            ba_action_taken="Организовал встречу с PM и стейкхолдером",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_blocker_to_champion(self):
-        """Blocker → Champion (the best outcome)."""
+        """Blocker → Champion (лучший исход)."""
         result = self._call(
             attitude_before="Blocker",
             attitude_after="Champion",
-            signal_observed="After the prototype demo, became an active supporter",
-            ba_action_planned="Involve as a key tester in UAT",
+            signal_observed="После демо прототипа стал активным сторонником",
+            ba_action_planned="Привлечь к UAT как ключевого тестировщика",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
@@ -476,29 +476,29 @@ class TestUpdateEngagementStatus(BaseMCPTest):
     # --- engagement level transitions ---
 
     def test_passive_to_active(self):
-        """Passive → Active."""
+        """Пассивный → Активный."""
         result = self._call(
-            engagement_level_before="Passive",
-            engagement_level_after="Active",
+            engagement_level_before="Пассивный",
+            engagement_level_after="Активный",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_absent_to_passive(self):
-        """Absent → Passive."""
+        """Отсутствует → Пассивный."""
         result = self._call(
-            engagement_level_before="Absent",
-            engagement_level_after="Passive",
-            signal_observed="Showed up at a meeting for the first time",
+            engagement_level_before="Отсутствует",
+            engagement_level_after="Пассивный",
+            signal_observed="Впервые появился на встрече",
         )
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_active_to_absent(self):
-        """Active → Absent (an alarming signal)."""
+        """Активный → Отсутствует (тревожный сигнал)."""
         result = self._call(
-            engagement_level_before="Active",
-            engagement_level_after="Absent",
+            engagement_level_before="Активный",
+            engagement_level_after="Отсутствует",
             escalation_needed=True,
             escalation_to="PM",
         )
@@ -508,7 +508,7 @@ class TestUpdateEngagementStatus(BaseMCPTest):
     # --- escalation scenarios ---
 
     def test_escalation_needed_with_target(self):
-        """Escalation needed — a target is specified."""
+        """Нужна эскалация — указан получатель."""
         result = self._call(
             escalation_needed=True,
             escalation_to="PM → Steering Committee",
@@ -517,27 +517,27 @@ class TestUpdateEngagementStatus(BaseMCPTest):
         self.assertNotIn("❌", result)
 
     def test_no_escalation(self):
-        """No escalation needed."""
+        """Эскалация не нужна."""
         result = self._call(escalation_needed=False, escalation_to="")
         self.assertIsInstance(result, str)
         self.assertNotIn("❌", result)
 
     def test_save_artifact_called(self):
-        """save_artifact is called exactly once."""
+        """save_artifact вызывается ровно один раз."""
         with patch("skills.elicitation_collaborate_mcp.save_artifact") as mock_sa:
-            mock_sa.return_value = "✅ Saved"
+            mock_sa.return_value = "✅ Сохранено"
             mod45.update_engagement_status(
                 project_name="crm_upgrade",
-                stakeholder_role="Director",
+                stakeholder_role="Директор",
                 change_date="2025-03-19",
                 attitude_before="Champion",
                 attitude_after="Neutral",
-                engagement_level_before="Active",
-                engagement_level_after="Passive",
-                signal_observed="Stopped responding",
-                probable_cause="Unknown",
-                ba_action_taken="Messaged",
-                ba_action_planned="Meeting",
+                engagement_level_before="Активный",
+                engagement_level_after="Пассивный",
+                signal_observed="Перестал отвечать",
+                probable_cause="Неизвестно",
+                ba_action_taken="Написал",
+                ba_action_planned="Встреча",
                 escalation_needed=False,
                 escalation_to="",
             )

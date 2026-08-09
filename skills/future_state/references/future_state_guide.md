@@ -1,135 +1,135 @@
-# Reference Guide: Define Future State (BABOK 6.2)
+# Справочник: Определение будущего состояния (BABOK 6.2)
 
-## The eight future state elements
+## Восемь элементов будущего состояния
 
-The same 8 domains as in 6.1 — but now we describe "how it should be."
-The BA's job isn't to invent the future, but to structure the stakeholders' vision.
+Те же 8 доменов что в 6.1 — но теперь описываем «как должно быть».
+Задача BA — не придумывать будущее, а структурировать видение стейкхолдеров.
 
-| Element | Key | What we describe in the future state |
+| Элемент | Ключ | Что описываем в будущем состоянии |
 |---------|------|-----------------------------------|
-| Business needs | `business_needs` | How needs will be satisfied, what outcome is achieved |
-| Organizational structure | `org_structure` | Roles, responsibilities, culture after the change |
-| Capabilities and processes | `capabilities` | New/improved processes, competencies that don't yet exist |
-| Technology | `technology` | Target technology architecture, systems, tools |
-| Policies | `policies` | New policies, regulations, rules |
-| Business architecture | `architecture` | Target organizational model, business domains |
-| Internal assets | `assets` | Data, knowledge, IP in the target state |
-| External factors | `external` | Market position, relationships with partners, regulators |
+| Бизнес-потребности | `business_needs` | Как потребности будут удовлетворены, какой результат достигнут |
+| Организационная структура | `org_structure` | Роли, ответственности, культура после изменений |
+| Возможности и процессы | `capabilities` | Новые/улучшенные процессы, компетенции, которых ещё нет |
+| Технологии | `technology` | Целевая технологическая архитектура, системы, инструменты |
+| Политики | `policies` | Новые политики, регламенты, правила |
+| Бизнес-архитектура | `architecture` | Целевая модель организации, бизнес-домены |
+| Внутренние активы | `assets` | Данные, знания, IP в целевом состоянии |
+| Внешние факторы | `external` | Позиция на рынке, отношения с партнёрами, регуляторами |
 
 ---
 
-## Questions for the BA on each element
+## Вопросы для BA по каждому элементу
 
 ### business_needs
-- How will the business needs from 6.1 be satisfied?
-- What concrete outcome will the organization achieve?
-- How will the customer / employee experience change?
-- What KPIs will be achieved?
+- Как будут удовлетворены бизнес-потребности из 6.1?
+- Какой конкретный результат получит организация?
+- Как изменится experience клиентов / сотрудников?
+- Какие KPI будут достигнуты?
 
 ### org_structure
-- How will roles and responsibilities change?
-- Will new positions / teams appear?
-- How will the decision-making culture change?
-- Who will own the new process?
+- Как изменятся роли и ответственности?
+- Появятся ли новые должности / команды?
+- Как изменится культура принятия решений?
+- Кто будет владельцем нового процесса?
 
 ### capabilities
-- What new capabilities will appear?
-- How will the key processes change?
-- What competencies need to be developed / hired?
-- What will the process look like in detail (as-should-be)?
+- Какие новые возможности появятся?
+- Как изменятся ключевые процессы?
+- Какие компетенции нужно развить / привлечь?
+- Как будет выглядеть процесс в деталях (as-should-be)?
 
 ### technology
-- What systems / tools will appear?
-- What will be replaced, what will be expanded?
-- How will the integration landscape change?
-- What level of automation will we achieve?
+- Какие системы / инструменты появятся?
+- Что будет заменено, что расширено?
+- Как изменится интеграционный ландшафт?
+- Какой уровень автоматизации достигнем?
 
 ### policies
-- What new regulations are needed?
-- What will require approval / sign-off?
-- How will the rules for employees change?
+- Какие новые регламенты нужны?
+- Что потребует согласования / утверждения?
+- Как изменятся правила для сотрудников?
 
 ### architecture
-- How will the business model / operating model change?
-- Which business domains will be affected?
-- How will system / team boundaries change?
+- Как изменится бизнес-модель / операционная модель?
+- Какие бизнес-домены будут затронуты?
+- Как изменятся границы систем / команд?
 
 ### assets
-- What data will we own?
-- How will knowledge bases and documentation change?
-- What IP is being created?
+- Какими данными будем владеть?
+- Как изменятся базы знаний, документация?
+- Какой IP создаётся?
 
 ### external
-- How will the market position change?
-- What will change in relationships with partners / customers?
-- How do we respond to regulatory requirements?
+- Как изменится позиция на рынке?
+- Что изменится в отношениях с партнёрами / клиентами?
+- Как реагируем на регуляторные требования?
 
 ---
 
-## SMART criteria for objectives and KPIs
+## SMART-критерии для целей и KPI
 
-Every business objective must meet SMART criteria:
+Каждая бизнес-цель должна соответствовать SMART:
 
-| Criterion | What we check | Bad | Good |
+| Критерий | Что проверяем | Плохо | Хорошо |
 |----------|--------------|-------|--------|
-| **S**pecific | Is it clearly formulated? | "Improve the process" | "Reduce request approval time" |
-| **M**easurable | Is there a metric? | "Get faster" | "Reduce from 8 to 2 hours" |
-| **A**chievable | Realistic given current constraints? | "Eliminate all errors" | "Reduce errors from 12% to 2%" |
-| **R**elevant | Linked to business needs? | An objective with no BN | An objective addresses BN-001, BN-002 |
-| **T**ime-bound | Is there a deadline? | "As soon as possible" | "By Q4 2025" |
+| **S**pecific | Чётко сформулировано? | «Улучшить процесс» | «Сократить время согласования заявок» |
+| **M**easurable | Есть метрика? | «Стать быстрее» | «Сократить с 8 до 2 часов» |
+| **A**chievable | Реалистично при имеющихся ограничениях? | «Устранить все ошибки» | «Снизить ошибки с 12% до 2%» |
+| **R**elevant | Связано с бизнес-потребностями? | Цель без BN | Цель адресует BN-001, BN-002 |
+| **T**ime-bound | Есть дедлайн? | «Как можно скорее» | «К Q4 2025» |
 
-### How to help the BA make an objective SMART
+### Как помочь BA сделать цель SMART
 
-If the BA says "we want to get better":
-1. Ask "Better by what measure?" → Measurable
-2. Ask "What's the current state? What do we want?" → specific numbers
-3. Ask "By what date?" → Time-bound
-4. Check "Does this address BN-xxx from 6.1?" → Relevant
+Если BA говорит «хотим стать лучше»:
+1. Спроси «Лучше по какому показателю?» → Measurable
+2. Спроси «Что сейчас? Что хотим?» → конкретные числа
+3. Спроси «К какому сроку?» → Time-bound
+4. Проверь «Это адресует BN-xxx из 6.1?» → Relevant
 
-### Structure of an objective (target metric)
+### Структура objective (целевого показателя)
 
 ```json
 {
-  "title": "Reduce request processing time",
-  "metric": "Processing time per request (hours)",
-  "baseline": "8 hours (Q1 2025)",
-  "target": "2 hours",
+  "title": "Сократить время обработки заявок",
+  "metric": "Время обработки одной заявки (часы)",
+  "baseline": "8 часов (Q1 2025)",
+  "target": "2 часа",
   "deadline": "2025-12-31"
 }
 ```
 
 ---
 
-## Gap analysis: from current to future
+## Gap-анализ: от текущего к будущему
 
-The gap analysis is an explicit comparison for each element: "where we are now" vs. "where we're going."
-The gap analysis result is a direct input for 6.4 (Define Change Strategy).
+Gap-анализ — это явное сравнение по каждому элементу: «где мы сейчас» vs «куда идём».
+Результат gap-анализа — прямой вход для 6.4 (Define Change Strategy).
 
-### Change types
+### Типы изменений
 
-| Type | Meaning | Example |
+| Тип | Смысл | Пример |
 |-----|-------|--------|
-| `new` | Building from scratch | No CRM → implementing a CRM |
-| `improve` | Improving something that exists | Manual process → automating part of it |
-| `eliminate` | Removing | Redundant approval levels → eliminating them |
-| `replace` | Replacing one thing with another | Old system → new system |
+| `new` | Создаём с нуля | Нет CRM → внедряем CRM |
+| `improve` | Улучшаем существующее | Ручной процесс → автоматизируем часть |
+| `eliminate` | Убираем | Лишние уровни согласования → устраняем |
+| `replace` | Заменяем одно другим | Старая система → новая система |
 
-### Change complexity assessment
+### Оценка сложности изменения
 
-| Complexity | Indicators |
+| Сложность | Признаки |
 |-----------|---------|
-| `low` | Change within a single domain, no dependencies, well-understood technology |
-| `medium` | 2–3 domains, has dependencies, requires training or new resources |
-| `high` | Multiple domains, cultural change, uncertainty, external dependencies |
+| `low` | Изменение в одном домене, нет зависимостей, понятная технология |
+| `medium` | 2–3 домена, есть зависимости, требует обучения или новых ресурсов |
+| `high` | Несколько доменов, культурные изменения, неопределённость, внешние зависимости |
 
-### Structure of a per-element gap analysis entry
+### Структура gap-анализа по элементу
 
 ```json
 {
   "element": "capabilities",
-  "current_description": "Manual approval process, 8 hours, 3 levels",
-  "future_description": "Automated process, 2 hours, 1 level",
-  "gap_summary": "Need to automate approval and reduce the number of levels",
+  "current_description": "Ручной процесс согласования, 8 часов, 3 уровня",
+  "future_description": "Автоматизированный процесс, 2 часа, 1 уровень",
+  "gap_summary": "Нужно автоматизировать согласование и сократить уровни",
   "change_type": "improve",
   "complexity": "medium"
 }
@@ -137,52 +137,52 @@ The gap analysis result is a direct input for 6.4 (Define Change Strategy).
 
 ---
 
-## Constraints — types and impact
+## Ограничения — типы и влияние
 
-Constraints narrow the solution space. They need to be captured explicitly so that
-7.5 doesn't end up developing design options that are clearly infeasible.
+Ограничения сужают пространство решений. Их нужно зафиксировать явно чтобы
+в 7.5 не разрабатывать дизайн-опции которые заведомо невозможны.
 
-### Constraint types
+### Типы ограничений
 
-| Category | What belongs here | Example |
+| Категория | Что сюда входит | Пример |
 |-----------|----------------|--------|
-| `budget` | Financial limits | "Project budget — up to $500K" |
-| `time` | Time frames, deadlines | "Mandatory launch by April 1, 2026" |
-| `technology` | Technology standards, prohibited platforms | "On-premise only, no cloud" |
-| `policy` | Internal policies, rules | "Data cannot be outsourced" |
-| `resources` | Team, competencies, throughput | "No dedicated development team" |
-| `compliance` | Regulatory and legal requirements | "GDPR, local data protection law" |
-| `other` | Other constraints | "Stakeholder X opposes any changes" |
+| `budget` | Финансовые лимиты | «Бюджет проекта — до 5 млн руб.» |
+| `time` | Временные рамки, дедлайны | «Обязательный запуск до 01.04.2026» |
+| `technology` | Технологические стандарты, запрещённые платформы | «Только on-premise, no cloud» |
+| `policy` | Внутренние политики, правила | «Нельзя передавать данные на аутсорс» |
+| `resources` | Команда, компетенции, пропускная способность | «Нет выделенной команды разработки» |
+| `compliance` | Регуляторные и законодательные требования | «152-ФЗ, GDPR» |
+| `other` | Прочие ограничения | «Стейкхолдер X против любых изменений» |
 
-### Constraint status
+### Статус ограничения
 
-- `confirmed` — confirmed in documentation or by an authorized person
-- `assumed` — the BA assumes the constraint exists but hasn't verified it
+- `confirmed` — подтверждено документально или от уполномоченного лица
+- `assumed` — BA предполагает что ограничение есть, но не проверял
 
-Assumed constraints need to be validated — they may turn out to be myths.
-
----
-
-## UX pattern: "past alongside future"
-
-When filling in future state elements — if data from 6.1 exists,
-show the BA the current state alongside it. This helps:
-- Avoid describing what already exists (FS ≠ CS)
-- See the gap between the states explicitly
-- Formulate the gap analysis more precisely
+Предполагаемые ограничения нужно валидировать — они могут оказаться мифами.
 
 ---
 
-## Linking FS elements to business needs
+## UX-паттерн: «прошлое рядом с будущим»
 
-Each FS element should be traced to one or more BNs from 6.1.
-If an element isn't linked to any BN, that's a sign of "scope creep":
-the organization is describing a desired future that doesn't address real pain points.
+При заполнении элементов будущего состояния — если есть данные из 6.1,
+показывай BA текущее состояние рядом. Это помогает:
+- Не описывать то, что уже есть (FS ≠ CS)
+- Явно видеть разрыв между состояниями
+- Формулировать gap-анализ точнее
 
-The `linked_business_needs` parameter when calling `capture_future_state_element`:
+---
+
+## Связь FS-элементов с бизнес-потребностями
+
+Каждый FS-элемент должен быть трассирован к одной или нескольким BN из 6.1.
+Если элемент не связан ни с одной BN — это признак «scope creep»:
+организация описывает желаемое будущее, которое не адресует реальные боли.
+
+Параметр `linked_business_needs` при вызове `capture_future_state_element`:
 ```
 '["BN-001", "BN-002"]'
 ```
 
-If there are no BNs yet (6.1 wasn't conducted), the parameter can be left empty.
-But it's better to create at least a minimal set of BNs before starting 6.2.
+Если BN ещё нет (6.1 не проводилась) — параметр можно оставить пустым.
+Но лучше создать хотя бы минимальный набор BN до начала 6.2.

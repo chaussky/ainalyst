@@ -1,6 +1,6 @@
 """
 BABOK 4.2 — Conduct Elicitation
-MCP tools for processing elicitation results.
+MCP-инструменты для обработки результатов выявления.
 
 Tools:
   - process_elicitation_results   — save the structured result of a session
@@ -9,7 +9,7 @@ Tools:
   - save_cr_elicitation_analysis  — elicitation analysis in the context of a Change Request
   - update_stakeholder_registry   — merge newly discovered stakeholders into the living registry
 
-# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
+# Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst (AI Платформа AIналитик). Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
 
 import json
@@ -172,7 +172,7 @@ def _record_session_risks(project_name: str, session_date: str, stakeholder_role
 
 
 # ---------------------------------------------------------------------------
-# 4.2.1 — Save structured results of a single session
+# 4.2.1 — Сохранить структурированные результаты одной сессии
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -188,40 +188,40 @@ def process_elicitation_results(
     requirements_json: str,
     gaps_and_signals: str,
     ba_recommendations: str,
-    maturity_level: Literal["Low", "Medium", "Good", "High"],
+    maturity_level: Literal["Низкий", "Средний", "Хороший", "Высокий"],
     maturity_notes: str,
     risks_json: str = "[]",
 ) -> str:
     """
-    BABOK 4.2 — Saves the structured results of a single elicitation session.
-    The result is passed on to task 4.3 (confirmation).
+    BABOK 4.2 — Сохраняет структурированные результаты одной сессии выявления.
+    Результат передаётся в задачу 4.3 (подтверждение).
 
     Args:
-        project_name:              Project name.
-        session_date:              Session date in DD.MM.YYYY format.
-        stakeholder_role:          Stakeholder role (job title / function).
-        session_type:              Type of elicitation session.
-        stakeholder_profile_json:  Stakeholder profile. Format:
+        project_name:              Название проекта.
+        session_date:              Дата сессии в формате ДД.ММ.ГГГГ.
+        stakeholder_role:          Роль стейкхолдера (должность / функция).
+        session_type:              Тип сессии выявления.
+        stakeholder_profile_json:  Профайл стейкхолдера. Формат:
                                    {
                                      "participation_type": "Decision maker / Influencer / End user",
                                      "influence": "High / Medium / Low",
                                      "interest": "High / Medium / Low",
                                      "attitude": "Champion / Neutral / Blocker",
-                                     "key_expectations": "text",
-                                     "key_concerns": "text",
-                                     "related_stakeholders": ["role 1", "role 2"]
+                                     "key_expectations": "текст",
+                                     "key_concerns": "текст",
+                                     "related_stakeholders": ["роль 1", "роль 2"]
                                    }
-        pains_json:                List of pain points. Format:
+        pains_json:                Список болей. Формат:
                                    [
                                      {
-                                       "title": "short title",
-                                       "description": "context and substance",
-                                       "frequency": "how often",
-                                       "business_impact": "impact on the business",
-                                       "quote": "verbatim quote if available"
+                                       "title": "краткое название",
+                                       "description": "контекст и суть",
+                                       "frequency": "как часто",
+                                       "business_impact": "влияние на бизнес",
+                                       "quote": "дословная цитата если есть"
                                      }
                                    ]
-        requirements_json:         Requirements by type. Format:
+        requirements_json:         Требования по типам. Формат:
                                    {
                                      "functional": ["FR-001: ...", "FR-002: ..."],
                                      "non_functional": ["NFR-001: ..."],
@@ -242,9 +242,9 @@ def process_elicitation_results(
                                    Consumed by 6.3 `import_risks_from_context`.
 
     Returns:
-        Path to the saved elicitation results file.
+        Путь к сохранённому файлу результатов выявления.
     """
-    logger.info(f"4.2 Saving elicitation results: project='{project_name}', type='{session_type}'")
+    logger.info(f"4.2 Сохранение результатов выявления: проект='{project_name}', тип='{session_type}'")
 
     profile, error = parse_json_dict(
         stakeholder_profile_json, "stakeholder_profile_json",
@@ -268,72 +268,72 @@ def process_elicitation_results(
     if error:
         return error
 
-    # Build the pain points block
+    # Формируем блок болей
     pains_md = ""
     for i, p in enumerate(pains, 1):
-        pains_md += f"\n### Pain point {i}: {p.get('title', '—')}\n"
-        pains_md += f"- **Description:** {p.get('description', '—')}\n"
-        pains_md += f"- **Frequency:** {p.get('frequency', '—')}\n"
-        pains_md += f"- **Business impact:** {p.get('business_impact', '—')}\n"
+        pains_md += f"\n### Боль {i}: {p.get('title', '—')}\n"
+        pains_md += f"- **Описание:** {p.get('description', '—')}\n"
+        pains_md += f"- **Частота:** {p.get('frequency', '—')}\n"
+        pains_md += f"- **Влияние на бизнес:** {p.get('business_impact', '—')}\n"
         if p.get('quote'):
-            pains_md += f"- **Quote:** *«{p['quote']}»*\n"
+            pains_md += f"- **Цитата:** *«{p['quote']}»*\n"
 
-    # Build the requirements block
+    # Формируем блок требований
     def req_list(items):
-        return "\n".join(f"- {r}" for r in items) if items else "- None identified"
+        return "\n".join(f"- {r}" for r in items) if items else "- Не выявлено"
 
-    # Build the profile block
-    related = ", ".join(profile.get("related_stakeholders", [])) or "None identified"
+    # Формируем блок профайла
+    related = ", ".join(profile.get("related_stakeholders", [])) or "Не выявлены"
 
     risks_md = ("\n".join(f"- {r['description']} — *{r['stakeholder']}*" for r in risks)
                 if risks else "- None mentioned")
 
     content = f"""# Elicitation Results (Unconfirmed)
 
-**Project:** {project_name}
-**Session date:** {session_date}
-**Session type:** {session_type}
-**Stakeholder:** {stakeholder_role}
-**Status:** Unconfirmed results → passed to task 4.3
+**Проект:** {project_name}
+**Дата сессии:** {session_date}
+**Тип сессии:** {session_type}
+**Стейкхолдер:** {stakeholder_role}
+**Статус:** Неподтверждённые результаты → передаётся в задачу 4.3
 
 ---
 
-## 1. Stakeholder Profile
+## 1. Профайл стейкхолдера
 
-| Parameter | Value |
+| Параметр | Значение |
 | :--- | :--- |
-| **Participation type** | {profile.get('participation_type', '—')} |
-| **Influence** | {profile.get('influence', '—')} |
-| **Interest** | {profile.get('interest', '—')} |
-| **Attitude toward the project** | {profile.get('attitude', '—')} |
-| **Key expectations** | {profile.get('key_expectations', '—')} |
-| **Key concerns** | {profile.get('key_concerns', '—')} |
-| **Related stakeholders** | {related} |
+| **Тип участия** | {profile.get('participation_type', '—')} |
+| **Влияние** | {profile.get('influence', '—')} |
+| **Интерес** | {profile.get('interest', '—')} |
+| **Отношение к проекту** | {profile.get('attitude', '—')} |
+| **Ключевые ожидания** | {profile.get('key_expectations', '—')} |
+| **Основные опасения** | {profile.get('key_concerns', '—')} |
+| **Смежные стейкхолдеры** | {related} |
 
 ---
 
-## 2. Needs and Pain Points
+## 2. Потребности и боли
 {pains_md}
 
 ---
 
-## 3. Requirements
+## 3. Требования
 
-### Functional Requirements
+### Функциональные требования
 {req_list(reqs.get('functional', []))}
 
-### Non-Functional Requirements
+### Нефункциональные требования
 {req_list(reqs.get('non_functional', []))}
 
-### Constraints
+### Ограничения
 {req_list(reqs.get('constraints', []))}
 
-### Business Rules
+### Бизнес-правила
 {req_list(reqs.get('business_rules', []))}
 
 ---
 
-## 4. Blind Spots and Hidden Signals
+## 4. Белые пятна и скрытые сигналы
 
 {gaps_and_signals}
 
@@ -353,7 +353,7 @@ def process_elicitation_results(
 
 ## 7. Requirements Maturity Assessment
 
-**Overall level:** {maturity_level}
+**Общий уровень:** {maturity_level}
 
 {maturity_notes}
 """
@@ -382,7 +382,7 @@ def process_elicitation_results(
 
 
 # ---------------------------------------------------------------------------
-# 4.2.2 — Save the cross-analysis of multiple sessions
+# 4.2.2 — Сохранить кросс-анализ нескольких сессий
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -396,34 +396,34 @@ def compare_elicitation_results(
     follow_up_plan: str,
 ) -> str:
     """
-    BABOK 4.2 — Saves the cross-analysis of multiple elicitation sessions.
+    BABOK 4.2 — Сохраняет кросс-анализ нескольких сессий выявления.
 
     Args:
-        project_name:                Project name.
-        sessions_summary:            Brief description of the analyzed sessions
-                                     (who, when, type).
-        contradictions:              Description of contradictions between stakeholders:
-                                     factual, priority-related, coverage gaps.
-        requirements_registry_json:  Consolidated requirements registry. Format:
+        project_name:                Название проекта.
+        sessions_summary:            Краткое описание проанализированных сессий
+                                     (кто, когда, тип).
+        contradictions:              Описание противоречий между стейкхолдерами:
+                                     фактические, приоритетные, пробелы покрытия.
+        requirements_registry_json:  Сводный реестр требований. Формат:
                                      [
                                        {
                                          "id": "FR-001",
-                                         "requirement": "text",
-                                         "sources": ["Stakeholder A", "Stakeholder B"],
-                                         "priority": "High / Medium / Low / Undetermined",
-                                         "status": "Agreed / Needs confirmation / Contradiction",
-                                         "notes": "note"
+                                         "requirement": "текст",
+                                         "sources": ["Стейкхолдер А", "Стейкхолдер Б"],
+                                         "priority": "High / Medium / Low / Не определён",
+                                         "status": "Согласовано / Требует подтверждения / Противоречие",
+                                         "notes": "примечание"
                                        }
                                      ]
-        political_map:               Observations on political dynamics among
-                                     stakeholders and risks to the project.
-        follow_up_plan:              Plan for further elicitation: questions, stakeholders,
-                                     formats, priorities.
+        political_map:               Наблюдения о политической динамике между
+                                     стейкхолдерами и рисках для проекта.
+        follow_up_plan:              План довыявления: вопросы, стейкхолдеры,
+                                     форматы, приоритеты.
 
     Returns:
-        Path to the saved cross-analysis file.
+        Путь к сохранённому файлу кросс-анализа.
     """
-    logger.info(f"4.2 Cross-analysis: project='{project_name}'")
+    logger.info(f"4.2 Кросс-анализ: проект='{project_name}'")
 
     registry, error = parse_json_dict_list(
         requirements_registry_json, "requirements_registry_json",
@@ -432,7 +432,7 @@ def compare_elicitation_results(
     if error:
         return error
 
-    # Build the registry table
+    # Формируем таблицу реестра
     reg_rows = "\n".join([
         f"| {r.get('id','—')} | {r.get('requirement','—')} | "
         f"{', '.join(r.get('sources',[]))} | {r.get('priority','—')} | "
@@ -441,44 +441,44 @@ def compare_elicitation_results(
     ])
 
     reg_table = (
-        "| ID | Requirement | Sources | Priority | Status | Notes |\n"
+        "| ID | Требование | Источники | Приоритет | Статус | Примечание |\n"
         "| :--- | :--- | :--- | :---: | :--- | :--- |\n"
         + reg_rows
     )
 
-    content = f"""# Cross-Analysis of Elicitation Results
+    content = f"""# Кросс-анализ результатов выявления
 
-**Project:** {project_name}
-**Analysis date:** {date.today().strftime("%d.%m.%Y")}
-**Status:** Unconfirmed results → passed to task 4.3
+**Проект:** {project_name}
+**Дата анализа:** {date.today().strftime("%d.%m.%Y")}
+**Статус:** Неподтверждённые результаты → передаётся в задачу 4.3
 
 ---
 
-## 1. Analyzed Sessions
+## 1. Проанализированные сессии
 
 {sessions_summary}
 
 ---
 
-## 2. Contradictions Between Stakeholders
+## 2. Противоречия между стейкхолдерами
 
 {contradictions}
 
 ---
 
-## 3. Consolidated Requirements Registry
+## 3. Сводный реестр требований
 
 {reg_table}
 
 ---
 
-## 4. Political Map
+## 4. Политическая карта
 
 {political_map}
 
 ---
 
-## 5. Further Elicitation Plan
+## 5. План довыявления
 
 {follow_up_plan}
 """
@@ -488,7 +488,7 @@ def compare_elicitation_results(
 
 
 # ---------------------------------------------------------------------------
-# 4.2.3 — Save the elicitation analysis in the context of a Change Request
+# 4.2.3 — Сохранить анализ выявления в контексте Change Request
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -504,31 +504,31 @@ def save_cr_elicitation_analysis(
     workshop_notes: str = "",
 ) -> str:
     """
-    BABOK 4.2 — Saves the elicitation analysis in the context of a Change Request.
+    BABOK 4.2 — Сохраняет анализ выявления в контексте Change Request.
 
     Args:
-        project_name:              Project name.
-        cr_description:            CR description: what is changing, initiator, reason.
-        affected_artifacts_json:   Affected artifacts. Format:
+        project_name:              Название проекта.
+        cr_description:            Описание CR: что меняется, инициатор, причина.
+        affected_artifacts_json:   Затронутые артефакты. Формат:
                                    [
                                      {
-                                       "artifact": "name / ID",
-                                       "type": "Profile / Pain point / FR / NFR / User Story",
+                                       "artifact": "название / ID",
+                                       "type": "Профайл / Боль / FR / NFR / User Story",
                                        "affected": true,
-                                       "change_type": "Update / Remove / Freeze"
+                                       "change_type": "Обновить / Удалить / Заморозить"
                                      }
                                    ]
-        outdated_data:             Description of outdated data and what to do about it.
-        follow_up_questions:       New elicitation questions: what, with whom,
-                                   priority, format.
-        scope_assessment:          Assessment of the scope and risks of further elicitation.
-        workshop_needed:           Whether a workshop is needed for alignment.
-        workshop_notes:            Participant list and agenda for the workshop (if needed).
+        outdated_data:             Описание устаревших данных и что с ними делать.
+        follow_up_questions:       Новые вопросы для выявления: что, у кого,
+                                   приоритет, формат.
+        scope_assessment:          Оценка масштаба довыявления и рисков.
+        workshop_needed:           Нужен ли воркшоп для согласования.
+        workshop_notes:            Состав участников и повестка воркшопа (если нужен).
 
     Returns:
-        Path to the saved CR analysis file.
+        Путь к сохранённому файлу анализа CR.
     """
-    logger.info(f"4.2 CR analysis: project='{project_name}'")
+    logger.info(f"4.2 CR-анализ: проект='{project_name}'")
 
     artifacts, error = parse_json_dict_list(
         affected_artifacts_json, "affected_artifacts_json",
@@ -537,7 +537,7 @@ def save_cr_elicitation_analysis(
     if error:
         return error
 
-    # Build the artifacts table
+    # Формируем таблицу артефактов
     art_rows = "\n".join([
         f"| {a.get('artifact','—')} | {a.get('type','—')} | "
         f"{'✅' if a.get('affected') else '—'} | {a.get('change_type','—')} |"
@@ -545,50 +545,50 @@ def save_cr_elicitation_analysis(
     ])
 
     art_table = (
-        "| Artifact | Type | Affected | Action |\n"
+        "| Артефакт | Тип | Затронут | Действие |\n"
         "| :--- | :--- | :---: | :--- |\n"
         + art_rows
     )
 
     workshop_block = ""
     if workshop_needed:
-        workshop_block = f"\n## 6. Workshop\n\n**Needed:** Yes\n\n{workshop_notes}\n"
+        workshop_block = f"\n## 6. Воркшоп\n\n**Необходим:** Да\n\n{workshop_notes}\n"
     else:
-        workshop_block = "\n## 6. Workshop\n\n**Needed:** No\n"
+        workshop_block = "\n## 6. Воркшоп\n\n**Необходим:** Нет\n"
 
-    content = f"""# Elicitation Analysis in the Context of a Change Request
+    content = f"""# Анализ выявления в контексте Change Request
 
-**Project:** {project_name}
-**Analysis date:** {date.today().strftime("%d.%m.%Y")}
-**Status:** Requires further elicitation
+**Проект:** {project_name}
+**Дата анализа:** {date.today().strftime("%d.%m.%Y")}
+**Статус:** Требует довыявления
 
 ---
 
-## 1. Change Request Description
+## 1. Описание Change Request
 
 {cr_description}
 
 ---
 
-## 2. Impact Zone
+## 2. Зона влияния
 
 {art_table}
 
 ---
 
-## 3. Outdated Data
+## 3. Устаревшие данные
 
 {outdated_data}
 
 ---
 
-## 4. Further Elicitation Plan
+## 4. План довыявления
 
 {follow_up_questions}
 
 ---
 
-## 5. Scope Assessment
+## 5. Оценка масштаба
 
 {scope_assessment}
 {workshop_block}
@@ -599,7 +599,7 @@ def save_cr_elicitation_analysis(
 
 
 # ---------------------------------------------------------------------------
-# 4.2.4 — Update the living stakeholder registry
+# 4.2.4 — Обновить живой реестр стейкхолдеров
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -610,40 +610,40 @@ def update_stakeholder_registry(
     new_stakeholders_json: str,
 ) -> str:
     """
-    BABOK 4.2 / 3.2 — Updates the project's living stakeholder registry.
+    BABOK 4.2 / 3.2 — Обновляет живой реестр стейкхолдеров проекта.
 
-    The stakeholder registry is a living document. It starts with 1-2 known people
-    (usually the sponsor) and grows after each elicitation session via a chain:
-    each stakeholder names the next ones.
+    Реестр стейкхолдеров — живой документ. Он начинается с 1–2 известных людей
+    (обычно спонсор) и пополняется после каждой сессии выявления по цепочке:
+    каждый стейкхолдер называет следующих.
 
-    Call this tool after every interview / workshop / document analysis.
+    Вызывай этот инструмент после каждого интервью / воркшопа / анализа документов.
 
     Args:
-        project_name:           Project name.
-        session_source:         Where the information about the new stakeholders came from.
-                                Example: "Interview with J. Smith (CFO), 03/15/2024"
-        new_stakeholders_json:  List of new or updated stakeholders. Format:
+        project_name:           Название проекта.
+        session_source:         Откуда получена информация о новых стейкхолдерах.
+                                Пример: "Интервью с Ивановым И.И. (CFO), 15.03.2024"
+        new_stakeholders_json:  Список новых или обновлённых стейкхолдеров. Формат:
                                 [
                                   {
-                                    "name": "J. Doe",
-                                    "role": "Head of Procurement",
-                                    "department": "Procurement",
-                                    "found_through": "J. Smith (CFO)",
-                                    "why_important": "Makes decisions on the procurement budget",
+                                    "name": "Петров П.П.",
+                                    "role": "Руководитель отдела закупок",
+                                    "department": "Закупки",
+                                    "found_through": "Иванов И.И. (CFO)",
+                                    "why_important": "Принимает решения по бюджету закупок",
                                     "influence": "High / Medium / Low",
                                     "interest": "High / Medium / Low",
-                                    "attitude": "Champion / Neutral / Blocker / Unknown",
-                                    "coverage_status": "Not covered / Planned / Elicited",
-                                    "priority": "Urgent / As planned / Uncertain",
-                                    "recommended_format": "Interview / Workshop / Written request",
-                                    "notes": "additional information"
+                                    "attitude": "Champion / Neutral / Blocker / Неизвестно",
+                                    "coverage_status": "Не охвачен / В плане / Выявлен",
+                                    "priority": "Срочно / По плану / Под вопросом",
+                                    "recommended_format": "Интервью / Воркшоп / Письменный запрос",
+                                    "notes": "доп. информация"
                                   }
                                 ]
 
     Returns:
-        Path to the updated stakeholder registry file.
+        Путь к обновлённому файлу реестра стейкхолдеров.
     """
-    logger.info(f"4.2 Updating stakeholder registry: project='{project_name}', source='{session_source}'")
+    logger.info(f"4.2 Обновление реестра стейкхолдеров: проект='{project_name}', источник='{session_source}'")
 
     incoming, error = parse_json_dict_list(
         new_stakeholders_json, "new_stakeholders_json",
@@ -683,7 +683,7 @@ def update_stakeholder_registry(
             f"| {s.get('name', '—')} | {s.get('role', '—')} | "
             f"{s.get('department', '—')} | {s.get('found_through', '—')} | "
             f"{s.get('influence', '—')} | {s.get('interest', '—')} | "
-            f"{s.get('attitude', 'Unknown')} | {s.get('coverage_status', '—')} | "
+            f"{s.get('attitude', 'Неизвестно')} | {s.get('coverage_status', '—')} | "
             f"{s.get('priority', '—')} | {s.get('recommended_format', '—')} |"
         )
 
@@ -711,32 +711,32 @@ def update_stakeholder_registry(
         name = s.get('name', '—')
         role = s.get('role', '—')
         why = s.get('why_important', '')
-        chain_lines.append(f"- **{name}** ({role}) ← via: {source}" + (f"\n  > {why}" if why else ""))
+        chain_lines.append(f"- **{name}** ({role}) ← через: {source}" + (f"\n  > {why}" if why else ""))
 
     # Not covered — separate action list (full registry).
     uncovered = [s for s in existing if s.get('coverage_status') == 'Not covered']
     urgent = [s for s in uncovered if s.get('priority') == 'Urgent']
     uncovered_block = ""
     if uncovered:
-        uncovered_block = "\n## ⚠️ Require Elicitation Coverage\n\n"
+        uncovered_block = "\n## ⚠️ Требуют охвата выявлением\n\n"
         if urgent:
-            uncovered_block += "### Urgent\n"
+            uncovered_block += "### Срочно\n"
             for s in urgent:
                 uncovered_block += (
                     f"- **{s.get('name', '—')}** ({s.get('role', '—')}) — "
-                    f"{s.get('recommended_format', 'Interview')}\n"
-                    f"  Why important: {s.get('why_important', '—')}\n"
+                    f"{s.get('recommended_format', 'Интервью')}\n"
+                    f"  Почему важен: {s.get('why_important', '—')}\n"
                 )
-        not_urgent = [s for s in uncovered if s.get('priority') != 'Urgent']
+        not_urgent = [s for s in uncovered if s.get('priority') != 'Срочно']
         if not_urgent:
-            uncovered_block += "\n### As Planned\n"
+            uncovered_block += "\n### По плану\n"
             for s in not_urgent:
                 uncovered_block += (
                     f"- **{s.get('name', '—')}** ({s.get('role', '—')}) — "
-                    f"{s.get('recommended_format', 'Interview')}\n"
+                    f"{s.get('recommended_format', 'Интервью')}\n"
                 )
 
-    content = f"""# Stakeholder Registry (Living Document)
+    content = f"""# Реестр стейкхолдеров (живой документ)
 
 **Project:** {project_name}
 **Last updated:** {today}
@@ -757,9 +757,9 @@ def update_stakeholder_registry(
 
 ---
 
-## Discovery Chain
+## Цепочка обнаружения
 
-{chr(10).join(chain_lines) if chain_lines else "— No data —"}
+{chr(10).join(chain_lines) if chain_lines else "— Нет данных —"}
 
 {uncovered_block}
 ---

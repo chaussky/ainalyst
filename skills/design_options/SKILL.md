@@ -1,56 +1,56 @@
 ---
 name: design_options
 description: >
-  BABOK 7.5 skill — Define Design Options. Use this skill when the BA moves
-  from requirements to implementation options: choosing a build/buy/hybrid approach,
-  evaluating technical alternatives, describing trade-offs, and preparing a recommendation.
-  Triggers: "design options", "build vs buy", "implementation options",
-  "how to implement", "technical alternatives", "solution options".
-project: "AI-powered Platform AInalyst"
+  Скилл BABOK 7.5 — Определение вариантов дизайна. Используй этот скилл когда
+  BA переходит от требований к вариантам реализации: выбирает build/buy/hybrid подход,
+  оценивает технические альтернативы, описывает компромиссы и готовит рекомендацию.
+  Триггеры: «варианты дизайна», «design options», «build vs buy», «варианты реализации»,
+  «как реализовать», «технические альтернативы», «solution options».
+project: "AI-powered Platform AInalyst (AI Платформа AIналитик)"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
 # SKILL.md — BABOK 7.5 Define Design Options
 
-## What this task is about
+## Суть задачи
 
-7.5 is the moment when the BA stops being a "needs recorder" and becomes a
-**solution architect**. The task synthesizes everything accumulated in the project
-and translates requirements into concrete implementation options.
+7.5 — момент, когда BA перестаёт быть «регистратором потребностей» и становится
+**архитектором решения**. Задача синтезирует всё накопленное в проекте
+и переводит требования в конкретные варианты реализации.
 
-Under BABOK v3 this task merged three tasks from v2:
-- Determine Solution Approach (BA chooses Build/Buy/Hybrid)
-- Assess Proposed Solution (BA evaluates options)
-- Allocation Requirements (BA allocates requirements across releases)
+По BABOK v3 задача объединила три задачи из v2:
+- Determine Solution Approach (BA выбирает Build/Buy/Hybrid)
+- Assess Proposed Solution (BA оценивает варианты)
+- Allocation Requirements (BA распределяет req по версиям)
 
-**Task output → 7.6 Analyze Potential Value and Recommend Solution**
+**Результат задачи → 7.6 Analyze Value and Recommend Solution**
 
 ---
 
-## Inputs (all optional — graceful degradation)
+## Входы (все опциональны — graceful degradation)
 
-| File | Source | What we take from it |
+| Файл | Источник | Что берём |
 |------|----------|-----------|
-| `{project}_traceability_repo.json` | 5.1 | Graph of `depends` links for allocation |
-| `{project}_prioritization.json` | 5.3 | Priorities (Must/Should/Could/Won't) for auto_suggest |
-| `{project}_business_context.json` | 7.3 | Business objectives, Future State, constraints |
+| `{project}_traceability_repo.json` | 5.1 | Граф `depends`-связей для allocation |
+| `{project}_prioritization.json` | 5.3 | Приоритеты (Must/Should/Could/Won't) для auto_suggest |
+| `{project}_business_context.json` | 7.3 | Бизнес-цели, Future State, ограничения |
 | `{project}_architecture.json` | 7.4 | Viewpoints, gaps, coverage matrix |
-| `{project}_change_strategy.json` | 6.4 | Change type, scope, constraints |
+| `{project}_change_strategy.json` | 6.4 | Тип изменения, скоуп, ограничения |
 
 ---
 
 ## Pipeline
 
 ```
-1. set_change_strategy          ← [optional] record the change strategy
-2. create_design_option × N     ← create 2-3 options (Build / Buy / Hybrid)
-3. allocate_requirements        ← allocate requirements to releases for each option
-4. compare_design_options       ← compare options against criteria
-5. save_design_options_report   ← final document → 7.6
+1. set_change_strategy          ← [опционально] зафиксировать стратегию изменения
+2. create_design_option × N     ← создать 2-3 варианта (Build / Buy / Hybrid)
+3. allocate_requirements        ← распределить req по версиям для каждого варианта
+4. compare_design_options       ← сравнить варианты по критериям
+5. save_design_options_report   ← финальный документ → 7.6
 ```
 
 ---
 
-## MCP tools
+## MCP-инструменты
 
 ### 1. `set_change_strategy`
 **When:** ONLY if task 6.4 (Define Change Strategy) has NOT been done. 6.4 is the authoritative
@@ -81,110 +81,110 @@ disk, so it is scheduled for the CLI port rather than done piecemeal.
 ---
 
 ### 2. `create_design_option`
-**When:** for each solution option (usually 2-3 options).
-**Idempotent:** calling again with the same `option_id` updates the option.
+**Когда:** для каждого варианта решения (обычно 2–3 варианта).
+**Идемпотентен:** повторный вызов с тем же `option_id` обновляет вариант.
 
-**Approaches:**
-- `build` — develop from scratch
-- `buy` — off-the-shelf solution / SaaS
-- `hybrid` — combination
+**Подходы:**
+- `build` — разработка с нуля
+- `buy` — готовое решение / SaaS
+- `hybrid` — комбинация
 
-**Key fields:**
-- `components_json` — list of solution components: `'["Backend API", "Web UI", "Database"]'`
-- `improvement_opportunities_json` — array of improvement opportunities:
-  `'[{"type": "efficiency", "description": "Automatic report generation"}]'`
-  Types: `efficiency` / `information_access` / `new_capability`
-- `effectiveness_measures_json` — success metrics: `'["Reduce processing time by 40%"]'`
-- `vendor_notes` — for buy/hybrid approaches: vendor assessment, cost, constraints
+**Ключевые поля:**
+- `components_json` — список компонентов решения: `'["Backend API", "Web UI", "БД"]'`
+- `improvement_opportunities_json` — массив возможностей улучшения:
+  `'[{"type": "efficiency", "description": "Автоматическое формирование отчётов"}]'`
+  Типы: `efficiency` / `information_access` / `new_capability`
+- `effectiveness_measures_json` — метрики успеха: `'["Снижение времени обработки на 40%"]'`
+- `vendor_notes` — для подходов buy/hybrid: оценка вендора, стоимость, ограничения
 
-**Reference:** `references/design_options_guide.md` — more on approaches and opportunity types
+**Справочник:** `references/design_options_guide.md` — подробнее о подходах и типах возможностей
 
 ---
 
 ### 3. `allocate_requirements`
-**When:** after creating the design options, for each option.
-**What it does:** allocates requirements to releases v1 / v2 / out_of_scope.
+**Когда:** после создания вариантов дизайна, для каждого варианта.
+**Что делает:** распределяет req по версиям v1 / v2 / out_of_scope.
 
-**auto_suggest=True mode (recommended):**
-- Reads priorities from the 5.1 repository (the `priority` field on each requirement)
+**Режим auto_suggest=True (рекомендуется):**
+- Читает приоритеты из репозитория 5.1 (поле `priority` в req)
 - Must → v1, Should → v1/v2, Could → v2, Won't → out_of_scope
-- Produces a suggestion — the BA confirms or overrides it
+- Выдаёт предложение — BA подтверждает или переопределяет
 
-**Manual override via assignments_json:**
+**Ручное переопределение через assignments_json:**
 ```json
 [
-  {"req_id": "FR-001", "version": "v1", "rationale": "Critical for MVP"},
-  {"req_id": "FR-010", "version": "out_of_scope", "rationale": "Out of project scope"}
+  {"req_id": "FR-001", "version": "v1", "rationale": "Критично для MVP"},
+  {"req_id": "FR-010", "version": "out_of_scope", "rationale": "Не входит в проект"}
 ]
 ```
 
-**Depends-conflict check:**
-After confirmation — automatically checks the 5.1 graph.
-If requirement A (v1) depends on requirement B (v2) → a warning is raised with a suggested fix.
+**Проверка depends-конфликтов:**
+После утверждения — автоматически проверяет граф 5.1.
+Если req A (v1) зависит от req B (v2) → предупреждение с предложением исправить.
 
 ---
 
 ### 4. `compare_design_options`
-**When:** after creating and allocating all options.
-**What it does:** builds a comparison matrix against criteria.
+**Когда:** после создания и allocation всех вариантов.
+**Что делает:** строит сравнительную матрицу по критериям.
 
-Default criteria: cost, speed, risk, requirements coverage, flexibility.
-Custom criteria are passed via `criteria_json`.
+Дефолтные критерии: стоимость, скорость, риски, покрытие требований, гибкость.
+Кастомные критерии передаются через `criteria_json`.
 
-**Result:** Comparison Document for stakeholders → 4.4
+**Результат:** Comparison Document для стейкхолдеров → 4.4
 
 ---
 
 ### 5. `save_design_options_report`
-**When:** final step — all options have been described and compared.
-**What it includes:** all options + allocation map + improvement opportunities + BA recommendation.
+**Когда:** финальный шаг — все варианты описаны и сравнены.
+**Что включает:** все варианты + allocation map + improvement opportunities + рекомендация BA.
 
-The `recommended_option_id` parameter is optional: the BA can give a preliminary view,
-but the final solution recommendation belongs to task 7.6.
+Параметр `recommended_option_id` — опциональный: BA может дать предварительный вывод,
+но финальная рекомендация решения — в задаче 7.6.
 
-**Result:** the Design Options Report is saved via `save_artifact` (prefix `7_5_design_options`) → 7.6
+**Результат:** Design Options Report сохраняется через `save_artifact` (префикс `7_5_design_options`) → 7.6
 
 ---
 
-## Typical workflow
+## Типичный сценарий работы
 
-**Context:** project "CRM system", 45 requirements in the 5.1 repository, prioritization completed in 5.3.
+**Контекст:** проект «CRM-система», 45 требований в репозитории 5.1, приоритизация выполнена в 5.3.
 
-1. Record the change strategy:
-   - `set_change_strategy(project_id="crm", change_type="technology", scope="Replace legacy CRM", constraints="Budget $200k, 12-month timeline")`
+1. Зафиксируй стратегию изменения:
+   - `set_change_strategy(project_id="crm", change_type="technology", scope="Замена legacy CRM", constraints="Бюджет $200k, срок 12 месяцев")`
 
-2. Create 3 options:
-   - OPT-001 Build: in-house development
+2. Создай 3 варианта:
+   - OPT-001 Build: собственная разработка
    - OPT-002 Buy: Salesforce
-   - OPT-003 Hybrid: open-source CRM + custom modules
+   - OPT-003 Hybrid: open-source CRM + кастомные модули
 
-3. Run allocation for each option:
+3. Для каждого варианта запусти allocation:
    - `allocate_requirements(project_id="crm", option_id="OPT-001", auto_suggest=True)`
-   - Review the suggestion, supply overrides if needed
+   - Проверь предложение, передай переопределения если нужно
 
-4. Compare the options:
+4. Сравни варианты:
    - `compare_design_options(project_id="crm")`
 
-5. Save the final report:
-   - `save_design_options_report(project_id="crm", recommended_option_id="OPT-003", notes="Hybrid offers the best cost/coverage ratio")`
+5. Сохрани финальный отчёт:
+   - `save_design_options_report(project_id="crm", recommended_option_id="OPT-003", notes="Hybrid оптимален по соотношению цена/покрытие")`
 
 ---
 
-## Task artifacts
+## Артефакты задачи
 
-| File | Format | Purpose |
+| Файл | Формат | Назначение |
 |------|--------|-----------|
-| `{project}_design_options.json` | JSON | Options + allocation (main file) |
-| `{project}_change_strategy.json` | JSON | 6.4 surrogate |
+| `{project}_design_options.json` | JSON | Варианты + allocation (основной файл) |
+| `{project}_change_strategy.json` | JSON | Суррогат 6.4 |
 | `7_5_design_options_*.md` | Markdown | Design Options Report → 7.6 |
 
 ---
 
-## Reference materials
+## Справочные материалы
 
-> Read `references/design_options_guide.md` when you need:
-> - More detail on the Build/Buy/Hybrid approaches
-> - BABOK Improvement Opportunity types
-> - Comparison criteria and their weights
-> - Allocation patterns
+> Читай `references/design_options_guide.md` если нужно:
+> - Подробнее о подходах Build/Buy/Hybrid
+> - Типы Improvement Opportunities по BABOK
+> - Критерии сравнения и их веса
+> - Паттерны allocation
 > - Vendor Assessment

@@ -52,10 +52,10 @@ REPO_FILENAME = "traceability_repo.json"
 # file too, and the name has to be agreed in one place. A consumer guessing a
 # producer's filename is the single most repeated defect in this codebase.
 
-# Valid decision statuses
+# Допустимые статусы решений
 VALID_DECISIONS = {"approved", "conditional", "rejected", "abstained"}
 
-# Requirement statuses in the 5.5 pipeline
+# Статусы требований в pipeline 5.5
 STATUS_PENDING = "pending_approval"
 STATUS_APPROVED = "approved"
 STATUS_CONDITIONAL = "conditional_approved"
@@ -63,7 +63,7 @@ STATUS_REJECTED = "rejected"
 
 
 # ---------------------------------------------------------------------------
-# Utilities — file layer
+# Утилиты — файловый слой
 # ---------------------------------------------------------------------------
 
 def _repo_path(project_name: str) -> str:
@@ -122,7 +122,7 @@ def _get_package(history: dict, package_id: str) -> Optional[dict]:
 
 
 def _get_req_approval_summary(package: dict, req_id: str) -> dict:
-    """Collects all decisions for a specific requirement across all stakeholders."""
+    """Собирает все решения по конкретному требованию из всех стейкхолдеров."""
     decisions = []
     for sh_name, sh_data in package.get("stakeholder_decisions", {}).items():
         for rd in sh_data.get("req_decisions", []):
@@ -334,7 +334,7 @@ def _verification_state(repo: dict, package: dict) -> dict:
 
 
 def _get_cr_context(repo: dict, req_id: str) -> list:
-    """Looks for CRs affecting the requirement (modifies links)."""
+    """Ищет CR, затрагивающие требование (modifies-связи)."""
     cr_refs = []
     for lnk in repo.get("links", []):
         if lnk.get("to") == req_id and lnk.get("relation") == "modifies":
@@ -350,7 +350,7 @@ def _get_cr_context(repo: dict, req_id: str) -> list:
 
 
 # ---------------------------------------------------------------------------
-# 5.5.1 — Prepare a package for approval
+# 5.5.1 — Подготовить пакет к согласованию
 # ---------------------------------------------------------------------------
 
 # The methodology is a 3.1 decision; before B3-1 the BA restated it here by hand and
@@ -485,10 +485,10 @@ def prepare_approval_package(
     sprint_number: str = "",
 ) -> str:
     """
-    BABOK 5.5 — Step 1: Prepare a requirements package for approval.
+    BABOK 5.5 — Шаг 1: Подготовить пакет требований к согласованию.
 
-    Gathers requirements from the 5.1 repository, adds context from 5.3 and 5.4,
-    and builds an Approval Package for stakeholders.
+    Собирает требования из репозитория 5.1, добавляет контекст из 5.3 и 5.4,
+    формирует Approval Package для стейкхолдеров.
 
     Args:
         project_name:   Project name.
@@ -507,8 +507,8 @@ def prepare_approval_package(
         sprint_number:  Sprint number (agile only, e.g.: "5").
 
     Returns:
-        A Markdown Approval Package to hand off to stakeholders.
-        Creates a package entry in {project}_approval_history.json.
+        Markdown Approval Package для передачи стейкхолдерам.
+        Создаёт запись пакета в {project}_approval_history.json.
     """
     logger.info(f"prepare_approval_package: {package_id} / {project_name}")
 
@@ -520,7 +520,7 @@ def prepare_approval_package(
         return shape_error
 
     if not req_ids:
-        return "❌ Error: the requirement list cannot be empty."
+        return "❌ Ошибка: список требований не может быть пустым."
 
     approach, approach_source, approach_error = _resolve_approach(
         project_name, approach)
@@ -530,22 +530,22 @@ def prepare_approval_package(
     repo = _load_repo(project_name)
     history = _load_approval_history(project_name)
 
-    # Check: does the package already exist?
+    # Проверка: пакет уже существует?
     if package_id in history["packages"]:
         return (
-            f"⚠️ Package `{package_id}` already exists for project `{project_name}`.\n"
-            f"Use a different ID, or review the existing package via `check_approval_status`."
+            f"⚠️ Пакет `{package_id}` уже существует для проекта `{project_name}`.\n"
+            f"Используйте другой ID или проверьте существующий пакет через `check_approval_status`."
         )
 
-    # Check: do the requirements exist?
+    # Проверка: требования существуют?
     missing = [rid for rid in req_ids if not _find_node(repo, rid)]
     if missing:
         return (
-            f"⚠️ The following requirements were not found in the repository: {missing}\n"
-            f"Check the ID, or add the requirements via `init_traceability_repo` (5.1)."
+            f"⚠️ Следующие требования не найдены в репозитории: {missing}\n"
+            f"Проверьте ID или добавьте требования через `init_traceability_repo` (5.1)."
         )
 
-    # Gather requirement data
+    # Собираем данные по требованиям
     req_details = []
     cr_warnings = []
     for rid in req_ids:
@@ -599,7 +599,7 @@ def prepare_approval_package(
             "cr_refs": cr_refs,
         })
 
-    # Create the package entry in approval_history
+    # Создаём запись пакета в approval_history
     package_record = {
         "package_id": package_id,
         "package_title": package_title,
@@ -637,10 +637,10 @@ def prepare_approval_package(
 
     # Build the Approval Package
     approach_label = "Predictive / Waterfall" if approach == "predictive" else "Agile"
-    sprint_label = f" | Sprint: {sprint_number}" if sprint_number else ""
+    sprint_label = f" | Спринт: {sprint_number}" if sprint_number else ""
 
     lines = [
-        f"<!-- BABOK 5.5 — Approval Package, Project: {project_name}, Package: {package_id}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.5 — Approval Package, Проект: {project_name}, Пакет: {package_id}, Дата: {date.today()} -->",
         "",
         f"# Approval Package: {package_title}",
         f"**Project:** {project_name}  ",
@@ -654,15 +654,15 @@ def prepare_approval_package(
         "",
     ]
 
-    # Warnings about open CRs
+    # Предупреждения об открытых CR
     if cr_warnings:
-        lines += ["## ⚠️ Warnings: open Change Requests", ""]
+        lines += ["## ⚠️ Предупреждения: открытые Change Requests", ""]
         for rid, open_crs in cr_warnings:
             cr_list = ", ".join(f"`{c['cr_id']}` ({c['status']})" for c in open_crs)
-            lines.append(f"- `{rid}` is affected by open CRs: {cr_list}")
-        lines += ["", "Recommend closing the CR (5.4) before approval.", ""]
+            lines.append(f"- `{rid}` затронуто открытыми CR: {cr_list}")
+        lines += ["", "Рекомендуется закрыть CR (5.4) перед согласованием.", ""]
 
-    # Requirements by type (filtered by audience)
+    # Требования по типам (фильтрация по audience)
     if audience == "business":
         filtered = [r for r in req_details if r["type"] in ("business", "stakeholder")]
         if not filtered:
@@ -678,22 +678,22 @@ def prepare_approval_package(
     else:
         filtered = req_details
 
-    lines += ["## Requirements for approval", ""]
+    lines += ["## Требования для согласования", ""]
 
     for req in filtered:
-        priority_str = f" | Priority: {req['priority']}" if req['priority'] != "—" else ""
+        priority_str = f" | Приоритет: {req['priority']}" if req['priority'] != "—" else ""
         lines += [
             f"### {req['id']}: {req['title']}",
-            f"**Type:** {req['type']} | **Version:** {req['version']}{priority_str}  ",
+            f"**Тип:** {req['type']} | **Версия:** {req['version']}{priority_str}  ",
             f"**Owner:** {req['owner']}  ",
         ]
         if req.get("description"):
             lines += ["", req["description"], ""]
         if req.get("acceptance_criteria"):
-            lines += [f"**Acceptance criteria:** {req['acceptance_criteria']}", ""]
+            lines += [f"**Критерии приёмки:** {req['acceptance_criteria']}", ""]
         if req["cr_refs"]:
             cr_info = "; ".join(f"{c['cr_id']} ({c['status']}/{c['decision']})" for c in req["cr_refs"])
-            lines += [f"**CR history:** {cr_info}", ""]
+            lines += [f"**CR-история:** {cr_info}", ""]
         lines.append("")
 
     gov_lines, gov_deadline = _governance_block(project_name)
@@ -720,7 +720,7 @@ def prepare_approval_package(
             + cadence_note
         )
     else:
-        sprint_ref = f" sprint {sprint_number}" if sprint_number else ""
+        sprint_ref = f" спринта {sprint_number}" if sprint_number else ""
         instruction = (
             f"For Sprint Planning{sprint_ref}. The Product Owner reviews and approves the backlog.\n"
             "Requirements accepted into the sprint will get status Approved and join the Sprint Baseline."
@@ -754,18 +754,18 @@ def prepare_approval_package(
     lines += [
         "---",
         "",
-        "## Instructions for stakeholders",
+        "## Инструкция для стейкхолдеров",
         "",
         instruction,
         "",
         "---",
         "",
-        "## Next step",
+        "## Следующий шаг",
         "",
-        f"Once stakeholder responses are in — call `record_approval_decision`:",
+        f"После получения ответов стейкхолдеров — вызывайте `record_approval_decision`:",
         f"  - `project_name`: \"{project_name}\"",
         f"  - `package_id`: \"{package_id}\"",
-        f"  - `stakeholder_name`: the stakeholder's name",
+        f"  - `stakeholder_name`: имя стейкхолдера",
         f"  - `decision`: approved / conditional / rejected / abstained",
     ]
 
@@ -776,7 +776,7 @@ def prepare_approval_package(
 
 
 # ---------------------------------------------------------------------------
-# 5.5.2 — Record a stakeholder's decision
+# 5.5.2 — Зафиксировать решение стейкхолдера
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -792,31 +792,31 @@ def record_approval_decision(
     comment: str = "",
 ) -> str:
     """
-    BABOK 5.5 — Step 2: Record a stakeholder's decision on the package.
+    BABOK 5.5 — Шаг 2: Зафиксировать решение стейкхолдера по пакету.
 
-    Called separately for each stakeholder (similar to add_stakeholder_scores in 5.3).
-    On rejected — automatically analyzes context from 5.3 and 5.4 to flag conflicts.
+    Вызывается отдельно для каждого стейкхолдера (аналог add_stakeholder_scores в 5.3).
+    При rejected — автоматически анализирует контекст из 5.3 и 5.4 для флагования конфликтов.
 
     Args:
-        project_name:       Project name.
-        package_id:         Package ID (from prepare_approval_package).
-        stakeholder_name:   The stakeholder's name or role.
-        stakeholder_raci:   RACI role: accountable / responsible / consulted.
-                            Rejected from accountable/responsible = a baseline blocker.
-                            Rejected from consulted = input for risk assessment.
-        decision:           Overall decision on the package: approved / conditional / rejected / abstained.
-                            Used if req_decisions_json is empty — applied to all requirements.
-        req_decisions_json: JSON list of decisions for individual requirements in the package.
-                            If provided — overrides the overall decision for the listed requirements.
-                            Format:
+        project_name:       Название проекта.
+        package_id:         ID пакета (из prepare_approval_package).
+        stakeholder_name:   Имя или роль стейкхолдера.
+        stakeholder_raci:   Роль в RACI: accountable / responsible / consulted.
+                            Rejected от accountable/responsible = блокировщик baseline.
+                            Rejected от consulted = input для risk assessment.
+        decision:           Общее решение по пакету: approved / conditional / rejected / abstained.
+                            Используется если req_decisions_json пуст — применяется ко всем req.
+        req_decisions_json: JSON-список решений по отдельным требованиям пакета.
+                            Если передан — overrides общий decision для указанных req.
+                            Формат:
                             [
                               {"req_id": "FR-001", "decision": "approved"},
                               {"req_id": "FR-002", "decision": "conditional",
-                               "condition_text": "Clarify the acceptance criterion",
+                               "condition_text": "Уточнить критерий приёмки",
                                "condition_deadline": "2026-04-01",
-                               "condition_owner": "J. Smith"},
+                               "condition_owner": "Иванов А."},
                               {"req_id": "FR-003", "decision": "rejected",
-                               "rejection_reason": "Out of scope"}
+                               "rejection_reason": "За пределами скоупа"}
                             ]
                             If empty ([]) — decision applies to all requirements in the package.
                             IMPORTANT: a PARTIAL list works the same way. `decision` is
@@ -831,8 +831,8 @@ def record_approval_decision(
         comment:            Additional comment from the stakeholder.
 
     Returns:
-        Confirmation that the decision was recorded, conflict analysis (on rejected),
-        updated requirement statuses.
+        Подтверждение записи решения, анализ конфликтов (при rejected),
+        обновлённые статусы требований.
     """
     logger.info(f"record_approval_decision: {package_id} / {stakeholder_name} / {project_name}")
 
@@ -850,20 +850,20 @@ def record_approval_decision(
     package = _get_package(history, package_id)
     if not package:
         return (
-            f"❌ Package `{package_id}` not found for project `{project_name}`.\n"
-            f"Run `prepare_approval_package` first."
+            f"❌ Пакет `{package_id}` не найден для проекта `{project_name}`.\n"
+            f"Сначала выполните `prepare_approval_package`."
         )
 
     if package.get("status") == "baselined":
-        return f"⚠️ Package `{package_id}` has already been baselined. Changes are not possible."
+        return f"⚠️ Пакет `{package_id}` уже переведён в baseline. Изменения невозможны."
 
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
 
-    # If req_decisions is empty — apply the overall decision to all requirements
+    # Если req_decisions пуст — применяем общий decision ко всем req
     if not req_decisions:
         if decision == "rejected" and not rejection_reason:
-            return "❌ When decision=rejected, you must provide `rejection_reason`."
+            return "❌ При decision=rejected необходимо указать `rejection_reason`."
         req_decisions = []
         for rid in req_ids:
             rd = {"req_id": rid, "decision": decision}
@@ -871,24 +871,24 @@ def record_approval_decision(
                 rd["rejection_reason"] = rejection_reason
             req_decisions.append(rd)
 
-    # Validation: are all req_id values part of the package?
+    # Валидация: все req_id из пакета?
     unknown_reqs = [rd["req_id"] for rd in req_decisions if rd["req_id"] not in req_ids]
     if unknown_reqs:
         return (
-            f"⚠️ Requirements {unknown_reqs} are not part of package `{package_id}`.\n"
-            f"The package contains: {req_ids}"
+            f"⚠️ Требования {unknown_reqs} не входят в пакет `{package_id}`.\n"
+            f"Пакет содержит: {req_ids}"
         )
 
-    # Conditional validation
+    # Валидация conditional
     for rd in req_decisions:
         if rd["decision"] == "conditional":
             if not rd.get("condition_text"):
                 return (
-                    f"❌ For a conditional approval of requirement `{rd['req_id']}` "
-                    f"you must provide `condition_text` in req_decisions."
+                    f"❌ Для conditional-одобрения требования `{rd['req_id']}` "
+                    f"необходимо указать `condition_text` в req_decisions."
                 )
 
-    # For requirements not mentioned in req_decisions — apply the overall decision
+    # Для req не упомянутых в req_decisions — применяем общий decision
     mentioned = {rd["req_id"] for rd in req_decisions}
     for rid in req_ids:
         if rid not in mentioned:
@@ -897,7 +897,7 @@ def record_approval_decision(
                 rd["rejection_reason"] = rejection_reason
             req_decisions.append(rd)
 
-    # Conflict analysis on rejected — context from 5.3 and 5.4
+    # Анализ конфликтов при rejected — контекст из 5.3 и 5.4
     conflict_analysis = []
     for rd in req_decisions:
         if rd["decision"] == "rejected":
@@ -906,7 +906,7 @@ def record_approval_decision(
             conflicts = []
 
             if node:
-                # Check the priority from 5.3
+                # Проверяем приоритет из 5.3
                 priority = node.get("priority", "")
                 # Both scales: 5.3 writes MoSCoW, 7.1 writes High/Medium/Low. Testing
                 # for `Must` alone meant this warning never fired on a project that
@@ -918,12 +918,12 @@ def record_approval_decision(
                 elif priority in ("Should", "Could", "Medium"):
                     conflicts.append(f"🟡 {priority} priority — recommend reviewing the necessity")
 
-                # WSJF score if present
+                # WSJF-скор если есть
                 wsjf = node.get("wsjf_score")
                 if wsjf and float(wsjf) > 2.0:
-                    conflicts.append(f"🟡 WSJF score {wsjf} (5.3) — high business value")
+                    conflicts.append(f"🟡 WSJF-скор {wsjf} (5.3) — высокая бизнес-ценность")
 
-            # Check the CR from 5.4
+            # Проверяем CR из 5.4
             cr_refs = _get_cr_context(repo, req_id)
             # 5.4 CR statuses are open/approved/approved_modified/deferred/rejected;
             # "under_change" belongs to the REQUIREMENT status vocabulary and was a
@@ -931,7 +931,7 @@ def record_approval_decision(
             open_crs = [c for c in cr_refs if c["status"] == "open"]
             if open_crs:
                 cr_list = ", ".join(f"`{c['cr_id']}` ({c['status']})" for c in open_crs)
-                conflicts.append(f"🟡 Open CRs from 5.4: {cr_list} — the requirement is under change")
+                conflicts.append(f"🟡 Открытые CR из 5.4: {cr_list} — требование под изменением")
 
             if conflicts:
                 conflict_analysis.append({
@@ -941,7 +941,7 @@ def record_approval_decision(
                     "conflicts": conflicts,
                 })
 
-    # Save the stakeholder's decision
+    # Сохраняем решение стейкхолдера
     stakeholder_record = {
         "stakeholder_name": stakeholder_name,
         "raci": stakeholder_raci,
@@ -955,7 +955,7 @@ def record_approval_decision(
     package["stakeholder_decisions"][stakeholder_name] = stakeholder_record
     _save_approval_history(project_name, history)
 
-    # Update requirement statuses in the 5.1 repository
+    # Обновляем статусы требований в репозитории 5.1
     updated_statuses = {}
     for rid in req_ids:
         new_status = _compute_req_status(rid, package)
@@ -976,7 +976,7 @@ def record_approval_decision(
 
     _save_repo(project_name, repo)
 
-    # Build the report
+    # Формируем отчёт
     decision_icon = {
         "approved": "✅",
         "conditional": "🟡",
@@ -985,20 +985,20 @@ def record_approval_decision(
     }.get(decision, "—")
 
     lines = [
-        f"<!-- BABOK 5.5 — Approval Decision, Project: {project_name}, Package: {package_id}, "
-        f"Stakeholder: {stakeholder_name}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.5 — Approval Decision, Проект: {project_name}, Пакет: {package_id}, "
+        f"Стейкхолдер: {stakeholder_name}, Дата: {date.today()} -->",
         "",
-        f"## {decision_icon} Decision recorded: {stakeholder_name}",
+        f"## {decision_icon} Решение зафиксировано: {stakeholder_name}",
         "",
-        f"**Package:** {package_id} | **RACI:** {stakeholder_raci} | **Date:** {date.today()}",
-        f"**Overall decision:** {decision}",
+        f"**Пакет:** {package_id} | **RACI:** {stakeholder_raci} | **Дата:** {date.today()}",
+        f"**Общее решение:** {decision}",
     ]
 
     if comment:
-        lines += [f"**Comment:** {comment}", ""]
+        lines += [f"**Комментарий:** {comment}", ""]
 
-    # Details by requirement
-    lines += ["", "### Decisions by requirement", ""]
+    # Детали по требованиям
+    lines += ["", "### Решения по требованиям", ""]
     for rd in req_decisions:
         rid = rd["req_id"]
         dec = rd["decision"]
@@ -1008,37 +1008,37 @@ def record_approval_decision(
 
         line = f"- {dec_icon} `{rid}` {title}"
         if dec == "conditional":
-            line += f"\n  → Condition: {rd.get('condition_text', '—')}"
+            line += f"\n  → Условие: {rd.get('condition_text', '—')}"
             if rd.get("condition_deadline"):
-                line += f" | Deadline: {rd['condition_deadline']}"
+                line += f" | Дедлайн: {rd['condition_deadline']}"
             if rd.get("condition_owner"):
-                line += f" | Owner: {rd['condition_owner']}"
+                line += f" | Ответственный: {rd['condition_owner']}"
         elif dec == "rejected":
-            line += f"\n  → Reason: {rd.get('rejection_reason', rejection_reason or '—')}"
+            line += f"\n  → Причина: {rd.get('rejection_reason', rejection_reason or '—')}"
         lines.append(line)
 
     lines.append("")
 
-    # Conflicts
+    # Конфликты
     if conflict_analysis:
-        lines += ["### ⚠️ Conflicts found", ""]
+        lines += ["### ⚠️ Обнаруженные конфликты", ""]
         for ca in conflict_analysis:
-            lines.append(f"**`{ca['req_id']}`** (rejected by {ca['stakeholder']}, role: {ca['raci']}):")
+            lines.append(f"**`{ca['req_id']}`** (отклонено {ca['stakeholder']}, роль: {ca['raci']}):")
             for c in ca["conflicts"]:
                 lines.append(f"  - {c}")
-        lines += ["", "The BA should review the conflicts before creating a baseline.", ""]
+        lines += ["", "BA рекомендуется проанализировать конфликты перед созданием baseline.", ""]
 
-    # RACI advice for rejected from consulted
+    # Совет по RACI при rejected от consulted
     rejected_req_ids = [rd["req_id"] for rd in req_decisions if rd["decision"] == "rejected"]
     if rejected_req_ids and stakeholder_raci == "consulted":
         lines += [
-            f"ℹ️ **{stakeholder_name}'s role is Consulted.** Rejected from C does not block the baseline.",
-            "Document the disagreement as a managed risk in `check_approval_status`.",
+            f"ℹ️ **Роль {stakeholder_name} — Consulted.** Rejected от C не блокирует baseline.",
+            "Задокументируйте несогласие как управляемый риск в `check_approval_status`.",
             "",
         ]
 
-    # Updated statuses
-    lines += ["### Requirement statuses after the decision", ""]
+    # Обновлённые статусы
+    lines += ["### Статусы требований после решения", ""]
     for rid, status in updated_statuses.items():
         status_icon = {
             STATUS_APPROVED: "✅",
@@ -1052,20 +1052,20 @@ def record_approval_decision(
         "",
         "---",
         "",
-        "## ➡️ Next step",
+        "## ➡️ Следующий шаг",
         "",
     ]
 
     has_conditional = any(rd["decision"] == "conditional" for rd in req_decisions)
     if has_conditional:
         lines += [
-            "There are conditional approvals. Once the conditions are met, call `close_approval_condition`.",
-            "Then check the package's readiness via `check_approval_status`.",
+            "Есть условные одобрения. После выполнения условий вызовите `close_approval_condition`.",
+            "Затем проверьте готовность пакета через `check_approval_status`.",
         ]
     else:
         lines += [
-            "Record the decisions of the remaining stakeholders via `record_approval_decision`.",
-            "Once all decisions are in — check readiness via `check_approval_status`.",
+            "Запишите решения остальных стейкхолдеров через `record_approval_decision`.",
+            "После всех решений — проверьте готовность через `check_approval_status`.",
         ]
 
     # BABOK 3.3 .1 — cross-check against the planned decision authority.
@@ -1101,7 +1101,7 @@ def record_approval_decision(
 
 
 # ---------------------------------------------------------------------------
-# 5.5.3 — Close a condition (Conditional)
+# 5.5.3 — Закрыть условие (Conditional)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1114,41 +1114,41 @@ def close_approval_condition(
     resolution_notes: str,
 ) -> str:
     """
-    BABOK 5.5 — Step 3 (if needed): Close a satisfied condition.
+    BABOK 5.5 — Шаг 3 (при необходимости): Закрыть выполненное условие.
 
-    Once a conditional-approval condition has been satisfied, updates the
-    requirement's status from conditional_approved to approved.
+    После выполнения условия conditional-одобрения обновляет статус
+    требования с conditional_approved на approved.
 
     Args:
-        project_name:      Project name.
-        package_id:        Package ID.
-        req_id:             ID of the requirement with an open condition.
-        stakeholder_name:  Name of the stakeholder who set the condition.
-        resolution_notes:  How the condition was satisfied (what specifically changed).
+        project_name:      Название проекта.
+        package_id:        ID пакета.
+        req_id:            ID требования с открытым условием.
+        stakeholder_name:  Имя стейкхолдера, выставившего условие.
+        resolution_notes:  Как условие было закрыто (что конкретно изменилось).
 
     Returns:
-        Confirmation that the condition was closed, the requirement's updated status.
+        Подтверждение закрытия условия, обновлённый статус требования.
     """
     logger.info(f"close_approval_condition: {package_id} / {req_id} / {project_name}")
 
     history = _load_approval_history(project_name)
     package = _get_package(history, package_id)
     if not package:
-        return f"❌ Package `{package_id}` not found. Run `prepare_approval_package` first."
+        return f"❌ Пакет `{package_id}` не найден. Сначала выполните `prepare_approval_package`."
 
     sh_data = package["stakeholder_decisions"].get(stakeholder_name)
     if not sh_data:
         return (
-            f"❌ Stakeholder `{stakeholder_name}` not found in package `{package_id}`.\n"
-            f"Available stakeholders: {list(package['stakeholder_decisions'].keys())}"
+            f"❌ Стейкхолдер `{stakeholder_name}` не найден в пакете `{package_id}`.\n"
+            f"Доступные стейкхолдеры: {list(package['stakeholder_decisions'].keys())}"
         )
 
-    # Look for a conditional decision for req_id
+    # Ищем conditional-решение по req_id
     condition_found = False
     for rd in sh_data["req_decisions"]:
         if rd["req_id"] == req_id and rd["decision"] == "conditional":
             if rd.get("condition_closed"):
-                return f"⚠️ The condition for `{req_id}` from `{stakeholder_name}` is already closed."
+                return f"⚠️ Условие по `{req_id}` от `{stakeholder_name}` уже закрыто."
             rd["condition_closed"] = True
             rd["condition_closed_date"] = str(date.today())
             rd["resolution_notes"] = resolution_notes
@@ -1157,13 +1157,13 @@ def close_approval_condition(
 
     if not condition_found:
         return (
-            f"❌ No open condition found for requirement `{req_id}` from `{stakeholder_name}`.\n"
-            f"Check the req_id and stakeholder_name."
+            f"❌ Открытое условие по требованию `{req_id}` от `{stakeholder_name}` не найдено.\n"
+            f"Проверьте req_id и stakeholder_name."
         )
 
     _save_approval_history(project_name, history)
 
-    # Recompute the requirement's status
+    # Пересчитываем статус требования
     repo = _load_repo(project_name)
     node = _find_node(repo, req_id)
     new_status = _compute_req_status(req_id, package)
@@ -1183,27 +1183,27 @@ def close_approval_condition(
     status_icon = "✅" if new_status == STATUS_APPROVED else "🟡"
 
     return "\n".join([
-        f"<!-- BABOK 5.5 — Condition Closed, Project: {project_name}, "
-        f"Package: {package_id}, Requirement: {req_id}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.5 — Condition Closed, Проект: {project_name}, "
+        f"Пакет: {package_id}, Требование: {req_id}, Дата: {date.today()} -->",
         "",
-        f"## ✅ Condition closed: {req_id}",
+        f"## ✅ Условие закрыто: {req_id}",
         "",
-        f"**Stakeholder:** {stakeholder_name}  ",
-        f"**Closed on:** {date.today()}  ",
-        f"**Description:** {resolution_notes}  ",
+        f"**Стейкхолдер:** {stakeholder_name}  ",
+        f"**Дата закрытия:** {date.today()}  ",
+        f"**Описание:** {resolution_notes}  ",
         "",
-        f"**New requirement status:** {status_icon} `{new_status}`",
+        f"**Новый статус требования:** {status_icon} `{new_status}`",
         "",
         "---",
         "",
-        "## ➡️ Next step",
+        "## ➡️ Следующий шаг",
         "",
-        f"Check the readiness of package `{package_id}` via `check_approval_status`.",
+        f"Проверьте готовность пакета `{package_id}` через `check_approval_status`.",
     ])
 
 
 # ---------------------------------------------------------------------------
-# 5.5.4 — Baseline readiness dashboard
+# 5.5.4 — Дашборд готовности к baseline
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1213,25 +1213,25 @@ def check_approval_status(
     package_id: str,
 ) -> str:
     """
-    BABOK 5.5 — Step 4: Dashboard of the package's readiness to create a baseline.
+    BABOK 5.5 — Шаг 4: Дашборд готовности пакета к созданию baseline.
 
-    Analyzes all stakeholder decisions and gives a verdict:
-    ready / not ready for a baseline.
+    Анализирует все решения стейкхолдеров и даёт вердикт:
+    готов / не готов к baseline.
 
     Args:
-        project_name:  Project name.
-        package_id:    Package ID.
+        project_name:  Название проекта.
+        package_id:    ID пакета.
 
     Returns:
-        The package's full status: approval statistics, blockers, open conditions,
-        verdict on baseline readiness.
+        Полный статус пакета: статистика одобрений, блокеры, открытые условия,
+        вердикт готовности к baseline.
     """
     logger.info(f"check_approval_status: {package_id} / {project_name}")
 
     history = _load_approval_history(project_name)
     package = _get_package(history, package_id)
     if not package:
-        return f"❌ Package `{package_id}` not found. Run `prepare_approval_package` first."
+        return f"❌ Пакет `{package_id}` не найден. Сначала выполните `prepare_approval_package`."
 
     repo = _load_repo(project_name)
     req_ids = package["req_ids"]
@@ -1254,8 +1254,8 @@ def check_approval_status(
     # 7.2 verification — reported, never gated. See `_verification_state`.
     vstate = _verification_state(repo, package)
 
-    # Stakeholders without a decision (if the package was sent but there's no response)
-    # We don't store an "expected list" — we show those who did respond
+    # Стейкхолдеры без решения (если пакет был отправлен, но ответа нет)
+    # Мы не храним "ожидаемый список" — показываем тех кто ответил
     responding_stakeholders = list(package["stakeholder_decisions"].keys())
 
     # Verdict — from the shared gate, so the dashboard and create_requirements_baseline
@@ -1287,7 +1287,7 @@ def check_approval_status(
     if gate["low_approval"]:
         verdict_reasons.append(f"🔴 Only {approved_pct}% of requirements approved (minimum 70%)")
 
-    # Consulted-rejected (does not block, but we flag it)
+    # Consulted-rejected (не блокирует, но отмечаем)
     consulted_rejected = []
     for sh_name, sh_data in package["stakeholder_decisions"].items():
         if sh_data["raci"] == "consulted":
@@ -1299,27 +1299,27 @@ def check_approval_status(
                         "reason": rd.get("rejection_reason", "—"),
                     })
 
-    # Build the report
+    # Формируем отчёт
     verdict_icon = "✅" if can_baseline else ("🟡" if not blockers and not counts[STATUS_PENDING] else "🔴")
 
     lines = [
-        f"<!-- BABOK 5.5 — Approval Status, Project: {project_name}, Package: {package_id}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.5 — Approval Status, Проект: {project_name}, Пакет: {package_id}, Дата: {date.today()} -->",
         "",
-        f"## 📊 Package status: {package_id} — {package.get('package_title', '—')}",
+        f"## 📊 Статус пакета: {package_id} — {package.get('package_title', '—')}",
         "",
-        f"**Project:** {project_name} | **Date:** {date.today()}",
-        f"**Methodology:** {package.get('approach', '—')}",
-        f"**Stakeholders who responded:** {', '.join(responding_stakeholders) if responding_stakeholders else '(no responses)'}",
+        f"**Проект:** {project_name} | **Дата:** {date.today()}",
+        f"**Методология:** {package.get('approach', '—')}",
+        f"**Стейкхолдеры ответили:** {', '.join(responding_stakeholders) if responding_stakeholders else '(нет ответов)'}",
         "",
-        "### Approval statistics",
+        "### Статистика одобрений",
         "",
-        f"| Status | Count | % |",
-        f"|--------|-------|---|",
+        f"| Статус | Кол-во | % |",
+        f"|--------|--------|---|",
         f"| ✅ Approved | {counts[STATUS_APPROVED]} | {approved_pct}% |",
-        f"| 🟡 Conditional (open conditions) | {counts[STATUS_CONDITIONAL]} | {round(counts[STATUS_CONDITIONAL]/total*100) if total else 0}% |",
+        f"| 🟡 Conditional (открытые условия) | {counts[STATUS_CONDITIONAL]} | {round(counts[STATUS_CONDITIONAL]/total*100) if total else 0}% |",
         f"| ❌ Rejected | {counts[STATUS_REJECTED]} | {round(counts[STATUS_REJECTED]/total*100) if total else 0}% |",
         f"| ⏳ Pending | {counts[STATUS_PENDING]} | {round(counts[STATUS_PENDING]/total*100) if total else 0}% |",
-        f"| **Total** | **{total}** | **100%** |",
+        f"| **Итого** | **{total}** | **100%** |",
         "",
     ]
 
@@ -1352,28 +1352,28 @@ def check_approval_status(
         ]
 
     if blockers:
-        lines += ["### 🔴 Blockers (Rejected from Accountable/Responsible)", ""]
+        lines += ["### 🔴 Блокеры (Rejected от Accountable/Responsible)", ""]
         for b in blockers:
-            lines.append(f"- `{b['req_id']}` {b['title']} — rejected by `{b['stakeholder']}` ({b['raci']}): {b['reason']}")
+            lines.append(f"- `{b['req_id']}` {b['title']} — отклонено `{b['stakeholder']}` ({b['raci']}): {b['reason']}")
         lines.append("")
 
     if open_conditions:
-        lines += ["### 🟡 Open conditions (Conditional)", ""]
+        lines += ["### 🟡 Открытые условия (Conditional)", ""]
         for c in open_conditions:
             overdue_flag = " ⚠️ OVERDUE" if c.get("overdue") else (
                 " ⚠️ DEADLINE UNREADABLE" if c.get("deadline_unreadable") else "")
             deadline_str = f" | Deadline: {c['condition_deadline']}{overdue_flag}" if c['condition_deadline'] else ""
             lines.append(
                 f"- `{c['req_id']}` — {c['condition_text']}"
-                f"{deadline_str} | Owner: {c['condition_owner']}"
+                f"{deadline_str} | Ответственный: {c['condition_owner']}"
             )
         lines.append("")
 
     if consulted_rejected:
-        lines += ["### ℹ️ Rejections from Consulted (do not block the baseline)", ""]
+        lines += ["### ℹ️ Отклонения от Consulted (не блокируют baseline)", ""]
         for cr in consulted_rejected:
-            lines.append(f"- `{cr['req_id']}` — rejected by `{cr['stakeholder']}` (consulted): {cr['reason']}")
-        lines += ["", "Recommend documenting this as a managed risk.", ""]
+            lines.append(f"- `{cr['req_id']}` — отклонено `{cr['stakeholder']}` (consulted): {cr['reason']}")
+        lines += ["", "Рекомендуется задокументировать как управляемый риск.", ""]
 
     # A package is modelled as a ROUND: where a requirement appears in several, the
     # LATEST one governs (common.approval_outcome — a settled decision, so a
@@ -1434,22 +1434,22 @@ def check_approval_status(
         ]
     elif can_baseline:
         lines += [
-            "All mandatory conditions are satisfied. You can create the Requirements Baseline.",
+            "Все обязательные условия выполнены. Можно создавать Requirements Baseline.",
             "",
-            "➡️ Call `create_requirements_baseline`:",
+            "➡️ Вызовите `create_requirements_baseline`:",
             f"  - `project_name`: \"{project_name}\"",
             f"  - `package_id`: \"{package_id}\"",
-            f"  - `baseline_version`: \"v1.0\" (or sprint-N for agile)",
-            f"  - `decided_by`: the authorized stakeholder",
+            f"  - `baseline_version`: \"v1.0\" (или sprint-N для agile)",
+            f"  - `decided_by`: уполномоченный стейкхолдер",
         ]
     else:
-        lines += ["Resolve the blockers before creating the baseline."]
+        lines += ["Устраните блокеры перед созданием baseline."]
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 5.5.5 — Create the Requirements Baseline
+# 5.5.5 — Создать Requirements Baseline
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -1462,11 +1462,11 @@ def create_requirements_baseline(
     force: bool = False,
 ) -> str:
     """
-    BABOK 5.5 — Step 5: Create the official Requirements Baseline.
+    BABOK 5.5 — Шаг 5: Создать official Requirements Baseline.
 
-    Records a snapshot of the package in {project}_approval_history.json.
-    Updates requirement statuses in the 5.1 repository to 'approved'.
-    Generates an Approval Record (Markdown) via save_artifact.
+    Фиксирует snapshot пакета в {project}_approval_history.json.
+    Обновляет статусы требований в репозитории 5.1 на 'approved'.
+    Генерирует Approval Record (Markdown) через save_artifact.
 
     Args:
         project_name:      Project name.
@@ -1481,7 +1481,7 @@ def create_requirements_baseline(
                            is a different decision from overriding a lapsed date, and
                            one flag for both hid the former behind the latter.
                            (open conditions, consulted-rejected).
-                           False (default) — block if blockers exist.
+                           False (по умолчанию) — блокировать при наличии блокеров.
 
     Returns:
         A summary of the baseline and the next steps. The Approval Record itself is
@@ -1493,12 +1493,12 @@ def create_requirements_baseline(
     history = _load_approval_history(project_name)
     package = _get_package(history, package_id)
     if not package:
-        return f"❌ Package `{package_id}` not found. Run `prepare_approval_package` first."
+        return f"❌ Пакет `{package_id}` не найден. Сначала выполните `prepare_approval_package`."
 
     if package.get("status") == "baselined":
         return (
-            f"⚠️ Package `{package_id}` already has baseline `{package.get('baseline_version')}`.\n"
-            f"For a new baseline, create a new package with a different package_id."
+            f"⚠️ Пакет `{package_id}` уже имеет baseline `{package.get('baseline_version')}`.\n"
+            f"Для нового baseline создайте новый пакет с другим package_id."
         )
 
     repo = _load_repo(project_name)
@@ -1563,7 +1563,7 @@ def create_requirements_baseline(
         ]
         return "\n".join(lines)
 
-    # Check for open conditional items (warnings, do not block when force is used)
+    # Проверяем открытые conditional (предупреждения, не блокируют при force)
     open_conditions = []
     for sh_name, sh_data in package["stakeholder_decisions"].items():
         for rd in sh_data["req_decisions"]:
@@ -1616,7 +1616,7 @@ def create_requirements_baseline(
 
     _save_repo(project_name, repo)
 
-    # Baseline snapshot in approval_history
+    # Snapshot baseline в approval_history
     baseline_snapshot = {
         "baseline_version": baseline_version,
         "package_id": package_id,
@@ -1646,7 +1646,7 @@ def create_requirements_baseline(
     package["baseline_version"] = baseline_version
     _save_approval_history(project_name, history)
 
-    # Generate the Approval Record
+    # Генерируем Approval Record
     approach_label = "Predictive / Waterfall" if package.get("approach") == "predictive" else "Agile"
     # Name what was overridden. "Created forcibly" alone is the same failure as
     # recording nothing: the reader learns a rule was bypassed but not which one.
@@ -1666,8 +1666,8 @@ def create_requirements_baseline(
         force_warning = ""
 
     record_lines = [
-        f"<!-- BABOK 5.5 — Approval Record, Project: {project_name}, "
-        f"Baseline: {baseline_version}, Date: {date.today()} -->",
+        f"<!-- BABOK 5.5 — Approval Record, Проект: {project_name}, "
+        f"Baseline: {baseline_version}, Дата: {date.today()} -->",
         "",
         f"# Requirements Baseline: {baseline_version}",
         f"**Project:** {project_name}  ",
@@ -1682,7 +1682,7 @@ def create_requirements_baseline(
         "",
         "---",
         "",
-        "## Approved requirements",
+        "## Одобренные требования",
         "",
     ]
 
@@ -1693,7 +1693,7 @@ def create_requirements_baseline(
         title = node.get("title", "—") if node else "—"
         version = node.get("version", "—") if node else "—"
         priority = node.get("priority", "—") if node else "—"
-        record_lines.append(f"- ✅ `{rid}` {title} (v{version}, priority: {priority})")
+        record_lines.append(f"- ✅ `{rid}` {title} (v{version}, приоритет: {priority})")
 
     # What this round is NOT entitled to sign off. Silence here would be the same defect
     # one step later: the requirement would simply be missing from the record, and a
@@ -1745,16 +1745,16 @@ def create_requirements_baseline(
         )
 
     if open_conditions:
-        record_lines += ["", "---", "", "## 🟡 Open conditions (risk)", ""]
+        record_lines += ["", "---", "", "## 🟡 Открытые условия (risk)", ""]
         for oc in open_conditions:
             record_lines.append(
                 f"- `{oc['req_id']}` — {oc['condition_text']}"
-                + (f" | Deadline: {oc['condition_deadline']}" if oc['condition_deadline'] else "")
+                + (f" | Дедлайн: {oc['condition_deadline']}" if oc['condition_deadline'] else "")
             )
         record_lines += [
             "",
-            "> Conditions must be closed via `close_approval_condition` "
-            "and recorded in the next baseline.",
+            "> Условия должны быть закрыты через `close_approval_condition` "
+            "и зафиксированы в следующем baseline.",
         ]
 
     # The record speaks about the BASELINE, so every statement here is scoped to what
@@ -1917,20 +1917,20 @@ def create_requirements_baseline(
     artifact_content = "\n".join(record_lines)
     save_path = save_artifact(artifact_content, prefix=f"5_5_approval_record_{baseline_version}", project_id=project_name)
 
-    # Final output
+    # Финальный вывод
     output_lines = [
-        f"## ✅ Requirements Baseline created: {baseline_version}",
+        f"## ✅ Requirements Baseline создан: {baseline_version}",
         "",
-        f"**Project:** {project_name} | **Package:** {package_id}  ",
-        f"**Confirmed by:** {decided_by} | **Date:** {date.today()}  ",
-        f"**Requirements approved:** {len(approved_reqs)} of {len(req_ids)}",
+        f"**Проект:** {project_name} | **Пакет:** {package_id}  ",
+        f"**Подтвердил:** {decided_by} | **Дата:** {date.today()}  ",
+        f"**Одобрено требований:** {len(approved_reqs)} из {len(req_ids)}",
         "",
     ]
 
     if open_conditions and force:
         output_lines += [
-            f"⚠️ The baseline was created with {len(open_conditions)} open condition(s).",
-            "They need to be closed via `close_approval_condition`.",
+            f"⚠️ Baseline создан с {len(open_conditions)} открытыми условиями.",
+            "Необходимо закрыть их через `close_approval_condition`.",
             "",
         ]
 
@@ -1968,7 +1968,7 @@ def create_requirements_baseline(
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Точка входа
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

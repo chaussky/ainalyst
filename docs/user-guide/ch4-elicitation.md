@@ -3,68 +3,68 @@
 ## AI-powered Platform AInalyst
 **Download:** https://github.com/chaussky/ainalyst.git
 
-**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+**Телеграм:** https://t.me/platform_ainalyst
 ---
-# Chapter 4: Elicitation and Collaboration
+# Глава 4 — Elicitation and Collaboration
 
-
----
-
-## Overview of Chapter 4
-
-Chapter 4 of BABOK, "Elicitation and Collaboration," is the heart of a business analyst's work. This is where the BA interacts directly with stakeholders: preparing sessions, running them, checking the quality of what was collected, communicating results to different audiences, and managing relationships within the team.
-
-Unlike Chapter 3 (planning, done once at the start), Chapter 4 is **iterative**. Every new interview, workshop, or survey is a new cycle of 4.1 to 4.2 to 4.3 to 4.4. A project spanning several months can produce 20 to 30 such cycles.
-
-This is where the most valuable and most fragile material accumulates: what a stakeholder said, what is behind it, how it relates to what everyone else said. This material is easily lost (notes in a notebook), easily distorted (retelling from memory), and easily left incomplete (questions that were never asked).
-
-The platform closes exactly these risks, without changing how the BA works with stakeholders in person.
 
 ---
 
-## Task 4.1: Prepare for Elicitation
+## Общая характеристика Главы 4
 
-### Brief description
+Глава 4 BABOK — «Elicitation and Collaboration» — это сердце работы бизнес-аналитика. Здесь BA непосредственно взаимодействует со стейкхолдерами: готовит сессии, проводит их, проверяет качество собранного, доносит результаты до разных аудиторий и управляет отношениями в команде.
 
-The BA prepares for a specific elicitation session: defines the goals of the meeting, chooses a technique, formulates questions, records a plan. This task is performed **before** every session: interview, workshop, survey, or observation.
+В отличие от Главы 3 (планирование, делается один раз на старте), Глава 4 — **итеративная**. Каждое новое интервью, воркшоп или анкета — это новый цикл 4.1 → 4.2 → 4.3 → 4.4. Проект на несколько месяцев может породить 20–30 таких циклов.
 
-### BA pain points
+Именно здесь накапливается самый ценный и самый хрупкий материал: что сказал стейкхолдер, что за этим стоит, как это соотносится с тем что сказали остальные. Этот материал легко теряется (заметки в блокноте), легко искажается (пересказ по памяти) и легко остаётся неполным (вопросы которые не задали).
 
-**An interview without a goal is just a conversation.** The BA goes in to "find out what the stakeholder thinks" without concrete goals. The result: an hour spent, a lot of interesting things said, but after the meeting it's unclear exactly what needed to be found out, and whether it was. The next session is needed simply because the first one didn't produce answers.
+Платформа закрывает именно эти риски — без изменения того как BA работает со стейкхолдерами вживую.
 
-**Technique selection is random.** Most BAs always default to interviews, because that's what they're used to. For a group of 15 users, that's 15 hours of meetings instead of one workshop. For standard operational data, it's a workshop instead of a 10-minute survey.
+---
 
-**Questions are formulated on the fly.** The BA spends five minutes preparing for an interview and recalls questions as the conversation goes. Key topics get skipped, the stakeholder wanders into details that aren't needed, and important aspects surface only after the meeting.
+## Задача 4.1 — Prepare for Elicitation (Подготовка к выявлению)
 
-**"What exactly do I want to get out of this?"** This question often goes unasked by the BA explicitly. A good elicitation goal is verifiable: after the session, there's either an answer or there isn't. A vague goal ("understand user pain points") is not verifiable.
+### Краткое описание
 
-**Google Forms by hand.** If a survey is needed, the BA builds it manually, formats it, shares it. This is a separate routine task that adds no analytical value.
+BA готовится к конкретной сессии выявления: определяет цели встречи, выбирает технику, формулирует вопросы, фиксирует план. Задача выполняется **до** каждой сессии — интервью, воркшопа, анкетирования, наблюдения.
 
-### What we built
+### Боли и проблемы BA
 
-**A step-by-step preparation algorithm.** SKILL.md walks the BA through five steps: goals, stakeholders, elicitation format, questions, artifact. Each step is one block of questions, without overload. AInalyst won't let go without a verifiable goal.
+**Интервью без цели — это разговор.** BA идёт «узнать что думает стейкхолдер» без конкретных целей. В результате: час потрачен, куча интересного сказано, но после встречи непонятно что именно нужно было выяснить — и выяснили ли. Следующая сессия нужна уже потому что первая не дала ответов.
 
-**Technique selection logic.** The platform accounts for the situation: number of stakeholders, whether depth or breadth of coverage is needed, participant availability, availability of documents. Based on this it recommends a technique and explains why.
+**Выбор техники — случайный.** Большинство BA всегда делают интервью, потому что к этому привыкли. Для группы из 15 пользователей это 15 часов встреч вместо одного воркшопа. Для стандартных операционных данных — воркшоп вместо анкеты на 10 минут.
 
-**Question generation for the chosen technique.** For the selected technique, AInalyst generates a concrete list of questions, taking into account the stakeholder's role, the session goals, and what is already known from previous interviews (if any).
+**Вопросы формулируются на ходу.** BA готовится к интервью за 5 минут и вспоминает вопросы по ходу беседы. Ключевые темы пропускаются, стейкхолдер уходит в детали которые не нужны, важные аспекты всплывают уже после встречи.
 
-**Recording the plan as an artifact.** `save_elicitation_plan` saves goals, participants, technique, and questions. This isn't just a document: the plan is linked to the results of 4.2, and afterward you can check whether all planned questions were asked and whether all goals got answers.
+**«Что именно я хочу получить?»** — этот вопрос BA часто не задаёт себе явно. Хорошая цель выявления проверяема: после сессии либо есть ответ, либо нет. Расплывчатая цель («понять боли пользователей») — не проверяема.
 
-**Creating a Google Form.** `create_google_form` builds a form automatically from a given question structure. The BA doesn't touch Google Forms by hand.
+**Google Forms руками.** Если нужна анкета, BA создаёт её вручную, форматирует, расшаривает. Это отдельная рутинная работа которая не приносит аналитической ценности.
+
+### Что мы реализовали
+
+**Пошаговый алгоритм подготовки** — SKILL.md ведёт BA через пять шагов: цели → стейкхолдеры → форма выявления → вопросы → артефакт. Каждый шаг — один блок вопросов, без перегрузки. AIналитик не отпустит без проверяемой цели.
+
+**Логика выбора техники** — платформа учитывает ситуацию: количество стейкхолдеров, нужна ли глубина или ширина охвата, доступность участников, наличие документов. На основе этого рекомендует технику и объясняет почему.
+
+**Генерация вопросов под технику** — для выбранной техники AIналитик генерирует конкретный список вопросов с учётом роли стейкхолдера, целей сессии и того что уже известно из предыдущих интервью (если они были).
+
+**Фиксация плана в артефакт** — `save_elicitation_plan` сохраняет цели, участников, технику, вопросы. Это не просто документ — план связывается с результатами 4.2, и потом можно проверить: задали ли все запланированные вопросы, получили ли ответы на все цели.
+
+**Создание Google Form** — `create_google_form` создаёт форму автоматически по заданной структуре вопросов. BA не заходит в Google Forms руками.
 
 **Reading the 3.1 plan, when there is one.** If the BA already ran the optional `plan_ba_activities` step in Chapter 3, `save_elicitation_plan` automatically states the work period planned for this session (with its effort and timing) and honestly cross-checks the chosen elicitation technique against what 3.1 recommended. On an agile project, where 3.1's recommended techniques are things like Backlog Management and Retrospectives rather than an elicitation technique, it says plainly that there's nothing to cross-check, instead of flagging every session as a mismatch.
 
 ### Value for the BA
 
-**Every meeting now has an outcome.** When the goal is formulated before the meeting, there's a clear answer afterward: achieved or not. If not, another session is needed. If achieved, work can move forward. This removes the feeling of "wasted time."
+**Каждая встреча теперь имеет результат.** Когда цель сформулирована до встречи, после встречи есть чёткий ответ: достигли или нет. Нет — нужна следующая сессия. Достигли — можно двигаться дальше. Это убирает ощущение «потраченного времени».
 
-**The right technique saves time.** Replacing 10 individual interviews with one workshop is the difference between a week of work and one evening. AInalyst makes this choice deliberate rather than habitual.
+**Правильная техника экономит время.** Замена 10 индивидуальных интервью на один воркшоп — это разница между неделей работы и одним вечером. AIналитик делает этот выбор осознанным, а не привычным.
 
-**Prepared questions mean better-quality material.** The stakeholder feels the structure of the conversation. All key topics get covered. The BA isn't scrambling to remember what else to ask. This directly affects the quality of the results in 4.2.
+**Подготовленные вопросы = лучшее качество материала.** Стейкхолдер чувствует структуру беседы. Все ключевые темы закрыты. BA не вспоминает на ходу что ещё спросить. Это прямо влияет на качество результатов 4.2.
 
-**Continuity between sessions is preserved.** AInalyst sees previous plans and results. When preparing for the next interview, it reminds the BA: here's what was left unresolved from the last meeting, here's what needs clarifying. The BA doesn't have to hold this in their head.
+**Сохраняется преемственность между сессиями.** AIналитик видит предыдущие планы и результаты. Готовя следующее интервью, он напоминает: вот что осталось невыясненным с прошлой встречи, вот что нужно уточнить. BA не держит это в голове.
 
-### How to use it: an example
+### Как пользоваться: пример
 
 The BA is preparing for a first interview with a new stakeholder, Sarah, the warehouse manager.
 
@@ -72,53 +72,53 @@ They tell AInalyst: *"I'm preparing for an interview with Sarah. She's the wareh
 
 AInalyst asks clarifying questions: how much time is available, has anyone from the warehouse already been interviewed, are there specific hypotheses that need testing. The BA answers. AInalyst proposes a structured 45-minute interview with three blocks of questions: current situation, pain points, and success criteria. The BA says "add one more question about the SAP integration," and AInalyst adds it. "Save it," and the plan is recorded.
 
-**The BA goes into the actual interview with a ready list of questions, understanding exactly why they're there.**
+**На само интервью BA идёт с готовым списком вопросов, понимая зачем он туда идёт.**
 
 ---
 
-## Task 4.2: Conduct Elicitation
+## Задача 4.2 — Conduct Elicitation (Анализ результатов выявления)
 
-### Brief description
+### Краткое описание
 
-After a session is complete, the BA hands off the raw material (transcript, notes, recordings) for analysis. The platform structures the results, identifies gaps, finds contradictions between sources, and recommends next steps. The task supports three scenarios: a single session, comparison of several sessions, and analysis for a Change Request.
+После проведённой сессии BA передаёт сырой материал (транскрипт, заметки, записи) на анализ. Платформа структурирует результаты, выявляет пробелы, находит противоречия между источниками и рекомендует следующие шаги. Задача поддерживает три сценария: одна сессия, сравнение нескольких, анализ при Change Request.
 
-### BA pain points
+### Боли и проблемы BA
 
-**The transcript sits unprocessed.** The BA ran the interview and captured a lot of interesting material, but doesn't know where to start the breakdown. Especially if the interview was long and unstructured. The material "cools off," details get forgotten, analysis gets postponed.
+**Транскрипт лежит неразобранным.** BA провёл интервью, записал много интересного — и не знает с чего начать разбор. Особенно если интервью было длинным и неструктурированным. Материал «остывает», детали забываются, анализ откладывается.
 
-**"What exactly did I extract from this?"** The stakeholder talked about their work for an hour. The BA listened, nodded, took notes. But structuring this into requirements is a separate analytical task that takes as long as the interview itself.
+**«Что именно я из этого извлёк?»** Стейкхолдер рассказывал про свою работу час. BA слушал, кивал, делал заметки. Но структурировать это в требования — отдельная аналитическая работа которая занимает столько же времени сколько само интервью.
 
-**Gaps are only visible when it's too late.** The BA realizes they didn't ask about something important only after the stakeholder has moved on to something else, gone on a business trip, or left the project altogether. The gap in knowledge is discovered not right after the interview, but in the middle of Chapter 5, when the requirements have already been written.
+**Пробелы видны только когда поздно.** BA понимает что не спросил про важную вещь уже после того как стейкхолдер занят другим, уехал в командировку или вообще покинул проект. Gap в знаниях обнаруживается не после интервью — а в середине Главы 5 когда требования уже написаны.
 
 **Contradictions between stakeholders go unnoticed.** James said one thing, Rachel said another, but the BA processed the interviews separately and didn't cross-check them. The conflict surfaces at the prioritization or approval stage, when it's much harder to fix.
 
 **The stakeholder registry doesn't grow.** In every interview, the stakeholder names other participants ("talk to Max from IT too" or "we have a chief accountant, Grace, she also works with the system"). The BA nods, but these people never make it into the registry. A month later it turns out a key stakeholder was never included in the process at all.
 
-**A Change Request means "start over."** A CR comes in. The BA doesn't know: which of the already collected requirements are affected? Which stakeholders need additional elicitation? What has changed in what they said before? This is several hours of manual work.
+**Change Request означает «начать заново».** Прилетел CR. BA не знает: какие из уже собранных требований затронуты? У кого из стейкхолдеров нужно довыявить информацию? Что изменилось в том что они говорили раньше? Это ручная работа на несколько часов.
 
-### What we built
+### Что мы реализовали
 
-**Structured analysis of a single interview.** `process_elicitation_results` accepts a transcript or notes in any format and returns: structured requirements, pain points, business rules, a stakeholder profile, identified gaps, and recommendations for the next step.
+**Структурированный анализ одного интервью** — `process_elicitation_results` принимает транскрипт или заметки в любом формате и возвращает: структурированные требования, боли, бизнес-правила, профайл стейкхолдера, выявленные пробелы, рекомендации для следующего шага.
 
-**Cross-analysis of multiple sessions.** `compare_elicitation_results` cross-references artifacts from different interviews and identifies: contradictions between stakeholders, gaps that no interview closed, consensus on key questions, and who needs to be asked more about what.
+**Кросс-анализ нескольких сессий** — `compare_elicitation_results` сопоставляет артефакты из разных интервью и выявляет: противоречия между стейкхолдерами, пробелы которые не закрыло ни одно интервью, консенсус по ключевым вопросам, кого и о чём нужно спросить дополнительно.
 
-**Change Request analysis.** `save_cr_elicitation_analysis` takes a CR description and determines: which previously collected requirements are affected, who needs additional elicitation and about what, and what information is now outdated. This is a technical input for Task 5.4.
+**Анализ при Change Request** — `save_cr_elicitation_analysis` получает описание CR и определяет: какие ранее собранные требования затронуты, у кого и что нужно довыявить, какая информация устарела. Это технический input для задачи 5.4.
 
 **Automatic registry expansion.** `update_stakeholder_registry` adds a new stakeholder or updates an existing one. It's called right during interview analysis: "James mentioned Max" leads to one request, and Max is in the registry with a note on the source.
 
-### Value for the BA
+### Ценности для BA
 
-**A transcript turns into requirements in minutes.** The BA no longer spends an hour on manual breakdown of recordings. They hand over the raw material and get back a structured artifact. This frees up cognitive resources for analytical work (decisions, interpretation) rather than mechanical work (formatting, structuring).
+**Транскрипт превращается в требования за минуты.** BA больше не тратит час на ручной разбор записей. Он отдаёт сырой материал — получает структурированный артефакт. Это освобождает когнитивный ресурс для аналитической работы (решения, интерпретации), а не для механической работы (оформление, структурирование).
 
-**Gaps are visible right after the session, while they can still be closed.** AInalyst explicitly points out: "here are three topics that remain unresolved." The BA knows what to clarify at the next meeting or by email, while the stakeholder still remembers the conversation.
+**Пробелы видны сразу после сессии, когда их ещё можно закрыть.** AIналитик явно указывает: «вот три темы которые остались незакрытыми». BA знает что уточнить на следующей встрече или по email — пока стейкхолдер ещё помнит разговор.
 
-**Contradictions are caught at the 4.2 level, not at 5.3.** Early detection of a conflict between stakeholders is a manageable situation. It can be clarified with an additional interview or workshop. Detection at the prioritization stage requires reworking artifacts that are already finished.
+**Противоречия обнаруживаются на уровне 4.2, а не 5.3.** Раннее обнаружение конфликта между стейкхолдерами — это управляемая ситуация. Его можно прояснить дополнительным интервью или воркшопом. Обнаружение на этапе приоритизации требует переделки уже готовых артефактов.
 
-**The stakeholder registry grows organically.** After every interview, AInalyst suggests adding the people who were mentioned. This takes 30 seconds. A month in, the registry contains all the real participants, not just the ones the BA knew about at the start of the project.
+**Реестр стейкхолдеров растёт органически.** После каждого интервью AIналитик предлагает добавить упомянутых людей. Это занимает 30 секунд. Через месяц реестр содержит всех реальных участников — а не только тех кого BA знал в начале проекта.
 
-**A CR stops causing panic.** There's a structured process: the platform works out what changed, what's outdated, and who to ask. The BA gets a clear action plan instead of a feeling that "now everything has to be redone."
+**CR перестаёт вызывать панику.** Есть структурированный процесс: платформа разбирает что изменилось, что устарело, кого спросить. BA получает чёткий план действий, а не ощущение «теперь всё надо переделывать».
 
-### How to use it: an example
+### Как пользоваться: пример
 
 The BA has interviewed Sarah and hands the transcript to AInalyst: *"Here's the recording of our conversation [text]. What's in it?"*
 
@@ -128,39 +128,39 @@ The BA says "yes, add him," and Dennis is in the registry. "Save the results," a
 
 ---
 
-## Task 4.3: Confirm Elicitation Results
+## Задача 4.3 — Confirm Elicitation Results (Подтверждение результатов)
 
-### Brief description
+### Краткое описание
 
-The BA checks the quality of the collected material **before** moving forward. This is internal work, not sign-off with the stakeholder, but a review of the BA's own records: are there contradictions, gaps, or vague wording?
+BA проверяет качество собранного материала **до** того как двигаться дальше. Это внутренняя работа — не согласование со стейкхолдером, а проверка собственных записей: нет ли противоречий, пробелов, расплывчатых формулировок.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"Done" does not equal "high quality."** The BA processed the interview, created an artifact, and considers it ready to move forward. But the artifact may contain wording like "the system should be user-friendly" (not testable), requirements without a source (where did this come from?), and conflicts that were missed during analysis. This surfaces later, when it's more expensive to fix.
+**«Готово» ≠ «качественно».** BA обработал интервью, создал артефакт — и считает что можно двигаться дальше. Но в артефакте могут быть формулировки вида «система должна быть удобной» (не тестируемо), требования без источника (откуда это взялось?), конфликты которые не заметил при анализе. Это всплывёт позже — когда исправить дороже.
 
-**Requirements quality criteria are abstract.** BABOK gives 5 criteria (completeness, correctness, consistency, unambiguity, testability), but applying them to a specific text takes experience. A junior BA doesn't know exactly how to do this. A senior BA knows, but spends time on it.
+**Критерии качества требований — абстрактные.** BABOK даёт 5 критериев (полнота, точность, непротиворечивость, однозначность, тестируемость) — но применять их к конкретному тексту требует опыта. Junior BA не знает как именно это делать. Senior BA знает, но тратит на это время.
 
-**Clarifying questions are formulated poorly.** The BA sees that something needs to be clarified with the stakeholder, but phrases the question in BA jargon or too broadly. The stakeholder doesn't understand exactly what's needed, answers vaguely, and there's still no specificity.
+**Уточнения формулируются плохо.** BA видит что нужно уточнить у стейкхолдера — но формулирует вопрос на BA-жаргоне или слишком широко. Стейкхолдер не понимает что именно нужно, отвечает размыто, и снова нет конкретики.
 
-**There's no formal moment of "closing" an artifact.** The BA works with the material, adding to it, editing it, and it's unclear when it's "done." Requirements go into analysis in a half-raw state, and problems are discovered only there.
+**Нет формального момента «закрытия» артефакта.** BA работает с материалом, добавляет, правит — и непонятно когда он «готов». Требования уходят в анализ в полусыром состоянии, и проблемы обнаруживаются уже там.
 
-### What we built
+### Что мы реализовали
 
-**Review against the 5 BABOK criteria with color-coded severity.** `run_consistency_check` reviews the artifact against each of the five criteria and, for every issue found, returns: the criterion, the severity (🔴/🟡/🟢), a specific example from the text, and a recommendation for what to do. Final verdict: ready / conditionally ready / 🔴 needs rework.
+**Проверка по 5 критериям BABOK с цветовой маркировкой серьёзности** — `run_consistency_check` проверяет артефакт по каждому из пяти критериев и для каждой проблемы выдаёт: критерий, серьёзность (🔴/🟡/🟢), конкретный пример из текста, рекомендацию что сделать. Итоговый вердикт: ✅ Готов / ⚠️ Готов условно / 🔴 Требует доработки.
 
-**Formulating questions for the stakeholder.** When issues are found, AInalyst formulates specific, short clarifying questions: no BA jargon, grouped by recipient, with a note on why it matters. The BA takes them and asks directly, or sends them by email.
+**Формулировка вопросов для стейкхолдера** — при найденных проблемах AIналитик формулирует конкретные короткие вопросы для уточнения: без BA-жаргона, сгруппированные по адресату, с указанием почему это важно. BA берёт их и задаёт напрямую — или отправляет по email.
 
-**Final recording of the confirmed result.** `save_confirmed_elicitation_result` closes open issues and saves the final artifact with a confirmation date. This artifact is the official input for Tasks 6.1 and 6.3; the platform knows it has been verified.
+**Финальная фиксация подтверждённого результата** — `save_confirmed_elicitation_result` закрывает открытые проблемы и сохраняет финальный артефакт с датой подтверждения. Этот артефакт является официальным входом для задач 6.1 и 6.3 — платформа знает что он проверен.
 
-### Value for the BA
+### Ценности для BA
 
-**Problems are caught at the cheapest possible stage.** Fixing vague wording in a 4.3 artifact means clarifying one sentence with the stakeholder. Discovering it in 5.2 while updating a requirement means revisiting an already-built traceability graph. 4.3 is insurance against a cascade of errors in Chapter 5.
+**Проблемы обнаруживаются на самом дешёвом этапе.** Исправить расплывчатую формулировку в артефакте 4.3 — это уточнить одно предложение у стейкхолдера. Обнаружить её в 5.2 при обновлении требования — это пересматривать уже построенный граф трассировки. 4.3 — это страховка от лавины ошибок в Главе 5.
 
-**A junior BA works like a senior one.** Quality criteria are applied systematically, not from memory. The platform won't let "should be user-friendly" slip through: it's guaranteed to be flagged as an ambiguity issue.
+**Junior BA работает как Senior.** Критерии качества применяются системно, а не по памяти. Платформа не пропустит «должна быть удобной» — это гарантированно будет поднято как проблема однозначности.
 
-**The BA knows for certain that the artifact is ready.** There's an explicit moment: `save_confirmed_elicitation_result` with a date. Before that, it's work in progress. After, it's closed. No uncertainty about "well, it's probably good enough."
+**BA точно знает что артефакт готов.** Есть явный момент: `save_confirmed_elicitation_result` с датой. До этого — работа. После — закрыто. Нет неопределённости «ну вроде уже достаточно хорошо».
 
-### How to use it: an example
+### Как пользоваться: пример
 
 The BA says: *"Here's my artifact from the interview with Sarah [text]. Check whether it's ready to move forward."*
 
@@ -168,91 +168,91 @@ AInalyst reviews it and returns: "🟡 FR-003: 'the system should work quickly,'
 
 ---
 
-## Task 4.4: Communicate BA Information
+## Задача 4.4 — Communicate BA Information (Коммуникация результатов)
 
-### Brief description
+### Краткое описание
 
-The BA adapts finished artifacts for different audiences, chooses the right format and delivery channel, records the fact that a communication happened, and checks the schedule: who hasn't been contacted in a while, whose trigger has fired.
+BA адаптирует готовые артефакты под разные аудитории, выбирает правильный формат и канал передачи, фиксирует факты коммуникации и проверяет расписание — кому давно не писали, у кого сработал триггер.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"The same requirements for everyone."** The BA sends the same document to the manager, the developer, and the tester. The manager sees technical details and doesn't understand why they need this. The developer doesn't see acceptance criteria. The tester doesn't see edge cases. Everyone comes back to the BA with questions, because they got something other than what they needed.
+**«Одинаковые требования для всех».** BA отправляет один и тот же документ руководителю, разработчику и тестировщику. Руководитель видит технические детали и не понимает зачем это ему. Разработчик не видит acceptance criteria. Тестировщик не видит edge cases. Каждый приходит к BA с вопросами — потому что получил не то что ему нужно.
 
-**The BA doesn't know what language to use with this particular audience.** A business sponsor needs ROI and business risks. An architect needs integrations and NFRs. A tester needs edge cases. These are different documents from the same source, and the BA writes them by hand, from scratch, every time.
+**BA не знает на каком языке говорить с этой конкретной аудиторией.** Бизнес-заказчику нужны ROI и бизнес-риски. Архитектору — интеграции и NFT. Тестировщику — граничные случаи. Это разные документы из одного исходника — и BA их пишет вручную, каждый раз заново.
 
-**"Who did I last write to?"** The BA runs projects with 5 to 15 stakeholders. Each has their own communication schedule and their own triggers. This is impossible to keep in your head. Someone has been waiting two weeks for an update, and the BA didn't notice.
+**«Кому я последний раз писал?»** BA ведёт проекты с 5–15 стейкхолдерами. У каждого своё расписание коммуникации, свои триггеры. Это невозможно удержать в голове. Кто-то ждёт апдейта уже две недели — а BA не заметил.
 
-**The fact of communication is never recorded anywhere.** Sent the report, good. But when, to whom, in what format, whether there were questions, none of this is logged. In a conflict, there's no way to prove the information was delivered on time.
+**Факт коммуникации нигде не фиксируется.** Отправил отчёт — хорошо. Но когда, кому, в каком формате, были ли вопросы — это не записывается. При конфликте нельзя доказать что информация была передана своевременно.
 
-**A Blocker still gets the standard report.** A stakeholder who is actively against the project gets the same document as everyone else. There's no extra section on "why this matters specifically to you," no adaptation to their objections.
+**Blocker по-прежнему получает стандартный отчёт.** Стейкхолдер который активно против проекта — получает тот же документ что и все. Нет дополнительного раздела «почему это важно именно для вас», нет адаптации под его возражения.
 
-### What we built
+### Что мы реализовали
 
-**Audience adaptation with a single command.** `prepare_communication_package` takes a source artifact and the recipient's role and returns a repackaged document in the right language. The content doesn't change, the form does: irrelevant details are removed, what matters to that role is added, the tone shifts.
+**Адаптация под аудиторию одной командой** — `prepare_communication_package` принимает исходный артефакт и роль получателя, возвращает переупакованный документ на нужном языке. Содержание не меняется — меняется форма: убирается лишнее, добавляется то что важно именно этой роли, меняется тон.
 
-**An adaptation table for 5 roles.** Built into SKILL.md: business sponsor, manager, developer, architect, tester. For each role: what to remove, what to add, what tone to use. For a Blocker, add a section on "why this matters to you."
+**Таблица адаптации по 5 ролям** — встроена в SKILL.md: бизнес-заказчик, руководитель, разработчик, архитектор, тестировщик. Для каждой роли — что убрать, что добавить, какой тон. Для Blocker — добавить раздел «почему это важно для вас».
 
 **The level of detail comes from Task 3.4, when it was planned.** If the BA recorded a planned level (Summary / Standard / Detailed) for this audience back in 3.4, `prepare_communication_package` states it in the package and adds an explicit include/leave-out checklist. The audience can be matched by its role archetype or by a stakeholder's job title from the registry — whichever the 3.4 plan used. If no level was planned for this audience, the package is built exactly as it would have been before this existed.
 
 **Format and channel recommendation.** With high influence and a negative attitude, a 1:1 meeting is recommended instead of a written message. For a standard update, email. This isn't something you can guess reliably without a system; the platform makes the choice deliberate.
 
-**A communication log.** `log_communication` records every instance of information being delivered: to whom, what, when, through which channel, whether follow-up is needed. This is both an evidence trail and a management tool.
+**Лог коммуникаций** — `log_communication` фиксирует каждый факт передачи информации: кому, что, когда, через какой канал, нужен ли follow-up. Это доказательная база и инструмент управления.
 
-**Schedule checking.** `check_communication_schedule` looks at the registry from 3.2: who hasn't been contacted in a while (per schedule) and whose trigger has fired (new requirements, a discovered risk). It returns a prioritized list: who to write to today.
+**Проверка расписания** — `check_communication_schedule` смотрит по реестру из 3.2: кому давно не писали (по расписанию) и у кого сработал триггер (новые требования, обнаруженный риск). Выдаёт приоритизированный список: кому написать сегодня.
 
-### Value for the BA
+### Ценности для BA
 
-**Everyone gets what they need, without extra effort from the BA.** One source artifact turns into 4 different documents in a few minutes. The BA doesn't write each one by hand. This reduces the number of clarifying questions from recipients, since they get the right format right away.
+**Каждый получает то что ему нужно — без дополнительных усилий BA.** Один исходный артефакт превращается в 4 разных документа за несколько минут. BA не пишет каждый вручную. Это снижает количество уточняющих вопросов от получателей — они сразу получают нужный формат.
 
-**The BA stops being a bottleneck.** When everyone gets a document they can understand, the questions "what does this mean?" and "can you explain?" disappear. Stakeholders read the artifact and make decisions instead of waiting for a verbal explanation from the BA.
+**BA перестаёт быть узким местом.** Когда каждый получает понятный ему документ, вопросы «что это значит?» и «можешь объяснить?» исчезают. Стейкхолдеры читают артефакт и принимают решения — а не ждут устного пояснения от BA.
 
 **No one falls out of the communication loop.** `check_communication_schedule` is "don't forget to write to James" implemented at the system level. This matters especially during periods of intense work, when it's easy to miss that someone hasn't gotten an update in a while.
 
-**Provability.** The communication log is the BA's protection in a conflict. "You never warned us about this risk" is answered with "here's the message from February 3rd, here's the read date." A professional position.
+**Доказуемость.** Лог коммуникаций — это защита BA при конфликте. «Вы нас не предупреждали об этом риске» → «Вот письмо от 3 февраля, вот дата получения». Профессиональная позиция.
 
 ---
 
-## Task 4.5: Manage Stakeholder Collaboration
+## Задача 4.5 — Manage Stakeholder Collaboration (Управление сотрудничеством)
 
-### Brief description
+### Краткое описание
 
-A cross-cutting task throughout Chapter 4. The BA diagnoses stakeholder engagement problems, records decisions made, saves meeting minutes, and works through conflicts. It's not called on a schedule, but when something has gone wrong or an important moment needs to be recorded.
+Сквозная задача на протяжении всей Главы 4. BA диагностирует проблемы с вовлечённостью стейкхолдеров, фиксирует принятые решения, сохраняет протоколы встреч, разбирает конфликты. Вызывается не по расписанию — а когда что-то пошло не так или нужно зафиксировать важный момент.
 
-### BA pain points
+### Боли и проблемы BA
 
-**"Something's wrong, but it's not clear what."** A stakeholder has started avoiding meetings, or agrees but doesn't follow through, or unexpectedly became aggressive at the last meeting. The BA senses something is off but doesn't know how to interpret it or what to do. The problem accumulates.
+**«Что-то пошло не так, но непонятно что».** Стейкхолдер начал избегать встреч, или соглашается но ничего не делает, или неожиданно стал агрессивным на последнем митинге. BA чувствует что что-то не так, но не знает как это интерпретировать и что делать. Проблема накапливается.
 
-**Decisions get made, and then forgotten.** At a meeting, everyone agreed that FR-005 moves to the next release. A month later, developers ask "why aren't we doing FR-005?" and no one remembers. "Remember, we agreed" is not documentation.
+**Решения принимаются — и забываются.** На встрече договорились что FR-005 уходит в следующий релиз. Через месяц разработчики спрашивают «а почему не делаем FR-005?» — никто не помнит. «Помнишь мы договорились» — это не документация.
 
-**Meeting minutes are a waste of time.** The BA knows minutes should be written. But it takes half an hour after every meeting, and the result is often just a retelling of the conversation with no structure. Action items get lost in the text, owners aren't specified, there are no deadlines.
+**Протоколы встреч — потеря времени.** BA знает что надо писать протоколы. Но это занимает полчаса после каждой встречи, и результат — часто просто пересказ разговора без структуры. Action items теряются в тексте, ответственные не указаны, дедлайнов нет.
 
-**A conflict between stakeholders leaves the BA alone with the problem.** The sponsor wants one thing, the head of development wants another. The BA is in the middle, without tools to analyze the situation. They improvise. Sometimes it works, sometimes it doesn't.
+**Конфликт между стейкхолдерами — BA один на один с проблемой.** Спонсор хочет одно, руководитель разработки хочет другое. BA в середине, без инструментов для анализа ситуации. Импровизирует. Иногда успешно, иногда нет.
 
-**Changes in attitude are never recorded anywhere.** A stakeholder who was a Champion has become a Blocker. The registry still says Champion. The next time the project is handed off, the new colleague doesn't understand the situation.
+**Изменение attitude фиксируется нигде.** Стейкхолдер был Champion — стал Blocker. В реестре по-прежнему написано Champion. При следующей передаче BA на проект новый коллега не понимает ситуацию.
 
-### What we built
+### Что мы реализовали
 
-**Engagement signal diagnosis.** The BA describes the stakeholder's behavior, and AInalyst classifies the signal (🟢/🟡/🔴), names 2 to 3 likely causes, and suggests specific tactics for each. This isn't guesswork, it's pattern analysis grounded in BABOK stakeholder-management methodology.
+**Диагностика сигналов вовлечённости** — BA описывает поведение стейкхолдера, AIналитик классифицирует сигнал (🟢/🟡/🔴), называет 2–3 вероятные причины и предлагает конкретные тактики для каждой. Это не гадание — это анализ паттернов на основе BABOK-методологии работы со стейкхолдерами.
 
-**Decision Log.** `log_decision` records every decision made, with context: what was decided, why, what alternatives were considered, who made the decision, and how it affects requirements. Three months later, any "why did we do it this way" question has an answer.
+**Decision Log** — `log_decision` фиксирует каждое принятое решение с контекстом: что решили, почему, какие альтернативы рассматривались, кто принял решение, как это влияет на требования. Через 3 месяца можно ответить на любой вопрос «почему так».
 
-**Structured meeting minutes.** `save_meeting_notes` takes notes in any format and returns: participants, agenda, key discussion points, decisions made, action items (action plus owner plus deadline), and open questions. Minutes are ready in 2 minutes instead of 30.
+**Структурированный протокол встречи** — `save_meeting_notes` принимает заметки в любом формате и возвращает: участники, повестка, ключевые обсуждения, принятые решения, action items (действие + ответственный + дедлайн), открытые вопросы. Протокол готов за 2 минуты вместо 30.
 
-**Conflict analysis.** AInalyst identifies the type of conflict (priority-based, resource-based, conceptual, or territorial), surfaces the parties' real interests, and suggests a facilitation strategy. The BA's role is facilitator, not judge. Personal conflicts get escalated to the PM or HR.
+**Анализ конфликта** — AIналитик определяет тип конфликта (приоритетный / ресурсный / концептуальный / территориальный), выявляет реальные интересы сторон и предлагает стратегию фасилитации. Роль BA — фасилитатор, не судья. Личные конфликты → эскалация PM/HR.
 
-**A history of attitude changes.** `update_engagement_status` updates the registry while preserving history: was, became, reason, planned action. This is the project's living memory.
+**История изменений attitude** — `update_engagement_status` обновляет реестр с сохранением истории: было → стало → причина → запланированное действие. Это живая память проекта.
 
-### Value for the BA
+### Ценности для BA
 
-**Early diagnosis saves relationships.** A warning signal noticed at the 🟡 level ("started replying to emails less often") is a manageable situation. The same signal at the 🔴 level ("openly sabotaging the changes") is a crisis that requires PM or HR intervention. Between the two is a matter of weeks. The platform helps catch that transition before it's missed.
+**Ранняя диагностика спасает отношения.** Сигнал тревоги замеченный на уровне 🟡 («стал реже отвечать на письма») — это управляемая ситуация. Тот же сигнал на уровне 🔴 («открыто саботирует изменения») — это кризис который требует вмешательства PM или HR. Между ними — несколько недель. Платформа помогает не пропустить переход.
 
-**The Decision Log is the BA's insurance.** For any "why did we decide this" question, there's an answer backed by data: date, context, alternatives, who decided. This is professional protection in the event of a conflict or a team change.
+**Decision Log — это страховка BA.** При любом вопросе «почему мы так решили» есть ответ с данными: дата, контекст, альтернативы, кто решил. Это профессиональная защита в случае конфликта или смены команды.
 
-**Minutes in 2 minutes instead of 30.** The BA takes notes during the meeting in whatever format is convenient. After the meeting, they hand them to AInalyst and get back structured minutes with action items. They send them to participants. This is actually achievable after every meeting, unlike "I'll sit down and write proper minutes later."
+**Протокол за 2 минуты вместо 30.** BA делает заметки во время встречи в любом удобном формате. После встречи отдаёт их AIналитику — получает структурированный протокол с action items. Отправляет участникам. Это реально выполнимо после каждой встречи — в отличие от «сяду напишу нормальный протокол».
 
-**Conflict becomes a workable task.** With an analysis tool in hand, a conflict stops being a vague threat and becomes a task with a typology, the parties' interests, and resolution strategies. The BA knows what to do, and does it professionally.
+**Конфликт становится рабочей задачей.** Когда есть инструмент анализа, конфликт перестаёт быть непонятной угрозой и превращается в задачу с типологией, интересами сторон и стратегиями разрешения. BA знает что делать — и делает профессионально.
 
-### How to use it: an example
+### Как пользоваться: пример
 
 The BA notices that Michael (the head of IT, who was initially skeptical) unexpectedly started actively supporting the project at the last meeting, but immediately afterward wrote an email to the PM raising objections, bypassing the BA.
 
@@ -264,12 +264,12 @@ The BA holds the 1:1 and learns that Michael has a specific fear about the workl
 
 ---
 
-## Final synthesis for Chapter 4
+## Финальный синтез по Главе 4
 
-**The overall value of Chapter 4 is the quality of the raw material for everything else.** Chapter 4 produces what the entire project is built on: requirements, stakeholder profiles, recorded decisions, minutes. If this raw material is low quality, Chapters 5, 6, and 7 are built on an unreliable foundation.
+**Общая ценность Главы 4 — это качество сырья для всего остального.** Глава 4 производит то на чём строится весь проект: требования, профайлы стейкхолдеров, зафиксированные решения, протоколы. Если это сырьё некачественное — Главы 5, 6, 7 строятся на ненадёжном фундаменте.
 
-**The platform removes mechanical load and reinforces analytical work.** Structuring a transcript, finding gaps, checking quality, adapting for an audience, writing minutes: all of this is mechanical work that the BA does instead of analytical work (making decisions, building relationships, facilitating). The platform takes the mechanical part off the BA's hands.
+**Платформа снимает механическую нагрузку и усиливает аналитическую.** Структурирование транскрипта, поиск пробелов, проверка качества, адаптация под аудиторию, написание протокола — всё это механическая работа которую BA делает вместо аналитической (принятие решений, выстраивание отношений, фасилитация). Платформа берёт механику на себя.
 
-**The iterative nature of Chapter 4 makes automation especially valuable.** While Chapter 3 tasks run once, in Chapter 4 the cycle of 4.1 to 4.2 to 4.3 to 4.4 repeats for every elicitation session. On a large project that's 20 to 30 cycles. Every hour saved on one cycle is 20 to 30 hours across the whole project.
+**Итеративность Главы 4 делает автоматизацию особенно ценной.** Если в Главе 3 задачи выполняются один раз, в Главе 4 каждый цикл 4.1→4.2→4.3→4.4 повторяется для каждой сессии выявления. На большом проекте это 20–30 циклов. Каждый час сэкономленный на одном цикле — это 20–30 часов на всём проекте.
 
-**The BA's responsibility in Chapter 4** stays human where it should: the quality of stakeholder relationships, facilitating conflicts, making analytical decisions. The platform takes on structuring, formatting, tracking, and recording.
+**Ответственность BA в Главе 4** остаётся человеческой там где она должна быть: качество отношений со стейкхолдерами, фасилитация конфликтов, принятие аналитических решений. Платформа берёт структурирование, форматирование, отслеживание и фиксацию.

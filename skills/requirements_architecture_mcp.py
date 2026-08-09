@@ -57,39 +57,39 @@ STAKEHOLDERS_FILENAME = "stakeholders.json"
 CONTEXT_FILENAME = "business_context.json"
 ARCHITECTURE_FILENAME = "architecture.json"
 
-# ADR-034: mapping of artifact types to viewpoints
+# ADR-034: маппинг типов артефактов на точки зрения
 VIEWPOINT_MAP = {
     "business_process": {
-        "label": "Business processes",
-        "audience": "Business sponsor, process owners",
+        "label": "Бизнес-процессы",
+        "audience": "Бизнес-заказчик, владельцы процессов",
     },
     "data_dictionary": {
-        "label": "Data and information",
-        "audience": "Data architect, DBA",
+        "label": "Данные и информация",
+        "audience": "Архитектор данных, DBA",
     },
     "erd": {
-        "label": "Data and information",
-        "audience": "Data architect, DBA",
+        "label": "Данные и информация",
+        "audience": "Архитектор данных, DBA",
     },
     "user_story": {
-        "label": "Users and interaction",
-        "audience": "UX designer, developer, tester",
+        "label": "Пользователи и взаимодействие",
+        "audience": "UX-дизайнер, разработчик, тестировщик",
     },
     "use_case": {
-        "label": "Users and interaction",
-        "audience": "UX designer, developer, tester",
+        "label": "Пользователи и взаимодействие",
+        "audience": "UX-дизайнер, разработчик, тестировщик",
     },
     "functional": {
-        "label": "Functionality",
-        "audience": "Developer, architect",
+        "label": "Функциональность",
+        "audience": "Разработчик, архитектор",
     },
     "non_functional": {
-        "label": "Functionality",
-        "audience": "Developer, architect",
+        "label": "Функциональность",
+        "audience": "Разработчик, архитектор",
     },
     "business_rule": {
-        "label": "Business rules",
-        "audience": "Business analyst, legal, compliance",
+        "label": "Бизнес-правила",
+        "audience": "Бизнес-аналитик, юрист, compliance",
     },
     # On-demand fallback for the requirement CLASSES 5.1 can hold (solution / transition /
     # stakeholder / component) that have no dedicated 7.1 viewpoint. Without it they were
@@ -113,7 +113,7 @@ SKIP_TYPES = NON_REQUIREMENT_NODE_TYPES
 
 
 # ---------------------------------------------------------------------------
-# Utilities — paths and file loading
+# Утилиты — пути и загрузка файлов
 # ---------------------------------------------------------------------------
 
 def _safe(project_id: str) -> str:
@@ -884,13 +884,13 @@ def _concern_lines(project_id: str, repo: dict) -> list:
 
 
 # ---------------------------------------------------------------------------
-# BFS for semantic gap analysis
+# BFS для анализа семантических разрывов
 # ---------------------------------------------------------------------------
 
 def _get_linked_ids(repo: dict, req_id: str, relation_filter: Optional[set] = None) -> set:
     """
-    Returns the IDs of all req linked to req_id in the 5.1 repository.
-    If relation_filter is set — only links of the specified types.
+    Возвращает ID всех req, связанных с req_id в репозитории 5.1.
+    Если relation_filter задан — только связи указанных типов.
     """
     links = repo.get("links", [])
     result = set()
@@ -908,8 +908,8 @@ def _get_linked_ids(repo: dict, req_id: str, relation_filter: Optional[set] = No
 
 def _build_views_from_repo(repo: dict) -> dict:
     """
-    Builds a dict {viewpoint_key: [req_id, ...]} from the 5.1 repository.
-    Uses VIEWPOINT_MAP to map types → viewpoints.
+    Строит словарь {viewpoint_key: [req_id, ...]} из репозитория 5.1.
+    Использует VIEWPOINT_MAP для маппинга типов → точки зрения.
     """
     views: dict = {}
     for req in repo.get("requirements", []):
@@ -939,16 +939,16 @@ def analyze_requirements_architecture(
     BABOK 7.4 — Automatically builds viewpoints from artifact types in the 5.1
     repository. Mapping: VIEWPOINT_MAP.
 
-    Additionally:
-    - Reads custom viewpoints from {project}_architecture.json (if any)
-    - Builds a BG × viewpoints coverage matrix (if business_context from 7.3 exists)
-    - Shows which artifact types are missing
+    Дополнительно:
+    - Читает кастомные viewpoints из {project}_architecture.json (если есть)
+    - Строит матрицу покрытия BG × точки зрения (если есть business_context из 7.3)
+    - Показывает какие типы артефактов отсутствуют
 
     Args:
-        project_id: Project identifier.
+        project_id: Идентификатор проекта.
 
     Returns:
-        A full picture of the requirements architecture: viewpoints, views, coverage matrix.
+        Полная картина архитектуры требований: viewpoints, views, coverage matrix.
     """
     logger.info(f"analyze_requirements_architecture: project_id='{project_id}'")
 
@@ -957,21 +957,21 @@ def analyze_requirements_architecture(
 
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty or not found.\n\n"
-            f"Create requirements via the 7.1 tools before working on architecture."
+            f"⚠️ Репозиторий 5.1 для проекта `{project_id}` пуст или не найден.\n\n"
+            f"Создай требования через инструменты 7.1 перед работой над архитектурой."
         )
 
-    # Build views from the repository
+    # Строим views из репозитория
     auto_views = _build_views_from_repo(repo)
 
-    # Load existing architecture (for custom viewpoints)
+    # Загружаем существующую архитектуру (для кастомных viewpoints)
     arch = _load_architecture(project_id)
     custom_viewpoints = {
         k: v for k, v in arch.get("viewpoints", {}).items()
         if not v.get("auto", True)
     }
 
-    # Update automatic viewpoints in the architecture
+    # Обновляем автоматические viewpoints в архитектуре
     for vp_key, req_ids in auto_views.items():
         vp_meta = VIEWPOINT_MAP[vp_key]
         arch["viewpoints"][vp_key] = {
@@ -982,13 +982,13 @@ def analyze_requirements_architecture(
         }
     arch["views"] = {**auto_views}
 
-    # Add views for custom viewpoints (from architecture)
+    # Добавляем views для кастомных viewpoints (из архитектуры)
     for vp_key, vp_data in custom_viewpoints.items():
         arch["views"][vp_key] = vp_data.get("req_ids", [])
 
     _save_architecture(arch)
 
-    # Statistics
+    # Статистика
     active_reqs = [r for r in all_reqs if r.get("type", "") not in SKIP_TYPES]
     total = len(active_reqs)
     # This line used to read "Total **active** req", which is a claim about STATUS made
@@ -1001,21 +1001,21 @@ def analyze_requirements_architecture(
     in_viewpoints = sum(len(ids) for ids in auto_views.values())
     coverage_pct = round(in_viewpoints / total * 100, 1) if total > 0 else 0.0
 
-    # Types missing from the repository
+    # Типы которых нет в репозитории
     all_auto_types = set(VIEWPOINT_MAP.keys())
     present_types = set(auto_views.keys())
     # `other` is an on-demand fallback bucket, not an expected viewpoint — never report it
     # as "missing" when there are no unmapped requirement types.
     missing_types = all_auto_types - present_types - {"other"}
 
-    # Business context for the coverage matrix
+    # Business context для coverage matrix
     ctx = _load_context(project_id)
     goals = ctx.get("business_goals", []) if ctx else []
 
     lines = [
-        f"<!-- BABOK 7.4 — Requirements Architecture | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.4 — Requirements Architecture | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 🏗️ Requirements architecture — {project_id}",
+        f"# 🏗️ Архитектура требований — {project_id}",
         "",
         f"**Date:** {date.today()}  ",
         f"**Total req:** {total}{archived_note}  ",
@@ -1023,11 +1023,11 @@ def analyze_requirements_architecture(
         "",
         "---",
         "",
-        "## Viewpoints",
+        "## Точки зрения (Viewpoints)",
         "",
     ]
 
-    # Group by unique labels (DD and ERD → one "Data" viewpoint)
+    # Группируем по уникальным labels (DD и ERD → один viewpoint «Данные»)
     seen_labels: dict = {}  # label → {artifact_types: [], req_ids: []}
     for vp_key, req_ids in auto_views.items():
         meta = VIEWPOINT_MAP[vp_key]
@@ -1041,27 +1041,27 @@ def analyze_requirements_architecture(
         seen_labels[label]["artifact_types"].append(vp_key)
         seen_labels[label]["req_ids"].extend(req_ids)
 
-    # Viewpoints table
+    # Таблица viewpoints
     lines += [
-        "| Viewpoint | Artifacts | Req count | Audience |",
-        "|-----------|-----------|-----------|----------|",
+        "| Точка зрения | Артефакты | Кол-во req | Аудитория |",
+        "|--------------|-----------|-----------|-----------|",
     ]
     for label, data in seen_labels.items():
         types_str = ", ".join(f"`{t}`" for t in data["artifact_types"])
         req_count = len(data["req_ids"])
-        icon = "✅" if req_count > 0 else "⚠️ empty"
+        icon = "✅" if req_count > 0 else "⚠️ пусто"
         lines.append(
             f"| {label} | {types_str} | {req_count} {icon} | {data['audience']} |"
         )
 
-    # Custom viewpoints
+    # Кастомные viewpoints
     if custom_viewpoints:
         lines += [
             "",
-            "## Custom viewpoints",
+            "## Кастомные точки зрения",
             "",
-            "| ID | Label | Req | Description |",
-            "|----|-------|-----|-------------|",
+            "| ID | Название | Req | Описание |",
+            "|----|----------|-----|---------|",
         ]
         for vp_key, vp_data in custom_viewpoints.items():
             req_count = len(vp_data.get("req_ids", []))
@@ -1070,40 +1070,40 @@ def analyze_requirements_architecture(
                 f"{vp_data.get('description', '—')[:60]} |"
             )
 
-    # Details per viewpoint
+    # Детали по каждому viewpoint
     lines += [
         "",
-        "## Viewpoint details",
+        "## Детали по точкам зрения",
         "",
     ]
     for label, data in seen_labels.items():
         req_ids = data["req_ids"]
         lines.append(f"### {label} ({len(req_ids)} req)")
         if req_ids:
-            # Show up to 10 req, the rest as a counter
+            # Показываем до 10 req, остальные — счётчик
             preview = req_ids[:10]
             lines.append(f"{' '.join(f'`{i}`' for i in preview)}"
-                         + (f" _+{len(req_ids) - 10} more_" if len(req_ids) > 10 else ""))
+                         + (f" _+{len(req_ids) - 10} ещё_" if len(req_ids) > 10 else ""))
         else:
-            lines.append("_No req of this type_")
+            lines.append("_Нет req этого типа_")
         lines.append("")
 
-    # Custom viewpoints details
+    # Кастомные viewpoints детали
     for vp_key, vp_data in custom_viewpoints.items():
         req_ids = vp_data.get("req_ids", [])
-        lines.append(f"### {vp_data['label']} [custom] ({len(req_ids)} req)")
+        lines.append(f"### {vp_data['label']} [кастомный] ({len(req_ids)} req)")
         if req_ids:
             preview = req_ids[:10]
             lines.append(f"{' '.join(f'`{i}`' for i in preview)}"
-                         + (f" _+{len(req_ids) - 10} more_" if len(req_ids) > 10 else ""))
+                         + (f" _+{len(req_ids) - 10} ещё_" if len(req_ids) > 10 else ""))
         lines.append("")
 
-    # Missing types
+    # Отсутствующие типы
     if missing_types:
         lines += [
-            "## ⚠️ Missing artifact types",
+            "## ⚠️ Отсутствующие типы артефактов",
             "",
-            "> These viewpoints are empty — no artifacts of these types exist in the repository.",
+            "> Эти точки зрения пусты — артефактов данных типов нет в репозитории.",
             "",
         ]
         type_labels = {k: VIEWPOINT_MAP[k]["label"] for k in missing_types}
@@ -1114,12 +1114,12 @@ def analyze_requirements_architecture(
     # Coverage matrix BG × viewpoints
     if goals:
         lines += [
-            "## Coverage Matrix — Business goals × Viewpoints",
+            "## Coverage Matrix — Бизнес-цели × Точки зрения",
             "",
-            "> Shows which viewpoints cover each business goal.",
+            "> Показывает: через какие точки зрения покрыта каждая бизнес-цель.",
             "",
         ]
-        # Build: for each req, look at its viewpoint and links to BG
+        # Строим: для каждого req смотрим его viewpoint и связи с BG
         from collections import defaultdict
         bg_to_viewpoints: dict = defaultdict(set)
 
@@ -1131,7 +1131,7 @@ def analyze_requirements_architecture(
             vp_key = req_type
             if vp_key not in VIEWPOINT_MAP:
                 continue
-            # BFS to nodes of type 'business'
+            # BFS к узлам типа 'business'
             linked = _get_linked_ids(repo, req_id)
             for linked_id in linked:
                 linked_req = _find_req(repo, linked_id)
@@ -1139,8 +1139,8 @@ def analyze_requirements_architecture(
                     bg_to_viewpoints[linked_id].add(VIEWPOINT_MAP[vp_key]["label"])
 
         vp_labels = sorted(set(v["label"] for v in VIEWPOINT_MAP.values()))
-        header = "| BG | Title | " + " | ".join(vp_labels) + " |"
-        sep = "|----|-------| " + " | ".join(["---"] * len(vp_labels)) + " |"
+        header = "| BG | Название | " + " | ".join(vp_labels) + " |"
+        sep = "|----|---------| " + " | ".join(["---"] * len(vp_labels)) + " |"
         lines += [header, sep]
 
         for g in goals:
@@ -1156,19 +1156,19 @@ def analyze_requirements_architecture(
     lines += [
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
     ]
 
     if missing_types:
         lines.append(
-            f"1. Create the missing artifacts ({', '.join(f'`{t}`' for t in sorted(missing_types))}) "
-            f"via the 7.1 tools, or justify their absence."
+            f"1. Создай недостающие артефакты ({', '.join(f'`{t}`' for t in sorted(missing_types))}) "
+            f"через инструменты 7.1 или обоснуй их отсутствие."
         )
     lines += [
-        "2. `check_architecture_gaps` — check for architecture gaps.",
-        "3. If needed: `add_custom_viewpoint` for regulatory/specific requirements.",
-        f"4. `save_architecture_snapshot(project_id='{project_id}', version='v1.0')` — record it.",
+        "2. `check_architecture_gaps` — проверь архитектурные разрывы.",
+        "3. При необходимости: `add_custom_viewpoint` для регуляторных/специфических требований.",
+        f"4. `save_architecture_snapshot(project_id='{project_id}', version='v1.0')` — зафиксируй.",
     ]
 
     return "\n".join(lines)
@@ -1192,64 +1192,64 @@ def add_custom_viewpoint(
     BABOK 7.4 — Adds a custom viewpoint bound to req_ids.
     custom viewpoints are defined via req_ids (not via artifact types).
 
-    Custom viewpoints are needed for specific perspectives: Security, Audit/Compliance,
-    Data migration, Integrations — anything not covered by the standard five viewpoints.
+    Кастомные viewpoints нужны для специфических перспектив: Безопасность, Аудит/Compliance,
+    Миграция данных, Интеграции — всё что не покрывается стандартными пятью точками зрения.
 
     Args:
-        project_id:        Project identifier.
-        viewpoint_id:      Unique identifier (lowercase, no spaces): security, audit, migration.
-        label:             Viewpoint label: "Security and access", "Audit and compliance".
-        req_ids_json:      JSON list of requirement IDs: '["NFR-003", "FR-015", "BR-002"]'.
-                           All IDs must exist in the 5.1 repository.
-        description:       Description: what this viewpoint represents (optional).
-        stakeholder_roles: Who this viewpoint is for: "Security architect, CISO" (optional).
+        project_id:        Идентификатор проекта.
+        viewpoint_id:      Уникальный идентификатор (lowercase, без пробелов): security, audit, migration.
+        label:             Название точки зрения: «Безопасность и доступ», «Аудит и compliance».
+        req_ids_json:      JSON-список ID требований: '["NFR-003", "FR-015", "BR-002"]'.
+                           Все ID должны существовать в репозитории 5.1.
+        description:       Описание: что представляет эта точка зрения (необязательно).
+        stakeholder_roles: Для кого эта точка зрения: «Архитектор безопасности, CISO» (необязательно).
 
     Returns:
-        Confirmation with the composition of the custom viewpoint.
+        Подтверждение с составом кастомного viewpoint.
     """
     logger.info(f"add_custom_viewpoint: project_id='{project_id}', viewpoint_id='{viewpoint_id}'")
 
-    # Validate viewpoint_id
+    # Валидация viewpoint_id
     viewpoint_id = viewpoint_id.lower().strip()
     if not viewpoint_id or " " in viewpoint_id:
         return (
-            f"❌ viewpoint_id must be lowercase with no spaces: 'security', 'audit', 'migration'.\n"
-            f"Got: '{viewpoint_id}'"
+            f"❌ viewpoint_id должен быть строчным без пробелов: 'security', 'audit', 'migration'.\n"
+            f"Получено: '{viewpoint_id}'"
         )
 
     if viewpoint_id in VIEWPOINT_MAP:
         return (
-            f"❌ viewpoint_id '{viewpoint_id}' conflicts with a standard artifact type.\n"
-            f"Use a different name, e.g.: 'security', 'audit', 'migration'."
+            f"❌ viewpoint_id '{viewpoint_id}' совпадает со стандартным типом артефакта.\n"
+            f"Используй другое имя, например: 'security', 'audit', 'migration'."
         )
 
     if not label.strip():
-        return "❌ label cannot be empty — provide a viewpoint label."
+        return "❌ label не может быть пустым — укажи название точки зрения."
 
-    # Parse req_ids
+    # Парсинг req_ids
     try:
         req_ids_list = json.loads(req_ids_json)
         if not isinstance(req_ids_list, list) or not req_ids_list:
-            raise ValueError("The list must not be empty")
+            raise ValueError("Список не должен быть пустым")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse req_ids_json: {e}\n\n"
-            f"Expected a non-empty JSON list: '[\"NFR-003\", \"FR-015\"]'"
+            f"❌ Ошибка парсинга req_ids_json: {e}\n\n"
+            f"Ожидается непустой JSON-список: '[\"NFR-003\", \"FR-015\"]'"
         )
 
-    # Validation: all req must exist in the 5.1 repository (ADR-036)
+    # Валидация: все req должны существовать в репозитории 5.1 (ADR-036)
     repo = _load_repo(project_id)
     repo_ids = {r["id"] for r in repo.get("requirements", [])}
 
     not_found = [rid for rid in req_ids_list if rid not in repo_ids]
     if not_found:
         return (
-            f"❌ The following req_ids were not found in the 5.1 repository of project `{project_id}`:\n"
+            f"❌ Следующие req_ids не найдены в репозитории 5.1 проекта `{project_id}`:\n"
             f"{', '.join(f'`{i}`' for i in not_found)}\n\n"
-            f"Create the req via the 7.1 tools or fix the IDs."
+            f"Создай req через инструменты 7.1 или исправь ID."
         )
 
-    # Save
+    # Сохраняем
     arch = _load_architecture(project_id)
 
     is_update = viewpoint_id in arch.get("viewpoints", {}) and not arch["viewpoints"][viewpoint_id].get("auto", True)
@@ -1262,40 +1262,40 @@ def add_custom_viewpoint(
         "stakeholder_roles": stakeholder_roles,
         "created": str(date.today()),
     }
-    # Update views
+    # Обновляем views
     arch["views"][viewpoint_id] = req_ids_list
 
     _save_architecture(arch)
 
-    # Req details
+    # Детали req
     req_details = []
     for rid in req_ids_list:
         req = _find_req(repo, rid)
         if req:
             req_details.append(f"- `{rid}` ({req.get('type', '?')}) — {req.get('title', '')}")
 
-    action = "updated" if is_update else "created"
+    action = "обновлена" if is_update else "создана"
     lines = [
-        f"✅ Custom viewpoint **{action}**: `{viewpoint_id}`",
+        f"✅ Кастомная точка зрения **{action}**: `{viewpoint_id}`",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
+        f"| Поле | Значение |",
+        f"|------|----------|",
         f"| ID | `{viewpoint_id}` |",
-        f"| Label | {label} |",
+        f"| Название | {label} |",
         f"| Req | {len(req_ids_list)} |",
-        f"| Audience | {stakeholder_roles or '—'} |",
-        f"| Date | {date.today()} |",
+        f"| Аудитория | {stakeholder_roles or '—'} |",
+        f"| Дата | {date.today()} |",
     ]
 
     if description:
         lines += [
             "",
-            f"**Description:** {description}",
+            f"**Описание:** {description}",
         ]
 
     lines += [
         "",
-        "**Requirements in this viewpoint:**",
+        "**Требования в этой точке зрения:**",
         "",
     ]
     lines.extend(req_details)
@@ -1304,8 +1304,8 @@ def add_custom_viewpoint(
         "",
         "---",
         "",
-        "**Next step:**",
-        f"`check_architecture_gaps(project_id='{project_id}')` — check gaps taking the new viewpoint into account.",
+        "**Следующий шаг:**",
+        f"`check_architecture_gaps(project_id='{project_id}')` — проверить разрывы с учётом новой точки зрения.",
     ]
 
     return "\n".join(lines)
@@ -1573,7 +1573,7 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     """
     all_reqs = repo.get("requirements", [])
 
-    # Build current views (auto + custom)
+    # Строим актуальные views (авто + кастомные)
     auto_views = _build_views_from_repo(repo)
     views = {**auto_views}
     for vp_key, vp_data in arch.get("viewpoints", {}).items():
@@ -1585,10 +1585,10 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     gaps_info: list = []
 
     # ------------------------------------------------------------------
-    # LEVEL 1: Coverage matrix
+    # УРОВЕНЬ 1: Матрица покрытия
     # ------------------------------------------------------------------
 
-    # 1a. Empty viewpoints (info)
+    # 1a. Пустые viewpoints (info)
     for vp_key, req_ids in views.items():
         if not req_ids:
             label = arch["viewpoints"].get(vp_key, {}).get("label") or \
@@ -1597,13 +1597,13 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 "type": "empty_viewpoint",
                 "viewpoint": vp_key,
                 "label": label,
-                "message": f"Viewpoint '{label}' (`{vp_key}`) is empty — no req of this type.",
+                "message": f"Точка зрения «{label}» (`{vp_key}`) пуста — нет req этого типа.",
             })
 
-    # 1b. Stakeholder without representation — ADR-035
+    # 1b. Стейкхолдер без представления — ADR-035
     stakeholders_data = _load_stakeholders(project_id)
     if stakeholders_data is None:
-        # Graceful: warn, don't fail
+        # Graceful: предупреждаем, не падаем
         gaps_info.append({
             "type": "no_stakeholder_registry",
             "message": (
@@ -1760,12 +1760,12 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     ),
                 })
 
-    # 1c. BG without viewpoint coverage (warning)
+    # 1c. BG без покрытия viewpoint (warning)
     ctx = _load_context(project_id)
     goals = ctx.get("business_goals", []) if ctx else []
 
     if goals:
-        # For each BG, check whether it has at least one link in the graph
+        # Для каждой BG смотрим есть ли хотя бы одна связь в граф
         goal_ids = {g["id"] for g in goals}
         bg_in_graph = {r["id"] for r in all_reqs if r.get("type") in BUSINESS_NODE_TYPES}
         for g in goals:
@@ -1784,7 +1784,7 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 })
 
     # ------------------------------------------------------------------
-    # LEVEL 2: Semantic gaps (uses the 5.1 graph)
+    # УРОВЕНЬ 2: Семантические разрывы (использует граф 5.1)
     # ------------------------------------------------------------------
 
     # Archived requirements leave this level entirely, and that cuts BOTH ways on
@@ -1811,7 +1811,7 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
     us_ids = {r["id"] for r in reqs_by_type.get("user_story", [])}
     nfr_ids = {r["id"] for r in reqs_by_type.get("non_functional", [])}
 
-    # 2a. UC without a corresponding BP (warning)
+    # 2a. UC без соответствующего BP (warning)
     for req in reqs_by_type.get("use_case", []):
         uc_id = req["id"]
         linked = _get_linked_ids(repo, uc_id)
@@ -1822,13 +1822,13 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 "req_id": uc_id,
                 "title": req.get("title", ""),
                 "message": (
-                    f"`{uc_id}` — Use Case '{req.get('title', '')[:50]}' "
-                    f"is not linked to any Business Process. "
-                    f"The user interacts, but the process is not described."
+                    f"`{uc_id}` — Use Case «{req.get('title', '')[:50]}» "
+                    f"не связан ни с одним Business Process. "
+                    f"Пользователь взаимодействует, но процесс не описан."
                 ),
             })
 
-    # 2b. NFR without a link to an FR (warning)
+    # 2b. NFR без привязки к FR (warning)
     for req in reqs_by_type.get("non_functional", []):
         nfr_id = req["id"]
         linked = _get_linked_ids(repo, nfr_id)
@@ -1839,13 +1839,13 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 "req_id": nfr_id,
                 "title": req.get("title", ""),
                 "message": (
-                    f"`{nfr_id}` — NFR '{req.get('title', '')[:50]}' "
-                    f"is not linked to any FR. "
-                    f"The non-functional constraint is left hanging."
+                    f"`{nfr_id}` — NFR «{req.get('title', '')[:50]}» "
+                    f"не привязан ни к одному FR. "
+                    f"Нефункциональное ограничение «в воздухе»."
                 ),
             })
 
-    # 2c. FR without a UC or US (info)
+    # 2c. FR без UC или US (info)
     for req in reqs_by_type.get("functional", []):
         fr_id = req["id"]
         linked = _get_linked_ids(repo, fr_id)
@@ -1856,9 +1856,9 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                 "req_id": fr_id,
                 "title": req.get("title", ""),
                 "message": (
-                    f"`{fr_id}` — FR '{req.get('title', '')[:50]}' "
-                    f"is not linked to a UC or US. "
-                    f"The function exists, but the usage scenario is not documented."
+                    f"`{fr_id}` — FR «{req.get('title', '')[:50]}» "
+                    f"не связан с UC или US. "
+                    f"Функция есть, но сценарий использования не задокументирован."
                 ),
             })
 
@@ -1968,29 +1968,29 @@ def check_architecture_gaps(
     _save_architecture(arch)
 
     # ------------------------------------------------------------------
-    # Build the report
+    # Формируем отчёт
     # ------------------------------------------------------------------
 
     total_gaps = len(gaps_critical) + len(gaps_warning) + len(gaps_info)
-    verdict = "✅ No critical gaps" if not gaps_critical else f"❌ {len(gaps_critical)} critical gap(s)"
+    verdict = "✅ Нет критических разрывов" if not gaps_critical else f"❌ {len(gaps_critical)} критических разрыва(ов)"
 
     lines = [
-        f"<!-- BABOK 7.4 — Architecture Gaps | Project: {project_id} | {date.today()} -->",
+        f"<!-- BABOK 7.4 — Architecture Gaps | Проект: {project_id} | {date.today()} -->",
         "",
-        f"# 🔍 Architecture gaps — {project_id}",
+        f"# 🔍 Архитектурные разрывы — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Verdict:** {verdict}",
+        f"**Дата:** {date.today()}  ",
+        f"**Вердикт:** {verdict}",
         "",
-        "| Severity | Count |",
-        "|----------|-------|",
+        "| Severity | Количество |",
+        "|----------|-----------|",
         f"| 🔴 Critical | {len(gaps_critical)} |",
         f"| 🟡 Warning | {len(gaps_warning)} |",
         f"| ℹ️ Info | {len(gaps_info)} |",
-        f"| **Total** | **{total_gaps}** |",
+        f"| **Всего** | **{total_gaps}** |",
         "",
-        "> ⚠️ **Project pattern:** severity does not block work — it only informs. "
-        "> Resolve critical gaps before handing off to 7.5.",
+        "> ⚠️ **Паттерн проекта:** severity не блокирует работу — только информирует. "
+        "> Устрани critical до передачи в 7.5.",
         "",
         "---",
         "",
@@ -1998,55 +1998,55 @@ def check_architecture_gaps(
 
     if gaps_critical:
         lines += [
-            "## 🔴 Critical — require resolution",
+            "## 🔴 Critical — требуют устранения",
             "",
         ]
         lines += _render_gap_section(gaps_critical)
 
     if gaps_warning:
         lines += [
-            "## 🟡 Warning — worth reviewing",
+            "## 🟡 Warning — стоит рассмотреть",
             "",
         ]
         lines += _render_gap_section(gaps_warning)
 
     if gaps_info:
         lines += [
-            "## ℹ️ Info — for completeness",
+            "## ℹ️ Info — для полноты картины",
             "",
         ]
         lines += _render_gap_section(gaps_info)
 
     if total_gaps == 0:
         lines += [
-            "## ✅ No gaps found",
+            "## ✅ Разрывов не обнаружено",
             "",
-            "The requirements architecture looks complete.",
-            "You can record a snapshot and hand off to 7.5.",
+            "Архитектура требований выглядит полной.",
+            "Можно фиксировать снапшот и передавать в 7.5.",
             "",
         ]
 
-    # Note about false positives
+    # Нотация о ложных срабатываниях
     if any(g["type"] in ("uc_without_bp", "nfr_without_fr", "fr_without_scenario")
            for g in gaps_warning + gaps_info):
         lines += [
             "---",
             "",
-            "> ℹ️ **About false positives (level 2):** gaps such as UC without BP, "
-            "> NFR without FR, FR without UC depend on how complete the links in the 5.1 "
-            "> repository are. If links were added rarely — some signals may be false. "
-            "> Verify via `run_impact_analysis` in 5.1.",
+            "> ℹ️ **О ложных срабатываниях (уровень 2):** разрывы типа UC без BP, "
+            "> NFR без FR, FR без UC зависят от полноты связей в репозитории 5.1. "
+            "> Если связи добавлялись редко — часть сигналов может быть ложной. "
+            "> Проверяй через `run_impact_analysis` в 5.1.",
             "",
         ]
 
     lines += [
         "---",
         "",
-        "## Next steps",
+        "## Следующие шаги",
         "",
-        "1. Resolve **critical** gaps: create missing req (7.1) or add traceability (5.1).",
-        "2. Review **warning** gaps — especially NFR without FR and UC without BP.",
-        f"3. Once resolved: `save_architecture_snapshot(project_id='{project_id}', version='v1.0')`",
+        "1. Устрани **critical** разрывы: создай недостающие req (7.1) или добавь трассировку (5.1).",
+        "2. Рассмотри **warning** разрывы — особенно NFR без FR и UC без BP.",
+        f"3. После устранения: `save_architecture_snapshot(project_id='{project_id}', version='v1.0')`",
     ]
 
     return "\n".join(lines)
@@ -2068,8 +2068,8 @@ def save_architecture_snapshot(
     BABOK 7.4 — Records a snapshot of the requirements architecture.
     snapshots accumulate in {project}_architecture.json — history is not overwritten.
 
-    Generates an Architecture Document (Markdown) via save_artifact.
-    The document is handed off to 4.4 (communication with stakeholders) and 7.5 (design options).
+    Генерирует Architecture Document (Markdown) через save_artifact.
+    Документ передаётся в 4.4 (коммуникация со стейкхолдерами) и 7.5 (дизайн решений).
 
     The gap block inside that document is RECOMPUTED here, not read back from the last
     `check_architecture_gaps`. The workflow deliberately puts `declare_stakeholder_interest`
@@ -2078,26 +2078,26 @@ def save_architecture_snapshot(
     same person. A project that never ran the check gets a real table rather than zeros.
 
     Args:
-        project_id: Project identifier.
-        version:    Snapshot version: v1.0, v1.1, v2.0.
-        notes:      Notes for the snapshot (what changed, context).
-        author:     Snapshot author (optional).
+        project_id: Идентификатор проекта.
+        version:    Версия снапшота: v1.0, v1.1, v2.0.
+        notes:      Примечания к снапшоту (что изменилось, контекст).
+        author:     Автор снапшота (необязательно).
 
     Returns:
-        The Architecture Document in Markdown + a save confirmation.
+        Architecture Document в Markdown + подтверждение сохранения.
     """
     logger.info(f"save_architecture_snapshot: project_id='{project_id}', version='{version}'")
 
     if not version.strip():
-        return "❌ version cannot be empty. Use the format: v1.0, v1.1, v2.0"
+        return "❌ version не может быть пустым. Используй формат: v1.0, v1.1, v2.0"
 
     repo = _load_repo(project_id)
     all_reqs = repo.get("requirements", [])
 
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository is empty — nothing to record.\n"
-            f"First call `analyze_requirements_architecture` to analyze."
+            f"⚠️ Репозиторий 5.1 пуст — нечего фиксировать.\n"
+            f"Сначала вызови `analyze_requirements_architecture` для анализа."
         )
 
     arch = _load_architecture(project_id)
@@ -2124,7 +2124,7 @@ def save_architecture_snapshot(
             all_views[vp_key] = vp_data.get("req_ids", [])
             custom_viewpoints[vp_key] = vp_data
 
-    # Update arch before the snapshot
+    # Обновляем arch перед снапшотом
     for vp_key, req_ids in auto_views.items():
         vp_meta = VIEWPOINT_MAP[vp_key]
         arch["viewpoints"][vp_key] = {
@@ -2168,13 +2168,13 @@ def save_architecture_snapshot(
     _save_architecture(arch)
 
     # ------------------------------------------------------------------
-    # Generate the Architecture Document (Markdown)
+    # Генерируем Architecture Document (Markdown)
     # ------------------------------------------------------------------
 
     ctx = _load_context(project_id)
     goals = ctx.get("business_goals", []) if ctx else []
 
-    # Group viewpoints by unique labels
+    # Группируем viewpoints по уникальным labels
     seen_labels: dict = {}
     for vp_key, req_ids in auto_views.items():
         meta = VIEWPOINT_MAP[vp_key]
@@ -2189,34 +2189,34 @@ def save_architecture_snapshot(
         seen_labels[label]["req_ids"].extend(req_ids)
 
     doc_lines = [
-        f"<!-- BABOK 7.4 — Architecture Document | Project: {project_id} | {version} | {date.today()} -->",
+        f"<!-- BABOK 7.4 — Architecture Document | Проект: {project_id} | {version} | {date.today()} -->",
         "",
-        f"# 📐 Requirements Architecture Document",
+        f"# 📐 Архитектурный документ требований",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Project | {project_id} |",
-        f"| Version | {version} |",
-        f"| Date | {date.today()} |",
-        f"| Author | {author or '—'} |",
-        f"| Total req | {total_reqs} |",
-        f"| Viewpoints | {viewpoints_count} ({custom_count} custom) |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Проект | {project_id} |",
+        f"| Версия | {version} |",
+        f"| Дата | {date.today()} |",
+        f"| Автор | {author or '—'} |",
+        f"| Всего req | {total_reqs} |",
+        f"| Точек зрения | {viewpoints_count} ({custom_count} кастомных) |",
         "",
     ]
 
     if notes:
         doc_lines += [
-            f"**Notes:** {notes}",
+            f"**Примечания:** {notes}",
             "",
         ]
 
     doc_lines += [
         "---",
         "",
-        "## Viewpoints",
+        "## Точки зрения (Viewpoints)",
         "",
-        "| Viewpoint | Artifacts | Req count | Audience |",
-        "|-----------|-----------|-----------|----------|",
+        "| Точка зрения | Артефакты | Кол-во req | Аудитория |",
+        "|--------------|-----------|-----------|-----------|",
     ]
 
     for label, data in seen_labels.items():
@@ -2229,15 +2229,15 @@ def save_architecture_snapshot(
     for vp_key, vp_data in custom_viewpoints.items():
         req_count = len(vp_data.get("req_ids", []))
         doc_lines.append(
-            f"| {vp_data['label']} _(custom)_ | req_ids | {req_count} | "
+            f"| {vp_data['label']} _(кастомный)_ | req_ids | {req_count} | "
             f"{vp_data.get('stakeholder_roles', '—')} |"
         )
 
     doc_lines.append("")
 
-    # Viewpoint details
+    # Детали по viewpoints
     doc_lines += [
-        "## Viewpoint details",
+        "## Детали по точкам зрения",
         "",
     ]
 
@@ -2245,31 +2245,31 @@ def save_architecture_snapshot(
         req_ids = data["req_ids"]
         doc_lines.append(f"### {label} ({len(req_ids)} req)")
         if req_ids:
-            # Req table
+            # Таблица req
             doc_lines += [
-                "| ID | Type | Title |",
-                "|----|------|-------|",
+                "| ID | Тип | Название |",
+                "|----|-----|---------|",
             ]
             for rid in req_ids[:20]:
                 row = _viewpoint_row(repo, rid)
                 if row:
                     doc_lines.append(row)
             if len(req_ids) > 20:
-                doc_lines.append(f"| _+{len(req_ids) - 20} more_ | | |")
+                doc_lines.append(f"| _+{len(req_ids) - 20} ещё_ | | |")
         else:
-            doc_lines.append("_No req_")
+            doc_lines.append("_Нет req_")
         doc_lines.append("")
 
     for vp_key, vp_data in custom_viewpoints.items():
         req_ids = vp_data.get("req_ids", [])
-        doc_lines.append(f"### {vp_data['label']} [custom] ({len(req_ids)} req)")
+        doc_lines.append(f"### {vp_data['label']} [кастомный] ({len(req_ids)} req)")
         if vp_data.get("description"):
             doc_lines.append(f"_{vp_data['description']}_")
             doc_lines.append("")
         if req_ids:
             doc_lines += [
-                "| ID | Type | Title |",
-                "|----|------|-------|",
+                "| ID | Тип | Название |",
+                "|----|-----|---------|",
             ]
             for rid in req_ids[:20]:
                 row = _viewpoint_row(repo, rid)
@@ -2281,10 +2281,10 @@ def save_architecture_snapshot(
 
     # Gap status
     doc_lines += [
-        "## Architecture gaps",
+        "## Архитектурные разрывы",
         "",
-        f"| Severity | Count |",
-        f"|----------|-------|",
+        f"| Severity | Количество |",
+        f"|----------|-----------|",
         f"| 🔴 Critical | {len(gaps.get('critical', []))} |",
         f"| 🟡 Warning | {len(gaps.get('warning', []))} |",
         f"| ℹ️ Info | {len(gaps.get('info', []))} |",
@@ -2292,19 +2292,19 @@ def save_architecture_snapshot(
     ]
 
     if gaps.get("critical"):
-        doc_lines.append("**Critical gaps:**")
+        doc_lines.append("**Critical разрывы:**")
         for g in gaps["critical"]:
             doc_lines.append(f"- {g}")
         doc_lines.append("")
 
-    # Snapshot history
+    # История снапшотов
     all_snapshots = arch.get("snapshots", [])
     if len(all_snapshots) > 1:
         doc_lines += [
-            "## Snapshot history",
+            "## История снапшотов",
             "",
-            "| Version | Date | Author | Notes |",
-            "|---------|------|--------|-------|",
+            "| Версия | Дата | Автор | Примечания |",
+            "|--------|------|-------|-----------|",
         ]
         for s in all_snapshots:
             doc_lines.append(
@@ -2316,28 +2316,28 @@ def save_architecture_snapshot(
     doc_lines += [
         "---",
         "",
-        "## Artifact handoff",
+        "## Передача артефакта",
         "",
-        "| Direction | Purpose |",
-        "|-----------|---------|",
-        "| → **4.4** Communicate | Communicate the architecture to stakeholders |",
-        "| → **7.5** Design Options | Basis for defining solution design options |",
+        "| Направление | Назначение |",
+        "|-------------|-----------|",
+        "| → **4.4** Communicate | Коммуникация архитектуры со стейкхолдерами |",
+        "| → **7.5** Design Options | Основа для определения вариантов дизайна решения |",
     ]
 
     content = "\n".join(doc_lines)
 
-    # Save via save_artifact
+    # Сохраняем через save_artifact
     save_artifact(content, prefix="7_4_architecture", project_id=project_id)
 
-    # Response to the user
+    # Ответ пользователю
     result_lines = [
-        f"✅ Snapshot **{version}** recorded — **{project_id}**",
+        f"✅ Снапшот **{version}** зафиксирован — **{project_id}**",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
-        f"| Version | {version} |",
-        f"| Date | {date.today()} |",
-        f"| Req covered | {total_reqs} |",
+        f"| Поле | Значение |",
+        f"|------|----------|",
+        f"| Версия | {version} |",
+        f"| Дата | {date.today()} |",
+        f"| Req охвачено | {total_reqs} |",
         f"| Viewpoints | {viewpoints_count} |",
         f"| 🔴 Critical gaps | {summary['gaps_critical']} |",
         f"| 🟡 Warning gaps | {summary['gaps_warning']} |",
@@ -2345,23 +2345,23 @@ def save_architecture_snapshot(
     ]
 
     if notes:
-        result_lines += [f"**Notes:** {notes}", ""]
+        result_lines += [f"**Примечания:** {notes}", ""]
 
     result_lines += [
-        "Architecture Document saved via `save_artifact` (prefix: `7_4_architecture`).",
+        "Architecture Document сохранён через `save_artifact` (префикс: `7_4_architecture`).",
         "",
         "---",
         "",
-        "**Next steps:**",
-        f"- → **4.4** `prepare_communication_package` — communicate the architecture to stakeholders",
-        f"- → **7.5** Use the Architecture Document as an input artifact for Design Options",
+        "**Следующие шаги:**",
+        f"- → **4.4** `prepare_communication_package` — коммуникация архитектуры со стейкхолдерами",
+        f"- → **7.5** Используй Architecture Document как входной артефакт для Design Options",
     ]
 
     if summary["gaps_critical"] > 0:
         result_lines += [
             "",
-            f"⚠️ **{summary['gaps_critical']} critical gap(s) not resolved.** "
-            f"It's recommended to resolve them before handing off to 7.5.",
+            f"⚠️ **{summary['gaps_critical']} critical разрыва(ов) не устранены.** "
+            f"Рекомендуется устранить перед передачей в 7.5.",
         ]
 
     return "\n".join(result_lines)
