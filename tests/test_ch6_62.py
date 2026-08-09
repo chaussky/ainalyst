@@ -1220,5 +1220,54 @@ class TestIntegration73(BaseMCPTest):
         self.assertIn("BG-999", r)
 
 
+class TestAListParameterIsRefusedBeforeAnythingIsWritten(BaseMCPTest):
+    """Same class as 6.1: a list whose ELEMENTS are the wrong type passed the
+    container check, reached the renderer, and raised there — after _save_state.
+    The stored element then carried objects where the readers expect ids."""
+
+    def _stored(self):
+        path = data_file(PROJECT, "future_state.json")
+        if not os.path.exists(path):
+            return None
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_objects_where_ids_were_wanted_are_refused(self):
+        _scope()
+        result = capture_future_state_element(
+            PROJECT, "capabilities", "Order intake",
+            linked_business_needs='[{"id": "BN-001"}]',
+        )
+        self.assertIn("❌", result)
+        self.assertIn("linked_business_needs", result)
+
+    def test_a_refused_capture_leaves_the_stored_element_untouched(self):
+        _scope()
+        capture_future_state_element(PROJECT, "capabilities", "The original text")
+        before = self._stored()
+
+        capture_future_state_element(
+            PROJECT, "capabilities", "The text that must NOT land",
+            linked_business_needs='[{"id": "BN-001"}]',
+        )
+
+        self.assertEqual(before, self._stored())
+
+    def test_a_scalar_where_a_list_was_wanted_is_refused(self):
+        _scope()
+        result = capture_future_state_element(
+            PROJECT, "capabilities", "Order intake", sources="42")
+        self.assertIn("❌", result)
+        self.assertIsNone(self._stored())
+
+    def test_an_empty_sources_string_still_means_the_default(self):
+        _scope()
+        result = capture_future_state_element(
+            PROJECT, "capabilities", "Order intake", sources="")
+        self.assertIn("✅", result)
+        self.assertEqual(
+            ["elicitation"], self._stored()["elements"]["capabilities"]["sources"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

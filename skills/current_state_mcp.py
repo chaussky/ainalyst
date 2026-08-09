@@ -38,7 +38,7 @@ from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
-    read_json_artifact, guard_artifact_errors,
+    read_json_artifact, guard_artifact_errors, parse_json_str_list,
 )
 
 mcp = FastMCP("BABOK_CurrentState")
@@ -428,13 +428,18 @@ def capture_current_state_element(
     """
     logger.info(f"capture_current_state_element: {project_id}, element={element}")
 
-    # Validate the JSON fields
-    try:
-        pain_list = json.loads(pain_points) if pain_points.strip() else []
-        if not isinstance(pain_list, list):
-            return "❌ pain_points must be a JSON list of strings: '[\"problem1\",\"problem2\"]'"
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing pain_points: {e}"
+    # Validate the JSON fields.
+    #
+    # The ELEMENTS are checked, not only the container. Checking the container alone
+    # let a list of objects through to the renderer, which joins these values into
+    # text — and it raised there, AFTER _save_state had already stored them. The tool
+    # then reported a failure over work it had done, and the element was left holding
+    # objects where every reader of this file expects plain strings. The shared
+    # parsers refuse both shapes here, before anything is written.
+    pain_list, error = parse_json_str_list(
+        pain_points, "pain_points", example='["The process is slow","Data is lost"]')
+    if error:
+        return error
 
     try:
         metrics_dict = json.loads(metrics) if metrics.strip() else {}
@@ -443,12 +448,14 @@ def capture_current_state_element(
     except json.JSONDecodeError as e:
         return f"❌ Error parsing metrics: {e}"
 
-    try:
-        sources_list = json.loads(sources) if sources.strip() else ["elicitation"]
-        if not isinstance(sources_list, list):
-            return "❌ sources must be a JSON list"
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing sources: {e}"
+    # An empty string means the documented default, not an empty list.
+    if sources.strip():
+        sources_list, error = parse_json_str_list(
+            sources, "sources", example='["elicitation","document"]')
+        if error:
+            return error
+    else:
+        sources_list = ["elicitation"]
 
     if not description.strip():
         return "❌ description cannot be empty — describe the element's current state."

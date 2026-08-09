@@ -43,6 +43,7 @@ from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR,
                            normalize_project_id, pick_field,
                            unrecognized_records_error,
     read_json_artifact, guard_artifact_errors, is_archived, archived_suffix,
+    parse_json_str_list,
 )
 
 mcp = FastMCP("BABOK_FutureState")
@@ -478,19 +479,24 @@ def capture_future_state_element(
     except json.JSONDecodeError as e:
         return f"❌ Error parsing target_metrics: {e}"
 
-    try:
-        bn_list = json.loads(linked_business_needs) if linked_business_needs.strip() else []
-        if not isinstance(bn_list, list):
-            return "❌ linked_business_needs must be a JSON list of strings"
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing linked_business_needs: {e}"
+    # The ELEMENTS are checked, not only the container — see the same guard in 6.1
+    # `capture_current_state_element`. A list of objects passed the container check,
+    # reached the renderer that joins these ids into text, and raised there, AFTER
+    # _save_state. The refusal has to happen while the stored version is still the
+    # only one on disk.
+    bn_list, error = parse_json_str_list(
+        linked_business_needs, "linked_business_needs", example='["BN-001","BN-002"]')
+    if error:
+        return error
 
-    try:
-        sources_list = json.loads(sources) if sources.strip() else ["elicitation"]
-        if not isinstance(sources_list, list):
-            return "❌ sources must be a JSON list"
-    except json.JSONDecodeError as e:
-        return f"❌ Error parsing sources: {e}"
+    # An empty string means the documented default, not an empty list.
+    if sources.strip():
+        sources_list, error = parse_json_str_list(
+            sources, "sources", example='["elicitation","document"]')
+        if error:
+            return error
+    else:
+        sources_list = ["elicitation"]
 
     # Check the scope
     scope = _load_scope(project_id)
