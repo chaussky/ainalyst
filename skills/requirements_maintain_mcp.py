@@ -35,6 +35,7 @@ from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR,
     attribute_writer, reg_norm, days_since, ARCHIVED_REQUIREMENT_STATUSES,
     approval_outcome,
 )
+from skills.plural_ru import plural_ru
 
 mcp = FastMCP("BABOK_Requirements_Maintain")
 
@@ -472,10 +473,11 @@ def update_requirement(
     if new_title and incoming:
         by_id = ", ".join(sorted({f"`{lnk['from']}`" for lnk in incoming}))
         meaning_note = (
-            f"\n\n⚠️ **{len(incoming)} requirement(s) were justified by this one, and "
-            f"the wording just changed:** {by_id}.\n"
-            f"Their links still read as ordinary justification — check that they still "
-            f"hold against the new wording."
+            f"\n\n⚠️ **Этим требованием обоснованы {len(incoming)} "
+            f"{plural_ru(len(incoming), 'требование', 'требования', 'требований')}, а "
+            f"формулировка только что изменилась:** {by_id}.\n"
+            f"Их связи по-прежнему читаются как обычное обоснование — проверьте, что "
+            f"они держатся и на новой формулировке."
         )
 
     # Reviving an archived requirement reverses a 5.2 decision. The opposite direction
@@ -486,12 +488,14 @@ def update_requirement(
     if old_status in ARCHIVED_REQUIREMENT_STATUSES and \
             new_status and new_status not in ARCHIVED_REQUIREMENT_STATUSES:
         incoming_ids = ", ".join(sorted({f"`{lnk['from']}`" for lnk in incoming}))
-        edges_part = (f"; {len(incoming)} link(s) point at it: {incoming_ids}"
-                      if incoming else "")
+        edges_part = (
+            f"; на него указывают {len(incoming)} "
+            f"{plural_ru(len(incoming), 'связь', 'связи', 'связей')}: {incoming_ids}"
+            if incoming else "")
         revival_note = (
-            f"\n\n♻️ **This requirement was `{old_status}` and is live again.** That "
-            f"reverses a 5.2 decision{edges_part}.\n"
-            f"Run `check_coverage` (5.1) to see what it is connected to now."
+            f"\n\n♻️ **Это требование было `{old_status}` и снова живо.** Это отменяет "
+            f"решение 5.2{edges_part}.\n"
+            f"Запустите `check_coverage` (5.1), чтобы увидеть, с чем оно связано теперь."
         )
 
     # Handing ownership over is a one-line edit here and a NEW 🔴 gap in 7.4 — ADR-098
@@ -506,12 +510,13 @@ def update_requirement(
     if previous_owner and previous_owner != "—" and \
             reg_norm(previous_owner) != reg_norm(new_owner):
         ownership_note = (
-            f"\n\n⚠️ **Ownership moved away from `{previous_owner}`.** 7.4 computes "
-            f"stakeholder↔requirement ties from `owner` ON THE FLY rather "
-            f"than storing them, so `{previous_owner}` may now show up in "
-            f"`check_architecture_gaps` as having no recorded tie to any requirement. "
-            f"If their interests are still touched, record that with 7.4 "
-            f"`declare_stakeholder_interest` — it is the one tie the platform keeps."
+            f"\n\n⚠️ **Владение ушло от `{previous_owner}`.** 7.4 вычисляет связи "
+            f"«стейкхолдер ↔ требование» из поля `owner` НА ЛЕТУ, а не хранит их, "
+            f"поэтому `{previous_owner}` может теперь появиться в "
+            f"`check_architecture_gaps` как человек без единой записанной связи с "
+            f"требованиями. Если его интересы по-прежнему затронуты — зафиксируйте это "
+            f"через 7.4 `declare_stakeholder_interest`: это та связь, которую платформа "
+            f"хранит."
         )
 
     content = ("\n".join(lines) + volatility_warning + ownership_note
@@ -731,7 +736,7 @@ def check_requirements_health(
     # single hard-coded owner check, worded exactly as before, and not one new line.
     plan, plan_note = load_ba_plan(project_name)
     resolved = planned_attribute_set(plan)
-    audited, audited_label = resolved if resolved else (("owner",), "platform default")
+    audited, audited_label = resolved if resolved else (("owner",), "умолчание платформы")
 
     # Only requirements are maintained here. The health criteria — volatility, owner,
     # staleness, reuse — describe a requirement's lifecycle, so applying them to other
@@ -785,19 +790,24 @@ def check_requirements_health(
                 # one who can say which. Staying silent here is how a damaged date
                 # switched the staleness check off for good.
                 issues.append(
-                    f"🟡 Review date could not be read (`{last_reviewed}`) — staleness "
-                    f"was NOT checked for this requirement")
+                    f"🟡 Не удалось прочитать дату ревью (`{last_reviewed}`) — "
+                    f"устаревание для этого требования НЕ проверялось")
             elif days < 0:
                 issues.append(
-                    f"🟡 Review date is {abs(days)} days in the future "
-                    f"(`{last_reviewed}`) — the data is damaged, staleness cannot be judged")
+                    f"🟡 Дата ревью на {abs(days)} "
+                    f"{plural_ru(abs(days), 'день', 'дня', 'дней')} в будущем "
+                    f"(`{last_reviewed}`) — данные испорчены, судить об устаревании нельзя")
             elif days > STALE_DAYS_CRITICAL:
                 # The heavier branch must not read as LIGHTER than the softer one: it
                 # used to lose the call to action the >30 case carries.
-                issues.append(f"🟡 Not updated for {days} days — review it")
+                issues.append(
+                    f"🟡 Не обновлялось {days} "
+                    f"{plural_ru(days, 'день', 'дня', 'дней')} — пересмотрите его")
                 is_stale = True
             elif days > STALE_DAYS_WARNING:
-                issues.append(f"🟡 Not updated for {days} days — worth checking")
+                issues.append(
+                    f"🟡 Не обновлялось {days} "
+                    f"{plural_ru(days, 'день', 'дня', 'дней')} — стоит проверить")
                 is_stale = True
 
         # Долго в draft
@@ -806,7 +816,9 @@ def check_requirements_health(
             if added:
                 days_draft = _days_since(added)
                 if days_draft is not None and days_draft > STALE_DAYS_WARNING:
-                    issues.append(f"🟡 In draft status for {days_draft} days already")
+                    issues.append(
+                        f"🟡 В статусе draft уже {days_draft} "
+                        f"{plural_ru(days_draft, 'день', 'дня', 'дней')}")
 
         # Planned attributes (BABOK 3.4 element .6). One line per requirement, not one
         # per attribute: a Full preset on a bare requirement would otherwise add nine
