@@ -426,8 +426,8 @@ def import_risks_from_context(
                     })
         else:
             warnings.append(
-                f"⚠️ 4.2 elicitation results not found for '{src_id}' — skipping "
-                f"(run `process_elicitation_results` with `risks_json` to produce it)"
+                f"⚠️ Результаты выявления 4.2 не найдены для '{src_id}' — пропускаю "
+                f"(чтобы получить их, вызовите `process_elicitation_results` с `risks_json`)"
             )
 
     if not drafts and not warnings:
@@ -871,11 +871,11 @@ def generate_recommendation(
             f"Толерантность организации: {tol_level}. "
             + (f"Ожидаемая ценность: {potential_value_summary}. " if potential_value_summary else "")
             + (
-                "The BA judged the cumulative risk exposure to outweigh the expected value. "
+                "BA счёл, что совокупная подверженность рискам перевешивает ожидаемую ценность. "
                 if value_vs_risk == "risk_exceeds_value" else ""
             )
             + (
-                f"Once the {len(mitigation_risks)} mitigation plans are executed, the risk profile will decrease."
+                f"После исполнения планов снижения ({len(mitigation_risks)}) профиль риска станет ниже."
                 if rec_type == "proceed_with_mitigation" else ""
             )
         ),
@@ -912,15 +912,15 @@ def generate_recommendation(
 
     if rec_type == "seek_higher_value":
         output.append(
-            "\n  🟠 The risks are manageable, but you judged them to outweigh the expected value.\n"
-            "  Revisit scope or approach in 6.4 (`add_strategy_option`) to raise the value,\n"
-            "  or narrow the scope so the exposure drops.\n"
+            "\n  🟠 Риски управляемы, но, по вашей оценке, перевешивают ожидаемую ценность.\n"
+            "  Пересмотрите скоуп или подход в 6.4 (`add_strategy_option`), чтобы поднять ценность,\n"
+            "  либо сузьте скоуп, чтобы подверженность снизилась.\n"
         )
 
     if not value_vs_risk and high_risks:
         output.append(
-            "\n  ℹ️ Value vs risk was not assessed. With High risks present, state whether the\n"
-            "  expected value still justifies the exposure: pass `value_vs_risk=` \n"
+            "\n  ℹ️ Размен ценности и риска не оценён. При наличии High-рисков скажите, оправдывает\n"
+            "  ли ожидаемая ценность подверженность: передайте `value_vs_risk=` \n"
             "  (value_exceeds_risk / comparable / risk_exceeds_value).\n"
         )
 
@@ -1033,9 +1033,9 @@ def save_risk_assessment(
                 pairs = ", ".join(f"`{r}` → `{t}`" for r, t in missing_targets[:5])
                 more = f" (+{len(missing_targets) - 5} more)" if len(missing_targets) > 5 else ""
                 traceability_notes.append(
-                    f"⚠️ {len(missing_targets)} link(s) NOT written — the target is not a "
-                    f"node in the 5.1 repository: {pairs}{more}.\n"
-                    f"   Register the objective or requirement first, then re-run the push."
+                    f"⚠️ Связей НЕ записано: {len(missing_targets)} — цели нет узлом "
+                    f"в репозитории 5.1: {pairs}{more}.\n"
+                    f"   Сначала зарегистрируйте цель или требование, затем повторите push."
                 )
         else:
             traceability_notes.append(

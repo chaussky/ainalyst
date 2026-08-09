@@ -1,12 +1,12 @@
 ---
 name: requirements_prioritize
 description: >
-  BABOK 5.3 skill — Prioritize Requirements. Use this skill when the BA wants to
-  rank requirements using MoSCoW, WSJF, Impact/Effort or Time Boxing/Budgeting,
-  resolve conflicts between stakeholders, or justify the implementation order.
-  Triggers: "prioritization", "prioritize requirements", "MoSCoW", "WSJF",
-  "what to do first", "priority conflict", "requirement importance", "backlog",
-  "time boxing", "fixed budget", "what fits in the sprint".
+  Скилл BABOK 5.3 — Приоритизация требований. Используй этот скилл, когда BA хочет
+  ранжировать требования по MoSCoW, WSJF, Impact/Effort или Time Boxing/Budgeting,
+  разрешить конфликты между стейкхолдерами или обосновать порядок реализации.
+  Триггеры: «приоритизация», «расставить приоритеты», «MoSCoW», «WSJF»,
+  «что делать первым», «конфликт приоритетов», «важность требования», «бэклог»,
+  «time boxing», «фиксированный бюджет», «что влезет в спринт».
 project: "AI-powered Platform AInalyst"
 copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com"
 ---
@@ -168,13 +168,13 @@ Algorithm:
 
 Algorithm:
 1. Убедись, что все конфликты помечены как решённые
-2. Call `save_prioritization_result`
-3. The tool:
-   - Writes the `priority` field into the 5.1 repository
-   - WSJF sessions also write `wsjf_score` onto the node — 5.5 reads it to warn
-     when a stakeholder rejects a high-value requirement
-   - Saves a snapshot to `{project}_prioritization.json`
-   - Generates a Markdown report for stakeholders
+2. Вызови `save_prioritization_result`
+3. Инструмент:
+   - Записывает поле `priority` в репозиторий 5.1
+   - Для сессий WSJF ещё и пишет `wsjf_score` на узел — 5.5 читает его, чтобы
+     предупредить, когда стейкхолдер отвергает требование с высокой ценностью
+   - Сохраняет снимок в `{project}_prioritization.json`
+   - Формирует Markdown-отчёт для стейкхолдеров
 
 ---
 
@@ -223,11 +223,11 @@ Algorithm:
 Вызвать `add_stakeholder_scores` повторно для того же стейкхолдера.
 Новые оценки заменяют предыдущие в текущей сессии.
 
-**"Do I need to run prioritization for designs too (not just requirements)?"**
-Yes — BABOK includes Designs as input information for 5.3. In this platform the design and
-model artifacts from 7.1 (use cases, business processes, data dictionaries, ERDs) are already
-registered in the 5.1 repository under their own types and are prioritized with the same
-scheme. There is no separate `design` node type.
+**«Нужно ли приоритизировать дизайны, а не только требования?»**
+Да — BABOK включает Designs во входы 5.3. В этой платформе артефакты дизайна и моделей из
+7.1 (use cases, бизнес-процессы, словари данных, ERD) уже зарегистрированы в репозитории 5.1
+под собственными типами и приоритизируются по той же схеме. Отдельного типа узла `design`
+нет.
 
 **«Как часто проводить повторную приоритизацию?»**
 Правило: при любом из триггеров выше (получены оценки, CR принят, контекст изменился).

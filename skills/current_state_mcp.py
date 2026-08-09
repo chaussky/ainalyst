@@ -361,13 +361,13 @@ def scope_current_state(
     if imported_sessions:
         lines += [
             "",
-            f"## Elicitation provenance (4.3)",
+            f"## Происхождение из выявления (4.3)",
             "",
-            f"Sessions recorded: {imported_sessions}",
-            f"⚠️ Nothing was imported — 4.3 produces a Markdown report, not a"
-            f" machine-readable artifact. An EMPTY draft was created for each in-scope"
-            f" element and stamped with these labels;"
-            f" fill each one in via `capture_current_state_element`.",
+            f"Записано сессий: {imported_sessions}",
+            f"⚠️ Ничего не импортировано — 4.3 выдаёт Markdown-отчёт, а не"
+            f" машиночитаемый артефакт. Для каждого элемента в скоупе создан ПУСТОЙ"
+            f" черновик с этими метками;"
+            f" заполните каждый через `capture_current_state_element`.",
         ]
 
     lines += [
@@ -767,11 +767,11 @@ def define_business_needs(
             # of THIS call, and a graph created afterwards starts empty. The analyst
             # followed the instruction, got an empty graph, and nothing said so.
             traceability_status = (
-                f"\n\n⚠️ The 5.1 traceability repository does not exist yet, so "
-                f"`{need_id}` was NOT registered in it. Needs recorded from now on will "
-                f"be registered as they are created — this one will not be added "
-                f"retroactively.\n"
-                f"To put it in the graph, create the repository WITH it:\n"
+                f"\n\n⚠️ Репозитория трассировки 5.1 ещё нет, поэтому "
+                f"`{need_id}` в нём НЕ зарегистрирована. Потребности, записанные дальше, "
+                f"будут регистрироваться по мере создания — эта задним числом добавлена "
+                f"не будет.\n"
+                f"Чтобы поместить её в граф, создайте репозиторий СРАЗУ с ней:\n"
                 f"`init_traceability_repo(project_name='{project_id}', "
                 f"formality_level='Standard', requirements_json='[{{\"id\": \"{need_id}\", "
                 f"\"type\": \"business_need\", \"title\": \"...\", \"version\": \"1.0\", "
@@ -941,14 +941,14 @@ def check_current_state_completeness(
         # The percentage counts coverage (elements filled + RCA + needs present); the
         # verdict additionally requires those pieces to be LINKED. Both can therefore be
         # true at once — 100% with "not ready" — and that used to read like a bug.
-        ("> ℹ️ **Readiness % measures coverage, the verdict measures coherence.** "
-         "The percentage counts what has been filled in; the verdict also requires the "
-         "pieces to connect (e.g. a business need traced to a root cause). "
-         "100% with a 🔴 verdict means everything is written down but something is not "
-         "linked yet — see the warnings below."
+        ("> ℹ️ **Процент готовности меряет охват, вердикт — связность.** "
+         "Процент считает заполненное; вердикт требует ещё и того, чтобы части были "
+         "связаны между собой (например, бизнес-потребность трассирована к корневой причине). "
+         "100% при 🔴 вердикте означает, что записано всё, но что-то ещё не связано — "
+         "смотрите предупреждения ниже."
          if readiness_pct == 100 and not ready else ""),
         "",
-        "## Current-state elements",
+        "## Элементы текущего состояния",
         "",
         f"| Статус | Количество |",
         f"|--------|------------|",

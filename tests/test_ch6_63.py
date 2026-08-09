@@ -1186,10 +1186,10 @@ class TestElicitationSourceWarning(BaseMCPTest):
         _make_scope()
         result = import_risks_from_context(PROJECT, f'["{PROJECT}"]')
         self.assertIn("4.2", result)
-        self.assertIn("not found", result.lower())
+        self.assertIn("не найдены", result.lower())
         # Assert the actual sentence, not the bare token "4.2": that would pass on any
         # incidental occurrence elsewhere in the report.
-        self.assertRegex(result, r"(?i)4\.2[^\n]*not found")
+        self.assertRegex(result, r"(?i)4\.2[^\n]*не найдены")
 
 
 class TestElicitationSeamAgainstRealProducer(BaseMCPTest):

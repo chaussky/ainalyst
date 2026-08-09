@@ -113,8 +113,8 @@ BABOK 6.1 — Analyze Current State — точка отсчёта для все�
 - `evidence` — данные, подтверждающие цепочку причин
 - `affected_elements` — какие из 8 элементов затронуты (связь с шагом 2)
 
-**Normalized output:** regardless of the technique used — a single unified format.
-The technique is a thinking tool. The MCP saves the normalized result.
+**Нормализованный вывод:** какой бы техникой ни пользовались — формат один.
+Техника — инструмент мышления; MCP сохраняет нормализованный результат.
 
 ---
 
@@ -133,10 +133,10 @@ The technique is a thinking tool. The MCP saves the normalized result.
 - `expected_benefits` — ожидаемые выгоды от изменений
 - `root_cause_ids` — связь с RCA (обязательно!)
 
-**Registering in traceability:**
-- `register_in_traceability: true` (default) — BN-xxx will appear in the 5.1 repository
-- This is an upstream node: BN → BR → FR → TC — full end-to-end traceability
-- If the 5.1 repository hasn't been created yet — create it via `init_traceability_repo` (5.1)
+**Регистрация в трассировке:**
+- `register_in_traceability: true` (по умолчанию) — BN-xxx появится в репозитории 5.1
+- Это узел верхнего уровня: BN → BR → FR → TC — сквозная трассировка целиком
+- Если репозиторий 5.1 ещё не создан — создайте его через `init_traceability_repo` (5.1)
 
 ---
 
@@ -162,7 +162,7 @@ The technique is a thinking tool. The MCP saves the normalized result.
 - `false` (по умолчанию) — только сохраняет отчёт 6.1
 - `true` — готовит данные для передачи в 7.3. BA затем вызывает:
   `set_business_context(from_current_state_project_id="project_id", ...)`
-  and the data from the BN automatically pre-fills the business objectives
+  и данные из BN автоматически предзаполняют бизнес-цели
 
 ---
 
@@ -190,9 +190,9 @@ BN-xxx узлы регистрируются в репозитории 5.1 с т
 
 ### Выход: 6.1 → 7.3 (бизнес-контекст)
 
-`set_business_context` in 7.3 accepts the `from_current_state_project_id` parameter.
-When passed — it pre-fills business objectives from the 6.1 business needs.
-Without the parameter — it works as before (backward compatible).
+`set_business_context` в 7.3 принимает параметр `from_current_state_project_id`.
+Если он передан — бизнес-цели предзаполняются из бизнес-потребностей 6.1.
+Без параметра — работает как раньше (обратная совместимость сохранена).
 
 ### Выход: 6.1 → 6.2 (Future State)
 
@@ -239,5 +239,5 @@ Without the parameter — it works as before (backward compatible).
 - **`references/current_state_guide.md`** — подробное описание каждого из 8 элементов:
   что анализировать, вопросы для BA, примеры хорошего/плохого описания
 
-- **`references/rca_guide.md`** — three RCA techniques with step-by-step instructions
+- **`references/rca_guide.md`** — три техники RCA с пошаговыми инструкциями
   and a mapping to the normalized format

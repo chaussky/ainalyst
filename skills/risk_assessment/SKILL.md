@@ -22,7 +22,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 Риски — это неопределённость, которая **угрожает бизнес-целям**.
 Цель 6.3: идентифицировать риски, оценить их полуколичественно (likelihood × impact),
 спланировать ответные меры и дать спонсору обоснованную рекомендацию:
-proceed / proceed with mitigation / do not proceed.
+идти / идти со снижением рисков / не идти.
 
 **Ключевые входы:**
 - 6.1 `{project}_current_state.json` — корневые причины, бизнес-потребности
@@ -186,26 +186,26 @@ Claude пишет narrative rationale (2–4 предложения с конк�
 
 **Параметры:**
 - `project_id`
-- `potential_value_summary` — brief description of the expected value from 6.2
-  (if 6.2 is filled in, it's pulled automatically)
-- `value_vs_risk` — optional. Your judgement on whether the expected value justifies
-  the cumulative risk exposure: `value_exceeds_risk` / `comparable` / `risk_exceeds_value`.
-  There is no honest arithmetic for this: 6.2 states value qualitatively, while the
-  cumulative exposure is a sum of 1–25 risk scores — comparing them numerically would be
-  false precision. So the call is yours. (The precise numeric version of this trade-off
-  lives in 7.6, which scores value against a risk penalty.)
+- `potential_value_summary` — краткое описание ожидаемой ценности из 6.2
+  (если 6.2 заполнена, подтягивается автоматически)
+- `value_vs_risk` — опционально. Ваше суждение о том, оправдывает ли ожидаемая ценность
+  совокупную подверженность рискам: `value_exceeds_risk` / `comparable` / `risk_exceeds_value`.
+  Честной арифметики здесь нет: 6.2 описывает ценность качественно, а совокупная
+  подверженность — это сумма оценок риска от 1 до 25; сравнивать их числами значило бы
+  выдать ложную точность. Поэтому решение за вами. (Точная числовая версия этого
+  размена живёт в 7.6, где ценность считается против штрафа за риск.)
 
 **Типы рекомендаций:**
 
 | Тип | Когда |
 |-----|-------|
-| `do_not_proceed` | Critical risks with no possible mitigation — outranks everything |
-| `seek_higher_value` | You passed `value_vs_risk="risk_exceeds_value"`: risks are manageable, but they outweigh the value |
-| `proceed_despite_risk` | No risks above the threshold |
-| `proceed_with_mitigation` | High risks exist, mitigation is possible |
+| `do_not_proceed` | Критичные риски, которые нечем снизить — важнее всего остального |
+| `seek_higher_value` | Вы передали `value_vs_risk="risk_exceeds_value"`: риски управляемы, но перевешивают ценность |
+| `proceed_despite_risk` | Рисков выше порога нет |
+| `proceed_with_mitigation` | High-риски есть, снижение возможно |
 
-> If High risks are present and you do not pass `value_vs_risk`, the type is decided by
-> the risk logic alone and the tool reminds you to state the trade-off.
+> Если High-риски есть, а `value_vs_risk` вы не передали, тип определяется только
+> логикой рисков, и инструмент напомнит вам высказать этот размен.
 
 **Твоя задача (Claude):** написать 2–4 предложения rationale с конкретными цифрами.
 Например: «Из 12 идентифицированных рисков 3 находятся в High-зоне (score 15–20).
