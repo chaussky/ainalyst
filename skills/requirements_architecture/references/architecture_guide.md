@@ -21,40 +21,40 @@ BABOK определяет два ключевых понятия:
 
 ---
 
-## Five viewpoints (automatic mapping)
+## Пять viewpoints (автоматическая раскладка)
 
-The platform automatically organizes requirements into five standard viewpoints based on the
-artifact type:
+Платформа автоматически раскладывает требования по пяти стандартным viewpoints, опираясь
+на тип артефакта:
 
-### 1. Business Processes
-**Artifacts:** `business_process` (BP)
-**Audience:** Business sponsor, process owners
-**Question:** How will business processes change?
-**Signs of completeness:** Every key business process is described. No Use Case lacks a corresponding BP.
+### 1. Бизнес-процессы
+**Артефакты:** `business_process` (BP)
+**Аудитория:** бизнес-спонсор, владельцы процессов
+**Вопрос:** как изменятся бизнес-процессы?
+**Признаки полноты:** описан каждый ключевой бизнес-процесс. Нет ни одного Use Case без соответствующего BP.
 
-### 2. Data and Information
-**Artifacts:** `data_dictionary` (DD), `erd` (ERD)
-**Audience:** Data architect, DBA
-**Question:** What data is created, stored, transmitted?
-**Signs of completeness:** All entities from the ERD are described in the DD. No entities with undefined attributes.
+### 2. Данные и информация
+**Артефакты:** `data_dictionary` (DD), `erd` (ERD)
+**Аудитория:** архитектор данных, DBA
+**Вопрос:** какие данные создаются, хранятся, передаются?
+**Признаки полноты:** все сущности из ERD описаны в DD. Нет сущностей с неопределёнными атрибутами.
 
-### 3. Users and Interaction
-**Artifacts:** `user_story` (US), `use_case` (UC)
-**Audience:** UX designer, developer, tester
-**Question:** How do users interact with the system?
-**Signs of completeness:** All user types are represented. Every US / UC traces to an FR.
+### 3. Пользователи и взаимодействие
+**Артефакты:** `user_story` (US), `use_case` (UC)
+**Аудитория:** UX-дизайнер, разработчик, тестировщик
+**Вопрос:** как пользователи взаимодействуют с системой?
+**Признаки полноты:** представлены все типы пользователей. Каждый US / UC трассируется на FR.
 
 ### 4. Functionality
-**Artifacts:** `functional` (FR), `non_functional` (NFR)
-**Audience:** Developer, architect
-**Question:** What must the system do, and how?
-**Signs of completeness:** Every FR traces to a US or UC. Every NFR is linked to an FR.
+**Артефакты:** `functional` (FR), `non_functional` (NFR)
+**Аудитория:** разработчик, архитектор
+**Вопрос:** что система должна делать и как именно?
+**Признаки полноты:** каждый FR трассируется на US или UC. Каждый NFR связан с FR.
 
-### 5. Business Rules
-**Artifacts:** `business_rule` (BR)
-**Audience:** Business analyst, legal counsel, compliance officer
-**Question:** What rules and constraints govern the system's behavior?
-**Signs of completeness:** Business rules reference specific FRs or BPs.
+### 5. Бизнес-правила
+**Артефакты:** `business_rule` (BR)
+**Аудитория:** бизнес-аналитик, юрист, комплаенс-офицер
+**Вопрос:** какие правила и ограничения управляют поведением системы?
+**Признаки полноты:** бизнес-правила ссылаются на конкретные FR или BP.
 
 ---
 
@@ -69,9 +69,10 @@ artifact type:
 - **Интеграции** — требования к API, интеграционным сценариям
 - **Миграция данных** — требования к переносу исторических данных
 
-**Key distinction:** custom viewpoints are defined via specific req_ids,
-not via artifact types. This is because "Security" is not a separate requirement type,
-but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly which requirements relate to security.
+**Ключевое отличие:** кастомные viewpoints задаются через конкретные req_ids, а не через
+типы артефактов. Причина в том, что «Безопасность» — не отдельный тип требований, а
+сквозной срез по существующим FR/NFR/BR. И только BA точно знает, какие требования
+относятся к безопасности.
 
 ---
 
@@ -81,91 +82,96 @@ but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly whi
 
 ### Уровень 1: Матрица покрытия
 
-**What's checked:**
-- Is there a stakeholder from the 4.2 registry with no recorded tie to any requirement?
-- Is there a stakeholder whose every tie points at a requirement 5.2 has archived?
-- Is there a business objective from business_context (7.3) not covered by any viewpoint?
-- Is there an empty viewpoint (a viewpoint with no requirements)?
+**Что проверяется:**
+- Есть ли в реестре 4.2 стейкхолдер без единой записанной связи с требованиями?
+- Есть ли стейкхолдер, все связи которого ведут на требования, заархивированные в 5.2?
+- Есть ли бизнес-цель из business_context (7.3), не покрытая ни одним viewpoint?
+- Есть ли пустой viewpoint (точка зрения без требований)?
 
-| Problem | Severity | What to do |
+| Проблема | Severity | Что делать |
 |---------|----------|-----------|
-| Stakeholder with no recorded tie to any requirement | critical | Declare what you know with `declare_stakeholder_interest`, or create the missing requirements |
-| Stakeholder reachable only by a shared title word | warning | Confirm it with `declare_stakeholder_interest` — a shared word is a coincidence, not a fact |
-| Stakeholder traceable only OUTSIDE the requirements — named by a risk, a goal or a change request | warning | Go to the node that names them and record what actually holds among the requirements |
-| Stakeholder whose every tie is to an archived requirement | warning | Re-declare against the replacement, or confirm the person is out of scope now |
-| BG with no viewpoint coverage | warning | Check traceability in 5.1 or create the missing requirements |
-| Empty viewpoint | info | Create artifacts of that type or remove the viewpoint |
-| Registry read, but no row carries a name or a role | info | Nobody was checked — fill the registry in via the 3.2 or 4.2 tools |
+| Стейкхолдер без единой записанной связи с требованиями | critical | Заявите то, что знаете, через `declare_stakeholder_interest`, либо создайте недостающие требования |
+| Стейкхолдер достижим только по общему слову в заголовке | warning | Подтвердите связь через `declare_stakeholder_interest` — общее слово это совпадение, а не факт |
+| Стейкхолдер прослеживается только ВНЕ требований — его называет риск, цель или запрос на изменение | warning | Идите к узлу, который его называет, и запишите то, что на самом деле верно среди требований |
+| Все связи стейкхолдера ведут на архивное требование | warning | Заявите интерес заново — на замену, либо подтвердите, что человек теперь вне скоупа |
+| BG не покрыта ни одним viewpoint | warning | Проверьте трассировку в 5.1 или создайте недостающие требования |
+| Пустой viewpoint | info | Создайте артефакты этого типа или удалите точку зрения |
+| Реестр прочитан, но ни в одной строке нет ни имени, ни роли | info | Никто не был проверен — заполните реестр инструментами 3.2 или 4.2 |
 
-The last row exists because a clean sheet and an unchecked sheet look identical otherwise.
-A registry that is *absent* and a registry that is *present and unusable* are two different
-facts, and the report states which one it met rather than printing zeros for both.
+Последняя строка существует потому, что иначе чистый лист и непроверенный лист выглядят
+одинаково. Реестра *нет* и реестр *есть, но непригоден* — это два разных факта, и отчёт
+называет тот, с которым встретился, вместо того чтобы печатать нули в обоих случаях.
 
-#### How the stakeholder verdict is reached
+#### Как выносится вердикт по стейкхолдеру
 
-The platform asks four questions about each person in the registry, and says in the gap
-text which ones it asked:
+Платформа задаёт о каждом человеке из реестра четыре вопроса и в тексте разрыва
+сообщает, какие именно задала:
 
-| Source | Written by | Counts as |
+| Источник | Кто записывает | Чем считается |
 |--------|------------|-----------|
-| A declared interest | 7.4, by the BA (`declare_stakeholder_interest`) | evidence |
-| The requirement's `owner` | 7.1 | evidence |
-| An approval decision on that requirement | 5.5 | evidence — a vote against counts too; opposing a requirement is the clearest possible sign it touches you |
-| A word of 4+ letters shared with a requirement title or with another recorded name | nobody — it is a coincidence | heuristic only |
-| The same, but found on a node that is NOT a requirement — a risk, a goal, a change request | nobody — it is a coincidence, and it sits outside the requirements | heuristic only, and the verdict says so |
+| Заявленный интерес | 7.4, силами BA (`declare_stakeholder_interest`) | свидетельство |
+| Роль `owner` у требования | 7.1 | свидетельство |
+| Решение о согласовании по этому требованию | 5.5 | свидетельство — голос ПРОТИВ считается тоже: возражать против требования есть яснейший признак того, что оно вас затрагивает |
+| Общее слово из 4+ букв с заголовком требования или с другим записанным именем | никто — это совпадение | только эвристика |
+| То же самое, но найденное на узле, который НЕ является требованием, — риск, цель, запрос на изменение | никто — это совпадение, и оно лежит вне требований | только эвристика, и вердикт прямо это называет |
 
-Any one piece of **live** evidence and the stakeholder is covered, silently. Only the
-heuristic and it is a warning that names its own weakness. Only evidence pointing at
-archived requirements and it is also a warning, with its own wording. Nothing at all and
-it is critical.
+Достаточно одного **живого** свидетельства — и стейкхолдер считается покрытым, молча.
+Только эвристика — и это предупреждение, которое само называет свою слабость. Только
+свидетельства, указывающие на архивные требования, — тоже предупреждение, со своей
+формулировкой. Совсем ничего — и это `critical`.
 
-**A type is refused; a status is not.** The 5.1 graph holds more than requirements — risks
-(6.3), business goals (6.2), change requests (5.4), the 6.4 solution scope, test cases.
-None of them is a requirement, so none is searched for EVIDENCE and
-`declare_stakeholder_interest` refuses one by name: recording it would let a business goal
-silence a coverage gap, and would print an id under a heading counting requirements that
-do not include it.
+**Отклоняется тип, но не статус.** В графе 5.1 лежат не только требования — там риски
+(6.3), бизнес-цели (6.2), запросы на изменение (5.4), solution scope из 6.4, тест-кейсы.
+Ни один из них не является требованием, поэтому ни в одном не ищут СВИДЕТЕЛЬСТВ, а
+`declare_stakeholder_interest` отклоняет такой узел по имени: записать его значило бы
+позволить бизнес-цели заглушить разрыв покрытия и напечатать её id под заголовком,
+который считает требования, её не включающие.
 
-They do stay in the COINCIDENCE pool, which is a different thing. That pool is only ever
-matched against, never rendered, and can only ever produce a warning — so a role named by
-a risk title, or a person who owns a change request, is reported as "traceable only
-outside the requirements" rather than as having nothing at all. Removing them from the
-pool as well was tried and measured: against the pre-branch baseline it turned four kinds
-of silence into red gaps, which is the single outcome decision 6 forbids. The objection
-that the older wording answered — a warning claiming the word came from "a requirement
-title" when it came from a risk — is answered in the sentence, where it belongs. An **archived** requirement is the opposite case — deprecated,
-superseded or retired is a stage, not a category, so the declaration is accepted with a
-warning, shown in the document marked `archived`, and simply not counted as live coverage.
+При этом они остаются в пуле СОВПАДЕНИЙ, а это другое. По этому пулу только ищут
+совпадения, его никогда не отрисовывают, и дать он может лишь предупреждение — поэтому
+роль, названная заголовком риска, или человек, владеющий запросом на изменение,
+докладывается как «прослеживается только вне требований», а не как не имеющий вообще
+ничего. Убрать их и из пула тоже — пробовали и измерили: относительно базовой линии до
+ветки это превратило четыре вида молчания в красные разрывы, а именно этот исход
+запрещён решением 6. Возражение, на которое отвечала прежняя формулировка —
+предупреждение, утверждавшее, что слово взято из «заголовка требования», когда оно взято
+из риска, — теперь снято в самом предложении, где ему и место. С **архивным** требованием
+всё наоборот: deprecated, superseded или retired — это стадия, а не категория, поэтому
+заявление принимается с предупреждением, показывается в документе с пометкой `archived`
+и просто не засчитывается как живое покрытие.
 
-The same rule holds everywhere else the archived requirement appears, because one id
-governed by two rules on one page is how a signed document contradicts itself:
+То же правило действует всюду, где архивное требование появляется снова, — потому что
+один id, живущий на одной странице по двум разным правилам, и есть способ, которым
+подписанный документ противоречит сам себе:
 
-- the viewpoint tables still list it, tagged `_(archived)_` — the table is read by
-  developers and by 7.5, and a retired requirement must not read there as one to build;
-- `Total req` still counts it — marking adds a fact, it does not move a released number;
-- level 2 skips it, as a subject and as a target: no one is advised to write a use case
-  for a retired requirement, and a live use case whose only business process was
-  deprecated is reported as hanging rather than as covered.
+- таблицы viewpoints по-прежнему его перечисляют, с пометкой `_(archived)_` — таблицу
+  читают разработчики и 7.5, и retired-требование не должно выглядеть там как то, что
+  надо строить;
+- `Total req` по-прежнему его считает — пометка добавляет факт, а не сдвигает уже
+  выпущенное число;
+- уровень 2 его пропускает и как субъект, и как цель: никому не советуют писать use case
+  для retired-требования, а живой use case, единственный бизнес-процесс которого был
+  deprecated, докладывается как висящий, а не как покрытый.
 
-**Why the heuristic was kept rather than deleted.** It is how this check worked before the
-model existed. Removing it would have handed every existing project a batch of new critical
-findings on the day of the upgrade — about people whose coverage had not changed at all.
-Demoting it adds information without taking any away.
+**Почему эвристику сохранили, а не удалили.** Именно так эта проверка работала до
+появления модели. Удаление выдало бы каждому существующему проекту пачку новых
+critical-находок в день обновления — про людей, покрытие которых вообще не менялось.
+Понижение же в ранге добавляет информацию, ничего не отнимая.
 
-**Names match through the registry.** The BA may write a role ("Product Owner") where 7.1
-recorded a name ("Ivan Petrov"); the registry ties the two together, so either resolves to
-the same person. An exact match is evidence; a partial one ("Priya" against "Priya Nair")
-is a heuristic, for the same reason a shared title word is.
+**Имена сопоставляются через реестр.** BA может написать роль («Product Owner») там, где
+7.1 записала имя («Иван Петров»); реестр связывает одно с другим, поэтому и то и другое
+приводит к одному человеку. Точное совпадение — свидетельство; частичное («Прия» против
+«Прия Наир») — эвристика, ровно по той же причине, что и общее слово в заголовке.
 
 ### Уровень 2: Семантические разрывы
 
 Проверки, выходящие за рамки матрицы — на основе связей в репозитории 5.1:
 
-| Gap | Severity | Explanation |
+| Разрыв | Severity | Пояснение |
 |-----|----------|--------------|
-| UC with no BP | warning | A user interacts, but the business process isn't described |
-| NFR with no FR | warning | A non-functional constraint is left "hanging" with no link to a function |
-| FR with no UC or US | info | A function is described, but the usage scenario isn't documented |
+| UC без BP | warning | Пользователь взаимодействует, но бизнес-процесс не описан |
+| NFR без FR | warning | Нефункциональное ограничение «висит» без связи с функцией |
+| FR без UC или US | info | Функция описана, но сценарий её использования не задокументирован |
 
 **⚠️ Важно об уровне 2:** проверки семантических разрывов зависят от полноты графа 5.1.
 Если BA добавил мало связей в трассировку — будет много ложных срабатываний (FR без UC не
@@ -198,7 +204,7 @@ BABOK описывает несколько концептуальных фре�
 
 ## Снапшоты архитектуры
 
-By analogy with the baseline in 5.5, task 7.4 supports snapshots:
+По аналогии с baseline из 5.5 задача 7.4 поддерживает снимки:
 
 **Когда делать снапшот:**
 - Перед передачей архитектуры в 7.5 (Design Options)
