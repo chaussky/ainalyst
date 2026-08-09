@@ -49,6 +49,7 @@ from skills.common import (write_json_artifact,
     PARTY_NOT_IN_REGISTRY, PARTY_UNBRIDGEABLE, registry_labels,
     ARCHIVED_REQUIREMENT_STATUSES, list_with_cap,
 )
+from skills.plural_ru import plural_ru
 
 mcp = FastMCP("BABOK_Requirements_Architecture")
 
@@ -342,10 +343,10 @@ CONCERN_EVIDENCE = (CONCERN_DECLARED, CONCERN_OWNER, CONCERN_APPROVAL)
 # nowhere: rename a source and the message keeps quoting the old name, with nothing to
 # fail (branch review A-6). The verdict is now assembled from the tuple, in its order.
 CONCERN_LABELS = {
-    CONCERN_DECLARED: "declared interest (7.4)",
-    CONCERN_OWNER: "7.1 owner",
-    CONCERN_APPROVAL: "5.5 approval decision on it",
-    CONCERN_TITLE: "requirement title mentioning them (heuristic)",
+    CONCERN_DECLARED: "заявленный интерес (7.4)",
+    CONCERN_OWNER: "`owner` из 7.1",
+    CONCERN_APPROVAL: "решение о согласовании из 5.5",
+    CONCERN_TITLE: "заголовок требования, упоминающий его (эвристика)",
 }
 
 
@@ -694,13 +695,13 @@ def _concern_lines(project_id: str, repo: dict) -> list:
     people = ([s for s in raw_people if isinstance(s, dict) and registry_labels(s)]
               if isinstance(raw_people, list) else [])
 
-    lines = ["## Stakeholder concerns", ""]
+    lines = ["## Интересы стейкхолдеров", ""]
 
     if people:
         lines += [
-            "Whose interests each requirement touches. `declared` is the analyst's own "
-            "statement (7.4); the other sources are facts recorded by another task and "
-            "read here without being copied.",
+            "Чьи интересы затрагивает каждое требование. `declared` — это собственное "
+            "утверждение аналитика (7.4); остальные источники суть факты, записанные "
+            "другой задачей и прочитанные здесь без копирования.",
             "",
         ]
         title_words, outside_pool, name_pool = _heuristic_pools(
@@ -739,23 +740,22 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 kind = _coincidence_kind(labels, title_words, name_pool, outside_pool)
                 if kind == COINCIDENCE_REQUIREMENT:
                     lines.append(
-                        f"- **{who}** — no exact tie recorded; reachable only by a "
-                        f"partial name or title match (a coincidence, not a fact). "
-                        f"Confirm with `declare_stakeholder_interest`."
+                        f"- **{who}** — точных связей не записано; достижим только по "
+                        f"частичному совпадению имени или заголовка (совпадение, а не "
+                        f"факт). Подтвердите через `declare_stakeholder_interest`."
                     )
                 elif kind == COINCIDENCE_OUTSIDE:
                     lines.append(
-                        f"- **{who}** — no tie among the requirements; reachable only "
-                        f"through something recorded outside them — a risk (6.3), a "
-                        f"business goal (6.2) or a change request (5.4). A "
-                        f"coincidence, not a fact. Confirm with "
-                        f"`declare_stakeholder_interest`."
+                        f"- **{who}** — среди требований связей нет; достижим только "
+                        f"через то, что записано вне их, — риск (6.3), бизнес-цель "
+                        f"(6.2) или запрос на изменение (5.4). Это совпадение, а не "
+                        f"факт. Подтвердите через `declare_stakeholder_interest`."
                     )
                 else:
-                    lines.append(f"- **{who}** — no interest recorded.")
+                    lines.append(f"- **{who}** — интерес не зафиксирован.")
                 continue
             count = len({t["req_id"] for t in ties})
-            noun = "requirement" if count == 1 else "requirements"
+            noun = plural_ru(count, "требование", "требования", "требований")
             # An all-archived person is a THIRD state again, and the gap report calls
             # it a warning — so the page must not read like full coverage (B-2).
             # The plural has to follow the count: "1 requirement … every one of them
@@ -765,10 +765,10 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             elif count == 1:
                 # The ref already carries "(… , archived)", so repeating the word here
                 # only stutters — the sentence has to add the CONSEQUENCE instead.
-                all_archived = " — so it is not live coverage"
+                all_archived = " — то есть живого покрытия нет"
             else:
-                all_archived = (" — every one of them archived (5.2), so none of it "
-                                "is live coverage")
+                all_archived = (" — все они заархивированы (5.2), поэтому живого "
+                                "покрытия нет ни одного")
             lines.append(
                 f"- **{who}** — {count} {noun}: "
                 f"{_group_refs((t['req_id'], t['source'], t['archived']) for t in ties)}"
@@ -791,13 +791,13 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                 entry["refs"].append((req_id, item["source"], item["archived"]))
                 entry["notes"].append((req_id, item.get("note")))
         if outside:
-            lines += ["", "**Tied to requirements but not in the 4.2 registry** — add "
-                          "them with `update_stakeholder_registry` so the coverage "
-                          "check can see them:", ""]
+            lines += ["", "**Связаны с требованиями, но отсутствуют в реестре 4.2** — "
+                          "добавьте их через `update_stakeholder_registry`, чтобы "
+                          "проверка покрытия их видела:", ""]
             for key in sorted(outside, key=lambda k: outside[k]["display"]):
                 entry = outside[key]
                 count = len({r for r, _, _ in entry["refs"]})
-                noun = "requirement" if count == 1 else "requirements"
+                noun = plural_ru(count, "требование", "требования", "требований")
                 # A short form of a registry name ("Priya" for "Priya Nair") lands here
                 # because the label did not match EXACTLY — and then the block's advice,
                 # "add them to the registry", is wrong for them: the thing to correct is
@@ -823,11 +823,11 @@ def _concern_lines(project_id: str, repo: dict) -> list:
                     who_list = ", ".join(
                         f"**{_md_label(name)}** (on `{_md_id(label_text.get(lab, lab))}`)"
                         for lab, name in shown)
-                    more = "" if len(matched) <= 3 else f" +{len(matched) - 3} more"
-                    hint = (f" — possibly the same person as {who_list}{more}: a "
-                            f"partial-label match, a coincidence rather than a fact. "
-                            f"If it is the same person, correct the record this tie "
-                            f"came from rather than adding them to the registry.")
+                    more = "" if len(matched) <= 3 else f" +ещё {len(matched) - 3}"
+                    hint = (f" — возможно, тот же человек, что и {who_list}{more}: "
+                            f"частичное совпадение подписи, совпадение, а не факт. "
+                            f"Если это один человек, поправьте ту запись, откуда взялась "
+                            f"связь, а не добавляйте его в реестр.")
                 lines.append(f"- **{_md_label(entry['display'])}** — {count} "
                              f"{noun}: {_group_refs(entry['refs'])}{hint}")
                 lines += _note_lines(entry["notes"])
@@ -841,15 +841,14 @@ def _concern_lines(project_id: str, repo: dict) -> list:
         # about, only inverted (fix review round 1).
         if registry is None:
             lines.append(
-                "⚠️ Stakeholder registry not found — the list of people was not checked "
-                "for completeness. Below are only the ties recorded on the requirements "
-                "themselves."
+                "⚠️ Реестр стейкхолдеров не найден — список людей на полноту не "
+                "проверялся. Ниже только те связи, что записаны на самих требованиях."
             )
         else:
             lines.append(
-                "⚠️ Stakeholder registry has no identifiable people — none of its rows "
-                "carries a name or a role, so completeness could not be checked against "
-                "it. Below are only the ties recorded on the requirements themselves."
+                "⚠️ В реестре стейкхолдеров нет опознаваемых людей — ни в одной строке "
+                "нет ни имени, ни роли, поэтому полноту по нему проверить не удалось. "
+                "Ниже только те связи, что записаны на самих требованиях."
             )
         lines.append("")
 
@@ -872,12 +871,12 @@ def _concern_lines(project_id: str, repo: dict) -> list:
             entry = named[key]
             refs = entry["refs"]
             count = len({r for r, _, _ in refs})
-            noun = "requirement" if count == 1 else "requirements"
+            noun = plural_ru(count, "требование", "требования", "требований")
             lines.append(f"- **{_md_label(entry['display'])}** — {count} {noun}: "
                          f"{_group_refs(refs)}")
             lines += _note_lines(entry["notes"])
         if not named:
-            lines.append("- No stakeholder ties recorded on any requirement.")
+            lines.append("- Ни на одном требовании не записано связей со стейкхолдерами.")
 
     lines.append("")
     return lines
@@ -1369,8 +1368,8 @@ def declare_stakeholder_interest(
     name = str(stakeholder or "").strip()
     if not reg_norm(name):
         return (
-            "❌ `stakeholder` cannot be empty — give a name or a role, "
-            "for example: `Ivan Petrov` or `Product Owner`."
+            "❌ `stakeholder` не может быть пустым — укажите имя или роль, "
+            "например: `Иван Петров` или `Product Owner`."
         )
 
     req_ids, error = parse_json_str_list(
@@ -1383,9 +1382,9 @@ def declare_stakeholder_interest(
     all_reqs = repo.get("requirements", [])
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty — "
-            f"nothing to declare interest in.\n"
-            f"First create requirements via the 7.1 tools."
+            f"⚠️ Репозиторий 5.1 проекта `{project_id}` пуст — заявлять интерес не к "
+            f"чему.\n"
+            f"Сначала создайте требования инструментами 7.1."
         )
 
     in_graph = {r["id"]: r for r in all_reqs
@@ -1404,27 +1403,27 @@ def declare_stakeholder_interest(
         # Refused as a whole, so a partial write cannot leave the BA guessing which
         # half landed. The vocabulary here is CLOSED — it is this project's own graph.
         known = ", ".join(f"`{rid}`" for rid in sorted(by_id)[:20])
-        more = "" if len(by_id) <= 20 else f" (+{len(by_id) - 20} more)"
+        more = "" if len(by_id) <= 20 else f" (+ещё {len(by_id) - 20})"
         problems = []
         if unknown:
             problems.append(
-                f"❌ Not in repository 5.1: {', '.join(f'`{u}`' for u in unknown)}."
+                f"❌ Нет в репозитории 5.1: {', '.join(f'`{u}`' for u in unknown)}."
             )
         if non_reqs:
             named = ", ".join(
-                f"`{rid}` is a `{in_graph[rid].get('type') or '?'}` node"
+                f"`{rid}` — узел типа `{in_graph[rid].get('type') or '?'}`"
                 for rid in non_reqs
             )
             problems.append(
-                f"❌ Not requirements: {named}.\n"
-                f"   7.4 records whose interests a REQUIREMENT touches. Risks (6.3), "
-                f"business goals (6.2), change requests (5.4), the 6.4 solution scope "
-                f"and test cases share the 5.1 graph but are not requirements — no "
-                f"other 7.4 count includes them either."
+                f"❌ Не требования: {named}.\n"
+                f"   7.4 фиксирует, чьи интересы затрагивает ТРЕБОВАНИЕ. Риски (6.3), "
+                f"бизнес-цели (6.2), запросы на изменение (5.4), solution scope из 6.4 "
+                f"и тест-кейсы живут в том же графе 5.1, но требованиями не являются — "
+                f"их не включает ни один другой счётчик 7.4."
             )
         return "\n".join(problems + [
-            f"   Existing requirements: {known or '—'}{more}",
-            f"   Nothing was written — fix the IDs and call again.",
+            f"   Существующие требования: {known or '—'}{more}",
+            f"   Ничего не записано — исправьте ID и вызовите снова.",
         ])
 
     today = str(date.today())
