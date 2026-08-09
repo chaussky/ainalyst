@@ -94,7 +94,7 @@ class TestAlignmentReportReflectsIt(unittest.TestCase):
 
     def test_the_unaligned_requirement_is_reported_as_an_orphan(self):
         out = v73.check_business_alignment("align")
-        self.assertNotIn("100.0%", out.split("## Summary")[1][:400],
+        self.assertNotIn("100.0%", out.split("## Сводка")[1][:400],
                          "the report claimed every requirement is aligned")
         self.assertIn("FR-099", out)
 

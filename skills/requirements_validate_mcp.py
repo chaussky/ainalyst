@@ -351,7 +351,7 @@ def set_business_context(
                     prefill_parts.append(f"✅ Бизнес-цели предзаполнены из 6.1 BN ({len(auto_goals)} шт.)")
 
             if prefill_parts:
-                prefill_status = "\n\n## Auto-fill from 6.1+6.2\n\n" + "\n".join(prefill_parts)
+                prefill_status = "\n\n## Автозаполнение из 6.1+6.2\n\n" + "\n".join(prefill_parts)
             else:
                 prefill_status = f"\n\n⚠️ Данные 6.1/6.2 для проекта `{from_strategy_project_id}` не найдены."
 
@@ -360,7 +360,7 @@ def set_business_context(
 
     # ADR-055: предзаполнение из 6.1 если передан from_current_state_project_id (deprecated)
     elif from_current_state_project_id.strip():
-        prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id`."
+        prefill_status = "\n\n⚠️ Параметр `from_current_state_project_id` устарел. Используйте `from_strategy_project_id`."
         # Raw id to data_path, normalised value only in the file name — see the note
         # on the from_strategy_project_id branch above.
         safe_cs = normalize_project_id(from_current_state_project_id)
@@ -389,11 +389,11 @@ def set_business_context(
                     business_goals_json = json.dumps(auto_goals, ensure_ascii=False)
                     ids_used = ", ".join(g["id"] for g in auto_goals)
                     prefill_status += (
-                        f"\n\n## Auto-fill from 6.1\n\n"
-                        f"✅ Business objectives prefilled from {len(auto_goals)} "
-                        f"business needs of `{from_current_state_project_id}`.\n"
-                        f"Objectives keep the 6.1 business-need ids so graph "
-                        f"traceability matches: {ids_used}"
+                        f"\n\n## Автозаполнение из 6.1\n\n"
+                        f"✅ Бизнес-цели предзаполнены из {len(auto_goals)} "
+                        f"бизнес-потребностей проекта `{from_current_state_project_id}`.\n"
+                        f"Цели сохраняют id бизнес-потребностей из 6.1, чтобы трассировка "
+                        f"в графе совпадала: {ids_used}"
                     )
 
                 if not solution_scope.strip() and os.path.exists(scope_path):
@@ -456,7 +456,7 @@ def set_business_context(
     lines = [
         f"{'⚠️ Бизнес-контекст ОБНОВЛЁН' if is_update else '✅ Бизнес-контекст создан'} — **{project_id}**",
         "",
-        f"> ℹ️ **Business context set by hand in 7.3** — Chapter 6 (6.1/6.2) populates this file automatically when run",
+        f"> ℹ️ **Бизнес-контекст задан вручную в 7.3** — глава 6 (6.1/6.2) заполняет этот файл автоматически, когда её запускают",
         "",
         f"**Дата:** {date.today()}",
         "",
@@ -652,9 +652,9 @@ def check_business_alignment(
         "",
         "| Статус | Количество |",
         "|--------|-----------|",
-        f"| ✅ Aligned (traced to BG in the graph) | {len(aligned_reqs)} ({aligned_pct}%) |",
-        f"| ⚠️ Title match only (verify & link) | {len(needs_review_reqs)} |",
-        f"| ❌ Orphan (no traceability to BG) | {len(orphan_reqs)} |",
+        f"| ✅ Согласовано (есть трассировка на BG в графе) | {len(aligned_reqs)} ({aligned_pct}%) |",
+        f"| ⚠️ Только совпадение по заголовку (проверить и связать) | {len(needs_review_reqs)} |",
+        f"| ❌ Сирота (нет трассировки на BG) | {len(orphan_reqs)} |",
         "",
     ]
 
@@ -689,17 +689,17 @@ def check_business_alignment(
         ]
         for r in aligned_reqs:
             goals_str = ", ".join(f"`{g}`" for g in r["aligned_goals"])
-            lines.append(f"- `{r['req_id']}` — {r['title']} → {goals_str} _(traced in graph)_")
+            lines.append(f"- `{r['req_id']}` — {r['title']} → {goals_str} _(трассировка в графе)_")
         lines.append("")
 
     # Title-match hints — advisory, NOT counted as coverage (graph is the source of truth)
     if needs_review_reqs:
         lines += [
-            "## ⚠️ Possible matches by title (advisory — not counted as coverage)",
+            "## ⚠️ Возможные совпадения по заголовку (подсказка — покрытием НЕ считается)",
             "",
-            "> A requirement's title shares words with an objective, but there is NO link "
-            "in the 5.1 graph. Confirm the relationship and record it with `add_trace_link` "
-            "(5.1) so it counts as real traceability.",
+            "> Заголовок требования делит слова с формулировкой цели, но связи в графе 5.1 "
+            "НЕТ. Подтвердите отношение и зафиксируйте его через `add_trace_link` "
+            "(5.1) — тогда оно засчитается как настоящая трассировка.",
             "",
         ]
         for r in needs_review_reqs:
@@ -848,9 +848,9 @@ def set_success_criteria(
         f"|------|----------|",
         f"| Требование | `{req_id}` — {req.get('title', '')} |",
         f"| Baseline | {criteria['baseline']} |",
-        f"| Target | {criteria['target']} |",
+        f"| Цель | {criteria['target']} |",
         f"| Метод измерения | {criteria['measurement_method']} |",
-        f"| KPI ref | {kpi_ref or '—'} |",
+        f"| Ссылка на KPI | {kpi_ref or '—'} |",
         f"| Дата | {date.today()} |",
     ]
 
@@ -948,7 +948,7 @@ def log_assumption(
         f"| Поле | Значение |",
         f"|------|----------|",
         f"| ID | `{assumption_id}` |",
-        f"| Risk level | {icon} {risk_level} |",
+        f"| Уровень риска | {icon} {risk_level} |",
         f"| Связанные req | {', '.join(f'`{r}`' for r in req_ids_list) or '—'} |",
         f"| Назначено | {assigned_to or '—'} |",
         f"| Статус | open |",
@@ -1059,7 +1059,7 @@ def resolve_assumption(
         f"| Resolution | {resolution} |",
         f"| Дата закрытия | {date.today()} |",
         "",
-        f"**Resolution note:** {resolution_note}",
+        f"**Комментарий к закрытию:** {resolution_note}",
         "",
         "---",
         "",
@@ -1218,7 +1218,7 @@ def mark_req_validated(
                 "req_id": req_id,
                 "outcome": outcome,
                 "message": f"✅ `{req_id}` — validated (было: {old_status})"
-                           + (" [force override]" if force and warnings else ""),
+                           + (" [принудительно через force]" if force and warnings else ""),
                 "warnings": warnings if force else [],
             })
 
@@ -1482,7 +1482,7 @@ def get_validation_report(
     # Success criteria coverage
     if with_criteria:
         lines += [
-            "## 📐 Criteria Success Coverage",
+            "## 📐 Покрытие критериями успеха",
             "",
             f"**{len(with_criteria)}/{total} req** ({criteria_pct}%) имеют success_criteria.",
             "",
@@ -1526,8 +1526,8 @@ def get_validation_report(
     else:
         reasons = []
         if not has_context:
-            reasons.append("⚠️ Business context not set — alignment to objectives is unchecked. "
-                           "Call `set_business_context` (or run 6.1/6.2), then re-run.")
+            reasons.append("⚠️ Бизнес-контекст не задан — согласованность с целями не проверялась. "
+                           "Вызовите `set_business_context` (или запустите 6.1/6.2) и повторите.")
         if validated_pct < 80:
             reasons.append(f"📊 Validated только {validated_pct}% req (рекомендуется ≥ 80%)")
         if open_high:

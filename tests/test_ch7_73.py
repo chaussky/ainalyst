@@ -338,11 +338,11 @@ class TestSetBusinessContext(BaseMCPTest):
         result = mod73.set_business_context(
             "proj73", self._valid_goals(), "Future", "Scope"
         )
-        # 7.3 can set the business context by hand; Chapter 6 (6.1/6.2) populates the
-        # same file automatically when run. The note must say so — not claim Chapter 6
+        # 7.3 can set the business context by hand; глава 6 (6.1/6.2) populates the
+        # same file automatically when run. The note must say so — not claim глава 6
         # is unimplemented (it is implemented; the old "surrogate/temporary" wording lied).
-        self.assertIn("Chapter 6", result)
-        self.assertIn("automatically", result)
+        self.assertIn("глава 6", result)
+        self.assertIn("автоматически", result)
 
 
 # ---------------------------------------------------------------------------
@@ -432,14 +432,14 @@ class TestCheckBusinessAlignment(BaseMCPTest):
         # req without a direct link in the graph, but the title overlaps with a BG.
         # Graph-truth (F-A): a title word-overlap is ADVISORY only — it is surfaced for
         # the analyst to confirm and link, but never counted as aligned/covered.
-        fr = make_verified_req("FR-001", "Reduce application processing time through automation", "functional")
+        fr = make_verified_req("FR-001", "Снизить время обработки заявок через автоматизацию", "functional")
         repo = make_repo("proj73", requirements=[fr], links=[])
         save_repo(repo)
         result = mod73.check_business_alignment("proj73")
         self.assertIn("FR-001", result)
-        self.assertIn("Title match only", result)      # advisory summary row
-        self.assertIn("advisory", result.lower())      # advisory section present
-        self.assertNotIn("_(traced in graph)_", result)  # NOT counted as aligned
+        self.assertIn("Только совпадение по заголовку", result)      # advisory summary row
+        self.assertIn("подсказка", result.lower())      # advisory section present
+        self.assertNotIn("_(трассировка в графе)_", result)  # NOT counted as aligned
 
     def test_business_type_excluded(self):
         # business-тип req не входит в проверку (скипается в цикле)
@@ -1102,8 +1102,8 @@ class TestBusinessNodeTypes(BaseMCPTest):
                           make_verified_req("FR-001", "Automatic routing engine", "functional")],
             links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod73.check_business_alignment(P)
-        self.assertIn("_(traced in graph)_", result)
-        aligned_section = result.split("Aligned requirements")[-1].split("##")[0]
+        self.assertIn("_(трассировка в графе)_", result)
+        aligned_section = result.split("Выровненные требования")[-1].split("##")[0]
         self.assertIn("FR-001", aligned_section)
 
     def test_report_excludes_business_goal_from_requirements(self):
@@ -1117,7 +1117,7 @@ class TestBusinessNodeTypes(BaseMCPTest):
                                             status="validated")],
             links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod73.get_validation_report(P)
-        self.assertIn("| Total active reqs | 1 |", result)
+        self.assertIn("| Всего активных req | 1 |", result)
 
 
 # ---------------------------------------------------------------------------
@@ -1146,12 +1146,12 @@ class TestValidationVerificationPrecondition(BaseMCPTest):
         """The B2 case: 5.5 overwrote the status, but the req DID pass 7.2."""
         self._setup("approved", [{"action": "req_verified", "req_id": "FR-001"}])
         result = mod73.mark_req_validated("proj73", '["FR-001"]')
-        self.assertNotIn("expected 'verified'", result)
+        self.assertNotIn("ожидается 'verified'", result)
 
     def test_never_verified_still_warns(self):
         self._setup("draft")
         result = mod73.mark_req_validated("proj73", '["FR-001"]')
-        self.assertIn("expected 'verified'", result)
+        self.assertIn("ожидается 'verified'", result)
 
 
 if __name__ == "__main__":
