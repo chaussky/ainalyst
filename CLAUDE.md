@@ -177,10 +177,11 @@ and nothing is written: `црм_апгрейд`, `統一平台`, `!!!`, but also
 some OTHER spelling also rewrites to, and two projects then land in one folder and silently
 mix each other's artifacts.
 
-So when the BA names a project in Russian, **agree on a latin `project_id` BEFORE the first tool
-call** — don't discover it through a refusal. Offer a transliteration, confirm it, then use it
-everywhere. The project's real name goes into the artifacts as a title (`project_title`,
-`package_title`, …), where cyrillic works perfectly — only the *id* is restricted.
+So when the BA names a project in any script other than Latin, **agree on a latin `project_id`
+BEFORE the first tool call** — don't discover it through a refusal. Offer a transliteration,
+confirm it, then use it everywhere. The project's real name goes into the artifacts as a title
+(`project_title`, `package_title`, …), where any script works perfectly — only the *id* is
+restricted.
 
 If the BA already has artifacts under a name that is now refused, say so plainly: the data is
 safe on disk, but the project has to be renamed to be reachable again.
