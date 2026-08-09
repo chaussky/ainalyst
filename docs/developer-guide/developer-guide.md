@@ -196,7 +196,7 @@ def data_path(project_id, filename) -> str:
 ```
 
 Rules for developers:
-- **JSON**: build the path via `data_path(project_id, f"{safe}_{FILENAME}")`, and create the directory when writing via `os.makedirs(os.path.dirname(path), exist_ok=True)` (not `os.makedirs(DATA_DIR, ...)`). The file name keeps the `{safe}_` prefix, so a file identifies itself when read out of context.
+- **JSON**: build the path via `data_path(project_id, f"{safe}_{FILENAME}")` and write it with **`write_json_artifact(path, data)`** — never with `open(...,"w")` + `json.dump` (see "Writing a JSON artifact" below; the writer creates the directory itself). The file name keeps the `{safe}_` prefix, so a file identifies itself when read out of context.
 - **Markdown**: call `save_artifact(content, prefix, project_id=...)`. With `project_id`, the report is written to `reports/<project_id>/`. Without `project_id`, it lands directly in `reports/` — that path belongs to no project and nothing reads it back; pass the id.
 - **One layout, no fallbacks** (owner's decision, 2026-08-03). `data_path` and `specs_dir` used to try five and four locations respectively, so that artifacts predating the per-project layout kept resolving. No project predates the platform, so those candidates could only ever find a file a TEST had placed — while costing every reader a multi-way search whose answer depended on what happened to be on disk. `migrate_artifacts.py` went with them.
 
@@ -215,7 +215,36 @@ def project_id_suggestion(project_id) -> str:        # latin hint, for the TEXT 
 - Transliteration is used **only** to build the hint inside the refusal text. It never reaches a path, so the table is not part of the on-disk contract and can be changed without losing projects.
 - The placeholder itself (`_unknown` / `unknown`) is a **reserved** id. Pass the RAW `project_id` to `data_path` — never a pre-normalized value, or the guard is bypassed.
 
-**Every tool that takes `project_id`/`project_name` MUST carry `@guard_artifact_errors`** (below `@mcp.tool()`). That decorator converts both `CorruptArtifactError` and `InvalidProjectIdError` into the `❌` string a tool must return; without it the refusal escapes as a protocol error. This is enforced by `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, which scans every module — a new tool that forgets it fails the suite.
+**Every tool that takes `project_id`/`project_name` MUST carry `@guard_artifact_errors`** (below `@mcp.tool()`). That decorator converts `CorruptArtifactError` (including its subclass `ArtifactShapeError`) and `InvalidProjectIdError` into the `❌` string a tool must return; without it the refusal escapes as a protocol error. This is enforced by `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, which scans every module — a new tool that forgets it fails the suite.
+
+### Writing a JSON artifact: `write_json_artifact()`
+
+**Every write of a project JSON file goes through one function.** Writing with `open(path, "w")` + `json.dump` is a defect, and `tests/test_json_writer.py::TestNoDirectWritesRemain` fails the suite if one reappears.
+
+```python
+from skills.common import write_json_artifact
+
+write_json_artifact(data_path(project_id, f"{safe}_{FILENAME}"), repo)
+```
+
+The reason is not tidiness. `open(path, "w")` **truncates the previous version before a single byte of the replacement exists**, so every such site was a window in which an interruption nobody controls — Ctrl+C, a full disk, a dead battery, an antivirus holding the handle — could reduce a whole project to a half-written file. There were 32 such sites and no backups anywhere.
+
+Three guarantees, and they are deliberately not the same guarantee three times:
+
+| Guarantee | Protects against | Mechanism |
+|---|---|---|
+| **Atomicity** | the write being cut short | the replacement is built under a temporary name in the same directory and moved into place with `os.replace` — the name points at one whole file or the other, never a torn one |
+| **Generations** | content written perfectly and **wrong**; hand edits | the version being replaced is copied to `governance_plans/.history/`, the last `HISTORY_GENERATIONS` (5) are kept |
+| **Shape** | a tool storing something no other chapter can read | the requirements graph accepts only `requirements` + `links` as lists; the refusal happens **before** the file is touched |
+
+Four consequences a maintainer needs to know:
+
+1. **Copies are taken BEFORE the write**, so the newest generation is the state one change ago — never the state being written. The case generations exist for is content that was written perfectly and is wrong (`init_traceability_repo` once destroyed a node type atomically, validly, and with a `✅`), and there the version you want is precisely the one that tool replaced. Copying afterwards would make the newest generation a second copy of the damage.
+2. **The cost of that is stated in the error text.** A file destroyed from outside restores to one change ago, and `read_json_artifact` says so rather than letting the analyst discover it after following the advice.
+3. **`ArtifactShapeError` subclasses `CorruptArtifactError`** so the existing tool boundary converts it. Do not add a separate `except` for it.
+4. **`.history/` is flat**, which is safe only because artifact names always carry the project prefix; pruning counts per artifact name and only `*.json`, so `.part` debris from a killed process cannot evict a real generation.
+
+Serialisation happens **before** the filesystem is touched: content that cannot be encoded is a defect in the caller and must not cost the analyst the stored version.
 
 Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, any cyrillic name) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
 
@@ -507,35 +536,43 @@ After the front matter comes free-form Markdown content:
 
 ### Folder Structure
 
+One folder per project — see "Layout by Project Subfolder" in section 3 for the resolver and the `project_id` contract.
+
 ```
 governance_plans/
-├── data/                                      ← JSON, machine-readable data for the MCP
+├── data/                                          ← JSON, machine-readable data for the MCP
 │   ├── .gitkeep
-│   ├── {project}_traceability_repo.json       ← requirements graph (5.1)
-│   ├── {project}_prioritization.json          ← prioritization results (5.3)
-│   ├── {project}_design_options.json          ← design options (7.5)
-│   └── {project}_change_strategy.json         ← change strategy (6.4)
-└── reports/                                   ← Markdown, documents for humans
-    ├── .gitkeep
-    ├── {project}_ba_approach.md               ← approach selection (3.1)
-    ├── {project}_stakeholder_plan.md          ← stakeholder map (3.2)
-    ├── 6_1_current_state_{project}.md         ← as-is analysis (6.1)
-    ├── 6_3_risk_assessment_{project}.md       ← risk assessment (6.3)
-    └── 7_6_recommendation_{project}.md        ← recommendation to the sponsor (7.6)
+│   └── <project_id>/
+│       ├── <project_id>_traceability_repo.json    ← requirements graph (5.1)
+│       ├── <project_id>_prioritization.json       ← prioritization results (5.3)
+│       ├── <project_id>_design_options.json       ← design options (7.5)
+│       ├── <project_id>_change_strategy.json      ← change strategy (6.4)
+│       └── specs/                                 ← 7.1 specifications
+├── reports/                                       ← Markdown, documents for humans
+│   ├── .gitkeep
+│   └── <project_id>/
+│       ├── 6_1_current_state_<project_id>_<ts>.md ← as-is analysis (6.1)
+│       ├── 6_3_risk_assessment_<project_id>_<ts>.md
+│       └── 7_6_recommendation_<project_id>_<ts>.md ← recommendation to the sponsor (7.6)
+└── .history/                                      ← previous versions of the data/ files
+    └── <project_id>_traceability_repo.json.20260809_004512_118430.json
 ```
 
 **Separation rule:** JSON → `data/`, Markdown → `reports/`. This is fixed in `common.py` through the `DATA_DIR` and `REPORTS_DIR` constants and reflected in `.gitignore`.
+
+**`.history/` is written only by `write_json_artifact`** (section 3). It is flat and holds the last `HISTORY_GENERATIONS` (5) versions of each artifact, named `<artifact>.<YYYYmmdd_HHMMSS_ffffff>.json`. Nothing reads it back automatically: restoring is a deliberate act, because the platform cannot know whether the current file is damaged or simply new.
 
 ### `.gitignore` and `.gitkeep`
 
 ```gitignore
 governance_plans/data/*
 governance_plans/reports/*
+governance_plans/.history/
 !governance_plans/data/.gitkeep
 !governance_plans/reports/.gitkeep
 ```
 
-The folder contents are ignored by Git: artifacts are specific to a given BA's project and should not end up in the repository. The folders themselves are kept via `.gitkeep`.
+The folder contents are ignored by Git: artifacts are specific to a given BA's project and should not end up in the repository. `.history/` holds the same content one version back, so it is ignored for the same reason. The folders themselves are kept via `.gitkeep`.
 
 `_ensure_dirs()` in `common.py` creates `data/` and `reports/` automatically on the first call to `save_artifact`. The folders are already present in the repository with `.gitkeep`, so no manual `mkdir` is needed.
 
@@ -559,7 +596,10 @@ Supported formats: `.txt`, `.md`, `.pdf`, `.docx`
 |---|---|---|
 | 1 (local) | `governance_plans/` on the BA's machine | ✅ Implemented |
 | 2 (team) | Confluence (via `confluence_mcp.py`) | ✅ Implemented |
-| 3 (versioned) | Git (change history, audit) | 📋 Technical debt |
+| 3 (versioned) | `governance_plans/.history/` — the last 5 versions of every JSON artifact | ✅ Implemented |
+| 4 (audit) | Git or another external store: full history, diffs, attribution | 📋 Technical debt |
+
+Tier 3 answers "give me back what this tool just replaced" and nothing more: five generations, no diffs, no author, no history beyond that. Tier 4 remains open, and `.history/` is not a substitute for it.
 
 ---
 
@@ -979,7 +1019,17 @@ All 1636+ tests must be green after adding the new server.
 
 ### Key ADRs
 
-The full registry is in `DECISIONS.md`. Below are the decisions most important for understanding the architecture.
+The complete decision log is an internal working document and is not part of this repository. **What follows is the published subset** — the decisions you need in order to read the code without re-deriving why it is shaped this way.
+
+---
+
+**ADR-101: Generations are copied BEFORE the write** (August 9, 2026)
+
+`write_json_artifact` (section 3) copies the version it is about to replace into `governance_plans/.history/`, not the version it just wrote. The case generations exist for is content that was written perfectly and is **wrong** — `init_traceability_repo` once destroyed the node type of every requirement it touched, atomically, validly, and with a `✅` — and there the version you want is precisely the one that tool replaced. Copying afterwards would make the newest generation a second copy of the damage.
+
+The accepted cost: a file destroyed from outside restores to one change ago. That is stated in `read_json_artifact`'s message rather than left for the analyst to discover after following the advice — the platform may not offer help it cannot deliver.
+
+`ArtifactShapeError` subclasses `CorruptArtifactError` deliberately: `except CorruptArtifactError` occurs exactly once in the codebase (the tool boundary), so inheritance means a refusal to write malformed content reaches the analyst as the same readable `❌` line, with no new `except` anywhere.
 
 ---
 
@@ -1037,7 +1087,7 @@ A series of decisions about the architecture of the Claude-in-Claude feature: ca
 
 **Storage tier 3 (Git versioning)**: `governance_plans/` artifacts are ignored by Git by default (`.gitignore`). The plan was to keep a change history and an audit trail through Git. Implementation options: a separate branch for project data, a separate repository, or `git add -f` to explicitly include artifacts. No decision has been made; implementation is on hold.
 
-**Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This needs its own ADR. Details are in `DECISIONS.md`, section IDEA "Workflow: new project and platform update."
+**Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This needs its own ADR and is still open.
 
 ---
 

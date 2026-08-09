@@ -205,6 +205,8 @@ If you don't have Confluence, send the `.md` file from `reports/` to a colleague
 
 The `governance_plans/data/` folder holds internal data in JSON format. This is the system's "memory" between sessions: the requirements graph, prioritization data, assessment results. There's no need to edit these by hand.
 
+Those files are replaced in a single step, so an interrupted write leaves the previous version whole instead of a truncated one, and the **last five versions of each are kept in `governance_plans/.history/`**. If a tool ever reports that a file cannot be read, its message names both the file and that folder — the newest copy there is the project as it stood before the most recent change.
+
 ---
 
 ## If something goes wrong

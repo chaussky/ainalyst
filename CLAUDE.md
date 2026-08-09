@@ -177,6 +177,14 @@ Every artifact lives in exactly one place — the project's folder. A file lying
 in `data/` or `reports/` belongs to no project and is not read by anything.
 Point the BA to results only in `reports/`.
 
+**Previous versions: `governance_plans/.history/`.** Every JSON file in `data/` is replaced
+in one step (so an interrupted write leaves the old version whole), and the version being
+replaced is copied aside first — the **last five** are kept, named
+`<artifact>.<timestamp>.json`. If a tool reports that a file could not be read, the fix is
+to copy the newest matching copy from `.history/` back over it. **Say the caveat out loud:**
+that copy is the project as it stood BEFORE the most recent change, so the last change is
+the one thing it cannot return. Never present a restore as a full recovery.
+
 ---
 
 ## Key principles

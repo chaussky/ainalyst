@@ -81,6 +81,8 @@ The platform saves all its output to the **`governance_plans/reports/`** folder 
 
 The **`governance_plans/data/`** folder is internal. It holds the JSON files the platform uses internally: the requirements graph, prioritization data, assessment results. You don't need to go in there; it's the platform's internal "memory" of the project.
 
+**If one of those files gets damaged.** The platform keeps the **last five versions** of every internal file in `governance_plans/.history/`, and it replaces a file in one step — so an interruption (Ctrl+C, a full disk, a laptop running out of battery) leaves the previous version whole rather than a half-written one. If a tool ever reports that a file cannot be read, its message names the folder and the file; copy the newest matching version from `.history/` back over it. One caveat, and the message says it too: the newest copy is the project **as it stood before the most recent change**, so that one change is the thing it cannot give back. Tell AInalyst — it will do the restore for you and say what was recovered.
+
 ### Context and Decisions
 
 AInalyst will ask you questions at key moments: when you need to choose a methodology, set priorities, approve requirements, or assess risks. It will give recommendations and warn you about the consequences, but the final decision is always yours. That's how it should be: methodology helps you make a good decision, but it doesn't make the decision for you.

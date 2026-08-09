@@ -8,6 +8,11 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **A stored artifact survives an interrupted write.** Every project JSON file is now replaced in a single step (written beside the target, then moved into place), so an interruption — Ctrl+C, a full disk, a dead battery, an antivirus holding the handle — leaves the previous version whole instead of a truncated one. Previously 32 places wrote straight over the file, truncating it before the replacement existed.
+- **Previous versions are kept.** Before a file is replaced, the version being replaced is copied to `governance_plans/.history/`; the last five generations of each artifact are retained. This covers what atomicity cannot: content written perfectly and *wrong*, and hand edits. The message for a damaged artifact now names that folder — and states that the newest copy is the project as it stood before the most recent change.
+- **A malformed structure is refused on write.** The requirements graph accepts only `requirements` and `links` as lists; the refusal happens before the file is touched and reaches the analyst as the usual `❌` line. Validation previously existed only on read, which meant a wrong-shaped write was detected after the good version was already gone.
+
 ### Changed
 - The flagship version of the project is now in English. The Russian version is kept on the `ru` branch.
 
