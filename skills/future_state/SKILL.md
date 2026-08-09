@@ -106,7 +106,7 @@ Call `define_goals_and_objectives` for each business objective.
 **SMART validation (more detail: `references/future_state_guide.md`):**
 - The tool checks the criteria and suggests improvements
 - Each objective is linked to a BN from 6.1 → traceability `BN → BG → FR`
-- The objective is registered as a `business_goal` node in the 5.1 repository (ADR-062)
+- The objective is registered as a `business_goal` node in the 5.1 repository
 
 **Structure of `objectives_json`:**
 ```json
@@ -197,13 +197,13 @@ Call `save_future_state`.
 - `false` (default) — only saves the 6.2 report
 - `true` — prepares data for handoff to 7.3. The BA then calls:
   `set_business_context(from_strategy_project_id="project_id", ...)`
-  and the data from the 6.2 objectives will pre-fill the business context for requirements validation (ADR-065)
+  and the data from the 6.2 objectives will pre-fill the business context for requirements validation
 
 ---
 
 ## Integration with other tasks
 
-### Input: 6.1 → 6.2 (optional, ADR-060)
+### Input: 6.1 → 6.2 (optional)
 
 6.1 is **not required** for 6.2 to work — graceful degradation.
 If 6.1 exists, the following is read automatically:
@@ -213,7 +213,7 @@ If 6.1 exists, the following is read automatically:
 
 ### Output: 6.2 → 5.1 (objective traceability)
 
-BG-xxx nodes are registered in the 5.1 repository with type `business_goal` (ADR-062).
+BG-xxx nodes are registered in the 5.1 repository with type `business_goal`.
 End-to-end chain: `BN-001 → derives → BG-001 → satisfies → FR-001 → verifies → TC-001`
 
 ### Output: 6.2 → 6.4 (change strategy)
@@ -223,7 +223,7 @@ The change strategy is built on the explicit list of gaps and their types.
 
 ### Output: 6.2 → 7.3 (business context)
 
-`set_business_context` in 7.3 accepts `from_strategy_project_id` (ADR-065).
+`set_business_context` in 7.3 accepts `from_strategy_project_id`.
 When passed, it pre-fills business objectives and future_state from 6.1 + 6.2 data.
 The older parameter `from_current_state_project_id` is deprecated but still works.
 

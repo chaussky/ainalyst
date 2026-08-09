@@ -195,7 +195,7 @@ mark_req_validated(
 )
 ```
 
-**Three preconditions (ADR-033) — warnings, not blockers:**
+**Three preconditions — warnings, not blockers:**
 1. Req status = `verified` (from 7.2)
 2. No open high-risk assumptions for this req
 3. Traced to a business goal

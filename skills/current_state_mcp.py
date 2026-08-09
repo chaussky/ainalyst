@@ -21,12 +21,12 @@ Integration:
       so nothing is read back; the labels record provenance and seed empty drafts)
   Out: BN nodes in the 5.1 repository, data for 7.3 set_business_context
 
-ADR-054: business_need as a node type in the 5.1 repository
-ADR-055: backward compatibility with set_business_context (7.3)
-ADR-056: normalized RCA output regardless of technique
-ADR-057: 4.3 provenance via session_ids (see the note above — no automated import)
-ADR-058: scope_current_state as an explicit contract
-ADR-059: capture_current_state_element — iterative pattern
+business_need as a node type in the 5.1 repository
+backward compatibility with set_business_context (7.3)
+normalized RCA output regardless of technique
+4.3 provenance via session_ids (see the note above — no automated import)
+scope_current_state as an explicit contract
+capture_current_state_element — iterative pattern
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -216,7 +216,7 @@ def scope_current_state(
 ) -> str:
     """
     BABOK 6.1 — First step: scope the current-state analysis.
-    Establishes an explicit contract between the BA and the system (ADR-058).
+    Establishes an explicit contract between the BA and the system.
     Called once at the start of work on 6.1.
 
     Args:
@@ -405,7 +405,7 @@ def capture_current_state_element(
     notes: str = "",
 ) -> str:
     """
-    BABOK 6.1 — Capture one current-state element (ADR-059).
+    BABOK 6.1 — Capture one current-state element.
     Iterative pattern: called once per element, possibly across different sessions.
     A repeated call updates the record (idempotent on element).
 
@@ -543,7 +543,7 @@ def run_root_cause_analysis(
     affected_elements: str = "[]",
 ) -> str:
     """
-    BABOK 6.1 — Run RCA and save a normalized result (ADR-056).
+    BABOK 6.1 — Run RCA and save a normalized result.
     Normalized format: the output is the same regardless of technique.
     The technique is a thinking tool. The MCP saves the result.
 
@@ -681,7 +681,7 @@ def define_business_needs(
 ) -> str:
     """
     BABOK 6.1 — Formulate a business need.
-    Optionally registers a business_need node in the 5.1 repository (ADR-054).
+    Optionally registers a business_need node in the 5.1 repository.
 
     Args:
         project_id:              Project identifier.
@@ -1016,13 +1016,13 @@ def save_current_state(
 ) -> str:
     """
     BABOK 6.1 — Finalize the current-state analysis.
-    Creates a readable Markdown report. Optionally pushes data to 7.3 (ADR-055).
+    Creates a readable Markdown report. Optionally pushes data to 7.3.
 
     Args:
         project_id:              Project identifier.
         project_title:           Readable project name for the report heading.
         push_to_business_context: If True — appends the exact 7.3 call to make, with the
-                                 6.1 data already identified (ADR-055). It does NOT call
+                                 6.1 data already identified. It does NOT call
                                  7.3 itself: 7.3 lives in a different phase and is not
                                  loaded in this session. The 6.1 data is readable by
                                  `set_business_context(from_current_state_project_id=...)`

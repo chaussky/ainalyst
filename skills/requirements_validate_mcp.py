@@ -12,10 +12,10 @@ Tools:
   - mark_req_validated         — status verified -> validated (warnings, not blocks)
   - get_validation_report      — summary report: coverage matrix, orphans, assumptions, verdict
 
-ADR-030: {project}_business_context.json — set here by hand or populated by Chapter 6 (6.1/6.2)
-ADR-031: {project}_assumptions.json — the assumptions registry
-ADR-032: set_success_criteria — an optional pipeline step
-ADR-033: mark_req_validated — warnings, not hard blocks
+{project}_business_context.json — set here by hand or populated by Chapter 6 (6.1/6.2)
+{project}_assumptions.json — the assumptions registry
+set_success_criteria — an optional pipeline step
+mark_req_validated — warnings, not hard blocks
 
 Reads: repository 5.1 ({project}_traceability_repo.json)
 Writes: {project}_business_context.json, {project}_assumptions.json,
@@ -237,7 +237,7 @@ def set_business_context(
 ) -> str:
     """
     BABOK 7.3 — Creates or updates the project's business context.
-    ADR-030: sets the business context by hand so 7.3 can run standalone. Chapter 6
+    sets the business context by hand so 7.3 can run standalone. Chapter 6
     (Strategy Analysis) is implemented; 6.1/6.2 populate the same file automatically when run.
 
     ⚠️ Call once at the start of validation work. On update — a warning.
@@ -251,9 +251,9 @@ def set_business_context(
         solution_scope:      Solution boundaries: what is in, what is out.
         potential_value:          Potential value/benefit (optional).
         from_current_state_project_id: ⚠️ DEPRECATED — use from_strategy_project_id.
-                                 Prefills from 6.1 data. Kept for compatibility (ADR-055).
+                                 Prefills from 6.1 data. Kept for compatibility.
         from_strategy_project_id: Reads data from 6.1 AND 6.2 and prefills objectives, future_state,
-                                 scope (ADR-065). Replaces from_current_state_project_id.
+                                 scope. Replaces from_current_state_project_id.
 
     Returns:
         Confirmation with a short summary of the business context.
@@ -351,7 +351,7 @@ def set_business_context(
                     prefill_parts.append(f"✅ Business objectives prefilled from 6.1 BN ({len(auto_goals)} items)")
 
             if prefill_parts:
-                prefill_status = "\n\n## Auto-fill from 6.1+6.2 (ADR-065)\n\n" + "\n".join(prefill_parts)
+                prefill_status = "\n\n## Auto-fill from 6.1+6.2\n\n" + "\n".join(prefill_parts)
             else:
                 prefill_status = f"\n\n⚠️ Data for 6.1/6.2 for project `{from_strategy_project_id}` not found."
 
@@ -360,7 +360,7 @@ def set_business_context(
 
     # ADR-055: prefill from 6.1 if from_current_state_project_id is passed (deprecated)
     elif from_current_state_project_id.strip():
-        prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id` (ADR-065)."
+        prefill_status = "\n\n⚠️ The `from_current_state_project_id` parameter is deprecated. Use `from_strategy_project_id`."
         # Raw id to data_path, normalised value only in the file name — see the note
         # on the from_strategy_project_id branch above.
         safe_cs = normalize_project_id(from_current_state_project_id)
@@ -389,7 +389,7 @@ def set_business_context(
                     business_goals_json = json.dumps(auto_goals, ensure_ascii=False)
                     ids_used = ", ".join(g["id"] for g in auto_goals)
                     prefill_status += (
-                        f"\n\n## Auto-fill from 6.1 (ADR-055)\n\n"
+                        f"\n\n## Auto-fill from 6.1\n\n"
                         f"✅ Business objectives prefilled from {len(auto_goals)} "
                         f"business needs of `{from_current_state_project_id}`.\n"
                         f"Objectives keep the 6.1 business-need ids so graph "
@@ -456,7 +456,7 @@ def set_business_context(
     lines = [
         f"{'⚠️ Business context UPDATED' if is_update else '✅ Business context created'} — **{project_id}**",
         "",
-        f"> ℹ️ **Business context set by hand in 7.3** — Chapter 6 (6.1/6.2) populates this file automatically when run (ADR-030)",
+        f"> ℹ️ **Business context set by hand in 7.3** — Chapter 6 (6.1/6.2) populates this file automatically when run",
         "",
         f"**Date:** {date.today()}",
         "",
@@ -517,7 +517,7 @@ def check_business_alignment(
     Methods: BFS search over 'business'-type nodes in repository 5.1 +
             title matching against BG-xxx from business_context.json.
 
-    ADR-030: business objectives are taken from {project}_business_context.json.
+    business objectives are taken from {project}_business_context.json.
 
     Args:
         project_id: Project identifier.
@@ -769,7 +769,7 @@ def set_success_criteria(
 ) -> str:
     """
     BABOK 7.3 — Attaches a measurable success criterion to a requirement.
-    An optional pipeline step (ADR-032). Recommended for critical reqs.
+    An optional pipeline step. Recommended for critical reqs.
 
     The data is written to the success_criteria field of the req node in repository 5.1.
     Link to 8.1 (Measure Solution Performance): this data becomes the input.
@@ -886,7 +886,7 @@ def log_assumption(
 ) -> str:
     """
     BABOK 7.3 — Records an assumption with a risk_level and linked reqs.
-    ADR-031: stored in {project}_assumptions.json, numbering AS-001/AS-002/...
+    stored in {project}_assumptions.json, numbering AS-001/AS-002/...
 
     Args:
         project_id:  Project identifier.
@@ -999,7 +999,7 @@ def resolve_assumption(
 ) -> str:
     """
     BABOK 7.3 — Closes an assumption as confirmed or refuted.
-    ADR-031: on refuted — a warning about the linked reqs.
+    on refuted — a warning about the linked reqs.
 
     Args:
         project_id:      Project identifier.
@@ -1100,7 +1100,7 @@ def mark_req_validated(
 ) -> str:
     """
     BABOK 7.3 — Sets the 'validated' status in repository 5.1.
-    Preconditions (ADR-033): warnings, not hard blocks.
+    Preconditions: warnings, not hard blocks.
 
     Checks:
       (1) req status = verified (from 7.2)

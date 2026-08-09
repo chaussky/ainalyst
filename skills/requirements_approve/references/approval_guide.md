@@ -164,7 +164,7 @@ Multiple baselines per project is normal practice:
 - `v1.1` — baseline after the first CR package
 - `v2.0` — baseline for the second version of the product
 
-Stored in `{project}_approval_history.json` — analogous to ADR-012.
+Stored in `{project}_approval_history.json`.
 
 ### What goes into the baseline snapshot
 - List of all approved requirements with versions (from 5.1)

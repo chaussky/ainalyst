@@ -507,7 +507,7 @@ def update_requirement(
             reg_norm(previous_owner) != reg_norm(new_owner):
         ownership_note = (
             f"\n\n⚠️ **Ownership moved away from `{previous_owner}`.** 7.4 computes "
-            f"stakeholder↔requirement ties from `owner` ON THE FLY (ADR-098) rather "
+            f"stakeholder↔requirement ties from `owner` ON THE FLY rather "
             f"than storing them, so `{previous_owner}` may now show up in "
             f"`check_architecture_gaps` as having no recorded tie to any requirement. "
             f"If their interests are still touched, record that with 7.4 "

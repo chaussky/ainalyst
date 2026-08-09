@@ -231,15 +231,8 @@ Link types: `derives` / `depends` / `satisfies` / `verifies` / `modifies`
 
 ---
 
-## Legal information and licensing
+## Licensing — one rule
 
-**Copyright owner:** Anatoly Chaussky.
-
-**Licensing model:** The project uses a dual-licensing model:
-1.  **Primary license:** GNU AGPL v3 (for the open-source community).
-2.  **Commercial license:** For use in SaaS, closed proprietary products, or enterprise systems.
-
-**Your instructions for licensing questions:**
-- **On commercial-use requests:** If a user asks about embedding the code into a paid product or SaaS, always point them to the `COMMERCIAL_LICENSE.md` file and recommend contacting the author by email at `chaussky@gmail.com`.
-- **When working with contributors:** Remind them that submitting a Pull Request means automatic agreement with the terms of `CLA.md`, which lets the author retain the ability to dual-license.
-- **Authorship:** When generating new files or modifying existing ones, preserve the `Copyright (c) 2026 Anatoly Chaussky` line in headers if it is present there.
+Preserve the `Copyright (c) 2026 Anatoly Chaussky` header line when creating or editing
+files that carry it (36 files do). Licensing questions are answered from `LICENSE`,
+`COMMERCIAL_LICENSE.md` and `CLA.md` — read them when asked, don't answer from memory.

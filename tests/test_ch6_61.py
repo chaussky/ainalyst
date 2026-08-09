@@ -10,7 +10,7 @@ Structure:
   - check_current_state_completeness (9): full, partial, no scope, verdicts
   - save_current_state (8): finalization, push_to_business_context, no scope
   - Pipeline (6): full predictive, light, deep with 4.3 import, no RCA
-  - Integration 7.3 from_current_state_project_id (8): ADR-055 pre-fill
+  - Integration 7.3 from_current_state_project_id (8): pre-fill of the business context
 """
 
 import json
@@ -739,7 +739,7 @@ class TestPipeline(BaseMCPTest):
 # Integration 7.3 — ADR-055: from_current_state_project_id
 # ---------------------------------------------------------------------------
 
-class TestADR055Integration(BaseMCPTest):
+class TestPrefillBusinessContextFrom61(BaseMCPTest):
     """Tests for the from_current_state_project_id parameter in set_business_context."""
 
     def test_without_param_backward_compatible(self):
@@ -776,7 +776,18 @@ class TestADR055Integration(BaseMCPTest):
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
-        self.assertIn("ADR-055", result)
+        self.assertIn("Auto-fill from 6.1", result)
+
+        # The behaviour, not a label in the prose: the objective is actually STORED,
+        # and it keeps the 6.1 business-need id so the graph stays traceable. This
+        # used to assert the substring "ADR-055" — a decision reference that was
+        # being printed into a delivered document, and a test that passed as long as
+        # that reference survived, whether or not anything was prefilled.
+        with open(data_file(PROJECT, "business_context.json"), encoding="utf-8") as f:
+            stored = json.load(f)
+        goal_ids = [g.get("id") for g in stored.get("business_goals", [])]
+        self.assertIn("BN-001", goal_ids,
+                      f"the 6.1 need should have been prefilled as an objective: {stored}")
 
     def test_explicit_goals_not_overwritten(self):
         """If the BA explicitly passed business_goals_json — don't overwrite it."""

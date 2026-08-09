@@ -1875,7 +1875,7 @@ PARTY_NOT_IN_REGISTRY = "not_in_registry"
 def registry_party_status(project_id: str, who) -> str:
     """Does the registry know `who`? IN_REGISTRY / NOT_IN_REGISTRY / UNBRIDGEABLE.
 
-    The third answer exists because the registry is a LIVING document (ADR-003): a
+    The third answer exists because the registry is a LIVING document: a
     project may legitimately have none yet, and "not in the registry" said about a
     project with no registry is an accusation manufactured from missing data — the
     B3-2 lesson, one chapter over.

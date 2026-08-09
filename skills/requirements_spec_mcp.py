@@ -13,10 +13,10 @@ Tools:
   - create_erd                   — description of relationships + PlantUML ER Diagram, auto-registration in 5.1
   - build_coverage_matrix        — "business objective -> requirements" matrix with coverage flags
 
-ADR-022: every creating tool registers the req in 5.1 automatically (status draft)
-ADR-023: analyze_elicitation_context — hybrid reading (4.3 file -> fallback to context_text)
-ADR-024: create_business_process generates .md + .puml
-ADR-025: PlantUML for all diagrams
+every creating tool registers the req in 5.1 automatically (status draft)
+analyze_elicitation_context — hybrid reading (4.3 file -> fallback to context_text)
+create_business_process generates .md + .puml
+PlantUML for all diagrams
 
 Artifact storage: governance_plans/{project_id}_specs/
 
@@ -99,11 +99,11 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
                       business_goal_ids: Optional[list] = None,
                       owner: str = "") -> str:
     """
-    ADR-022: registers a requirement in repository 5.1 with status draft.
+    registers a requirement in repository 5.1 with status draft.
     If a requirement with this ID already exists — skips the node (without an error).
 
     A1: also writes the BA-declared `satisfies` edges requirement -> business objective
-    (ADR-082, from=requirement to=objective). These edges are what makes per-goal coverage
+    (from=requirement to=objective). These edges are what makes per-goal coverage
     in `build_coverage_matrix` a real claim instead of a project-level average, and they
     are what `check_coverage` (5.1) and CR impact analysis (5.4) read.
 
@@ -284,7 +284,7 @@ def _confirmed_artifact_pattern(project_id: str) -> str:
 
 
 def _find_confirmed_artifact(project_id: str):
-    """ADR-023: finds the latest confirmed 4.3 artifact for project_id, or None.
+    """Finds the latest confirmed 4.3 artifact for project_id, or None.
 
     The 4.3 producer (save_confirmed_elicitation_result -> save_artifact) writes the report to
       reports/<project_id>/4_3_confirmed_result_<timestamp>.md
@@ -350,7 +350,7 @@ def analyze_elicitation_context(
     BABOK 7.1 — Analyzes confirmed elicitation results (4.3) and proposes
     a list of candidate requirements classified by type with a recommended ID prefix.
 
-    ADR-023 (hybrid reading):
+    Hybrid reading:
       1. Tries to find the 4.3 file by project_id in governance_plans/
       2. If not found and context_text is empty — returns instructions
       3. If not found but context_text is provided — uses the supplied text
@@ -485,7 +485,7 @@ def create_user_story(
 ) -> str:
     """
     BABOK 7.1 — Creates a User Story with Acceptance Criteria.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:                Project identifier.
@@ -606,7 +606,7 @@ def create_functional_requirement(
 ) -> str:
     """
     BABOK 7.1 — Creates a formal SRS-style requirement.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:        Project identifier.
@@ -758,7 +758,7 @@ def create_use_case(
 ) -> str:
     """
     BABOK 7.1 — Creates a textual Use Case specification.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:        Project identifier.
@@ -869,7 +869,7 @@ def generate_use_case_diagram(
 ) -> str:
     """
     BABOK 7.1 — Generates a PlantUML Use Case Diagram from all UCs in repository 5.1.
-    ADR-025: PlantUML notation.
+    PlantUML notation.
 
     Reads all requirements of type 'use_case' from repository 5.1 and builds a summary diagram.
     Actors are extracted from the UC specification files (if available).
@@ -1045,8 +1045,8 @@ def create_business_process(
 ) -> str:
     """
     BABOK 7.1 — Creates a business process description.
-    ADR-024: generates TWO files — a textual description .md and an Activity Diagram .puml.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    generates TWO files — a textual description .md and an Activity Diagram .puml.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:      Project identifier.
@@ -1246,7 +1246,7 @@ def create_data_dictionary(
 ) -> str:
     """
     BABOK 7.1 — Creates a Data Dictionary: a registry of entities with attributes, types and constraints.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:      Project identifier.
@@ -1391,8 +1391,8 @@ def create_erd(
 ) -> str:
     """
     BABOK 7.1 — Creates a description of entities and relationships + PlantUML ER Diagram (.puml).
-    ADR-025: PlantUML notation.
-    Automatically registers it in repository 5.1 (status draft). ADR-022.
+    PlantUML notation.
+    Automatically registers it in repository 5.1 (status draft).
 
     Args:
         project_id:      Project identifier.

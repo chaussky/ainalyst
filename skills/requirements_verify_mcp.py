@@ -11,9 +11,9 @@ Tools:
   - mark_req_verified         — set the verified status in 5.1
   - get_verification_report   — summary report on project verification
 
-ADR-027: rule-based MCP + interpretation in Claude Code (not API-in-MCP)
-ADR-028: issues in a separate file {project}_verification_issues.json
-ADR-029: cross-model verification — a separate tool
+rule-based MCP + interpretation in Claude Code (not API-in-MCP)
+issues in a separate file {project}_verification_issues.json
+cross-model verification — a separate tool
 
 Reads: repository 5.1, the specs directory from 7.1
 Writes: the verified status in 5.1, {project}_verification_issues.json
@@ -535,7 +535,7 @@ def check_req_quality(
     Group B (repository): consistency, completeness.
     Group C: a reminder to go through the checklists manually.
 
-    ADR-027: MCP does the rule-based checks, Claude Code interprets and writes recommendations.
+    MCP does the rule-based checks, Claude Code interprets and writes recommendations.
 
     Args:
         project_id: Project identifier.
@@ -760,7 +760,7 @@ def check_model_consistency(
 ) -> str:
     """
     BABOK 7.2 — Cross-model verification: compares the .md and .puml files from 7.1.
-    ADR-029: a separate tool for checking model consistency.
+    a separate tool for checking model consistency.
 
     What it checks:
       - Entities in the Data Dictionary (.md) vs the ERD (.puml): name mismatch
@@ -1018,7 +1018,7 @@ def open_verification_issue(
 ) -> str:
     """
     BABOK 7.2 — Records a problem found while verifying a requirement.
-    ADR-028: issues are stored in {project}_verification_issues.json.
+    issues are stored in {project}_verification_issues.json.
 
     Args:
         project_id:  Project identifier.

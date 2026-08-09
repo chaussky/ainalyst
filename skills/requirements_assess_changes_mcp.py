@@ -470,7 +470,7 @@ def run_cr_impact(
         Two axes matter and both used to be wrong:
           - terminal node type: real roots are `business_goal` (6.2) and `business_need`
             (6.1), not only the legacy `business` — the class behind findings 7.3-A/7.4-B;
-          - relation: 7.1 links a requirement to an objective with `satisfies` (ADR-082),
+          - relation: 7.1 links a requirement to an objective with `satisfies`,
             so a derives-only walk cannot see those links at all.
         Both relations point from=child/implementer -> to=parent/goal, so the walk always
         follows `to`.

@@ -740,7 +740,7 @@ In both cases: not just a list of causes, but a structured business need with an
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 6.1 MCP server (`current_state_mcp`) supports three modes through the `run_rca` tool: `five_whys`, `fishbone`, and `problem_tree`. AInalyst picks the mode based on context: number of factors, presence of organizational pressure, time constraints. When the analysis is done, `register_business_need` creates a BN-xxx record in `traceability_repo.json` as a root node of the graph, all subsequent business objectives and requirements will inherit traceability links from it.
+The Task 6.1 MCP server (`current_state_mcp`) supports three modes through the `run_root_cause_analysis` tool: `five_whys`, `fishbone`, and `problem_tree`. AInalyst picks the mode based on context: number of factors, presence of organizational pressure, time constraints. When the analysis is done, `register_business_need` creates a BN-xxx record in `traceability_repo.json` as a root node of the graph, all subsequent business objectives and requirements will inherit traceability links from it.
 
 ---
 
@@ -839,7 +839,7 @@ And importantly: BG-001 is now recorded in the traceability repository. When req
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 6.2 MCP server (`future_state_mcp`), when `capture_future_state_element` is called, immediately runs the wording through `validate_smart_goal`, checking for a metric, a time horizon, a baseline, and a target value. Objectives that fail validation aren't recorded. Once objective BG-001 is confirmed valid, the `run_gap_analysis` tool compares the current and future states element by element — one gap card for each of the future-state elements captured, out of the eight BABOK defines — and returns them with a change type (new / improve / eliminate / replace) and a complexity rating (low / medium / high). It assigns no gap IDs and no priorities: how big a gap is stays the analyst's judgement, recorded later as `gap_severity` in 6.4. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
+The Task 6.2 MCP server (`future_state_mcp`), when `define_goals_and_objectives` is called, runs the wording through a SMART check — a metric, a time horizon, a baseline, and a target value. An objective that fails is still **recorded**, marked `smart_validated: false`, and the weakness is named in the answer: the platform warns, it does not block, so a goal is never lost because its wording was not ready yet. Once objective BG-001 is in place, the `run_gap_analysis` tool compares the current and future states element by element — one gap card for each of the future-state elements captured, out of the eight BABOK defines — and returns them with a change type (`new` where there is no current state, `improve` where there is) and a complexity rating (low / medium / high). It assigns no gap IDs and no priorities: how big a gap is stays the analyst's judgement, recorded later as `gap_severity` in 6.4. The result is saved to `gap_analysis.json` and imported automatically in Task 6.4, where the platform reports which of those gaps the solution scope covers.
 
 ---
 
@@ -997,7 +997,7 @@ And a second benefit: if the director insists on big bang anyway, the Decision L
 
 > *The business analyst doesn't work with this directly, the Platform does it all automatically.*
 
-The Task 6.4 MCP server (`change_strategy_mcp`), when `assess_org_readiness` is called, collects scores across six standard dimensions and computes a weighted Readiness Score, change history and cultural readiness carry extra weight since they're the strongest predictors of failure. The `compare_strategy_options` tool builds a weighted matrix for each option against: speed, risk, cost, fit with the readiness profile. The result, with the recommended option, is saved to `{project}_change_strategy.json` and used when generating the final artifact via `save_artifact`.
+The Task 6.4 MCP server (`change_strategy_mcp`), when `assess_enterprise_readiness` is called, collects scores across six standard dimensions and computes a weighted Readiness Score, change history and cultural readiness carry extra weight since they're the strongest predictors of failure. The `compare_strategy_options` tool builds a weighted matrix for each option against: speed, risk, cost, fit with the readiness profile. The result, with the recommended option, is saved to `{project}_change_strategy.json` and used when generating the final artifact via `save_artifact`.
 
 ---
 

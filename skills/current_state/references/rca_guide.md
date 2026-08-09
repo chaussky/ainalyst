@@ -109,7 +109,7 @@ People:   ← Different employees perform the export differently (no standard)
 
 ---
 
-## Normalized RCA output format (ADR-056)
+## Normalized RCA output format
 
 Regardless of the technique used, the result is saved in a unified format.
 The technique is a thinking tool. The MCP saves the normalized artifact.

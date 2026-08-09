@@ -4,15 +4,15 @@ MCP tools for defining solution design options, allocating requirements across
 versions, and comparing options.
 
 Tools:
-  - set_change_strategy      — manual/flat entry point for 6.4 data when 6.4 was not run (ADR-039); 6.4 writes the same file
+  - set_change_strategy      — manual/flat entry point for 6.4 data when 6.4 was not run; 6.4 writes the same file
   - create_design_option     — create/update a design option (build/buy/hybrid)
-  - allocate_requirements    — semi-automatic allocation of req across versions (ADR-041)
+  - allocate_requirements    — semi-automatic allocation of req across versions
   - compare_design_options   — comparison matrix of options against criteria
   - save_design_options_report — final report → 7.6 (Analyze Value and Recommend Solution)
 
-ADR-039: set_change_strategy — flat stand-in for 6.4; 6.4 (implemented) writes the SAME file, so the two coexist (6.4's rich contract wins, see the guard in set_change_strategy)
-ADR-040: single file {project}_design_options.json with an options[] array
-ADR-041: allocation — semi-automatic, versions v1/v2/out_of_scope, depends-conflict check
+set_change_strategy — flat stand-in for 6.4; 6.4 (implemented) writes the SAME file, so the two coexist (6.4's rich contract wins, see the guard in set_change_strategy)
+single file {project}_design_options.json with an options[] array
+allocation — semi-automatic, versions v1/v2/out_of_scope, depends-conflict check
 
 Reads:  {project}_traceability_repo.json (5.1) — dependency graph and priorities
         (5.3 priorities are NOT read from its file. They reach 7.5 through the 5.1
@@ -239,7 +239,7 @@ def set_change_strategy(
 ) -> str:
     """
     BABOK 7.5 / flat stand-in for 6.4 — Records the change strategy for the project.
-    ADR-039: lets 7.5 run standalone by entering the change strategy by hand. Chapter 6
+    lets 7.5 run standalone by entering the change strategy by hand. Chapter 6
     (Strategy Analysis) is implemented; task 6.4 writes the SAME file with a richer
     contract, and a real 6.4 contract is never clobbered (see the guard below).
 
@@ -403,7 +403,7 @@ def create_design_option(
 ) -> str:
     """
     BABOK 7.5 — Creates or updates a solution design option.
-    ADR-040: options accumulate in {project}_design_options.json.
+    options accumulate in {project}_design_options.json.
     Idempotent by option_id: calling again updates the existing option.
 
     It's recommended to create 2–3 options for comparison:
@@ -603,7 +603,7 @@ def allocate_requirements(
 ) -> str:
     """
     BABOK 7.5 — Semi-automatic allocation of requirements across solution versions.
-    ADR-041: reads priorities from the 5.1 repository, proposes an allocation,
+    reads priorities from the 5.1 repository, proposes an allocation,
     the BA confirms it or passes overrides via assignments_json.
 
     Versions: v1 (MVP) / v2 (next phase) / out_of_scope (out of the project).

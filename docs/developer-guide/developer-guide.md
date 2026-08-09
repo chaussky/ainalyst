@@ -25,7 +25,7 @@ This document describes the architecture of the AInalyst platform under the hood
 8. [Testing](#8-testing)
 9. [Development Environment](#9-development-environment)
 10. [Adding a New MCP Server](#10-adding-a-new-mcp-server)
-11. [Technical Debt and ADR Registry](#11-technical-debt-and-adr-registry)
+11. [Technical Debt and Design Decisions](#11-technical-debt-and-design-decisions)
 
 ---
 
@@ -361,7 +361,7 @@ Key principles:
 
 ### Why `planning_mcp.py` Is a Monolith
 
-Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 7 tools make a lightweight monolith, which is architecturally justified (ADR-090).
+Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 7 tools make a lightweight monolith, which is architecturally justified.
 
 ### All 22 MCP Servers
 
@@ -611,14 +611,17 @@ Tier 3 answers "give me back what this tool just replaced" and nothing more: fiv
 
 The server starts without errors even when `.env` is not filled in, thanks to a graceful fallback. A connection error occurs only at the moment a specific tool is called, when the server tries to reach the Confluence API.
 
-### 4 Tools
+### 5 Tools
 
 | Tool | What it does |
 |---|---|
-| `push_to_confluence` | Publishes a Markdown artifact as a Confluence page |
+| `publish_artifact_to_confluence` | Publishes an artifact **already saved** to `reports/` — the document is read from disk, so its text never has to be passed in |
+| `push_to_confluence` | Publishes Markdown passed as text — for ad-hoc content that is not a stored artifact |
 | `pull_from_confluence` | Loads a page's content into context |
 | `sync_page` | Updates an existing page (or creates one if it doesn't exist) |
 | `list_space_pages` | Lists pages in a space (search by title) |
+
+Use `publish_artifact_to_confluence` whenever the content is the output of a BABOK task: passing a saved document back through as text is how a published page ends up differing from the artifact it claims to be.
 
 ### Configuration via `.env`
 
@@ -693,7 +696,7 @@ class BaseMCPTest(unittest.TestCase):
 
 Every test runs in its own temporary directory, so artifacts do not clutter the working folder or affect each other.
 
-### ADR-068: `patch` Instead of a Global Mock
+### `patch` Instead of a Global Mock
 
 ```python
 # ✅ Correct: patch save_artifact in the specific module
@@ -718,11 +721,15 @@ Every BABOK chapter and task has its own file:
 | `tests/test_ch3_ch4.py` | Chapter 4 (Chapter 3 is tested through `planning_mcp.py`) |
 | `tests/test_ch4_41.py` … `test_ch4_45.py` | Tasks 4.1-4.5 tested separately |
 | `tests/test_ch5_51.py` … `test_ch5_55.py` | Tasks 5.1-5.5 tested separately |
-| `tests/test_ch6.py` | Chapter 6, combined |
-| `tests/test_ch7.py` | Chapter 7, combined |
+| `tests/test_ch6_61.py` … `test_ch6_64.py` | Tasks 6.1-6.4 tested separately |
+| `tests/test_ch7_71.py` … `test_ch7_76.py` | Tasks 7.1-7.6 tested separately |
 | `tests/test_confluence.py` | Confluence integration |
+| `tests/test_common_*.py` | Shared helpers in `common.py` |
+| `tests/test_json_writer.py` | Durability of stored artifacts (`write_json_artifact`) |
 
-**Current coverage (v27):** 1636 tests, all green.
+Several tasks have a second file for a property that cuts across the task — for example `test_ch7_72_preserves_approval.py` and `test_ch7_73_alignment_direction.py`.
+
+**Coverage:** run `python -m pytest -q` — the count is printed at the end. It is deliberately not repeated here: a number written into prose is wrong the day after the next test is added, and this guide has already carried a stale one.
 
 ### How to Add a Test for a New Tool
 
@@ -760,7 +767,7 @@ class TestMyNewTool(BaseMCPTest):
 pip install -r requirements.txt
 ```
 
-`requirements.txt` pins the exact versions of every dependency (an ADR from REVIEW_v20):
+`requirements.txt` pins the exact versions of every dependency:
 
 ```
 mcp[cli]==1.6.0
@@ -835,7 +842,7 @@ If `.env` is not filled in, the platform still works fully except for the Conflu
 - the list of input materials in `inputs/` ready for processing
 - hints about commands (voice mode, plan mode, PDF export)
 
-It uses `find` instead of `ls *.{ext}`, a fix (an ADR from REVIEW_v20, item 7). Previously, bash brace expansion produced an error if there were no files of one of the types.
+It uses `find` instead of `ls *.{ext}`, a fix. Previously, bash brace expansion produced an error if there were no files of one of the types.
 
 **`post_tool_use.sh`** runs after every MCP tool call. If the tool saved an `.md` file to `governance_plans/reports/`, it prints a notification with the file name and the command to view it.
 
@@ -971,7 +978,7 @@ import skills.my_new_mcp as mod
 class TestMyNewTool(BaseMCPTest):
 
     def _call(self, **overrides):
-        # ADR-084: {**defaults, **overrides}, not dict(key=val, **overrides)
+        # {**defaults, **overrides}, not dict(key=val, **overrides)
         defaults = {
             "project_id": "test_proj",
             "param": "value",
@@ -992,7 +999,7 @@ class TestMyNewTool(BaseMCPTest):
         self.assertIn("crm_bank", result)
 ```
 
-The `_call(**overrides)` pattern is mandatory (ADR-084). `{**defaults, **overrides}` is semantically correct and does not fail when a key that already exists is passed in.
+The `_call(**overrides)` pattern is mandatory. `{**defaults, **overrides}` is semantically correct and does not fail when a key that already exists is passed in.
 
 **Step 6: Run the Tests**
 
@@ -1015,15 +1022,15 @@ All 1636+ tests must be green after adding the new server.
 
 ---
 
-## 11. Technical Debt and ADR Registry
+## 11. Technical Debt and Design Decisions
 
-### Key ADRs
+### Decisions worth knowing
 
 The complete decision log is an internal working document and is not part of this repository. **What follows is the published subset** — the decisions you need in order to read the code without re-deriving why it is shaped this way.
 
 ---
 
-**ADR-101: Generations are copied BEFORE the write** (August 9, 2026)
+**Generations are copied BEFORE the write** (August 9, 2026)
 
 `write_json_artifact` (section 3) copies the version it is about to replace into `governance_plans/.history/`, not the version it just wrote. The case generations exist for is content that was written perfectly and is **wrong** — `init_traceability_repo` once destroyed the node type of every requirement it touched, atomically, validly, and with a `✅` — and there the version you want is precisely the one that tool replaced. Copying afterwards would make the newest generation a second copy of the damage.
 
@@ -1033,43 +1040,43 @@ The accepted cost: a file destroyed from outside restores to one change ago. Tha
 
 ---
 
-**ADR-090: Removal of `main.py`** (Session 45, April 2, 2026)
+**Removal of `main.py`** (Session 45, April 2, 2026)
 
 `main.py` was a legacy wrapper that re-exported functions from `planning_mcp.py`. It was removed: it created confusion about the entry point, and "backward compatibility" was meaningless since there was no public API. Chapter 3 is now served exclusively by `skills/planning_mcp.py`.
 
 ---
 
-**ADR-089: Removal of `planning.py`** (Session 46, April 2, 2026, REVIEW_v26)
+**Removal of `planning.py`** (Session 46, April 2, 2026, REVIEW_v26)
 
 `planning.py` was a "pure" utility module for Chapter 3's business logic, with no MCP wrapper. It was used only in `tests/test_ch3_ch4.py`. It duplicated `_classify_stakeholder` from `planning_mcp.py` with a different signature (it took a `Stakeholder` object instead of two strings). It was removed: `tests/test_ch3_ch4.py` was rewritten to test `planning_mcp.py` directly through `BaseMCPTest`. Chapter 3's architecture is now aligned with the other chapters.
 
 ---
 
-**ADR-088: `planning_mcp.py` Stays a Monolith** (Session 46)
+**`planning_mcp.py` Stays a Monolith** (Session 46)
 
 The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1-3.5, even though Chapters 4-7 are built that way. The reasoning: `planning_mcp.py` is part of `BASE_SERVER` and present in every phase, so splitting it would not save any context window. 7 tools make a lightweight server, so a monolith is justified here. Symmetry for its own sake would be excessive.
 
 ---
 
-**ADR-085: Signature Mismatches While Writing Chapter 5 Tests** (Session 38, March 29, 2026)
+**Signature Mismatches While Writing Chapter 5 Tests** (Session 38, March 29, 2026)
 
 While writing `test_ch5_51.py` through `test_ch5_53.py`, mismatches turned up between the expected and the actual tool signatures. This is recorded as a pattern: tests are written against the code's real signatures, not against the documentation. When refactoring tools, update the tests at the same time as the code.
 
 ---
 
-**ADR-084: The `_call(**overrides)` Pattern in Test Classes** (Session 39)
+**The `_call(**overrides)` Pattern in Test Classes** (Session 39)
 
 `dict(key=val, **overrides)` fails with a `TypeError` when a key already present in `dict()` is passed again. The mandatory pattern for every `_call(**overrides)` is `{**defaults, **overrides}`. `overrides` wins, so there are no conflicts. Recorded in `conftest.py` as a comment.
 
 ---
 
-**ADR-068: `patch` Instead of a Global Mock** (early sessions)
+**`patch` Instead of a Global Mock** (early sessions)
 
 When testing MCP servers, patch in the namespace of the module that uses the function: `@patch("skills.my_mcp.save_artifact")`, not `@patch("skills.common.save_artifact")`. A global mock on `common.save_artifact` breaks other tests run in parallel or in the same discover pass.
 
 ---
 
-**ADR-047 to 053: Claude-in-Claude** (status: 📋 Design)
+**Claude-in-Claude** (status: 📋 Design)
 
 A series of decisions about the architecture of the Claude-in-Claude feature: calling a nested Claude agent from an MCP tool for complex analytical operations. The only functional block of the platform still open. Left for the last stage of development.
 
@@ -1079,7 +1086,7 @@ A series of decisions about the architecture of the Claude-in-Claude feature: ca
 
 | # | Problem | Severity | Status |
 |---|---|---|---|
-| 1 | Claude-in-Claude (ADR-047 to 053) | 🔴 Functional | Last in line |
+| 1 | Claude-in-Claude | 🔴 Functional | Last in line |
 | 2 | Storage tier 3 (Git versioning of artifacts) | 🔵 Architecture | Not implemented |
 | 3 | Run `pytest` on a real machine after publishing to GitHub | 📋 Process | After GitHub |
 | 4 | Platform update strategy without losing project data | 🔵 Architecture | Needs design |
@@ -1087,7 +1094,7 @@ A series of decisions about the architecture of the Claude-in-Claude feature: ca
 
 **Storage tier 3 (Git versioning)**: `governance_plans/` artifacts are ignored by Git by default (`.gitignore`). The plan was to keep a change history and an audit trail through Git. Implementation options: a separate branch for project data, a separate repository, or `git add -f` to explicitly include artifacts. No decision has been made; implementation is on hold.
 
-**Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This needs its own ADR and is still open.
+**Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This is still open.
 
 ---
 
@@ -1108,8 +1115,8 @@ Main changes:
 **v26 → v27** (April 1-2, 2026, final preparation for GitHub)
 
 - All critical bugs from `DAMAGE_REPORT_v26.md` were fixed
-- `main.py` was removed (ADR-090): Chapter 3 now goes through `planning_mcp.py`
-- `planning.py` was removed (ADR-089): the duplication with `planning_mcp.py` was eliminated
+- `main.py` was removed: Chapter 3 now goes through `planning_mcp.py`
+- `planning.py` was removed: the duplication with `planning_mcp.py` was eliminated
 - `tests/test_ch3_ch4.py` was rewritten for `BaseMCPTest` plus direct testing of `planning_mcp.py`
 - `CLAUDE.md` was fixed: the `governance_plans/` structure now reflects the real `data/` and `reports/` subfolders
 - `phase.py` was checked: all 22 servers are on disk, with paths via `Path(__file__).resolve().parent`

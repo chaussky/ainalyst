@@ -113,7 +113,7 @@ Call `run_root_cause_analysis` for each key problem.
 - `evidence` — data confirming the chain of causes
 - `affected_elements` — which of the 8 elements are affected (link to step 2)
 
-**Normalized output (ADR-056):** regardless of the technique used — a single unified format.
+**Normalized output:** regardless of the technique used — a single unified format.
 The technique is a thinking tool. The MCP saves the normalized result.
 
 ---
@@ -133,7 +133,7 @@ Call `define_business_needs` for each business need.
 - `expected_benefits` — expected benefits from the change
 - `root_cause_ids` — link to RCA (mandatory!)
 
-**Registering in traceability (ADR-054):**
+**Registering in traceability:**
 - `register_in_traceability: true` (default) — BN-xxx will appear in the 5.1 repository
 - This is an upstream node: BN → BR → FR → TC — full end-to-end traceability
 - If the 5.1 repository hasn't been created yet — create it via `init_traceability_repo` (5.1)
@@ -162,7 +162,7 @@ Call `save_current_state`.
 - `false` (default) — only saves the 6.1 report
 - `true` — prepares the data for handoff to 7.3. The BA then calls:
   `set_business_context(from_current_state_project_id="project_id", ...)`
-  and the data from the BN automatically pre-fills the business objectives (ADR-055)
+  and the data from the BN automatically pre-fills the business objectives
 
 ---
 
@@ -192,7 +192,7 @@ Full chain: `BN-001 → BR-001 → FR-001 → TC-001`
 
 `set_business_context` in 7.3 accepts the `from_current_state_project_id` parameter.
 When passed — it pre-fills business objectives from the 6.1 business needs.
-Without the parameter — it works as before (backward compatible, ADR-055).
+Without the parameter — it works as before (backward compatible).
 
 ### Output: 6.1 → 6.2 (Future State)
 
@@ -240,4 +240,4 @@ Read when you need details:
   what to analyze, questions for the BA, examples of good/poor descriptions
 
 - **`references/rca_guide.md`** — three RCA techniques with step-by-step instructions
-  and a mapping to the normalized format (ADR-056)
+  and a mapping to the normalized format

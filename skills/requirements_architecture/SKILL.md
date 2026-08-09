@@ -70,7 +70,7 @@ analyze_requirements_architecture(project_id = "crm_upgrade")
 
 **What it does:**
 - Reads all requirements from the 5.1 repository (`{project}_traceability_repo.json`)
-- Distributes them across viewpoints according to VIEWPOINT_MAP (ADR-034)
+- Distributes them across viewpoints according to VIEWPOINT_MAP
 - Builds a coverage matrix: BG × viewpoints
 - Shows custom viewpoints if already added
 - Takes into account business_context from 7.3 (BG list)
@@ -98,7 +98,7 @@ add_custom_viewpoint(
 )
 ```
 
-**Important (ADR-036):** custom viewpoints are defined via `req_ids`, not via types.
+**Important:** custom viewpoints are defined via `req_ids`, not via types.
 "Security" is a cross-cutting slice over FR/NFR/BR — only the BA knows exactly which requirements belong to it.
 
 **Validation:** the tool checks that all passed req_ids exist in the 5.1 repository.
@@ -172,7 +172,7 @@ can see *why* the interests are touched, in your own words.
 check_architecture_gaps(project_id = "crm_upgrade")
 ```
 
-**Two levels of checking (ADR-038):**
+**Two levels of checking:**
 
 **Level 1 — Coverage matrix:**
 - Stakeholder with no recorded tie to any requirement → `critical`
@@ -196,7 +196,7 @@ check_architecture_gaps(project_id = "crm_upgrade")
 - NFR not linked to an FR → `warning`
 - FR with no UC/US → `info`
 
-**How the stakeholder verdict is reached (ADR-098).** Three sources count as evidence:
+**How the stakeholder verdict is reached.** Three sources count as evidence:
 a declared interest (7.4), being a requirement's `owner` (7.1), and an approval decision
 on that requirement (5.5). A shared word with a requirement title is a fourth source,
 kept because it is how this check used to work — but it is a coincidence, not a fact, so
@@ -221,7 +221,7 @@ save_architecture_snapshot(
 ```
 
 **What it creates:**
-- A snapshot in `{project}_architecture.json` (history is not overwritten, ADR-037)
+- A snapshot in `{project}_architecture.json` (history is not overwritten)
 - A Markdown document via `save_artifact` → handed off to 4.4 and 7.5
 
 **The gap block is recomputed at save time, not read back.** The workflow below puts

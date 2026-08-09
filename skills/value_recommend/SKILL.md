@@ -50,7 +50,7 @@ is handed to the sponsor for decision-making and to Chapter 8 (Solution Evaluati
 
 Read `references/value_assessment_guide.md` when:
 - The BA asks how to classify a benefit or cost type
-- You need to explain the Value Score formula (ADR-043)
+- You need to explain the Value Score formula
 - The BA is unsure which `recommendation_type` to choose
 - You need examples of success_metrics
 

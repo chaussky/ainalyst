@@ -10,17 +10,17 @@ Tools:
   - check_architecture_gaps          — coverage matrix + semantic gaps (two levels)
   - save_architecture_snapshot       — records an architecture snapshot, generates Markdown
 
-ADR-034: VIEWPOINT_MAP — constant mapping of types → viewpoints
-ADR-035: reads the stakeholder registry from 4.2 ({project}_stakeholder_registry.json) directly
+VIEWPOINT_MAP — constant mapping of types → viewpoints
+reads the stakeholder registry from 4.2 ({project}_stakeholder_registry.json) directly
          (legacy fallback: {project}_stakeholders.json)
-ADR-036: custom viewpoints are bound to req_ids, not to types
-ADR-037: {project}_architecture.json with snapshots (pattern from 5.5)
-ADR-038: check_architecture_gaps — two levels: coverage matrix + semantic gaps
-ADR-098: stakeholder↔requirement model. The `stakeholders` field on a requirement node
+custom viewpoints are bound to req_ids, not to types
+{project}_architecture.json with snapshots (pattern from 5.5)
+check_architecture_gaps — two levels: coverage matrix + semantic gaps
+stakeholder↔requirement model. The `stakeholders` field on a requirement node
          holds ONLY what the BA declares here; the owner (7.1) and approval decisions
          (5.5) are read on demand and never copied, so no stored copy can go stale.
          A title-word match is kept as a fourth, explicitly labelled source and is a
-         warning, never a critical verdict (this REVISES ADR-088, which labelled the
+         warning, never a critical verdict (this REVISES the earlier rule, which labelled the
          heuristic honestly because no model existed yet).
 
 Reads:  {project}_traceability_repo.json (5.1) — also WRITTEN by declare_stakeholder_interest
@@ -166,7 +166,7 @@ def _save_repo(repo: dict, project_id: str) -> None:
 
 
 def _load_stakeholders(project_id: str) -> Optional[dict]:
-    """ADR-035: read the stakeholder registry from 4.2 directly. Returns None if the file is missing."""
+    """Read the stakeholder registry from 4.2 directly. Returns None if the file is missing."""
     path = _stakeholders_path(project_id)
     if os.path.exists(path):
         # Corrupt -> CorruptArtifactError, converted to a ❌ line at the tool
@@ -224,7 +224,7 @@ def _is_requirement(node) -> bool:
     change request (5.4), the 6.4 solution scope and a test case all live there for
     traceability and are none of them requirements — `_build_views_from_repo`, the
     `Total req` count and the level-2 type buckets have always said so. The
-    stakeholder path added by ADR-098 did not, so a declared interest on a risk was
+    stakeholder path added later did not, so a declared interest on a risk was
     answered "interest declared on 1 requirement(s)", counted as coverage, and
     printed in the signed document under a header saying the project has one
     requirement (branch review R-1).
@@ -471,7 +471,7 @@ def _heuristic_pools(all_reqs: list, evidence: dict) -> tuple:
     drift would surface as one page contradicting another in front of a sponsor.
 
     The pool spans the WHOLE 5.1 graph, risks and goals and change requests included,
-    exactly as the pre-ADR-098 bucket did. R-1's objection was never that the pool was
+    exactly as the earlier bucket did. R-1's objection was never that the pool was
     too wide — it was that the sentence LIED about where the platform had looked, saying
     "a word in a requirement title" when the word sat in a risk title. That is fixed by
     keeping the two title sets apart and naming the right one, not by narrowing the
@@ -566,7 +566,7 @@ def _coincidence_kind(labels: set, title_words: set, name_pool: set,
 
 
 def _heuristic_hit(labels: set, pool: set) -> bool:
-    """Bidirectional substring with the 4-character floor — the pre-ADR-098 rule.
+    """Bidirectional substring with the 4-character floor — the earlier rule.
 
     Kept verbatim from the old flat-bucket check, and fed from the same RAW values the
     old bucket held (see `_heuristic_pools`), so the set of stakeholders it called
@@ -937,7 +937,7 @@ def analyze_requirements_architecture(
 ) -> str:
     """
     BABOK 7.4 — Automatically builds viewpoints from artifact types in the 5.1
-    repository. Mapping: ADR-034 (VIEWPOINT_MAP).
+    repository. Mapping: VIEWPOINT_MAP.
 
     Additionally:
     - Reads custom viewpoints from {project}_architecture.json (if any)
@@ -1190,7 +1190,7 @@ def add_custom_viewpoint(
 ) -> str:
     """
     BABOK 7.4 — Adds a custom viewpoint bound to req_ids.
-    ADR-036: custom viewpoints are defined via req_ids (not via artifact types).
+    custom viewpoints are defined via req_ids (not via artifact types).
 
     Custom viewpoints are needed for specific perspectives: Security, Audit/Compliance,
     Data migration, Integrations — anything not covered by the standard five viewpoints.
@@ -1327,7 +1327,7 @@ def declare_stakeholder_interest(
     """
     BABOK 7.4 — Declares that a stakeholder's interests are touched by requirements.
 
-    ADR-098. This is the ONE relation the BA states by hand. It is deliberately NOT
+    This is the ONE relation the BA states by hand. It is deliberately NOT
     the same thing as two facts the platform already holds elsewhere:
       - `owner` (written by 7.1) — who is answerable for the WORDING of a requirement;
       - RACI (written by 5.5) — someone's role in a DECISION on an approval package.
@@ -1918,17 +1918,17 @@ def check_architecture_gaps(
     project_id: str,
 ) -> str:
     """
-    BABOK 7.4 — Checks the requirements architecture for gaps at two levels (ADR-038).
+    BABOK 7.4 — Checks the requirements architecture for gaps at two levels.
 
     Level 1 — Coverage matrix:
-      - Stakeholder with no recorded tie to any requirement → critical (ADR-098:
+      - Stakeholder with no recorded tie to any requirement → critical (
         declared interest 7.4, owner 7.1, approval decision 5.5 — a title-word match
         alone is a warning, not a verdict)
       - Stakeholder reachable only by a title-word match → warning
       - Stakeholder traceable only OUTSIDE the requirements — a risk (6.3), goal (6.2)
         or change request (5.4) carries their name or a word of it → warning. Never a
         critical: decision 6 forbids handing an existing project a new red gap, and
-        the pre-ADR-098 bucket spanned the whole graph, so these were silent before
+        the earlier bucket spanned the whole graph, so these were silent before
       - Stakeholder whose every tie points at a requirement archived in 5.2
         (deprecated / superseded / retired) → warning: a stage is not a category, so
         the tie is real, but nothing live covers that person
@@ -2066,7 +2066,7 @@ def save_architecture_snapshot(
 ) -> str:
     """
     BABOK 7.4 — Records a snapshot of the requirements architecture.
-    ADR-037: snapshots accumulate in {project}_architecture.json — history is not overwritten.
+    snapshots accumulate in {project}_architecture.json — history is not overwritten.
 
     Generates an Architecture Document (Markdown) via save_artifact.
     The document is handed off to 4.4 (communication with stakeholders) and 7.5 (design options).

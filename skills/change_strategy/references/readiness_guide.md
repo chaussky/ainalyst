@@ -15,7 +15,7 @@ A readiness assessment is the **insurance policy** of a change strategy.
 
 ---
 
-## 2. Six dimensions of readiness (ADR-079)
+## 2. Six dimensions of readiness
 
 ### 2.1 `leadership_commitment` — Leadership commitment
 
@@ -97,7 +97,7 @@ A readiness assessment is the **insurance policy** of a change strategy.
 
 ---
 
-### 2.6 `change_history` — Change history (ADR-079)
+### 2.6 `change_history` — Change history
 
 **What it assesses:** How capable the organization is at carrying out change — based on past experience.
 

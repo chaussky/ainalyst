@@ -9,11 +9,11 @@ Tools:
   - check_value_readiness   — optional pre-flight check
   - save_recommendation     — final Recommendation Document
 
-ADR-042: value assessment structure (benefits/costs/risks per option)
-ADR-043: Value Score formula: Benefits×2.0 + Alignment×1.5 - Cost×1.5 - Risk×1.0
-ADR-044: check_value_readiness — optional check, does not block
-ADR-045: recommendation_type — mandatory Literal with 4 outcomes
-ADR-046: {project}_recommendation.json — single store for task 7.6
+value assessment structure (benefits/costs/risks per option)
+Value Score formula: Benefits×2.0 + Alignment×1.5 - Cost×1.5 - Risk×1.0
+check_value_readiness — optional check, does not block
+recommendation_type — mandatory Literal with 4 outcomes
+{project}_recommendation.json — single store for task 7.6
 
 Reads:  {project}_design_options.json (7.5)
         {project}_business_context.json (7.3, optional)
@@ -327,7 +327,7 @@ def add_value_assessment(
 ) -> str:
     """
     BABOK 7.6 — Assesses the potential value of a single design option.
-    ADR-042: the assessment structure contains benefits, costs, risks.
+    the assessment structure contains benefits, costs, risks.
     Idempotent by option_id: calling again updates the assessment.
 
     Reads {project}_risks.json if it exists (from task 6.3) — graceful degradation.
@@ -634,7 +634,7 @@ def compare_value(
 ) -> str:
     """
     BABOK 7.6 — Builds an automatic Value Score matrix of all assessed options.
-    ADR-043: Value Score formula = Benefits×2.0 + Alignment×1.5 - Cost×1.5 - Risk×1.0.
+    Value Score formula = Benefits×2.0 + Alignment×1.5 - Cost×1.5 - Risk×1.0.
 
     Reads all value_assessments from {project}_recommendation.json.
     Reads business_context (7.3) for Alignment_Score (optional).
@@ -845,7 +845,7 @@ def check_value_readiness(
 ) -> str:
     """
     BABOK 7.6 — Optional pre-flight check before save_recommendation.
-    ADR-044: only informs (severity warning/info), does not block.
+    only informs (severity warning/info), does not block.
 
     What it checks:
     - All options from design_options.json have a value assessment
@@ -1018,7 +1018,7 @@ def save_recommendation(
 ) -> str:
     """
     BABOK 7.6 — Generates the final Recommendation Document.
-    ADR-045: mandatory recommendation_type parameter with 4 outcomes.
+    mandatory recommendation_type parameter with 4 outcomes.
     Idempotent: calling again updates the recommendation.
 
     Four legitimate outcomes per BABOK:

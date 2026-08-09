@@ -20,13 +20,13 @@ Integration:
   In: 6.1 (current_state, business_needs), 6.2 (future_state, gap_analysis), 4.2 (elicitation)
   Out: risk_assessment.json → 6.4; risk + threatens nodes → 5.1 (optional)
 
-ADR-070: hybrid storage (own JSON + optional push to 5.1)
-ADR-071: import_risks_from_context — draft mode
-ADR-072: 1-5 x 1-5 scale, Low/Medium/High zones
-ADR-073: generate_recommendation — hybrid approach (logic + Claude narrative)
-ADR-074: node type `risk` and relation `threatens` in the 5.1 repository
-ADR-075: risk card structure (14 fields)
-ADR-076: export format for 6.4
+hybrid storage (own JSON + optional push to 5.1)
+import_risks_from_context — draft mode
+1-5 x 1-5 scale, Low/Medium/High zones
+generate_recommendation — hybrid approach (logic + Claude narrative)
+node type `risk` and relation `threatens` in the 5.1 repository
+risk card structure (14 fields)
+export format for 6.4
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -767,14 +767,14 @@ def generate_recommendation(
     """
     Step 6 of the 6.3 pipeline: generate a recommendation (type + narrative).
 
-    Deterministic logic determines the recommendation type per ADR-073.
+    Deterministic logic determines the recommendation type.
     Claude writes a 2-4 sentence narrative with concrete data.
 
     Args:
         project_id: Project identifier
         potential_value_summary: Short description of the expected value from 6.2 (if not filled in automatically)
         value_vs_risk: The BA's judgement on whether the expected value justifies the
-            cumulative risk exposure. ADR-073 defines `seek_higher_value` for
+            cumulative risk exposure. BABOK reserves `seek_higher_value` for
             "potential value < cumulative risk exposure", but that comparison has no
             honest arithmetic here: 6.2 states value qualitatively, and the cumulative
             exposure is a sum of 1-25 risk scores — the units are not comparable, so a

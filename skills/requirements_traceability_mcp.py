@@ -108,7 +108,7 @@ def _counts_as_evidence(repo: dict, node_id: str) -> bool:
     was reported as fully covered three lines under the banner denying it.
 
     Yes, if the id is not in the graph at all: an id outside the repository is a
-    documented legitimate reference (ADR-087), so it is EXTERNAL, not archived. Reading
+    documented legitimate reference, so it is EXTERNAL, not archived. Reading
     "not live" as "archived" would turn every external reference into an orphan — the
     false positive `add_trace_link` was deliberately built to avoid.
     """

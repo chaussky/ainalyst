@@ -151,7 +151,7 @@ by rejecting the alternatives. This makes the decision defensible to the sponsor
 
 ---
 
-## 6. Weighted comparison criteria (ADR-081)
+## 6. Weighted comparison criteria
 
 The default criteria and their meaning:
 

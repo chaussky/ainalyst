@@ -23,13 +23,13 @@ Integration:
   In: 6.1 data (optional) — business_needs, current_state, current_state_scope
   Out: BG nodes in the 5.1 repository, gap_analysis for 6.4, data for 7.3 set_business_context
 
-ADR-060: link between 6.2 and 6.1 is modular (6.1 is optional; auto-imported when present)
-ADR-061: 6.2 elements are the same 8 domains as in 6.1 + separate tools for goals and constraints
-ADR-062: business_goal as a node type in the 5.1 repository
-ADR-063: gap analysis as a separate explicit tool
-ADR-064: potential value in 6.2 is qualitative and structured
-ADR-065: from_strategy_project_id — single parameter for 7.3
-ADR-066: check_future_state_completeness — separate tool following the 6.1 pattern
+link between 6.2 and 6.1 is modular (6.1 is optional; auto-imported when present)
+6.2 elements are the same 8 domains as in 6.1 + separate tools for goals and constraints
+business_goal as a node type in the 5.1 repository
+gap analysis as a separate explicit tool
+potential value in 6.2 is qualitative and structured
+from_strategy_project_id — single parameter for 7.3
+check_future_state_completeness — separate tool following the 6.1 pattern
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -269,7 +269,7 @@ def scope_future_state(
 ) -> str:
     """
     BABOK 6.2 — First step: scope the future-state analysis.
-    Mirrors scope_current_state (6.1) — an explicit contract (ADR-058/ADR-060).
+    Mirrors scope_current_state (6.1) — an explicit contract.
     If 6.1 data exists, it is automatically read in as context.
 
     Args:
@@ -444,7 +444,7 @@ def capture_future_state_element(
     notes: str = "",
 ) -> str:
     """
-    BABOK 6.2 — Capture one future-state element (ADR-061).
+    BABOK 6.2 — Capture one future-state element.
     Iterative pattern: called once for each element.
     When 6.1 data exists, shows the current state alongside it ("past next to future").
 
@@ -596,7 +596,7 @@ def define_goals_and_objectives(
     register_in_traceability: bool = True,
 ) -> str:
     """
-    BABOK 6.2 — Capture a business goal with KPIs. SMART validation (ADR-062).
+    BABOK 6.2 — Capture a business goal with KPIs. SMART validation.
     Registers the goal as a business_goal node in the 5.1 repository.
     Establishes traceability BN → derives → BG.
 
@@ -826,7 +826,7 @@ def capture_constraints(
     linked_elements: str = "[]",
 ) -> str:
     """
-    BABOK 6.2 — Capture a constraint that narrows the solution space (ADR-061).
+    BABOK 6.2 — Capture a constraint that narrows the solution space.
     Constraints are checked in 7.5 when developing design options.
 
     Args:
@@ -954,7 +954,7 @@ def run_gap_analysis(
     project_id: str,
 ) -> str:
     """
-    BABOK 6.2 — Run a gap analysis: compare current and future state (ADR-063).
+    BABOK 6.2 — Run a gap analysis: compare current and future state.
     A separate explicit tool: the BA runs it deliberately after filling in all elements.
     The result is a direct input for 6.4 (Define Change Strategy).
 
@@ -1124,7 +1124,7 @@ def assess_potential_value(
     value_summary: str = "",
 ) -> str:
     """
-    BABOK 6.2 — Preliminary qualitative assessment of potential value (ADR-064).
+    BABOK 6.2 — Preliminary qualitative assessment of potential value.
     No formula — a structured list of benefits. This is context for 7.6, not a replacement.
 
     Args:
@@ -1284,7 +1284,7 @@ def check_future_state_completeness(
     project_id: str,
 ) -> str:
     """
-    BABOK 6.2 — Check the completeness of the future-state analysis before finalization (ADR-066).
+    BABOK 6.2 — Check the completeness of the future-state analysis before finalization.
     Follows the check_current_state_completeness (6.1) pattern. Does not block — informs.
 
     What it checks:
@@ -1467,7 +1467,7 @@ def save_future_state(
 ) -> str:
     """
     BABOK 6.2 — Finalize the future-state analysis.
-    Creates a human-readable Markdown report. Optionally pushes data to 7.3 (ADR-065).
+    Creates a human-readable Markdown report. Optionally pushes data to 7.3.
 
     Args:
         project_id:              Project identifier.
@@ -1726,7 +1726,7 @@ def save_future_state(
             f"Call: `set_business_context(project_id='{project_id}', "
             f"from_strategy_project_id='{project_id}', ...)`\n"
             f"The `from_strategy_project_id` parameter will pre-fill business goals from {len(goals_list)} BG goals.\n"
-            f"(ADR-065: a single parameter for 6.1 + 6.2 data)"
+            f"(a single parameter for 6.1 + 6.2 data)"
         )
 
     result_lines = [

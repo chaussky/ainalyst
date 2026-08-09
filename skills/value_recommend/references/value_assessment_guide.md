@@ -49,7 +49,7 @@ and gives a formal recommendation to the sponsor.
 
 ---
 
-## Value Score — formula (ADR-043)
+## Value Score — formula
 
 ```
 Value Score = (Benefits_Score × 2.0) + (Alignment_Score × 1.5)

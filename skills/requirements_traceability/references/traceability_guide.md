@@ -119,9 +119,9 @@ BN-001 (business_need) → derives → BG-001 (business_goal) → satisfies → 
 
 ### Inputs to 5.1
 - **6.1** `define_business_needs` → registers BN-xxx nodes of type `business_need`
-  as upstream roots. End-to-end traceability starts right here (ADR-054).
+  as upstream roots. End-to-end traceability starts right here.
 - **6.2** `define_goals_and_objectives` → registers BG-xxx nodes of type `business_goal`
-  with `BG derives BN` links. The second tier of traceability (ADR-062).
+  with `BG derives BN` links. The second tier of traceability.
 - **4.3** `save_confirmed_elicitation_result` → confirmed elicitation artifacts.
   This is the primary source for creating requirements in the traceability repository.
 - **4.2** `save_cr_elicitation_analysis` → for a CR: new requirements or changes to

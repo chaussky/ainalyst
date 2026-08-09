@@ -23,13 +23,13 @@ Integration:
   Out: change_strategy.json -> 7.1, 7.4, 7.5, 7.6, 8.x;
        solution_scope + satisfies node -> 5.1 (optional)
 
-ADR-077: scope_change_strategy — auto-import from 6.1+6.2+6.3, graceful degradation
-ADR-078: GAP embedded in define_solution_scope (gap_severity + gap_source)
-ADR-079: 6 readiness dimensions (change_history added to the base 5)
-ADR-080: do_nothing is added automatically as OPT-000
-ADR-081: default 6 criteria + optional custom ones
-ADR-082: node type `solution_scope` in the 5.1 repository (revised 2026-07-21 from `solution`)
-ADR-083: JSON contract — a single file with solution_scope + change_strategy sections
+scope_change_strategy — auto-import from 6.1+6.2+6.3, graceful degradation
+GAP embedded in define_solution_scope (gap_severity + gap_source)
+6 readiness dimensions (change_history added to the base 5)
+do_nothing is added automatically as OPT-000
+default 6 criteria + optional custom ones
+node type `solution_scope` in the 5.1 repository (revised 2026-07-21 from `solution`)
+JSON contract — a single file with solution_scope + change_strategy sections
 
 # Copyright (c) 2026 Anatoly Chaussky. AI-powered Platform AInalyst. Licensed under AGPL v3. Commercial licensing: chaussky@gmail.com
 """
@@ -914,7 +914,7 @@ def assess_enterprise_readiness(
 
     Rates 6 dimensions on a 1-5 scale. Computes the readiness_score (average) and a verdict:
     ready (>=4.0) / proceed_with_caution (2.5-3.9) / not_ready (<2.5).
-    ADR-079: change_history added to the base 5 dimensions.
+    change_history added to the base 5 dimensions.
 
     Args:
         project_id: Project identifier

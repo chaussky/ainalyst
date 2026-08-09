@@ -13,7 +13,7 @@ Architecture note:
   4.5 records an engagement change with history: before/after, cause, BA action.
   The split is intentional — they could be merged later if practice shows it's redundant.
 
-  BOTH write to the living registry (ADR-003). They used not to: 4.5 wrote only a
+  BOTH write to the living registry. They used not to: 4.5 wrote only a
   Markdown report, so "became a Blocker" never reached the registry that 7.4 reads and
   3.2's conflict detector compares against. Separating the REPORT from the FACT is not
   the same as separating the tools — the report is 4.5's alone, the fact is shared.

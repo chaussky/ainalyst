@@ -24,7 +24,7 @@ each stakeholder sees "their" part of the picture, while the BA sees the whole.
 ## Five viewpoints (automatic mapping)
 
 The platform automatically organizes requirements into five standard viewpoints based on the
-artifact type (ADR-034):
+artifact type:
 
 ### 1. Business Processes
 **Artifacts:** `business_process` (BP)
@@ -69,7 +69,7 @@ financial, and healthcare projects may require additional ones:
 - **Integrations** — requirements for APIs, integration scenarios
 - **Data Migration** — requirements for migrating historical data
 
-**Key distinction (ADR-036):** custom viewpoints are defined via specific req_ids,
+**Key distinction:** custom viewpoints are defined via specific req_ids,
 not via artifact types. This is because "Security" is not a separate requirement type,
 but a cross-cutting slice over existing FR/NFR/BR. Only the BA knows exactly which requirements relate to security.
 
@@ -101,7 +101,7 @@ The last row exists because a clean sheet and an unchecked sheet look identical 
 A registry that is *absent* and a registry that is *present and unusable* are two different
 facts, and the report states which one it met rather than printing zeros for both.
 
-#### How the stakeholder verdict is reached (ADR-098)
+#### How the stakeholder verdict is reached
 
 The platform asks four questions about each person in the registry, and says in the gap
 text which ones it asked:
@@ -198,7 +198,7 @@ are enough. Frameworks are needed when working in a large enterprise context.
 
 ## Architecture snapshots
 
-By analogy with the baseline in 5.5, task 7.4 supports snapshots (ADR-037):
+By analogy with the baseline in 5.5, task 7.4 supports snapshots:
 
 **When to take a snapshot:**
 - Before handing the architecture off to 7.5 (Design Options)
