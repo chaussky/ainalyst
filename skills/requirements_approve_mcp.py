@@ -1672,14 +1672,14 @@ def create_requirements_baseline(
     forced_gates = gate["forceable"] if force else []
     if forced_gates:
         force_warning = (
-            "\n\n> ⚠️ **Baselined with `force`.** These gates were overridden: "
+            "\n\n> ⚠️ **Baseline зафиксирован с `force`.** Обойдены следующие гейты: "
             + ", ".join(forced_gates)
-            + (". Open conditions remain." if open_conditions else ".")
+            + (". Открытые условия остаются." if open_conditions else ".")
         )
     elif force and open_conditions:
         force_warning = (
-            "\n\n> ⚠️ The baseline was created with `force=true`. "
-            "Open conditions remain."
+            "\n\n> ⚠️ Baseline создан с `force=true`. "
+            "Открытые условия остаются."
         )
     else:
         force_warning = ""
@@ -1689,14 +1689,14 @@ def create_requirements_baseline(
         f"Baseline: {baseline_version}, Дата: {date.today()} -->",
         "",
         f"# Requirements Baseline: {baseline_version}",
-        f"**Project:** {project_name}  ",
-        f"**Package:** {package_id} — {package.get('package_title', '—')}  ",
-        f"**Methodology:** {approach_label}"
+        f"**Проект:** {project_name}  ",
+        f"**Пакет:** {package_id} — {package.get('package_title', '—')}  ",
+        f"**Методология:** {approach_label}"
         + (f" ({package.get('approach_source')})" if package.get("approach_source")
            else "") + "  ",
-        f"**Created on:** {date.today()}  ",
-        f"**Confirmed by:** {decided_by}  ",
-        f"**Requirements in the baseline:** {len(approved_reqs)}  ",
+        f"**Создан:** {date.today()}  ",
+        f"**Подтвердили:** {decided_by}  ",
+        f"**Требований в baseline:** {len(approved_reqs)}  ",
         force_warning,
         "",
         "---",
@@ -1706,7 +1706,7 @@ def create_requirements_baseline(
     ]
 
     if not approved_reqs:
-        record_lines.append("*(none — no requirement in this package reached full approval)*")
+        record_lines.append("*(нет — ни одно требование пакета не получило полного согласования)*")
     for rid in approved_reqs:
         node = _find_node(repo, rid)
         title = node.get("title", "—") if node else "—"
@@ -1719,16 +1719,16 @@ def create_requirements_baseline(
     # reader comparing it against the package would find a requirement that went in and
     # never came out.
     if overtaken:
-        record_lines += ["", "---", "", "## Decided by a later round", "",
-                         "These requirements were in this package, but a later round "
-                         "decided them again, and the later round governs. This "
-                         "baseline does not sign them off:", ""]
+        record_lines += ["", "---", "", "## Решено более поздним раундом", "",
+                         "Эти требования входили в пакет, но более поздний раунд принял "
+                         "по ним решение заново, и главенствует он. Этот baseline их не "
+                         "подписывает:", ""]
         for rid, later_pkg in sorted(overtaken.items()):
             node = _find_node(repo, rid)
             title = node.get("title", "—") if node else "—"
             record_lines.append(
-                f"- 📦 `{rid}` {title} — decided by `{later_pkg}` "
-                f"(outcome there: **{approval_outcome(project_name, rid)}**)")
+                f"- 📦 `{rid}` {title} — решено пакетом `{later_pkg}` "
+                f"(исход там: **{approval_outcome(project_name, rid)}**)")
 
     # What THIS round overturned. A requirement rejected in an earlier round and
     # approved here is decided by this one (the settled "latest round governs" rule),
@@ -1738,22 +1738,22 @@ def create_requirements_baseline(
     # rejection as current, and the reversal was in no audit trail at all.
     overturned = _decisions_this_round_overrides(project_name, package_id, req_ids)
     if overturned:
-        record_lines += ["", "---", "", "## Decisions this round overrides", ""]
+        record_lines += ["", "---", "", "## Решения, которые этот раунд отменяет", ""]
         for item in overturned:
             record_lines.append(
-                f"- `{item['req_id']}` was **{item['decision']}** by "
-                f"`{item['stakeholder']}` ({item['raci']}) in package `{item['package_id']}`"
+                f"- `{item['req_id']}` — решение **{item['decision']}**, "
+                f"`{item['stakeholder']}` ({item['raci']}), пакет `{item['package_id']}`"
                 + (f" — {item['reason']}" if item.get("reason") else "")
             )
         record_lines += [
             "",
-            "These earlier decisions no longer govern: the round recorded here is the "
-            "later one. Confirm the people who objected have been brought along.",
+            "Эти прежние решения больше не главенствуют: раунд, записанный здесь, "
+            "более поздний. Убедитесь, что возражавшие люди согласны с переменой.",
         ]
 
-    record_lines += ["", "---", "", "## Stakeholder decisions", ""]
+    record_lines += ["", "---", "", "## Решения стейкхолдеров", ""]
     if not baseline_snapshot["stakeholder_summary"]:
-        record_lines.append("*(none — nobody recorded a decision on this package)*")
+        record_lines.append("*(нет — по этому пакету никто не записал решения)*")
     for sh_name, sh_summary in baseline_snapshot["stakeholder_summary"].items():
         icon = {"approved": "✅", "conditional": "🟡", "rejected": "❌", "abstained": "⚪"}.get(
             sh_summary["overall_decision"], "—"
@@ -1787,38 +1787,39 @@ def create_requirements_baseline(
     forced_in_baseline = [r for r in vstate["forced"] if r in baselined]
 
     if unverified_in_baseline or unknown_in_baseline or forced_in_baseline:
-        record_lines += ["", "---", "", "## 7.2 verification", ""]
+        record_lines += ["", "---", "", "## Верификация 7.2", ""]
 
     if unverified_in_baseline:
         ids_str = list_with_cap(unverified_in_baseline, cap=20)
+        n = len(unverified_in_baseline)
         record_lines += [
-            "### ⚠️ Baselined without 7.2 verification",
+            "### ⚠️ Вошло в baseline без верификации 7.2",
             "",
-            f"**{len(unverified_in_baseline)} requirement(s)** entered the baseline "
-            f"without passing verification (7.2): {ids_str}",
+            f"**{n} {plural_ru(n, 'требование', 'требования', 'требований')}** вошло в "
+            f"baseline, не пройдя верификацию (7.2): {ids_str}",
             "",
-            "> Approval is a stakeholder decision; verification is a quality check.",
-            "> These requirements carry an unmeasured quality risk into the baseline.",
+            "> Согласование — это решение стейкхолдера; верификация — проверка качества.",
+            "> Эти требования вносят в baseline неизмеренный риск качества.",
             "",
         ]
 
     if unknown_in_baseline:
         ids_str = ", ".join(f"`{rid}`" for rid in unknown_in_baseline)
         record_lines += [
-            "### ⚪ 7.2 verification unknown",
+            "### ⚪ Верификация 7.2 неизвестна",
             "",
-            f"There is no record either way for: {ids_str}. This package predates the "
-            f"verification check, so whether they passed 7.2 cannot be determined — "
-            f"which is not the same as saying they failed.",
+            f"Записи нет ни за, ни против для: {ids_str}. Этот пакет старше самой "
+            f"проверки, поэтому определить, прошли они 7.2 или нет, невозможно — а это "
+            f"не то же самое, что сказать, будто они её не прошли.",
             "",
         ]
 
     if forced_in_baseline:
         forced_str = ", ".join(f"`{rid}`" for rid in forced_in_baseline)
         record_lines += [
-            "### Verified with override",
+            "### Верифицировано с обходом",
             "",
-            f"7.2 blockers were open and deliberately overridden: {forced_str}",
+            f"Блокеры 7.2 были открыты и обойдены сознательно: {forced_str}",
             "",
         ]
 
