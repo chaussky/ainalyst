@@ -69,18 +69,18 @@ class TestResolution(BaseMCPTest):
         _seed_plan({"timing_form": "iterations"})
         out = self._prepare(approach="predictive")
         self.assertIn("Predictive / Waterfall", out)
-        self.assertIn("stated in this call", out)
+        self.assertIn("указан в этом вызове", out)
         self.assertEqual(_history()["packages"]["PKG-1"]["approach"], "predictive")
 
     def test_the_timing_form_supplies_the_methodology(self):
         _seed_plan({"timing_form": "iterations"})
         out = self._prepare()
         self.assertIn("Agile", out)
-        self.assertIn("3.1 BA plan", out)
+        self.assertIn("плана BA (3.1)", out)
         self.assertIn("iterations", out)
         record = _history()["packages"]["PKG-1"]
         self.assertEqual(record["approach"], "agile")
-        self.assertIn("timing form", record["approach_source"])
+        self.assertIn("форма тайминга", record["approach_source"])
 
     def test_phases_resolve_to_predictive(self):
         _seed_plan({"timing_form": "phases"})
@@ -140,10 +140,10 @@ class TestResolution(BaseMCPTest):
         _seed_plan({"timing_form": "iterations"},
                    approach_label="Hybrid (Agile + compliance gates)")
         out = self._prepare(sprint_number="5")
-        self.assertIn("Sprint: 5", out)
+        self.assertIn("Спринт: 5", out)
         # NOT assertIn("compliance gates"): the resolution source line already
         # contains the label, so that would hold with no explanation printed at all.
-        self.assertIn("The work runs in sprints", out)
+        self.assertIn("Работа идёт спринтами", out)
 
     def test_plain_hybrid_refuses_and_names_both_ways_out(self):
         _seed_plan(approach_label="Hybrid")
@@ -187,7 +187,7 @@ class TestResolution(BaseMCPTest):
         _seed_plan({"timing_form": "phases"})
         self._prepare(package_id="PKG-2")
         record_approval_decision(
-            project_name=PROJECT, package_id="PKG-2", stakeholder_name="Ivanov",
+            project_name=PROJECT, package_id="PKG-2", stakeholder_name="Иванов",
             stakeholder_raci="accountable", decision="approved",
             req_decisions_json="[]")
         os.remove(ba_plan_path(PROJECT))          # the plan is gone
@@ -195,13 +195,13 @@ class TestResolution(BaseMCPTest):
             saver.return_value = "\n\n✅ Saved"
             create_requirements_baseline(
                 project_name=PROJECT, package_id="PKG-2", baseline_version="v1.0",
-                decided_by="Ivanov")
+                decided_by="Иванов")
         self.assertTrue(saver.call_args, "the Approval Record was not written")
         record = saver.call_args[0][0]
-        self.assertIn("**Methodology:** Predictive / Waterfall", record)
+        self.assertIn("**Методология:** Predictive / Waterfall", record)
         # The Approval Record is the document an auditor reads; where the methodology
         # came from belongs in it, and storing the source is pointless otherwise.
-        self.assertIn("timing form: phases", record)
+        self.assertIn("форма тайминга: phases", record)
 
 
 if __name__ == "__main__":

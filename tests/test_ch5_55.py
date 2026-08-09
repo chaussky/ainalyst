@@ -199,7 +199,7 @@ class TestComputeReqStatus(BaseMCPTest):
     def test_abstention_alongside_an_approval_still_approves(self):
         """Abstention does not BLOCK — it just does not count as a yes."""
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Ivanov"] = {
+        pkg["stakeholder_decisions"]["Иванов"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "approved"}],
         }
@@ -213,7 +213,7 @@ class TestComputeReqStatus(BaseMCPTest):
         """The consequence that matters: no approver → not ready for baseline."""
         from skills.requirements_approve_mcp import _baseline_gate
         pkg = self._make_pkg()
-        pkg["stakeholder_decisions"]["Ivanov"] = {
+        pkg["stakeholder_decisions"]["Иванов"] = {
             "raci": "accountable",
             "req_decisions": [{"req_id": "FR-001", "decision": "abstained"}],
         }
@@ -292,7 +292,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
         self.assertEqual(fr001["status"], STATUS_PENDING)
 
-    def test_duplicate_package_id_blocked(self):
+    def test_duplicate_package_id_заблокирован(self):
         _open_package()
         result = _open_package()
         self.assertIn("уже существует", result)
@@ -461,7 +461,7 @@ class TestRecordApprovalDecision(BaseMCPTest):
         self.assertIn("FR-001", result)
         self.assertIn("FR-002", result)
 
-    def test_unknown_req_id_in_decisions_blocked(self):
+    def test_unknown_req_id_in_decisions_заблокирован(self):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
@@ -624,12 +624,12 @@ class TestASupersededRoundSaysSoItself(BaseMCPTest):
         super().setUp()
         _make_repo_with_verified(self.tmp_dir)
         _open_package(package_id="PKG-A", req_ids=["FR-001"])
-        _record(package_id="PKG-A", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="PKG-A", stakeholder="Иванов", raci="accountable",
                 decision="rejected", rejection_reason="the flow is wrong",
                 req_decisions=[{"req_id": "FR-001", "decision": "rejected",
                                 "rejection_reason": "the flow is wrong"}])
         _open_package(package_id="PKG-B", req_ids=["FR-001"])
-        _record(package_id="PKG-B", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="PKG-B", stakeholder="Иванов", raci="accountable",
                 decision="approved",
                 req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
 
@@ -637,22 +637,22 @@ class TestASupersededRoundSaysSoItself(BaseMCPTest):
         result = check_approval_status(PROJECT, "PKG-A")
         self.assertIn("PKG-B", result,
                       "the older round still reads as the project's current position")
-        self.assertIn("superseded", result.lower())
+        self.assertIn("вытеснен", result.lower())
 
     def test_the_new_record_names_the_decision_it_overrides(self):
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
-            create_requirements_baseline(PROJECT, "PKG-B", "2.0", decided_by="Ivanov")
+            create_requirements_baseline(PROJECT, "PKG-B", "2.0", decided_by="Иванов")
             record = mock_sa.call_args[0][0]
         self.assertIn("PKG-A", record, "the reversal is in no audit trail")
-        self.assertIn("Ivanov", record)
+        self.assertIn("Иванов", record)
         self.assertIn("the flow is wrong", record)
 
     def test_a_round_nobody_overtook_is_left_alone(self):
         _open_package(package_id="PKG-C", req_ids=["FR-002"])
         _record(package_id="PKG-C", req_decisions=[{"req_id": "FR-002", "decision": "approved"}])
         result = check_approval_status(PROJECT, "PKG-C")
-        self.assertNotIn("superseded", result.lower())
+        self.assertNotIn("вытеснен", result.lower())
 
 
 class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
@@ -676,11 +676,11 @@ class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
         super().setUp()
         _make_repo_with_verified(self.tmp_dir)
         _open_package(package_id="PKG-A", req_ids=["FR-001"])
-        _record(package_id="PKG-A", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="PKG-A", stakeholder="Иванов", raci="accountable",
                 decision="approved",
                 req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
         _open_package(package_id="PKG-B", req_ids=["FR-001"])
-        _record(package_id="PKG-B", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="PKG-B", stakeholder="Иванов", raci="accountable",
                 decision="rejected", rejection_reason="security review failed",
                 req_decisions=[{"req_id": "FR-001", "decision": "rejected",
                                 "rejection_reason": "security review failed"}])
@@ -689,13 +689,13 @@ class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             returned = create_requirements_baseline(PROJECT, "PKG-A", "1.0",
-                                                    decided_by="Ivanov")
+                                                    decided_by="Иванов")
             record = mock_sa.call_args[0][0]
         return returned, record
 
     @staticmethod
     def _approved_section(record):
-        return record.split("## Approved requirements", 1)[1].split("\n---", 1)[0]
+        return record.split("## Одобренные требования", 1)[1].split("\n---", 1)[0]
 
     def test_the_record_does_not_list_it_as_approved(self):
         _returned, record = self._baseline_the_dead_round()
@@ -715,7 +715,7 @@ class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
 
     def test_the_dashboard_does_not_invite_a_baseline_it_would_disown(self):
         out = check_approval_status(PROJECT, "PKG-A")
-        verdict = out.split("## 📦 Verdict", 1)[1]
+        verdict = out.split("## 📦 Вердикт", 1)[1]
         self.assertNotIn("All mandatory conditions are satisfied", verdict,
                          "the paragraph above says this round decides nothing:\n" + out)
 
@@ -724,12 +724,12 @@ class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
         rework must keep working. If this test ever fails, the fix above has grown
         into the regression it was written to avoid."""
         _open_package(package_id="PKG-C", req_ids=["FR-001"])
-        _record(package_id="PKG-C", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="PKG-C", stakeholder="Иванов", raci="accountable",
                 decision="approved",
                 req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
-            create_requirements_baseline(PROJECT, "PKG-C", "2.0", decided_by="Ivanov")
+            create_requirements_baseline(PROJECT, "PKG-C", "2.0", decided_by="Иванов")
             record = mock_sa.call_args[0][0]
         self.assertIn("`FR-001`", self._approved_section(record))
         node = [r for r in load_test_repo(PROJECT)["requirements"]
@@ -749,25 +749,25 @@ class TestAnEmptyBaselineSaysTheSameThingInBothPlaces(BaseMCPTest):
         _make_repo_with_verified(self.tmp_dir)
         _open_package(package_id="APKG-009", req_ids=["FR-001"])
 
-    def test_the_returned_summary_does_not_send_an_empty_list_to_development(self):
+    def test_the_returned_summary_does_not_send_an_empty_list_to_разработку(self):
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             returned = create_requirements_baseline(
                 PROJECT, "APKG-009", "0.1", decided_by="BA", force=True)
-        self.assertIn("**Requirements approved:** 0 of 1", returned)
-        self.assertNotIn("Hand off the list of approved requirements to development",
+        self.assertIn("**Одобрено требований:** 0 из 1", returned)
+        self.assertNotIn("Hand off the list of approved requirements to разработку",
                          returned)
-        self.assertIn("no approved requirements", returned.lower())
+        self.assertIn("нет ни одного согласованного требования", returned.lower())
 
     def test_a_baseline_that_did_approve_something_still_says_so(self):
-        _record(package_id="APKG-009", stakeholder="Ivanov", raci="accountable",
+        _record(package_id="APKG-009", stakeholder="Иванов", raci="accountable",
                 decision="approved",
                 req_decisions=[{"req_id": "FR-001", "decision": "approved"}])
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             returned = create_requirements_baseline(
-                PROJECT, "APKG-009", "1.0", decided_by="Ivanov")
-        self.assertIn("development", returned)
+                PROJECT, "APKG-009", "1.0", decided_by="Иванов")
+        self.assertIn("разработку", returned)
 
 
 class TestCheckApprovalStatus(BaseMCPTest):
@@ -846,13 +846,13 @@ class TestCheckApprovalStatus(BaseMCPTest):
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Ivanov",
+            stakeholder_name="Иванов",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
                 {"req_id": "FR-001", "decision": "conditional",
                  "condition_text": "Clarify access", "condition_deadline": deadline,
-                 "condition_owner": "Ivanov"},
+                 "condition_owner": "Иванов"},
                 {"req_id": "FR-002", "decision": "approved"},
             ]),
         )
@@ -866,12 +866,12 @@ class TestCheckApprovalStatus(BaseMCPTest):
         could not fire on such data."""
         long_past = (date.today() - timedelta(days=480)).strftime("%d.%m.%Y")
         result = self._conditional_with_deadline(long_past)
-        self.assertIn("OVERDUE", result)
+        self.assertIn("ПРОСРОЧЕНО", result)
         self.assertNotIn("(not overdue)", result)
 
     def test_an_unreadable_deadline_is_not_reported_as_not_overdue(self):
         result = self._conditional_with_deadline("whenever")
-        self.assertIn("UNREADABLE", result.upper())
+        self.assertIn("НЕЧИТАЕМ", result.upper())
         self.assertNotIn("(not overdue)", result,
                          "a claim was made about a deadline nobody could read")
 
@@ -985,7 +985,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
         self.assertEqual(len(history["baselines"]), 1)
         self.assertEqual(history["baselines"][0]["baseline_version"], "v1.0")
 
-    def test_baseline_blocked_by_rejected_accountable(self):
+    def test_baseline_заблокирован_by_rejected_accountable(self):
         _record(decision="rejected", rejection_reason="Не согласен")
         result = create_requirements_baseline(
             project_name=PROJECT,
@@ -1016,7 +1016,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
         record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
-            stakeholder_name="Ivanov",
+            stakeholder_name="Иванов",
             stakeholder_raci="accountable",
             decision="conditional",
             req_decisions_json=json.dumps([
@@ -1030,10 +1030,10 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
             project_name=PROJECT,
             package_id="APKG-001",
             baseline_version="v1.0",
-            decided_by="Ivanov",
+            decided_by="Иванов",
         )  # no force
         self.assertIn("❌", result)
-        self.assertIn("blocked", result)
+        self.assertIn("заблокирован", result)
         history = _load_approval_history(PROJECT)
         self.assertEqual(len(history["baselines"]), 0, "no baseline may be created when not ready")
 
@@ -1435,14 +1435,14 @@ class TestDashboardVerificationLine(BaseMCPTest):
     def test_all_verified_shows_a_green_line(self):
         self._prepare(_make_repo_with_verified)
         out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
-        self.assertIn("Verified (7.2): 2 of 2", out)
-        self.assertIn("✅ **Verified (7.2)", out)
+        self.assertIn("Верифицировано (7.2): 2 из 2", out)
+        self.assertIn("✅ **Верифицировано (7.2)", out)
 
     def test_partially_verified_shows_the_ids(self):
         self._prepare(_make_repo_unverified)
         out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
-        self.assertIn("Verified (7.2): 0 of 2", out)
-        self.assertIn("🟡 **Verified (7.2)", out)
+        self.assertIn("Верифицировано (7.2): 0 из 2", out)
+        self.assertIn("🟡 **Верифицировано (7.2)", out)
         self.assertIn("FR-001", out)
 
     def test_unknown_package_says_so(self):
@@ -1455,7 +1455,7 @@ class TestDashboardVerificationLine(BaseMCPTest):
         repo["history"] = []
         save_test_repo(repo)
         out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
-        self.assertIn("unknown", out.lower())
+        self.assertIn("неизвестно", out.lower())
 
     def test_verification_does_not_change_the_verdict(self):
         """GLOBAL CONSTRAINT: the gate keeps its four conditions."""
@@ -1466,7 +1466,7 @@ class TestDashboardVerificationLine(BaseMCPTest):
             stakeholder_raci="accountable", decision="approved",
         )
         out = check_approval_status(project_name=PROJECT, package_id="APKG-001")
-        self.assertIn("Ready for baseline", out)
+        self.assertIn("Готов к baseline", out)
 
 
 class TestApprovalRecordVerificationSection(BaseMCPTest):
@@ -1494,20 +1494,20 @@ class TestApprovalRecordVerificationSection(BaseMCPTest):
     def test_unverified_reqs_land_in_the_approval_record(self):
         self._approve_and_baseline(_make_repo_unverified)
         content = self._record_content()
-        self.assertIn("Baselined without 7.2 verification", content)
+        self.assertIn("Вошло в baseline без верификации 7.2", content)
         self.assertIn("FR-001", content)
         self.assertIn("FR-002", content)
 
     def test_fully_verified_record_has_no_such_section(self):
         self._approve_and_baseline(_make_repo_with_verified)
         content = self._record_content()
-        self.assertNotIn("Baselined without 7.2 verification", content)
+        self.assertNotIn("Вошло в baseline без верификации 7.2", content)
 
-    def test_baseline_is_not_blocked_by_missing_verification(self):
+    def test_baseline_is_not_заблокирован_by_missing_verification(self):
         """GLOBAL CONSTRAINT: report-only. force must NOT be needed."""
         out = self._approve_and_baseline(_make_repo_unverified, force=False)
-        self.assertIn("Requirements Baseline created", out)
-        self.assertNotIn("Baseline blocked", out)
+        self.assertIn("Requirements Baseline создан", out)
+        self.assertNotIn("Baseline заблокирован", out)
 
     def test_forced_verification_is_recorded_distinctly(self):
         repo = _make_repo_unverified(self.tmp_dir)
@@ -1530,9 +1530,9 @@ class TestApprovalRecordVerificationSection(BaseMCPTest):
             baseline_version="v1.0", decided_by="Sponsor",
         )
         content = self._record_content()
-        self.assertIn("verified with override", content.lower())
+        self.assertIn("верифицировано с обходом", content.lower())
         self.assertIn("FR-001", content)
-        self.assertNotIn("Baselined without 7.2 verification", content)
+        self.assertNotIn("Вошло в baseline без верификации 7.2", content)
 
 
 # ---------------------------------------------------------------------------
@@ -1566,11 +1566,11 @@ class TestApprovalRecordAccuracy(BaseMCPTest):
             mock_sa.return_value = "✅ Saved"
             create_requirements_baseline(
                 project_name=PROJECT, package_id="APKG-001",
-                baseline_version="v1.0", decided_by="Ivanov", force=True)
+                baseline_version="v1.0", decided_by="Иванов", force=True)
             record = mock_sa.call_args[0][0]
 
-        if "Baselined without 7.2 verification" in record:
-            section = record.split("Baselined without 7.2 verification", 1)[1]
+        if "Вошло в baseline без верификации 7.2" in record:
+            section = record.split("Вошло в baseline без верификации 7.2", 1)[1]
             section = section.split("###", 1)[0]
             for rid in ("FR-001", "FR-002"):
                 self.assertNotIn(rid, section,
@@ -1614,7 +1614,7 @@ class TestApprovalRecordAccuracy(BaseMCPTest):
         _save_approval_history(PROJECT, history)
 
         dashboard = check_approval_status(project_name=PROJECT, package_id="APKG-001")
-        self.assertIn("1 of 1", dashboard,
+        self.assertIn("1 из 1", dashboard,
                       "FR-001 is verified in the durable history — that is knowable")
 
 
@@ -1639,26 +1639,26 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
         self._reject_from_accountable()
         result = create_requirements_baseline(
             project_name=PROJECT, package_id="APKG-001",
-            baseline_version="v1.0", decided_by="Ivanov", force=True)
+            baseline_version="v1.0", decided_by="Иванов", force=True)
         self.assertIn("❌", result)
-        self.assertIn("NOT lifted by `force`", result)
+        self.assertIn("НЕ снимается флагом `force`", result)
 
     def test_the_rejection_block_names_who_objected_and_why(self):
         self._reject_from_accountable()
         result = create_requirements_baseline(
             project_name=PROJECT, package_id="APKG-001",
-            baseline_version="v1.0", decided_by="Ivanov", force=True)
-        self.assertIn("Ivanov", result)
+            baseline_version="v1.0", decided_by="Иванов", force=True)
+        self.assertIn("Иванов", result)
         self.assertIn("Conflicts with the SLA", result)
 
     def test_no_baseline_is_written_when_the_hard_gate_blocks(self):
         self._reject_from_accountable()
         create_requirements_baseline(
             project_name=PROJECT, package_id="APKG-001",
-            baseline_version="v1.0", decided_by="Ivanov", force=True)
+            baseline_version="v1.0", decided_by="Иванов", force=True)
         history = _load_approval_history(PROJECT)
         self.assertEqual(history.get("baselines", []), [],
-                         "a blocked baseline must leave no record behind")
+                         "a заблокирован baseline must leave no record behind")
 
     def test_process_gates_are_still_forceable_and_named(self):
         """The other three remain overridable — the point is that they are recorded
@@ -1667,21 +1667,21 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
         _open_package(req_ids=["FR-001", "FR-002"])
         _record(stakeholder="Consulted Carl", raci="consulted", decision="approved")
 
-        blocked = create_requirements_baseline(
+        заблокирован = create_requirements_baseline(
             project_name=PROJECT, package_id="APKG-001",
-            baseline_version="v1.0", decided_by="Ivanov")
-        self.assertIn("❌", blocked)
-        self.assertIn("pending approvals", blocked)
+            baseline_version="v1.0", decided_by="Иванов")
+        self.assertIn("❌", заблокирован)
+        self.assertIn("незакрытые согласования", заблокирован)
 
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             forced = create_requirements_baseline(
                 project_name=PROJECT, package_id="APKG-001",
-                baseline_version="v1.0", decided_by="Ivanov", force=True)
+                baseline_version="v1.0", decided_by="Иванов", force=True)
             record = mock_sa.call_args[0][0]
 
         self.assertNotIn("❌", forced)
-        self.assertIn("pending approvals", record)
+        self.assertIn("незакрытые согласования", record)
         self.assertIn("force", record.lower())
 
     def test_the_record_stores_which_gates_were_overridden(self):
@@ -1694,12 +1694,12 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
             mock_sa.return_value = "✅ Saved"
             create_requirements_baseline(
                 project_name=PROJECT, package_id="APKG-001",
-                baseline_version="v1.0", decided_by="Ivanov", force=True)
+                baseline_version="v1.0", decided_by="Иванов", force=True)
 
         history = _load_approval_history(PROJECT)
         snapshot = history["baselines"][-1]
         self.assertTrue(snapshot["force_created"])
-        self.assertIn("pending approvals", snapshot["forced_gates"])
+        self.assertIn("незакрытые согласования", snapshot["forced_gates"])
 
 
 class TestApprovalPackageShowsRequirementText(BaseMCPTest):

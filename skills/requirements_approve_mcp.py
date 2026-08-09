@@ -1377,9 +1377,9 @@ def check_approval_status(
     if open_conditions:
         lines += ["### 🟡 Открытые условия (Conditional)", ""]
         for c in open_conditions:
-            overdue_flag = " ⚠️ OVERDUE" if c.get("overdue") else (
+            overdue_flag = " ⚠️ ПРОСРОЧЕНО" if c.get("overdue") else (
                 " ⚠️ СРОК НЕЧИТАЕМ" if c.get("deadline_unreadable") else "")
-            deadline_str = f" | Deadline: {c['condition_deadline']}{overdue_flag}" if c['condition_deadline'] else ""
+            deadline_str = f" | Срок: {c['condition_deadline']}{overdue_flag}" if c['condition_deadline'] else ""
             lines.append(
                 f"- `{c['req_id']}` — {c['condition_text']}"
                 f"{deadline_str} | Ответственный: {c['condition_owner']}"
@@ -1423,7 +1423,7 @@ def check_approval_status(
             ]
 
     # Verdict
-    verdict_word = "Готово к baseline" if can_baseline else "Не готово к baseline"
+    verdict_word = "Готов к baseline" if can_baseline else "Не готов к baseline"
     if fully_superseded:
         verdict_icon, verdict_word = "📦", "Вытеснен — этот раунд больше ничего не решает"
     lines += [

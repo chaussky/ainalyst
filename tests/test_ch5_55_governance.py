@@ -77,10 +77,10 @@ class GovernanceInThePackageTest(BaseMCPTest):
         """Silent degradation is allowed only if the tool says LESS. A dash in a
         signed document is a conclusion the BA never supplied."""
         result = self._prepare()
-        self.assertIn("Instructions for stakeholders", result)   # the block IS rendered
+        self.assertIn("Инструкция для стейкхолдеров", result)   # the block IS rendered
         self.assertNotIn("per the project's governance plan", result)
         self.assertNotIn("Response deadline", result)
-        self.assertNotIn("Approval authority", result)
+        self.assertNotIn("Полномочия на согласование", result)
 
     def test_the_tool_never_refuses_for_a_missing_plan(self):
         """It works without a plan today; refusing would be a regression for every
@@ -96,8 +96,8 @@ class GovernanceInThePackageTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]',
                            approval_sla_days=5)
         result = self._prepare()
-        self.assertIn("5 business days", result)
-        self.assertIn("3.3 governance plan", result)
+        self.assertIn("5 рабочих дней", result)
+        self.assertIn("плану governance 3.3", result)
 
     def test_the_sla_is_printed_on_the_agile_branch_too(self):
         """`approval_sla_days` answers "the timing for the approvals" regardless of
@@ -105,7 +105,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=3)
         result = self._prepare(approach="agile", sprint_number="7")
         self.assertIn("Sprint Planning", result)      # it IS the agile block...
-        self.assertIn("3 business days", result)      # ...and it carries the deadline
+        self.assertIn("3 рабочих дней", result)      # ...and it carries the deadline
 
     def test_the_event_note_is_printed_verbatim(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]',
@@ -116,14 +116,14 @@ class GovernanceInThePackageTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5,
                            approval_timing_note="to the monthly CAB")
         result = self._prepare()
-        self.assertIn("5 business days", result)
+        self.assertIn("5 рабочих дней", result)
         self.assertIn("to the monthly CAB", result)
 
     def test_a_cleared_sla_removes_the_sentence_again(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5)
         plan_ba_governance(PROJECT, approval_sla_days=0)
         result = self._prepare()
-        self.assertIn("Instructions for stakeholders", result)
+        self.assertIn("Инструкция для стейкхолдеров", result)
         self.assertNotIn("Response deadline", result)
 
     # --- the approvers -------------------------------------------------------
@@ -131,7 +131,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
     def test_the_approvers_are_named(self):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         result = self._prepare()
-        self.assertIn("Approval authority", result)
+        self.assertIn("Полномочия на согласование", result)
         self.assertIn("CFO, Head of Risk", result)
 
     def test_the_package_names_ONE_set_of_approvers(self):
@@ -142,7 +142,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
         a generated default is not a second opinion worth printing beside it."""
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         result = self._prepare()
-        self.assertIn("**Approvers:** CFO, Head of Risk", result)
+        self.assertIn("**Согласующие:** CFO, Head of Risk", result)
         self.assertNotIn("Sponsor + Product Owner", result)
         self.assertNotIn("from the High template", result)
 
@@ -152,7 +152,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]',
                            approval_process="Both sign; Board is informed within 24h")
         result = self._prepare()
-        self.assertIn("**Approvers:** CFO, Head of Risk", result)
+        self.assertIn("**Согласующие:** CFO, Head of Risk", result)
         self.assertIn("Both sign; Board is informed within 24h", result)
         self.assertIn("declared in 3.3", result)
 
@@ -166,7 +166,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
     def test_the_authority_block_appears_on_the_agile_branch_too(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]')
         result = self._prepare(approach="agile")
-        self.assertIn("Approval authority", result)
+        self.assertIn("Полномочия на согласование", result)
 
     # --- damaged plan --------------------------------------------------------
 
@@ -176,7 +176,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
             f.write("{ not json")
         result = self._prepare()
         self.assertIn("Approval Package: Auth", result)
-        self.assertNotIn("5 business days", result)
+        self.assertNotIn("5 рабочих дней", result)
         self.assertIn("could not be read", result)
 
     def test_a_governance_section_of_the_wrong_shape_does_not_crash(self):
@@ -189,7 +189,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
             json.dump(data, f)
         result = self._prepare()
         self.assertIn("Approval Package: Auth", result)
-        self.assertNotIn("Approval authority", result)
+        self.assertNotIn("Полномочия на согласование", result)
 
     def test_a_null_governance_section_does_not_crash(self):
         """Chapter 3 loads in EVERY phase, so an AttributeError here is a protocol
@@ -216,7 +216,7 @@ class AuthorityCrossCheckTest(BaseMCPTest):
                                  '["FR-001", "FR-002"]', approach="predictive")
         # A real project has a registry (3.2 seeds it, 4.2 maintains it): it is what
         # ties a planned ROLE to the NAME a decision is recorded under. Without one the
-        # check reports that it cannot tell and says nothing — `NoRegistryTest`.
+        # check reports that it не может определить and says nothing — `NoRegistryTest`.
         _seed_registry([{"name": "Alice Chen", "role": "CFO"},
                         {"name": "Dana Cole", "role": "Head of Risk"},
                         {"name": "Priya Nair", "role": "Marketing Lead"}])
@@ -258,7 +258,7 @@ class AuthorityCrossCheckTest(BaseMCPTest):
                      rejection_reason="out of scope")
         _record, summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("❌", summary)
-        self.assertIn("NOT lifted by `force`", summary)
+        self.assertIn("НЕ снимается флагом `force`", summary)
 
     def test_nothing_is_flagged_when_no_authority_is_planned(self):
         os.remove(ba_plan_path(PROJECT))
@@ -283,16 +283,16 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
     def test_the_record_names_who_responded_and_who_did_not(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
-        self.assertIn("Planned approval authority", record)
+        self.assertIn("Запланированные полномочия на согласование", record)
         self.assertIn("CFO, Head of Risk", record)
-        self.assertIn("No approval decision recorded from: Head of Risk", record)
+        self.assertIn("Решения о согласовании не записано от: Head of Risk", record)
 
     def test_the_record_says_so_when_every_authority_responded(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
         record_approval_decision(PROJECT, "APKG-001", "Head of Risk",
                                  "responsible", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
-        self.assertIn("Planned approval authority", record)
+        self.assertIn("Запланированные полномочия на согласование", record)
         self.assertNotIn("No approval decision recorded from", record)
 
     def test_an_unplanned_responder_does_not_count_as_a_planned_one(self):
@@ -303,8 +303,8 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record_approval_decision(PROJECT, "APKG-001", "Marketing Lead",
                                  "accountable", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO", force=True)
-        self.assertIn("**Responded (accountable/responsible):** nobody.", record)
-        self.assertIn("No approval decision recorded from: CFO, Head of Risk", record)
+        self.assertIn("**Ответили (accountable/responsible):** никто.", record)
+        self.assertIn("Решения о согласовании не записано от: CFO, Head of Risk", record)
 
     def test_an_unplanned_accountable_signer_is_named_in_the_record(self):
         """FOUND BY THE LIVE RUN. `record_approval_decision` warns that an accountable
@@ -318,7 +318,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record_approval_decision(PROJECT, "APKG-001", "Priya Nair (PO)",
                                  "accountable", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
-        self.assertIn("Planned approval authority", record)
+        self.assertIn("Запланированные полномочия на согласование", record)
         self.assertIn("Priya Nair (PO)", record.split("## Governance (3.3)")[1])
 
     def test_a_planned_signer_is_never_listed_as_unnamed_in_the_plan(self):
@@ -331,7 +331,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "responsible", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("**Responded (accountable/responsible):** CFO, Head of Risk", gov)   # the block rendered
+        self.assertIn("**Ответили (accountable/responsible):** CFO, Head of Risk", gov)   # the block rendered
         self.assertNotIn("without being named", gov)
 
     def test_a_consulted_reviewer_outside_the_plan_is_not_reported_as_authority(self):
@@ -343,7 +343,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "consulted", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("**Responded (accountable/responsible):** CFO", gov)          # the block rendered
+        self.assertIn("**Ответили (accountable/responsible):** CFO", gov)          # the block rendered
         self.assertNotIn("Sam Doyle", gov)
 
     def test_the_block_is_absent_without_a_plan(self):
@@ -351,7 +351,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         os.remove(ba_plan_path(PROJECT))
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("Approval Record", record)      # the record IS rendered...
-        self.assertNotIn("Planned approval authority", record)   # ...without the block
+        self.assertNotIn("Запланированные полномочия на согласование", record)   # ...without the block
 
 
 class NoRegistryApprovalRecordTest(BaseMCPTest):
@@ -377,15 +377,15 @@ class NoRegistryApprovalRecordTest(BaseMCPTest):
                                         force=True)
         gov = record.split("## Governance (3.3)")[1]
         self.assertIn("Alice Chen", gov)
-        self.assertIn("cannot tell", gov)
+        self.assertIn("не может определить", gov)
         self.assertNotIn("without being named in the 3.3 plan", gov)   # no accusation
 
     def test_an_exact_role_match_still_counts_without_a_registry(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("**Responded (accountable/responsible):** CFO", gov)
-        self.assertNotIn("cannot tell", gov)
+        self.assertIn("**Ответили (accountable/responsible):** CFO", gov)
+        self.assertNotIn("не может определить", gov)
 
 
 class ConsultedIsNotSilenceTest(BaseMCPTest):
@@ -409,7 +409,7 @@ class ConsultedIsNotSilenceTest(BaseMCPTest):
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("**Head of Risk** (consulted) — approved", record)
         gov = record.split("## Governance (3.3)")[1]
-        self.assertIn("No approval decision recorded from: Head of Risk", gov)
+        self.assertIn("Решения о согласовании не записано от: Head of Risk", gov)
         self.assertNotIn("No decision recorded from: Head of Risk", gov)
 
 
