@@ -575,7 +575,9 @@ def prepare_approval_package(
                     spec_text = ""
                 if spec_text:
                     if not description:
-                        for header in ("Statement", "Story", "Main scenario"):
+                        # Заголовки секций — КОНТРАКТ с 7.1, а не текст этого файла:
+                        # искать надо ровно то, что 7.1 печатает по-русски.
+                        for header in ("Формулировка", "История", "Основной сценарий"):
                             body = spec_section_body(spec_text, header)
                             # drop the italic hint line the 7.1 template prepends
                             body = "\n".join(

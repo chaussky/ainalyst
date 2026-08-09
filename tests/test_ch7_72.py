@@ -1094,8 +1094,8 @@ class TestQualityReadsSpecFiles(BaseMCPTest):
     def test_uc_with_exceptions_in_spec_file_not_flagged_not_testable(self):
         P = "spec_uc"
         make_spec_file(P, "UC-001",
-            "# UC-001 — Review\n\n## Main scenario (Happy Path)\n\n1. Step\n\n"
-            "## Exception scenarios\n\n4a. Timeout: notify the manager.\n")
+            "# UC-001 — Review\n\n## Основной сценарий (Happy Path)\n\n1. Step\n\n"
+            "## Сценарии исключений\n\n4a. Timeout: notify the manager.\n")
         save_repo(make_repo(P, [make_bare_node("UC-001", "use_case", "Review")]))
         result = mod72.check_req_quality(P)
         self.assertNotIn("not_testable", result)
@@ -1103,9 +1103,9 @@ class TestQualityReadsSpecFiles(BaseMCPTest):
     def test_fr_with_metric_in_spec_file_not_flagged_not_testable(self):
         P = "spec_fr"
         make_spec_file(P, "FR-001",
-            "# FR-001 — Routing\n\n## Statement\n\n> _hint_\n\n"
-            "The system SHALL route each application within 3 seconds under up to 1000 requests per second.\n\n"
-            "## Rationale\n\nSpeed.\n")
+            "# FR-001 — Routing\n\n## Формулировка\n\n> _hint_\n\n"
+            "Система ДОЛЖНА маршрутизировать каждую заявку за 3 секунды при нагрузке до 1000 запросов в секунду.\n\n"
+            "## Обоснование\n\nSpeed.\n")
         save_repo(make_repo(P, [make_bare_node("FR-001", "functional", "Routing")]))
         result = mod72.check_req_quality(P)
         self.assertNotIn("not_testable", result)

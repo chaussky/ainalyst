@@ -242,14 +242,15 @@ def _read_spec_fields(req: dict, project_id: str) -> Optional[dict]:
         fields["ac_count"] = len(ac_texts)
         fields["ac_texts"] = ac_texts
     elif req_type in ("functional", "non_functional", "business_rule"):
-        stmt = _spec_section_body(content, "Statement")
+        # Заголовок секции — КОНТРАКТ с 7.1: ищем ровно то, что она печатает.
+        stmt = _spec_section_body(content, "Формулировка")
         # drop the italic hint line ("> _..._") the 7.1 template prepends
         stmt = "\n".join(l for l in stmt.split("\n") if not l.strip().startswith(">")).strip()
         if stmt:
             fields["description"] = stmt
     elif req_type == "use_case":
         # present the exception-scenarios section (empty string if the section is absent)
-        fields["exc_scenarios"] = _spec_section_body(content, "Exception scenarios")
+        fields["exc_scenarios"] = _spec_section_body(content, "Сценарии исключений")
     return fields
 
 
