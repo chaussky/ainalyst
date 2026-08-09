@@ -249,7 +249,7 @@ Serialisation happens **before** the filesystem is touched: content that cannot 
 
 **Чего писатель НЕ даёт — одновременного запуска.** Каждый инструмент читает файл целиком, меняет его в памяти и целиком записывает обратно. Две команды подряд — норма, это обычный порядок работы. Две команды **одновременно** (скрипт, CI, два открытых терминала по одному проекту) кончаются правилом «кто последний, тот и прав»: второй запуск стартовал от состояния до сохранения первого, поэтому затирает его правку — и о потере никто не сообщит. Платформа рассчитана на одного аналитика в одной сессии; параллельный запуск инструментов по одному проекту не поддерживается.
 
-Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, any cyrillic name) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
+Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, a name in any non-Latin script) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
 
 ### `_ensure_dirs()` and `save_artifact()`
 
