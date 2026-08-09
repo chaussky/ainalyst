@@ -422,15 +422,15 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         self._set_field("FR-001", last_reviewed=old_dotted)
         dotted_result = self._call()
 
-        self.assertIn("64 days", iso_result)
-        self.assertIn("64 days", dotted_result,
+        self.assertIn("64 дня", iso_result)
+        self.assertIn("64 дня", dotted_result,
                       "the platform's own second date format read as today")
 
     def test_an_unparseable_date_is_reported_as_unknown_not_as_fresh(self):
         self._set_field("FR-001", last_reviewed="not a date at all")
         result = self._call()
         self.assertIn("FR-001", result)
-        self.assertIn("could not be read", result.lower(),
+        self.assertIn("не удалось прочитать", result.lower(),
                       "a damaged date passed silently as if the requirement were fresh")
 
     def test_a_review_date_in_the_future_is_reported_not_silently_trusted(self):
@@ -440,7 +440,7 @@ class TestCheckRequirementsHealth(BaseMCPTest):
         self._set_field("FR-001", last_reviewed=(date.today() + timedelta(days=30)).isoformat())
         result = self._call()
         self.assertIn("FR-001", result)
-        self.assertIn("in the future", result.lower())
+        self.assertIn("в будущем", result.lower())
 
     def test_detects_volatile_requirement(self):
         """Требование с версией 1.4+ помечается как волатильное."""
@@ -561,7 +561,7 @@ class TestFindReusableRequirements(BaseMCPTest):
         result = self._call(min_reuse_scope="enterprise")
         self.assertIsInstance(result, str)
         self.assertIn("BR-002", result)
-        self.assertIn("raises the ranking, does not exclude", result)
+        self.assertIn("поднимает в ранжировании, но не исключает", result)
 
     def test_min_scope_program_includes_enterprise(self):
         """Target scope program — enterprise candidates rank at least as high."""
@@ -687,7 +687,7 @@ class TestHandingOverOwnershipWarnsAboutTheArchitectureSide(BaseMCPTest):
         # A warning that does not say WHY reads as noise and gets ignored.
         self._call(new_owner="David Kim")
         result = self._call(new_owner="Marta Silva")
-        self.assertIn("on the fly", result.lower())
+        self.assertIn("на лету", result.lower())
 
     def test_setting_an_owner_where_there_was_none_warns_about_nobody(self):
         # Nothing was taken away from anyone, so there is nothing to warn about.
@@ -753,8 +753,8 @@ class TestTheStalenessCountIsCountingStaleness(BaseMCPTest):
         self._set_dates("FR-001", last_reviewed=self._days_ahead(510))
         out = self._health()
 
-        self.assertIn("in the future", out, "fixture did not reach the damaged-date branch")
-        self.assertNotIn("not updated in a while", out,
+        self.assertIn("в будущем", out, "fixture did not reach the damaged-date branch")
+        self.assertNotIn("давно не обновлялись", out,
                          "the same document says staleness cannot be judged:\n" + out)
 
     def test_a_requirement_reviewed_today_is_not_stale_because_it_is_an_old_draft(self):
@@ -762,8 +762,8 @@ class TestTheStalenessCountIsCountingStaleness(BaseMCPTest):
                         added=self._days_ago(100), status="draft")
         out = self._health()
 
-        self.assertIn("In draft status", out, "fixture did not reach the draft-age branch")
-        self.assertNotIn("not updated in a while", out,
+        self.assertIn("В статусе draft", out, "fixture did not reach the draft-age branch")
+        self.assertNotIn("давно не обновлялись", out,
                          "it was reviewed today:\n" + out)
 
     def test_a_genuinely_stale_requirement_is_still_counted(self):
@@ -771,8 +771,8 @@ class TestTheStalenessCountIsCountingStaleness(BaseMCPTest):
         self._set_dates("FR-001", last_reviewed=self._days_ago(90))
         out = self._health()
 
-        self.assertIn("Not updated for 90 days", out)
-        self.assertIn("1 not updated in a while", out)
+        self.assertIn("Не обновлялось 90 дней", out)
+        self.assertIn("1 давно не обновлялись", out)
 
 
 class TestTheDocstringOffersOnlyStatusesTheToolAccepts(BaseMCPTest):
@@ -831,7 +831,7 @@ class TestTheDocstringOffersOnlyStatusesTheToolAccepts(BaseMCPTest):
         `Allowed: ...` built from the raw vocabulary, `approved` included."""
         out = self._set("banana")
         self.assertIn("❌", out)
-        allowed = out.split("Allowed:", 1)[1].split("\n", 1)[0]
+        allowed = out.split("Допустимые:", 1)[1].split("\n", 1)[0]
         self.assertNotIn("approved", allowed,
                          f"refused value offered as allowed: {allowed}")
 

@@ -54,39 +54,39 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ)])
         result = check_requirements_health(PROJECT)
         expected = "\n".join([
-            f"<!-- BABOK 5.2 — Health Audit | Project: {PROJECT} | {date.today()} -->",
+            f"<!-- BABOK 5.2 — Аудит здоровья | Проект: {PROJECT} | {date.today()} -->",
             "",
-            "# 🏥 Requirements registry health audit",
+            "# 🏥 Аудит здоровья реестра требований",
             "",
-            f"**Project:** {PROJECT}  ",
-            "**Filter:** type=all, status=active  ",
-            f"**Date:** {date.today()}",
+            f"**Проект:** {PROJECT}  ",
+            "**Фильтр:** type=все, status=active  ",
+            f"**Дата:** {date.today()}",
             "",
-            "## Summary",
+            "## Сводка",
             "",
-            "| Status | Count | % |",
+            "| Статус | Кол-во | % |",
             "|--------|--------|---|",
-            "| 🟢 Healthy | 0 | 0% |",
-            "| 🟡 Need attention | 1 | 100% |",
-            "| 🔴 Critical | 0 | 0% |",
-            "| **Total active** | **1** | 100% |",
+            "| 🟢 Здоровые | 0 | 0% |",
+            "| 🟡 Требуют внимания | 1 | 100% |",
+            "| 🔴 Критические | 0 | 0% |",
+            "| **Всего активных** | **1** | 100% |",
             "",
-            "## 🟡 Need attention",
+            "## 🟡 Требуют внимания",
             "",
-            "| ID | Type | Title | v | Owner | Issue |",
+            "| ID | Тип | Название | v | Владелец | Проблема |",
             "|----|-----|----------|---|----------|----------|",
-            "| `FR-001` | functional | Login | 1.0 | — | 🟡 No owner |",
+            "| `FR-001` | functional | Login | 1.0 | — | 🟡 Нет владельца |",
             "",
             "---",
             "",
-            "## Recommended actions",
+            "## Рекомендуемые действия",
             "",
-            "1. 🟡 **1 without an owner** — assign an owner via `update_requirement`.",
+            "1. 🟡 **1 без владельца** — назначьте владельца через `update_requirement`.",
         ])
         # Compared over the WHOLE report, not as a prefix: a prefix check let a line
         # appended after the action list escape. The Confluence hook note is the one
         # environment-dependent tail, so it is stripped rather than pinned.
-        body = result.split("\n\n💾 Saved locally.")[0]
+        body = result.split("\n\n💾 Сохранено локально.")[0]
         self.assertEqual(body, expected)
 
     def test_minimum_preset_stops_demanding_an_owner(self):
@@ -97,10 +97,10 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ, source="Interview 21.03")])
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertNotIn("No owner", result)
+        self.assertNotIn("Нет владельца", result)
         self.assertNotIn("without an owner", result)
-        self.assertNotIn("Attributes not filled in", result)
-        self.assertIn("preset Minimum", result)
+        self.assertNotIn("Не заполнены атрибуты", result)
+        self.assertIn("пресет Minimum", result)
 
     def test_full_preset_flags_attributes_nobody_checked_before(self):
         """Asserted on the ISSUE LINE, not on the whole report: `complexity` and
@@ -111,7 +111,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Full", "additional": []}})
         result = check_requirements_health(PROJECT)
         self.assertIn(
-            "Attributes not filled in: priority, stability, reuse_candidate, "
+            "Не заполнены атрибуты: priority, stability, reuse_candidate, "
             "reuse_scope, complexity", result)
 
     def test_healthy_block_does_not_claim_an_owner_it_never_checked(self):
@@ -122,13 +122,13 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ, source="Interview 21.03")])
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertIn("🟢 Healthy requirements", result)
+        self.assertIn("🟢 Здоровые требования", result)
         self.assertNotIn("have an owner", result)
 
     def test_healthy_block_wording_is_untouched_without_a_plan(self):
         _write_repo(PROJECT, [dict(BARE_REQ, owner="PO")])
         result = check_requirements_health(PROJECT)
-        self.assertIn("current, have an owner, stable", result)
+        self.assertIn("актуальны, есть владелец, стабильны", result)
 
     def test_missing_attributes_are_one_line_not_one_line_each(self):
         """A Full preset on a bare requirement must not push the real 🔴 rows out of
@@ -136,7 +136,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ)])
         _write_plan(PROJECT, {"attributes": {"preset": "Full", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertEqual(result.count("Attributes not filled in"), 1)
+        self.assertEqual(result.count("Не заполнены атрибуты"), 1)
 
     def test_reuse_candidate_false_counts_as_filled_in(self):
         """False is a legitimate answer — "not a reuse candidate" is not a gap.
@@ -147,7 +147,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
                                    reuse_candidate=False)])
         _write_plan(PROJECT, {"attributes": {"preset": "Standard", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertNotIn("Attributes not filled in", result)
+        self.assertNotIn("Не заполнены атрибуты", result)
 
     def test_advice_block_names_the_unfilled_attributes(self):
         """Was going to be: 🟡 rows in the table and NOTHING in "Recommended
@@ -159,8 +159,8 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
                                    reuse_candidate=True)])
         _write_plan(PROJECT, {"attributes": {"preset": "Full", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertIn("unfilled attributes", result)
-        self.assertIn("complexity", result.split("Recommended actions")[1])
+        self.assertIn("не заполнены атрибуты", result)
+        self.assertIn("complexity", result.split("Рекомендуемые действия")[1])
 
     def test_action_list_is_numbered_from_one(self):
         """Was: the numbers were hardcoded 1/2/3, so a report with no critical
@@ -168,7 +168,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         own first step."""
         _write_repo(PROJECT, [dict(BARE_REQ)])
         result = check_requirements_health(PROJECT)
-        actions = result.split("Recommended actions")[1]
+        actions = result.split("Рекомендуемые действия")[1]
         self.assertIn("1. 🟡", actions)
         self.assertNotIn("2. 🟡", actions)
 
@@ -176,8 +176,8 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ)])
         _write_plan(PROJECT, {"attributes": {"preset": "Standard", "additional": []}})
         result = check_requirements_health(PROJECT)
-        self.assertIn("Audited attributes", result)
-        self.assertIn("3.4 plan", result)
+        self.assertIn("Проверяемые атрибуты", result)
+        self.assertIn("план 3.4", result)
 
     def test_corrupt_plan_degrades_to_default_and_warns(self):
         """A damaged chapter-3 file must not kill a chapter-5 tool."""
@@ -188,7 +188,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
             f.write("{broken")
         result = check_requirements_health(PROJECT)
         self.assertIn("⚠️", result)
-        self.assertIn("🟡 No owner", result)
+        self.assertIn("🟡 Нет владельца", result)
 
 
 class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
@@ -212,7 +212,7 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
         _write_repo(PROJECT, [dict(BARE_REQ, owner="PO")])
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
         result = check_requirements_health(PROJECT)
-        advice = result.split("Recommended actions")[1]
+        advice = result.split("Рекомендуемые действия")[1]
         self.assertIn("source", advice)
         self.assertIn("init_traceability_repo", advice)
 
@@ -221,7 +221,7 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
                                              "additional": ["stakeholders"]}})
         result = check_requirements_health(PROJECT)
-        advice = result.split("Recommended actions")[1]
+        advice = result.split("Рекомендуемые действия")[1]
         self.assertIn("declare_stakeholder_interest", advice)
         self.assertIn("7.4", advice)
 
@@ -230,14 +230,14 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
                                              "additional": ["last_reviewed"]}})
         result = check_requirements_health(PROJECT)
-        advice = result.split("Recommended actions")[1]
-        self.assertIn("stamped by the platform", advice)
+        advice = result.split("Рекомендуемые действия")[1]
+        self.assertIn("проставляется платформой", advice)
 
     def test_the_nine_ordinary_attributes_still_name_update_requirement(self):
         _write_repo(PROJECT, [dict(BARE_REQ, owner="PO", source="Interview")])
         _write_plan(PROJECT, {"attributes": {"preset": "Standard", "additional": []}})
         result = check_requirements_health(PROJECT)
-        advice = result.split("Recommended actions")[1]
+        advice = result.split("Рекомендуемые действия")[1]
         self.assertIn("update_requirement", advice)
         self.assertIn("priority", advice)
 
@@ -246,7 +246,7 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum",
                                              "additional": ["owner", "stakeholders"]}})
         result = check_requirements_health(PROJECT)
-        advice = result.split("Recommended actions")[1]
+        advice = result.split("Рекомендуемые действия")[1]
         self.assertIn("update_requirement", advice)
         self.assertIn("init_traceability_repo", advice)
         self.assertIn("declare_stakeholder_interest", advice)
@@ -256,17 +256,17 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Full",
                                              "additional": ["stakeholders"]}})
         result = check_requirements_health(PROJECT)
-        actions = result.split("Recommended actions")[1]
-        self.assertEqual(actions.count("unfilled attributes"), 1)
-        self.assertNotIn("2. 🟡 **", actions.split("not updated in a while")[0])
+        actions = result.split("Рекомендуемые действия")[1]
+        self.assertEqual(actions.count("не заполнены атрибуты"), 1)
+        self.assertNotIn("2. 🟡 **", actions.split("давно не обновлялись")[0])
 
     def test_the_plan_less_wording_is_untouched_byte_for_byte(self):
         # The legacy branch has a byte-for-byte contract and is deliberately out of
-        # scope: a project with no 3.4 plan must not see one new character.
+        # scope: a project with no план 3.4 must not see one new character.
         _write_repo(PROJECT, [dict(BARE_REQ)])
         result = check_requirements_health(PROJECT)
         self.assertIn(
-            "1. 🟡 **1 without an owner** — assign an owner via `update_requirement`.",
+            "1. 🟡 **1 без владельца** — назначьте владельца через `update_requirement`.",
             result)
         self.assertNotIn("init_traceability_repo", result)
 
@@ -285,8 +285,8 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("**Target reuse scope:** division", result)
-        self.assertIn("3.4 plan", result)
+        self.assertIn("**Целевой scope переиспользования:** division", result)
+        self.assertIn("из плана 3.4", result)
 
     def test_explicit_scope_always_wins_over_the_plan(self):
         """Silently overriding an explicit BA input is worse than having no feature —
@@ -295,14 +295,14 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT, min_reuse_scope="initiative")
-        self.assertIn("**Target reuse scope:** initiative", result)
-        self.assertNotIn("3.4 plan", result)
+        self.assertIn("**Целевой scope переиспользования:** initiative", result)
+        self.assertNotIn("план 3.4", result)
 
     def test_without_a_plan_the_default_is_still_initiative(self):
         _write_repo(PROJECT, [dict(REUSABLE)])
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("**Target reuse scope:** initiative", result)
-        self.assertNotIn("3.4 plan", result)
+        self.assertIn("**Целевой scope переиспользования:** initiative", result)
+        self.assertNotIn("план 3.4", result)
 
     def test_planned_repository_is_named_instead_of_generic_advice(self):
         _write_repo(PROJECT, [dict(REUSABLE)])
@@ -342,7 +342,7 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
                                         "repository": "", "categories": []}})
         with_plan = find_reusable_requirements(PROJECT)
         self.assertIn("SR-001", with_plan)
-        self.assertNotIn("No suitable candidates", with_plan)
+        self.assertNotIn("Подходящих кандидатов не найдено", with_plan)
 
     def test_a_wider_planned_scope_does_not_demote_between_sections(self):
         """Same defect one threshold up: a confirmed candidate must not slide into the
@@ -351,8 +351,8 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         _write_plan(PROJECT, {"reuse": {"target_scope": "division",
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("## ✅ Confirmed candidates", result)
-        confirmed = result.split("## ✅ Confirmed candidates")[1].split("\n## ")[0]
+        self.assertIn("## ✅ Подтверждённые кандидаты", result)
+        confirmed = result.split("## ✅ Подтверждённые кандидаты")[1].split("\n## ")[0]
         self.assertIn("SR-001", confirmed)
 
     def test_the_report_does_not_present_the_scope_as_a_filter(self):
@@ -363,7 +363,7 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
                                         "repository": "", "categories": []}})
         result = find_reusable_requirements(PROJECT)
         self.assertNotIn("Minimum scope", result)
-        self.assertIn("raises the ranking", result)
+        self.assertIn("поднимает в ранжировании", result)
         self.assertIn("BR-001", result)
 
     def test_the_scope_bonus_still_shows_up_in_the_score(self):
@@ -388,15 +388,15 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
         # inverted to reward requirements BELOW the target, so it could not pin the
         # DIRECTION — nor the narrow-to-wide order of REUSE_SCOPES that it rests on.
         self.assertGreater(_score(at_target), _score(below_target))
-        self.assertIn("Below the planned reuse scope", below_target)
-        self.assertNotIn("Below the planned reuse scope", at_target)
+        self.assertIn("Ниже запланированного scope переиспользования", below_target)
+        self.assertNotIn("Ниже запланированного scope переиспользования", at_target)
 
     def test_empty_result_advice_does_not_offer_a_scope_that_filters_nothing(self):
         """"Lowering min_reuse_scope" cannot change an empty result once the scope no
         longer decides membership. Advice that cannot work is worse than no advice."""
         _write_repo(PROJECT, [])
         result = find_reusable_requirements(PROJECT)
-        self.assertIn("No suitable candidates", result)
+        self.assertIn("Подходящих кандидатов не найдено", result)
         self.assertNotIn("Lowering min_reuse_scope", result)
 
     def test_empty_result_advice_names_the_planned_repository(self):
@@ -414,7 +414,7 @@ class TestReuseUsesThePlannedScope(BaseMCPTest):
             f.write("{broken")
         result = find_reusable_requirements(PROJECT)
         self.assertIn("⚠️", result)
-        self.assertIn("**Target reuse scope:** initiative", result)
+        self.assertIn("**Целевой scope переиспользования:** initiative", result)
 
 
 if __name__ == "__main__":

@@ -1414,11 +1414,11 @@ ATTRIBUTE_WRITERS = {
     "reuse_candidate": "`update_requirement` (5.2)",
     "reuse_scope": "`update_requirement` (5.2)",
     "title": "`update_requirement` (5.2)",
-    "source": "`init_traceability_repo` (5.1 — re-state the requirement; it merges "
-              "by `stated` rather than duplicating)",
-    "stakeholders": "`declare_stakeholder_interest` (7.4, `design` phase)",
-    "last_reviewed": "stamped by the platform on every update (nothing to fill in "
-                     "by hand — drop it from the plan if it keeps showing up)",
+    "source": "`init_traceability_repo` (5.1 — заявите требование заново; оно сольётся "
+              "по `stated`, а не продублируется)",
+    "stakeholders": "`declare_stakeholder_interest` (7.4, фаза `design`)",
+    "last_reviewed": "проставляется платформой при каждом обновлении (заполнять руками "
+                     "нечего — уберите его из плана, если оно продолжает всплывать)",
 }
 
 
@@ -1580,11 +1580,11 @@ def planned_attribute_set(plan):
     if not merged:
         return None
     if preset and additional:
-        label = f"3.4 plan, preset {preset} + {len(additional)} added"
+        label = f"план 3.4, пресет {preset} + добавлено {len(additional)}"
     elif preset:
-        label = f"3.4 plan, preset {preset}"
+        label = f"план 3.4, пресет {preset}"
     else:
-        label = "3.4 plan, explicit list"
+        label = "план 3.4, явный список"
     return merged, label
 
 

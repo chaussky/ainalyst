@@ -829,7 +829,7 @@ def check_requirements_health(
                 issues.append(f"{_ATTR_GAP_PREFIX} {', '.join(missing)}")
             else:
                 # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
-                issues.append("🟡 No owner")
+                issues.append("🟡 Нет владельца")
 
         req_info = {
             "id": req_id,
@@ -871,12 +871,12 @@ def check_requirements_health(
         # action list is now numbered from 1, and the reuse report stopped calling a
         # ranking bonus a minimum. Neither is plan-dependent; "no plan, nothing new"
         # describes this feature's ADDITIONS, not those two fixes.)
-        *([f"**Audited attributes:** {', '.join(audited)} *({audited_label})*  "]
+        *([f"**Проверяемые атрибуты:** {', '.join(audited)} *({audited_label})*  "]
           if resolved else []),
-        f"**Date:** {date.today()}",
+        f"**Дата:** {date.today()}",
         "",
         *([plan_note, ""] if plan_note else []),
-        "## Summary",
+        "## Сводка",
         "",
         "| Статус | Кол-во | % |",
         "|--------|--------|---|",
