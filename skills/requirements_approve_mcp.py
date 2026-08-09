@@ -44,6 +44,7 @@ from skills.common import (write_json_artifact,
     parse_platform_date, deciding_package, superseding_packages, list_with_cap,
     load_approval_history, approval_outcome,
 )
+from skills.plural_ru import plural_ru
 
 mcp = FastMCP("BABOK_Requirements_Approve")
 
@@ -645,12 +646,12 @@ def prepare_approval_package(
         f"<!-- BABOK 5.5 — Approval Package, Проект: {project_name}, Пакет: {package_id}, Дата: {date.today()} -->",
         "",
         f"# Approval Package: {package_title}",
-        f"**Project:** {project_name}  ",
-        f"**Package:** {package_id}  ",
-        f"**Methodology:** {approach_label}{sprint_label} ({approach_source})  ",
-        f"**Audience:** {audience}  ",
-        f"**Date:** {date.today()}  ",
-        f"**Requirements in the package:** {len(req_ids)}  ",
+        f"**Проект:** {project_name}  ",
+        f"**Пакет:** {package_id}  ",
+        f"**Методология:** {approach_label}{sprint_label} ({approach_source})  ",
+        f"**Аудитория:** {audience}  ",
+        f"**Дата:** {date.today()}  ",
+        f"**Требований в пакете:** {len(req_ids)}  ",
         "",
         "---",
         "",
@@ -706,15 +707,17 @@ def prepare_approval_package(
         # would otherwise read "Predictive / Waterfall | Sprint: 5" above an
         # instruction block that never mentions the sprint.
         cadence_note = (
-            f"\n\nThe work runs in sprints (Sprint {sprint_number}); the sign-off "
-            f"itself is formal because of the project's compliance gates."
+            f"\n\nРабота идёт спринтами (Спринт {sprint_number}); само подписание "
+            f"формальное — из-за комплаенс-гейтов проекта."
             if sprint_number else "")
         instruction = (
-            "Please review the requirements and provide a decision for each:\n"
-            "- **Approved** — agreed without reservations\n"
-            "- **Conditional** — agreed subject to a condition (state the condition)\n"
-            "- **Rejected** — not agreed (state the reason)\n"
-            "- **Abstained** — abstaining"
+            # Названия решений оставлены латиницей: это ЗНАЧЕНИЯ параметра `decision`,
+            # которые BA потом передаёт в `record_approval_decision`.
+            "Пожалуйста, рассмотрите требования и вынесите решение по каждому:\n"
+            "- **Approved** — согласовано без замечаний\n"
+            "- **Conditional** — согласовано при условии (условие укажите)\n"
+            "- **Rejected** — не согласовано (укажите причину)\n"
+            "- **Abstained** — воздерживаюсь"
             # Was: "Response deadline: per the project's governance plan." — a pointer
             # at a plan nothing read, printed on a document that goes out for
             # signature. It now states the deadline, or says nothing at all.
@@ -724,8 +727,8 @@ def prepare_approval_package(
     else:
         sprint_ref = f" спринта {sprint_number}" if sprint_number else ""
         instruction = (
-            f"For Sprint Planning{sprint_ref}. The Product Owner reviews and approves the backlog.\n"
-            "Requirements accepted into the sprint will get status Approved and join the Sprint Baseline."
+            f"Для Sprint Planning{sprint_ref}. Product Owner рассматривает и утверждает бэклог.\n"
+            "Требования, принятые в спринт, получат статус Approved и войдут в Sprint Baseline."
             # The SLA answers "the timing for the approvals" (BABOK 3.3 .4) whatever
             # the ceremony: a sprint package has a response window too. A project that
             # planned no SLA sees this branch exactly as it was.
@@ -737,18 +740,18 @@ def prepare_approval_package(
         lines += [
             "---",
             "",
-            "## ⚠️ Not verified via 7.2",
+            "## ⚠️ Не верифицировано через 7.2",
             "",
-            f"These requirements have not passed verification (7.2): {ids_str}",
+            f"Эти требования не прошли верификацию (7.2): {ids_str}",
             "",
-            "This does not block approval — the decision stays with the BA — but it will be "
-            "recorded in the Approval Record when the baseline is created.",
+            "Согласование это не блокирует — решение остаётся за BA, — но факт будет "
+            "записан в Approval Record при создании baseline.",
             "",
-            "To verify them first (7.2 tools live in another phase):",
+            "Чтобы сперва их верифицировать (инструменты 7.2 живут в другой фазе):",
             "",
-            "1. `python phase.py design`, then `/restart`",
-            "2. `check_req_quality` → fix what it finds → `mark_req_verified`",
-            "3. `python phase.py lifecycle`, then `/restart`, and continue here",
+            "1. `python phase.py design`, затем `/restart`",
+            "2. `check_req_quality` → исправь найденное → `mark_req_verified`",
+            "3. `python phase.py lifecycle`, затем `/restart`, и продолжай здесь",
             "",
         ]
 
@@ -915,10 +918,10 @@ def record_approval_decision(
                 # specified requirements and never ran a prioritisation session.
                 if priority in MUST_PRIORITIES:
                     conflicts.append(
-                        f"🔴 {priority} priority — rejecting a critically important requirement"
+                        f"🔴 Приоритет {priority} — отклоняется критически важное требование"
                     )
                 elif priority in ("Should", "Could", "Medium"):
-                    conflicts.append(f"🟡 {priority} priority — recommend reviewing the necessity")
+                    conflicts.append(f"🟡 Приоритет {priority} — рекомендуем пересмотреть необходимость")
 
                 # WSJF-скор если есть
                 wsjf = node.get("wsjf_score")
@@ -1091,10 +1094,10 @@ def record_approval_decision(
                                 stakeholder_name) == PARTY_UNPLANNED:
             lines += [
                 "",
-                f"⚠️ `{stakeholder_name}` is recorded as **{stakeholder_raci}** but is "
-                f"not among the planned decision makers (3.3): {', '.join(planned)}.",
-                "The decision stands exactly as recorded — either update 3.3 with "
-                "`plan_ba_governance`, or confirm this person holds the authority.",
+                f"⚠️ `{stakeholder_name}` записан как **{stakeholder_raci}**, но его нет "
+                f"среди запланированных лиц, принимающих решения (3.3): {', '.join(planned)}.",
+                "Решение остаётся ровно таким, каким записано — либо обновите 3.3 через "
+                "`plan_ba_governance`, либо подтвердите, что у этого человека есть полномочия.",
             ]
         if plan_note:
             lines += ["", plan_note]
@@ -1266,28 +1269,40 @@ def check_approval_status(
     verdict_reasons = []
 
     if blockers:
-        verdict_reasons.append(f"🔴 {len(blockers)} rejection(s) from Accountable/Responsible stakeholders")
+        verdict_reasons.append(
+            f"🔴 {len(blockers)} "
+            f"{plural_ru(len(blockers), 'отказ', 'отказа', 'отказов')} "
+            f"от стейкхолдеров Accountable/Responsible")
 
     if overdue_conditions:
-        verdict_reasons.append(f"🔴 {len(overdue_conditions)} overdue condition(s)")
+        n = len(overdue_conditions)
+        verdict_reasons.append(
+            f"🔴 {n} {plural_ru(n, 'просроченное условие', 'просроченных условия', 'просроченных условий')}")
 
     unreadable_deadlines = [c for c in open_conditions if c.get("deadline_unreadable")]
     if unreadable_deadlines:
         # "Not overdue" is a claim, and it cannot be made about a deadline nobody could
         # read. Say what is actually known.
+        n = len(unreadable_deadlines)
         verdict_reasons.append(
-            f"🟡 {len(unreadable_deadlines)} condition(s) whose deadline could not be "
-            f"read — whether they are overdue is UNKNOWN")
+            f"🟡 у {n} {plural_ru(n, 'условия', 'условий', 'условий')} не удалось "
+            f"прочитать срок — просрочены они или нет, НЕИЗВЕСТНО")
 
     if open_conditions and not overdue_conditions and not unreadable_deadlines:
         # Not blocking, but flag it
-        verdict_reasons.append(f"🟡 {len(open_conditions)} open condition(s) (not overdue)")
+        n = len(open_conditions)
+        verdict_reasons.append(
+            f"🟡 {n} {plural_ru(n, 'открытое условие', 'открытых условия', 'открытых условий')} "
+            f"(не просрочены)")
 
     if counts[STATUS_PENDING] > 0:
-        verdict_reasons.append(f"🔴 {counts[STATUS_PENDING]} requirement(s) still in pending_approval status")
+        n = counts[STATUS_PENDING]
+        verdict_reasons.append(
+            f"🔴 {n} {plural_ru(n, 'требование', 'требования', 'требований')} "
+            f"всё ещё в статусе pending_approval")
 
     if gate["low_approval"]:
-        verdict_reasons.append(f"🔴 Only {approved_pct}% of requirements approved (minimum 70%)")
+        verdict_reasons.append(f"🔴 Согласовано лишь {approved_pct}% требований (минимум 70%)")
 
     # Consulted-rejected (не блокирует, но отмечаем)
     consulted_rejected = []
