@@ -43,11 +43,11 @@ class TestFormDerivation(_TempCwd):
         out = plan_ba_activities(PROJECT)
         section = _read_plan()["ba_activities"]
         self.assertEqual(section["timing_form"], "iterations")
-        self.assertIn("derived from Adaptive (Agile)", section["form_source"])
+        self.assertIn("выведено из подхода Adaptive (Agile)", section["form_source"])
         # NOT assertIn("iterations", out): the "form not set" warning also names
         # `timing_form="iterations"`, so that assertion would pass with the
         # derivation entirely broken.
-        self.assertIn("derived from Adaptive (Agile)", out)
+        self.assertIn("выведено из подхода Adaptive (Agile)", out)
 
     def test_predictive_derives_phases(self):
         suggest_ba_approach(PROJECT, "Low", "Low")            # -> Predictive (Waterfall)
@@ -71,10 +71,10 @@ class TestFormDerivation(_TempCwd):
         out = plan_ba_activities(PROJECT, timing_form="phases")
         section = _read_plan()["ba_activities"]
         self.assertEqual(section["timing_form"], "phases")
-        self.assertIn("declared by the BA", section["form_source"])
+        self.assertIn("заявлено БА", section["form_source"])
         # "Adaptive (Agile)" alone would also appear in `form_source` if the
         # declaration had been ignored — assert the conflict sentence itself.
-        self.assertIn("Stored what you declared", out)
+        self.assertIn("Сохранено то, что вы заявили", out)
         self.assertIn("Adaptive (Agile)", out)
         self.assertIn("⚠️", out)
 
@@ -88,14 +88,14 @@ class TestSkeleton(_TempCwd):
         self.assertTrue(section["generated"])
         self.assertGreaterEqual(len(section["periods"]), 2)
         self.assertTrue(all(p["name"].startswith("Iteration") for p in section["periods"]))
-        self.assertIn("generated", out.lower())
+        self.assertIn("енерировано", out.lower())
 
     def test_phases_skeleton_uses_stage_not_the_word_phase(self):
         """"Phase" is taken: `python phase.py` switches the platform's session phase."""
         suggest_ba_approach(PROJECT, "Low", "Low")
         plan_ba_activities(PROJECT)
         names = [p["name"] for p in _read_plan()["ba_activities"]["periods"]]
-        self.assertTrue(all(n.startswith("Stage") for n in names), names)
+        self.assertTrue(all(n.startswith("Этап") for n in names), names)
         self.assertFalse([n for n in names if "phase" in n.lower()])
 
     def test_declared_periods_replace_the_skeleton(self):
@@ -151,7 +151,7 @@ class TestInputShapes(_TempCwd):
             {"name": "It 1", "tasks": ["4.1"], "effort": "Heroic"}]))
         # The period line prints the effort anyway, so "Heroic" alone cannot tell a
         # warning from silence.
-        self.assertIn("outside the Low/Medium/High scale", out)
+        self.assertIn("вне шкалы Low/Medium/High", out)
         self.assertIn("Heroic", out)
         self.assertEqual(_read_plan()["ba_activities"]["periods"][0]["effort"], "Heroic")
 
@@ -249,9 +249,9 @@ class TestRerun(_TempCwd):
         self.assertEqual(section["ba_notes"], "agreed with the sponsor")
         # The status line must name EVERYTHING that survived, or it is worse than
         # absent — it exists to spare the BA from opening the JSON.
-        self.assertIn("Kept from the previous plan", out)
-        for kept in ("timing form (iterations)", "1 period(s)",
-                     "1 timing constraint(s)", "BA notes"):
+        self.assertIn("Сохранено из прежнего плана", out)
+        for kept in ("форму привязки ко времени (iterations)", "периодов: 1",
+                     "ограничений по срокам: 1", "заметки БА"):
             self.assertIn(kept, out, kept)
 
     def test_a_bare_rerun_does_not_revert_a_declared_form_to_the_derived_one(self):
@@ -261,7 +261,7 @@ class TestRerun(_TempCwd):
         plan_ba_activities(PROJECT)
         section = _read_plan()["ba_activities"]
         self.assertEqual(section["timing_form"], "phases")
-        self.assertIn("declared by the BA", section["form_source"])
+        self.assertIn("заявлено БА", section["form_source"])
 
     def test_a_bare_rerun_does_not_regenerate_over_a_stored_skeleton(self):
         suggest_ba_approach(PROJECT, "High", "High")
@@ -283,11 +283,11 @@ class TestRerun(_TempCwd):
         out = plan_ba_activities(PROJECT, timing_form="phases")
         section = _read_plan()["ba_activities"]
         self.assertEqual(section["timing_form"], "phases")
-        self.assertTrue(all(p["name"].startswith("Stage") for p in section["periods"]),
+        self.assertTrue(all(p["name"].startswith("Этап") for p in section["periods"]),
                         [p["name"] for p in section["periods"]])
-        self.assertNotIn("period(s)", out.split("Kept from the previous plan")[-1]
-                         if "Kept from the previous plan" in out else "")
-        self.assertIn("regenerated", out.lower())
+        self.assertNotIn("period(s)", out.split("Сохранено из прежнего плана")[-1]
+                         if "Сохранено из прежнего плана" in out else "")
+        self.assertIn("перегенерировано", out.lower())
 
     def test_periods_the_ba_typed_survive_a_form_change(self):
         suggest_ba_approach(PROJECT, "High", "High")
@@ -375,7 +375,7 @@ class TestReport(_TempCwd):
             ba_notes="agreed with the sponsor")
         save_ba_plan(PROJECT)
         text = self._report_text()
-        self.assertIn("## 3.1b BA Activities and Timing", text)
+        self.assertIn("## 3.1b Работы БА и их сроки", text)
         # The whole row, not loose cells: "High" is printed by the 3.1 table above
         # (change frequency / uncertainty), so a loose assertion could not tell the
         # effort column from that. The row also pins the COLUMN ORDER.
@@ -389,7 +389,7 @@ class TestReport(_TempCwd):
         suggest_ba_approach(PROJECT, "High", "High")
         plan_ba_activities(PROJECT)
         save_ba_plan(PROJECT)
-        self.assertIn("Generated from the approach", self._report_text())
+        self.assertIn("Сгенерировано из подхода", self._report_text())
 
     def test_declared_periods_carry_no_generated_notice(self):
         from skills.planning_mcp import save_ba_plan
@@ -397,7 +397,7 @@ class TestReport(_TempCwd):
         plan_ba_activities(PROJECT, periods_json=json.dumps([
             {"name": "Iteration A", "tasks": ["4.1"]}]))
         save_ba_plan(PROJECT)
-        self.assertNotIn("Generated from the approach", self._report_text())
+        self.assertNotIn("Сгенерировано из подхода", self._report_text())
 
     def test_a_plan_holding_only_this_section_is_not_refused_as_empty(self):
         """The same gate mismatch that once refused a plan holding only 3.5."""
@@ -406,12 +406,12 @@ class TestReport(_TempCwd):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project_id": PROJECT, "ba_activities": {
-                "timing_form": "phases", "form_source": "declared by the BA",
+                "timing_form": "phases", "form_source": "заявлено БА",
                 "generated": False, "periods": [{"name": "Stage 1", "tasks": ["4"],
                 "deliverables": [], "effort": "High", "when": ""}],
                 "timing_constraints": [], "ba_notes": "", "planned_on": "2026-07-26"}}, f)
         out = save_ba_plan(PROJECT)
-        self.assertNotIn("plan is empty", out)
+        self.assertNotIn("план пуст", out)
         self.assertIn("Stage 1", self._report_text())
 
     def test_a_damaged_section_does_not_take_the_whole_report_down(self):
@@ -423,7 +423,7 @@ class TestReport(_TempCwd):
             json.dump(plan, f)
         out = save_ba_plan(PROJECT)
         self.assertNotIn("❌", out)
-        self.assertIn("3.1 Business Analysis Approach", self._report_text())
+        self.assertIn("3.1 Подход к бизнес-анализу", self._report_text())
 
     def test_a_non_dict_ba_approach_does_not_crash_the_report(self):
         """The drift note reads `approach` from INSIDE the `if activities:` branch, so
@@ -437,7 +437,7 @@ class TestReport(_TempCwd):
             with open(path, "w", encoding="utf-8") as f:
                 json.dump({"project_id": PROJECT, "ba_approach": broken,
                            "ba_activities": {"timing_form": "phases",
-                                             "form_source": "derived from Adaptive (Agile)",
+                                             "form_source": "выведено из подхода Adaptive (Agile)",
                                              "periods": [{"name": "Stage 1",
                                                           "tasks": ["4"]}]}}, f)
             out = save_ba_plan(PROJECT)
@@ -465,7 +465,7 @@ class TestReport(_TempCwd):
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"project_id": PROJECT, "ba_activities": {}}, f)
         out = save_ba_plan(PROJECT)
-        self.assertIn("plan is empty", out)
+        self.assertIn("план пуст", out)
 
     def test_a_derived_form_left_behind_by_a_31_rerun_is_flagged(self):
         """Found by reading the rendered report, not by an assertion: the stored
@@ -479,11 +479,11 @@ class TestReport(_TempCwd):
         save_ba_plan(PROJECT)
         text = self._report_text()
         self.assertIn("Adaptive (Agile)", text)               # where it came from
-        self.assertIn("no longer", text)
+        self.assertIn("больше не", text)
         # The advice must stay executable. A bare re-run KEEPS the recorded form (that
         # is the anti-wipe rule), so pointing at a bare `plan_ba_activities` would be
         # an orphaned signpost — the class a previous feature shipped for one commit.
-        self.assertIn("with an explicit `timing_form`", text)
+        self.assertIn("с явным `timing_form`", text)
 
     def test_a_declared_form_is_not_flagged_when_the_approach_changes(self):
         """The BA said it; the approach is not evidence about it either way."""
@@ -492,14 +492,14 @@ class TestReport(_TempCwd):
         plan_ba_activities(PROJECT, timing_form="phases")
         suggest_ba_approach(PROJECT, "Low", "Low")
         save_ba_plan(PROJECT)
-        self.assertNotIn("no longer", self._report_text())
+        self.assertNotIn("больше не", self._report_text())
 
     def test_an_unchanged_approach_is_not_flagged(self):
         from skills.planning_mcp import save_ba_plan
         suggest_ba_approach(PROJECT, "High", "High")
         plan_ba_activities(PROJECT)
         save_ba_plan(PROJECT)
-        self.assertNotIn("no longer", self._report_text())
+        self.assertNotIn("больше не", self._report_text())
 
     def test_31_points_at_the_new_optional_step(self):
         out = suggest_ba_approach(PROJECT, "High", "High")

@@ -50,7 +50,7 @@ class TestAbstractionLevels(BaseMCPTest):
                 {"audience": "Manager", "level": "Summary"},
                 {"level": "Summary"}]))
         self.assertIn("❌", result)
-        self.assertIn("row 2", result)
+        self.assertIn("строке 2", result)
 
     def test_archetype_recognition_is_case_insensitive(self):
         """The consumer matches through `reg_norm`, so "business sponsor" DOES resolve
@@ -71,7 +71,7 @@ class TestAbstractionLevels(BaseMCPTest):
             abstraction_levels_json=json.dumps([
                 {"audience": "Manager", "level": "Summary"},
                 {"audience": "manager", "level": "Detailed"}]))
-        self.assertIn("appears twice", result)
+        self.assertIn("встречается дважды", result)
         self.assertNotIn("job title", result)
 
     def test_job_title_audience_is_accepted_with_a_warning(self):
@@ -178,7 +178,7 @@ class TestMergeOnRerun(BaseMCPTest):
     def test_rerun_reports_what_it_kept(self):
         plan_information_management(PROJECT, '["Confluence"]', attributes_preset="Full")
         result = plan_information_management(PROJECT, '["Confluence", "Jira"]')
-        self.assertIn("kept", result.lower())
+        self.assertIn("охранено", result.lower())
 
     def test_explicit_clearing_works(self):
         plan_information_management(
@@ -212,9 +212,9 @@ class TestMergeOnRerun(BaseMCPTest):
             ba_notes="agreed at the kickoff",
             attributes_preset="Minimum", additional_attributes_json='["complexity"]')
         result = plan_information_management(PROJECT, '["Confluence", "Jira"]')
-        self.assertIn("access rules", result)
-        self.assertIn("BA notes", result)
-        self.assertIn("additional attributes", result)
+        self.assertIn("правила доступа", result)
+        self.assertIn("заметки БА", result)
+        self.assertIn("дополнительные атрибуты", result)
 
     def test_clearing_access_rules_restores_the_documented_default(self):
         """`-` clears every other text field to empty, but this one has a standing
@@ -222,7 +222,7 @@ class TestMergeOnRerun(BaseMCPTest):
         default. Documented rather than left as an inconsistency."""
         plan_information_management(PROJECT, '["Confluence"]', access_rules="PO edits")
         plan_information_management(PROJECT, access_rules="-")
-        self.assertEqual(_section()["access_rules"], "BA edits, others read")
+        self.assertEqual(_section()["access_rules"], "BA правит, остальные читают")
 
     def test_a_section_of_the_wrong_shape_does_not_kill_the_tool(self):
         """Introduced by merge semantics: the writer never read the previous section
@@ -323,7 +323,7 @@ class TestReportRendersThePlannedElements(BaseMCPTest):
         """No empty tables in a delivered document."""
         plan_information_management("b33_bare", '["Jira"]')
         text = _report_text("b33_bare")
-        self.assertIn("3.4 Information Management", text)
+        self.assertIn("3.4 Управление информацией", text)
         self.assertNotIn("Level of detail per audience", text)
         self.assertNotIn("Requirements reuse", text)
         self.assertNotIn("Requirements attributes", text)
@@ -370,7 +370,7 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
     it at all.
     """
 
-    SEEDED = "seeded from the 3.3 criticality"
+    SEEDED = "задан по критичности из 3.3"
 
     def test_the_criticality_seeds_the_level_when_none_is_stated(self):
         plan_ba_governance("seed1", "High", '["CFO"]')
@@ -416,11 +416,11 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
         plan_ba_governance("seed4", "High")
         result = plan_information_management("seed4", access_rules="BA edits")
         self.assertIn("Traceability:      Low", result)
-        self.assertIn("traceability level", result)                     # the Kept line
+        self.assertIn("уровень трассировки", result)                     # the Kept line
         # The VALUE does not move. The explanation now says the criticality has since
         # changed, rather than either rolling the level back or claiming the current
         # criticality produced it.
-        self.assertIn("3.3 now says High", result)
+        self.assertIn("сейчас 3.3 говорит High", result)
 
     def test_a_governance_section_of_the_wrong_type_does_not_raise(self):
         """Chapter 3 loads in EVERY phase, so an AttributeError here is a protocol
@@ -467,7 +467,7 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
             save_ba_plan("seed_doc")
             report = mock_sa.call_args[0][0]
         self.assertIn("**Traceability:** High", report)
-        self.assertIn("seeded from the 3.3 criticality", report)
+        self.assertIn("задан по критичности из 3.3", report)
 
     def test_stating_a_level_later_clears_the_seeded_label(self):
         """Caught by mutation: merging the source instead of recomputing it left the
@@ -510,7 +510,7 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
             mock_sa.return_value = "\n\n✅ saved"
             save_ba_plan("seed_keep")
             report = mock_sa.call_args[0][0]
-        self.assertIn("seeded from the 3.3 criticality", report)
+        self.assertIn("задан по критичности из 3.3", report)
 
     def test_the_label_does_not_outlive_the_criticality_it_names(self):
         """The other direction: the criticality moves Low -> High after the seed, and
@@ -526,8 +526,8 @@ class TestTraceabilitySeededFromCriticality(BaseMCPTest):
             save_ba_plan("seed_drift")
             report = mock_sa.call_args[0][0]
         self.assertIn("**Traceability:** Low", report)                   # value stands
-        self.assertNotIn("seeded from the 3.3 criticality: Low", report)
-        self.assertIn("3.3 now says High", report)
+        self.assertNotIn("задан по критичности из 3.3: Low", report)
+        self.assertIn("сейчас 3.3 говорит High", report)
 
     def test_a_hand_edited_stored_level_falls_back_to_the_seed(self):
         """A stored level is guarded for value too. `Bogus` used to be echoed as the

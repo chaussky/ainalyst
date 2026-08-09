@@ -144,7 +144,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
         result = self._prepare()
         self.assertIn("**Согласующие:** CFO, Head of Risk", result)
         self.assertNotIn("Sponsor + Product Owner", result)
-        self.assertNotIn("from the High template", result)
+        self.assertNotIn("из шаблона High", result)
 
     def test_a_declared_process_is_kept_beside_the_approvers(self):
         """A process the BA authored is not a second opinion — it is theirs, and it
@@ -154,14 +154,14 @@ class GovernanceInThePackageTest(BaseMCPTest):
         result = self._prepare()
         self.assertIn("**Согласующие:** CFO, Head of Risk", result)
         self.assertIn("Both sign; Board is informed within 24h", result)
-        self.assertIn("declared in 3.3", result)
+        self.assertIn("заявлено в 3.3", result)
 
     def test_a_declared_process_is_labelled_as_the_bas(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]',
                            approval_process="CFO signs; Board informed")
         result = self._prepare()
         self.assertIn("CFO signs; Board informed", result)
-        self.assertIn("declared in 3.3", result)
+        self.assertIn("заявлено в 3.3", result)
 
     def test_the_authority_block_appears_on_the_agile_branch_too(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]')

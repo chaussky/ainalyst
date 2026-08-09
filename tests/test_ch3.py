@@ -219,7 +219,7 @@ class TestSuggestBaApproach(BaseMCPTest):
 
     def test_regulatory_note_in_output(self):
         result = _make_approach(change_frequency="High", uncertainty="High", regulatory_need=True)
-        self.assertIn("Regulatory override", result)
+        self.assertIn("Переопределено регуляторикой", result)
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ class TestPlanBaGovernance(BaseMCPTest):
     def test_low_criticality(self):
         _make_governance(project_criticality="Low")
         plan = _load()
-        self.assertIn("Минимальный", plan["governance"]["change_control"])
+        self.assertIn("Минимально", plan["governance"]["change_control"])
 
     def test_decision_makers_saved(self):
         _make_governance(decision_makers_json='["Sponsor", "PO", "Lead BA"]')
@@ -842,8 +842,8 @@ class TestStakeholderRegistrySeeding(BaseMCPTest):
         _make_stakeholders()
         entries = self._registry()["stakeholders"]
         names = {e["name"] for e in entries}
-        self.assertEqual(names, {"Sponsor", "User"})
-        sponsor = next(e for e in entries if e["name"] == "Sponsor")
+        self.assertEqual(names, {"Спонсор", "Пользователь"})
+        sponsor = next(e for e in entries if e["name"] == "Спонсор")
         self.assertEqual(sponsor["role"], "CEO")
         self.assertEqual(sponsor["influence"], "High")
         self.assertEqual(sponsor["interest"], "High")
@@ -854,7 +854,7 @@ class TestStakeholderRegistrySeeding(BaseMCPTest):
         In the registry they would go stale the moment 4.2 updates those inputs."""
         _make_stakeholders()
         sponsor = next(e for e in self._registry()["stakeholders"]
-                       if e["name"] == "Sponsor")
+                       if e["name"] == "Спонсор")
         self.assertNotIn("quadrant", sponsor)
         self.assertNotIn("strategy", sponsor)
         self.assertNotIn("comm_frequency", sponsor)
@@ -862,7 +862,7 @@ class TestStakeholderRegistrySeeding(BaseMCPTest):
     def test_seeded_entries_are_marked_not_covered_and_sourced_to_the_plan(self):
         _make_stakeholders()
         sponsor = next(e for e in self._registry()["stakeholders"]
-                       if e["name"] == "Sponsor")
+                       if e["name"] == "Спонсор")
         self.assertEqual(sponsor["coverage_status"], "Not covered")
         self.assertIn("3.2", sponsor["found_through"])
 
@@ -878,7 +878,7 @@ class TestStakeholderRegistrySeeding(BaseMCPTest):
         from skills.common import (load_stakeholder_registry,
                                    save_stakeholder_registry)
         registry = load_stakeholder_registry(PROJECT)
-        sponsor = next(e for e in registry["stakeholders"] if e["name"] == "Sponsor")
+        sponsor = next(e for e in registry["stakeholders"] if e["name"] == "Спонсор")
         sponsor["coverage_status"] = "Elicited"
         sponsor["found_through"] = "J. Smith (CFO)"
         save_stakeholder_registry(PROJECT, registry)
@@ -886,7 +886,7 @@ class TestStakeholderRegistrySeeding(BaseMCPTest):
         _make_stakeholders()
 
         sponsor = next(e for e in self._registry()["stakeholders"]
-                       if e["name"] == "Sponsor")
+                       if e["name"] == "Спонсор")
         self.assertEqual(sponsor["coverage_status"], "Elicited")
         self.assertEqual(sponsor["found_through"], "J. Smith (CFO)")
 

@@ -195,7 +195,7 @@ class EscalationPathTest(CRGovernanceBase):
                            escalation_path="BA → CRO → Board")
         record, _output = self._resolve()
         self.assertIn("**Escalation path:** BA → CRO → Board", record)
-        self.assertIn("declared in 3.3", record)
+        self.assertIn("заявлено в 3.3", record)
 
     def test_a_template_escalation_path_is_labelled_as_the_template(self):
         """The source label is read from the plan, never hardcoded: a document that
@@ -204,8 +204,8 @@ class EscalationPathTest(CRGovernanceBase):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, _output = self._resolve()
         self.assertIn("**Escalation path:** BA → PM → Steering Committee", record)
-        self.assertIn("from the High template", record)
-        self.assertNotIn("declared in 3.3", record)
+        self.assertIn("из шаблона High", record)
+        self.assertNotIn("заявлено в 3.3", record)
 
     def test_a_deferred_cr_offers_the_escalation_path_in_the_output(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS,

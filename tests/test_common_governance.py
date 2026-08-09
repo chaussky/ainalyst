@@ -94,7 +94,7 @@ class TestApprovalTiming(unittest.TestCase):
             _plan(approval_sla_days=5, approval_timing_note="to the monthly CAB"))
         self.assertEqual(days, 5)
         self.assertEqual(note, "to the monthly CAB")
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_nothing_planned_returns_no_source(self):
         days, note, source = planned_approval_timing(_plan(project_criticality="High"))
@@ -124,7 +124,7 @@ class TestApprovalTiming(unittest.TestCase):
         days, note, source = planned_approval_timing(
             _plan(approval_timing_note="to the monthly CAB"))
         self.assertIsNone(days)
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_a_non_string_note_is_dropped(self):
         _, note, source = planned_approval_timing(_plan(approval_timing_note=["CAB"]))
@@ -139,12 +139,12 @@ class TestApprovalProcessAndEscalation(unittest.TestCase):
                   approval_process="Board sign-off",
                   declared=["approval_process"]))
         self.assertEqual(text, "Board sign-off")
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_undeclared_falls_back_to_the_criticality_template(self):
         text, source = planned_approval_process(_plan(project_criticality="Low"))
         self.assertEqual(text, GOVERNANCE_TEMPLATES["Low"]["approval"])
-        self.assertEqual(source, "from the Low template")
+        self.assertEqual(source, "из шаблона Low")
 
     def test_a_declared_value_identical_to_the_template_is_still_declared(self):
         """B3-1 finding 5: a lookalike CONDITION drifts from the record it imitates.
@@ -154,7 +154,7 @@ class TestApprovalProcessAndEscalation(unittest.TestCase):
             _plan(project_criticality="High",
                   approval_process=GOVERNANCE_TEMPLATES["High"]["approval"],
                   declared=["approval_process"]))
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_unknown_criticality_yields_no_template_and_no_source(self):
         text, source = planned_approval_process(_plan(project_criticality="Catastrophic"))
@@ -167,32 +167,32 @@ class TestApprovalProcessAndEscalation(unittest.TestCase):
             _plan(project_criticality="Low", approval_process="",
                   declared=["approval_process"]))
         self.assertEqual(text, GOVERNANCE_TEMPLATES["Low"]["approval"])
-        self.assertEqual(source, "from the Low template")
+        self.assertEqual(source, "из шаблона Low")
 
     def test_a_corrupt_declared_list_does_not_crash_the_reader(self):
         text, source = planned_approval_process(
             _plan(project_criticality="Low", approval_process="Board", declared="oops"))
         self.assertEqual(text, GOVERNANCE_TEMPLATES["Low"]["approval"])
-        self.assertEqual(source, "from the Low template")
+        self.assertEqual(source, "из шаблона Low")
 
     def test_escalation_follows_the_same_rule(self):
         text, source = planned_escalation_path(_plan(project_criticality="Medium"))
         self.assertEqual(text, GOVERNANCE_TEMPLATES["Medium"]["escalation"])
-        self.assertEqual(source, "from the Medium template")
+        self.assertEqual(source, "из шаблона Medium")
 
     def test_escalation_can_be_declared(self):
         text, source = planned_escalation_path(
             _plan(project_criticality="Medium", escalation_path="BA → CRO → Board",
                   declared=["escalation_path"]))
         self.assertEqual(text, "BA → CRO → Board")
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_the_two_fields_do_not_share_a_declared_marker(self):
         """Declaring the escalation path must not relabel the approval process."""
         _text, source = planned_approval_process(
             _plan(project_criticality="High", approval_process="Board sign-off",
                   declared=["escalation_path"]))
-        self.assertEqual(source, "from the High template")
+        self.assertEqual(source, "из шаблона High")
 
 
 class TestPlannedPrioritization(unittest.TestCase):
@@ -336,25 +336,25 @@ class TestCarriedOverReachesTheReaders(BaseMCPTest):
         text, source = planned_escalation_path(self._legacy_plan())
         self.assertEqual(text, "BA → CRO → Board Risk Committee")
         self.assertNotIn("declared", source)          # not credited to the BA...
-        self.assertNotIn("template", source)          # ...and not blamed on a template
+        self.assertNotIn("шаблон", source)          # ...and not blamed on a template
 
     def test_a_carried_over_approval_process_is_read_not_regenerated(self):
         text, source = planned_approval_process(self._legacy_plan())
         self.assertEqual(text, "Two-key sign-off: CRO and Head of Compliance.")
-        self.assertIn("carried over", source)
+        self.assertIn("перенесено", source)
 
     def test_declared_still_wins_over_carried_over(self):
         plan = self._legacy_plan()
         plan["governance"]["declared"] = ["escalation_path"]
         _text, source = planned_escalation_path(plan)
-        self.assertEqual(source, "declared in 3.3")
+        self.assertEqual(source, "заявлено в 3.3")
 
     def test_a_carried_over_marker_without_a_value_falls_back_to_the_template(self):
         plan = self._legacy_plan()
         del plan["governance"]["escalation_path"]
         text, source = planned_escalation_path(plan)
         self.assertEqual(text, GOVERNANCE_TEMPLATES["High"]["escalation"])
-        self.assertIn("template", source)
+        self.assertIn("шаблон", source)
 
 
 if __name__ == "__main__":

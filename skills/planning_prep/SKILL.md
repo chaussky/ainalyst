@@ -46,15 +46,15 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 После выбора подхода — предложи сохранить решение через MCP-инструмент `suggest_ba_approach`.
 
-**Optional step 3.1b — plan the BA activities and their timing.** BABOK 3.1 has two more
-elements: which BA activities are performed (.3) and when — in specific phases or
-iteratively (.4). Offer `plan_ba_activities` after the approach is chosen; leave the
-timing form empty to derive it from the approach (Predictive → phases, Adaptive → iterations,
-a plain Hybrid does not resolve and the tool asks instead of guessing). It records work
-periods (BABOK tasks, deliverables, effort, timing) in the same `ba_plan.json`. Two chapters
-then read it automatically: 5.5 `prepare_approval_package` takes the methodology from the
-planned timing form instead of asking the BA a second time, and 4.1 `save_elicitation_plan`
-names the period that covers elicitation work.
+**Необязательный шаг 3.1b — запланировать работы БА и их привязку ко времени.** В BABOK 3.1
+есть ещё два элемента: какие работы БА выполняются (.3) и когда — в конкретных фазах или
+итеративно (.4). Предложи `plan_ba_activities` после выбора подхода; оставь форму привязки
+пустой, чтобы вывести её из подхода (Predictive → фазы, Adaptive → итерации; чистый Hybrid
+не разрешается, и инструмент спрашивает, а не угадывает). Он записывает рабочие периоды
+(задачи BABOK, поставляемые результаты, трудозатраты, сроки) в тот же `ba_plan.json`. Дальше
+его автоматически читают две главы: 5.5 `prepare_approval_package` берёт методологию из
+запланированной формы привязки вместо повторного вопроса БА, а 4.1 `save_elicitation_plan`
+называет период, который покрывает работы по выявлению.
 
 ---
 
@@ -117,12 +117,12 @@ names the period that covers elicitation work.
 
 Помоги установить правила принятия решений и контроля изменений.
 
-Key questions:
-- Who makes the final decisions on requirements?
-- How are changes handled — formally (CR + CAB) or flexibly (through the PO)?
-- How are conflicts escalated?
-- How long do approvers get to respond?
-- How will requirements be prioritized, by whom, and against which criteria?
+Ключевые вопросы:
+- Кто принимает окончательные решения по требованиям?
+- Как обрабатываются изменения — формально (CR + CAB) или гибко (через PO)?
+- Как эскалируются конфликты?
+- Сколько времени даётся согласующим на ответ?
+- Как, кем и по каким критериям будут приоритизироваться требования?
 
 **Шаблон ответа по критичности:**
 
@@ -132,33 +132,33 @@ Key questions:
 | Medium | PO одобряет через Backlog | PO + Lead BA |
 | Low | Фиксация в Jira, устно | Lead BA |
 
-The template is a **default**, not a verdict: whatever the BA states explicitly is
-recorded as stated, and the plan says which values were declared and which came from
-the template.
+Шаблон — это **значение по умолчанию**, а не приговор: всё, что БА заявляет явно,
+записывается как заявленное, и план говорит, какие значения были заявлены, а какие пришли
+из шаблона.
 
-Use the MCP tool `plan_ba_governance`.
+Используй MCP-инструмент `plan_ba_governance`.
 
-**3.3 is read by Chapter 5 — this is not a reference document:**
+**3.3 читает Глава 5 — это не справочный документ:**
 
-| Decision | BABOK element | Who reads it |
+| Решение | Элемент BABOK | Кто читает |
 |---|---|---|
-| Decision makers | .1 | 5.5 `prepare_approval_package` prints them; 5.5 `record_approval_decision` and 5.4 `resolve_cr` cross-check who actually decided |
-| Escalation path | .1 | 5.4 `resolve_cr` carries it into the CR Decision Record |
-| Response deadline | .4 | 5.5 states it on the approval package |
-| Prioritization technique, participants, criteria | .3 | 5.3 cross-checks the session and reconciles participation in the result report |
-| Project criticality | .1 | seeds 3.4's traceability level, if the BA does not state one |
+| Принимающие решения | .1 | 5.5 `prepare_approval_package` их печатает; 5.5 `record_approval_decision` и 5.4 `resolve_cr` сверяют, кто на самом деле решил |
+| Путь эскалации | .1 | 5.4 `resolve_cr` переносит его в CR Decision Record |
+| Срок ответа | .4 | 5.5 указывает его в пакете согласования |
+| Техника приоритизации, участники, критерии | .3 | 5.3 сверяет сессию и сводит участие в итоговом отчёте |
+| Критичность проекта | .1 | задаёт уровень трассировки в 3.4, если БА его не указал |
 
-Every one of those is a **cross-check or a default — never an override.** 5.3 keeps the
-`method` the BA chose even when the plan names another technique (it selects the whole
-aggregation algorithm); 5.5 keeps an explicit RACI; a stated traceability level wins
-over the seed. The BA is told about the difference and decides.
+Каждое из этого — **сверка или значение по умолчанию, но никогда не переопределение.**
+5.3 сохраняет `method`, выбранный БА, даже если план называет другую технику (он определяет
+весь алгоритм агрегации); 5.5 сохраняет явный RACI; заявленный уровень трассировки
+перевешивает заданный по умолчанию. БА сообщают о расхождении, и решает он.
 
-**Plan roles here; the checks resolve names through the stakeholder registry.** 3.3
-records roles ("Product Owner"), while a decision in 5.4 or 5.5 and a scoring session in
-5.3 are usually recorded against a person ("John Smith"). The registry that 3.2 seeds
-and 4.2 maintains ties the two together, so the person is recognised as the planned
-role. With no registry the platform says nothing rather than reporting a name it cannot
-match as a governance breach — one more reason to run 3.2 before the Chapter 5 work.
+**Планируй здесь роли; имена проверки разрешают через реестр стейкхолдеров.** 3.3
+записывает роли («Product Owner»), тогда как решение в 5.4 или 5.5 и сессия оценки в 5.3
+обычно записываются на человека («Иван Петров»). Реестр, который заводит 3.2 и поддерживает
+4.2, связывает одно с другим, поэтому человек опознаётся как запланированная роль. Без
+реестра платформа молчит, а не сообщает о нарушении governance из-за имени, которое не с чем
+сопоставить, — ещё одна причина пройти 3.2 до работ Главы 5.
 
 **A plan made before this feature keeps its wording.** If 3.3 was planned in an earlier
 version, re-running it preserves the text that is there; the BA Plan marks those values
@@ -199,22 +199,23 @@ they did before and say nothing about a plan.
 |---|---|---|
 | Level of detail per audience | .2 | 4.4 `prepare_communication_package` |
 | Reuse scope + repository + categories | .4 | 5.2 `find_reusable_requirements` |
-| Attribute set (Minimum / Standard / Full) | .6 | 5.2 `check_requirements_health` |
+| Набор атрибутов (Minimum / Standard / Full) | .6 | 5.2 `check_requirements_health` |
 
-Re-running 3.4 MERGES: an omitted parameter keeps its previous value. Clear a list
-with `"[]"`, a text field with `"-"`, an enum with `"None"` — with two exceptions:
-`storage_tools_json` can never be cleared (a plan with nowhere to store anything is an
-unfinished task, not an empty field), and clearing `access_rules` restores its standing
-default instead of emptying it. Clearing `attributes_preset` leaves any
-`additional_attributes_json` in force, so clear both if the project should fall back to
-the platform default.
+Повторный запуск 3.4 СЛИВАЕТ: опущенный параметр сохраняет прежнее значение. Список
+очищается через `"[]"`, текстовое поле — через `"-"`, перечисление — через `"None"`, с двумя
+исключениями: `storage_tools_json` очистить нельзя вовсе (план, которому негде ничего
+хранить, — это незаконченная задача, а не пустое поле), а очистка `access_rules`
+восстанавливает её постоянное значение по умолчанию, а не опустошает. Очистка
+`attributes_preset` оставляет в силе `additional_attributes_json`, поэтому очищайте оба,
+если проект должен вернуться к значению платформы по умолчанию.
 
-Nothing here is required: with no 3.4 plan, 4.4 reads nothing new and 5.2 falls back to
-`initiative` for reuse and to the single `owner` check for health.
+Ничто здесь не обязательно: без плана 3.4 глава 4.4 не читает ничего нового, а 5.2
+откатывается к `initiative` для переиспользования и к единственной проверке `owner` для
+здоровья требований.
 
-The reuse scope **ranks** — a requirement at or above the target scores one point more.
-It does not hide anything below the target; most requirements are never tagged with a
-scope, and filtering would empty the report.
+Scope переиспользования **ранжирует**: требование на уровне цели или выше получает на балл
+больше. Он ничего не прячет ниже цели — у большинства требований scope не проставлен вовсе,
+и фильтрация опустошила бы отчёт.
 
 ---
 
@@ -240,14 +241,14 @@ scope, and filtering would empty the report.
 
 | Задача | MCP-инструмент |
 | :--- | :--- |
-| 3.1 Plan approach | `suggest_ba_approach` |
-| 3.1b Plan BA activities and timing (optional) | `plan_ba_activities` |
-| 3.2 Stakeholders | `plan_stakeholder_engagement` |
+| 3.1 Планирование подхода | `suggest_ba_approach` |
+| 3.1b Работы БА и их сроки (необязательно) | `plan_ba_activities` |
+| 3.2 Стейкхолдеры | `plan_stakeholder_engagement` |
 | 3.3 Governance | `plan_ba_governance` |
 | 3.4 Хранение информации | `plan_information_management` |
 | 3.5 Оценка эффективности | `evaluate_ba_performance` |
 | Финализация | `save_ba_plan` |
 
-All tools take `project_id` as the first parameter. Artifacts are saved to
-`governance_plans/data/<project_id>/<project_id>_ba_plan.json` and
-`governance_plans/reports/<project_id>/` — one folder per project.
+Все инструменты принимают `project_id` первым параметром. Артефакты сохраняются в
+`governance_plans/data/<project_id>/<project_id>_ba_plan.json` и
+`governance_plans/reports/<project_id>/` — по одной папке на проект.

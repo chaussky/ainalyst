@@ -1749,21 +1749,21 @@ def planned_work_period(plan, task_ref):
 # dashboard and the baseline gate drifted apart.
 GOVERNANCE_TEMPLATES = {
     "High": {
-        "change_control": "Formal: Change Request (CR) → assessment → CAB approval",
-        "approval":       "Requires sign-off from Sponsor + Product Owner",
-        "review_cycle":   "Weekly status + formal review on every CR",
+        "change_control": "Формально: Change Request (CR) → оценка → согласование CAB",
+        "approval":       "Требуется подпись Sponsor + Product Owner",
+        "review_cycle":   "Еженедельный статус + формальное ревью по каждому CR",
         "escalation":     "BA → PM → Steering Committee",
     },
     "Medium": {
-        "change_control": "Adaptive: PO approves changes via the Backlog",
+        "change_control": "Адаптивно: PO согласует изменения через Backlog",
         "approval":       "Product Owner + Lead BA",
-        "review_cycle":   "Bi-weekly review, retrospectives",
+        "review_cycle":   "Ревью раз в две недели, ретроспективы",
         "escalation":     "BA → PO → PM",
     },
     "Low": {
-        "change_control": "Minimal: logged in Jira, verbal sign-off",
+        "change_control": "Минимально: фиксируется в Jira, устное согласование",
         "approval":       "Lead BA",
-        "review_cycle":   "On request",
+        "review_cycle":   "По запросу",
         "escalation":     "BA → PM",
     },
 }
@@ -1975,14 +1975,14 @@ def _governance_template_value(plan, field: str) -> tuple:
     if field in declared or field in carried:
         value = section.get(field)
         if isinstance(value, str) and value.strip():
-            return value, ("declared in 3.3" if field in declared
-                           else "carried over from an earlier plan")
+            return value, ("заявлено в 3.3" if field in declared
+                           else "перенесено из прежнего плана")
     criticality = section.get("project_criticality")
     template = (GOVERNANCE_TEMPLATES.get(criticality)
                 if isinstance(criticality, str) else None)
     if not template:
         return "", ""
-    return template[TEMPLATE_FIELD_KEYS[field]], f"from the {criticality} template"
+    return template[TEMPLATE_FIELD_KEYS[field]], f"из шаблона {criticality}"
 
 
 def planned_approval_process(plan) -> tuple:
@@ -2013,7 +2013,7 @@ def planned_approval_timing(plan) -> tuple:
             and 1 <= raw <= MAX_APPROVAL_SLA_DAYS else None)
     raw_note = section.get("approval_timing_note")
     note = raw_note.strip() if isinstance(raw_note, str) else ""
-    source = "declared in 3.3" if (days is not None or note) else ""
+    source = "заявлено в 3.3" if (days is not None or note) else ""
     return days, note, source
 
 

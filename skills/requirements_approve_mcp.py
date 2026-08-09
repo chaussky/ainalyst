@@ -460,7 +460,7 @@ def _governance_block(project_name: str) -> tuple:
     # It was harmless while it only sat in the 3.3 table with nothing beside it.
     # So the generated wording is dropped once the BA has named the approvers: the
     # authoritative answer to "who signs" is their list, not a criticality default.
-    show_process = bool(process) and (process_source == "declared in 3.3"
+    show_process = bool(process) and (process_source == "заявлено в 3.3"
                                       or not approvers)
     if approvers or show_process:
         lines = ["---", "", "## Полномочия на согласование (3.3)", ""]

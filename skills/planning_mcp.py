@@ -88,10 +88,10 @@ PLAN_FILENAME = "ba_plan.json"
 # Display labels for the "Kept from the previous plan" line. Names only — the
 # field -> template-key mapping itself is TEMPLATE_FIELD_KEYS, imported from common.
 _FIELD_LABELS = {
-    "change_control": "change control",
-    "approval_process": "approval process",
-    "review_cycle": "review cycle",
-    "escalation_path": "escalation",
+    "change_control": "процесс изменений",
+    "approval_process": "процесс согласования",
+    "review_cycle": "цикл ревью",
+    "escalation_path": "путь эскалации",
 }
 
 _SEEDED = "seeded"      # stored FACT; the wording is built by _trace_source_text
@@ -118,11 +118,12 @@ def _trace_source_text(level: str, criticality: str, source: str) -> str:
         # 3.3 table one section up now reads "not planned". Claiming the level came
         # from a criticality that section says does not exist is the contradiction
         # this helper was written to prevent.
-        return f"seeded from the 3.3 criticality, which 3.3 no longer states"
+        return f"задан по критичности из 3.3, которую 3.3 больше не указывает"
     if criticality != level:
-        return (f"seeded from the 3.3 criticality when it was {level}; "
-                f"3.3 now says {criticality} — re-state the level if it should follow")
-    return f"seeded from the 3.3 criticality: {level}"
+        return (f"задан по критичности из 3.3, когда она была {level}; "
+                f"сейчас 3.3 говорит {criticality} — укажите уровень заново, если он "
+                f"должен следовать за ней")
+    return f"задан по критичности из 3.3: {level}"
 
 
 _TRACEABILITY_LEVELS = {
@@ -242,7 +243,7 @@ def suggest_ba_approach(
     regulatory_note = ""
     if regulatory_need and approach in REGULATORY_OVERRIDE:
         approach = REGULATORY_OVERRIDE[approach]
-        regulatory_note = f"\n  ⚠️ Regulatory override: {original_approach} → {approach}"
+        regulatory_note = f"\n  ⚠️ Переопределено регуляторикой: {original_approach} → {approach}"
 
     plan = _load_plan(project_id)
     plan["ba_approach"] = {
@@ -275,16 +276,16 @@ def suggest_ba_approach(
         f"  **Рекомендуемый подход: {approach}**\n"
         f"  Техники BABOK: {', '.join(techniques)}\n\n"
         f"  💡 {hint}\n\n"
-        f"→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.\n"
-        f"   Optional first: `plan_ba_activities` — which BABOK tasks run in which "
-        f"period and with what effort (BABOK 3.1, elements .3 and .4). 5.5 then takes "
-        f"the methodology from there instead of asking you again."
+        f"→ Следующий шаг: `plan_stakeholder_engagement` — построить карту стейкхолдеров.\n"
+        f"   Перед этим можно: `plan_ba_activities` — какие задачи BABOK идут в каком "
+        f"периоде и с какими трудозатратами (BABOK 3.1, элементы .3 и .4). 5.5 затем "
+        f"берёт методологию оттуда, а не спрашивает вас снова."
     )
 
 
 # The 3.2 map and the 4.2 registry describe the SAME people. Seeding here is what
 # stops the BA entering them twice — and 4.2's file is the one 7.4 reads.
-_REGISTRY_SOURCE = "3.2 BA plan (Power/Interest map)"
+_REGISTRY_SOURCE = "3.2 план БА (карта Power/Interest)"
 
 # Source data only. quadrant/strategy/comm_frequency are DERIVED from influence and
 # interest, and a derived value inside a file another chapter mutates goes stale
@@ -351,15 +352,15 @@ def _seed_stakeholder_registry(project_id: str, stakeholders: list) -> str:
         )
     except Exception as e:  # noqa: BLE001 — never let planning fail on this
         logger.warning(f"3.2 could not seed the stakeholder registry: {e}")
-        return "\n⚠️ Stakeholder registry not updated — the BA plan is saved.\n"
+        return "\n⚠️ Реестр стейкхолдеров не обновлён — план БА сохранён.\n"
 
     if not result.get("saved"):
-        return "\n⚠️ Stakeholder registry could not be written — the BA plan is saved.\n"
+        return "\n⚠️ Записать реестр стейкхолдеров не удалось — план БА сохранён.\n"
 
     return (
-        f"\n📇 Stakeholder registry: {len(result['added'])} added, "
-        f"{len(result['updated'])} updated "
-        f"(the same living registry 4.2 `update_stakeholder_registry` maintains).\n"
+        f"\n📇 Реестр стейкхолдеров: добавлено {len(result['added'])}, "
+        f"обновлено {len(result['updated'])} "
+        f"(тот же живой реестр, который поддерживает 4.2 `update_stakeholder_registry`).\n"
     )
 
 
@@ -471,10 +472,10 @@ def plan_stakeholder_engagement(
     lines = [
         # "map", not "registry": the living registry is a different artifact, and this
         # tool now reports on both in the same message.
-        f"✅ Stakeholder map saved\n\n",
+        f"✅ Карта стейкхолдеров сохранена\n\n",
         f"  Project:          {project_id}\n",
         f"  Stakeholders:     {len(valid)}\n\n",
-        f"**Quadrant distribution:**\n",
+        f"**Распределение по квадрантам:**\n",
     ]
     for q, cnt in sorted(quadrants.items()):
         lines.append(f"  {q}: {cnt}\n")
@@ -496,16 +497,16 @@ def plan_stakeholder_engagement(
     # judgment, not an assumption); it just must not be invisible.
     if conflicts:
         lines.append(
-            "\n⚠️ This plan overrides an attitude that elicitation had recorded:\n"
+            "\n⚠️ Этот план переопределяет отношение, записанное при выявлении:\n"
         )
         for name, planned, recorded in conflicts:
             lines.append(
-                f"  {name}: elicitation recorded {recorded}, this plan states "
-                f"{planned} — the registry now holds {planned}\n"
+                f"  {name}: при выявлении записано {recorded}, этот план указывает "
+                f"{planned} — в реестре теперь {planned}\n"
             )
         lines.append(
-            "  If the interview is the more recent evidence, restate it here or "
-            "correct it via `update_stakeholder_registry` (4.2).\n"
+            "  Если интервью — более свежее свидетельство, укажите это здесь заново "
+            "либо поправьте через `update_stakeholder_registry` (4.2).\n"
         )
 
     lines.append(registry_note)
@@ -655,7 +656,7 @@ def plan_ba_governance(
     if project_criticality == "":
         criticality = previous.get("project_criticality", "")
         if criticality:
-            kept.append("criticality")
+            kept.append("критичность")
     else:
         criticality = project_criticality
     if criticality not in GOVERNANCE_TEMPLATES:
@@ -665,20 +666,20 @@ def plan_ba_governance(
         # "the first time 3.3 is planned" is false and sends the BA looking for a file
         # that is right there.
         if previous:
-            return ("❌ `project_criticality` is missing from the stored 3.3 plan or "
-                    "holds a value this platform does not know.\n"
-                    "   It selects the default wording for every process field, so it "
-                    "has to be re-stated: Low / Medium / High.\n"
-                    "   Everything else you have planned in 3.3 is untouched.")
-        return ("❌ `project_criticality` is required the first time 3.3 is planned "
-                "— it selects the default wording for every process field.\n"
-                "   Allowed: Low / Medium / High")
+            return ("❌ В сохранённом плане 3.3 нет `project_criticality` либо там "
+                    "значение, которого платформа не знает.\n"
+                    "   Оно выбирает формулировку по умолчанию для каждого поля процесса, "
+                    "поэтому его надо указать заново: Low / Medium / High.\n"
+                    "   Всё остальное, что вы запланировали в 3.3, не тронуто.")
+        return ("❌ При первом планировании 3.3 `project_criticality` обязателен — он "
+                "выбирает формулировку по умолчанию для каждого поля процесса.\n"
+                "   Допустимо: Low / Medium / High")
 
     # --- decision makers ---------------------------------------------------
     if decision_makers_json == "":
         decision_makers = previous.get("decision_makers", [])
         if decision_makers:
-            kept.append("decision makers")
+            kept.append("принимающих решения")
     else:
         decision_makers, error = _parse_string_list(
             decision_makers_json, "decision_makers_json")
@@ -689,15 +690,15 @@ def plan_ba_governance(
         # already-planned project "required the first time 3.3 is planned" is simply
         # false, and it sends them looking for a plan file that is right there.
         if previous.get("decision_makers"):
-            return ("❌ `decision_makers_json` cannot be cleared — 5.4 and 5.5 "
-                    "cross-check every recorded decision against it, and an empty "
-                    "list would silently switch those checks off.\n"
-                    "   Pass the corrected list instead: "
+            return ("❌ `decision_makers_json` очистить нельзя: 5.4 и 5.5 сверяют с ним "
+                    "каждое записанное решение, и пустой список молча выключил бы эти "
+                    "проверки.\n"
+                    "   Передайте вместо этого исправленный список: "
                     "'[\"Sponsor\", \"PO\", \"Lead BA\"]'\n"
                     f"   Currently planned: {', '.join(previous['decision_makers'])}")
-        return ("❌ `decision_makers_json` is required the first time 3.3 is planned "
-                "— without it 5.4 and 5.5 have nothing to cross-check a decision "
-                "against.\n   Example: '[\"Sponsor\", \"PO\", \"Lead BA\"]'")
+        return ("❌ При первом планировании 3.3 `decision_makers_json` обязателен — без "
+                "него 5.4 и 5.5 не с чем сверять записанное решение.\n"
+                "   Пример: '[\"Sponsor\", \"PO\", \"Lead BA\"]'")
 
     # --- the four template-backed text fields ------------------------------
     # `declared` is a RECORD, not a comparison: a BA who states wording identical to
@@ -736,18 +737,18 @@ def plan_ba_governance(
     if approval_sla_days == -1:
         sla_days = previous.get("approval_sla_days", 0)
         if sla_days:
-            kept.append("approval SLA")
+            kept.append("срок согласования")
     elif not 0 <= approval_sla_days <= MAX_APPROVAL_SLA_DAYS:
-        return (f"❌ `approval_sla_days` must be between 0 and "
-                f"{MAX_APPROVAL_SLA_DAYS} business days (0 clears it). "
-                f"Got: {approval_sla_days}")
+        return (f"❌ `approval_sla_days` должен быть от 0 до "
+                f"{MAX_APPROVAL_SLA_DAYS} рабочих дней (0 очищает его). "
+                f"Получено: {approval_sla_days}")
     else:
         sla_days = approval_sla_days
 
     if approval_timing_note == "":
         timing_note = previous.get("approval_timing_note", "")
         if timing_note:
-            kept.append("approval timing note")
+            kept.append("примечание к срокам согласования")
     elif approval_timing_note == _CLEAR_TEXT:
         timing_note = ""
     else:
@@ -757,7 +758,7 @@ def plan_ba_governance(
     if ba_notes == "":
         notes = previous.get("ba_notes", "")
         if notes:
-            kept.append("notes")
+            kept.append("заметки")
     elif ba_notes == _CLEAR_TEXT:
         notes = ""
     else:
@@ -773,7 +774,7 @@ def plan_ba_governance(
     if prioritization_technique == "":
         technique = prev_prio.get("technique", "")
         if technique:
-            kept.append("prioritization technique")
+            kept.append("технику приоритизации")
     elif prioritization_technique == _CLEAR_ENUM:
         technique = ""
     else:
@@ -782,7 +783,7 @@ def plan_ba_governance(
     if prioritization_participants_json == "":
         prio_participants = prev_prio.get("participants", [])
         if prio_participants:
-            kept.append("prioritization participants")
+            kept.append("участников приоритизации")
     else:
         prio_participants, error = _parse_string_list(
             prioritization_participants_json, "prioritization_participants_json")
@@ -792,7 +793,7 @@ def plan_ba_governance(
     if prioritization_criteria_json == "":
         prio_criteria = prev_prio.get("criteria", [])
         if prio_criteria:
-            kept.append("prioritization criteria")
+            kept.append("критерии приоритизации")
     else:
         prio_criteria, error = _parse_string_list(
             prioritization_criteria_json, "prioritization_criteria_json")
@@ -842,20 +843,20 @@ def plan_ba_governance(
         # with "(from the High template)" beside it — and the template's wording for
         # that field was something else entirely.
         if field in declared:
-            return "declared"
+            return "заявлено"
         if field in carried:
-            return "carried over from an earlier plan"
-        return f"from the {criticality} template"
+            return "перенесено из прежнего плана"
+        return f"из шаблона {criticality}"
 
-    deadline_line = (f"  Response deadline:  {sla_days} business days\n"
+    deadline_line = (f"  Срок ответа:        {sla_days} рабочих дней\n"
                      if sla_days else "")
-    timing_line = f"  Approval timing:    {timing_note}\n" if timing_note else ""
+    timing_line = f"  Сроки согласования: {timing_note}\n" if timing_note else ""
 
     # Every part the BA may plan is echoed, including criteria on their own: a ✅ over
     # content the analyst cannot see recorded is how dropped input goes unnoticed.
     prio_line = ""
     if any(prioritization.values()):
-        segments = [prioritization["technique"] or "technique not set"]
+        segments = [prioritization["technique"] or "техника не задана"]
         if prioritization["participants"]:
             segments.append(
                 f"participants: {', '.join(prioritization['participants'])}")
@@ -864,18 +865,18 @@ def plan_ba_governance(
         prio_line = f"  Prioritization:     {' | '.join(segments)}\n"
 
     return (
-        f"✅ Governance plan recorded\n\n"
-        f"  Project:            {project_id}\n"
-        f"  Criticality:        {criticality}\n"
-        f"  Decision makers:    {', '.join(decision_makers)}\n\n"
-        f"  Change control:     {values['change_control']} ({_src('change_control')})\n"
-        f"  Approval:           {values['approval_process']} ({_src('approval_process')})\n"
-        f"  Review cycle:       {values['review_cycle']} ({_src('review_cycle')})\n"
+        f"✅ План governance записан\n\n"
+        f"  Проект:             {project_id}\n"
+        f"  Критичность:        {criticality}\n"
+        f"  Принимают решения:  {', '.join(decision_makers)}\n\n"
+        f"  Процесс изменений:  {values['change_control']} ({_src('change_control')})\n"
+        f"  Согласование:       {values['approval_process']} ({_src('approval_process')})\n"
+        f"  Цикл ревью:         {values['review_cycle']} ({_src('review_cycle')})\n"
         f"  Escalation:         {values['escalation_path']} ({_src('escalation_path')})\n"
         f"{deadline_line}{timing_line}{prio_line}\n"
-        + (f"  Kept from the previous plan: {', '.join(kept)}\n\n" if kept else "")
+        + (f"  Сохранено из прежнего плана: {', '.join(kept)}\n\n" if kept else "")
         + f"  {criticality_hints[criticality]}\n\n"
-        f"→ Next step: `plan_information_management` — define the storage architecture."
+        f"→ Следующий шаг: `plan_information_management` — определить архитектуру хранения."
     )
 
 
@@ -1024,9 +1025,9 @@ def plan_information_management(
     if storage_tools_json == "":
         storage_tools = previous.get("storage_tools", [])
         if not storage_tools:
-            return ("❌ `storage_tools_json` is required the first time 3.4 is planned.\n"
-                    "   Example: '[\"Confluence\", \"Jira\"]'")
-        kept.append("storage tools")
+            return ("❌ При первом планировании 3.4 `storage_tools_json` обязателен.\n"
+                    "   Пример: '[\"Confluence\", \"Jira\"]'")
+        kept.append("инструменты хранения")
     else:
         storage_tools, error = _parse_string_list(
             storage_tools_json, "storage_tools_json", required=True)
@@ -1049,7 +1050,7 @@ def plan_information_management(
         # DESCRIPTION — a delivered plan naming a traceability level that does not exist.
         if stored in _TRACEABILITY_LEVELS:
             level = stored
-            kept.append("traceability level")
+            kept.append("уровень трассировки")
             # The LABEL is carried with the value it describes. It used to be written
             # only on the branch that performs the seed, so any ordinary follow-up call
             # — adding artifact types, a reuse scope — silently dropped it while the
@@ -1078,7 +1079,7 @@ def plan_information_management(
     if artifact_types_json == "":
         artifact_types = previous.get("artifact_types", [])
         if artifact_types:
-            kept.append("artifact types")
+            kept.append("типы артефактов")
     else:
         artifact_types, error = _parse_string_list(artifact_types_json, "artifact_types_json")
         if error:
@@ -1088,7 +1089,7 @@ def plan_information_management(
     if abstraction_levels_json == "":
         abstraction_levels = previous.get("abstraction_levels", [])
         if abstraction_levels:
-            kept.append("abstraction levels")
+            kept.append("уровни детализации")
     else:
         rows, error = _parse_json_dict_list(
             abstraction_levels_json, "abstraction_levels_json",
@@ -1100,13 +1101,13 @@ def plan_information_management(
         for i, row in enumerate(rows, 1):
             audience = str(row.get("audience") or "").strip()
             if not audience:
-                return (f"❌ `abstraction_levels_json`: row {i} has no `audience`.\n"
+                return (f"❌ `abstraction_levels_json`: в строке {i} нет `audience`.\n"
                         f"   Every row needs an audience — an archetype from 4.4 or a "
                         f"job title from the stakeholder map.")
             row_level = str(row.get("level") or "").strip()
             if row_level not in ABSTRACTION_LEVELS:
-                return (f"❌ `abstraction_levels_json`: row {i} has level "
-                        f"`{row_level or '(empty)'}`.\n"
+                return (f"❌ `abstraction_levels_json`: в строке {i} уровень "
+                        f"`{row_level or '(пусто)'}`.\n"
                         f"   Allowed: {', '.join(ABSTRACTION_LEVELS)}")
             key = reg_norm(audience)
             # Compared through reg_norm, because that is how the CONSUMER matches:
@@ -1116,12 +1117,12 @@ def plan_information_management(
             # case-differing duplicate.
             if key not in _ARCHETYPE_KEYS:
                 warnings.append(
-                    f"⚠️ `{audience}` is not one of the 4.4 audience archetypes — it will "
-                    f"match only by job title.")
+                    f"⚠️ `{audience}` не входит в архетипы аудиторий 4.4 — сопоставление "
+                    f"пойдёт только по должности.")
             entry = {"audience": audience, "level": row_level,
                      "note": str(row.get("note") or "")}
             if key in seen:
-                warnings.append(f"⚠️ `{audience}` appears twice — the last row wins.")
+                warnings.append(f"⚠️ `{audience}` встречается дважды — побеждает последняя строка.")
                 abstraction_levels[seen[key]] = entry
             else:
                 seen[key] = len(abstraction_levels)
@@ -1132,18 +1133,18 @@ def plan_information_management(
     if reuse_target_scope == "":
         target_scope = prev_reuse.get("target_scope", "")
         if target_scope:
-            kept.append("reuse scope")
+            kept.append("scope переиспользования")
     else:
         target_scope = "" if reuse_target_scope == _CLEAR_ENUM else reuse_target_scope
 
     repository = _merge_text(reuse_repository, prev_reuse.get("repository"))
     if reuse_repository == "" and prev_reuse.get("repository"):
-        kept.append("reuse repository")
+        kept.append("репозиторий переиспользования")
 
     if reuse_categories_json == "":
         reuse_categories = prev_reuse.get("categories", [])
         if reuse_categories:
-            kept.append("reuse categories")
+            kept.append("категории переиспользования")
     else:
         reuse_categories, error = _parse_string_list(
             reuse_categories_json, "reuse_categories_json")
@@ -1153,22 +1154,22 @@ def plan_information_management(
         if unlisted:
             # BABOK's list is explicitly open-ended, so this is a note, not a refusal.
             warnings.append(
-                f"⚠️ Categories outside the BABOK list: {', '.join(unlisted)}. "
-                f"Kept — the list in the guide is not exhaustive.")
+                f"⚠️ Категории вне списка BABOK: {', '.join(unlisted)}. "
+                f"Сохранены — список в руководстве не исчерпывающий.")
 
     # --- element .6: attributes -------------------------------------------
     prev_attrs = previous.get("attributes") or {}
     if attributes_preset == "":
         preset = prev_attrs.get("preset", "")
         if preset:
-            kept.append("attribute preset")
+            kept.append("набор атрибутов")
     else:
         preset = "" if attributes_preset == _CLEAR_ENUM else attributes_preset
 
     if additional_attributes_json == "":
         additional = prev_attrs.get("additional", [])
         if additional:
-            kept.append("additional attributes")
+            kept.append("дополнительные атрибуты")
     else:
         additional, error = _parse_string_list(
             additional_attributes_json, "additional_attributes_json")
@@ -1178,18 +1179,18 @@ def plan_information_management(
         if unknown:
             # Planning an attribute the model cannot store would recreate the
             # "declared but dead" class inside this very feature.
-            return (f"❌ Not stored by this platform: {', '.join(unknown)}.\n"
-                    f"   Plannable attributes: {', '.join(PLANNABLE_ATTRIBUTES)}\n"
-                    f"   BABOK also lists author, risks and urgency (p. 45-46); the "
-                    f"requirement model has no field for them, so 5.2 could never "
-                    f"check them.")
+            return (f"❌ Эта платформа такого не хранит: {', '.join(unknown)}.\n"
+                    f"   Планируемые атрибуты: {', '.join(PLANNABLE_ATTRIBUTES)}\n"
+                    f"   BABOK перечисляет ещё author, risks и urgency (с. 45-46), но в "
+                    f"модели требования для них нет поля, поэтому 5.2 никогда не смогла бы "
+                    f"их проверить.")
 
     # Tracked like every other merged field: a "Kept" line the BA is meant to trust
     # instead of opening the JSON must not under-report what actually survived.
     if access_rules == "" and previous.get("access_rules"):
-        kept.append("access rules")
+        kept.append("правила доступа")
     if ba_notes == "" and previous.get("ba_notes"):
-        kept.append("BA notes")
+        kept.append("заметки БА")
 
     info_mgmt = {
         "storage_tools": storage_tools,
@@ -1204,7 +1205,7 @@ def plan_information_management(
         # `-` restores the standing default rather than emptying the field: an empty
         # Access line in the delivered BA Plan is worse than the default it replaced.
         "access_rules": _merge_text(access_rules, previous.get("access_rules"),
-                                    "BA edits, others read") or "BA edits, others read",
+                                    "BA правит, остальные читают") or "BA правит, остальные читают",
         "ba_notes": _merge_text(ba_notes, previous.get("ba_notes")),
         "abstraction_levels": abstraction_levels,
         "reuse": {"target_scope": target_scope, "repository": repository,
@@ -1218,7 +1219,7 @@ def plan_information_management(
 
     trace_note = _trace_source_text(level, criticality, trace_source)
     out = [
-        "✅ Information management plan recorded",
+        "✅ План управления информацией записан",
         "",
         f"  Project:           {project_id}",
         f"  Tools:             {', '.join(storage_tools)}",
@@ -1226,22 +1227,22 @@ def plan_information_management(
         + (f" ({trace_note})" if trace_note else ""),
     ]
     if artifact_types:
-        out.append(f"  Artifact types:    {', '.join(artifact_types)}")
+        out.append(f"  Типы артефактов:   {', '.join(artifact_types)}")
     out.append(f"  Access:            {info_mgmt['access_rules']}")
 
     if abstraction_levels:
         out.append("")
-        out.append("  Level of detail (read by 4.4):")
+        out.append("  Уровень детализации (читает 4.4):")
         for row in abstraction_levels:
             suffix = f" — {row['note']}" if row["note"] else ""
             out.append(f"    • {row['audience']}: {row['level']}{suffix}")
 
     if target_scope or repository or reuse_categories:
         out.append("")
-        out.append("  Reuse (read by 5.2):")
+        out.append("  Переиспользование (читает 5.2):")
         if target_scope:
-            out.append(f"    • Target scope: {target_scope} — 5.2 ranks by it "
-                       f"(it does not exclude anything below)")
+            out.append(f"    • Целевой scope: {target_scope} — 5.2 по нему ранжирует "
+                       f"(ничего ниже он не исключает)")
         if repository:
             out.append(f"    • Repository:   {repository}")
         if reuse_categories:
@@ -1251,21 +1252,21 @@ def plan_information_management(
     if resolved:
         attrs, label = resolved
         out.append("")
-        out.append(f"  Attributes audited by 5.2 ({label}):")
+        out.append(f"  Атрибуты, которые аудирует 5.2 ({label}):")
         out.append(f"    {', '.join(attrs)}")
         if "owner" not in attrs:
-            out.append("    ⚠️ `owner` is not in this set — 5.2's health audit will stop "
-                       "asking for it.")
+            out.append("    ⚠️ `owner` в этот набор не входит — аудит здоровья 5.2 "
+                       "перестанет его спрашивать.")
 
     if kept:
         out.append("")
-        out.append(f"  ↩️ Kept from the previous plan: {', '.join(kept)}")
+        out.append(f"  ↩️ Сохранено из прежнего плана: {', '.join(kept)}")
 
     for w in warnings:
         out.append(f"\n{w}")
 
     out.append("")
-    out.append("→ Next step: `evaluate_ba_performance` — set performance metrics.")
+    out.append("→ Следующий шаг: `evaluate_ba_performance` — задать метрики эффективности.")
     return "\n".join(out)
 
 
@@ -1284,22 +1285,22 @@ def plan_information_management(
 # reasonably think it is a phase to switch to.
 _SKELETON_ITERATIONS = (
     {"name": "Iteration 1", "tasks": ["4", "6.1"],
-     "deliverables": ["Elicitation results", "As-is understanding"],
+     "deliverables": ["Результаты выявления", "Понимание as-is"],
      "effort": "High", "when": ""},
     {"name": "Iteration 2", "tasks": ["5", "7"],
-     "deliverables": ["Prioritized backlog", "Requirement specifications"],
+     "deliverables": ["Приоритизированный бэклог", "Спецификации требований"],
      "effort": "Medium", "when": ""},
 )
 
 _SKELETON_PHASES = (
-    {"name": "Stage 1 — Discovery", "tasks": ["3", "4"],
-     "deliverables": ["BA plan", "Elicitation results"],
+    {"name": "Этап 1 — Discovery", "tasks": ["3", "4"],
+     "deliverables": ["План БА", "Результаты выявления"],
      "effort": "High", "when": ""},
-    {"name": "Stage 2 — Analysis", "tasks": ["6"],
-     "deliverables": ["As-is / to-be models", "Change strategy"],
+    {"name": "Этап 2 — Анализ", "tasks": ["6"],
+     "deliverables": ["Модели as-is / to-be", "Стратегия изменений"],
      "effort": "High", "when": ""},
-    {"name": "Stage 3 — Specification and approval", "tasks": ["7", "5"],
-     "deliverables": ["Requirement specifications", "Approved baseline"],
+    {"name": "Этап 3 — Спецификация и согласование", "tasks": ["7", "5"],
+     "deliverables": ["Спецификации требований", "Согласованный baseline"],
      "effort": "Medium", "when": ""},
 )
 
@@ -1371,23 +1372,23 @@ def plan_ba_activities(
 
     warnings = []
     if timing_form:
-        form, form_source = timing_form, "declared by the BA"
+        form, form_source = timing_form, "заявлено БА"
         if derived and derived != timing_form:
             warnings.append(
-                f"⚠️ You declared `{timing_form}`, but the 3.1 approach "
-                f"({approach_label}) implies `{derived}`. Stored what you declared — "
-                f"the decision is yours.")
+                f"⚠️ Вы заявили `{timing_form}`, а подход из 3.1 "
+                f"({approach_label}) подразумевает `{derived}`. Сохранено то, что вы "
+                f"заявили — решение за вами.")
     elif previous.get("timing_form"):
         form = previous["timing_form"]
         form_source = previous.get("form_source", "")
-        kept.append(f"timing form ({form})")
-        if derived and derived != form and form_source.startswith("derived from "):
+        kept.append(f"форму привязки ко времени ({form})")
+        if derived and derived != form and form_source.startswith("выведено из подхода "):
             warnings.append(
-                f"⚠️ The stored form was derived from a different approach than the "
-                f"plan now recommends ({approach_label}). Re-run with "
-                f"`timing_form=\"{derived}\"` to move it, or leave it as it is.")
+                f"⚠️ Сохранённая форма выведена из подхода, отличного от того, что план "
+                f"рекомендует сейчас ({approach_label}). Перезапустите с "
+                f"`timing_form=\"{derived}\"`, чтобы сменить её, либо оставьте как есть.")
     elif derived:
-        form, form_source = derived, f"derived from {approach_label}"
+        form, form_source = derived, f"выведено из подхода {approach_label}"
     else:
         form, form_source = "", ""
 
@@ -1395,17 +1396,17 @@ def plan_ba_activities(
     # section would claim the planning happened and would pass the "empty plan"
     # gate in save_ba_plan.
     if not form and not periods_in and not previous.get("periods"):
-        reason = (f"the approach `{approach_label}` sits between predictive and "
-                  f"adaptive, so the form does not follow from it"
+        reason = (f"подход `{approach_label}` лежит между предиктивным и адаптивным, "
+                  f"поэтому форма из него не следует"
                   if approach_label else
-                  "3.1 has not been run for this project yet")
+                  "3.1 для этого проекта ещё не запускалась")
         return (
-            f"⚠️ Nothing recorded — {reason}.\n\n"
-            f"  Say which form the work takes and I will store it:\n"
-            f"    • `timing_form=\"phases\"`     — BA tasks run in specific stages\n"
-            f"    • `timing_form=\"iterations\"` — BA tasks run iteratively\n\n"
-            f"  (BABOK 3.1, element .4 — I will not guess it for you: the value ends "
-            f"up on the approval package that goes out for signature.)"
+            f"⚠️ Ничего не записано — {reason}.\n\n"
+            f"  Скажите, в какой форме идёт работа, и я это сохраню:\n"
+            f"    • `timing_form=\"phases\"`     — задачи БА идут по этапам\n"
+            f"    • `timing_form=\"iterations\"` — задачи БА идут итеративно\n\n"
+            f"  (BABOK 3.1, элемент .4 — угадывать я это не буду: значение попадает в "
+            f"пакет согласования, который уходит на подпись.)"
         )
 
     kept_skeleton_regenerated = False
@@ -1418,7 +1419,7 @@ def plan_ba_activities(
         # over. Regenerating here is what discarded their work.
         generated = bool(previous.get("generated"))
         source_periods = previous["periods"]
-        kept.append(f"{len(source_periods)} period(s)")
+        kept.append(f"периодов: {len(source_periods)}")
     else:
         # A stored SKELETON is 100% machine output built FOR a particular form, so
         # carrying it across a form change delivered a `phases` plan tabulating
@@ -1464,18 +1465,18 @@ def plan_ba_activities(
 
     if not form:
         warnings.append(
-            "⚠️ The timing form is not set, so 5.5 `prepare_approval_package` will "
-            "NOT take the methodology from this plan — you will keep passing "
-            "`approach` there by hand. Re-run with `timing_form=\"phases\"` or "
-            "`timing_form=\"iterations\"` to close that.")
+            "⚠️ Форма привязки ко времени не задана, поэтому 5.5 "
+            "`prepare_approval_package` НЕ возьмёт методологию из этого плана — "
+            "`approach` придётся передавать туда руками. Перезапустите с "
+            "`timing_form=\"phases\"` или `timing_form=\"iterations\"`, чтобы это закрыть.")
     if unknown_refs:
         warnings.append(
-            f"⚠️ Not BABOK task ids of this platform, so they were dropped: "
-            f"{', '.join(unknown_refs)}. Use 3.1-7.6 or a whole chapter (\"4\"). "
-            f"Chapter 8 is not implemented yet.")
+            f"⚠️ Это не id задач BABOK этой платформы, поэтому они отброшены: "
+            f"{', '.join(unknown_refs)}. Используйте 3.1-7.6 либо главу целиком (\"4\"). "
+            f"Глава 8 пока не реализована.")
     if off_scale_efforts:
         warnings.append(
-            f"⚠️ Effort outside the Low/Medium/High scale, stored as given: "
+            f"⚠️ Трудозатраты вне шкалы Low/Medium/High, сохранены как есть: "
             f"{', '.join(off_scale_efforts)}.")
 
     # "" means "not passed" -> keep; "[]" is the explicit clear, the same idiom
@@ -1484,11 +1485,11 @@ def plan_ba_activities(
     if (not constraints and previous.get("timing_constraints")
             and timing_constraints_json.strip() != "[]"):
         constraints = previous["timing_constraints"]
-        kept.append(f"{len(constraints)} timing constraint(s)")
+        kept.append(f"ограничений по срокам: {len(constraints)}")
     # `-` clears, "" keeps — the convention the rest of this module already uses.
     merged_notes = _merge_text(ba_notes, previous.get("ba_notes"))
     if ba_notes == "" and merged_notes:
-        kept.append("BA notes")
+        kept.append("заметки БА")
 
     plan["ba_activities"] = {
         "timing_form": form,
@@ -1502,15 +1503,14 @@ def plan_ba_activities(
     _save_plan(plan, project_id)
 
     lines = [
-        "✅ BA activities and timing recorded\n",
+        "✅ Работы БА и их сроки записаны\n",
         f"  Project:      {project_id}",
-        f"  Timing form:  {form or '(not set)'}"
+        f"  Форма привязки: {form or '(не задана)'}"
         + (f" ({form_source})" if form_source else ""),
         f"  Periods:      {len(periods)}"
-        + ("  ℹ️ regenerated from the approach — the previous ones were a skeleton "
-           "for a different form"
+        + ("  ℹ️ перегенерировано из подхода — прежние были заготовкой под другую форму"
            if kept_skeleton_regenerated else
-           "  ℹ️ generated from the approach — edit and re-run to make them yours"
+           "  ℹ️ сгенерировано из подхода — отредактируйте и перезапустите, чтобы сделать своими"
            if generated else ""),
         "",
     ]
@@ -1522,12 +1522,12 @@ def plan_ba_activities(
             f" | effort: {period['effort'] or '—'}"
             f" | when: {period['when'] or '—'}")
     if constraints:
-        lines += ["", f"  Timing constraints ({len(constraints)}):"]
+        lines += ["", f"  Ограничения по срокам ({len(constraints)}):"]
         lines += [f"    – {c}" for c in constraints]
     if merged_notes:
         lines += ["", f"  BA notes: {merged_notes}"]
     if kept:
-        lines += ["", f"  ↩️ Kept from the previous plan: {', '.join(kept)}"]
+        lines += ["", f"  ↩️ Сохранено из прежнего плана: {', '.join(kept)}"]
     if warnings:
         lines += [""] + [f"  {w}" for w in warnings]
     # Printed unconditionally, this block contradicted the warnings above it: with no
@@ -1536,20 +1536,20 @@ def plan_ba_activities(
     readers = []
     if form:
         readers.append(
-            "  • 5.5 `prepare_approval_package` — takes the methodology from the "
-            "timing form, so you do not state it twice")
+            "  • 5.5 `prepare_approval_package` — берёт методологию из формы привязки, "
+            "чтобы вам не указывать её дважды")
     # Ask the CONSUMER's own reader, not a lookalike condition: 4.1 queries for the
     # task `4.1`, so a period tagged only 4.2/4.3 answers nothing, and a footer built
     # on `startswith("4.")` promised output that never appears.
     if planned_work_period({"ba_activities": {"periods": periods}}, "4.1"):
         readers.append(
-            "  • 4.1 `save_elicitation_plan` — names the period that covers "
-            "elicitation work and its planned effort")
+            "  • 4.1 `save_elicitation_plan` — называет период, который покрывает "
+            "работы по выявлению, и запланированные трудозатраты")
     if readers:
-        lines += ["", "ℹ️ What now reads this:"] + readers
+        lines += ["", "ℹ️ Что теперь это читает:"] + readers
     lines += [
         "",
-        "→ Next step: `plan_stakeholder_engagement` — build the stakeholder map.",
+        "→ Следующий шаг: `plan_stakeholder_engagement` — построить карту стейкхолдеров.",
     ]
     return "\n".join(lines)
 
@@ -1749,22 +1749,22 @@ def save_ba_plan(
         form = activities.get("timing_form", "")
         source = activities.get("form_source", "")
         md_lines += [
-            "## 3.1b BA Activities and Timing",
+            "## 3.1b Работы БА и их сроки",
             "",
-            f"- **Timing form:** {form or '(not set)'}"
+            f"- **Форма привязки:** {form or '(не задана)'}"
             + (f" ({source})" if source else ""),
         ]
         if activities.get("generated"):
             md_lines.append(
-                "- ℹ️ Generated from the approach — edit via `plan_ba_activities`.")
+                "- ℹ️ Сгенерировано из подхода — правьте через `plan_ba_activities`.")
         # A DERIVED form records the approach it came from, and that record stays true
         # forever — so a later 3.1 re-run leaves two ADJACENT sections of this one
         # delivered document disagreeing: 3.1 recommends X while 3.1b cites a
         # derivation from Y. Found by reading the rendered report, not by an assertion.
         # A form the BA DECLARED is not evidence about the approach either way, so it
         # is never flagged.
-        derived_from = (source[len("derived from "):]
-                        if source.startswith("derived from ") else "")
+        derived_from = (source[len("выведено из подхода "):]
+                        if source.startswith("выведено из подхода ") else "")
         # `approach` is only guaranteed to be a dict inside `if approach:` above; this
         # branch runs under `if activities:`, so a plan whose `ba_approach` is null,
         # "" or [] reached .get() here. planning_mcp loads in EVERY phase, so that
@@ -1773,15 +1773,15 @@ def save_ba_plan(
                             if isinstance(approach, dict) else "")
         if derived_from and current_approach and derived_from != current_approach:
             md_lines.append(
-                f"- ⚠️ This form was derived from **{derived_from}**, which the plan "
-                f"no longer recommends (now **{current_approach}**). To move it, re-run "
-                f"`plan_ba_activities` with an explicit `timing_form` — a bare re-run "
-                f"keeps what is recorded here.")
+                f"- ⚠️ Эта форма выведена из **{derived_from}**, который план больше не "
+                f"рекомендует (сейчас **{current_approach}**). Чтобы её сменить, "
+                f"перезапустите `plan_ba_activities` с явным `timing_form` — простой "
+                f"перезапуск сохранит записанное здесь.")
         periods = activities.get("periods", [])
         if periods:
             md_lines += [
                 "",
-                "| Period | BABOK tasks | Deliverables | Effort | When |",
+                "| Период | Задачи BABOK | Результаты | Трудозатраты | Когда |",
                 "|--------|-------------|--------------|--------|------|",
             ]
             for period in periods:
@@ -1797,7 +1797,7 @@ def save_ba_plan(
                     f"{period.get('when', '') or '—'} |")
         constraints = activities.get("timing_constraints", [])
         if constraints:
-            md_lines += ["", "**Timing constraints:**", ""]
+            md_lines += ["", "**Ограничения по срокам:**", ""]
             md_lines += [f"- {c}" for c in constraints]
         md_lines.append("")
         md_lines += _notes_block(activities)
@@ -1832,33 +1832,33 @@ def save_ba_plan(
             # written before this feature is genuinely of unknown origin: crediting the
             # analyst for it would be as wrong as calling it a template default.
             if field in gov_declared:
-                return "declared in 3.3"
+                return "заявлено в 3.3"
             if field in gov_carried:
-                return "carried over from an earlier plan"
-            return (f"from the {gov_criticality} template" if gov_criticality
-                    else "template default")
+                return "перенесено из прежнего плана"
+            return (f"из шаблона {gov_criticality}" if gov_criticality
+                    else "значение шаблона по умолчанию")
 
         md_lines += [
             "## 3.3 Governance",
             "",
-            f"| Parameter | Value | Source |",
+            f"| Параметр | Значение | Источник |",
             f"|----------|---------|--------|",
             f"| Criticality | {gov_criticality or '—'} | "
-            f"{'declared in 3.3' if gov_criticality else 'not planned'} |",
-            f"| Decision makers | {', '.join(governance.get('decision_makers', []))} | declared in 3.3 |",
-            f"| Change control | {governance.get('change_control', '')} | {_gov_src('change_control')} |",
+            f"{'заявлено в 3.3' if gov_criticality else 'не запланировано'} |",
+            f"| Принимающие решения | {', '.join(governance.get('decision_makers', []))} | заявлено в 3.3 |",
+            f"| Процесс изменений | {governance.get('change_control', '')} | {_gov_src('change_control')} |",
             f"| Approval | {governance.get('approval_process', '')} | {_gov_src('approval_process')} |",
-            f"| Review cycle | {governance.get('review_cycle', '')} | {_gov_src('review_cycle')} |",
+            f"| Цикл ревью | {governance.get('review_cycle', '')} | {_gov_src('review_cycle')} |",
             f"| Escalation | {governance.get('escalation_path', '')} | {_gov_src('escalation_path')} |",
         ]
         if governance.get("approval_sla_days"):
             md_lines.append(
-                f"| Response deadline | {governance['approval_sla_days']} business days "
-                f"| declared in 3.3 |")
+                f"| Срок ответа | {governance['approval_sla_days']} рабочих дней "
+                f"| заявлено в 3.3 |")
         if governance.get("approval_timing_note"):
             md_lines.append(
-                f"| Approval timing | {governance['approval_timing_note']} "
-                f"| declared in 3.3 |")
+                f"| Сроки согласования | {governance['approval_timing_note']} "
+                f"| заявлено в 3.3 |")
         # Element .3 appears only when something was planned: an empty block in a
         # document that goes to people reads as a gap in the analysis, not as an
         # unused option. The block is already coerced by _sane_governance_section.
@@ -1866,9 +1866,9 @@ def save_ba_plan(
         if isinstance(prio, dict) and any(prio.values()):
             md_lines += [
                 "",
-                "**Prioritization approach (BABOK 3.3 .3)**",
+                "**Подход к приоритизации (BABOK 3.3 .3)**",
                 "",
-                f"- **Technique:** {prio.get('technique') or 'not set'}",
+                f"- **Техника:** {prio.get('technique') or 'не задана'}",
             ]
             if prio.get("participants"):
                 md_lines.append(
@@ -1900,7 +1900,7 @@ def save_ba_plan(
         ]
         artifact_types = info_mgmt.get("artifact_types", [])
         if artifact_types:
-            md_lines.append(f"- **Artifact types:** {', '.join(artifact_types)}")
+            md_lines.append(f"- **Типы артефактов:** {', '.join(artifact_types)}")
         md_lines.append("")
 
         # Each block appears only when it holds data: an empty table in a document
@@ -1908,11 +1908,11 @@ def save_ba_plan(
         rows = info_mgmt.get("abstraction_levels") or []
         if rows:
             md_lines += [
-                "### Level of detail per audience",
+                "### Уровень детализации по аудиториям",
                 "",
-                "_Read by 4.4 when a communication package is prepared._",
+                "_Читается главой 4.4 при подготовке коммуникационного пакета._",
                 "",
-                "| Audience | Level | Note |",
+                "| Аудитория | Уровень | Примечание |",
                 "|---|---|---|",
             ]
             for row in rows:
@@ -1923,25 +1923,25 @@ def save_ba_plan(
 
         reuse = info_mgmt.get("reuse") or {}
         if any(reuse.values()):
-            md_lines += ["### Requirements reuse", ""]
+            md_lines += ["### Переиспользование требований", ""]
             if reuse.get("target_scope"):
-                md_lines.append(f"- **Target scope:** {reuse['target_scope']} "
-                                f"(the default 5.2 applies)")
+                md_lines.append(f"- **Целевой scope:** {reuse['target_scope']} "
+                                f"(значение, которое применяет 5.2 по умолчанию)")
             if reuse.get("repository"):
                 md_lines.append(f"- **Repository:** {reuse['repository']}")
             if reuse.get("categories"):
                 md_lines.append(
-                    f"- **Candidate categories:** {', '.join(reuse['categories'])}")
+                    f"- **Категории-кандидаты:** {', '.join(reuse['categories'])}")
             md_lines.append("")
 
         resolved = planned_attribute_set({"information_management": info_mgmt})
         if resolved:
             attrs, label = resolved
             md_lines += [
-                "### Requirements attributes",
+                "### Атрибуты требований",
                 "",
-                f"- **Maintained set** ({label}): {', '.join(attrs)}",
-                "- _5.2's health audit checks exactly this set._",
+                f"- **Поддерживаемый набор** ({label}): {', '.join(attrs)}",
+                "- _Аудит здоровья 5.2 проверяет ровно этот набор._",
                 "",
             ]
 
@@ -1974,8 +1974,8 @@ def save_ba_plan(
     json_path = _plan_path(project_id)
 
     return (
-        f"✅ BA plan finalized\n\n"
-        f"  Project: {project_id}\n"
+        f"✅ План БА финализирован\n\n"
+        f"  Проект: {project_id}\n"
         f"  📄 JSON (plan record): `{json_path}`\n"
         f"  {artifact_result}\n\n"
         f"**Next step:**\n"

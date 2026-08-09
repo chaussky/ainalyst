@@ -92,8 +92,8 @@ class TestMerge(BaseMCPTest):
                            approval_sla_days=5, escalation_path="BA → CRO",
                            approval_timing_note="to the CAB", ba_notes="kickoff")
         result = plan_ba_governance(PROJECT, review_cycle="Monthly").lower()
-        for expected in ("criticality", "decision makers", "approval sla",
-                         "escalation", "approval timing note", "notes"):
+        for expected in ("критичность", "принимающих решения", "срок согласования",
+                         "путь эскалации", "примечание к срокам согласования", "заметки"):
             self.assertIn(expected, result, f"{expected} missing from the Kept line")
 
     def test_clearing_text_returns_the_field_to_the_template(self):
@@ -209,27 +209,27 @@ class TestReport(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         report = _report_text()
         self.assertIn("CFO, Head of Risk", report)
-        self.assertIn("from the High template", report)
+        self.assertIn("из шаблона High", report)
 
     def test_a_declared_process_is_labelled_as_declared(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]',
                            approval_process="CFO signs, Board is informed")
         report = _report_text()
         self.assertIn("CFO signs, Board is informed", report)
-        self.assertIn("declared in 3.3", report)
+        self.assertIn("заявлено в 3.3", report)
 
     def test_the_sla_reaches_the_report(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]', approval_sla_days=5,
                            approval_timing_note="to the monthly CAB")
         report = _report_text()
-        self.assertIn("5 business days", report)
+        self.assertIn("5 рабочих дней", report)
         self.assertIn("to the monthly CAB", report)
 
     def test_no_sla_row_when_none_is_planned(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]')
         report = _report_text()
         self.assertIn("3.3 Governance", report)      # the section IS rendered...
-        self.assertNotIn("business days", report)    # ...it just has no SLA row
+        self.assertNotIn("рабочих дней", report)    # ...it just has no SLA row
 
     def test_a_string_where_a_list_belongs_does_not_render_per_character(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]')
@@ -316,8 +316,8 @@ class TestPrioritizationApproach(BaseMCPTest):
                            prioritization_participants_json='["PO"]',
                            prioritization_criteria_json='["cost"]')
         result = plan_ba_governance(PROJECT, review_cycle="Monthly").lower()
-        for expected in ("prioritization technique", "prioritization participants",
-                         "prioritization criteria"):
+        for expected in ("технику приоритизации", "участников приоритизации",
+                         "критерии приоритизации"):
             self.assertIn(expected, result, f"{expected} missing from the Kept line")
 
     # --- validation ----------------------------------------------------------
@@ -360,7 +360,7 @@ class TestPrioritizationApproach(BaseMCPTest):
 
     def test_no_prioritization_row_when_none_is_planned(self):
         result = plan_ba_governance(PROJECT, review_cycle="Monthly")
-        self.assertIn("Governance plan recorded", result)   # the status IS rendered...
+        self.assertIn("План governance записан", result)   # the status IS rendered...
         self.assertNotIn("Prioritization:", result)         # ...with no .3 row
 
     # --- the BA Plan report ---------------------------------------------------
@@ -368,12 +368,12 @@ class TestPrioritizationApproach(BaseMCPTest):
     def test_the_report_renders_the_block_only_when_planned(self):
         report_without = _report_text()
         self.assertIn("3.3 Governance", report_without)              # section IS there...
-        self.assertNotIn("Prioritization approach", report_without)  # ...without the block
+        self.assertNotIn("Подход к приоритизации", report_without)  # ...without the block
         plan_ba_governance(PROJECT, prioritization_technique="WSJF",
                            prioritization_participants_json='["PO", "Head of Risk"]',
                            prioritization_criteria_json='["cost", "risk"]')
         report = _report_text()
-        self.assertIn("Prioritization approach", report)
+        self.assertIn("Подход к приоритизации", report)
         self.assertIn("WSJF", report)
         self.assertIn("PO, Head of Risk", report)
         self.assertIn("cost, risk", report)
@@ -384,7 +384,7 @@ class TestPrioritizationApproach(BaseMCPTest):
         P and O, inside a delivered document."""
         self._damage({"technique": "WSJF", "participants": "PO", "criteria": ["cost"]})
         report = _report_text()
-        self.assertIn("Prioritization approach", report)   # the block IS rendered...
+        self.assertIn("Подход к приоритизации", report)   # the block IS rendered...
         self.assertNotIn("P, O", report)                   # ...without invented scorers
 
     def test_a_technique_outside_the_vocabulary_is_not_rendered_as_planned(self):
@@ -393,7 +393,7 @@ class TestPrioritizationApproach(BaseMCPTest):
         dropped where it is stored, or the two disagree in a delivered document."""
         self._damage({"technique": "Gut feel", "criteria": ["cost"]})
         report = _report_text()
-        self.assertIn("Prioritization approach", report)   # the block IS rendered...
+        self.assertIn("Подход к приоритизации", report)   # the block IS rendered...
         self.assertNotIn("Gut feel", report)               # ...without the junk technique
 
 
@@ -446,7 +446,7 @@ class TestPlansWrittenBeforeThisFeature(BaseMCPTest):
         plan_ba_governance(PROJECT, prioritization_technique="MoSCoW")
         report = _report_text()
         self.assertIn(self.LEGACY_TEXT, report)
-        self.assertNotIn("declared in 3.3 | ", report.split("Change control")[1][:60])
+        self.assertNotIn("заявлено в 3.3 | ", report.split("Процесс изменений")[1][:60])
 
     def test_an_empty_declared_list_still_means_nothing_was_declared(self):
         """The counterpart: `declared: []` is a POSITIVE statement by the current
@@ -468,14 +468,14 @@ class TestClearingTheDecisionMakers(BaseMCPTest):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         result = plan_ba_governance(PROJECT, decision_makers_json='[]')
         self.assertIn("❌", result)
-        self.assertNotIn("the first time 3.3 is planned", result)
+        self.assertNotIn("При первом планировании 3.3", result)
         self.assertIn("CFO, Head of Risk", result)          # what is planned right now
         # And it really did refuse: the stored list is untouched.
         self.assertEqual(_section()["decision_makers"], ["CFO", "Head of Risk"])
 
     def test_the_first_time_message_still_names_the_first_time(self):
         result = plan_ba_governance(PROJECT, "High", decision_makers_json='[]')
-        self.assertIn("the first time 3.3 is planned", result)
+        self.assertIn("При первом планировании 3.3", result)
 
 
 class TestDeclaredMarkerCannotOutliveItsValue(BaseMCPTest):
@@ -533,7 +533,7 @@ class TestCriticalityIsGuardedByValue(BaseMCPTest):
             json.dump(data, f)
         result = plan_ba_governance(PROJECT, review_cycle="Monthly")
         self.assertIn("❌", result)
-        self.assertNotIn("the first time 3.3 is planned", result)
+        self.assertNotIn("При первом планировании 3.3", result)
         self.assertIn("Low / Medium / High", result)
         # ...and it really did refuse without eating the stored plan.
         self.assertEqual(_section()["decision_makers"], ["CFO", "Head of Risk"])
