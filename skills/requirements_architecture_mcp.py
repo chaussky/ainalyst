@@ -672,7 +672,7 @@ def _group_refs(refs) -> str:
     # this string, and a shortened number would be a false claim rather than a shorter
     # one. Saying how many were held back keeps the two halves consistent.
     if len(ordered) > len(shown):
-        rendered += f", _+{len(ordered) - len(shown)} more_"
+        rendered += f", _+ещё {len(ordered) - len(shown)}_"
     return rendered
 
 

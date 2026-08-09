@@ -270,20 +270,20 @@ class TestSharedValidators(unittest.TestCase):
 
     def test_required_rejects_empty_array(self):
         _, err = self.p_dicts("[]", "my_field", required=True)
-        self.assertIn("non-empty", err)
+        self.assertIn("непустым", err)
 
     def test_dict_list_rejects_non_objects(self):
         _, err = self.p_dicts('[{"a": 1}, "oops"]', "my_field")
-        self.assertIn("objects", err)
+        self.assertIn("объектов", err)
         self.assertIn("str", err)
 
     def test_str_list_rejects_non_strings(self):
         _, err = self.p_str('["ok", {"a": 1}]', "my_field")
-        self.assertIn("strings", err)
+        self.assertIn("только строки", err)
 
     def test_dict_rejects_a_list(self):
         _, err = self.p_dict('["a"]', "my_field")
-        self.assertIn("JSON object", err)
+        self.assertIn("JSON-объектом", err)
 
     def test_plain_list_accepts_mixed_items(self):
         value, err = self.p_list('["a", {"b": 1}]', "my_field")

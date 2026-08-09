@@ -486,7 +486,7 @@ class TestCheckCoverage(BaseMCPTest):
                          "derives" in ln or "satisfies" in ln or "verifies" in ln)]
         self.assertTrue(link_rows, f"no link row mentioning FR-002:\n{matrix}")
         for row in link_rows:
-            self.assertIn("archived", row.lower(),
+            self.assertIn("в архиве", row.lower(),
                           f"a link to an archived node carries no marker: {row}")
 
     def test_child_with_derives_link_is_not_orphan(self):

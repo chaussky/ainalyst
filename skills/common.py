@@ -95,7 +95,7 @@ NON_REQUIREMENT_NODE_TYPES = BUSINESS_NODE_TYPES | ANALYSIS_NODE_TYPES | TEST_NO
 # requirement with a warning.
 ARCHIVED_REQUIREMENT_STATUSES = {"deprecated", "superseded", "retired"}
 
-ARCHIVED_MARK = "_(archived)_"
+ARCHIVED_MARK = "_(в архиве)_"
 
 # Human labels for the node types that are NOT requirements, so a caption printed next
 # to a count can be built from the types actually present instead of a hard-coded list.
@@ -124,7 +124,7 @@ def list_with_cap(items, cap: int = 10, formatter=None) -> str:
         return "—"
     shown = ", ".join(fmt(v) for v in values[:cap])
     if len(values) > cap:
-        shown += f", _+{len(values) - cap} more_"
+        shown += f", _+ещё {len(values) - cap}_"
     return shown
 
 

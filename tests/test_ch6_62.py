@@ -923,7 +923,7 @@ class TestTheDocumentAgreesWithTheGraph(BaseMCPTest):
         bn_lines = [ln for ln in doc.split("\n") if "Addresses BN" in ln]
         self.assertTrue(bn_lines, doc)
         for line in bn_lines:
-            self.assertIn("archived", line.lower(),
+            self.assertIn("в архиве", line.lower(),
                           f"a superseded need was cited as a standing justification: {line}")
 
     def test_a_goal_retired_in_the_graph_is_not_shown_as_live(self):

@@ -1023,7 +1023,7 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         self.assertIn("FR-DEP", result, "an archived requirement vanished from the matrix")
         dep_row = [ln for ln in result.split("\n") if "FR-DEP" in ln and ln.startswith("|")]
         self.assertTrue(dep_row)
-        self.assertIn("archived", dep_row[0].lower(), "it is shown but not marked")
+        self.assertIn("в архиве", dep_row[0].lower(), "it is shown but not marked")
         self.assertIn("| — of them archived (5.2) | 1 |", result)
 
         # ...and the objective it used to serve is NOT covered by it.
@@ -1097,7 +1097,7 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         result = self._matrix_with_goals([60])
         row = self._row_for(result, "BG-001")
         self.assertIn("| 60 |", row, "the count must stay complete")
-        self.assertIn("more_", row, "the id list has no ceiling")
+        self.assertIn("+ещё", row, "the id list has no ceiling")
         self.assertLess(row.count("`FR-"), 15, f"the whole list is still printed: {row}")
 
     def test_the_average_matches_the_column_under_it(self):

@@ -2498,7 +2498,7 @@ class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
         bullet = next(l for l in concerns.splitlines() if "Busy Person" in l)
         self.assertLess(len(bullet), 500, "one bullet must not run to a paragraph")
         self.assertIn("60 требований", bullet)
-        self.assertIn("more", bullet)
+        self.assertIn("ещё", bullet)
         self.assertIn("`FR-001`", bullet)
 
     def test_the_count_still_reports_every_requirement_not_only_the_shown_ones(self):
