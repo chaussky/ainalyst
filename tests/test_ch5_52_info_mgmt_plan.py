@@ -262,7 +262,7 @@ class TestTheAdviceNamesTheToolThatCanActuallyFillTheAttribute(BaseMCPTest):
 
     def test_the_plan_less_wording_is_untouched_byte_for_byte(self):
         # The legacy branch has a byte-for-byte contract and is deliberately out of
-        # scope: a project with no план 3.4 must not see one new character.
+        # scope: a project with no 3.4 plan must not see one new character.
         _write_repo(PROJECT, [dict(BARE_REQ)])
         result = check_requirements_health(PROJECT)
         self.assertIn(

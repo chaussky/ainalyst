@@ -897,7 +897,7 @@ class TestArchAuditRegressions(BaseMCPTest):
             make_req("BG-001", "business_goal", "Reduce waiting", status="confirmed"),
         ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod74.analyze_requirements_architecture("bg74")
-        # The claim under test is the COUNT — a бизнес-цель is not a requirement.
+        # The claim under test is the COUNT — a business goal is not a requirement.
         # The label lost the word "active" in re-review N-5: it described a status
         # filter this line has never had.
         self.assertIn("**Всего требований:** 1", result)
@@ -1140,8 +1140,8 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         self.assertEqual(mod74._ties_for_labels({"someone else"}, ev), [])
 
     def test_evidence_never_reads_the_title(self):
-        # The title эвристика is deliberately NOT one of the three evidence sources —
-        # it stays where it is, in the gap check, explicitly labelled as a эвристика.
+        # The title heuristic is deliberately NOT one of the three evidence sources —
+        # it stays where it is, in the gap check, explicitly labelled as a heuristic.
         repo = make_repo("ev74l", [make_req("FR-001", "functional", "Sales Head report")])
         self.assertEqual(mod74._stakeholder_evidence("ev74l", repo)["FR-001"], [])
 
@@ -1344,7 +1344,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         self.assertNotIn("`Priya Nair` нет ни одной записанной связи", result)
         # An EXACT tie must be fully silent — not merely "not critical". Without
         # this, disabling the tie short-circuit still passes: the person's own
-        # exact evidence string re-enters through the name-pool эвристика and
+        # exact evidence string re-enters through the name-pool heuristic and
         # produces a warning instead, which the check above would not catch.
         self.assertIn("🟡 Warning | 0", result)
 
@@ -1419,8 +1419,8 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
 
     def test_a_short_shared_word_does_not_count_as_a_title_match(self):
         # "it" is a real word of the title AND the stakeholder's role, but it is only
-        # 2 letters — below the 4-letter floor the эвристика requires. Without the
-        # floor this совпадение would wrongly demote a real gap to a warning.
+        # 2 letters — below the 4-letter floor the heuristic requires. Without the
+        # floor this coincidence would wrongly demote a real gap to a warning.
         save_repo(make_repo("gv74i", [make_req("FR-001", "functional", "Wire it now")]))
         save_stakeholder_registry("gv74i", [{"name": "", "role": "IT"}])
         result = mod74.check_architecture_gaps("gv74i")
@@ -1458,7 +1458,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
     def test_an_exact_name_match_still_silences_the_gap(self):
         # Guard against over-widening: adding the name pool must not stop an EXACT
         # match from taking the tie path (silent) — it must still short-circuit
-        # before the эвристика is even consulted.
+        # before the heuristic is even consulted.
         repo = make_repo("gv74l", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Priya Nair"
         save_repo(repo)
@@ -1688,7 +1688,7 @@ class TestLiveRunFindings74(BaseMCPTest):
         self.assertIn("отсутствуют в реестре 4.2", doc)
         self.assertIn("`FR-001` (declared)", doc)
 
-    def test_a_эвристика_only_stakeholder_is_not_reported_as_having_nothing(self):
+    def test_a_heuristic_only_stakeholder_is_not_reported_as_having_nothing(self):
         """L-3. Two people in different states rendered identically.
 
         `owner: "Priya"` against a registry row "Priya Nair" is a heuristic match — the
@@ -2342,7 +2342,7 @@ class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
             self.assertTrue(mock_sa.called, "save_artifact was not reached")
             return mock_sa.call_args[0][0]
 
-    def test_the_hint_says_what_matched_and_that_it_is_a_совпадение(self):
+    def test_the_hint_says_what_matched_and_that_it_is_a_coincidence(self):
         repo = make_repo("a4_74", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Compliance Officer"
         save_repo(repo)
@@ -2645,7 +2645,7 @@ class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
             result = mod74.check_architecture_gaps(pid)
         self.assertIn("SENTINEL-OWNER-LABEL", result)
 
-    def test_the_эвристика_source_is_named_from_its_own_constant(self):
+    def test_the_heuristic_source_is_named_from_its_own_constant(self):
         pid = self._project("a6_74b")
         with patch.dict(mod74.CONCERN_LABELS,
                         {mod74.CONCERN_TITLE: "SENTINEL-TITLE-LABEL"}):

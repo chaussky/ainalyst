@@ -216,7 +216,7 @@ class AuthorityCrossCheckTest(BaseMCPTest):
                                  '["FR-001", "FR-002"]', approach="predictive")
         # A real project has a registry (3.2 seeds it, 4.2 maintains it): it is what
         # ties a planned ROLE to the NAME a decision is recorded under. Without one the
-        # check reports that it не может определить and says nothing — `NoRegistryTest`.
+        # check reports that it cannot tell and says nothing — `NoRegistryTest`.
         _seed_registry([{"name": "Alice Chen", "role": "CFO"},
                         {"name": "Dana Cole", "role": "Head of Risk"},
                         {"name": "Priya Nair", "role": "Marketing Lead"}])

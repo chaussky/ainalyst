@@ -338,8 +338,8 @@ class TestSetBusinessContext(BaseMCPTest):
         result = mod73.set_business_context(
             "proj73", self._valid_goals(), "Future", "Scope"
         )
-        # 7.3 can set the business context by hand; глава 6 (6.1/6.2) populates the
-        # same file automatically when run. The note must say so — not claim глава 6
+        # 7.3 can set the business context by hand; Chapter 6 (6.1/6.2) populates the
+        # same file automatically when run. The note must say so — not claim Chapter 6
         # is unimplemented (it is implemented; the old "surrogate/temporary" wording lied).
         self.assertIn("глава 6", result)
         self.assertIn("автоматически", result)

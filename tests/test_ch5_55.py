@@ -292,7 +292,7 @@ class TestPrepareApprovalPackage(BaseMCPTest):
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
         self.assertEqual(fr001["status"], STATUS_PENDING)
 
-    def test_duplicate_package_id_заблокирован(self):
+    def test_duplicate_package_id_blocked(self):
         _open_package()
         result = _open_package()
         self.assertIn("уже существует", result)
@@ -461,7 +461,7 @@ class TestRecordApprovalDecision(BaseMCPTest):
         self.assertIn("FR-001", result)
         self.assertIn("FR-002", result)
 
-    def test_unknown_req_id_in_decisions_заблокирован(self):
+    def test_unknown_req_id_in_decisions_blocked(self):
         result = record_approval_decision(
             project_name=PROJECT,
             package_id="APKG-001",
@@ -749,7 +749,7 @@ class TestAnEmptyBaselineSaysTheSameThingInBothPlaces(BaseMCPTest):
         _make_repo_with_verified(self.tmp_dir)
         _open_package(package_id="APKG-009", req_ids=["FR-001"])
 
-    def test_the_returned_summary_does_not_send_an_empty_list_to_разработку(self):
+    def test_the_returned_summary_does_not_send_an_empty_list_to_development(self):
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
             returned = create_requirements_baseline(
@@ -985,7 +985,7 @@ class TestCreateRequirementsBaseline(BaseMCPTest):
         self.assertEqual(len(history["baselines"]), 1)
         self.assertEqual(history["baselines"][0]["baseline_version"], "v1.0")
 
-    def test_baseline_заблокирован_by_rejected_accountable(self):
+    def test_baseline_blocked_by_rejected_accountable(self):
         _record(decision="rejected", rejection_reason="Не согласен")
         result = create_requirements_baseline(
             project_name=PROJECT,
@@ -1503,7 +1503,7 @@ class TestApprovalRecordVerificationSection(BaseMCPTest):
         content = self._record_content()
         self.assertNotIn("Вошло в baseline без верификации 7.2", content)
 
-    def test_baseline_is_not_заблокирован_by_missing_verification(self):
+    def test_baseline_is_not_blocked_by_missing_verification(self):
         """GLOBAL CONSTRAINT: report-only. force must NOT be needed."""
         out = self._approve_and_baseline(_make_repo_unverified, force=False)
         self.assertIn("Requirements Baseline создан", out)
@@ -1658,7 +1658,7 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
             baseline_version="v1.0", decided_by="Иванов", force=True)
         history = _load_approval_history(PROJECT)
         self.assertEqual(history.get("baselines", []), [],
-                         "a заблокирован baseline must leave no record behind")
+                         "a blocked baseline must leave no record behind")
 
     def test_process_gates_are_still_forceable_and_named(self):
         """The other three remain overridable — the point is that they are recorded
@@ -1667,11 +1667,11 @@ class TestForceIsNotOneFlagForEverything(BaseMCPTest):
         _open_package(req_ids=["FR-001", "FR-002"])
         _record(stakeholder="Consulted Carl", raci="consulted", decision="approved")
 
-        заблокирован = create_requirements_baseline(
+        blocked = create_requirements_baseline(
             project_name=PROJECT, package_id="APKG-001",
             baseline_version="v1.0", decided_by="Иванов")
-        self.assertIn("❌", заблокирован)
-        self.assertIn("незакрытые согласования", заблокирован)
+        self.assertIn("❌", blocked)
+        self.assertIn("незакрытые согласования", blocked)
 
         with patch("skills.requirements_approve_mcp.save_artifact") as mock_sa:
             mock_sa.return_value = "✅ Saved"
