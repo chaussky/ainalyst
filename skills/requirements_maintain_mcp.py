@@ -863,8 +863,8 @@ def check_requirements_health(
         "",
         f"# 🏥 Аудит здоровья реестра требований",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Filter:** type={filter_type or 'all'}, status={filter_status or 'active'}  ",
+        f"**Проект:** {project_name}  ",
+        f"**Фильтр:** type={filter_type or 'все'}, status={filter_status or 'active'}  ",
         # Named only when a plan actually selected the set: a project that never opened
         # chapter 3 gains no line here and keeps the legacy owner check and its wording.
         # (Two deliberate repairs in the same feature DO reach plan-less projects — the
@@ -925,11 +925,13 @@ def check_requirements_health(
         # it, nothing here ever looked at the owner, so claiming every healthy
         # requirement has one is a confident false claim on the same page that chose
         # not to check. Without a plan the wording is untouched.
+        n_h = len(healthy)
+        noun_h = plural_ru(n_h, "требование", "требования", "требований")
         healthy_summary = (
-            f"**{len(healthy)} requirement(s)** in good shape — current, stable, and "
-            f"complete on every audited attribute."
+            f"**{n_h} {noun_h}** в порядке — актуальны, стабильны и заполнены по "
+            f"каждому проверяемому атрибуту."
             if resolved else
-            f"**{len(healthy)} requirement(s)** in good shape — current, have an owner, stable."
+            f"**{n_h} {noun_h}** в порядке — актуальны, есть владелец, стабильны."
         )
         lines += [
             "## 🟢 Здоровые требования",
@@ -951,8 +953,8 @@ def check_requirements_health(
     actions = []
     if critical:
         actions.append(
-            f"🔴 **{len(critical)} critical** — discuss the volatility, "
-            f"update via `update_requirement` or `deprecate_requirements`."
+            f"🔴 **{len(critical)} critical** — обсудите волатильность, "
+            f"обновите через `update_requirement` или `deprecate_requirements`."
         )
     if warnings:
         attr_gaps = [r for r in warnings if r["missing_attributes"]]
@@ -980,16 +982,16 @@ def check_requirements_health(
                                                 key=lambda kv: kv[1][0])
                 )
                 actions.append(
-                    f"🟡 **{len(attr_gaps)} with unfilled attributes** "
-                    f"({', '.join(missing_names)}) — fill them in: {routes}.")
+                    f"🟡 **У {len(attr_gaps)} не заполнены атрибуты** "
+                    f"({', '.join(missing_names)}) — заполните их: {routes}.")
             else:
                 # Legacy wording, byte-for-byte, for projects with no 3.4 plan.
                 actions.append(
-                    f"🟡 **{len(attr_gaps)} without an owner** — "
-                    f"assign an owner via `update_requirement`.")
+                    f"🟡 **{len(attr_gaps)} без владельца** — "
+                    f"назначьте владельца через `update_requirement`.")
         if stale:
             actions.append(
-                f"🟡 **{stale} not updated in a while** — confirm relevance with the stakeholder.")
+                f"🟡 **{stale} давно не обновлялись** — подтвердите актуальность у стейкхолдера.")
 
     lines += [f"{i}. {action}" for i, action in enumerate(actions, 1)]
 
@@ -1058,7 +1060,7 @@ def find_reusable_requirements(
     if min_reuse_scope:
         effective_scope, scope_source = min_reuse_scope, ""
     elif reuse_plan.get("target_scope"):
-        effective_scope, scope_source = reuse_plan["target_scope"], " *(from the 3.4 plan)*"
+        effective_scope, scope_source = reuse_plan["target_scope"], " *(из плана 3.4)*"
     else:
         effective_scope, scope_source = "initiative", ""
 
@@ -1118,15 +1120,15 @@ def find_reusable_requirements(
         # points — the reuse ranking degraded as the project matured.
         if has_been_approved(project_name, req.get("id", "")):
             score += 2
-            score_notes.append("✅ Approved in 5.5 — proven in practice")
+            score_notes.append("✅ Согласовано в 5.5 — проверено практикой")
         elif status == "implemented":
             score += 2
-            score_notes.append("✅ Status implemented — proven in practice")
+            score_notes.append("✅ Статус implemented — проверено практикой")
         elif status == "approved":
             # No approval records (a legacy project, or an approval recorded outside
             # 5.5). The status is the only evidence there is, so it still counts.
             score += 2
-            score_notes.append("✅ Status approved — proven in practice")
+            score_notes.append("✅ Статус approved — проверено практикой")
         elif status == "confirmed":
             score += 1
             score_notes.append("🟡 Статус confirmed — ещё не утверждён")
@@ -1138,17 +1140,18 @@ def find_reusable_requirements(
         # Accountable rejection in another package, as "proven in practice".
         age = _days_since(req.get("last_reviewed") or req.get("added", ""))
         if age is None:
-            score_notes.append("🟡 Age unknown — the review date could not be read")
+            score_notes.append("🟡 Возраст неизвестен — дату ревью прочитать не удалось")
         elif age > STALE_DAYS_CRITICAL:
             score_notes.append(
-                f"🟡 Not reviewed for {age} days — confirm it still reflects the "
-                f"current process before reusing it")
+                f"🟡 Не пересматривалось {age} "
+                f"{plural_ru(age, 'день', 'дня', 'дней')} — прежде чем переиспользовать, "
+                f"подтвердите, что оно ещё отражает текущий процесс")
         outcome = approval_outcome(project_name, req.get("id", ""))
         if outcome == "rejected":
             score_notes.append(
-                "❌ Rejected in 5.5 — the objection was never withdrawn")
+                "❌ Отклонено в 5.5 — возражение так и не было снято")
         elif outcome == "conditional":
-            score_notes.append("🟡 Approved in 5.5 with open conditions")
+            score_notes.append("🟡 Согласовано в 5.5 с открытыми условиями")
 
         minor = _minor_version(req.get("version", "1.0"))
         if minor <= 1:
@@ -1177,7 +1180,7 @@ def find_reusable_requirements(
             # section: without this line a confirmed and a potential candidate could
             # show the same score with nothing in the document explaining why.
             score_notes.append(
-                f"🟡 Below the planned reuse scope ({effective_scope}) — one point less")
+                f"🟡 Ниже запланированного scope переиспользования ({effective_scope}) — на балл меньше")
 
         req_info = {
             "id": req.get("id"),
@@ -1214,22 +1217,23 @@ def find_reusable_requirements(
         "",
         f"# ♻️ Кандидаты на повторное использование",
         "",
-        f"**Project:** {project_name}  ",
-        f"**Query:** {search_query or 'all'}  ",
-        f"**Type:** {filter_type or 'all'}  ",
-        f"**Target reuse scope:** {effective_scope}{scope_source} — "
-        f"raises the ranking, does not exclude  ",
-        f"**Date:** {date.today()}",
+        f"**Проект:** {project_name}  ",
+        f"**Запрос:** {search_query or 'все'}  ",
+        f"**Тип:** {filter_type or 'все'}  ",
+        f"**Целевой scope переиспользования:** {effective_scope}{scope_source} — "
+        f"поднимает в ранжировании, но не исключает  ",
+        f"**Дата:** {date.today()}",
         "",
         *([plan_note, ""] if plan_note else []),
-        f"Found **{len(candidates)}** confirmed candidate(s), "
-        f"**{len(others)}** potential.",
+        f"Найдено **{len(candidates)}** "
+        f"{plural_ru(len(candidates), 'подтверждённый кандидат', 'подтверждённых кандидата', 'подтверждённых кандидатов')}, "
+        f"**{len(others)}** потенциальных.",
         "",
     ]
 
     if reuse_plan.get("categories"):
         lines += [
-            "**Planned candidate categories (3.4):** "
+            "**Запланированные категории кандидатов (3.4):** "
             + ", ".join(reuse_plan["categories"]),
             "",
         ]
@@ -1281,16 +1285,16 @@ def find_reusable_requirements(
         lines += [
             "ℹ️ Подходящих кандидатов не найдено по заданным критериям.",
             "",
-            "Try:",
-            "- Removing the type filter",
-            "- Broadening the search query",
+            "Попробуйте:",
+            "- Снять фильтр по типу",
+            "- Расширить поисковый запрос",
             # "Lowering min_reuse_scope" used to be offered here. It could never change
             # an empty result: the scope adds a point to the suitability score and
             # excludes nothing. Advice that cannot work is worse than no advice.
-            "- Flagging requirements via `update_requirement(reuse_candidate='true')`",
+            "- Помечать требования через `update_requirement(reuse_candidate='true')`",
         ]
         if repository:
-            lines.append(f"- Looking in the reuse repository planned in 3.4: {repository}")
+            lines.append(f"- Посмотреть в репозитории переиспользования из плана 3.4: {repository}")
 
     lines += [
         "",
@@ -1306,7 +1310,7 @@ def find_reusable_requirements(
         # BABOK p. 45: reusable requirements must live "in a repository that is
         # available to other business analysts". Naming the planned one turns generic
         # advice into an address.
-        lines += ["", f"Reuse repository planned in 3.4: **{repository}**"]
+        lines += ["", f"Репозиторий переиспользования из плана 3.4: **{repository}**"]
 
     content = "\n".join(lines)
 
