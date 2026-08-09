@@ -2,7 +2,7 @@
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-1556%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2991%20passed-brightgreen.svg)](tests/)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-required-orange.svg)](https://claude.ai)
 [![Telegram](https://img.shields.io/badge/Telegram-канал-blue?logo=telegram)](https://t.me/platform_ainalyst)
 ![Status: Beta](https://img.shields.io/badge/status-beta-orange)
