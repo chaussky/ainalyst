@@ -99,7 +99,7 @@ class TestConfirmedArtifactSearchCannotReachAnotherProject(BaseMCPTest):
         out = t71.analyze_elicitation_context(PID)
         self.assertNotIn("4_3_confirmed_result_20260701_120000.md", out,
                          "an artifact belonging to no project was read into this one")
-        self.assertIn("not found", out.lower())
+        self.assertIn("не найден", out.lower())
 
     def test_the_file_that_was_used_is_named(self):
         import skills.requirements_spec_mcp as t71

@@ -36,6 +36,8 @@ from skills.common import (write_json_artifact,
     safe_filename_part, CorruptArtifactError, list_with_cap,
 )
 
+from skills.plural_ru import plural_ru
+
 mcp = FastMCP("BABOK_Requirements_Spec")
 
 REPO_FILENAME = "traceability_repo.json"
@@ -149,10 +151,10 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
                 filled.append(field)
         if filled:
             notes.append(
-                f"ℹ️ `{req_id}` is already registered in repository 5.1 — filled in "
-                f"from this specification: {', '.join(filled)}.")
+                f"ℹ️ `{req_id}` уже зарегистрировано в репозитории 5.1 — из этой "
+                f"спецификации заполнено: {', '.join(filled)}.")
         else:
-            notes.append(f"ℹ️ `{req_id}` is already registered in repository 5.1.")
+            notes.append(f"ℹ️ `{req_id}` уже зарегистрировано в репозитории 5.1.")
     else:
         repo["requirements"].append({
             "id": req_id,
@@ -176,7 +178,7 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
             "source": "7.1_spec",
             "date": str(date.today()),
         })
-        notes.append(f"✅ `{req_id}` registered in repository 5.1 (status: draft).")
+        notes.append(f"✅ `{req_id}` зарегистрировано в репозитории 5.1 (статус: draft).")
 
     nodes_by_id = {r["id"]: r for r in repo["requirements"]}
     # Idempotency on EDGES, not just on nodes — the bug that recurred in 6.3 and 6.4.
@@ -191,14 +193,14 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
             # Never invent the node: a phantom objective would poison check_coverage,
             # the 7.3 BFS, the 7.4 matrix and 5.4 impact analysis. Warn, don't block.
             notes.append(
-                f"⚠️ Objective `{goal_id}` is not in repository 5.1 — link skipped. "
-                f"Define objectives in 6.2 (`define_goals_and_objectives`)."
+                f"⚠️ Цели `{goal_id}` нет в репозитории 5.1 — связь пропущена. "
+                f"Задайте цели в 6.2 (`define_goals_and_objectives`)."
             )
             continue
         if target.get("type") not in BUSINESS_NODE_TYPES:
             notes.append(
-                f"⚠️ `{goal_id}` is a `{target.get('type')}` node, not a business objective — "
-                f"link skipped. For requirement-to-requirement relations use "
+                f"⚠️ `{goal_id}` — узел типа `{target.get('type')}`, а не бизнес-цель: "
+                f"связь пропущена. Для отношений между требованиями используйте "
                 f"`add_trace_link` (5.1)."
             )
             continue
@@ -213,14 +215,16 @@ def _register_in_repo(project_id: str, req_id: str, req_type: str,
             # omitting it put a dash in the column a regulated project exists to fill.
             # `added` is the spelling every other producer uses; `created` was read by
             # nobody.
-            "rationale": f"Requirement {req_id} serves objective {goal_id}",
+            "rationale": f"Требование {req_id} служит цели {goal_id}",
             "added": str(date.today()),
         })
         existing_edges.add(key)
         added += 1
 
     if added:
-        notes.append(f"🔗 Linked to {added} business objective(s) via `satisfies`.")
+        notes.append(
+            f"🔗 Связано с бизнес-целями через `satisfies`: {added} "
+            f"{plural_ru(added, 'цель', 'цели', 'целей')}.")
 
     _save_repo(repo)
     return " ".join(notes)
@@ -258,10 +262,10 @@ def _save_spec(content: str, project_id: str, filename: str) -> str:
     real_path = os.path.realpath(filepath)
     if os.path.commonpath([real_path, real_dir]) != real_dir:
         raise CorruptArtifactError(
-            f"❌ The specification file name resolves outside the project's specs "
-            f"folder: `{filename}`.\n"
-            f"   Nothing has been written. Rename the requirement so its title does "
-            f"not read as a path."
+            f"❌ Имя файла спецификации уводит за пределы папки specs этого проекта: "
+            f"`{filename}`.\n"
+            f"   Ничего не записано. Переименуйте требование так, чтобы его заголовок "
+            f"не читался как путь."
         )
 
     with open(filepath, "w", encoding="utf-8") as f:
@@ -380,14 +384,14 @@ def analyze_elicitation_context(
         logger.info("Артефакт 4.3 не найден — используем context_text")
     else:
         return (
-            f"⚠️ 4.3 artifact not found for project `{project_id}`.\n\n"
-            f"The tool searched for files matching the pattern:\n"
+            f"⚠️ Артефакт 4.3 для проекта `{project_id}` не найден.\n\n"
+            f"Инструмент искал файлы по шаблону:\n"
             f"`{_confirmed_artifact_pattern(project_id)}`\n\n"
-            f"(the project id is the FOLDER; the file name does not carry it)\n\n"
-            f"**Options:**\n"
-            f"1. Make sure the 4.3 artifact was created via `save_confirmed_elicitation_result` (4.3)\n"
-            f"2. Pass the content manually: `analyze_elicitation_context("
-            f"project_id='{project_id}', context_text='[paste the 4.3 artifact text]')`"
+            f"(id проекта — это ПАПКА; в имени файла его нет)\n\n"
+            f"**Варианты:**\n"
+            f"1. Убедитесь, что артефакт 4.3 создан через `save_confirmed_elicitation_result` (4.3)\n"
+            f"2. Передайте содержимое вручную: `analyze_elicitation_context("
+            f"project_id='{project_id}', context_text='[вставьте текст артефакта 4.3]')`"
         )
 
     # Формируем аналитический запрос к содержимому
@@ -1669,26 +1673,26 @@ def build_coverage_matrix(
         goal_entries = [(g["id"], g.get("title") or g["id"]) for g in goal_nodes]
         business_goals = [t for _, t in goal_entries]
         precise = True
-        source_info = "📂 Business objectives from the 6.2 goals registered in the 5.1 graph (business_goal nodes)."
+        source_info = "📂 Бизнес-цели — из целей 6.2, зарегистрированных в графе 5.1 (узлы business_goal)."
 
     if not business_goals:
         fs_goals = _load_future_state_goals(project_id)
         if fs_goals:
             business_goals = fs_goals
-            source_info = "📂 Business objectives from 6.2 `future_state_goals.json`."
+            source_info = "📂 Бизнес-цели — из `future_state_goals.json` (6.2)."
 
     if not business_goals:
         artifact_path = _find_confirmed_artifact(project_id)
         if artifact_path:
             try:
                 content = _read_confirmed_artifact(artifact_path)
-                source_info = f"📂 Business objectives extracted from the 4.3 artifact: `{artifact_path}`"
+                source_info = f"📂 Бизнес-цели извлечены из артефакта 4.3: `{artifact_path}`"
                 # Simple parsing: look for the section with business objectives
                 in_goals_section = False
                 for line in content.split("\n"):
                     line_stripped = line.strip()
                     lower = line_stripped.lower()
-                    if any(kw in lower for kw in ["business objective", "business goal", "project objectives", "objectives:"]):
+                    if any(kw in lower for kw in ["business objective", "business goal", "бизнес-цел", "цели проекта"]):
                         in_goals_section = True
                         continue
                     if in_goals_section:
@@ -1713,11 +1717,11 @@ def build_coverage_matrix(
                 source_artifacts.add(sa)
 
         if source_artifacts:
-            business_goals = [f"Objectives from: {sa}" for sa in sorted(source_artifacts)]
-            source_info = "📋 No 6.2 goals and no 4.3 objectives found. Showing grouping by requirement source."
+            business_goals = [f"Цели из: {sa}" for sa in sorted(source_artifacts)]
+            source_info = "📋 Ни целей 6.2, ни целей из 4.3 не найдено. Показана группировка по источнику требований."
         else:
-            business_goals = ["Business objectives not defined"]
-            source_info = "⚠️ No business objectives found. Define them in 6.2 (`define_goals_and_objectives`) or run `analyze_elicitation_context`."
+            business_goals = ["Бизнес-цели не заданы"]
+            source_info = "⚠️ Бизнес-цели не найдены. Задайте их в 6.2 (`define_goals_and_objectives`) либо запустите `analyze_elicitation_context`."
 
     if not precise:
         goal_entries = [("", t) for t in business_goals]
@@ -1790,9 +1794,9 @@ def build_coverage_matrix(
         "",
         "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Business objectives | {num_goals} |",
-        f"| Requirements in the registry | {total_reqs} |",
-        f"| — of them archived (5.2) | {len(archived_reqs)} |",
+        f"| Бизнес-цели | {num_goals} |",
+        f"| Требований в реестре | {total_reqs} |",
+        f"| — из них в архиве (5.2) | {len(archived_reqs)} |",
     ]
     if precise:
         # Counted over LINKS, so it matches the column of the table below: a
@@ -1800,24 +1804,24 @@ def build_coverage_matrix(
         # figure was registry/objectives, which agrees with no list in the document.
         pairs = sum(len(v) for v in per_goal.values())
         lines.append(
-            f"| Avg requirements per objective | {pairs / max(1, num_goals):.1f} "
-            f"(over {pairs} objective↔requirement links) |")
+            f"| Требований на цель в среднем | {pairs / max(1, num_goals):.1f} "
+            f"(по {pairs} связям цель↔требование) |")
     else:
         lines.append(
-            f"| Requirements per objective (registry ÷ objectives) | {avg_per_goal:.1f} |")
+            f"| Требований на цель (реестр ÷ цели) | {avg_per_goal:.1f} |")
 
     if precise:
         covered_count = sum(1 for gid in per_goal if per_goal[gid])
         lines += [
-            f"| Objectives covered | {covered_count} of {num_goals} |",
+            f"| Целей покрыто | {covered_count} из {num_goals} |",
             "",
-            "> **Per-objective coverage is computed from `satisfies` links in the 5.1 graph.** "
-            "A requirement appears under an objective only because the analyst linked it there — "
-            "nothing is inferred from text.",
+            "> **Покрытие по каждой цели считается по связям `satisfies` в графе 5.1.** "
+            "Требование попадает под цель только потому, что аналитик его туда связал — "
+            "из текста ничего не выводится.",
             "",
-            "## Coverage by business objective",
+            "## Покрытие по бизнес-целям",
             "",
-            "| | Objective | Requirements | IDs |",
+            "| | Цель | Требований | ID |",
             "|---|-----------|--------------|-----|",
         ]
         # The threshold is relative: "far more than this project's own average"
@@ -1841,23 +1845,23 @@ def build_coverage_matrix(
                 f"| {flag} | `{gid}` {title_short}{mark} | {len(covered)} | {ids} |")
         lines += [
             "",
-            f"> 🔴 no requirement serves this objective &nbsp;|&nbsp; 🟢 normal "
-            f"&nbsp;|&nbsp; 🟡 more than {over_threshold:.0f} — twice this project's "
-            f"average of {mean_per_goal:.1f} (possible over-engineering)",
+            f"> 🔴 цели не служит ни одно требование &nbsp;|&nbsp; 🟢 норма "
+            f"&nbsp;|&nbsp; 🟡 больше {over_threshold:.0f} — вдвое выше среднего по "
+            f"проекту ({mean_per_goal:.1f}), возможно переусложнение",
             "",
         ]
     else:
         lines += [
             "",
-            "> **Objectives came from a source without graph ids**, so per-objective coverage "
-            "cannot be computed and none is claimed. Define objectives in 6.2 "
-            "(`define_goals_and_objectives`) — they are registered as graph nodes, and linking "
-            "requirements to them (the `business_goal_ids_json` parameter of the 7.1 creating "
-            "tools) turns this report into a precise per-objective matrix.",
+            "> **Цели пришли из источника без id в графе**, поэтому покрытие по каждой "
+            "цели посчитать нельзя — и оно не утверждается. Задайте цели в 6.2 "
+            "(`define_goals_and_objectives`): они регистрируются как узлы графа, и связывание "
+            "требований с ними (параметр `business_goal_ids_json` у создающих инструментов "
+            "7.1) превращает этот отчёт в точную матрицу по каждой цели.",
             "",
-            "## Business objectives — checklist",
+            "## Бизнес-цели — чеклист",
             "",
-            "> Confirm by eye that each objective is addressed by at least one requirement in the list below.",
+            "> Убедитесь глазами, что каждой цели отвечает хотя бы одно требование из списка ниже.",
             "",
         ]
         for goal in business_goals:
@@ -1866,9 +1870,9 @@ def build_coverage_matrix(
         lines.append("")
 
     lines += [
-        "## Requirements in the registry",
+        "## Требования в реестре",
         "",
-        "| ID | Type | Title |",
+        "| ID | Тип | Название |",
         "|----|------|-------|",
     ]
     for req in requirements:
@@ -1882,58 +1886,59 @@ def build_coverage_matrix(
         by_type = {}
         for r in unattached:
             by_type.setdefault(r.get("type", "—"), []).append(r["id"])
-        lines += ["", "## Requirements not linked to any objective", ""]
+        lines += ["", "## Требования, не связанные ни с одной целью", ""]
         for rtype in sorted(by_type):
             ids = ", ".join(f"`{i}`" for i in sorted(by_type[rtype]))
             lines.append(f"- **{rtype}** ({len(by_type[rtype])}): {ids}")
         lines += [
             "",
-            "> Supporting models (data dictionary, ERD) are normally left unlinked — they "
-            "describe the solution rather than serve an objective directly.",
+            "> Вспомогательные модели (словарь данных, ERD) обычно оставляют без связи — "
+            "они описывают решение, а не служат цели напрямую.",
         ]
 
     if need_only_req_ids:
         ids = ", ".join(f"`{i}`" for i in sorted(need_only_req_ids))
         lines += [
             "",
-            f"> **Traced to a business need, not to an objective:** {ids}. "
-            f"This usually means 6.2 has not yet refined that need into objectives.",
+            f"> **Трассировано на бизнес-потребность, но не на цель:** {ids}. "
+            f"Обычно это значит, что 6.2 ещё не раскрыла эту потребность в цели.",
         ]
 
     lines += [
         "",
         "---",
         "",
-        "## Signals & recommendations",
+        "## Сигналы и рекомендации",
         "",
     ]
     if precise:
         uncovered = [f"`{gid}`" for gid, _ in goal_entries if not per_goal.get(gid)]
         if uncovered:
             lines.append(
-                f"- 🔴 **{len(uncovered)} objective(s) with no requirement:** "
-                f"{', '.join(uncovered)}. Either specify requirements for them, or "
-                f"link existing ones via the 7.1 creating tools / `add_trace_link` (5.1)."
+                f"- 🔴 **Целей без единого требования: {len(uncovered)}** — "
+                f"{', '.join(uncovered)}. Либо опишите для них требования, либо свяжите "
+                f"существующие через создающие инструменты 7.1 / `add_trace_link` (5.1)."
             )
         crowded = [f"`{gid}`" for gid, _ in goal_entries if len(per_goal.get(gid, [])) >= 10]
         if crowded:
             lines.append(
-                f"- 🟡 **Possible over-engineering:** {', '.join(crowded)} carry 10+ "
-                f"requirements each. Check for duplicates via `check_coverage` (5.1)."
+                f"- 🟡 **Возможно переусложнение:** на {', '.join(crowded)} приходится "
+                f"по 10+ требований. Проверьте на дубликаты через `check_coverage` (5.1)."
             )
     elif over_engineering:
         lines.append(
-            f"- 🟡 **Possible over-engineering / duplication:** {total_reqs} requirements for "
-            f"{num_goals} business objective(s) (avg {avg_per_goal:.1f} per objective). "
-            f"Check for duplicates via `check_coverage` (5.1)."
+            f"- 🟡 **Возможно переусложнение или дублирование:** {total_reqs} требований на "
+            f"{num_goals} {plural_ru(num_goals, 'бизнес-цель', 'бизнес-цели', 'бизнес-целей')} "
+            f"(в среднем {avg_per_goal:.1f} на цель). Проверьте на дубликаты через "
+            f"`check_coverage` (5.1)."
         )
     lines.append(
-        "- ✅ **Next:** confirm every objective is addressed, then run "
-        "verification (7.2) and validation (7.3)."
+        "- ✅ **Дальше:** убедитесь, что закрыта каждая цель, затем запускайте "
+        "верификацию (7.2) и валидацию (7.3)."
     )
     lines.append(
-        "- ℹ️ For full per-requirement traceability (sources, implementation, tests) run "
-        "`check_coverage` (5.1)."
+        "- ℹ️ Для полной трассировки по каждому требованию (источники, реализация, тесты) "
+        "запустите `check_coverage` (5.1)."
     )
 
     content = "\n".join(lines)

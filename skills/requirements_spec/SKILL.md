@@ -57,47 +57,48 @@ analyze_elicitation_context(
 **Каждый созданный артефакт автоматически регистрируется в репозитории 5.1**
 со статусом `draft`. Тебе не нужно вручную вызывать инструменты 5.1.
 
-**Link each requirement to the business objective it serves.** Every creating tool takes
-`business_goal_ids_json` — the IDs of the 6.2 objectives (`["BG-001", "BG-002"]`). This
-writes a `satisfies` link into the 5.1 graph, and it is what makes the coverage matrix in
-Step 4 precise instead of a checklist. Ask the BA which objective the requirement serves;
-never guess it from the wording. If the ID is unknown the tool warns and creates the
-requirement anyway — you can link it later with `add_trace_link` (5.1).
+**Связывай каждое требование с бизнес-целью, которой оно служит.** Каждый создающий
+инструмент принимает `business_goal_ids_json` — ID целей из 6.2 (`["BG-001", "BG-002"]`).
+Это пишет связь `satisfies` в граф 5.1 и именно это делает матрицу покрытия на шаге 4
+точной, а не чеклистом. Спроси у BA, какой цели служит требование; никогда не угадывай
+это по формулировке. Если ID неизвестен, инструмент предупредит и всё равно создаст
+требование — связать можно позже через `add_trace_link` (5.1).
 
-Supporting models (data dictionary, ERD) are usually left unlinked — they describe the
-solution rather than serve an objective directly.
+Вспомогательные модели (словарь данных, ERD) обычно оставляют без связи — они описывают
+решение, а не служат цели напрямую.
 
-How to choose the artifact type → see `references/modeling_guide.md`.
-Templates for each artifact → see `references/templates.md`.
+Как выбрать тип артефакта → см. `references/modeling_guide.md`.
+Шаблоны по каждому артефакту → см. `references/templates.md`.
 
 ### Шаг 3 — Диаграммы (по необходимости)
 - После создания Use Cases → вызови `generate_use_case_diagram` для сводной диаграммы
 - Business Process создаёт `.puml` файл Activity Diagram автоматически
 - ERD создаёт `.puml` файл автоматически
 
-### Step 4 — Coverage check
-At the end, call `build_coverage_matrix`. It reads the business objectives from 6.2
-(Define Future State: the `business_goal` nodes registered in the 5.1 graph, or
-`future_state_goals.json`) and reports, per objective, which requirements serve it.
+### Шаг 4 — Проверка покрытия
+В конце вызови `build_coverage_matrix`. Он читает бизнес-цели из 6.2 (Define Future State:
+узлы `business_goal`, зарегистрированные в графе 5.1, либо `future_state_goals.json`) и
+показывает по каждой цели, какие требования ей служат.
 
-**Precise coverage requires two things:**
-1. objectives defined in 6.2 `define_goals_and_objectives` — that is what puts them in the
-   graph as `business_goal` nodes with IDs;
-2. requirements linked to them — pass `business_goal_ids_json=["BG-001"]` when creating the
-   requirement (see Step 2), or link later with `add_trace_link` (5.1).
+**Точное покрытие требует двух вещей:**
+1. цели заданы через 6.2 `define_goals_and_objectives` — именно это кладёт их в граф как
+   узлы `business_goal` с ID;
+2. требования с ними связаны — передай `business_goal_ids_json=["BG-001"]` при создании
+   требования (см. шаг 2) либо свяжи позже через `add_trace_link` (5.1).
 
-Then the report shows:
-- 🔴 an objective no requirement serves
-- 🟢 normal coverage (1–9 requirements)
-- 🟡 10+ requirements on one objective — possible over-engineering, check for duplicates
-- requirements not linked to any objective, grouped by type
+Тогда отчёт покажет:
+- 🔴 цель, которой не служит ни одно требование
+- 🟢 нормальное покрытие (1–9 требований)
+- 🟡 10+ требований на одну цель — возможно переусложнение, проверь на дубликаты
+- требования, не связанные ни с одной целью, сгруппированные по типу
 
-**If the objectives have no IDs** (they came from `future_state_goals.json`, a legacy
-"Business objectives" section in the 4.3 artifact, or grouping by source), no per-objective
-claim is made at all: the objectives are shown as a checklist and the report says so. The
-tool never guesses which requirement serves which objective from their wording.
+**Если у целей нет ID** (они пришли из `future_state_goals.json`, из устаревшего раздела
+«Business objectives» артефакта 4.3 или из группировки по источнику), никакого утверждения
+по каждой цели не делается вовсе: цели показываются чеклистом, и отчёт об этом говорит.
+Инструмент никогда не угадывает по формулировкам, какое требование какой цели служит.
 
-For full per-requirement traceability (sources, implementation, tests) run `check_coverage` (5.1).
+Для полной трассировки по каждому требованию (источники, реализация, тесты) запусти
+`check_coverage` (5.1).
 
 ---
 
@@ -260,9 +261,8 @@ create_erd(
 
 ### `build_coverage_matrix`
 
-Reports which requirements serve which business objective. Objectives come from the 6.2
-`business_goal` nodes in the 5.1 graph (or `future_state_goals.json`); requirements come from
-the 5.1 registry.
+Показывает, какие требования служат какой бизнес-цели. Цели берутся из узлов
+`business_goal` в графе 5.1 (либо из `future_state_goals.json`), требования — из реестра 5.1.
 
 ```
 build_coverage_matrix(
@@ -270,24 +270,24 @@ build_coverage_matrix(
 )
 ```
 
-**Signals (when the objectives are graph nodes):**
-- 🔴 objective with no requirement serving it
+**Сигналы (когда цели — узлы графа):**
+- 🔴 цель, которой не служит ни одно требование
 - 🟢 1–9 requirements
-- 🟡 10+ requirements on one objective — possible over-engineering, check for duplicates
-- requirements not linked to any objective, grouped by type
-- requirements traced to a business need but not to an objective — usually a need 6.2 has
-  not refined into objectives yet
+- 🟡 10+ требований на одну цель — возможно переусложнение, проверь на дубликаты
+- требования, не связанные ни с одной целью, сгруппированные по типу
+- требования, трассированные на бизнес-потребность, но не на цель — обычно это
+  потребность, которую 6.2 ещё не раскрыла в цели
 
-Coverage is computed by traversing the `satisfies` links the analyst declares (`derives`
-links to an objective count too). **Nothing is inferred from wording** — an objective is
-covered only when a requirement is actually linked to its node.
+Покрытие считается обходом связей `satisfies`, которые заявил аналитик (связи `derives`
+на цель тоже засчитываются). **Из формулировок ничего не выводится** — цель считается
+покрытой только тогда, когда требование действительно связано с её узлом.
 
-**Without objective IDs** (objectives from `future_state_goals.json`, a legacy "Business
-objectives" section in the 4.3 artifact, or grouping by requirement source), no per-objective
-claim is made: the objectives are listed as a checklist and the report states why.
+**Без ID у целей** (цели из `future_state_goals.json`, из устаревшего раздела «Business
+objectives» артефакта 4.3 или из группировки по источнику требований) утверждений по каждой
+цели не делается: цели перечисляются чеклистом, и отчёт объясняет почему.
 
-Nodes other chapters keep in the same graph — `change_request` (5.4), `risk` (6.3),
-`solution` (6.4), `test` (5.1) — are not counted as requirements here.
+Узлы, которые держат в том же графе другие главы — `change_request` (5.4), `risk` (6.3),
+`solution` (6.4), `test` (5.1) — здесь требованиями не считаются.
 
 ---
 

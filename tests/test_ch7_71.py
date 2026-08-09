@@ -1024,7 +1024,7 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         dep_row = [ln for ln in result.split("\n") if "FR-DEP" in ln and ln.startswith("|")]
         self.assertTrue(dep_row)
         self.assertIn("в архиве", dep_row[0].lower(), "it is shown but not marked")
-        self.assertIn("| — of them archived (5.2) | 1 |", result)
+        self.assertIn("| — из них в архиве (5.2) | 1 |", result)
 
         # ...and the objective it used to serve is NOT covered by it.
         goal_row = [ln for ln in result.split("\n")
@@ -1106,7 +1106,7 @@ class TestBuildCoverageMatrix(BaseMCPTest):
         objective↔requirement PAIRS, and a requirement may serve several."""
         result = self._matrix_with_goals([3, 3, 2])
         rows = result.split("\n")
-        avg_line = [ln for ln in rows if "Avg requirements per objective" in ln][0]
+        avg_line = [ln for ln in rows if "Требований на цель в среднем" in ln][0]
         counts = [int(ln.split("|")[3].strip()) for ln in rows
                   if ln.startswith("| 🟢") or ln.startswith("| 🟡") or ln.startswith("| 🔴")]
         expected = sum(counts) / len(counts) if counts else 0
@@ -1294,7 +1294,7 @@ class TestConfirmedArtifactRealLayout(BaseMCPTest):
     def test_analyze_finds_real_producer_artifact(self):
         make_confirmed_artifact_reports(self.P)
         result = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("File found", result)
+        self.assertIn("Файл найден", result)
         self.assertNotIn("not found", result.split("##")[0])
 
 
@@ -1367,7 +1367,7 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
         result = mod71.build_coverage_matrix(self.P)
         # appears as an objective row, not as a requirement row
         self.assertIn("`BG-001` Cut processing time to 2 days", result)
-        self.assertIn("6.2 goals registered in the 5.1 graph", result)
+        self.assertIn("целей 6.2, зарегистрированных в графе 5.1", result)
 
     def test_business_goal_node_not_counted_as_requirement(self):
         """A business_goal node is an objective, not a spec requirement — it must not inflate
@@ -1379,7 +1379,7 @@ class TestCoverageMatrixHybrid(BaseMCPTest):
              "version": "1.0", "status": "draft", "added": str(date.today()), "source_artifact": ""},
         ]))
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("| Requirements in the registry | 1 |", result)
+        self.assertIn("| Требований в реестре | 1 |", result)
 
     def test_goals_read_from_future_state_goals_file(self):
         """If goals are not in the graph (register_in_traceability=False) but the 6.2 file
@@ -1652,9 +1652,9 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
     def _coverage_table(self, result):
         """Rows of the per-objective table only. The flag legend below it mentions every
         symbol by design, so scanning the whole document would never detect a false flag."""
-        if "## Coverage by business objective" not in result:
+        if "## Покрытие по бизнес-целям" not in result:
             return ""
-        return result.split("## Coverage by business objective", 1)[1].split("\n\n>", 1)[0]
+        return result.split("## Покрытие по бизнес-целям", 1)[1].split("\n\n>", 1)[0]
 
     def test_covered_objective_is_not_flagged_red(self):
         """Both objectives covered -> no red row."""
@@ -1674,7 +1674,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
     def test_requirement_without_any_objective_is_listed_unattached(self):
         self._save([self._edge("FR-001", "BG-001")])
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("not linked to any objective", result.lower())
+        self.assertIn("не связанные ни с одной целью", result.lower())
         self.assertIn("FR-002", result)
 
     def test_need_only_link_is_not_called_unattached(self):
@@ -1682,7 +1682,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         need into objectives yet."""
         self._save([self._edge("FR-002", "BN-001")])
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("business need", result.lower())
+        self.assertIn("бизнес-потребность", result.lower())
 
     def test_no_text_similarity_matching(self):
         """Titles deliberately identical, but with no edge the objective stays
@@ -1699,7 +1699,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         """Roots must not inflate the requirement count (finding 7.1-C)."""
         self._save([self._edge("FR-001", "BG-001")])
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("| Requirements in the registry | 3 |", result)
+        self.assertIn("| Требований в реестре | 3 |", result)
 
     def test_degraded_mode_when_objectives_have_no_ids(self):
         """No business_goal nodes -> objectives come from an id-less source ->
@@ -1722,7 +1722,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
              "source_artifact": "governance_plans/reports/matrix_precise/4_3_x.md"},
         ]))
         result = mod71.build_coverage_matrix(self.P)
-        self.assertNotIn("not linked to any objective", result.lower())
+        self.assertNotIn("не связанные ни с одной целью", result.lower())
 
     def test_precise_mode_is_announced(self):
         self._save([self._edge("FR-001", "BG-001")])
@@ -1753,7 +1753,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         self._save([self._edge("FR-001", "BG-001")], nodes=nodes)
         result = mod71.build_coverage_matrix(self.P)
         # unchanged count: FR-001, FR-002, DD-001 only
-        self.assertIn("| Requirements in the registry | 3 |", result)
+        self.assertIn("| Требований в реестре | 3 |", result)
         for foreign in ("CR-001", "RK-001", "TC-001"):
             self.assertNotIn(foreign, result)
 
@@ -1776,7 +1776,7 @@ class TestCoverageMatrixPrecise(BaseMCPTest):
         ]
         self._save([], nodes=nodes)
         result = mod71.build_coverage_matrix(self.P)
-        self.assertIn("| Requirements in the registry | 1 |", result)
+        self.assertIn("| Требований в реестре | 1 |", result)
         self.assertIn("FR-900", result)
 
 
@@ -1874,7 +1874,7 @@ class TestTheNotFoundMessageDescribesTheSearchThatRan(BaseMCPTest):
 
     def test_following_the_named_pattern_produces_a_file_the_tool_finds(self):
         out = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("not found", out)
+        self.assertIn("не найден", out)
 
         pattern = self._named_pattern(out)
         concrete = os.path.join(PROJECT_ROOT_TMP(), pattern.replace("*", "probe"))
@@ -1883,7 +1883,7 @@ class TestTheNotFoundMessageDescribesTheSearchThatRan(BaseMCPTest):
             f.write("# 4.3 confirmed result\n\nBusiness objective: cut handling time.\n")
 
         out2 = mod71.analyze_elicitation_context(self.P)
-        self.assertIn("File found", out2,
+        self.assertIn("Файл найден", out2,
                       f"the analyst followed the message and put the file at "
                       f"{concrete}; the tool still does not see it")
 
