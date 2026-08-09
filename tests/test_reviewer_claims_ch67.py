@@ -162,7 +162,7 @@ class TestProjectWideRiskPenaltyIsLabelled(BaseMCPTest):
                 {"component": "Build", "cost_items": [
                     {"category": "development", "description": "Engineering",
                      "magnitude": "Medium"}]}]}))
-        self.assertIn("project-wide", out.lower())
+        self.assertIn("по проекту целиком", out.lower())
 
     def test_the_comparison_says_the_penalty_does_not_differentiate(self):
         self._setup_project_risks()
@@ -178,7 +178,7 @@ class TestProjectWideRiskPenaltyIsLabelled(BaseMCPTest):
                         {"category": "development", "description": "Engineering",
                          "magnitude": "Medium"}]}]}))
         out = t76.compare_value(PID)
-        self.assertIn("does not differentiate", out.lower())
+        self.assertIn("не различает", out.lower())
 
 
 if __name__ == "__main__":

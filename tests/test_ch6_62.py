@@ -541,7 +541,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
 
     def test_goal_no_repo_warning(self):
         r = _goal(register=True)
-        self.assertIn("does not exist yet", r.lower())
+        self.assertIn("ещё нет", r.lower())
 
     def test_the_warning_promises_only_what_the_platform_does(self):
         """G-1. The message used to say that creating the repository would add this
@@ -550,7 +550,7 @@ class TestDefineGoalsAndObjectives(BaseMCPTest):
         nothing said so. 6.2 did not even offer the manual route 6.1 mentioned."""
         r = _goal(register=True)
         self.assertNotIn("will then be added automatically", r)
-        self.assertIn("not be added retroactively", r)
+        self.assertIn("задним числом добавлена", r)
         self.assertIn("requirements_json", r, "no route that actually works was named")
 
     def test_goal_register_false_no_repo_needed(self):
@@ -909,7 +909,7 @@ class TestTheDocumentAgreesWithTheGraph(BaseMCPTest):
         doc = self._rebuild()
         self.assertIn("Make the application visible to the customer", doc,
                        "6.2 redrew its own stale copy as if nothing had happened")
-        self.assertIn("differs", doc.lower())
+        self.assertIn("отличается", doc.lower())
 
     def test_a_superseded_need_is_not_offered_as_a_live_justification(self):
         import skills.future_state_mcp as mod

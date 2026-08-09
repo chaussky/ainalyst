@@ -67,14 +67,14 @@ def _seed_registry_from_plan(project_name: str, stakeholders: list) -> str:
         )
     except Exception as e:  # noqa: BLE001 — never let the plan fail on this
         logger.warning(f"4.1 could not update the stakeholder registry: {e}")
-        return ("\n⚠️ Stakeholder registry not updated — "
-                "the elicitation plan is saved.")
+        return ("\n⚠️ Реестр стейкхолдеров не обновлён — "
+                "план выявления сохранён.")
 
     added, updated = len(result.get("added", [])), len(result.get("updated", []))
     if not (added or updated):
         return ""
-    return (f"\n📇 Stakeholder registry: +{added} new, {updated} updated "
-            f"(the same registry 4.2 maintains and 7.4 reads).")
+    return (f"\n📇 Реестр стейкхолдеров: +{added} новых, обновлено {updated} "
+            f"(тот же реестр, который ведёт 4.2 и читает 7.4).")
 
 
 # 3.1 records techniques for the WHOLE practice (BABOK ch. 10), and only four of them
@@ -105,18 +105,18 @@ def _planned_context(project_name: str, technique: str) -> tuple:
     if period:
         detail = [f"**{period['name']}**"]
         if period["effort"]:
-            detail.append(f"planned effort: {period['effort']}")
+            detail.append(f"плановая трудоёмкость: {period['effort']}")
         if period["when"]:
             detail.append(period["when"])
-        lines.append(f"- **Planned work period (BABOK 3.1, element .3/.4):** "
+        lines.append(f"- **Запланированный период работ (BABOK 3.1, элемент .3/.4):** "
                      f"{' — '.join(detail)}")
         # 3.1b marks a machine-made skeleton, and the BA plan report says so. Repeating
         # the period here without that mark would state an invented name and effort as
         # something someone planned.
         if activities_section(plan).get("generated"):
             lines.append(
-                "  ℹ️ That period was generated from the chosen approach, not planned "
-                "by hand — edit it via `plan_ba_activities` if it does not fit.")
+                "  ℹ️ Этот период сгенерирован из выбранного подхода, а не запланирован "
+                "вручную — если он не подходит, поправьте его через `plan_ba_activities`.")
 
     approach = plan.get("ba_approach")
     raw_techniques = approach.get("techniques") if isinstance(approach, dict) else None
@@ -130,9 +130,9 @@ def _planned_context(project_name: str, technique: str) -> tuple:
                 planned.append(mapped)
         if not planned:
             lines.append(
-                f"- ℹ️ The 3.1 plan recommends no elicitation techniques "
-                f"({', '.join(techniques)}), so there is nothing to cross-check "
-                f"against `{technique}`.")
+                f"- ℹ️ План 3.1 не рекомендует ни одной техники выявления "
+                f"({', '.join(techniques)}), поэтому сверять `{technique}` "
+                f"не с чем.")
         elif technique in planned:
             lines.append(
                 f"- ✅ `{technique}` is among the techniques 3.1 recommended "
@@ -227,7 +227,7 @@ def save_elicitation_plan(
 
 ---
 
-{planned_block}## Elicitation Goals
+{planned_block}## Цели выявления
 
 {goals}
 
@@ -261,7 +261,7 @@ def save_elicitation_plan(
     # 7.1 consumer into globbing for a pid that the filename never carries).
     suffix = save_artifact(content, "4_1_elicitation_plan", project_id=project_name)
     registry_note = _seed_registry_from_plan(project_name, stakeholders)
-    return f"✅ Elicitation plan saved.{suffix}{registry_note}" + (
+    return f"✅ План выявления сохранён.{suffix}{registry_note}" + (
         f"\n{plan_note}" if plan_note else "")
 
 

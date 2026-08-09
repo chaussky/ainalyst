@@ -468,7 +468,7 @@ class TestUpdateStakeholderRegistry(BaseMCPTest):
             [{"name": "Dave Ruiz", "role": "Backend Developer"}]))
         _result, md = self._call_capture(new_stakeholders_json=json.dumps(
             [{"name": "Erin Park", "role": "Backend Developer"}]))
-        self.assertIn("Possibly the same person", md)
+        self.assertIn("Возможно, это тот же человек", md)
         self.assertIn("Dave Ruiz", md)
 
 

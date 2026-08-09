@@ -184,7 +184,7 @@ class TestCommunicationScheduleVocabularies(unittest.TestCase):
         doc = self._run([{"role": "Subjects rep", "influence": "Medium",
                           "comm_frequency": "Monthly",
                           "last_communication_date": "01.01.2026"}])
-        self.assertNotIn("All Communications Are on Track", doc)
+        self.assertNotIn("Все коммуникации идут по плану", doc)
         self.assertIn("Subjects rep", doc)
 
     def test_at_milestones_matches_at_milestone(self):
@@ -195,7 +195,7 @@ class TestCommunicationScheduleVocabularies(unittest.TestCase):
     def test_an_unknown_cadence_does_not_produce_a_clean_bill_of_health(self):
         doc = self._run([{"role": "Sponsor", "influence": "High",
                           "comm_frequency": "Whenever he asks"}])
-        self.assertNotIn("All Communications Are on Track", doc)
+        self.assertNotIn("Все коммуникации идут по плану", doc)
         self.assertIn("Whenever he asks", doc)
 
     def test_a_logged_communication_is_matched_by_the_audience_archetype(self):
@@ -204,7 +204,7 @@ class TestCommunicationScheduleVocabularies(unittest.TestCase):
               "comm_frequency": "Weekly"}],
             log=json.dumps([{"audience_role": "Business Sponsor",
                              "communication_date": "09.08.2026"}]))
-        self.assertNotIn("No communication on record yet", doc)
+        self.assertNotIn("Коммуникаций пока не записано", doc)
 
     def test_a_logged_communication_is_matched_by_name(self):
         doc = self._run(
@@ -212,4 +212,4 @@ class TestCommunicationScheduleVocabularies(unittest.TestCase):
               "influence": "High", "comm_frequency": "Weekly"}],
             log=json.dumps([{"audience_role": "Marina Volkova",
                              "communication_date": "09.08.2026"}]))
-        self.assertNotIn("No communication on record yet", doc)
+        self.assertNotIn("Коммуникаций пока не записано", doc)

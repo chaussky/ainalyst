@@ -90,11 +90,11 @@ def _record_engagement_in_registry(project_name: str, stakeholder_role: str,
     if len(matches) > 1:
         # Guessing would attach an observation about one person to another's record.
         names = ", ".join(f"`{s.get('name')}`" for s in matches)
-        return (f"\n⚠️ Stakeholder registry NOT updated — more than one person holds "
-                f"the role `{stakeholder_role}`: {names}.\n"
-                f"   Record the change against the individual via "
-                f"`update_stakeholder_registry` (4.2) so it lands on the right person. "
-                f"The engagement record itself is saved.")
+        return (f"\n⚠️ Реестр стейкхолдеров НЕ обновлён — роль `{stakeholder_role}` "
+                f"занимает больше одного человека: {names}.\n"
+                f"   Запишите изменение на конкретного человека через "
+                f"`update_stakeholder_registry` (4.2), чтобы оно попало на нужного. "
+                f"Сама запись о вовлечении сохранена.")
 
     incoming = {"role": stakeholder_role,
                 "attitude": attitude_after,
@@ -111,14 +111,14 @@ def _record_engagement_in_registry(project_name: str, stakeholder_role: str,
         )
     except Exception as e:  # noqa: BLE001 — never let the engagement record fail on this
         logger.warning(f"4.5 could not update the stakeholder registry: {e}")
-        return ("\n⚠️ Stakeholder registry not updated — "
-                "the engagement record is saved.")
+        return ("\n⚠️ Реестр стейкхолдеров не обновлён — "
+                "запись о вовлечении сохранена.")
 
     added = len(result.get("added", []))
-    verb = "added to" if added else "updated in"
-    return (f"\n📇 `{stakeholder_role}` {verb} the stakeholder registry: "
-            f"attitude → {attitude_after}, engagement → {engagement_level_after} "
-            f"(the registry 7.4 reads).")
+    verb = "добавлен в" if added else "обновлён в"
+    return (f"\n📇 `{stakeholder_role}` {verb} реестре стейкхолдеров: "
+            f"отношение → {attitude_after}, вовлечённость → {engagement_level_after} "
+            f"(тот самый реестр, который читает 7.4).")
 
 
 

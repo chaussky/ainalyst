@@ -1218,7 +1218,7 @@ class TestResolveArtifact(BaseMCPTest):
         self.assertIsNone(path)
         self.assertIn("❌", message)
         self.assertIn(self.PID, message)
-        self.assertIn("irreversible", message.lower())
+        self.assertIn("необратим", message.lower())
 
     def test_legacy_flat_report_gets_an_accurate_refusal(self):
         """A pre-layout artifact in the flat reports/ folder really IS this project's

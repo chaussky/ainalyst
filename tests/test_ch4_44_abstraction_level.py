@@ -63,7 +63,7 @@ class TestPlannedDetailLevel(BaseMCPTest):
         _write_plan(PROJECT, [{"audience": "Business Sponsor", "level": "Summary",
                                "note": "value and risks only"}])
         _, artefact = _package()
-        self.assertIn("Level of detail (planned in 3.4)", artefact)
+        self.assertIn("Уровень детализации (запланирован в 3.4)", artefact)
         self.assertIn("Summary", artefact)
         self.assertIn("value and risks only", artefact)
 
@@ -73,28 +73,28 @@ class TestPlannedDetailLevel(BaseMCPTest):
         checklist has to live in the artefact."""
         _write_plan(PROJECT, [{"audience": "Business Sponsor", "level": "Summary"}])
         _, artefact = _package()
-        self.assertIn("Include:", artefact)
-        self.assertIn("Leave out:", artefact)
-        self.assertIn("requirement IDs", artefact)   # the Summary "leave out" list
+        self.assertIn("Включить:", artefact)
+        self.assertIn("Оставить за скобками:", artefact)
+        self.assertIn("ID требований", artefact)   # the Summary "leave out" list
 
     def test_job_title_row_matches_when_the_archetype_does_not(self):
         _write_plan(PROJECT, [{"audience": "Head of Retail Lending", "level": "Detailed"}])
         _, artefact = _package(audience="Manager")
-        self.assertIn("**Level of detail (planned in 3.4):** Detailed", artefact)
+        self.assertIn("**Уровень детализации (запланирован в 3.4):** Detailed", artefact)
 
     def test_archetype_row_matches_case_insensitively(self):
         """The writer accepts any casing, so the reader must too — otherwise the join
         fails on exactly the input the writer told the BA was fine."""
         _write_plan(PROJECT, [{"audience": "business sponsor", "level": "Detailed"}])
         _, artefact = _package(audience="Business Sponsor")
-        self.assertIn("Level of detail (planned in 3.4)", artefact)
+        self.assertIn("Уровень детализации (запланирован в 3.4)", artefact)
 
     def test_audience_absent_from_the_plan_is_flagged_in_the_return(self):
         _write_plan(PROJECT, [{"audience": "Developer", "level": "Detailed"}])
         result, artefact = _package(audience="Tester")
         self.assertIn("⚠️", result)
         self.assertIn("Developer", result)      # the planned audiences are listed
-        self.assertNotIn("Level of detail (planned in 3.4)", artefact)
+        self.assertNotIn("Уровень детализации (запланирован в 3.4)", artefact)
 
     def test_an_empty_plan_section_does_not_nag(self):
         """A project that planned storage but no detail levels has made no decision
@@ -123,7 +123,7 @@ class TestPlannedDetailLevel(BaseMCPTest):
                 result, artefact = _package()
                 self.assertIn("✅", result)
                 self.assertNotIn("None", artefact.split("## Audience Profile")[0])
-                self.assertNotIn("Level of detail (planned in 3.4)", artefact)
+                self.assertNotIn("Уровень детализации (запланирован в 3.4)", artefact)
 
     def test_corrupt_plan_does_not_kill_the_tool(self):
         path = ba_plan_path(PROJECT)

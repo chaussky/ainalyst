@@ -542,8 +542,8 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
                 triggered_events_json=json.dumps([]),
             )
             content = mock_sa.call_args.args[0]
-        self.assertNotIn("All Communications Are on Track", content)
-        self.assertIn("no communication cadence", content)
+        self.assertNotIn("Все коммуникации идут по плану", content)
+        self.assertIn("без записанной частоты коммуникаций", content)
         self.assertIn("Claims Adjuster", content)
         self.assertIn("Actuary", content)
 
@@ -564,8 +564,8 @@ class TestCheckCommunicationSchedule(BaseMCPTest):
                 triggered_events_json=json.dumps([]),
             )
             content = mock_sa.call_args.args[0]
-        self.assertIn("All Communications Are on Track", content)
-        self.assertNotIn("no communication cadence", content)
+        self.assertIn("Все коммуникации идут по плану", content)
+        self.assertNotIn("без записанной частоты коммуникаций", content)
 
 
 if __name__ == "__main__":

@@ -428,16 +428,16 @@ def _artifact_listing(project_id: str) -> str:
     is ambiguous between 'the thing is absent' and 'we looked in the wrong place'.
     """
     roots = _artifact_roots(project_id)
-    scope = ", ".join(f"`{r}`" for r in roots) if roots else "(no project directories exist yet)"
-    lines = [f"**Searched in:** {scope}", ""]
+    scope = ", ".join(f"`{r}`" for r in roots) if roots else "(папок проекта пока нет)"
+    lines = [f"**Искали в:** {scope}", ""]
     artifacts = _list_artifacts(project_id)
     if not artifacts:
-        lines.append(f"No .md artifacts found for project `{project_id}`.")
+        lines.append(f"Артефактов .md для проекта `{project_id}` не найдено.")
         return "\n".join(lines)
-    lines += ["**Available artifacts (newest first):**", ""]
+    lines += ["**Доступные артефакты (новые сверху):**", ""]
     for path in artifacts:
         lines.append(f"- `{os.path.basename(path)}`")
-    lines += ["", "Pass one of these, or its prefix, as `artifact`."]
+    lines += ["", "Передайте один из них — или его префикс — в `artifact`."]
     return "\n".join(lines)
 
 
@@ -451,7 +451,7 @@ def _resolve_artifact(project_id: str, selector: str):
 
     if not selector:
         return None, (
-            f"ℹ️ Specify which artifact to publish (`artifact`).\n\n"
+            f"ℹ️ Укажите, какой артефакт публиковать (`artifact`).\n\n"
             + _artifact_listing(project_id)
         )
 
@@ -471,7 +471,7 @@ def _resolve_artifact(project_id: str, selector: str):
             except ValueError:
                 continue  # different drives on Windows
         if not inside:
-            allowed = ", ".join(f"`{r}`" for r in roots) if roots else "(none exist yet)"
+            allowed = ", ".join(f"`{r}`" for r in roots) if roots else "(пока не существует ни одной)"
             # A file sitting directly in reports/ carries no project id at all, so it
             # cannot be attributed to a project. The flat directory is deliberately NOT
             # a root: it is not scoped to a project and allowing it would expose every
@@ -479,24 +479,24 @@ def _resolve_artifact(project_id: str, selector: str):
             legacy_hint = ""
             if os.path.dirname(real) == os.path.realpath(REPORTS_DIR):
                 legacy_hint = (
-                    "\n\nThis file sits directly in `reports/`, which belongs to no "
-                    "project. Move it into `reports/<project_id>/` — the folder is what "
-                    "says whose document it is — then publish it."
+                    "\n\nЭтот файл лежит прямо в `reports/`, а эта папка не принадлежит "
+                    "ни одному проекту. Перенесите его в `reports/<project_id>/` — именно "
+                    "папка говорит, чей это документ, — и публикуйте."
                 )
             return None, (
-                f"❌ `{selector}` is not in this project's directories.\n"
-                f"Publishing is irreversible, so only these are allowed: {allowed}"
+                f"❌ `{selector}` не лежит в папках этого проекта.\n"
+                f"Публикация необратима, поэтому разрешены только эти: {allowed}"
                 f"{legacy_hint}"
             )
         if not real.lower().endswith(".md"):
             # Diagram sources and data files are not documents: they would render as
             # noise, and the extension leaks into the derived page title.
             return None, (
-                f"❌ `{os.path.basename(real)}` is not a Markdown document. "
-                f"Only `.md` artifacts are publishable — a `.puml` is diagram source, "
-                f"and its rendered diagram belongs in the document that references it."
+                f"❌ `{os.path.basename(real)}` — не Markdown-документ. "
+                f"Публиковать можно только артефакты `.md`: `.puml` — это исходник "
+                f"диаграммы, а её отрисовка живёт в документе, который на неё ссылается."
             )
-        return real, f"Publishing `{os.path.basename(real)}` (explicit path)."
+        return real, f"Публикую `{os.path.basename(real)}` (явный путь)."
 
     # Otherwise a filename prefix, case-insensitive.
     needle = selector.lower()
@@ -505,7 +505,7 @@ def _resolve_artifact(project_id: str, selector: str):
 
     if not matches:
         return None, (
-            f"❌ Nothing matches `{selector}` in project `{project_id}`.\n\n"
+            f"❌ В проекте `{project_id}` ничего не подходит под `{selector}`.\n\n"
             + _artifact_listing(project_id)
         )
 
@@ -580,9 +580,9 @@ def push_to_confluence(
         if existing:
             if not update_if_exists:
                 return (
-                    f"⚠️ Page '{page_title}' already exists.\n"
+                    f"⚠️ Страница '{page_title}' уже существует.\n"
                     f"URL: {_page_url(existing)}\n"
-                    f"Use update_if_exists=True to update it."
+                    f"Чтобы обновить её, передайте update_if_exists=True."
                 )
             result = confluence.update_page(
                 page_id=existing["id"],
@@ -939,18 +939,18 @@ def publish_artifact_to_confluence(
         # below and left the tool as a protocol error. Reachable: a file a person
         # dropped into reports/, or the RU fork where the console default is cp1251.
         return (
-            f"❌ `{path}` is not valid UTF-8 ({e.reason} at byte {e.start}). "
-            f"Re-save the file as UTF-8 and publish again."
+            f"❌ `{path}` — не корректный UTF-8 ({e.reason} на байте {e.start}). "
+            f"Пересохраните файл в UTF-8 и опубликуйте снова."
         )
     except OSError as e:
-        return f"❌ Could not read `{path}`: {e}"
+        return f"❌ Не удалось прочитать `{path}`: {e}"
 
     if not content.strip():
         # Publication is irreversible and this would blank an existing wiki page while
         # reporting success — the same reasoning that justifies the containment check.
         return (
-            f"❌ `{path}` is empty — nothing to publish. Publishing it would replace "
-            f"the existing page with a blank one."
+            f"❌ `{path}` пуст — публиковать нечего. Публикация заменила бы "
+            f"существующую страницу пустой."
         )
 
     title = page_title or _derive_page_title(project_id, path)
@@ -966,10 +966,10 @@ def publish_artifact_to_confluence(
         # INT-D: the reason lives in `message` — surface it, never a bare failure.
         # The note reads "Publishing <file>." — appending it after a failure suggested
         # the publication had gone ahead. State what was attempted, in the past tense.
-        reason = result.get("message") or "unknown error"
+        reason = result.get("message") or "неизвестная ошибка"
         return (
-            f"❌ Publication failed: {reason}\n\n"
-            f"**Nothing was published.** Attempted: `{path}` → page **{title}**."
+            f"❌ Публикация не удалась: {reason}\n\n"
+            f"**Ничего не опубликовано.** Пытались: `{path}` → страница **{title}**."
         )
 
     return (
@@ -1022,8 +1022,8 @@ def export_artifact_to_confluence(
                 # the BA the page is filed where they asked. `push_to_confluence`
                 # refuses the same input; the two publish paths must agree.
                 return {"status": "error", "message":
-                        f"Parent page '{parent_page_title}' not found in space "
-                        f"'{space}'. Check the title, or publish without a parent."}
+                        f"Родительская страница '{parent_page_title}' не найдена в "
+                        f"пространстве '{space}'. Проверьте заголовок или публикуйте без родителя."}
 
         # The response shape is not uniform — a search hit wraps the page under
         # `content` on one endpoint and returns it flat on another. Indexing ["id"]
@@ -1049,8 +1049,8 @@ def export_artifact_to_confluence(
             # send the BA to a page that does not exist. Same guard push_to_confluence
             # already applies.
             return {"status": "error", "message":
-                    "Confluence returned an empty response. Check permissions on space "
-                    f"'{space}' and that the account may create or edit pages."}
+                    "Confluence вернул пустой ответ. Проверьте права на пространство "
+                    f"'{space}' и то, что учётной записи разрешено создавать и править страницы."}
 
         # `operation` tells the caller whether a living page was overwritten.
         # Additive and inert for existing consumers: _export_hook and its four call

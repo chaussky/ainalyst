@@ -696,11 +696,11 @@ def define_goals_and_objectives(
             # is a side effect of THIS call, and 6.2 did not even name the manual route
             # 6.1 offered — it left the analyst with nothing that works.
             traceability_status = (
-                f"\n\n⚠️ The 5.1 traceability repository does not exist yet, so "
-                f"`{goal_id}` was NOT registered in it. Goals recorded from now on will "
-                f"be registered as they are created — this one will not be added "
-                f"retroactively.\n"
-                f"To put it in the graph, create the repository WITH it:\n"
+                f"\n\n⚠️ Репозитория трассировки 5.1 ещё нет, поэтому "
+                f"`{goal_id}` в нём НЕ зарегистрирована. Цели, записанные дальше, будут "
+                f"регистрироваться по мере создания — эта задним числом добавлена "
+                f"не будет.\n"
+                f"Чтобы поместить её в граф, создайте репозиторий СРАЗУ с ней:\n"
                 f"`init_traceability_repo(project_name='{project_id}', "
                 f"formality_level='Standard', requirements_json='[{{\"id\": \"{goal_id}\", "
                 f"\"type\": \"business_goal\", \"title\": \"...\", \"version\": \"1.0\", "
@@ -748,7 +748,7 @@ def define_goals_and_objectives(
                 linked_bns = [bn for bn in bn_list if bn not in skipped_bns]
                 trace_chain = (" → ".join(linked_bns) + f" → {goal_id}") if linked_bns else goal_id
                 traceability_status = (
-                    f"\n\n✅ Node `{goal_id}` (business_goal) registered in the 5.1 repository."
+                    f"\n\n✅ Узел `{goal_id}` (business_goal) зарегистрирован в репозитории 5.1."
                     + (f"\n   Traceability: {trace_chain}" if linked_bns else "")
                 )
                 # Naming the skipped ids is the point. Silently dropping the link would
@@ -756,10 +756,10 @@ def define_goals_and_objectives(
                 # on believing the objective is traced to its need.
                 if skipped_bns:
                     traceability_status += (
-                        f"\n   ⚠️ No link written to {', '.join(f'`{b}`' for b in skipped_bns)}"
-                        f" — not present in the 5.1 repository."
-                        f"\n   Register the business need first (6.1 `define_business_needs`),"
-                        f" then re-run this tool, or check the id for a typo."
+                        f"\n   ⚠️ Связь не записана с {', '.join(f'`{b}`' for b in skipped_bns)}"
+                        f" — их нет в репозитории 5.1."
+                        f"\n   Сначала зарегистрируйте бизнес-потребность (6.1 `define_business_needs`)"
+                        f" и повторите вызов — или проверьте id на опечатку."
                     )
             else:
                 traceability_status = f"\n\nℹ️ Узел `{goal_id}` уже существует в репозитории 5.1."
@@ -1604,10 +1604,10 @@ def save_future_state(
                 if graph_title and graph_title != goal["goal_title"].strip():
                     shown_title = graph_title
                     divergence = (
-                        f"\n> ⚠️ The title here differs from the one 6.2 recorded "
-                        f"(`{goal['goal_title']}`). The 5.1 graph is shown, since that "
-                        f"is where 5.2 writes; re-run `define_goals_and_objectives` to "
-                        f"settle the two.")
+                        f"\n> ⚠️ Заголовок здесь отличается от записанного в 6.2 "
+                        f"(`{goal['goal_title']}`). Показан граф 5.1 — именно туда пишет "
+                        f"5.2; чтобы согласовать оба, вызовите `define_goals_and_objectives` "
+                        f"заново.")
                 if is_archived(node):
                     smart_mark = f"📦 archived in 5.2 — {node.get('status')}"
             report_lines += [
@@ -1731,8 +1731,8 @@ def save_future_state(
             f"Данные 6.2 подготовлены для передачи в `set_business_context` (7.3).\n"
             f"Вызовите: `set_business_context(project_id='{project_id}', "
             f"from_strategy_project_id='{project_id}', ...)`\n"
-            f"The `from_strategy_project_id` parameter will pre-fill business goals from {len(goals_list)} BG goals.\n"
-            f"(a single parameter for 6.1 + 6.2 data)"
+            f"Параметр `from_strategy_project_id` предзаполнит бизнес-цели из {len(goals_list)} BG-целей.\n"
+            f"(один параметр сразу для данных 6.1 и 6.2)"
         )
 
     result_lines = [
@@ -1774,11 +1774,11 @@ def save_future_state(
         "",
         "---",
         "",
-        "**Next steps:**",
-        "- Use `{project}_gap_analysis.json` in task **6.4** (Define Change Strategy)",
-        "- Call `set_business_context` in task **7.3** with `from_strategy_project_id`",
-        "- Business goals (BG-xxx) are available in the 5.1 repository for requirements traceability",
-        "- Potential value feeds 6.3 `generate_recommendation` (read automatically)",
+        "**Следующие шаги:**",
+        "- Используйте `{project}_gap_analysis.json` в задаче **6.4** (Define Change Strategy)",
+        "- Вызовите `set_business_context` в задаче **7.3** с `from_strategy_project_id`",
+        "- Бизнес-цели (BG-xxx) доступны в репозитории 5.1 для трассировки требований",
+        "- Потенциальная ценность попадает в 6.3 `generate_recommendation` (читается автоматически)",
     ]
 
     return "\n".join(result_lines)

@@ -26,12 +26,12 @@ mcp = FastMCP("BABOK_Communicate")
 # A bare label with no consequence is the "declared but dead" class; this turns the
 # planning decision into an instruction the BA can follow while adapting the content.
 _LEVEL_GUIDANCE = {
-    "Summary": ("conclusions, business value, the decision being asked for",
-                "requirement IDs, NFR wording, model internals"),
-    "Standard": ("requirements as a list with priorities, key risks, open questions",
-                 "acceptance criteria, exception flows, diagram internals"),
-    "Detailed": ("full requirement wording, acceptance criteria, exceptions, models",
-                 "nothing — this audience works with the material directly"),
+    "Summary": ("выводы, бизнес-ценность, решение, которое просят принять",
+                "ID требований, формулировки NFR, внутреннее устройство моделей"),
+    "Standard": ("требования списком с приоритетами, ключевые риски, открытые вопросы",
+                 "критерии приёмки, сценарии исключений, внутреннее устройство диаграмм"),
+    "Detailed": ("полные формулировки требований, критерии приёмки, исключения, модели",
+                 "ничего — эта аудитория работает с материалом напрямую"),
 }
 
 
@@ -158,14 +158,14 @@ def prepare_communication_package(
     # -----------------------------------------------------------------------
     lines = []
     lines.append(f"# Communication Package: {audience_role}\n")
-    lines.append(f"**Project:** {project_name}  ")
-    lines.append(f"**Audience:** {audience_role}  ")
-    lines.append(f"**Preparation date:** {today}  ")
+    lines.append(f"**Проект:** {project_name}  ")
+    lines.append(f"**Аудитория:** {audience_role}  ")
+    lines.append(f"**Дата подготовки:** {today}  ")
     if level_row:
         note = f" — {level_row['note']}" if level_row.get("note") else ""
         lines.append(
-            f"**Level of detail (planned in 3.4):** {level_row['level']}{note}  ")
-    lines.append(f"**Source:** `{source_artifact_path}`\n")
+            f"**Уровень детализации (запланирован в 3.4):** {level_row['level']}{note}  ")
+    lines.append(f"**Источник:** `{source_artifact_path}`\n")
     lines.append("---\n")
 
     # Профайл аудитории
@@ -188,9 +188,9 @@ def prepare_communication_package(
     if level_row:
         include, leave_out = _LEVEL_GUIDANCE.get(level_row["level"], ("", ""))
         lines.append("---\n")
-        lines.append(f"## Level of Detail — {level_row['level']} (planned in 3.4)\n")
-        lines.append(f"**Include:** {include}  ")
-        lines.append(f"**Leave out:** {leave_out}\n")
+        lines.append(f"## Уровень детализации — {level_row['level']} (запланирован в 3.4)\n")
+        lines.append(f"**Включить:** {include}  ")
+        lines.append(f"**Оставить за скобками:** {leave_out}\n")
 
     # Key messages
     if key_messages:
@@ -272,15 +272,15 @@ def prepare_communication_package(
         notes.append(plan_note)
     elif unusable_level is not None:
         notes.append(
-            f"⚠️ 3.4 does plan a detail level for `{audience_role}`, but its value "
-            f"`{unusable_level}` is not one of {', '.join(ABSTRACTION_LEVELS)} — fix it "
-            f"in `plan_information_management(abstraction_levels_json=...)`.")
+            f"⚠️ Уровень детализации для `{audience_role}` в 3.4 запланирован, но его "
+            f"значение `{unusable_level}` не входит в {', '.join(ABSTRACTION_LEVELS)} — "
+            f"поправьте его в `plan_information_management(abstraction_levels_json=...)`.")
     elif planned_audiences and not level_row:
         # Only when the project actually planned detail levels for SOMEONE. A project
         # that planned storage but no levels has made no decision to be reminded of.
         notes.append(
-            f"⚠️ Detail level for `{audience_role}` is not planned in 3.4. "
-            f"Planned audiences: {', '.join(a for a in planned_audiences if a)}.")
+            f"⚠️ Уровень детализации для `{audience_role}` в 3.4 не запланирован. "
+            f"Запланированные аудитории: {', '.join(a for a in planned_audiences if a)}.")
     return saved + ("\n\n" + "\n".join(notes) if notes else "")
 
 
@@ -719,35 +719,35 @@ def check_communication_schedule(
     if total_actions == 0:
         if unknown_frequencies or no_cadence_roles:
             # Degrading is fine; making a confident positive claim on top of it is not.
-            lines.append("## ⚠️ Schedule Could Not Be Fully Checked\n")
+            lines.append("## ⚠️ Расписание проверено не полностью\n")
             if unknown_frequencies:
                 lines.append(
-                    f"No overdue communications among the cadences this tool recognises, "
-                    f"but {len(unknown_frequencies)} unrecognised value(s) were skipped: "
-                    f"{', '.join(sorted(unknown_frequencies))}. Those stakeholders were "
-                    f"NOT evaluated — this is not a clean bill of health.\n"
+                    f"Среди частот, которые инструмент распознаёт, просроченных коммуникаций "
+                    f"нет, но {len(unknown_frequencies)} нераспознанных значений пропущено: "
+                    f"{', '.join(sorted(unknown_frequencies))}. Эти стейкхолдеры НЕ "
+                    f"проверялись — считать это чистой картиной нельзя.\n"
                 )
             if no_cadence_roles:
                 lines.append(
-                    f"{len(no_cadence_roles)} stakeholder(s) have no communication cadence "
-                    f"on record and were NOT evaluated: {', '.join(no_cadence_roles)}. "
-                    f"Set `comm_frequency` (the 3.2 plan assigns one per quadrant) to "
-                    f"include them in this check.\n"
+                    f"Стейкхолдеров без записанной частоты коммуникаций: "
+                    f"{len(no_cadence_roles)} — они НЕ проверялись: {', '.join(no_cadence_roles)}. "
+                    f"Задайте `comm_frequency` (план 3.2 назначает её по квадрантам), чтобы "
+                    f"включить их в эту проверку.\n"
                 )
         else:
-            lines.append("## ✅ All Communications Are on Track\n")
-            lines.append("No overdue or triggered communications.\n")
+            lines.append("## ✅ Все коммуникации идут по плану\n")
+            lines.append("Просроченных и сработавших по событию коммуникаций нет.\n")
     else:
-        lines.append(f"## Need Attention Today: {total_actions} stakeholder(s)\n")
+        lines.append(f"## Требуют внимания сегодня: {total_actions} стейкхолдеров\n")
         if unknown_frequencies:
             lines.append(
-                f"> ⚠️ Skipped {len(unknown_frequencies)} unrecognised cadence(s): "
+                f"> ⚠️ Пропущено нераспознанных частот: {len(unknown_frequencies)} — "
                 f"{', '.join(sorted(unknown_frequencies))}.\n"
             )
         if no_cadence_roles:
             lines.append(
-                f"> ⚠️ {len(no_cadence_roles)} stakeholder(s) have no communication cadence "
-                f"on record and were NOT evaluated: {', '.join(no_cadence_roles)}.\n"
+                f"> ⚠️ Стейкхолдеров без записанной частоты коммуникаций: {len(no_cadence_roles)} "
+                f"— они НЕ проверялись: {', '.join(no_cadence_roles)}.\n"
             )
 
     # Urgent (overdue) — ranked by influence (High first). Sorting the raw
@@ -756,7 +756,7 @@ def check_communication_schedule(
     influence_rank = {"High": 3, "Medium": 2, "Low": 1}
     if urgent:
         lines.append("---\n")
-        lines.append("## 🔴 Urgent — Overdue\n")
+        lines.append("## 🔴 Срочно — просрочено\n")
         for item in sorted(urgent, key=lambda x: influence_rank.get(x.get("influence"), 0), reverse=True):
             lines.append(f"**{item['role']}** (influence: {item['influence']})  ")
             lines.append(f"- {item['reason']}  ")
@@ -828,18 +828,18 @@ def check_communication_schedule(
     # and meant for forwarding.)
     saved = save_artifact(meta + content, prefix="4_4_comm_schedule", project_id=project_name)
 
-    verdict = [f"📡 **Communication schedule check — {project_name}**", ""]
+    verdict = [f"📡 **Проверка расписания коммуникаций — {project_name}**", ""]
     if urgent or triggered or followup_due:
-        verdict.append(f"- 🔴 Urgent: {len(urgent)}")
-        verdict.append(f"- 🟠 Triggered by events: {len(triggered)}")
-        verdict.append(f"- 🟡 Follow-up due: {len(followup_due)}")
+        verdict.append(f"- 🔴 Срочно: {len(urgent)}")
+        verdict.append(f"- 🟠 Сработали по событию: {len(triggered)}")
+        verdict.append(f"- 🟡 Пора follow-up: {len(followup_due)}")
     else:
-        verdict.append("- ✅ Nothing overdue among the cadences this tool recognises")
+        verdict.append("- ✅ Среди распознанных частот просроченного нет")
     if unknown_frequencies or no_cadence_roles:
         skipped = len(unknown_frequencies) + len(no_cadence_roles)
         verdict.append(
-            f"- ⚠️ **{skipped} stakeholder(s)/cadence(s) were NOT evaluated** "
-            f"(unrecognised cadence, or none recorded) — this is not a clean bill of health")
+            f"- ⚠️ **НЕ проверено записей (стейкхолдер/частота): {skipped}** "
+            f"(частота не распознана либо не записана) — считать это чистой картиной нельзя")
     return "\n".join(verdict) + "\n" + saved
 
 

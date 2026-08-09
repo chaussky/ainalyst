@@ -60,8 +60,8 @@ def _parse_session_risks(risks_json: str, default_stakeholder: str):
                            or default_stakeholder)
         else:
             return None, (
-                "❌ `risks_json`: every item must be an object or a string.\n"
-                'Example: [{"description": "The legacy API may not survive the load"}]'
+                "❌ `risks_json`: каждый элемент должен быть объектом или строкой.\n"
+                'Пример: [{"description": "Legacy-API может не выдержать нагрузку"}]'
             )
         if description:
             risks.append({"description": description, "stakeholder": stakeholder})
@@ -72,10 +72,10 @@ def _parse_session_risks(risks_json: str, default_stakeholder: str):
     # BA believes the risks were recorded and 6.3 later finds nothing.
     if raw and not risks:
         return None, (
-            "❌ `risks_json`: no risk had a description. Accepted keys are "
-            "`description` (or `risk`) and `stakeholder` (or `source`); a bare string "
-            'is read as the description.\n'
-            'Example: [{"description": "The legacy API may not survive the load"}]'
+            "❌ `risks_json`: ни у одного риска нет описания. Принимаются ключи "
+            "`description` (или `risk`) и `stakeholder` (или `source`); голая строка "
+            'читается как описание.\n'
+            'Пример: [{"description": "Legacy-API может не выдержать нагрузку"}]'
         )
     return risks, ""
 
@@ -286,7 +286,7 @@ def process_elicitation_results(
     related = ", ".join(profile.get("related_stakeholders", [])) or "Не выявлены"
 
     risks_md = ("\n".join(f"- {r['description']} — *{r['stakeholder']}*" for r in risks)
-                if risks else "- None mentioned")
+                if risks else "- Не упоминались")
 
     content = f"""# Elicitation Results (Unconfirmed)
 
@@ -339,7 +339,7 @@ def process_elicitation_results(
 
 ---
 
-## 5. Risks Mentioned by the Stakeholder
+## 5. Риски, названные стейкхолдером
 
 {risks_md}
 
@@ -374,11 +374,11 @@ def process_elicitation_results(
     # the stakeholder registry a few lines down — the two writers must not disagree.
     if risks and not risks_saved:
         return (
-            f"⚠️ Elicitation results saved, but the risk file for 6.3 could NOT be "
-            f"written — the risks below are in the report only, and "
-            f"`import_risks_from_context` will not see them.{suffix}"
+            f"⚠️ Результаты выявления сохранены, но файл рисков для 6.3 записать НЕ "
+            f"удалось — риски ниже есть только в отчёте, и "
+            f"`import_risks_from_context` их не увидит.{suffix}"
         )
-    return f"✅ Elicitation results saved.{suffix}"
+    return f"✅ Результаты выявления сохранены.{suffix}"
 
 
 # ---------------------------------------------------------------------------
@@ -673,8 +673,8 @@ def update_stakeholder_registry(
     # Render the .md report from the FULL registry.
     # -----------------------------------------------------------------------
     table_header = (
-        "| Stakeholder | Role | Department | Found through | Influence | Interest | "
-        "Attitude | Coverage status | Priority | Format |\n"
+        "| Стейкхолдер | Роль | Подразделение | Как найден | Влияние | Интерес | "
+        "Отношение | Статус охвата | Приоритет | Формат |\n"
         "| :--- | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :---: | :--- |\n"
     )
     rows = []
@@ -697,11 +697,11 @@ def update_stakeholder_registry(
     # Possible-duplicate warnings (soft, non-blocking).
     dup_block = ""
     if dup_warnings:
-        dup_block = "\n## ⚠️ Possible Duplicates\n\n"
+        dup_block = "\n## ⚠️ Возможные дубликаты\n\n"
         for new_name, existing_name in dup_warnings:
             dup_block += (
-                f"- **{new_name}** shares a role with **{existing_name}** already in the registry. "
-                f"Possibly the same person as \"{existing_name}\" — please verify.\n"
+                f"- У **{new_name}** та же роль, что и у **{existing_name}**, уже записанного в реестре. "
+                f"Возможно, это тот же человек, что и \"{existing_name}\", — проверьте.\n"
             )
 
     # Discovery chain (full registry).
@@ -738,20 +738,20 @@ def update_stakeholder_registry(
 
     content = f"""# Реестр стейкхолдеров (живой документ)
 
-**Project:** {project_name}
-**Last updated:** {today}
-**Update source:** {session_source}
-**Total stakeholders:** {len(existing)}
+**Проект:** {project_name}
+**Обновлён:** {today}
+**Источник обновления:** {session_source}
+**Всего стейкхолдеров:** {len(existing)}
 
 ---
 
-## Changes in This Update
+## Изменения в этом обновлении
 
 {changes_block}
 {dup_block}
 ---
 
-## Full Registry (Current)
+## Полный реестр (актуальный)
 
 {table_header}{chr(10).join(rows) if rows else "| — | — | — | — | — | — | — | — | — | — |"}
 
@@ -764,8 +764,8 @@ def update_stakeholder_registry(
 {uncovered_block}
 ---
 
-> This file is updated after every elicitation session.
-> The full registry accumulates cumulatively from all updates.
+> Этот файл обновляется после каждой сессии выявления.
+> Полный реестр накапливается из всех обновлений.
 """
 
     suffix = save_artifact(content, "4_2_stakeholder_registry", project_id=project_name)
@@ -775,13 +775,13 @@ def update_stakeholder_registry(
     # 3.2 already surfaces this on its side — the two writers must not disagree.
     if not merge_result.get("saved"):
         return (
-            f"⚠️ Stakeholder registry could NOT be saved to disk — the report below was "
-            f"generated, but the changes are not persisted and the next session will not "
-            f"see them. Added: {len(added)}, updated: {len(updated)}.{suffix}"
+            f"⚠️ Реестр стейкхолдеров НЕ удалось сохранить на диск — отчёт ниже "
+            f"сформирован, но изменения не записаны, и следующая сессия их не "
+            f"увидит. Добавлено: {len(added)}, обновлено: {len(updated)}.{suffix}"
         )
     return (
-        f"✅ Stakeholder registry updated. Added: {len(added)}, updated: {len(updated)}. "
-        f"Total in registry: {len(existing)}.{suffix}"
+        f"✅ Реестр стейкхолдеров обновлён. Добавлено: {len(added)}, обновлено: {len(updated)}. "
+        f"Всего в реестре: {len(existing)}.{suffix}"
     )
 
 

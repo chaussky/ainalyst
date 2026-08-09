@@ -666,7 +666,7 @@ class TestCheckValueReadiness(BaseMCPTest):
         mod76.compare_value("arch_proj")
         result = mod76.check_value_readiness("arch_proj")
         self.assertIn("⚠️", result)
-        self.assertIn("gap", result.lower())
+        self.assertIn("разрыв", result.lower())
         self.assertIn("CFO", result)
 
     def test_critical_arch_gaps_legacy_dict_shape_still_read(self):

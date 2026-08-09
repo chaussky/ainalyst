@@ -74,7 +74,7 @@ class TestElicitationPlanSeedsTheRegistry(BaseMCPTest):
 
     def test_the_report_tells_the_ba_the_registry_was_updated(self):
         out = self._save_plan([{"name": "Jane Doe", "role": "Process Owner"}])
-        self.assertIn("registry", out.lower())
+        self.assertIn("реестр", out.lower())
 
     def test_planning_does_not_overwrite_an_elicited_attitude(self):
         """4.1 plans; it does not observe. An attitude it did not receive must never
@@ -142,7 +142,7 @@ class TestEngagementChangeReachesTheRegistry(BaseMCPTest):
 
     def test_the_report_tells_the_ba_the_registry_was_updated(self):
         out = self._record_change()
-        self.assertIn("registry", out.lower())
+        self.assertIn("реестр", out.lower())
 
     def test_a_failing_registry_write_does_not_break_the_record(self):
         with patch("skills.elicitation_collaborate_mcp.update_stakeholder_registry_file",
@@ -187,7 +187,7 @@ class TestEngagementChangeReachesTheRegistry(BaseMCPTest):
                   {"name": "Ada Vance", "role": "Compliance Officer"}],
             source="4.1 elicitation plan")
         out = self._record_change(role="Compliance Officer")
-        self.assertIn("more than one", out.lower())
+        self.assertIn("больше одного", out.lower())
         for name in ("sam reed", "ada vance"):
             self.assertNotEqual(
                 _entry(load_stakeholder_registry(PID), name).get("attitude"),

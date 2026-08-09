@@ -550,7 +550,7 @@ def add_value_assessment(
         f"| Рисков | {len(risks)} ({risks_source}) |",
         f"| **Value Score** | **{score}** — {label} |",
         "",
-        "**Score Breakdown:**",
+        "**Разбор оценки:**",
         "",
         f"| Составляющая | Значение | Вес |",
         f"|-------------|---------|-----|",
@@ -582,13 +582,12 @@ def add_value_assessment(
         # constant that cancels out. Saying so is the whole fix: the number appears in
         # a comparison table, where it reads as though it discriminated.
         lines += [
-            "> ⚠️ **Risk Penalty is project-wide**, taken from the 6.3 register because no "
-            "option-specific risks were supplied.",
-            "> Every option therefore receives the SAME penalty: it is correct for this "
-            "option's absolute score, but it **does not differentiate** the options in "
-            "`compare_value`.",
-            "> To make risk discriminate between options, pass option-specific risks via "
-            "`risks_json`.",
+            "> ⚠️ **Risk Penalty взят по проекту целиком** — из реестра 6.3, потому что "
+            "рисков, специфичных для варианта, передано не было.",
+            "> Значит каждый вариант получает ОДИН И ТОТ ЖЕ штраф: для абсолютной оценки "
+            "этого варианта он верен, но варианты в `compare_value` он **не различает**.",
+            "> Чтобы риск различал варианты, передайте специфичные для варианта риски "
+            "через `risks_json`.",
             "",
         ]
 
@@ -749,12 +748,12 @@ def compare_value(
     if (len(ranking) > 1 and len(set(penalties.values())) == 1
             and any(v == "6.3_file" for v in sources.values())):
         lines += [
-            f"> ⚠️ **The Risk column does not differentiate these options.** Every option "
-            f"was scored against the same project-wide 6.3 register (penalty "
-            f"{next(iter(penalties.values()))} for all), because no option-specific risks "
-            f"were supplied — so the risk term cancels out of the ranking.",
-            "> Pass option-specific risks via `risks_json` in `add_value_assessment` to "
-            "make risk affect the comparison.",
+            f"> ⚠️ **Колонка Risk эти варианты не различает.** Все они оценены по одному и "
+            f"тому же реестру 6.3 на весь проект (штраф "
+            f"{next(iter(penalties.values()))} у всех), потому что рисков, специфичных для "
+            f"варианта, передано не было, — и в ранжировании слагаемое риска сокращается.",
+            "> Передайте специфичные для варианта риски через `risks_json` в "
+            "`add_value_assessment`, чтобы риск влиял на сравнение.",
             "",
         ]
 
@@ -935,8 +934,8 @@ def check_value_readiness(
             for gap in critical_gaps:
                 text = gap.get("description", "") if isinstance(gap, dict) else str(gap)
                 warnings.append(
-                    f"⚠️ **Critical architecture gap**: {text[:100]}. "
-                    f"Make sure this gap is accounted for in the value assessment."
+                    f"⚠️ **Critical-разрыв архитектуры**: {text[:100]}. "
+                    f"Убедитесь, что этот разрыв учтён в оценке ценности."
                 )
 
     # Итог
@@ -1199,7 +1198,7 @@ def save_recommendation(
 
     # Executive Summary
     doc_lines += [
-        "## Executive Summary",
+        "## Резюме для спонсора",
         "",
         rationale,
         "",
@@ -1274,11 +1273,11 @@ def save_recommendation(
             if benefits:
                 doc_lines.append("**Выгоды:**")
                 type_icons_map = {
-                    "financial": "💰 Financial",
-                    "operational": "⚙️ Operational",
-                    "strategic": "🎯 Strategic",
-                    "regulatory": "📋 Regulatory",
-                    "user_experience": "👤 User Experience",
+                    "financial": "💰 Финансовая",
+                    "operational": "⚙️ Операционная",
+                    "strategic": "🎯 Стратегическая",
+                    "regulatory": "📋 Регуляторная",
+                    "user_experience": "👤 Пользовательский опыт",
                 }
                 for b in benefits:
                     type_label = type_icons_map.get(b.get("type", ""), b.get("type", ""))

@@ -74,7 +74,7 @@ class TestPlannedPeriod(unittest.TestCase):
         self.assertIn("Iteration 1", text)
         # "High" alone is printed by the stakeholder table (influence / interest), so
         # it cannot tell the effort column from that.
-        self.assertIn("planned effort: High", text)
+        self.assertIn("плановая трудоёмкость: High", text)
         self.assertIn("Aug 2026", text)
 
     def test_a_generated_skeleton_is_not_presented_as_the_bas_own_plan(self):
@@ -88,14 +88,14 @@ class TestPlannedPeriod(unittest.TestCase):
         self._save()
         text = self._artefact_text()
         self.assertIn("Iteration 1", text)
-        self.assertIn("generated", text.lower())
+        self.assertIn("сгенерирован", text.lower())
 
     def test_a_period_the_ba_typed_carries_no_generated_notice(self):
         _seed_plan({"timing_form": "iterations", "generated": False, "periods": [
             {"name": "Iteration 1", "tasks": ["4"], "effort": "High", "when": "",
              "deliverables": []}]})
         self._save()
-        self.assertNotIn("generated", self._artefact_text().lower())
+        self.assertNotIn("сгенерирован", self._artefact_text().lower())
 
     def test_a_chapter_wide_period_covers_41(self):
         _seed_plan({"timing_form": "phases", "periods": [
@@ -114,7 +114,7 @@ class TestPlannedPeriod(unittest.TestCase):
     def test_no_plan_at_all_changes_nothing(self):
         out = self._save()
         self.assertIn("✅", out)
-        self.assertNotIn("Planned work period", self._artefact_text())
+        self.assertNotIn("Запланированный период работ", self._artefact_text())
 
     def test_the_block_keeps_the_documents_own_spacing(self):
         """Every other separator in this artefact is followed by a blank line. This is
@@ -124,7 +124,7 @@ class TestPlannedPeriod(unittest.TestCase):
             {"name": "Stage 1", "tasks": ["4"], "effort": "High", "when": "",
              "deliverables": []}]})
         self._save()
-        self.assertIn("---\n\n## Elicitation Goals", self._artefact_text())
+        self.assertIn("---\n\n## Цели выявления", self._artefact_text())
 
     def test_an_unreadable_plan_warns_in_the_tool_output(self):
         path = ba_plan_path(PROJECT)
@@ -193,7 +193,7 @@ class TestTechniqueCrossCheck(unittest.TestCase):
         self._save("Workshop")
         text = self._artefact_text()
         self.assertNotIn("⚠️", text)
-        self.assertIn("no elicitation techniques", text)
+        self.assertIn("ни одной техники выявления", text)
         self.assertIn("Backlog Management", text)
 
     def test_a_techniques_field_of_the_wrong_shape_is_ignored_quietly(self):
