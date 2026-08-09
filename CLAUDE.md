@@ -15,9 +15,6 @@ At every step you:
 3. Call the right MCP tool
 4. Explain what came out of it and what to do next
 
-Never overload the BA with a list of all possible tools.
-Suggest one next step — the one needed right now.
-
 ---
 
 ## Phase management — do this first
@@ -25,19 +22,11 @@ Suggest one next step — the one needed right now.
 The platform runs in **active-phase mode**: only the MCP servers of the
 needed BABOK chapter are loaded into the session (to save the context window).
 
-1. **Check the phase** — at the start of a session run `python phase.py` (it shows the active phase and the list of available ones).
-2. **Determine which one you need** from the table:
-
-| Phase | When to use |
-|------|--------------------|
-| `planning` | New project, BA plan, stakeholder map |
-| `elicitation` | Interviews, workshops, surveys, meeting minutes |
-| `lifecycle` | Traceability, prioritization, CRs, requirements approval |
-| `analysis` | as-is / to-be, gap analysis, business need, risks, change strategy |
-| `design` | Specification, verification, validation, design, value assessment |
-| `full` | Only when you need tools from different chapters at the same time |
-
-3. **Switch if it doesn't match:** `python phase.py <phase>`, then **be sure to** tell the BA:
+1. **Check the phase** — at the start of a session run `python phase.py`. It prints the
+   active phase AND all six with the BABOK chapter each one covers and a hint about when
+   to use it. That output is the source of truth for which phase you need — read it there,
+   don't guess. (`full` is only for when you need tools from different chapters at once.)
+2. **Switch if it doesn't match:** `python phase.py <phase>`, then **be sure to** tell the BA:
    *"Switched the platform to the <name> phase. The session needs to be restarted — type `/restart`, and we'll continue."*
    After `/restart` the BA writes again — and you work with the right tools. If the phase is already correct — just continue.
 
@@ -140,19 +129,13 @@ exactly as published here — keep the two in sync when editing.
 ## Platform documentation — use it to answer the BA's questions
 
 If the BA asks how the platform works, what phases are, how to use the
-tools, or what a BABOK term means — answer based on the documentation,
-not from memory:
+tools, or what a BABOK term means — **answer from the documentation, not from memory.**
+Three places, and their file names say which chapter they cover:
 
-| Question | File |
-|--------|------|
-| How the platform works, how to get started | `docs/user-guide/1-introduction.md` |
-| Planning (Ch. 3) | `docs/user-guide/ch3-planning.md` |
-| Elicitation (Ch. 4) | `docs/user-guide/ch4-elicitation.md` |
-| Requirements life cycle (Ch. 5) | `docs/user-guide/ch5-requirements-lifecycle.md` |
-| Strategy analysis (Ch. 6) | `docs/user-guide/ch6-strategy-analysis.md` |
-| Requirements analysis and design (Ch. 7) | `docs/user-guide/ch7-requirements-analysis-and-design.md` |
-| Examples and usage scenarios | `docs/use-cases/use-cases.md` |
-| Technical architecture, development | `docs/developer-guide/developer-guide.md` |
+- `docs/user-guide/` — how to work with the platform, one file per BABOK chapter
+  (`1-introduction.md`, `ch3-planning.md` … `ch7-requirements-analysis-and-design.md`)
+- `docs/use-cases/use-cases.md` — examples and end-to-end scenarios
+- `docs/developer-guide/developer-guide.md` — technical architecture, development
 
 ---
 
@@ -163,15 +146,8 @@ Artifacts are saved in `governance_plans/` with a **per-project layout** (one fo
 - `governance_plans/reports/<project_id>/` — Markdown (documents for people and the BA)
 - 7.1 specs — in `governance_plans/data/<project_id>/specs/`
 
-The folders are created automatically. The file name keeps the project prefix. Example for `crm_upgrade`:
-```
-governance_plans/
-├── data/crm_upgrade/
-│   ├── crm_upgrade_traceability_repo.json   ← requirements graph (5.1)
-│   └── crm_upgrade_prioritization.json      ← prioritization (5.3)
-└── reports/crm_upgrade/
-    └── 7_6_recommendation_crm_upgrade_<date>.md   ← recommendation to the sponsor (7.6)
-```
+The folders are created automatically, and the file name keeps the project prefix — for
+`crm_upgrade`: `data/crm_upgrade/crm_upgrade_traceability_repo.json`.
 
 Every artifact lives in exactly one place — the project's folder. A file lying directly
 in `data/` or `reports/` belongs to no project and is not read by anything.
@@ -188,15 +164,6 @@ the one thing it cannot return. Never present a restore as a full recovery.
 ---
 
 ## Key principles
-
-**Don't block — warn.** If something is missing — warn the BA, but don't
-stop the work. Continue with what you have.
-
-**The stakeholder registry is a living document.** Stakeholders are discovered gradually.
-Update the registry after every session via `update_stakeholder_registry`, not just at the start.
-
-**Decisions stay with the BA.** You give recommendations and flag problems, but the final
-decision always belongs to the analyst — especially in tasks 5.3, 5.4, and 5.5.
 
 **`project_id` is the key to everything.** All project artifacts are linked through `project_id`.
 Use a short name from `[a-z0-9_-]`, no spaces (for example `crm_upgrade`, `bank_portal`).
