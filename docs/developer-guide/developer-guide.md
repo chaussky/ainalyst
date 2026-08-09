@@ -246,6 +246,8 @@ Four consequences a maintainer needs to know:
 
 Serialisation happens **before** the filesystem is touched: content that cannot be encoded is a defect in the caller and must not cost the analyst the stored version.
 
+**What the writer does not give you: concurrent runs.** Every tool reads the whole file, changes it in memory, and writes the whole file back. Two commands one after another are fine — that is the normal way of working. Two commands **at the same time** (a script, CI, two open terminals against one project) end in last-writer-wins: the second run started from the state before the first one saved, so it overwrites that change, and nothing reports the loss. The platform assumes one analyst in one session; running tools in parallel against a single project is not supported.
+
 Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, any cyrillic name) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
 
 ### `_ensure_dirs()` and `save_artifact()`
