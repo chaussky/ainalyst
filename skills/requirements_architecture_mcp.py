@@ -98,8 +98,8 @@ VIEWPOINT_MAP = {
     # architecture document — the 7.4 mirror of the coverage-vocabulary class. Populated
     # only when such requirements exist (never flagged as a "missing" viewpoint).
     "other": {
-        "label": "Other requirements",
-        "audience": "Architect, business analyst",
+        "label": "Прочие требования",
+        "audience": "Архитектор, бизнес-аналитик",
     },
 }
 
@@ -1016,9 +1016,9 @@ def analyze_requirements_architecture(
         "",
         f"# 🏗️ Архитектура требований — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Total req:** {total}{archived_note}  ",
-        f"**Covered by viewpoints:** {in_viewpoints} ({coverage_pct}%)",
+        f"**Дата:** {date.today()}  ",
+        f"**Всего требований:** {total}{archived_note}  ",
+        f"**Покрыто точками зрения:** {in_viewpoints} ({coverage_pct}%)",
         "",
         "---",
         "",
@@ -1492,13 +1492,18 @@ def declare_stakeholder_interest(
         repo["history"].append(entry)
         _save_repo(repo, project_id)
 
-    verb = "removed from" if remove else "declared on"
+    # Падеж зависит от глагола: «снят С требований» (родительный), но «заявлен НА
+    # требованиях» (предложный). Одной формой здесь не обойтись — в отличие от
+    # английского, где `requirement(s)` покрывает оба случая разом.
+    verb = "снят с" if remove else "заявлен на"
+    noun = (plural_ru(len(changed), "требования", "требований", "требований") if remove
+            else plural_ru(len(changed), "требовании", "требованиях", "требованиях"))
     lines = [
-        f"✅ `{name}` — interest **{verb} {len(changed)} requirement(s)**"
+        f"✅ `{name}` — интерес **{verb} {len(changed)} {noun}**"
         + (f": {', '.join(f'`{r}`' for r in changed)}" if changed else "."),
     ]
     if skipped:
-        state = "was not declared on" if remove else "already declared on"
+        state = "не был заявлен на" if remove else "уже был заявлен на"
         lines.append(
             f"   ℹ️ {state} {len(skipped)}: {', '.join(f'`{r}`' for r in skipped)}"
         )
@@ -1506,10 +1511,10 @@ def declare_stakeholder_interest(
     if replaced:
         lines += [
             "",
-            f"⚠️ Replaced, not merged: {', '.join(f'`{r}`' for r in sorted(replaced))} "
-            f"held a `stakeholders` value that is not a list of declarations, so it "
-            f"could not be appended to. The previous value is preserved under "
-            f"`replaced` in the repository history.",
+            f"⚠️ Заменено, а не дополнено: {', '.join(f'`{r}`' for r in sorted(replaced))} "
+            f"— поле `stakeholders` содержало значение, не являющееся списком заявлений, "
+            f"поэтому дополнить его было нельзя. Прежнее значение сохранено под ключом "
+            f"`replaced` в истории репозитория.",
         ]
 
     # A STATUS is not a TYPE. A deprecated requirement is still a requirement, so the
@@ -1522,31 +1527,31 @@ def declare_stakeholder_interest(
     if archived_targets and not remove:
         lines += [
             "",
-            f"⚠️ Archived in 5.2: {', '.join(f'`{r}`' for r in archived_targets)} "
-            f"(deprecated / superseded / retired). The declaration was recorded — an "
-            f"archived requirement is still a requirement — but the coverage check "
-            f"does not count it as live representation.",
+            f"⚠️ Заархивировано в 5.2: {', '.join(f'`{r}`' for r in archived_targets)} "
+            f"(deprecated / superseded / retired). Заявление записано — архивное "
+            f"требование всё ещё требование, — но проверка покрытия не засчитает его "
+            f"как живое представительство.",
         ]
 
     status = registry_party_status(project_id, name)
     if status == PARTY_NOT_IN_REGISTRY:
         lines += [
             "",
-            f"⚠️ `{name}` is not in the stakeholder registry (4.2). The declaration was "
-            f"recorded anyway — the registry is a living document. Add them with 4.2 "
-            f"`update_stakeholder_registry` so the coverage check can see them.",
+            f"⚠️ `{name}` отсутствует в реестре стейкхолдеров (4.2). Заявление всё равно "
+            f"записано — реестр живой документ. Добавьте человека через 4.2 "
+            f"`update_stakeholder_registry`, чтобы проверка покрытия его видела.",
         ]
     elif status == PARTY_UNBRIDGEABLE:
         lines += [
             "",
-            f"⚠️ There is no stakeholder registry for `{project_id}`, so this name could "
-            f"not be checked against anything. Create it via the 3.2 or 4.2 tools.",
+            f"⚠️ У проекта `{project_id}` нет реестра стейкхолдеров, поэтому сверить это "
+            f"имя было не с чем. Создайте реестр инструментами 3.2 или 4.2.",
         ]
 
     lines += [
         "",
-        f"Next: `check_architecture_gaps(project_id='{project_id}')` — see which "
-        f"stakeholders still have no recorded tie to any requirement.",
+        f"Дальше: `check_architecture_gaps(project_id='{project_id}')` — посмотреть, у "
+        f"кого из стейкхолдеров всё ещё нет ни одной записанной связи с требованиями.",
     ]
     return "\n".join(lines)
 
@@ -1606,9 +1611,9 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
         gaps_info.append({
             "type": "no_stakeholder_registry",
             "message": (
-                f"Stakeholder registry not found (`{project_id}_stakeholder_registry.json`). "
-                f"Stakeholder coverage check skipped. "
-                f"Create the registry via the 4.2 tools."
+                f"Реестр стейкхолдеров не найден (`{project_id}_stakeholder_registry.json`). "
+                f"Проверка покрытия стейкхолдеров пропущена. "
+                f"Создайте реестр инструментами 4.2."
             ),
         })
         all_stakeholders = []
@@ -1624,10 +1629,11 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
             gaps_info.append({
                 "type": "stakeholder_registry_unusable",
                 "message": (
-                    f"The stakeholder registry for `{project_id}` was read, but holds "
-                    f"nobody identifiable — no row carries a name or a role. Nobody was "
-                    f"checked for representation, so this report says nothing about "
-                    f"stakeholder coverage. Record the people via the 4.2 tools."
+                    f"Реестр стейкхолдеров проекта `{project_id}` прочитан, но "
+                    f"опознаваемых людей в нём нет — ни в одной строке нет ни имени, ни "
+                    f"роли. Никто не проверялся на представленность, поэтому этот отчёт "
+                    f"ничего не говорит о покрытии стейкхолдеров. Занесите людей "
+                    f"инструментами 4.2."
                 ),
             })
 
@@ -1681,12 +1687,12 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
                     "message": (
-                        f"Stakeholder `{who}` has ties only to archived requirements "
+                        f"У стейкхолдера `{who}` связи только с архивными требованиями "
                         f"({', '.join(f'`{r}`' for r in archived_ids)}) — deprecated, "
-                        f"superseded or retired in 5.2. Nothing live covers their "
-                        f"interests. Re-declare against the replacement with "
-                        f"`declare_stakeholder_interest`, or confirm they are out of "
-                        f"scope now."
+                        f"superseded или retired в 5.2. Живого покрытия его интересов "
+                        f"нет. Заявите интерес заново — на замену — через "
+                        f"`declare_stakeholder_interest`, либо подтвердите, что человек "
+                        f"теперь вне скоупа."
                     ),
                 })
                 continue
@@ -1704,10 +1710,10 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
                     "message": (
-                        f"Stakeholder `{who}` is reachable only by a word in a "
-                        f"requirement title (heuristic) — no declared interest, no "
-                        f"requirement owned, no 5.5 approval decision. Confirm with "
-                        f"`declare_stakeholder_interest`."
+                        f"Стейкхолдер `{who}` достижим только по слову в заголовке "
+                        f"требования (эвристика) — ни заявленного интереса, ни "
+                        f"требования во владении, ни решения о согласовании из 5.5. "
+                        f"Подтвердите через `declare_stakeholder_interest`."
                     ),
                 })
             elif kind == COINCIDENCE_REQUIREMENT:
@@ -1716,10 +1722,11 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
                     "message": (
-                        f"Stakeholder `{who}` is reachable only by a partial name "
-                        f"match (heuristic) — no exact declared interest, no "
-                        f"requirement owned under this exact name, no 5.5 approval "
-                        f"decision. Confirm with `declare_stakeholder_interest`."
+                        f"Стейкхолдер `{who}` достижим только по частичному совпадению "
+                        f"имени (эвристика) — нет ни точно заявленного интереса, ни "
+                        f"требования во владении под этим же именем, ни решения о "
+                        f"согласовании из 5.5. Подтвердите через "
+                        f"`declare_stakeholder_interest`."
                     ),
                 })
             elif kind == COINCIDENCE_OUTSIDE:
@@ -1734,13 +1741,12 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "stakeholder_id": sh.get("id", ""),
                     "stakeholder_name": sh.get("name", ""),
                     "message": (
-                        f"Stakeholder `{who}` is traceable only OUTSIDE the "
-                        f"requirements (heuristic) — a risk (6.3), a business goal "
-                        f"(6.2) or a change request (5.4) carries their name or a "
-                        f"word of it. Nothing among the requirements does: no "
-                        f"declared interest, no requirement owned, no 5.5 approval "
-                        f"decision. Record what actually holds with "
-                        f"`declare_stakeholder_interest`."
+                        f"Стейкхолдер `{who}` прослеживается только ВНЕ требований "
+                        f"(эвристика) — его имя или часть имени несёт риск (6.3), "
+                        f"бизнес-цель (6.2) или запрос на изменение (5.4). Среди самих "
+                        f"требований — ничего: ни заявленного интереса, ни требования "
+                        f"во владении, ни решения о согласовании из 5.5. Запишите то, "
+                        f"что верно на самом деле, через `declare_stakeholder_interest`."
                     ),
                 })
             else:
@@ -1751,11 +1757,14 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     # Assembled from CONCERN_EVIDENCE, in its order, so renaming a
                     # source cannot leave this sentence quoting the old name (A-6).
                     "message": (
-                        f"Stakeholder `{who}` has no recorded tie to any requirement: "
-                        + ", ".join(f"no {CONCERN_LABELS[s]}" for s in CONCERN_EVIDENCE)
-                        + f", and no {CONCERN_LABELS[CONCERN_TITLE]}. "
-                        f"Their interests may be uncovered — record what you know with "
-                        f"`declare_stakeholder_interest`."
+                        f"У стейкхолдера `{who}` нет ни одной записанной связи с "
+                        f"требованиями. Проверено: "
+                        # Форма «источник — нет» вместо «нет источника»: метки
+                        # подставляются из констант и в родительный падеж не встают.
+                        + ", ".join(f"{CONCERN_LABELS[s]} — нет" for s in CONCERN_EVIDENCE)
+                        + f", {CONCERN_LABELS[CONCERN_TITLE]} — нет. "
+                        f"Его интересы могут быть не покрыты — запишите то, что знаете, "
+                        f"через `declare_stakeholder_interest`."
                     ),
                 })
 
@@ -1774,11 +1783,11 @@ def _compute_gaps(project_id: str, repo: dict, arch: dict) -> tuple:
                     "bg_id": g["id"],
                     "title": g["title"],
                     "message": (
-                        f"Business goal `{g['id']}` ('{g['title'][:50]}') "
-                        f"is not represented as a node in the 5.1 graph. "
-                        f"Register it via 6.2 `define_goals_and_objectives` "
-                        f"(register_in_traceability=True), or add the node directly "
-                        f"with 5.1 `init_traceability_repo`."
+                        f"Бизнес-цель `{g['id']}` («{g['title'][:50]}») "
+                        f"не представлена узлом в графе 5.1. "
+                        f"Зарегистрируйте её через 6.2 `define_goals_and_objectives` "
+                        f"(register_in_traceability=True) либо добавьте узел напрямую "
+                        f"через 5.1 `init_traceability_repo`."
                     ),
                 })
 
@@ -1895,8 +1904,8 @@ def _render_gap_section(gaps: list, cap: int = GAP_LIST_CAP) -> list:
             out += [f"**{n}.** {gap['message']}", ""]
         if len(group) > cap:
             out += [
-                f"   _+{len(group) - cap} more of the same kind ({len(group)} in "
-                f"total). They are all in the architecture file._",
+                f"   _+ещё {len(group) - cap} того же рода (всего {len(group)}). "
+                f"Все они есть в файле архитектуры._",
                 "",
             ]
     return out
@@ -1955,8 +1964,8 @@ def check_architecture_gaps(
 
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty.\n\n"
-            f"First create requirements via the 7.1 tools."
+            f"⚠️ Репозиторий 5.1 проекта `{project_id}` пуст.\n\n"
+            f"Сначала создайте требования инструментами 7.1."
         )
 
     arch = _load_architecture(project_id)
@@ -2108,9 +2117,9 @@ def save_architecture_snapshot(
     existing_versions = [s["version"] for s in arch.get("snapshots", [])]
     if version in existing_versions:
         return (
-            f"⚠️ Version `{version}` already exists in the snapshots of project `{project_id}`.\n"
-            f"Existing versions: {', '.join(existing_versions)}\n"
-            f"Use the next version, for example: "
+            f"⚠️ Версия `{version}` уже есть среди снапшотов проекта `{project_id}`.\n"
+            f"Существующие версии: {', '.join(existing_versions)}\n"
+            f"Возьмите следующую, например: "
             f"`{version.replace('v', 'v').split('.')[0]}.{int(version.split('.')[-1]) + 1}`"
         )
 
@@ -2338,8 +2347,8 @@ def save_architecture_snapshot(
         f"| Дата | {date.today()} |",
         f"| Req охвачено | {total_reqs} |",
         f"| Viewpoints | {viewpoints_count} |",
-        f"| 🔴 Critical gaps | {summary['gaps_critical']} |",
-        f"| 🟡 Warning gaps | {summary['gaps_warning']} |",
+        f"| 🔴 Critical-разрывы | {summary['gaps_critical']} |",
+        f"| 🟡 Warning-разрывы | {summary['gaps_warning']} |",
         "",
     ]
 
