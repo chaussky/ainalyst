@@ -68,12 +68,12 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 analyze_requirements_architecture(project_id = "crm_upgrade")
 ```
 
-**What it does:**
-- Reads all requirements from the 5.1 repository (`{project}_traceability_repo.json`)
-- Distributes them across viewpoints according to VIEWPOINT_MAP
-- Builds a coverage matrix: BG × viewpoints
-- Shows custom viewpoints if already added
-- Takes into account business_context from 7.3 (BG list)
+**Что делает:**
+- Читает все требования из репозитория 5.1 (`{project}_traceability_repo.json`)
+- Раскладывает их по viewpoints согласно VIEWPOINT_MAP
+- Строит coverage matrix: BG × viewpoints
+- Показывает кастомные viewpoints, если они уже добавлены
+- Учитывает business_context из 7.3 (список BG)
 
 **Что возвращает:**
 - Сводная таблица: viewpoint → количество req → список ID
@@ -98,8 +98,8 @@ add_custom_viewpoint(
 )
 ```
 
-**Important:** custom viewpoints are defined via `req_ids`, not via types.
-"Security" is a cross-cutting slice over FR/NFR/BR — only the BA knows exactly which requirements belong to it.
+**Важно:** кастомные viewpoints задаются через `req_ids`, а не через типы.
+«Безопасность» — сквозной срез по FR/NFR/BR, и только BA точно знает, какие требования в него входят.
 
 **Валидация:** инструмент проверяет что все переданные req_ids существуют в репозитории 5.1.
 
@@ -107,8 +107,9 @@ add_custom_viewpoint(
 
 ### 3. `declare_stakeholder_interest`
 
-**When:** once you know which requirements touch which people — usually right after
-`analyze_requirements_architecture`, and again whenever elicitation turns up someone new.
+**Когда:** как только стало понятно, чьи интересы затрагивает каждое требование — обычно
+сразу после `analyze_requirements_architecture` и затем всякий раз, когда выявление
+приводит нового человека.
 
 ```
 declare_stakeholder_interest(
@@ -119,48 +120,50 @@ declare_stakeholder_interest(
 )
 ```
 
-**This is the one stakeholder relation you state by hand.** It is deliberately not the
-same as two facts the platform already holds:
+**Это единственная связь со стейкхолдером, которую вы указываете руками.** Она намеренно
+не совпадает с двумя фактами, которые платформа знает и так:
 
-| Relation | Who writes it | What it means |
+| Связь | Кто её записывает | Что она означает |
 |----------|---------------|---------------|
-| declared interest | **7.4 — you, with this tool** | this requirement touches their interests |
-| `owner` | 7.1 | who is answerable for the WORDING of the requirement |
-| RACI | 5.5 | their role in a DECISION on an approval package |
+| заявленный интерес | **7.4 — вы, этим инструментом** | это требование затрагивает его интересы |
+| `owner` | 7.1 | кто отвечает за ФОРМУЛИРОВКУ требования |
+| RACI | 5.5 | его роль в РЕШЕНИИ по пакету согласования |
 
-**You do not re-enter the last two.** `check_architecture_gaps` and the Architecture
-Document read them directly and say where each tie came from, so a person who owns a
-requirement or voted on it in 5.5 already counts as covered.
+**Последние две заново вводить не нужно.** `check_architecture_gaps` и Architecture
+Document читают их напрямую и указывают, откуда взялась каждая связь: человек, который
+владеет требованием или голосовал по нему в 5.5, уже считается покрытым.
 
-⚠️ **Ownership is computed on the fly, so handing it over can silently uncover
-somebody.** Because 7.4 reads `owner` at check time instead of storing a copy (nothing
-here can go stale), a single `update_requirement(new_owner = ...)` in 5.2 can turn the
-previous owner into a **new critical gap**: their one recorded tie was the owner field,
-and it now points at somebody else. 5.2 warns when it happens. If the previous owner's
-interests are still touched, record that here with `declare_stakeholder_interest` — a
-declared interest is the one tie the platform keeps.
+⚠️ **Владение вычисляется на лету, поэтому его передача может молча оставить человека
+без покрытия.** 7.4 читает `owner` в момент проверки, а не хранит копию (устареть здесь
+нечему), и потому один вызов `update_requirement(new_owner = ...)` в 5.2 способен
+превратить прежнего владельца в **новый critical-разрыв**: его единственной записанной
+связью было поле owner, а оно теперь указывает на другого. 5.2 предупреждает, когда так
+происходит. Если интересы прежнего владельца по-прежнему затронуты — зафиксируйте это
+здесь через `declare_stakeholder_interest`: заявленный интерес и есть та связь, которую
+платформа хранит.
 
-**Repeat calls MERGE** — a second call never erases what an earlier one recorded. To
-withdraw a declaration, call again with `remove = True`. The reply always prints counts
-("declared on 2 requirement(s)", "already declared on 1"), so a no-op is visible.
+**Повторные вызовы ДОПОЛНЯЮТ** — второй вызов никогда не стирает то, что записал первый.
+Чтобы отозвать заявление, вызовите инструмент ещё раз с `remove = True`. В ответе всегда
+печатаются счётчики («заявлен на 2 требованиях», «уже был заявлен на 1»), поэтому вызов
+вхолостую видно сразу.
 
-**A stakeholder the registry does not know is still recorded, with a warning** — the
-registry is a living document and you may be entering someone you met an hour ago. An
-unknown *requirement ID*, by contrast, is refused outright: that vocabulary is the
-project's own graph, and a typo there is cheapest to fix at the call.
+**Стейкхолдер, которого нет в реестре, всё равно записывается — с предупреждением:**
+реестр живой документ, и вы вполне можете вносить человека, с которым познакомились час
+назад. А вот неизвестный *ID требования* отклоняется сразу: этот словарь — собственный
+граф проекта, и опечатку в нём дешевле всего исправить прямо на вызове.
 
-**A TYPE is refused, a STATUS is not.** The 5.1 graph also holds risks (6.3), business
-goals (6.2), change requests (5.4), the 6.4 solution scope and test cases. Those are
-**not requirements**, so declaring an interest in one is refused by name — the tool
-would otherwise report "declared on 1 requirement(s)" about a risk, count it as
-coverage, and print its id in a document whose header says the project has no such
-requirement. An **archived** requirement (deprecated / superseded / retired) is a
-different matter: it is still a requirement, so the declaration is recorded, with a
-warning that the coverage check will not count it as live representation.
+**Отклоняется ТИП, но не СТАТУС.** В графе 5.1 лежат также риски (6.3), бизнес-цели
+(6.2), запросы на изменение (5.4), solution scope из 6.4 и тест-кейсы. Это **не
+требования**, поэтому заявить интерес к такому узлу нельзя — отказ называет узел по
+имени. Иначе инструмент ответил бы «заявлен на 1 требовании» про риск, засчитал бы это
+как покрытие и напечатал бы его id в документе, в шапке которого сказано, что такого
+требования у проекта нет. С **архивным** требованием (deprecated / superseded / retired)
+дело обстоит иначе: оно всё ещё требование, поэтому заявление записывается — вместе с
+предупреждением, что проверка покрытия не засчитает его как живое представительство.
 
-**The `note` reaches the reader.** Whatever you write there is printed under the
-requirement it belongs to in the Architecture Document — it is the one place a sponsor
-can see *why* the interests are touched, in your own words.
+**`note` доходит до читателя.** Всё, что вы туда напишете, печатается в Architecture
+Document под тем требованием, к которому относится, — это единственное место, где
+спонсор видит *почему* интересы затронуты, вашими словами.
 
 ---
 
@@ -172,35 +175,36 @@ can see *why* the interests are touched, in your own words.
 check_architecture_gaps(project_id = "crm_upgrade")
 ```
 
-**Two levels of checking:**
+**Два уровня проверки:**
 
-**Level 1 — Coverage matrix:**
-- Stakeholder with no recorded tie to any requirement → `critical`
-- Stakeholder reachable only by a word shared with a requirement title → `warning`
-- Stakeholder traceable only **outside** the requirements — a risk (6.3), a business goal
-  (6.2) or a change request (5.4) carries their name or a word of it → `warning`, and the
-  message says which kind of node it found, so the BA knows where to go and look
-- Stakeholder whose every recorded tie points at an **archived** requirement
-  (deprecated / superseded / retired in 5.2) → `warning`
-- Archived requirements leave level 2 entirely: nobody is advised to write a use case
-  for a retired requirement, and a live UC whose only BP was deprecated is reported as
-  hanging rather than as covered. In the Architecture Document they stay in the
-  viewpoint tables, tagged `_(archived)_`, and `Total req` still counts them.
-- BG with no viewpoint coverage → `warning`
-- Empty viewpoint → `info`
-- Registry read but holding nobody identifiable → `info` (nobody was checked, and
-  the report says so rather than reporting a clean sheet)
+**Уровень 1 — Coverage matrix:**
+- У стейкхолдера нет ни одной записанной связи с требованиями → `critical`
+- Стейкхолдер достижим только по слову, общему с заголовком требования → `warning`
+- Стейкхолдер прослеживается только **вне** требований — его имя или часть имени несёт
+  риск (6.3), бизнес-цель (6.2) или запрос на изменение (5.4) → `warning`, причём
+  сообщение называет вид найденного узла, чтобы BA знал, где смотреть
+- Все записанные связи стейкхолдера ведут на **архивные** требования
+  (deprecated / superseded / retired в 5.2) → `warning`
+- Архивные требования полностью выходят из уровня 2: никому не советуют писать use case
+  для retired-требования, а живой UC, единственный BP которого был deprecated,
+  отмечается как висящий, а не как покрытый. В Architecture Document они остаются в
+  таблицах viewpoints с пометкой `_(archived)_`, и `Total req` их по-прежнему считает.
+- BG не покрыта ни одной точкой зрения → `warning`
+- Пустой viewpoint → `info`
+- Реестр прочитан, но опознаваемых людей в нём нет → `info` (никто не был проверен, и
+  отчёт говорит именно это, а не рапортует о чистом листе)
 
-**Level 2 — Semantic gaps (uses the 5.1 graph):**
-- UC with no corresponding BP → `warning`
-- NFR not linked to an FR → `warning`
-- FR with no UC/US → `info`
+**Уровень 2 — Смысловые разрывы (по графу 5.1):**
+- UC без соответствующего BP → `warning`
+- NFR не связан ни с одним FR → `warning`
+- FR без UC/US → `info`
 
-**How the stakeholder verdict is reached.** Three sources count as evidence:
-a declared interest (7.4), being a requirement's `owner` (7.1), and an approval decision
-on that requirement (5.5). A shared word with a requirement title is a fourth source,
-kept because it is how this check used to work — but it is a coincidence, not a fact, so
-it now yields a warning that names its own weakness instead of a critical verdict.
+**Как выносится вердикт по стейкхолдеру.** Свидетельством считаются три источника:
+заявленный интерес (7.4), роль `owner` у требования (7.1) и решение о согласовании по
+этому требованию (5.5). Общее слово с заголовком требования — четвёртый источник,
+оставленный потому, что раньше проверка работала именно так; но это совпадение, а не
+факт, поэтому теперь он даёт предупреждение, которое само называет свою слабость, а не
+вердикт `critical`.
 
 ⚠️ **Интерпретация:** уровень 2 зависит от полноты связей в 5.1.
 Если BA не добавлял трассировку через 5.1 — много ложных срабатываний. Учитывай это.
@@ -220,16 +224,17 @@ save_architecture_snapshot(
 )
 ```
 
-**What it creates:**
-- A snapshot in `{project}_architecture.json` (history is not overwritten)
-- A Markdown document via `save_artifact` → handed off to 4.4 and 7.5
+**Что создаёт:**
+- Снимок в `{project}_architecture.json` (история не перезаписывается)
+- Markdown-документ через `save_artifact` → передаётся в 4.4 и 7.5
 
-**The gap block is recomputed at save time, not read back.** The workflow below puts
-`declare_stakeholder_interest` between the gap check and the snapshot on purpose, so a
-stored block would report gaps you had just resolved — right underneath a concerns
-section, computed live, saying the opposite about the same person. That also means a
-project which never calls `check_architecture_gaps` still gets a real gap table rather
-than a row of zeros.
+**Блок разрывов пересчитывается в момент сохранения, а не читается из файла.** Порядок
+работ ниже намеренно ставит `declare_stakeholder_interest` между проверкой разрывов и
+снимком, поэтому сохранённый блок докладывал бы о разрывах, которые вы только что
+закрыли, — прямо под разделом интересов, посчитанным на лету и говорящим об одном и том
+же человеке обратное. Отсюда же следует, что проект, который ни разу не вызвал
+`check_architecture_gaps`, всё равно получает настоящую таблицу разрывов, а не строку
+нулей.
 
 ---
 
@@ -239,23 +244,23 @@ than a row of zeros.
 1. Убедись что в 7.1 созданы артефакты разных типов (BP, US, FR и т.д.)
 2. Вызови `analyze_requirements_architecture` — получи полную картину
 
-### If the project is standard
-3. `declare_stakeholder_interest` — record whose interests each requirement touches
-4. `check_architecture_gaps` — find gaps
-5. Resolve critical gaps: declare the interests you know (7.4), create missing requirements (7.1), or add traceability (5.1)
-6. `save_architecture_snapshot(version="v1.0")` — lock it in
+### Если проект стандартный
+3. `declare_stakeholder_interest` — записать, чьи интересы затрагивает каждое требование
+4. `check_architecture_gaps` — найти разрывы
+5. Закрыть critical-разрывы: заявить известные интересы (7.4), создать недостающие требования (7.1) или добавить трассировку (5.1)
+6. `save_architecture_snapshot(version="v1.0")` — зафиксировать
 
-### If the project is regulated (banking, healthcare, government)
-3. `add_custom_viewpoint` — add viewpoints "Security", "Audit and Compliance"
-4. `declare_stakeholder_interest` — regulators and compliance officers rarely own or approve individual requirements, so their interest usually has to be stated explicitly
-5. `check_architecture_gaps` — check, accounting for custom viewpoints
-6. `save_architecture_snapshot` — lock it in
+### Если проект регулируемый (банки, здравоохранение, госсектор)
+3. `add_custom_viewpoint` — добавить точки зрения «Безопасность», «Аудит и комплаенс»
+4. `declare_stakeholder_interest` — регуляторы и комплаенс-офицеры редко владеют отдельными требованиями и редко их согласовывают, поэтому их интерес обычно приходится заявлять явно
+5. `check_architecture_gaps` — проверить с учётом кастомных viewpoints
+6. `save_architecture_snapshot` — зафиксировать
 
-### Agile project (iterative work)
-- Call `analyze_requirements_architecture` at the end of each sprint
-- Declare interests for the requirements the sprint added — the declaration merges, so this is safe to repeat
-- Take a snapshot after each significant increment of requirements
-- Hand off the Architecture Document to the next sprint's planning
+### Agile-проект (итеративная работа)
+- Вызывайте `analyze_requirements_architecture` в конце каждого спринта
+- Заявляйте интересы по требованиям, добавленным за спринт, — заявления дополняют друг друга, повторять безопасно
+- Снимайте снимок после каждого значимого прироста требований
+- Передавайте Architecture Document в планирование следующего спринта
 
 ---
 
@@ -263,20 +268,20 @@ than a row of zeros.
 
 | Файл | Содержит |
 |------|----------|
-| `{project}_architecture.json` | Viewpoints, views, gaps, snapshot history |
-| `{project}_traceability_repo.json` | The `stakeholders` field on requirement nodes — declared interests only (7.4 writes this one field; everything else in the file belongs to chapter 5) |
+| `{project}_architecture.json` | Viewpoints, views, разрывы, история снимков |
+| `{project}_traceability_repo.json` | Поле `stakeholders` у узлов-требований — только заявленные интересы (7.4 пишет это одно поле; всё остальное в файле принадлежит главе 5) |
 | `7_4_architecture_*.md` | Architecture Document → 4.4, 7.5 |
 
 ---
 
 ## Связи с другими задачами
 
-| From | What comes in |
+| Откуда | Что приходит |
 |------|----------------|
-| 5.1 | Requirements repository — basis for viewpoint mapping and BFS gap analysis |
-| 4.2 | Stakeholder registry — coverage check; the name↔role bridge for declared interests |
-| 5.5 | Approval decisions — a vote on a requirement is evidence that it touches the voter |
-| 7.1 | Artifact types — automatic mapping to viewpoints; the `owner` field — evidence of interest |
+| 5.1 | Репозиторий требований — основа для раскладки по viewpoints и BFS-анализа разрывов |
+| 4.2 | Реестр стейкхолдеров — проверка покрытия; мост «имя ↔ роль» для заявленных интересов |
+| 5.5 | Решения о согласовании — голос по требованию есть свидетельство, что оно затрагивает голосовавшего |
+| 7.1 | Типы артефактов — автоматическая раскладка по viewpoints; поле `owner` — свидетельство интереса |
 | 7.3 | business_context (BG) — coverage matrix |
 
 | Куда | Что передаём |
