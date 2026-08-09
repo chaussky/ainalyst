@@ -443,9 +443,9 @@ class TestCheckCoverage(BaseMCPTest):
         result = self._call()
 
         self.assertIn("FR-002", result, "an archived requirement vanished from the audit")
-        self.assertIn("archived", result.lower())
+        self.assertIn("в архиве", result.lower())
         # It is counted, and it is not counted as coverage.
-        archived_row = [ln for ln in result.split("\n") if "Archived" in ln and "|" in ln]
+        archived_row = [ln for ln in result.split("\n") if "В архиве" in ln and "|" in ln]
         self.assertTrue(archived_row, f"no archived row in the summary:\n{result}")
         self.assertIn("| 1 |", archived_row[0])
 
@@ -464,8 +464,8 @@ class TestCheckCoverage(BaseMCPTest):
                     return int(re.search(r"(\d+)", line.split(label)[1]).group(1))
             raise AssertionError(f"{label!r} not found in:\n{text}")
 
-        self.assertEqual(_number_after(audit, "Total items"),
-                         _number_after(matrix, "Total requirements:"),
+        self.assertEqual(_number_after(audit, "Всего элементов"),
+                         _number_after(matrix, "Итого требований:"),
                          "the audit and the matrix report different totals for one graph")
 
     def test_a_link_pointing_at_an_archived_node_is_marked_in_the_matrix(self):
@@ -498,7 +498,7 @@ class TestCheckCoverage(BaseMCPTest):
         """
         result = self._call()
         # Header of the orphan table (distinct from the summary row "No source (orphan)")
-        marker = "requirements with no source"
+        marker = "требования без источника"
         low = result.lower()
         if marker in low:
             section = low.split(marker, 1)[1].split("\n## ", 1)[0]
@@ -523,7 +523,7 @@ class TestCheckCoverage(BaseMCPTest):
                 relation="verifies", rationale="the test verifies FR-001", remove=False,
             )
         result = self._call()
-        marker = "requirements with no source"
+        marker = "требования без источника"
         low = result.lower()
         self.assertIn(marker, low)  # FR-002 is a genuine orphan -> section exists
         section = low.split(marker, 1)[1].split("\n## ", 1)[0]
@@ -547,7 +547,7 @@ class TestCheckCoverage(BaseMCPTest):
             json.dump(data, f, ensure_ascii=False)
 
         result = self._call()
-        marker = "requirements with no source"
+        marker = "требования без источника"
         low = result.lower()
         self.assertIn(marker, low)
         section = low.split(marker, 1)[1].split("\n## ", 1)[0]
@@ -714,7 +714,7 @@ class TestSatisfiesGrantsSource(BaseMCPTest):
     def _orphan_section(self, result):
         """Body of the '🔴 Requirements with no source' table only — the summary row
         above it mentions the same words and would mask a real regression."""
-        marker = "requirements with no source"
+        marker = "требования без источника"
         low = result.lower()
         if marker not in low:
             return ""
@@ -809,7 +809,7 @@ class TestNoTestAxisCoversBehavioralTypes(BaseMCPTest):
             [{"from": "FR-700", "to": "BG-001", "relation": "satisfies",
               "added": str(date.today())}],
         )
-        self.assertIn("no test", self._row_for(out, "FR-700"))
+        self.assertIn("нет теста", self._row_for(out, "FR-700"))
 
     def test_model_artifact_without_verifies_is_not_flagged(self):
         out = self._run_with(
@@ -819,7 +819,7 @@ class TestNoTestAxisCoversBehavioralTypes(BaseMCPTest):
               "added": str(date.today())}],
         )
         row = self._row_for(out, "ERD-001")
-        self.assertNotIn("no test", row)
+        self.assertNotIn("нет теста", row)
 
 
 class TestAddTraceLinkWarnsOnMissingTarget(BaseMCPTest):
@@ -845,7 +845,7 @@ class TestAddTraceLinkWarnsOnMissingTarget(BaseMCPTest):
         self._prepare()
         out = self._add("BG-01")   # typo — node does not exist
         self.assertIn("BG-01", out)
-        self.assertIn("not in the repository", out)
+        self.assertIn("в репозитории нет", out)
         repo = load_test_repo(self.P)
         self.assertTrue(
             any(l["from"] == "FR-001" and l["to"] == "BG-01" for l in repo["links"]),
@@ -854,7 +854,7 @@ class TestAddTraceLinkWarnsOnMissingTarget(BaseMCPTest):
     def test_existing_target_gets_no_warning(self):
         self._prepare()
         out = self._add("BR-001")
-        self.assertNotIn("not in the repository", out)
+        self.assertNotIn("в репозитории нет", out)
 
 
 class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
@@ -908,7 +908,7 @@ class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
     def test_a_retired_source_does_not_justify_a_live_requirement(self):
         self._live_requirement_leaning_on_archived_evidence()
         out = self._run()
-        covered = out.split("## 🟢 Fully covered items", 1)
+        covered = out.split("## 🟢 Полностью покрытые элементы", 1)
         self.assertEqual(len(covered), 1,
                          "FR-001 is justified only by retired nodes — it cannot be "
                          "fully covered:\n" + out)
@@ -917,15 +917,15 @@ class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
     def test_the_verdict_does_not_call_that_project_ready(self):
         self._live_requirement_leaning_on_archived_evidence()
         out = self._run()
-        self.assertNotIn("Coverage is complete", out)
+        self.assertNotIn("Покрытие полное", out)
 
     @staticmethod
     def _covered_section(out):
         """The '🟢 Fully covered' table only. The summary row above it carries the same
         words, so a whole-output assertion would pass on the wrong evidence."""
-        if "## 🟢 Fully covered items" not in out:
+        if "## 🟢 Полностью покрытые элементы" not in out:
             return ""
-        return out.split("## 🟢 Fully covered items", 1)[1].split("\n## ", 1)[0]
+        return out.split("## 🟢 Полностью покрытые элементы", 1)[1].split("\n## ", 1)[0]
 
     def test_a_live_source_still_justifies(self):
         """The rule must not degenerate into "nothing is ever covered"."""
@@ -963,8 +963,8 @@ class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
             [self._edge("FR-001", "BR-001", "derives")],
         )
         out = self._run()
-        self.assertNotIn("Coverage is complete", out)
-        self.assertIn("archived", out.lower())
+        self.assertNotIn("Покрытие полное", out)
+        self.assertIn("в архиве", out.lower())
 
     def test_a_stale_link_is_named_where_the_analyst_reads_the_verdict(self):
         """`deprecate_requirements` sends the analyst here to find links left pointing
@@ -985,7 +985,7 @@ class TestArchivedEvidenceIsNotCoverage(BaseMCPTest):
         # Coverage really IS complete here — every live node has live evidence. The
         # defect was that "complete" was the ONLY thing the verdict said, while the
         # body warned about a link nobody had re-pointed.
-        recommendations = out.split("## Recommendations", 1)[1]
+        recommendations = out.split("## Рекомендации", 1)[1]
         self.assertIn("BR-OLD", recommendations)
 
 

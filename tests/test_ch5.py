@@ -220,7 +220,7 @@ class TestMaintainMCP(BaseMCPTest):
     def test_update_unknown_id(self):
         self._prepare()
         result = mod52.update_requirement(self.P, "XX-999", "Test", new_status="implemented")
-        self.assertIn("not found", result)
+        self.assertIn("не найдено", result)
 
     def test_update_no_changes(self):
         self._prepare()

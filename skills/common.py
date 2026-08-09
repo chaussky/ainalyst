@@ -100,13 +100,13 @@ ARCHIVED_MARK = "_(в архиве)_"
 # Human labels for the node types that are NOT requirements, so a caption printed next
 # to a count can be built from the types actually present instead of a hard-coded list.
 NODE_TYPE_LABELS = {
-    "business": "business requirements",
-    "business_need": "business needs (6.1)",
-    "business_goal": "business objectives (6.2)",
-    "risk": "risks (6.3)",
-    "change_request": "change requests (5.4)",
-    SOLUTION_SCOPE_NODE_TYPE: "solution scope (6.4)",
-    "test": "tests",
+    "business": "бизнес-требования",
+    "business_need": "бизнес-потребности (6.1)",
+    "business_goal": "бизнес-цели (6.2)",
+    "risk": "риски (6.3)",
+    "change_request": "запросы на изменение (5.4)",
+    SOLUTION_SCOPE_NODE_TYPE: "границы решения (6.4)",
+    "test": "тесты",
 }
 
 

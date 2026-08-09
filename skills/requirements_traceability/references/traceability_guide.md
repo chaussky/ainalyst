@@ -37,7 +37,7 @@
 
 Когда выбирать: Enterprise-проекты, Agile в масштабе, есть QA-процесс.
 
-### Full — Regulated domains, Enterprise
+### Full — регулируемые отрасли, Enterprise
 Трассируем все 4 типа отношений.
 `rationale` обязателен для каждой связи.
 Версионность: полная история изменений.
@@ -115,23 +115,23 @@ BN-001 (business_need) → derives → BG-001 (business_goal) → satisfies → 
 
 ---
 
-## Integration with other BABOK tasks
+## Связь с другими задачами BABOK
 
-### Inputs to 5.1
-- **6.1** `define_business_needs` → registers BN-xxx nodes of type `business_need`
-  as upstream roots. End-to-end traceability starts right here.
-- **6.2** `define_goals_and_objectives` → registers BG-xxx nodes of type `business_goal`
-  with `BG derives BN` links. The second tier of traceability.
-- **4.3** `save_confirmed_elicitation_result` → confirmed elicitation artifacts.
-  This is the primary source for creating requirements in the traceability repository.
-- **4.2** `save_cr_elicitation_analysis` → for a CR: new requirements or changes to
-  existing ones. A trigger for updating traceability.
-- **3.2** Stakeholder registry → determines who is the source of each requirement.
+### Что приходит в 5.1
+- **6.1** `define_business_needs` → заводит узлы BN-xxx типа `business_need`
+  как корни вверх по цепочке. Сквозная трассировка начинается именно здесь.
+- **6.2** `define_goals_and_objectives` → заводит узлы BG-xxx типа `business_goal`
+  со связями `BG derives BN`. Второй ярус трассировки.
+- **4.3** `save_confirmed_elicitation_result` → подтверждённые артефакты выявления.
+  Это основной источник для создания требований в репозитории трассировки.
+- **4.2** `save_cr_elicitation_analysis` → для CR: новые требования или изменения
+  существующих. Триггер для обновления трассировки.
+- **3.2** Реестр стейкхолдеров → определяет, кто является источником каждого требования.
 
-### Outputs from 5.1
-- **5.3** Prioritization uses the traceability repository: dependencies between
-  requirements affect implementation order (B cannot be prioritized above A if
-  B depends on A).
+### Что уходит из 5.1
+- **5.3** Приоритизация опирается на репозиторий трассировки: зависимости между
+  требованиями влияют на порядок реализации (B нельзя поставить выше A, если
+  B зависит от A).
 - **5.4** Оценка изменений вызывает `run_impact_analysis`: граф трассировки — 
   инфраструктура для оценки CR. 5.4 добавляет экспертную оценку поверх технического результата.
 - **5.5** Утверждение требований: `export_traceability_matrix` генерирует матрицу

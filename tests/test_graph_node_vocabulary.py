@@ -127,7 +127,7 @@ class TestTraceabilityMatrixRendersEveryNode(unittest.TestCase):
         out = t51.export_traceability_matrix("vocab")
         body = out.split("## Traceability links")[0]
         rendered = sum(1 for n in self.repo["requirements"] if n["id"] in body)
-        self.assertIn(f"**Total requirements:** {rendered}", out)
+        self.assertIn(f"**Итого требований:** {rendered}", out)
 
 
 class TestCoverageAuditClassifiesForeignNodes(unittest.TestCase):
@@ -166,14 +166,14 @@ class TestCoverageAuditClassifiesForeignNodes(unittest.TestCase):
         out = t51.check_coverage("vocab")
         for node_id in ("RK-001", "CR-001"):
             self.assertNotIn(
-                "no implementation", self._row(out, node_id),
+                "нет реализации", self._row(out, node_id),
                 f"{node_id} was reported as missing an implementation",
             )
 
     def test_a_real_requirement_is_still_asked_for_an_implementation(self):
         """The guard against over-correcting: the rule must survive for requirements."""
         out = t51.check_coverage("vocab")
-        self.assertIn("no implementation", self._row(out, "NFR-001"))
+        self.assertIn("нет реализации", self._row(out, "NFR-001"))
 
 
 class TestImpactAnalysisCountMatchesItsTables(unittest.TestCase):
@@ -189,7 +189,7 @@ class TestImpactAnalysisCountMatchesItsTables(unittest.TestCase):
     def test_reported_total_equals_the_rows_the_reader_can_see(self):
         out = t51.run_impact_analysis("vocab", "FR-001", "Add self-employed handling")
         import re
-        m = re.search(r"Result: \*\*(\d+)\*\* artifacts affected", out)
+        m = re.search(r"Итог: затронуто \*\*(\d+)\*\* артефактов", out)
         self.assertIsNotNone(m, "impact analysis did not report a total")
         claimed = int(m.group(1))
         listed = len(re.findall(r"^\| `[A-Z]+-\d+`", out, flags=re.M))

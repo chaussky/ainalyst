@@ -139,10 +139,10 @@ class TestFA_GraphTruthAlignment(BaseMCPTest):
             future_state="future", solution_scope="scope")
         out = val.check_business_alignment(pid, req_ids='["FR-DECOY"]')
         self.assertIn("0 (0.0%)", out)            # nothing counted as aligned
-        self.assertIn("Title match only", out)    # advisory summary row
-        self.assertIn("advisory", out.lower())    # advisory section present
+        self.assertIn("Только совпадение по заголовку", out)    # advisory summary row
+        self.assertIn("подсказка", out.lower())    # advisory section present
         # the decoy must NOT be listed as an aligned requirement
-        self.assertNotIn("→ `BG-001` _(traced in graph)_", out)
+        self.assertNotIn("→ `BG-001` _(трассировка в графе)_", out)
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ class TestR11_SixOneOnlyPath(BaseMCPTest):
                                  from_current_state_project_id=pid)
         out = val.check_business_alignment(pid, req_ids='["FR-001"]')
         self.assertIn("1 (100.0%)", out)          # aligned via the graph edge
-        self.assertIn("traced in graph", out)
+        self.assertIn("трассировка в графе", out)
 
 
 # ---------------------------------------------------------------------------
@@ -280,9 +280,9 @@ class TestConfirmationFindings(BaseMCPTest):
         ver.mark_req_verified(pid, req_ids='["FR-001"]', force=True)
         val.mark_req_validated(pid, req_ids='["FR-001"]', force=True)
         out = val.get_validation_report(pid)
-        self.assertIn("Not ready for 7.5", out)
-        self.assertNotIn("All reqs trace to business objectives", out)
-        self.assertIn("Business context not set", out)
+        self.assertIn("Не готово к 7.5", out)
+        self.assertNotIn("Все req трассированы на бизнес-цели", out)
+        self.assertIn("Бизнес-контекст не задан", out)
 
     def test_r2_4_reverify_keeps_validated_status(self):
         import skills.requirements_traceability_mcp as tr
@@ -307,15 +307,15 @@ class TestConfirmationFindings(BaseMCPTest):
         tr.add_trace_link(pid, "RK-001", "FR-001", "threatens", "x")
         tr.add_trace_link(pid, "SOL-001", "FR-001", "satisfies", "x")
         out = tr.check_coverage(pid)
-        self.assertIn("Total items", out)
-        self.assertIn("non-requirement node", out)
-        self.assertIn("Fully covered items", out)
+        self.assertIn("Всего элементов", out)
+        self.assertIn("узлов другого рода", out)
+        self.assertIn("Полностью покрытые элементы", out)
         # G-6: the caption is built from the types actually present. It used to be a
         # fixed list printed beside a count taken over a wider set, so a project with
         # no risk and no change request still read "(risks / change requests / ...)".
-        self.assertIn("risks (6.3)", out)
-        self.assertIn("solution scope (6.4)", out)
-        self.assertNotIn("change requests (5.4)", out,
+        self.assertIn("риски (6.3)", out)
+        self.assertIn("границы решения (6.4)", out)
+        self.assertNotIn("запросы на изменение (5.4)", out,
                          "the caption names a category this project does not contain")
 
     def test_r1_2_arch_places_51_classes_in_other_viewpoint(self):
@@ -326,7 +326,7 @@ class TestConfirmationFindings(BaseMCPTest):
             {"id": "SR-001", "type": "solution", "title": "Sol req", "status": "confirmed"},
             {"id": "TR-001", "type": "transition", "title": "Trans req", "status": "confirmed"}]))
         out = arch.analyze_requirements_architecture(pid)
-        self.assertIn("Other requirements", out)
+        self.assertIn("Прочие требования", out)
         self.assertIn("(100.0%)", out)     # both counted -> full viewpoint coverage
         self.assertIn("SR-001", out)
 
@@ -338,9 +338,9 @@ class TestConfirmationFindings(BaseMCPTest):
             {"id": "COMP-1", "type": "component", "title": "Auth component", "status": "confirmed"}]))
         tr.add_trace_link(pid, "COMP-1", "FR-001", "satisfies", "implements")
         out = tr.check_coverage(pid)
-        self.assertIn("Fully covered items", out)
+        self.assertIn("Полностью покрытые элементы", out)
         # the component is a realizer -> fully covered, NOT flagged for missing implementation
-        self.assertIn("COMP-1", out.split("Fully covered items")[1])
+        self.assertIn("COMP-1", out.split("Полностью покрытые элементы")[1])
 
     def test_r1_4_priority_not_written_to_non_requirement_node(self):
         import skills.requirements_traceability_mcp as tr

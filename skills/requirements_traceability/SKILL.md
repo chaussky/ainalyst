@@ -86,18 +86,18 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 **Когда:** перед приоритизацией (5.3), перед утверждением (5.5), после серии CR.
 
-Algorithm:
-1. Call `check_coverage`
-2. Interpret the results:
-   - 🔴 **Orphan with no source** → clarify the business justification or freeze it
-   - 🟡 **No implementation** → check with the developer or add to the backlog
-   - 🟡 **No test** → check with QA or create a test. Applies to BEHAVIORAL
-     requirement types (functional / non_functional / user_story / use_case /
-     solution / transition); model artifacts (erd, data_dictionary,
-     business_process, business_rule) are reviewed, not tested
-   - 🟢 **Full coverage** → ready for the next step
-3. Make a decision for each problematic requirement
-4. If needed → `export_traceability_matrix` for a report
+Алгоритм:
+1. Вызови `check_coverage`
+2. Разбери результаты:
+   - 🔴 **Сирота без источника** → выясни бизнес-обоснование или заморозь требование
+   - 🟡 **Нет реализации** → уточни у разработчика или добавь в бэклог
+   - 🟡 **Нет теста** → уточни у QA или заведи тест. Относится к ПОВЕДЕНЧЕСКИМ
+     типам требований (functional / non_functional / user_story / use_case /
+     solution / transition); артефакты-модели (erd, data_dictionary,
+     business_process, business_rule) рецензируются, а не тестируются
+   - 🟢 **Полное покрытие** → готово к следующему шагу
+3. По каждому проблемному требованию прими решение
+4. При необходимости → `export_traceability_matrix` для отчёта
 
 ---
 

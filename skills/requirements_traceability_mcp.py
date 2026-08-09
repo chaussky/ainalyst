@@ -36,6 +36,8 @@ from skills.common import (write_json_artifact, save_artifact, logger, DATA_DIR,
     list_with_cap,
 )
 
+from skills.plural_ru import plural_ru
+
 mcp = FastMCP("BABOK_Requirements_Traceability")
 
 REPO_FILENAME = "traceability_repo.json"
@@ -247,13 +249,13 @@ def init_traceability_repo(
     ]
 
     type_labels = {
-        "business": "Business requirements (BR)",
-        "stakeholder": "Stakeholder requirements (SR)",
-        "solution": "Solution requirements (FR/NFR)",
-        "transition": "Transition requirements (TR)",
-        "test": "Tests (TC)",
-        "component": "Components (COMP)",
-        "solution_scope": "Solution scope (6.4)",
+        "business": "Бизнес-требования (BR)",
+        "stakeholder": "Требования стейкхолдеров (SR)",
+        "solution": "Требования к решению (FR/NFR)",
+        "transition": "Переходные требования (TR)",
+        "test": "Тесты (TC)",
+        "component": "Компоненты (COMP)",
+        "solution_scope": "Границы решения (6.4)",
     }
     for t, count in type_counts.items():
         label = type_labels.get(t, t)
@@ -401,10 +403,10 @@ def add_trace_link(
     if missing_ends:
         listed = ", ".join(f"`{node_id}`" for node_id in missing_ends)
         dangling_note = (
-            f"\n⚠️ {listed}: not in the repository. If this is an external artifact "
-            f"(component, ticket), that is fine; if it is a typo, remove the link "
-            f"with `remove=True` — coverage checks will treat this edge as a real "
-            f"justification.\n"
+            f"\n⚠️ {listed}: в репозитории нет. Если это внешний артефакт "
+            f"(компонент, тикет) — всё в порядке; если это опечатка, снимите связь "
+            f"через `remove=True`: проверки покрытия считают такую связь настоящим "
+            f"обоснованием.\n"
         )
 
     # Add the link
@@ -440,7 +442,7 @@ def add_trace_link(
     }
 
     lines = [
-        f"✅ Link added: `{from_id}` --[**{relation}**]--> `{to_id}`",
+        f"✅ Связь добавлена: `{from_id}` --[**{relation}**]--> `{to_id}`",
         dangling_note,
         f"**Rationale:** {rationale or '—'}",
         "",
@@ -557,13 +559,13 @@ def run_impact_analysis(
     # endangering the objective, which is precisely what impact analysis exists to
     # surface. Build the buckets from what is actually present.
     rel_labels = {
-        "derives": ("⬇️ Derived requirements", "Review — they derive from the changed item"),
-        "depends": ("↔️ Dependent requirements", "Check — they may lose meaning without the changed item"),
-        "satisfies": ("✔️ Satisfies-linked (components / objectives served)",
-                      "Components: estimate rework. Objectives: check the target is still met"),
-        "verifies": ("🧪 Tests", "Rerun or update the test cases"),
-        "threatens": ("⚠️ Risks (6.3)", "Re-assess — they threaten the changed item"),
-        "modifies": ("📝 Change requests (5.4)", "Check whether the pending change still applies"),
+        "derives": ("⬇️ Производные требования", "Пересмотреть — они выведены из изменяемого"),
+        "depends": ("↔️ Зависимые требования", "Проверить — без изменяемого они могут потерять смысл"),
+        "satisfies": ("✔️ Связаны через satisfies (компоненты / достигаемые цели)",
+                      "Компоненты: оценить переделку. Цели: проверить, что цель по-прежнему достигается"),
+        "verifies": ("🧪 Тесты", "Перезапустить или обновить тест-кейсы"),
+        "threatens": ("⚠️ Риски (6.3)", "Переоценить — они угрожают изменяемому"),
+        "modifies": ("📝 Запросы на изменение (5.4)", "Проверить, применим ли ещё незакрытый CR"),
     }
 
     by_relation: dict = {rel: [] for rel in rel_labels}
@@ -571,7 +573,7 @@ def run_impact_analysis(
         rel = item["relation"]
         by_relation.setdefault(rel, []).append(item)
         rel_labels.setdefault(
-            rel, (f"🔗 Linked via `{rel}`", "Review the relationship"))
+            rel, (f"🔗 Связано через `{rel}`", "Пересмотреть связь"))
 
     lines = [
         f"<!-- BABOK 5.1 — Анализ влияния | Проект: {project_name} | {date.today()} -->",
@@ -677,7 +679,7 @@ def check_coverage(
         requirements = [r for r in requirements if r.get("type") == filter_type]
 
     if not requirements:
-        return f"ℹ️ No requirements {'of type `' + filter_type + '`' if filter_type else ''} found in the `{project_name}` repository."
+        return f"ℹ️ Требований{' типа `' + filter_type + '`' if filter_type else ''} в репозитории проекта `{project_name}` не найдено."
 
     archived = [r for r in requirements if is_archived(r)]
     live = [r for r in requirements if not is_archived(r)]
@@ -844,19 +846,18 @@ def check_coverage(
         "",
         f"| Статус | Количество | % |",
         f"|--------|------------|---|",
-        f"| 🟢 Full coverage | {len(fully_covered)} | {covered_pct}% |",
-        f"| 🔴 No source (orphan) | {len(orphans_no_source)} | {round(len(orphans_no_source)/total*100) if total else 0}% |",
-        f"| 🟡 Coverage gaps | {len(orphans_no_impl)} | {round(len(orphans_no_impl)/total*100) if total else 0}% |",
-        f"| 📦 Archived (5.2) | {len(archived)} | {round(len(archived)/total*100) if total else 0}% |",
-        f"| **Total items** | **{total}** | 100% |",
+        f"| 🟢 Полное покрытие | {len(fully_covered)} | {covered_pct}% |",
+        f"| 🔴 Без источника (orphan) | {len(orphans_no_source)} | {round(len(orphans_no_source)/total*100) if total else 0}% |",
+        f"| 🟡 Пробелы в покрытии | {len(orphans_no_impl)} | {round(len(orphans_no_impl)/total*100) if total else 0}% |",
+        f"| 📦 В архиве (5.2) | {len(archived)} | {round(len(archived)/total*100) if total else 0}% |",
+        f"| **Всего элементов** | **{total}** | 100% |",
         "",
     ]
     if analysis_count:
         lines += [
-            f"> ℹ️ **{total - analysis_count} requirement(s)** + **{analysis_count} "
-            f"non-requirement node(s)** ({', '.join(present_labels)}). They are audited "
-            f"for graph connectivity only — they are not prioritised (5.3) or "
-            f"approved (5.5).",
+            f"> ℹ️ Требований: **{total - analysis_count}**, узлов другого рода: "
+            f"**{analysis_count}** ({', '.join(present_labels)}). Они проверяются только "
+            f"на связность графа — их не приоритизируют (5.3) и не согласуют (5.5).",
             "",
         ]
 
@@ -864,8 +865,8 @@ def check_coverage(
         lines += [
             "## 🔴 Требования без источника (orphan)",
             "",
-            "> **Diagnosis:** no `derives` or `satisfies` link upward. Unknown which business need or objective it came from.",
-            "> **Action:** find a business justification via `add_trace_link`, or freeze it.",
+            "> **Диагноз:** нет связи `derives` или `satisfies` вверх. Неизвестно, из какой бизнес-потребности или цели требование выросло.",
+            "> **Действие:** найдите бизнес-обоснование через `add_trace_link` либо заморозьте требование.",
             "",
             "| ID | Тип | Название | Статус |",
             "|----|-----|----------|--------|",
@@ -893,14 +894,14 @@ def check_coverage(
         lines.append("")
 
         lines += [
-            "> **No implementation:** add a `satisfies` link (a component or requirement that implements it) or a `derives` link (child requirement)",
-            "> **No test:** add a `verifies` link (test case)",
+            "> **Нет реализации:** добавьте связь `satisfies` (компонент или требование, которое его реализует) либо `derives` (дочернее требование)",
+            "> **Нет теста:** добавьте связь `verifies` (тест-кейс)",
             "",
         ]
 
     if fully_covered:
         lines += [
-            "## 🟢 Fully covered items",
+            "## 🟢 Полностью покрытые элементы",
             "",
             "| ID | Тип | Название | Связей |",
             "|----|-----|----------|--------|",
@@ -915,13 +916,13 @@ def check_coverage(
         # justification on every other surface. Naming the live nodes that still lean
         # on it is the whole answer the analyst came for.
         lines += [
-            "## 📦 Archived requirements (5.2)",
+            "## 📦 Требования в архиве (5.2)",
             "",
-            "> Kept for audit — nothing is ever deleted. They are listed and counted, "
-            "but they do **not** count as coverage: an archived requirement is not "
-            "evidence that anything is justified, implemented or verified.",
+            "> Хранятся для аудита — на платформе ничего не удаляется. Они показаны и "
+            "посчитаны, но покрытием **не** считаются: требование в архиве не является "
+            "доказательством того, что что-то обосновано, реализовано или проверено.",
             "",
-            "| ID | Type | Title | Status | Still referenced by |",
+            "| ID | Тип | Название | Статус | На него всё ещё ссылаются |",
             "|----|-----|----------|--------|---------------------|",
         ]
         for req in archived:
@@ -934,10 +935,12 @@ def check_coverage(
         lines.append("")
         if still_referenced:
             lines += [
-                f"> ⚠️ **{len(still_referenced)} archived requirement(s) are still "
-                f"referenced by live ones.** Those links read as ordinary justification "
-                f"everywhere else — re-point them with `add_trace_link`, or archive what "
-                f"depends on them.",
+                f"> ⚠️ **На требования в архиве всё ещё ссылаются живые: "
+                f"{len(still_referenced)} "
+                f"{plural_ru(len(still_referenced), 'требование', 'требования', 'требований')}.** "
+                f"Везде в других местах такие связи читаются как обычное обоснование — "
+                f"перенаправьте их через `add_trace_link` либо отправьте в архив то, что "
+                f"от них зависит.",
                 "",
             ]
 
@@ -956,26 +959,33 @@ def check_coverage(
     # true where there was nothing to have an orphan.
     actions = []
     if orphans_no_source:
-        actions.append(f"⚠️ **Close out {len(orphans_no_source)} orphan requirement(s)** before prioritization (5.3) and approval (5.5).")
+        actions.append(
+            f"⚠️ **Требования-сироты: {len(orphans_no_source)}** — закройте по ним "
+            f"вопрос до приоритизации (5.3) и согласования (5.5).")
     if orphans_no_impl:
-        actions.append(f"🔧 **Fill the gaps** in {len(orphans_no_impl)} requirement(s): add implementation and/or tests.")
+        actions.append(
+            f"🔧 **Закройте пробелы** в {len(orphans_no_impl)} "
+            f"{plural_ru(len(orphans_no_impl), 'требовании', 'требованиях', 'требованиях')}: "
+            f"добавьте реализацию и/или тесты.")
     if still_referenced:
         actions.append(
-            f"📦 **Re-point or archive the links still pointing at "
-            f"{len(still_referenced)} archived requirement(s):** "
+            f"📦 **Перенаправьте или отправьте в архив связи, которые всё ещё указывают "
+            f"на {len(still_referenced)} "
+            f"{plural_ru(len(still_referenced), 'требование', 'требования', 'требований')} "
+            f"в архиве:** "
             + list_with_cap(still_referenced, formatter=lambda i: f"`{i}`")
-            + ". They are not evidence, so nothing above counts them as coverage.")
+            + ". Доказательством они не являются, поэтому выше не засчитаны в покрытие.")
 
     if actions:
         lines += [f"{n}. {text}" for n, text in enumerate(actions, 1)]
     elif not live:
         lines.append(
-            f"ℹ️ Every requirement in this project is archived ({len(archived)} of "
-            f"{len(archived)}). There is nothing to prioritise (5.3) or approve (5.5), "
-            f"and this is not a statement that the traceability is in good order — "
-            f"revive what is still in scope with `update_requirement` (5.2).")
+            f"ℹ️ Все требования проекта в архиве ({len(archived)} из "
+            f"{len(archived)}). Приоритизировать (5.3) и согласовывать (5.5) нечего, и это "
+            f"не утверждение о том, что с трассировкой всё в порядке — верните в работу "
+            f"то, что осталось в границах, через `update_requirement` (5.2).")
     else:
-        lines.append("✅ Coverage is complete. Traceability is ready for 5.3 (Prioritization) and 5.5 (Approval).")
+        lines.append("✅ Покрытие полное. Трассировка готова к 5.3 (приоритизация) и 5.5 (согласование).")
 
     content = "\n".join(lines)
     save_artifact(content, prefix="5_1_coverage_check", project_id=project_name)
@@ -1073,25 +1083,25 @@ def export_traceability_matrix(
     # document goes into the 5.5 approval package, so the omission is silent and signed.
     type_order = ["business", "stakeholder", "solution", "transition", "test", "component"]
     type_labels = {
-        "business": "Business requirements",
-        "stakeholder": "Stakeholder requirements",
-        "solution": "Solution requirements",
-        "transition": "Transition requirements",
-        "test": "Tests",
-        "component": "Components",
-        "business_need": "Business needs (6.1)",
-        "business_goal": "Business objectives (6.2)",
-        "risk": "Risks (6.3)",
-        "change_request": "Change requests (5.4)",
-        "solution_scope": "Solution scope (6.4)",
-        "functional": "Functional requirements",
-        "non_functional": "Non-functional requirements",
-        "business_rule": "Business rules",
-        "user_story": "User stories",
-        "use_case": "Use cases",
-        "business_process": "Business processes",
-        "data_dictionary": "Data dictionaries",
-        "erd": "Entity-relationship models",
+        "business": "Бизнес-требования",
+        "stakeholder": "Требования стейкхолдеров",
+        "solution": "Требования к решению",
+        "transition": "Переходные требования",
+        "test": "Тесты",
+        "component": "Компоненты",
+        "business_need": "Бизнес-потребности (6.1)",
+        "business_goal": "Бизнес-цели (6.2)",
+        "risk": "Риски (6.3)",
+        "change_request": "Запросы на изменение (5.4)",
+        "solution_scope": "Границы решения (6.4)",
+        "functional": "Функциональные требования",
+        "non_functional": "Нефункциональные требования",
+        "business_rule": "Бизнес-правила",
+        "user_story": "Пользовательские истории",
+        "use_case": "Use Cases",
+        "business_process": "Бизнес-процессы",
+        "data_dictionary": "Словари данных",
+        "erd": "Модели «сущность — связь»",
     }
     # Known types first, in the order above; then anything else, so a node type
     # introduced later is rendered under its own name instead of disappearing.
