@@ -227,7 +227,7 @@ class TestConsumersStopJudgingByTheMutableStatus(BaseMCPTest):
     def test_52_reuse_scoring_still_credits_the_approval(self):
         import skills.requirements_maintain_mcp as t52
         out = t52.find_reusable_requirements(PID)
-        self.assertIn("Approved in 5.5", out)
+        self.assertIn("Согласовано в 5.5", out)
 
 
 class TestVerificationReportIsHonestWhenThereAreNoRecords(BaseMCPTest):

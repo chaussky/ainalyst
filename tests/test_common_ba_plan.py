@@ -59,7 +59,7 @@ class TestBaPlanReader(BaseMCPTest):
         # NOT "3.4": this reader now also serves 5.5 (the 3.1 timing form) and 4.1
         # (the 3.1 work period), and naming 3.4 made the 5.5 refusal contradict its
         # own first sentence. The note must name the file, not one of its sections.
-        self.assertIn("chapter-3 BA plan", note)
+        self.assertIn("План БА из главы 3", note)
         self.assertNotIn("3.4", note)
 
     def test_path_matches_the_producer(self):

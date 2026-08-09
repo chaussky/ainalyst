@@ -198,8 +198,8 @@ class TestTheRefusalReachesTheToolAsAnAnswer(unittest.TestCase):
         to use the same id — that is the original collision, rebuilt through advice."""
         for pid in ("統一平台", "منصة", "!!!"):
             msg = common.project_id_error(pid)
-            self.assertNotIn(f"Try: `{common._PID_FALLBACK_SUGGESTION}`", msg, pid)
-            self.assertIn("pick a short latin name yourself", msg, pid)
+            self.assertNotIn(f"Попробуйте: `{common._PID_FALLBACK_SUGGESTION}`", msg, pid)
+            self.assertIn("латинское имя сами", msg, pid)
 
     def test_a_valid_id_is_unaffected(self):
         self.assertEqual(

@@ -338,7 +338,7 @@ class DamagedPlanIsReportedTest(CRGovernanceBase):
         with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
             f.write("{ not json")
         _record, output = self._resolve(decided_by="Mark Feld")
-        self.assertIn("could not be read", output)
+        self.assertIn("прочитать его не удалось", output)
 
     def test_the_decision_record_itself_stays_a_statement_about_the_cr(self):
         """The warning belongs in the reply, not in the signed record — that document
@@ -348,7 +348,7 @@ class DamagedPlanIsReportedTest(CRGovernanceBase):
             f.write("{ not json")
         record, _output = self._resolve(decided_by="Mark Feld")
         self.assertIn("# CR Decision Record", record)
-        self.assertNotIn("could not be read", record)
+        self.assertNotIn("прочитать его не удалось", record)
 
 
 if __name__ == "__main__":

@@ -368,36 +368,36 @@ def project_id_error(project_id, field: str = "project_id") -> Optional[str]:
     if _pid_is_acceptable(text):
         return None
 
-    shown = str(project_id) if str(project_id or "").strip() else "(empty)"
+    shown = str(project_id) if str(project_id or "").strip() else "(пусто)"
     suggestion = project_id_suggestion(project_id)
     if suggestion == _PID_FALLBACK_SUGGESTION:
         # Naming a value the analyst can copy would hand the SAME name to every
         # project whose alphabet the table does not cover, recreating the collision
         # through the advice itself. Say so instead of offering it.
-        hint = (f"   Nothing could be transliterated automatically — pick a short "
-                f"latin name yourself (for example `{_PID_FALLBACK_SUGGESTION}`).")
+        hint = (f"   Транслитерировать автоматически нечего — придумайте короткое "
+                f"латинское имя сами (например, `{_PID_FALLBACK_SUGGESTION}`).")
     else:
-        hint = f"   Try: `{suggestion}`"
+        hint = f"   Попробуйте: `{suggestion}`"
         # The suggestion is not part of the path contract, so it MAY look at the disk
         # — and it must: advising a name that is already another project's folder
         # would walk the analyst back into the collision this refusal just prevented.
         try:
             if os.path.isdir(os.path.join(DATA_DIR, normalize_project_id(suggestion))):
-                hint += (f"\n   ⚠️ `{suggestion}` already belongs to another project "
-                         f"in this workspace — choose a different name.")
+                hint += (f"\n   ⚠️ `{suggestion}` уже принадлежит другому проекту "
+                         f"в этом рабочем каталоге — выберите другое имя.")
         except OSError:
             pass
 
     return (
-        f"❌ `{field}` cannot be `{shown}`.\n"
-        f"   `{field}` is the key to every artifact of a project: it IS the name "
-        f"of the project's folder, so it has to be spelled exactly the way a folder is "
-        f"— lower-case `a-z`, `0-9`, `_` and `-`, starting with a letter or a digit, "
-        f"with no spaces and no doubled `_`. Any other spelling would have to be "
-        f"rewritten to fit, and two different ids rewritten the same way would land in "
-        f"ONE folder and overwrite each other's artifacts.\n"
+        f"❌ `{field}` не может быть `{shown}`.\n"
+        f"   `{field}` — ключ ко всем артефактам проекта: это И ЕСТЬ имя "
+        f"папки проекта, поэтому писаться он обязан ровно так, как пишется имя папки "
+        f"— строчные `a-z`, `0-9`, `_` и `-`, первым символом буква или цифра, "
+        f"без пробелов и без сдвоенного `_`. Любое другое написание пришлось бы "
+        f"переписать, чтобы оно подошло, а два разных id, переписанных одинаково, "
+        f"попали бы в ОДНУ папку и затёрли артефакты друг друга.\n"
         f"{hint}\n"
-        f"   No project data has been written."
+        f"   Данные проекта не записаны."
     )
 
 
@@ -472,8 +472,8 @@ def _json_load_field(raw: str, field: str, example: str):
     try:
         return json.loads(text), ""
     except json.JSONDecodeError as e:
-        return None, (f"❌ Error parsing {field}: {e}\n"
-                      f"Expected JSON, e.g. '{example}'.")
+        return None, (f"❌ Ошибка разбора {field}: {e}\n"
+                      f"Ожидается JSON, например '{example}'.")
 
 
 def parse_json_list(raw: str, field: str, required: bool = False,
@@ -484,13 +484,13 @@ def parse_json_list(raw: str, field: str, required: bool = False,
         return [], error
     if value is None:
         if required:
-            return [], f"❌ {field} is required. Expected a JSON array, e.g. '{example}'."
+            return [], f"❌ {field} обязателен. Ожидается JSON-массив, например '{example}'."
         return [], ""
     if not isinstance(value, list):
-        return [], (f"❌ {field} must be a JSON array, got {type(value).__name__}. "
-                    f"Example: '{example}'.")
+        return [], (f"❌ {field} должен быть JSON-массивом, получено {type(value).__name__}. "
+                    f"Пример: '{example}'.")
     if required and not value:
-        return [], f"❌ {field} must be a non-empty JSON array."
+        return [], f"❌ {field} должен быть непустым JSON-массивом."
     return value, ""
 
 
@@ -502,9 +502,9 @@ def parse_json_str_list(raw: str, field: str, required: bool = False,
         return [], error
     bad = next((v for v in values if not isinstance(v, str)), None)
     if bad is not None:
-        return [], (f"❌ {field} must contain only strings — got "
+        return [], (f"❌ {field} должен содержать только строки — получено "
                     f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
-                    f"Example: '{example}'.")
+                    f"Пример: '{example}'.")
     return values, ""
 
 
@@ -533,8 +533,8 @@ def unrecognized_records_error(field: str, accepted: tuple, example: str) -> str
     """The message for "you supplied records, none of them carried the key field"."""
     spellings = " or ".join(f"`{a}`" for a in accepted)
     return (
-        f"❌ `{field}`: no entry had a recognisable name. Accepted spellings are "
-        f"{spellings}.\nExample: {example}"
+        f"❌ `{field}`: ни в одной записи не нашлось распознаваемого имени. Допустимые "
+        f"написания — {spellings}.\nПример: {example}"
     )
 
 
@@ -546,9 +546,9 @@ def parse_json_dict_list(raw: str, field: str, required: bool = False,
         return [], error
     bad = next((v for v in values if not isinstance(v, dict)), None)
     if bad is not None:
-        return [], (f"❌ {field} must be a JSON array of objects — got "
+        return [], (f"❌ {field} должен быть JSON-массивом объектов — получено "
                     f"{type(bad).__name__}: {json.dumps(bad, ensure_ascii=False)[:60]}. "
-                    f"Example: '{example}'.")
+                    f"Пример: '{example}'.")
     return values, ""
 
 
@@ -560,11 +560,11 @@ def parse_json_dict(raw: str, field: str, required: bool = False,
         return {}, error
     if value is None:
         if required:
-            return {}, f"❌ {field} is required. Expected a JSON object, e.g. '{example}'."
+            return {}, f"❌ {field} обязателен. Ожидается JSON-объект, например '{example}'."
         return {}, ""
     if not isinstance(value, dict):
-        return {}, (f"❌ {field} must be a JSON object, got {type(value).__name__}. "
-                    f"Example: '{example}'.")
+        return {}, (f"❌ {field} должен быть JSON-объектом, получено {type(value).__name__}. "
+                    f"Пример: '{example}'.")
     return value, ""
 
 
@@ -773,7 +773,7 @@ class CorruptArtifactError(Exception):
     """A stored artifact exists but cannot be parsed. `str(exc)` is BA-facing."""
 
 
-def read_json_artifact(path: str, what: str = "artifact") -> dict:
+def read_json_artifact(path: str, what: str = "артефакт") -> dict:
     """Reads a stored JSON artifact, raising CorruptArtifactError with the path.
 
     The path is part of the message on purpose: "something went wrong" is not
@@ -787,14 +787,14 @@ def read_json_artifact(path: str, what: str = "artifact") -> dict:
         # UnicodeDecodeError is a ValueError, not an OSError — a distinction that
         # already let a non-UTF-8 file escape one guard in this codebase (A4).
         raise CorruptArtifactError(
-            f"❌ The {what} could not be read: `{path}`\n"
+            f"❌ Не удалось прочитать: {what} — `{path}`\n"
             f"   {type(exc).__name__}: {exc}\n"
-            f"   The file exists but is not valid JSON. The last "
-            f"{HISTORY_GENERATIONS} versions are kept in "
-            f"`{os.path.join(BASE_DIR, HISTORY_DIRNAME)}` — copying the newest one "
-            f"back gives you the project as it stood BEFORE the most recent change, "
-            f"which is the one thing it cannot return. No data has been changed by "
-            f"this call."
+            f"   Файл на месте, но это не корректный JSON. Последние "
+            f"{HISTORY_GENERATIONS} версий хранятся в "
+            f"`{os.path.join(BASE_DIR, HISTORY_DIRNAME)}` — если скопировать оттуда "
+            f"самую свежую, вы получите проект в том виде, в каком он был ДО "
+            f"последнего изменения: именно это изменение она вернуть и не может. "
+            f"Этот вызов данные не менял."
         ) from exc
 
 
@@ -865,10 +865,10 @@ def _refuse_write(path: str, problem: str) -> "ArtifactShapeError":
     """Builds the refusal. The promise in the last line is the reason the check runs
     BEFORE anything on disk is touched."""
     return ArtifactShapeError(
-        f"❌ Refused to write `{path}`\n"
+        f"❌ Запись отклонена: `{path}`\n"
         f"   {problem}\n"
-        f"   Nothing was written — the stored version of this file is unchanged.\n"
-        f"   This is a defect in the tool that produced the content, not in your data."
+        f"   Ничего не записано — сохранённая версия этого файла не изменилась.\n"
+        f"   Это дефект инструмента, породившего содержимое, а не ваших данных."
     )
 
 
@@ -882,21 +882,21 @@ def check_artifact_shape(path: str, data) -> None:
     """
     if not isinstance(data, dict):
         raise _refuse_write(
-            path, f"The content is a {type(data).__name__}, not a JSON object.")
+            path, f"Содержимое имеет тип {type(data).__name__}, а не JSON-объект.")
 
     if os.path.basename(path).endswith(f"_{TRACEABILITY_REPO_FILENAME}"):
         for key in ("requirements", "links"):
             if key not in data:
                 raise _refuse_write(
                     path,
-                    f"The requirements graph has no `{key}` key. A graph is "
-                    f"`requirements` (nodes) plus `links` (edges); writing it "
-                    f"without one would make the project unreadable to Chapter 5.")
+                    f"В графе требований нет ключа `{key}`. Граф — это "
+                    f"`requirements` (узлы) плюс `links` (связи); запись без одного "
+                    f"из них сделала бы проект нечитаемым для Главы 5.")
             if not isinstance(data[key], list):
                 raise _refuse_write(
                     path,
-                    f"`{key}` is a {type(data[key]).__name__}, and the requirements "
-                    f"graph needs it to be a list.")
+                    f"`{key}` имеет тип {type(data[key]).__name__}, а графу требований "
+                    f"нужен список.")
 
 
 def _keep_generation(path: str) -> None:
@@ -1490,8 +1490,8 @@ def load_ba_plan(project_id: str):
         # (section 3.4), 5.5 (the 3.1 timing form) and 4.1 (the 3.1 work period). The
         # 3.4 wording was accurate when 3.4 was the only consumer, and it now
         # contradicts the sentence the caller prints above it.
-        return None, (f"⚠️ The chapter-3 BA plan exists but could not be read "
-                      f"(`{path}`) — continuing without it.")
+        return None, (f"⚠️ План БА из главы 3 есть, но прочитать его не удалось "
+                      f"(`{path}`) — продолжаем без него.")
     return loaded, ""
 
 

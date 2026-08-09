@@ -177,7 +177,7 @@ class GovernanceInThePackageTest(BaseMCPTest):
         result = self._prepare()
         self.assertIn("Approval Package: Auth", result)
         self.assertNotIn("5 рабочих дней", result)
-        self.assertIn("could not be read", result)
+        self.assertIn("прочитать его не удалось", result)
 
     def test_a_governance_section_of_the_wrong_shape_does_not_crash(self):
         plan_ba_governance(PROJECT, "High", '["CFO"]')
