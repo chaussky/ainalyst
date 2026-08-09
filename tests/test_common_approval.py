@@ -215,7 +215,7 @@ class TestConsumersStopJudgingByTheMutableStatus(BaseMCPTest):
     def test_72_report_still_counts_the_approval_after_73_validated_it(self):
         import skills.requirements_verify_mcp as t72
         out = t72.get_verification_report(PID)
-        self.assertIn("| ✅ Approved in 5.5 | 1 |", out)
+        self.assertIn("| ✅ Согласовано в 5.5 | 1 |", out)
 
     def test_51_matrix_does_not_drop_an_approved_requirement(self):
         """This document goes into the approval package a stakeholder signs."""
@@ -245,7 +245,7 @@ class TestVerificationReportIsHonestWhenThereAreNoRecords(BaseMCPTest):
                 {"id": "FR-001", "type": "functional", "title": "X",
                  "version": "1.0", "status": "draft"}]}, f)
         out = t72.get_verification_report(PID)
-        self.assertIn("5.5 has not run", out)
+        self.assertIn("5.5 не запускалась", out)
 
 
 if __name__ == "__main__":

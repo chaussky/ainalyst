@@ -756,7 +756,7 @@ class TestMarkReqVerified(BaseMCPTest):
         """force defaults to False — the gate is unchanged unless asked."""
         pid = self._blocked_project("proj_force4")
         result = mod72.mark_req_verified(pid, '["US-001"]')
-        self.assertIn("BLOCKED", result)
+        self.assertIn("ЗАБЛОКИРОВАНО", result)
         self.assertNotEqual(mod72._find_req(load_repo(pid), "US-001")["status"], "verified")
 
     def test_blocked_message_points_to_force(self):
@@ -885,7 +885,7 @@ class TestGetVerificationReport(BaseMCPTest):
         mod72.open_verification_issue("proj_rep4", "US-001", "missing_ac", "Desc", "blocker")
         result = mod72.get_verification_report("proj_rep4")
         self.assertIn("US-001", result)
-        self.assertIn("Blocker", result.lower() if "blocker" not in result else result)
+        self.assertIn("Блокеры", result)
 
     def test_open_issues_table(self):
         repo = make_repo("proj_rep5", [make_us_req("US-001")])
@@ -1115,7 +1115,7 @@ class TestQualityReadsSpecFiles(BaseMCPTest):
         save_repo(make_repo(P, [make_bare_node("US-001", "user_story", "Submit")]))
         result = mod72.check_req_quality(P)
         self.assertNotIn("missing_ac", result)
-        self.assertIn("verify manually", result.lower())
+        self.assertIn("проверьте вручную", result.lower())
 
 
 if __name__ == "__main__":

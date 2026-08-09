@@ -135,16 +135,18 @@ check_req_quality(project_id="my_project", req_type="user_story")
 
 Меняет статус `draft → verified` в репозитории 5.1.
 
-**Precondition:** MCP checks for open blocker issues on each req. By default a req
-with an open blocker is NOT verified — it is reported as blocked.
+**Предусловие:** MCP проверяет каждое требование на открытые проблемы уровня blocker.
+По умолчанию требование с открытым блокером НЕ верифицируется — о нём сообщается как
+о заблокированном.
 
-**The decision still belongs to the BA.** If you judge a blocker acceptable, pass
-`force=true`: the req is verified, the blocker issue **stays open**, and the override
-is recorded — in the repository history (with the overridden blocker ids) and in a
-dedicated section of `get_verification_report`, so whoever approves in 5.5 sees it.
+**Решение всё равно за BA.** Если ты считаешь блокер допустимым, передай
+`force=true`: требование верифицируется, проблема-блокер **остаётся открытой**, а само
+решение записывается — в историю репозитория (вместе с id перекрытых блокеров) и в
+отдельный раздел `get_verification_report`, чтобы тот, кто согласует в 5.5, его увидел.
 
-> Never close an unresolved issue via `resolve_verification_issue` just to move on —
-> that corrupts the verification record. Use `force` instead: it is honest and auditable.
+> Никогда не закрывай нерешённую проблему через `resolve_verification_issue` просто
+> чтобы двигаться дальше — так портится запись о верификации. Для этого есть `force`:
+> он честен и оставляет след в аудите.
 
 ```
 # Верифицировать список

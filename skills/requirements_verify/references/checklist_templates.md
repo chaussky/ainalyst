@@ -49,10 +49,10 @@
 - [ ] История понятна бизнес-заказчику без технических деталей
 
 **Плохо:**  
-`As a user, I want REST API endpoint /api/v1/applications POST, so that data is persisted.`
+`As a пользователь, I want REST API endpoint /api/v1/applications POST, so that данные сохранялись.`
 
 **Хорошо:**  
-`As a loan officer, I want to submit a new loan application, so that I can start the review process.`
+`As a кредитный специалист, I want подать новую заявку на кредит, so that начать её рассмотрение.`
 
 ---
 
@@ -256,11 +256,11 @@
 
 | Тип req | MCP автоматически | BA вручную (чеклист выше) |
 |---------|-------------------|--------------------------|
-| User Story | AC count, ambiguity signals, priority | Role specificity, action vs solution, AC language |
-| Functional | Measurability pattern, atomicity, priority | Tech feasibility, full coverage of condition+result |
-| Non-Functional | Number present, ambiguity, priority | Metric realism, measurement tool |
-| Business Rule | Condition presence, atomicity, priority | Source/authority, exceptions documented |
-| Use Case | Exception presence, actor present, priority | Step clarity, actor in diagram |
-| Business Process | Outcome present, trigger, atomicity | Org feasibility, diagram matches text |
-| Data Dictionary | Constraint presence, ambiguity in names | Type compatibility, naming conventions |
-| ERD | Entity names match DD | Cardinality accuracy, implementability |
+| User Story | число AC, признаки двусмысленности, приоритет | конкретность роли, потребность против решения, язык AC |
+| Functional | шаблон измеримости, атомарность, приоритет | техническая выполнимость, полнота пары «условие + результат» |
+| Non-Functional | наличие числа, двусмысленность, приоритет | реалистичность метрики, чем измеряем |
+| Business Rule | наличие условия, атомарность, приоритет | источник и полномочия, задокументированы ли исключения |
+| Use Case | наличие исключений, наличие актора, приоритет | понятность шагов, актор есть на диаграмме |
+| Business Process | наличие результата, триггер, атомарность | организационная выполнимость, диаграмма совпадает с текстом |
+| Data Dictionary | наличие ограничений, двусмысленность в именах | совместимость типов, соглашения об именовании |
+| ERD | имена сущностей совпадают с DD | точность кардинальностей, реализуемость |

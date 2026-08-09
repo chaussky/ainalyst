@@ -37,6 +37,7 @@ from skills.common import (write_json_artifact,
     read_json_artifact, guard_artifact_errors,
     find_spec_file, spec_section_body,
 )
+from skills.plural_ru import plural_ru
 
 mcp = FastMCP("BABOK_Requirements_Verify")
 
@@ -452,7 +453,7 @@ def _check_single_req(req: dict, repo: dict) -> dict:
                 blockers.append(checks["testable"].get("issue", "missing_ac"))
         else:
             checks["testable"] = {"passed": True, "issue": None,
-                                  "note": "Acceptance Criteria not found in the 7.1 spec file — verify manually"}
+                                  "note": "Acceptance Criteria не найдены в файле спецификации 7.1 — проверьте вручную"}
 
     elif req_type in ("functional", "non_functional", "business_rule"):
         desc = (description or "").strip()
@@ -462,7 +463,7 @@ def _check_single_req(req: dict, repo: dict) -> dict:
                 majors.append(checks["testable"].get("issue", "not_testable"))
         else:
             checks["testable"] = {"passed": True, "issue": None,
-                                  "note": "Requirement statement not found in the 7.1 spec file — verify testability manually"}
+                                  "note": "Формулировка требования не найдена в файле спецификации 7.1 — проверьте тестируемость вручную"}
 
     elif req_type == "use_case":
         if "exc_scenarios" in req:
@@ -472,7 +473,7 @@ def _check_single_req(req: dict, repo: dict) -> dict:
                 majors.append(checks["testable"].get("issue", "not_testable"))
         else:
             checks["testable"] = {"passed": True, "issue": None,
-                                  "note": "Use Case scenarios not found in the 7.1 spec file — verify manually"}
+                                  "note": "Сценарии Use Case не найдены в файле спецификации 7.1 — проверьте вручную"}
 
     else:
         # business_process, data_dictionary, erd — базовая проверка по title
@@ -618,7 +619,8 @@ def check_req_quality(
         f"# 🔍 Верификация требований — {project_id}",
         "",
         f"**Дата:** {date.today()}  ",
-        f"**Проверено:** {len(results)} требований  ",
+        f"**Проверено:** {len(results)} "
+        f"{plural_ru(len(results), 'требование', 'требования', 'требований')}  ",
         f"**Фильтр по типу:** {req_type or 'все типы'}",
         "",
         "## Сводка",
@@ -722,8 +724,8 @@ def check_req_quality(
         if r["blockers"] or r["majors"]:
             lines.append("")
             lines.append(f"> **Рекомендация для Claude Code:** "
-                         f"Blockers: {r['blockers'] or 'нет'} | "
-                         f"Majors: {r['majors'] or 'нет'}")
+                         f"Блокеры: {r['blockers'] or 'нет'} | "
+                         f"Major: {r['majors'] or 'нет'}")
             lines.append("> Объясни BA что именно нарушено и предложи конкретную переформулировку.")
 
         lines.append("")
@@ -1090,14 +1092,14 @@ def open_verification_issue(
     _save_issues(data)
 
     lines = [
-        f"✅ Issue зафиксирован: **{issue_id}**",
+        f"✅ Проблема зафиксирована: **{issue_id}**",
         "",
         f"| Поле | Значение |",
         f"|------|----------|",
-        f"| ID issue | `{issue_id}` |",
+        f"| ID проблемы | `{issue_id}` |",
         f"| Требование | `{req_id}` — {req_title} |",
         f"| Тип проблемы | {issue_type} |",
-        f"| Severity | {severity_labels[severity]} |",
+        f"| Критичность | {severity_labels[severity]} |",
         f"| Назначено | {assigned_to or '—'} |",
         f"| Статус | open |",
         f"| Дата открытия | {date.today()} |",
@@ -1148,16 +1150,16 @@ def resolve_verification_issue(
 
     if issue_id not in data["issues"]:
         return (
-            f"❌ Issue `{issue_id}` не найден в проекте `{project_id}`.\n"
-            f"Открытые issues: {', '.join(k for k, v in data['issues'].items() if v['status'] == 'open') or 'нет'}"
+            f"❌ Проблема `{issue_id}` не найдена в проекте `{project_id}`.\n"
+            f"Открытые проблемы: {', '.join(k for k, v in data['issues'].items() if v['status'] == 'open') or 'нет'}"
         )
 
     issue = data["issues"][issue_id]
 
     if issue["status"] == "closed":
         return (
-            f"ℹ️ Issue `{issue_id}` уже закрыт ({issue.get('resolved_date', '?')}).\n"
-            f"Resolution: {issue.get('resolution_note', '—')}"
+            f"ℹ️ Проблема `{issue_id}` уже закрыта ({issue.get('resolved_date', '?')}).\n"
+            f"Резолюция: {issue.get('resolution_note', '—')}"
         )
 
     req_id = issue["req_id"]
@@ -1176,7 +1178,7 @@ def resolve_verification_issue(
     remaining_all = _open_issues_for_req(data, req_id)
 
     lines = [
-        f"✅ Issue **{issue_id}** закрыт.",
+        f"✅ Проблема **{issue_id}** закрыта.",
         "",
         f"| Поле | Значение |",
         f"|------|----------|",
@@ -1185,7 +1187,7 @@ def resolve_verification_issue(
         f"| Severity | {issue['severity']} |",
         f"| Дата закрытия | {date.today()} |",
         "",
-        f"**Resolution:** {resolution_note}",
+        f"**Резолюция:** {resolution_note}",
         "",
         "---",
         "",
@@ -1264,9 +1266,9 @@ def mark_req_verified(
         blocker_ids = [b["issue_id"] for b in blockers]
         if blockers and not force:
             results.append(
-                f"⚠️ `{req_id}` — BLOCKED. Open blockers: {', '.join(blocker_ids)}. "
-                f"Close them via `resolve_verification_issue`, or use force=true "
-                f"to verify anyway (the override is recorded)."
+                f"⚠️ `{req_id}` — ЗАБЛОКИРОВАНО. Открытые блокеры: {', '.join(blocker_ids)}. "
+                f"Закройте их через `resolve_verification_issue` либо передайте force=true, "
+                f"чтобы верифицировать всё равно (решение будет записано)."
             )
             blocked_count += 1
             continue
@@ -1311,17 +1313,17 @@ def mark_req_verified(
 
         if blockers:
             results.append(
-                f"⚠️ `{req_id}` — verified WITH FORCE despite open blockers: "
-                f"{', '.join(blocker_ids)} (was: {old_status})"
+                f"⚠️ `{req_id}` — верифицировано ПРИНУДИТЕЛЬНО, несмотря на открытые "
+                f"блокеры: {', '.join(blocker_ids)} (было: {old_status})"
             )
             forced_count += 1
         elif status_preserved:
             results.append(
-                f"✅ `{req_id}` — verified; status left as `{old_status}` "
-                f"(a 5.5 decision is not overwritten by a 7.2 re-check)"
+                f"✅ `{req_id}` — верифицировано; статус оставлен `{old_status}` "
+                f"(решение 5.5 не перезаписывается повторной проверкой 7.2)"
             )
         else:
-            results.append(f"✅ `{req_id}` — verified (was: {old_status})")
+            results.append(f"✅ `{req_id}` — верифицировано (было: {old_status})")
         verified_count += 1
 
     if verified_count > 0:
@@ -1330,12 +1332,13 @@ def mark_req_verified(
     lines = [
         f"# Результат верификации — {project_id}",
         "",
-        f"**Date:** {date.today()}  ",
-        f"**Processed:** {len(ids_list)} requirements  ",
-        f"**Verified:** ✅ {verified_count}  ",
-        f"**Of which forced (open blockers overridden):** ⚠️ {forced_count}  ",
-        f"**Blocked:** ⚠️ {blocked_count}  ",
-        f"**Not found:** ❌ {not_found_count}",
+        f"**Дата:** {date.today()}  ",
+        f"**Обработано:** {len(ids_list)} "
+        f"{plural_ru(len(ids_list), 'требование', 'требования', 'требований')}  ",
+        f"**Верифицировано:** ✅ {verified_count}  ",
+        f"**Из них принудительно (перекрыты открытые блокеры):** ⚠️ {forced_count}  ",
+        f"**Заблокировано:** ⚠️ {blocked_count}  ",
+        f"**Не найдено:** ❌ {not_found_count}",
         "",
         "## Детали",
         "",
@@ -1347,10 +1350,12 @@ def mark_req_verified(
             "",
             "---",
             "",
-            f"⚠️ {blocked_count} requirements are blocked by open blockers.",
-            "After fixing and closing the issues — call `mark_req_verified` again.",
-            "If you judge a blocker acceptable, `force=true` verifies anyway and records "
-            "the override (the blocker itself stays open — do NOT close an unresolved issue).",
+            f"⚠️ Открытыми блокерами заблокировано: {blocked_count} "
+            f"{plural_ru(blocked_count, 'требование', 'требования', 'требований')}.",
+            "После исправления и закрытия проблем — вызови `mark_req_verified` снова.",
+            "Если считаешь блокер допустимым, `force=true` верифицирует всё равно и "
+            "запишет это решение (сам блокер остаётся открытым — НЕ закрывай нерешённую "
+            "проблему).",
         ]
 
     if forced_count > 0:
@@ -1358,9 +1363,10 @@ def mark_req_verified(
             "",
             "---",
             "",
-            f"⚠️ {forced_count} requirements were verified WITH FORCE over open blockers.",
-            "The override is recorded in the repository history and listed in "
-            "`get_verification_report`. The blocker issues remain open.",
+            f"⚠️ Верифицировано ПРИНУДИТЕЛЬНО поверх открытых блокеров: {forced_count} "
+            f"{plural_ru(forced_count, 'требование', 'требования', 'требований')}.",
+            "Это решение записано в историю репозитория и попадает в "
+            "`get_verification_report`. Проблемы-блокеры остаются открытыми.",
         ]
 
     if verified_count > 0:
@@ -1496,11 +1502,11 @@ def get_verification_report(
         "",
         "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Total active reqs | {total} |",
-        f"| ✅ Passed verification | {len(verified_reqs)} ({verified_pct}%) |",
-        f"| &nbsp;&nbsp;↳ currently in `verified` status | {len(verified)} |",
-        f"| ✅ Approved in 5.5 | {'— (5.5 has not run)' if approval_unknown else len(approved)} |",
-        f"| 📝 Draft (not verified) | {len(draft)} |",
+        f"| Всего активных требований | {total} |",
+        f"| ✅ Прошли верификацию | {len(verified_reqs)} ({verified_pct}%) |",
+        f"| &nbsp;&nbsp;↳ сейчас в статусе `verified` | {len(verified)} |",
+        f"| ✅ Согласовано в 5.5 | {'— (5.5 не запускалась)' if approval_unknown else len(approved)} |",
+        f"| 📝 Черновики (не верифицированы) | {len(draft)} |",
         "",
     ]
 
@@ -1549,7 +1555,7 @@ def get_verification_report(
             title = req["title"] if req else "—"
             blockers_for_req = [i for i in open_blockers if i["req_id"] == req_id]
             blocker_ids = ", ".join(b["issue_id"] for b in blockers_for_req)
-            lines.append(f"- `{req_id}` — {title} | Blockers: {blocker_ids}")
+            lines.append(f"- `{req_id}` — {title} | Блокеры: {blocker_ids}")
         lines.append("")
 
     # Forced verifications — the BA's override must be visible to whoever approves in 5.5,
@@ -1560,18 +1566,18 @@ def get_verification_report(
             forced_entries[h["req_id"]] = h
     if forced_entries:
         lines += [
-            "## ⚠️ Verified with force (blockers overridden by the BA)",
+            "## ⚠️ Верифицировано принудительно (BA перекрыл блокеры)",
             "",
-            "> The BA judged these blockers acceptable and verified anyway. "
-            "The blocker issues are still open — review before approving in 5.5.",
+            "> BA счёл эти блокеры допустимыми и верифицировал требования всё равно. "
+            "Проблемы-блокеры всё ещё открыты — просмотрите их до согласования в 5.5.",
             "",
         ]
         for req_id in sorted(forced_entries):
             req = _find_req(repo, req_id)
             title = req["title"] if req else "—"
             overridden = ", ".join(forced_entries[req_id].get("overridden_blockers", []))
-            lines.append(f"- `{req_id}` — {title} | Overridden: {overridden} "
-                         f"| Date: {forced_entries[req_id].get('date', '—')}")
+            lines.append(f"- `{req_id}` — {title} | Перекрыты: {overridden} "
+                         f"| Дата: {forced_entries[req_id].get('date', '—')}")
         lines.append("")
 
     # Open issues
@@ -1593,7 +1599,7 @@ def get_verification_report(
     # Reqs that have passed verification (including those 5.5 has since approved)
     if verified_reqs:
         lines += [
-            "## ✅ Requirements that passed verification",
+            "## ✅ Требования, прошедшие верификацию",
             "",
         ]
         by_type: dict = {}
@@ -1616,20 +1622,25 @@ def get_verification_report(
         lines += [
             "### ✅ Готово к передаче в следующие задачи",
             "",
-            f"- **5.5 Approve Requirements:** {len(verified)} reqs currently in status `verified` are ready for baseline "
-            f"({len(verified_reqs)} have passed verification in total).",
-            f"- **7.3 Validate Requirements:** the verified reqs are ready for validation with the business.",
+            f"- **5.5 Approve Requirements:** {len(verified)} "
+            f"{plural_ru(len(verified), 'требование', 'требования', 'требований')} "
+            f"в статусе `verified` готовы к baseline "
+            f"(всего верификацию прошли {len(verified_reqs)}).",
+            f"- **7.3 Validate Requirements:** верифицированные требования готовы к "
+            f"валидации с бизнесом.",
             "",
             "**Передай этот отчёт в 5.5:** используй `prepare_approval_package` с ссылкой на данный отчёт.",
         ]
     else:
         reasons = []
         if open_blockers:
-            reasons.append(f"🚨 {len(open_blockers)} открытых blockers не закрыты")
+            reasons.append(f"🚨 Открытых blocker-проблем не закрыто: {len(open_blockers)}")
         if verified_pct < 80:
             reasons.append(f"📊 Верифицировано только {verified_pct}% req (рекомендуется ≥ 80%)")
         if draft:
-            reasons.append(f"📝 {len(draft)} требований ещё не верифицированы")
+            reasons.append(
+                f"📝 Ещё не верифицировано: {len(draft)} "
+                f"{plural_ru(len(draft), 'требование', 'требования', 'требований')}")
 
         lines += [
             "### ❌ Не готово к 5.5 Approve",

@@ -1117,7 +1117,7 @@ class TestBusinessNodeTypes(BaseMCPTest):
                                             status="validated")],
             links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod73.get_validation_report(P)
-        self.assertIn("| Всего активных req | 1 |", result)
+        self.assertIn("| Всего активных требований | 1 |", result)
 
 
 # ---------------------------------------------------------------------------

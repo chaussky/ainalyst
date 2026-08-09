@@ -1390,7 +1390,7 @@ def get_validation_report(
         "",
         "| Показатель | Значение |",
         "|------------|----------|",
-        f"| Всего активных req | {total} |",
+        f"| Всего активных требований | {total} |",
         f"| ✅ Validated | {len(validated)} ({validated_pct}%) |",
         f"| 🔍 Verified (ещё не validated) | {len(verified_only)} |",
         f"| 📐 С success_criteria | {len(with_criteria)} ({criteria_pct}%) |",

@@ -78,7 +78,7 @@ class TestVerificationSkipsNonRequirements(unittest.TestCase):
 
     def test_verification_report_counts_only_requirements(self):
         out = v72.get_verification_report("mixed")
-        self.assertIn("| Total active reqs | 1 |", out)
+        self.assertIn("| Всего активных требований | 1 |", out)
 
 
 class TestPrioritizationSkipsNonRequirements(unittest.TestCase):
@@ -152,7 +152,7 @@ class TestValidationReportSkipsNonRequirements(unittest.TestCase):
 
     def test_report_counts_only_requirements(self):
         out = v73.get_validation_report("mixed")
-        self.assertIn("| Total active reqs | 1 |", out)
+        self.assertIn("| Всего активных требований | 1 |", out)
 
     def test_foreign_nodes_are_not_traceability_orphans(self):
         out = v73.get_validation_report("mixed")
@@ -191,7 +191,7 @@ class TestArchitectureSkipsNonRequirements(BaseMCPTest):
         # filter the line never had. The claim under test is the COUNT: of a graph
         # holding goals, risks and a scope node, exactly one entry is a requirement.
         self.assertTrue(
-            re.search(r"Total req:\*\*\s*1\b", out),
+            re.search(r"Всего требований:\*\*\s*1\b", out),
             f"Expected exactly 1 requirement, got:\n{out[:600]}",
         )
 
