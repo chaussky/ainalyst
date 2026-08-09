@@ -50,6 +50,17 @@ docs/superpowers/
 .superpowers/
 Dev/
 
+# The second, LOCAL repository that snapshots the whole tree, including everything the
+# rule above keeps out of this one. It lives here rather than only in .git/info/exclude
+# because that file is per-clone and is never published: a fresh clone would leave this
+# directory untracked-but-not-ignored, and a single `git add -A` would commit the entire
+# internal history into the public repository.
+.git-internal/
+
 # Local machine-specific / test scratch files (not for the public repo).
 /test_input.docx
 .claude/statusline-command.sh
+
+# Per-machine Claude Code settings, written by the tool itself. Ignored for the same
+# reason: it is machine-specific for the author and for every user who clones this.
+.claude/settings.local.json
