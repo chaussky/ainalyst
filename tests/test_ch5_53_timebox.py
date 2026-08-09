@@ -835,7 +835,7 @@ class TestTimeboxFinalisation(BaseMCPTest):
     def test_unestimated_requirement_is_not_reported_as_a_missing_node(self):
         """It exists in the graph — it just has no estimate. Do not name it a typo."""
         out = self.finalise()
-        self.assertNotIn("match no repository node", out)
+        self.assertNotIn("не соответствует ни один узел репозитория", out)
 
     def test_final_report_contains_the_box_block(self):
         out = self.finalise()
@@ -964,7 +964,7 @@ class TestTimeboxUnplacedDependencies(BaseMCPTest):
         session = mod53._load_prio(PROJECT)["sessions"][0]
         self.assertTrue(any(v["req_id"] == "FR-001" and v["depends_on"] == "FR-004"
                             for v in session["dependency_violations"]))
-        self.assertNotIn("No conflicts remain", out)
+        self.assertNotIn("Все конфликты отсутствуют", out)
 
     def test_moscow_is_not_given_new_violations(self):
         """Integration guard only — it cannot fail on its own.
@@ -1131,7 +1131,7 @@ class TestFinalReviewFindings(BaseMCPTest):
         with patch("skills.requirements_prioritize_mcp.save_artifact", return_value=""):
             out = mod53.save_prioritization_result(PROJECT, SESSION)
         self.assertIn("Нерешённые конфликты", out)
-        self.assertNotIn("via `resolve_conflict`", out)
+        self.assertNotIn("через `resolve_conflict`", out)
         self.assertIn("откройте новую сессию приоритизации", out)
 
     def test_finalising_without_aggregating_says_so(self):

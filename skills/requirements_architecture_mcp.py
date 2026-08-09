@@ -2368,7 +2368,7 @@ def save_architecture_snapshot(
     if summary["gaps_critical"] > 0:
         result_lines += [
             "",
-            f"⚠️ **{summary['gaps_critical']} critical разрыва(ов) не устранены.** "
+            f"⚠️ **Не устранено Critical-разрывов: {summary['gaps_critical']}.** "
             f"Рекомендуется устранить перед передачей в 7.5.",
         ]
 

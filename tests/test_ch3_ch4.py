@@ -628,7 +628,7 @@ class TestPlanSeedsRegistryEndToEnd(BaseMCPTest):
         result = self._plan([{"name": "Jane", "role": "CFO", "influence": "High",
                               "interest": "High"}])
 
-        self.assertNotIn("overrides an attitude", result)
+        self.assertNotIn("переопределяет отношение", result)
         self.assertEqual(self._person("Jane")["attitude"], "Blocker")
 
     def test_wrong_shaped_stakeholders_json_is_rejected_not_crashed(self):

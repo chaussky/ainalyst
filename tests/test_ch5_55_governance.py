@@ -231,15 +231,15 @@ class AuthorityCrossCheckTest(BaseMCPTest):
         self.assertIn("CFO, Head of Risk", result)
 
     def test_a_planned_accountable_is_not_flagged(self):
-        self.assertNotIn("not among the planned",
+        self.assertNotIn("нет среди запланированных",
                          self._record("CFO", "accountable"))
 
     def test_a_planned_responsible_is_not_flagged(self):
-        self.assertNotIn("not among the planned",
+        self.assertNotIn("нет среди запланированных",
                          self._record("Head of Risk", "responsible"))
 
     def test_the_match_is_case_and_space_insensitive(self):
-        self.assertNotIn("not among the planned",
+        self.assertNotIn("нет среди запланированных",
                          self._record("  head of   RISK ", "responsible"))
 
     def test_a_consulted_stakeholder_is_never_flagged(self):
@@ -250,7 +250,7 @@ class AuthorityCrossCheckTest(BaseMCPTest):
         it is read, never derived."""
         result = self._record("Marketing Lead", "consulted")
         self.assertIn("Marketing Lead", result)          # the decision IS recorded...
-        self.assertNotIn("not among the planned", result)  # ...silently
+        self.assertNotIn("нет среди запланированных", result)  # ...silently
 
     def test_the_cross_check_does_not_demote_an_ar_rejection(self):
         """The hard block must survive the cross-check untouched."""
@@ -264,7 +264,7 @@ class AuthorityCrossCheckTest(BaseMCPTest):
         os.remove(ba_plan_path(PROJECT))
         result = self._record("Anyone", "accountable")
         self.assertIn("Anyone", result)
-        self.assertNotIn("not among the planned", result)
+        self.assertNotIn("нет среди запланированных", result)
 
 
 class ApprovalRecordGovernanceTest(BaseMCPTest):
@@ -293,7 +293,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
                                  "responsible", "approved")
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         self.assertIn("Запланированные полномочия на согласование", record)
-        self.assertNotIn("No approval decision recorded from", record)
+        self.assertNotIn("Решения о согласовании не записано от", record)
 
     def test_an_unplanned_responder_does_not_count_as_a_planned_one(self):
         """The `silent` list alone cannot prove this — it is computed by matching the
@@ -332,7 +332,7 @@ class ApprovalRecordGovernanceTest(BaseMCPTest):
         record, _summary = _record_text(PROJECT, "APKG-001", "v1.0", "CFO")
         gov = record.split("## Governance (3.3)")[1]
         self.assertIn("**Ответили (accountable/responsible):** CFO, Head of Risk", gov)   # the block rendered
-        self.assertNotIn("without being named", gov)
+        self.assertNotIn("не будучи названными в плане 3.3", gov)
 
     def test_a_consulted_reviewer_outside_the_plan_is_not_reported_as_authority(self):
         """The RACI guard, in the record as well as in the warning: `consulted` is a
@@ -378,7 +378,7 @@ class NoRegistryApprovalRecordTest(BaseMCPTest):
         gov = record.split("## Governance (3.3)")[1]
         self.assertIn("Alice Chen", gov)
         self.assertIn("не может определить", gov)
-        self.assertNotIn("without being named in the 3.3 plan", gov)   # no accusation
+        self.assertNotIn("не будучи названными в плане 3.3", gov)   # no accusation
 
     def test_an_exact_role_match_still_counts_without_a_registry(self):
         record_approval_decision(PROJECT, "APKG-001", "CFO", "accountable", "approved")

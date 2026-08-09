@@ -556,7 +556,7 @@ class TestCheckArchitectureGaps(BaseMCPTest):
         # UC-001 не должен появляться в warning о UC без BP
         if "UC-001" in result:
             # Проверяем что это не warning о uc_without_bp
-            self.assertNotIn("без соответствующего Business Process", result)
+            self.assertNotIn("не связан ни с одним Business Process", result)
 
     def test_nfr_without_fr_warning(self):
         links = []  # Нет связей
@@ -889,7 +889,7 @@ class TestArchAuditRegressions(BaseMCPTest):
         save_repo(make_repo("reg74b", [make_req("FR-001", "functional", "Auto routing")]))
         save_stakeholder_registry("reg74b")
         result = mod74.check_architecture_gaps("reg74b")
-        self.assertNotIn("registry not found", result.lower())
+        self.assertNotIn("Реестр стейкхолдеров не найден", result.lower())
 
     def test_analyze_excludes_business_goal_from_total(self):
         save_repo(make_repo("bg74", [
@@ -909,7 +909,7 @@ class TestArchAuditRegressions(BaseMCPTest):
         ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         save_context(make_context("bg74c", goals=[{"id": "BG-001", "title": "Reduce waiting"}]))
         result = mod74.check_architecture_gaps("bg74c")
-        self.assertNotIn("not represented as a node", result)
+        self.assertNotIn("не представлена узлом в графе 5.1", result)
 
 
 class TestStakeholderRepresentationCountsOwner(BaseMCPTest):
@@ -1594,7 +1594,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_stakeholder_registry("doc74i", [{"name": "", "role": ""}])
         doc = self._doc("doc74i")
         self.assertNotIn("**—**", doc)
-        self.assertNotIn("registry not found", doc.lower())
+        self.assertNotIn("Реестр стейкхолдеров не найден", doc.lower())
         self.assertIn("нет опознаваемых людей", doc)
 
     def test_an_empty_registry_list_is_not_reported_as_not_found(self):
@@ -1738,7 +1738,7 @@ class TestLiveRunFindings74(BaseMCPTest):
         doc = self._doc("live74f")
         concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("**Helen Vasquez**", concerns)
-        self.assertNotIn("possibly the same person", concerns)
+        self.assertNotIn("возможно, тот же человек", concerns)
 
     def test_the_two_states_agree_with_the_gap_report(self):
         """The document and the gap report must not disagree about the same person.
@@ -1933,7 +1933,7 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         with patch.object(mod74, "save_artifact"):
             reply = mod74.save_architecture_snapshot(pid, "v1.0")
         self.assertIn("| 🔴 Critical-разрывы | 0 |", reply)
-        self.assertNotIn("critical gap(s) not resolved", reply)
+        self.assertNotIn("Не устранено Critical-разрывов", reply)
 
     def test_a_gap_that_appeared_after_the_check_is_in_the_snapshot(self):
         # The other direction: recomputing must not only ever lower the number.
@@ -2210,7 +2210,7 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         self._write_registry(pid, {"project": pid, "stakeholders": []})
         reply = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
         doc = self._doc(pid)
-        self.assertNotIn("Create it via the 3.2 or 4.2 tools", reply)
+        self.assertNotIn("Создайте реестр инструментами 3.2", reply)
         self.assertIn("нет опознаваемых людей", doc)
 
     def test_a_missing_registry_still_says_it_cannot_compare(self):
@@ -2226,7 +2226,7 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         self._write_registry(pid, {"project": pid, "stakeholders": []})
         result = mod74.check_architecture_gaps(pid)
         self.assertIn("опознаваемых людей в нём нет", result)
-        self.assertNotIn("registry not found", result.lower())
+        self.assertNotIn("Реестр стейкхолдеров не найден", result.lower())
 
     def test_a_registry_of_unidentifiable_rows_produces_the_same_note(self):
         pid = "b1_74e"
@@ -2923,7 +2923,7 @@ class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
         line = [ln for ln in captured[0].splitlines() if "Compliance" in ln][0]
         self.assertIn("записано вне их", line)
         self.assertIn("риск (6.3)", line)
-        self.assertNotIn("partial name or title match", line,
+        self.assertNotIn("частичному совпадению имени или заголовка", line,
                          "that wording sends the reader into the requirements, "
                          "where there is nothing to find")
 

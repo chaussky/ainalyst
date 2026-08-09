@@ -117,20 +117,20 @@ class TechniqueCrossCheckTest(PrioritizationGovernanceBase):
         self.assertIn("**Method:** MoSCoW", result)
         # WSJF sessions print a "**Scale:**" line and a BV/TC/RR/JS table; a MoSCoW
         # session must not have switched to either.
-        self.assertNotIn("**Scale:**", result)
+        self.assertNotIn("**Шкала:**", result)
         self.assertNotIn("BV=?", result)
 
     def test_a_matching_technique_is_not_flagged(self):
         plan_ba_governance(PROJECT, "High", '["PO"]', prioritization_technique="WSJF")
         result = start_prioritization_session(PROJECT, "S1", "WSJF")
         self.assertIn("# Сессия приоритизации: S1", result)      # it rendered
-        self.assertNotIn("but 3.3 plans the technique", result)
+        self.assertNotIn("а в 3.3 запланирована техника", result)
 
     def test_no_planned_technique_means_no_message(self):
         plan_ba_governance(PROJECT, "High", '["PO"]')
         result = start_prioritization_session(PROJECT, "S1", "MoSCoW")
         self.assertIn("# Сессия приоритизации: S1", result)
-        self.assertNotIn("but 3.3 plans the technique", result)
+        self.assertNotIn("а в 3.3 запланирована техника", result)
 
     def test_without_a_plan_the_session_is_unchanged(self):
         result = start_prioritization_session(PROJECT, "S1", "MoSCoW")
@@ -145,7 +145,7 @@ class TechniqueCrossCheckTest(PrioritizationGovernanceBase):
                 self._write_plan(bad)
                 result = start_prioritization_session(PROJECT, f"S{i}", "MoSCoW")
                 self.assertIn(f"# Сессия приоритизации: S{i}", result)
-                self.assertNotIn("but 3.3 plans the technique", result)
+                self.assertNotIn("а в 3.3 запланирована техника", result)
 
     def test_a_hand_edited_technique_outside_the_vocabulary_is_not_flagged(self):
         """Junk from a hand-edited plan must not be rendered as "the planned
@@ -155,7 +155,7 @@ class TechniqueCrossCheckTest(PrioritizationGovernanceBase):
         result = start_prioritization_session(PROJECT, "S1", "MoSCoW")
         self.assertIn("# Сессия приоритизации: S1", result)
         self.assertNotIn("Gut feel", result)
-        self.assertNotIn("but 3.3 plans the technique", result)
+        self.assertNotIn("а в 3.3 запланирована техника", result)
 
 
 # ---------------------------------------------------------------------------
@@ -271,8 +271,8 @@ class ReportReconcilesParticipationTest(PrioritizationGovernanceBase):
         run_aggregation(PROJECT, "S1")
         report = save_prioritization_result(PROJECT, "S1")
         self.assertIn("2 из 2 запланированных участников", report)
-        self.assertNotIn("Did not score:", report)
-        self.assertNotIn("Scored without being planned:", report)
+        self.assertNotIn("Не оценивали:", report)
+        self.assertNotIn("Оценивали, не будучи запланированными:", report)
 
     def test_criteria_alone_still_render_the_block(self):
         """The three parts of element .3 are independent: a plan that names only the
@@ -288,14 +288,14 @@ class ReportReconcilesParticipationTest(PrioritizationGovernanceBase):
     def test_the_block_is_absent_without_a_plan(self):
         report = self._finalised_report()
         self.assertIn("# Результаты приоритизации: S1", report)       # it rendered
-        self.assertNotIn("Planned approach (3.3)", report)
+        self.assertNotIn("Запланированный подход (3.3)", report)
         self.assertNotIn("запланированных участников", report)
 
     def test_the_block_is_absent_when_nothing_of_element_3_is_planned(self):
         plan_ba_governance(PROJECT, "High", '["CFO", "Head of Risk"]')
         report = self._finalised_report()
         self.assertIn("# Результаты приоритизации: S1", report)
-        self.assertNotIn("Planned approach (3.3)", report)
+        self.assertNotIn("Запланированный подход (3.3)", report)
 
     def test_a_governance_section_of_the_wrong_type_does_not_raise(self):
         for bad in (None, "oops", ["Product Owner"], 7):
@@ -303,7 +303,7 @@ class ReportReconcilesParticipationTest(PrioritizationGovernanceBase):
                 self._write_plan(bad)
                 report = self._finalised_report()
                 self.assertIn("# Результаты приоритизации: S1", report)
-                self.assertNotIn("Planned approach (3.3)", report)
+                self.assertNotIn("Запланированный подход (3.3)", report)
                 # A fresh session for the next iteration of the loop.
                 os.remove(os.path.join("governance_plans", "data", PROJECT,
                                        f"{PROJECT}_prioritization.json"))
@@ -369,8 +369,8 @@ class RegistryBridgeTest(PrioritizationGovernanceBase):
         run_aggregation(PROJECT, "S1")
         report = save_prioritization_result(PROJECT, "S1")
         self.assertIn("2 из 2 запланированных участников", report)
-        self.assertNotIn("Did not score:", report)
-        self.assertNotIn("Scored without being planned:", report)
+        self.assertNotIn("Не оценивали:", report)
+        self.assertNotIn("Оценивали, не будучи запланированными:", report)
 
     def test_a_person_whose_role_is_not_planned_is_still_reported(self):
         """The bridge must not blunt the check — it only removes false accusations."""
@@ -436,7 +436,7 @@ class NoRegistryTest(BaseMCPTest):
         self.assertNotIn("0 из 2 запланированных участников", report)
         self.assertIn("Priya Nair", report)                     # they are still named
         self.assertIn("Dana Cole", report)
-        self.assertNotIn("Did not score:", report)              # ...and not accused
+        self.assertNotIn("Не оценивали:", report)              # ...and not accused
 
     def test_an_exact_role_match_still_works_without_a_registry(self):
         """The bridge only ADDS matches: a BA who types the planned role gets the same

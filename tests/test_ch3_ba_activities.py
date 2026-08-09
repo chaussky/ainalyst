@@ -285,7 +285,7 @@ class TestRerun(_TempCwd):
         self.assertEqual(section["timing_form"], "phases")
         self.assertTrue(all(p["name"].startswith("Этап") for p in section["periods"]),
                         [p["name"] for p in section["periods"]])
-        self.assertNotIn("period(s)", out.split("Сохранено из прежнего плана")[-1]
+        self.assertNotIn("периодов", out.split("Сохранено из прежнего плана")[-1]
                          if "Сохранено из прежнего плана" in out else "")
         self.assertIn("перегенерировано", out.lower())
 

@@ -98,7 +98,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
         result = check_requirements_health(PROJECT)
         self.assertNotIn("Нет владельца", result)
-        self.assertNotIn("without an owner", result)
+        self.assertNotIn("без владельца", result)
         self.assertNotIn("Не заполнены атрибуты", result)
         self.assertIn("пресет Minimum", result)
 
@@ -123,7 +123,7 @@ class TestHealthUsesThePlannedAttributeSet(BaseMCPTest):
         _write_plan(PROJECT, {"attributes": {"preset": "Minimum", "additional": []}})
         result = check_requirements_health(PROJECT)
         self.assertIn("🟢 Здоровые требования", result)
-        self.assertNotIn("have an owner", result)
+        self.assertNotIn("есть владелец", result)
 
     def test_healthy_block_wording_is_untouched_without_a_plan(self):
         _write_repo(PROJECT, [dict(BARE_REQ, owner="PO")])

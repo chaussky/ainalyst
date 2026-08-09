@@ -109,7 +109,7 @@ class TestPlannedPeriod(unittest.TestCase):
             {"name": "Stage 2", "tasks": ["7.1"], "effort": "High", "when": "",
              "deliverables": []}]})
         self._save()
-        self.assertNotIn("Stage 2", self._artefact_text())
+        self.assertNotIn("Этап 2", self._artefact_text())
 
     def test_no_plan_at_all_changes_nothing(self):
         out = self._save()

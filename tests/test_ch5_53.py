@@ -705,7 +705,7 @@ class TestSavePrioritizationResult(BaseMCPTest):
         _add_scores_moscow(session="wave-empty2", sh_id="SH-001", influence="High")
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-empty2")
-        self.assertNotIn("already закрыт", agg.lower(),
+        self.assertNotIn("уже закрыта", agg.lower(),
                          "the analyst lost the session by finalising an empty one")
 
     def test_save_result_works(self):
@@ -957,7 +957,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         out = self._finalise("wave-noagg")
 
         self.assertIn("Стейкхолдеров: 1", out, "fixture did not collect anything")
-        self.assertNotIn("No scores were collected", out,
+        self.assertNotIn("не собрано ни одной оценки", out,
                          "the scores are on disk and counted two sections below:\n" + out)
 
     def test_the_missing_step_is_named(self):
@@ -967,7 +967,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         out = self._finalise("wave-noagg2")
 
         self.assertIn("run_aggregation", out)
-        self.assertNotIn("Add scores with `add_stakeholder_scores`", out,
+        self.assertNotIn("Вызвать `add_stakeholder_scores`", out,
                          "they are already entered; re-entering them is not the step")
 
     def test_nothing_is_written_when_the_aggregate_is_empty(self):
@@ -990,7 +990,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
 
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             agg = mod53.run_aggregation(project_name=PROJECT, session_label="wave-noagg4")
-        self.assertNotIn("already закрыт", agg.lower(),
+        self.assertNotIn("уже закрыта", agg.lower(),
                          "finalising before aggregating cost the analyst the session")
 
     # -- session already closed on disk -------------------------------------
@@ -1000,9 +1000,9 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         self._close_on_disk("wave-legacy")
         out = self._finalise("wave-legacy")
 
-        self.assertNotIn("still OPEN", out,
+        self.assertNotIn("ещё ОТКРЫТА", out,
                          "the disk says закрыт:\n" + out)
-        self.assertNotIn("The session remains open", out,
+        self.assertNotIn("Сессия остаётся открытой", out,
                          "the disk says закрыт:\n" + out)
 
     def test_a_closed_session_is_not_told_to_add_scores(self):
@@ -1012,7 +1012,7 @@ class TestTheReportNamesTheStepThatIsActuallyMissing(BaseMCPTest):
         self._close_on_disk("wave-legacy2")
         out = self._finalise("wave-legacy2")
 
-        self.assertNotIn("Add scores with `add_stakeholder_scores`", out, out)
+        self.assertNotIn("Вызвать `add_stakeholder_scores`", out, out)
 
         with patch("skills.requirements_prioritize_mcp.save_artifact"):
             refused = mod53.add_stakeholder_scores(

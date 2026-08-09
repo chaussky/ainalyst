@@ -716,7 +716,7 @@ class TestADeadRoundCannotSignOffWhatALaterRoundRejected(BaseMCPTest):
     def test_the_dashboard_does_not_invite_a_baseline_it_would_disown(self):
         out = check_approval_status(PROJECT, "PKG-A")
         verdict = out.split("## 📦 Вердикт", 1)[1]
-        self.assertNotIn("All mandatory conditions are satisfied", verdict,
+        self.assertNotIn("Все обязательные условия выполнены", verdict,
                          "the paragraph above says this round decides nothing:\n" + out)
 
     def test_the_latest_round_still_baselines_what_it_approved(self):
@@ -755,7 +755,7 @@ class TestAnEmptyBaselineSaysTheSameThingInBothPlaces(BaseMCPTest):
             returned = create_requirements_baseline(
                 PROJECT, "APKG-009", "0.1", decided_by="BA", force=True)
         self.assertIn("**Одобрено требований:** 0 из 1", returned)
-        self.assertNotIn("Hand off the list of approved requirements to разработку",
+        self.assertNotIn("Передайте список согласованных требований в разработку",
                          returned)
         self.assertIn("нет ни одного согласованного требования", returned.lower())
 
@@ -1384,7 +1384,7 @@ class TestVerificationSnapshot(BaseMCPTest):
             project_name=PROJECT, package_id="APKG-001", package_title="Pkg",
             req_ids_json='["FR-001"]', approach="predictive",
         )
-        self.assertNotIn("Not verified via 7.2", out)
+        self.assertNotIn("Не верифицировано через 7.2", out)
 
 
 class TestVerificationState(BaseMCPTest):

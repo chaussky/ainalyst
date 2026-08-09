@@ -244,7 +244,7 @@ class NoPlanAndDamagedPlanTest(CRGovernanceBase):
                                        rationale="next quarter")
         self.assertIn("# CR Decision Record: CR-001", record)   # the record rendered
         self.assertNotIn("Governance (3.3)", record)
-        self.assertNotIn("Escalation path", record)
+        self.assertNotIn("Путь эскалации", record)
         self.assertIn("CR CR-001 — Deferred", output)           # the output rendered
         self.assertNotIn("escalation path", output)
         self.assertNotIn("нет среди запланированных принимающих решения", output)

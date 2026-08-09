@@ -112,7 +112,7 @@ class TestCoverageAuditTreatsTheScopeNodeAsAnArtifact(unittest.TestCase):
     def test_scope_node_is_not_asked_for_an_implementation(self):
         """Nothing implements the scope: it is itself what satisfies the objectives."""
         out = t51.check_coverage("collide")
-        self.assertNotIn("no implementation", self._row(out, "SOL-001"))
+        self.assertNotIn("нет реализации", self._row(out, "SOL-001"))
 
     def test_a_real_solution_class_requirement_is_still_asked_for_a_test(self):
         """The guard against over-correcting: the rule must keep working for the

@@ -325,8 +325,8 @@ class TestReportRendersThePlannedElements(BaseMCPTest):
         text = _report_text("b33_bare")
         self.assertIn("3.4 Управление информацией", text)
         self.assertNotIn("Level of detail per audience", text)
-        self.assertNotIn("Requirements reuse", text)
-        self.assertNotIn("Requirements attributes", text)
+        self.assertNotIn("Переиспользование требований", text)
+        self.assertNotIn("Атрибуты требований", text)
 
     def test_module_header_no_longer_claims_the_plan_has_no_readers(self):
         """The header said "read back by this module only". After B3-3 that is a lie

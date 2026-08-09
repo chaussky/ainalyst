@@ -281,7 +281,7 @@ class TestConfirmationFindings(BaseMCPTest):
         val.mark_req_validated(pid, req_ids='["FR-001"]', force=True)
         out = val.get_validation_report(pid)
         self.assertIn("Не готово к 7.5", out)
-        self.assertNotIn("Все req трассированы на бизнес-цели", out)
+        self.assertNotIn("Все req трассируются к бизнес-целям", out)
         self.assertIn("Бизнес-контекст не задан", out)
 
     def test_r2_4_reverify_keeps_validated_status(self):
