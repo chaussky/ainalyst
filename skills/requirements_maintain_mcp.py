@@ -46,7 +46,7 @@ VOLATILITY_CRITICAL_THRESHOLD = 4  # версия 1.4+
 
 
 # Written once, matched nowhere else: the missing names travel as data on req_info.
-_ATTR_GAP_PREFIX = "🟡 Attributes not filled in:"
+_ATTR_GAP_PREFIX = "🟡 Не заполнены атрибуты:"
 
 
 def _attribute_missing(req: dict, attr: str) -> bool:
@@ -155,10 +155,10 @@ def _days_since(date_str: str):
 # ---------------------------------------------------------------------------
 
 _ARTIFACT_LABELS = {
-    "requirement_update": "Requirement update",
-    "deprecation": "Deprecated requirements",
-    "health_report": "Requirements health audit",
-    "reuse_list": "Reuse candidates",
+    "requirement_update": "Обновление требования",
+    "deprecation": "Устаревшие требования",
+    "health_report": "Аудит здоровья требований",
+    "reuse_list": "Кандидаты на переиспользование",
 }
 
 # Snapshots of the CURRENT state: there should be exactly one page per project that
@@ -242,7 +242,7 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
         # reports it via `message`. Normalize here so a configured-but-failing sync
         # (bad token, missing CONFLUENCE_SPACE_KEY, no permission) is never silent.
         if result.get("status") != "synced" and not result.get("note"):
-            result["note"] = result.get("message") or "Confluence sync failed."
+            result["note"] = result.get("message") or "Синхронизация с Confluence не удалась."
         return result
 
     except ImportError:
@@ -324,9 +324,9 @@ def update_requirement(
     # coverage all simply skipped it, so the requirement lost its priority silently.
     if new_priority and new_priority not in VALID_PRIORITIES:
         return (
-            f"❌ Unknown priority `{new_priority}`.\n"
+            f"❌ Неизвестный приоритет `{new_priority}`.\n"
             f"   MoSCoW (5.3): {', '.join(sorted(MOSCOW_PRIORITIES))}\n"
-            f"   Levels (7.1): {', '.join(sorted(LEVEL_PRIORITIES))}"
+            f"   Уровни (7.1): {', '.join(sorted(LEVEL_PRIORITIES))}"
         )
 
     # `status` has a closed vocabulary too — spelled out in this docstring — and it
@@ -335,11 +335,11 @@ def update_requirement(
     # requirement neither live nor archived, with nothing said.
     if new_status and new_status not in VALID_REQUIREMENT_STATUSES:
         return (
-            f"❌ Unknown status `{new_status}`.\n"
-            f"   Allowed: {', '.join(sorted(SETTABLE_REQUIREMENT_STATUSES))}\n"
-            f"   (`approved` is not among them — it is recorded by 5.5.)\n"
-            f"   Status routes archiving and every chapter's filters, so an "
-            f"unrecognised value leaves the requirement neither live nor archived."
+            f"❌ Неизвестный статус `{new_status}`.\n"
+            f"   Допустимые: {', '.join(sorted(SETTABLE_REQUIREMENT_STATUSES))}\n"
+            f"   (`approved` в их числе нет — его записывает 5.5.)\n"
+            f"   Статус управляет архивацией и фильтрами всех глав, поэтому "
+            f"нераспознанное значение оставляет требование ни живым, ни архивным."
         )
 
     # `approved` is not a description of a requirement — it is the record of an EVENT:
@@ -350,14 +350,14 @@ def update_requirement(
     # happened. Owner's decision, 2026-08-03.
     if new_status == STATUS_APPROVED_LITERAL:
         return (
-            f"❌ `approved` cannot be set here.\n"
-            f"   Approval is a decision made by stakeholders, not an attribute the "
-            f"analyst edits: it is recorded by chapter 5.5, which checks that nobody "
-            f"Accountable/Responsible rejected the requirement, that enough people "
-            f"approved, and that its conditions are not overdue.\n"
-            f"   Route: `prepare_approval_package` → `record_approval_decision` → "
+            f"❌ `approved` здесь поставить нельзя.\n"
+            f"   Согласование — это решение стейкхолдеров, а не атрибут, который "
+            f"правит аналитик: его записывает глава 5.5, и она проверяет, что никто "
+            f"из Accountable/Responsible не отклонил требование, что согласовавших "
+            f"достаточно и что условия по нему не просрочены.\n"
+            f"   Маршрут: `prepare_approval_package` → `record_approval_decision` → "
             f"`create_requirements_baseline` (5.5).\n"
-            f"   Nothing has been changed."
+            f"   Ничего не изменено."
         )
 
     changes = []
