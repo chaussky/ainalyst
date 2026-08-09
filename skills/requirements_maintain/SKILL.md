@@ -12,7 +12,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 # SKILL: BABOK 5.2 — Maintain Requirements
 **Задача:** поддержание актуальности требований и их атрибутов на протяжении жизненного цикла.
 **MCP-сервер:** `requirements_maintain_mcp.py`
-**Reference:** `references/lifecycle_guide.md`
+**Справочник:** `references/lifecycle_guide.md`
 
 ---
 
@@ -33,14 +33,14 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 ## Когда активируется этот скилл
 
-- A requirement's status has changed (confirmed → under_change, approved → on_hold...)
-  — every status except `approved`, which only 5.5 records (see below)
-- A requirement is outdated or replaced by another → needs to be marked deprecated/superseded
-- A CR has come in → versions of affected requirements need updating (after 5.4)
-- Before prioritization (5.3) → the priority and stability attributes need to be current
-- Before approval (5.5) → a clean registry is needed, free of clutter
-- The BA wants to find requirements for reuse in a new initiative
-- A regular "health" audit of the registry
+- У требования изменился статус (confirmed → under_change, approved → on_hold…)
+  — любой статус, кроме `approved`: его записывает только 5.5 (см. ниже)
+- Требование устарело или заменено другим → нужно пометить deprecated/superseded
+- Пришёл CR → нужно обновить версии затронутых требований (после 5.4)
+- Перед приоритизацией (5.3) → атрибуты priority и stability должны быть актуальны
+- Перед согласованием (5.5) → нужен чистый реестр, без мусора
+- BA хочет найти требования для переиспользования в новой инициативе
+- Регулярный аудит «здоровья» реестра
 
 ---
 
@@ -126,23 +126,23 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 Полное описание атрибутов: `references/lifecycle_guide.md` → «Атрибуты требования»
 
-> The preset is chosen in **3.4** (`plan_information_management(attributes_preset=...)`),
-> and `check_requirements_health` audits exactly that set. Without a 3.4 plan the audit
-> checks `owner` only. A project on `Minimum` deliberately stops being asked for an
-> owner — you audit what you planned to maintain.
+> Пресет выбирается в **3.4** (`plan_information_management(attributes_preset=...)`),
+> и `check_requirements_health` проверяет ровно этот набор. Без плана 3.4 аудит
+> проверяет только `owner`. У проекта на пресете `Minimum` владельца намеренно
+> перестают спрашивать — аудируется то, что вы планировали поддерживать.
 
 ---
 
 ## Интеграция с другими задачами
 
-**Where updates come from:**
-- `4.3` → status: `confirmed` (after the BA's internal review)
-- `5.1 run_impact_analysis` → list of affected requirements for a CR
-- `5.3` → updated priorities
-- `5.4` → CR decision: which requirements change, which are deprecated
-- `5.5` → status: `approved` after formal sign-off — written by 5.5 itself
-  (`create_requirements_baseline`). Do not re-enter it here: `update_requirement`
-  refuses `approved` and answers with that route.
+**Откуда приходят обновления:**
+- `4.3` → статус `confirmed` (после внутренней проверки BA)
+- `5.1 run_impact_analysis` → список требований, затронутых CR
+- `5.3` → обновлённые приоритеты
+- `5.4` → решение по CR: какие требования меняются, какие устаревают
+- `5.5` → статус `approved` после формального подписания — его пишет сама 5.5
+  (`create_requirements_baseline`). Здесь его заново вводить не нужно:
+  `update_requirement` отклоняет `approved` и в ответе называет этот маршрут.
 
 **Куда уходят результаты:**
 - `5.3` — актуальные stability и priority для правильной приоритизации

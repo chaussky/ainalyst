@@ -143,7 +143,7 @@ def _export_hook(artifact_type: str, content: str, metadata: dict) -> dict:
 | Откуда | Что передаётся в 5.2 |
 |--------|----------------------|
 | 4.2 | Первичные атрибуты: source, первоначальный status=draft |
-| 4.3 | status → confirmed, quality-checked |
+| 4.3 | status → confirmed, качество проверено |
 | 5.1 | JSON-репозиторий — 5.2 работает с тем же файлом |
 | 5.3 | priority обновляется после приоритизации |
 | 5.4 | При CR: status и version затронутых требований обновляются |
