@@ -2117,7 +2117,7 @@ def save_architecture_snapshot(
     existing_versions = [s["version"] for s in arch.get("snapshots", [])]
     if version in existing_versions:
         return (
-            f"⚠️ Версия `{version}` уже есть среди снапшотов проекта `{project_id}`.\n"
+            f"⚠️ Версия `{version}` уже существует в снапшотах проекта `{project_id}`.\n"
             f"Существующие версии: {', '.join(existing_versions)}\n"
             f"Возьмите следующую, например: "
             f"`{version.replace('v', 'v').split('.')[0]}.{int(version.split('.')[-1]) + 1}`"
@@ -2207,7 +2207,7 @@ def save_architecture_snapshot(
         f"| Версия | {version} |",
         f"| Дата | {date.today()} |",
         f"| Автор | {author or '—'} |",
-        f"| Всего req | {total_reqs} |",
+        f"| Всего требований | {total_reqs} |",
         f"| Точек зрения | {viewpoints_count} ({custom_count} кастомных) |",
         "",
     ]

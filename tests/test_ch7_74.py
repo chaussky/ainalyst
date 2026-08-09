@@ -897,10 +897,10 @@ class TestArchAuditRegressions(BaseMCPTest):
             make_req("BG-001", "business_goal", "Reduce waiting", status="confirmed"),
         ], links=[{"from": "FR-001", "to": "BG-001", "relation": "derives"}]))
         result = mod74.analyze_requirements_architecture("bg74")
-        # The claim under test is the COUNT — a business goal is not a requirement.
+        # The claim under test is the COUNT — a бизнес-цель is not a requirement.
         # The label lost the word "active" in re-review N-5: it described a status
         # filter this line has never had.
-        self.assertIn("**Total req:** 1", result)
+        self.assertIn("**Всего требований:** 1", result)
 
     def test_gaps_recognizes_business_goal_node_in_graph(self):
         save_repo(make_repo("bg74c", [
@@ -938,7 +938,7 @@ class TestStakeholderRepresentationCountsOwner(BaseMCPTest):
             [{"name": "Priya Nair", "role": "Compliance Officer"}])
         result = mod74.check_architecture_gaps("own74b")
         self.assertIn("Priya Nair", result)
-        self.assertIn("heuristic", result,
+        self.assertIn("эвристика", result,
                       "the verdict must say HOW it looked (owner + title words)")
 
 
@@ -1140,8 +1140,8 @@ class TestEvidenceHasFourNamedSources(BaseMCPTest):
         self.assertEqual(mod74._ties_for_labels({"someone else"}, ev), [])
 
     def test_evidence_never_reads_the_title(self):
-        # The title heuristic is deliberately NOT one of the three evidence sources —
-        # it stays where it is, in the gap check, explicitly labelled as a heuristic.
+        # The title эвристика is deliberately NOT one of the three evidence sources —
+        # it stays where it is, in the gap check, explicitly labelled as a эвристика.
         repo = make_repo("ev74l", [make_req("FR-001", "functional", "Sales Head report")])
         self.assertEqual(mod74._stakeholder_evidence("ev74l", repo)["FR-001"], [])
 
@@ -1182,7 +1182,7 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
         result = mod74.declare_stakeholder_interest(pid, "Sales Head",
                                                     '["FR-001", "FR-002"]')
-        self.assertIn("declared on 2 requirement(s)", result)
+        self.assertIn("заявлен на 2 требованиях", result)
 
     def test_a_second_identical_call_adds_nothing_and_says_so(self):
         # Silence is right for an accusation and wrong for a count: "done" after a
@@ -1191,8 +1191,8 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        self.assertIn("declared on 0 requirement(s)", result)
-        self.assertIn("already declared on 1", result)
+        self.assertIn("заявлен на 0 требованиях", result)
+        self.assertIn("уже был заявлен на 1", result)
         self.assertEqual(len(self._stored(pid)["stakeholders"]), 1)
 
     def test_a_second_call_with_different_case_is_still_the_same_person(self):
@@ -1203,8 +1203,8 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
         result = mod74.declare_stakeholder_interest(pid, "sales head", '["FR-001"]')
-        self.assertIn("declared on 0 requirement(s)", result)
-        self.assertIn("already declared on 1", result)
+        self.assertIn("заявлен на 0 требованиях", result)
+        self.assertIn("уже был заявлен на 1", result)
         self.assertEqual(len(self._stored(pid)["stakeholders"]), 1)
 
     def test_a_second_call_for_someone_else_does_not_erase_the_first(self):
@@ -1222,7 +1222,7 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
                                                     remove=True)
-        self.assertIn("removed from 1 requirement(s)", result)
+        self.assertIn("снят с 1 требования", result)
         self.assertEqual(self._stored(pid)["stakeholders"], [])
 
     def test_removing_what_was_never_declared_reports_zero(self):
@@ -1230,7 +1230,7 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         save_stakeholder_registry(pid, [{"name": "Sales Head"}])
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
                                                     remove=True)
-        self.assertIn("removed from 0 requirement(s)", result)
+        self.assertIn("снят с 0 требований", result)
 
     def test_an_unknown_req_id_is_refused_with_the_ones_that_exist(self):
         # The requirement vocabulary is CLOSED — it is this project's own graph — so a
@@ -1253,14 +1253,14 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         pid = self._repo()
         save_stakeholder_registry(pid, [{"name": "Sales Head", "role": "Sponsor"}])
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        self.assertNotIn("not in the stakeholder registry", result)
-        self.assertNotIn("no stakeholder registry", result)
+        self.assertNotIn("отсутствует в реестре стейкхолдеров", result)
+        self.assertNotIn("нет реестра стейкхолдеров", result)
 
     def test_a_role_resolves_against_the_registry_too(self):
         pid = self._repo()
         save_stakeholder_registry(pid, [{"name": "Ivan Petrov", "role": "Product Owner"}])
         result = mod74.declare_stakeholder_interest(pid, "Product Owner", '["FR-001"]')
-        self.assertNotIn("not in the stakeholder registry", result)
+        self.assertNotIn("отсутствует в реестре стейкхолдеров", result)
 
     def test_an_unknown_stakeholder_is_recorded_with_a_warning(self):
         # The registry is a LIVING document: refusing here would block a BA who just
@@ -1268,15 +1268,15 @@ class TestDeclareStakeholderInterest(BaseMCPTest):
         pid = self._repo()
         save_stakeholder_registry(pid, [{"name": "Sales Head"}])
         result = mod74.declare_stakeholder_interest(pid, "Brand New Person", '["FR-001"]')
-        self.assertIn("not in the stakeholder registry", result)
+        self.assertIn("отсутствует в реестре стейкхолдеров", result)
         self.assertIn("update_stakeholder_registry", result)
         self.assertEqual(self._stored(pid)["stakeholders"][0]["name"], "Brand New Person")
 
     def test_no_registry_at_all_says_it_cannot_compare_not_that_the_person_is_missing(self):
         pid = self._repo("dsi74noreg")
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        self.assertIn("no stakeholder registry", result)
-        self.assertNotIn("not in the stakeholder registry", result)
+        self.assertIn("нет реестра стейкхолдеров", result)
+        self.assertNotIn("отсутствует в реестре стейкхолдеров", result)
         self.assertEqual(self._stored(pid)["stakeholders"][0]["name"], "Sales Head")
 
     def test_an_empty_stakeholder_name_is_refused(self):
@@ -1341,10 +1341,10 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("gv74", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74")
-        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertNotIn("`Priya Nair` нет ни одной записанной связи", result)
         # An EXACT tie must be fully silent — not merely "not critical". Without
         # this, disabling the tie short-circuit still passes: the person's own
-        # exact evidence string re-enters through the name-pool heuristic and
+        # exact evidence string re-enters through the name-pool эвристика and
         # produces a warning instead, which the check above would not catch.
         self.assertIn("🟡 Warning | 0", result)
 
@@ -1359,7 +1359,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
                     "req_decisions": [{"req_id": "FR-001", "decision": "approved"}]}}}}}, f)
         save_stakeholder_registry("gv74b", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74b")
-        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertNotIn("`Priya Nair` нет ни одной записанной связи", result)
         self.assertIn("🟡 Warning | 0", result)
 
     def test_a_stakeholder_reachable_only_by_a_title_word_is_a_warning_not_critical(self):
@@ -1372,14 +1372,14 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         # is empty in this fixture, so the guarded expression was always "" and
         # `assertNotIn` could never fail for any implementation).
         self.assertIn("🔴 Critical | 0", result)
-        self.assertIn("only by a word in a requirement title", result)
+        self.assertIn("только по слову в заголовке требования", result)
         self.assertIn("declare_stakeholder_interest", result)
 
     def test_a_stakeholder_with_nothing_at_all_is_still_critical(self):
         save_repo(make_repo("gv74d", [make_req("FR-001", "functional", "Auto routing")]))
         save_stakeholder_registry("gv74d", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74d")
-        self.assertIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("`Priya Nair` нет ни одной записанной связи", result)
         self.assertIn("🔴 Critical | 1", result)
 
     def test_the_critical_message_names_every_place_it_looked(self):
@@ -1388,9 +1388,9 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(make_repo("gv74e", [make_req("FR-001", "functional", "Auto routing")]))
         save_stakeholder_registry("gv74e", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74e")
-        self.assertIn("declared interest", result)
-        self.assertIn("7.1 owner", result)
-        self.assertIn("5.5 approval", result)
+        self.assertIn("заявленный интерес", result)
+        self.assertIn("`owner` из 7.1", result)
+        self.assertIn("решение о согласовании из 5.5", result)
 
     def test_the_owner_is_still_represented_and_now_says_which_requirement(self):
         # ADR-088 kept: the owner counts. What is NEW is that the reader can check it.
@@ -1399,7 +1399,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("gv74f", [{"name": "David Kim", "role": "SIU"}])
         result = mod74.check_architecture_gaps("gv74f")
-        self.assertNotIn("`David Kim` has no recorded tie", result)
+        self.assertNotIn("`David Kim` нет ни одной записанной связи", result)
         self.assertIn("🟡 Warning | 0", result)
 
     def test_a_role_only_registry_row_resolves_through_its_role(self):
@@ -1408,23 +1408,23 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("gv74g", [{"name": "Ivan Petrov", "role": "Product Owner"}])
         result = mod74.check_architecture_gaps("gv74g")
-        self.assertNotIn("has no recorded tie", result)
+        self.assertNotIn("нет ни одной записанной связи", result)
         self.assertIn("🟡 Warning | 0", result)
 
     def test_the_missing_registry_warning_is_unchanged(self):
         # Regression guard: this branch is explicitly out of scope for the feature.
         save_repo(make_repo("gv74h", [make_req("FR-001", "functional", "Auto routing")]))
         result = mod74.check_architecture_gaps("gv74h")
-        self.assertIn("Stakeholder registry not found", result)
+        self.assertIn("Реестр стейкхолдеров не найден", result)
 
     def test_a_short_shared_word_does_not_count_as_a_title_match(self):
         # "it" is a real word of the title AND the stakeholder's role, but it is only
-        # 2 letters — below the 4-letter floor the heuristic requires. Without the
-        # floor this coincidence would wrongly demote a real gap to a warning.
+        # 2 letters — below the 4-letter floor the эвристика requires. Without the
+        # floor this совпадение would wrongly demote a real gap to a warning.
         save_repo(make_repo("gv74i", [make_req("FR-001", "functional", "Wire it now")]))
         save_stakeholder_registry("gv74i", [{"name": "", "role": "IT"}])
         result = mod74.check_architecture_gaps("gv74i")
-        self.assertIn("`IT` has no recorded tie", result)
+        self.assertIn("`IT` нет ни одной записанной связи", result)
 
     def test_a_registry_row_with_neither_name_nor_role_is_silently_skipped(self):
         # A row with nothing to key on cannot be looked up in evidence OR title words —
@@ -1448,24 +1448,24 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("gv74k", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74k")
-        self.assertNotIn("`Priya Nair` has no recorded tie", result)
+        self.assertNotIn("`Priya Nair` нет ни одной записанной связи", result)
         self.assertIn("🔴 Critical | 0", result)
         self.assertIn("🟡 Warning | 1", result)
         # A phrase only the new partial-name warning branch can assemble — the
         # report has several sections, so a bare common word would be ambiguous.
-        self.assertIn("partial name match", result)
+        self.assertIn("частичному совпадению имени", result)
 
     def test_an_exact_name_match_still_silences_the_gap(self):
         # Guard against over-widening: adding the name pool must not stop an EXACT
         # match from taking the tie path (silent) — it must still short-circuit
-        # before the heuristic is even consulted.
+        # before the эвристика is even consulted.
         repo = make_repo("gv74l", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Priya Nair"
         save_repo(repo)
         save_stakeholder_registry("gv74l", [{"name": "Priya Nair", "role": "Compliance"}])
         result = mod74.check_architecture_gaps("gv74l")
-        self.assertNotIn("`Priya Nair` has no recorded tie", result)
-        self.assertNotIn("partial name match", result)
+        self.assertNotIn("`Priya Nair` нет ни одной записанной связи", result)
+        self.assertNotIn("частичному совпадению имени", result)
         self.assertIn("🟡 Warning | 0", result)
 
     def test_a_short_partial_name_fragment_does_not_count_as_evidence(self):
@@ -1477,7 +1477,7 @@ class TestStakeholderVerdictRestsOnEvidence(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("gv74m", [{"name": "Alina Petrova", "role": "Consultant"}])
         result = mod74.check_architecture_gaps("gv74m")
-        self.assertIn("`Alina Petrova` has no recorded tie", result)
+        self.assertIn("`Alina Petrova` нет ни одной записанной связи", result)
         self.assertIn("🔴 Critical | 1", result)
 
 
@@ -1504,7 +1504,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("doc74", [{"name": "Priya Nair", "role": "Compliance"}])
         doc = self._doc("doc74")
-        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("## Интересы стейкхолдеров", doc)
         self.assertIn("Priya Nair", doc)
         self.assertIn("`FR-001` (declared)", doc)
 
@@ -1520,7 +1520,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_repo(make_repo("doc74c", [make_req("FR-001", "functional", "Auto routing")]))
         save_stakeholder_registry("doc74c", [{"name": "Priya Nair", "role": "Compliance"}])
         doc = self._doc("doc74c")
-        self.assertIn("no interest recorded", doc)
+        self.assertIn("интерес не зафиксирован", doc)
 
     def test_without_a_registry_the_section_says_the_list_was_not_checked(self):
         # The denominator is a claim about the domain too: with no registry the
@@ -1529,7 +1529,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         repo["requirements"][0]["owner"] = "David Kim"
         save_repo(repo)
         doc = self._doc("doc74d")
-        self.assertIn("stakeholder registry not found", doc.lower())
+        self.assertIn("реестр стейкхолдеров не найден", doc.lower())
         self.assertIn("David Kim", doc)
 
     def test_the_section_lands_before_the_gaps_section(self):
@@ -1540,8 +1540,8 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("doc74e", [{"name": "David Kim"}])
         doc = self._doc("doc74e")
-        self.assertLess(doc.index("## Stakeholder concerns"),
-                        doc.index("## Architecture gaps"))
+        self.assertLess(doc.index("## Интересы стейкхолдеров"),
+                        doc.index("## Архитектурные разрывы"))
 
     def test_the_summary_reply_does_not_contain_the_section(self):
         # Documents the asymmetry so a later reader does not "fix" the test by
@@ -1552,7 +1552,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_stakeholder_registry("doc74f", [{"name": "David Kim"}])
         with patch.object(mod74, "save_artifact"):
             reply = mod74.save_architecture_snapshot("doc74f", "v1.0")
-        self.assertNotIn("## Stakeholder concerns", reply)
+        self.assertNotIn("## Интересы стейкхолдеров", reply)
 
     def test_one_tie_and_two_ties_both_read_correctly(self):
         # A number branch that inflects one of two agreeing words is half a fix — check
@@ -1565,9 +1565,9 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("doc74g", [{"name": "Solo Person"}, {"name": "Busy Person"}])
         doc = self._doc("doc74g")
-        self.assertIn("1 requirement", doc)
-        self.assertIn("2 requirements", doc)
-        self.assertNotIn("1 requirements", doc)
+        self.assertIn("1 требование", doc)
+        self.assertIn("2 требования", doc)
+        self.assertNotIn("1 требованиеs", doc)
 
     def test_a_null_stakeholders_field_does_not_lose_the_document(self):
         # An explicit null, not a deleted key — different guards, and this is the one
@@ -1577,7 +1577,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("doc74h", [{"name": "David Kim"}])
         doc = self._doc("doc74h")
-        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("## Интересы стейкхолдеров", doc)
 
     def test_a_registry_row_with_neither_name_nor_role_is_not_rendered(self):
         # Mirrors the gaps-side guard
@@ -1595,7 +1595,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         doc = self._doc("doc74i")
         self.assertNotIn("**—**", doc)
         self.assertNotIn("registry not found", doc.lower())
-        self.assertIn("no identifiable people", doc)
+        self.assertIn("нет опознаваемых людей", doc)
 
     def test_an_empty_registry_list_is_not_reported_as_not_found(self):
         # A registry persisted as {"stakeholders": []} — the ordinary shape the
@@ -1614,7 +1614,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
                   "w", encoding="utf-8") as f:
             json.dump({"project": "doc74j", "stakeholders": [], "history": []}, f)
         doc = self._doc("doc74j")
-        self.assertIn("no identifiable people", doc)
+        self.assertIn("нет опознаваемых людей", doc)
         self.assertNotIn("not found", doc.lower())
         self.assertIn("David Kim", doc)
 
@@ -1634,7 +1634,7 @@ class TestTheDocumentCarriesStakeholderConcerns(BaseMCPTest):
         self.assertNotIn("**david kim**", doc)
         self.assertIn("`FR-001` (declared)", doc)
         self.assertIn("`FR-002` (7.1:owner)", doc)
-        self.assertIn("2 requirements", doc)
+        self.assertIn("2 требования", doc)
 
 
 class TestLiveRunFindings74(BaseMCPTest):
@@ -1665,11 +1665,11 @@ class TestLiveRunFindings74(BaseMCPTest):
         save_stakeholder_registry("live74a", [{"name": "Marcus Webb", "role": "Nurse"}])
         doc = self._doc("live74a")
         self.assertIn("`FR-001` (7.1:owner, declared)", doc)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertEqual(concerns.count("`FR-001`"), 1,
                          "one requirement must be referenced once, however many "
                          "sources vouch for it")
-        self.assertIn("1 requirement:", concerns)
+        self.assertIn("1 требование:", concerns)
 
     def test_a_person_declared_but_absent_from_the_registry_is_still_shown(self):
         """L-2. The tool said "recorded anyway"; the document showed nothing.
@@ -1685,10 +1685,10 @@ class TestLiveRunFindings74(BaseMCPTest):
         save_stakeholder_registry("live74b", [{"name": "Ivan Petrov", "role": "PO"}])
         doc = self._doc("live74b")
         self.assertIn("Helen Vasquez", doc)
-        self.assertIn("not in the 4.2 registry", doc)
+        self.assertIn("отсутствуют в реестре 4.2", doc)
         self.assertIn("`FR-001` (declared)", doc)
 
-    def test_a_heuristic_only_stakeholder_is_not_reported_as_having_nothing(self):
+    def test_a_эвристика_only_stakeholder_is_not_reported_as_having_nothing(self):
         """L-3. Two people in different states rendered identically.
 
         `owner: "Priya"` against a registry row "Priya Nair" is a heuristic match — the
@@ -1707,10 +1707,10 @@ class TestLiveRunFindings74(BaseMCPTest):
             {"name": "Marcus Webb", "role": "Nurse"},
         ])
         doc = self._doc("live74c")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
-        self.assertIn("**Marcus Webb** — no interest recorded", concerns)
-        self.assertNotIn("**Priya Nair** — no interest recorded", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("**Priya Nair** — точных связей не записано", concerns)
+        self.assertIn("**Marcus Webb** — интерес не зафиксирован", concerns)
+        self.assertNotIn("**Priya Nair** — интерес не зафиксирован", concerns)
 
     def test_a_short_form_of_a_registry_name_is_flagged_as_probably_the_same_person(self):
         """L-4, produced by the fix for L-2 and found by re-reading the page.
@@ -1725,8 +1725,8 @@ class TestLiveRunFindings74(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("live74e", [{"name": "Priya Nair", "role": "Compliance"}])
         doc = self._doc("live74e")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("possibly the same person as **Priya Nair**", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("возможно, тот же человек, что и **Priya Nair**", concerns)
 
     def test_a_genuinely_unknown_party_carries_no_same_person_hint(self):
         """The other side of the branch: a name that resembles nobody in the registry
@@ -1736,7 +1736,7 @@ class TestLiveRunFindings74(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("live74f", [{"name": "Ivan Petrov", "role": "PO"}])
         doc = self._doc("live74f")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("**Helen Vasquez**", concerns)
         self.assertNotIn("possibly the same person", concerns)
 
@@ -1760,9 +1760,9 @@ class TestLiveRunFindings74(BaseMCPTest):
         self.assertIn("🔴 Critical | 1", report)
         self.assertIn("🟡 Warning | 1", report)
         doc = self._doc("live74d")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
-        self.assertIn("**Marcus Webb** — no interest recorded", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("**Priya Nair** — точных связей не записано", concerns)
+        self.assertIn("**Marcus Webb** — интерес не зафиксирован", concerns)
 
 
 class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
@@ -1846,8 +1846,8 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         result = mod74.check_architecture_gaps("skip74e")
         self.assertIn("🔴 Critical | 0", result, "silence must not become a red gap")
         self.assertIn("🟡 Warning | 1", result)
-        self.assertNotIn("only by a word in a requirement title", result)
-        self.assertIn("OUTSIDE the requirements", result)
+        self.assertNotIn("только по слову в заголовке требования", result)
+        self.assertIn("ВНЕ требований", result)
 
     def test_a_business_goal_cannot_silence_the_coverage_check(self):
         """The finding's claim was SILENCE, and silence is what must not happen.
@@ -1865,9 +1865,9 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         save_stakeholder_registry("skip74f", [{"name": "Helen Vasquez", "role": "Ops"}])
         result = mod74.check_architecture_gaps("skip74f")
         self.assertNotIn("🟡 Warning | 0", result, "the check must not go quiet")
-        self.assertIn("`Helen Vasquez` is traceable only OUTSIDE the requirements",
+        self.assertIn("`Helen Vasquez` прослеживается только ВНЕ требований",
                       result)
-        self.assertIn("business goal", result)
+        self.assertIn("бизнес-цель", result)
 
     def test_the_document_never_prints_an_id_it_does_not_count(self):
         repo = self._mixed_repo("skip74g")
@@ -1876,16 +1876,16 @@ class TestOnlyRequirementsCarryStakeholderTies(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("skip74g", [{"name": "Helen Vasquez", "role": "Ops"}])
         doc = self._doc("skip74g")
-        self.assertIn("| Total req | 1 |", doc)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        self.assertIn("| Всего требований | 1 |", doc)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertNotIn("RISK-002", concerns)
         self.assertNotIn("BG-001", concerns)
         # The finding was about IDS the page cannot account for. Her line still names
-        # no such id — but "no interest recorded" would now be the wrong half of the
+        # no such id — but "интерес не зафиксирован" would now be the wrong half of the
         # distinction L-3 drew: something outside the requirements does mention her,
         # and the page has to say which of the two states it met (re-review N-2).
-        self.assertIn("**Helen Vasquez** — no tie among the requirements", concerns)
-        self.assertIn("business goal (6.2)", concerns)
+        self.assertIn("**Helen Vasquez** — среди требований связей нет", concerns)
+        self.assertIn("бизнес-цель (6.2)", concerns)
 
 
 class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
@@ -1920,11 +1920,11 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         self.assertIn("🔴 Critical | 1", report)
         mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        gaps_block = doc.split("## Architecture gaps")[1]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        gaps_block = doc.split("## Архитектурные разрывы")[1]
         self.assertIn("`FR-001` (declared)", concerns)
         self.assertIn("| 🔴 Critical | 0 |", gaps_block)
-        self.assertNotIn("has no recorded tie", gaps_block)
+        self.assertNotIn("нет ни одной записанной связи", gaps_block)
 
     def test_the_reply_stops_claiming_an_unresolved_gap_that_was_resolved(self):
         pid = self._project("a1_74b")
@@ -1932,7 +1932,7 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]')
         with patch.object(mod74, "save_artifact"):
             reply = mod74.save_architecture_snapshot(pid, "v1.0")
-        self.assertIn("| 🔴 Critical gaps | 0 |", reply)
+        self.assertIn("| 🔴 Critical-разрывы | 0 |", reply)
         self.assertNotIn("critical gap(s) not resolved", reply)
 
     def test_a_gap_that_appeared_after_the_check_is_in_the_snapshot(self):
@@ -1945,9 +1945,9 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         self.assertIn("🔴 Critical | 0", report)
         mod74.declare_stakeholder_interest(pid, "Priya Nair", '["FR-001"]', remove=True)
         doc = self._doc(pid)
-        gaps_block = doc.split("## Architecture gaps")[1]
+        gaps_block = doc.split("## Архитектурные разрывы")[1]
         self.assertIn("| 🔴 Critical | 1 |", gaps_block)
-        self.assertIn("has no recorded tie", gaps_block)
+        self.assertIn("нет ни одной записанной связи", gaps_block)
 
     def test_the_snapshot_stores_the_recomputed_gaps_on_the_architecture_file(self):
         pid = self._project("a1_74d")
@@ -1970,7 +1970,7 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         with patch.object(mod74, "save_artifact") as mock_sa:
             reply = mod74.save_architecture_snapshot(pid, "v1.0")
             self.assertFalse(mock_sa.called)
-        self.assertIn("already exists", reply)
+        self.assertIn("уже существует", reply)
         self.assertEqual(json.dumps(load_arch(pid), sort_keys=True), before)
 
     def test_the_snapshot_and_the_gap_report_agree_without_calling_the_check_at_all(self):
@@ -1978,9 +1978,9 @@ class TestTheSnapshotRecomputesItsOwnGaps(BaseMCPTest):
         # whose gap table was all zeros because nothing had ever filled it in.
         pid = self._project("a1_74f")
         doc = self._doc(pid)
-        gaps_block = doc.split("## Architecture gaps")[1]
+        gaps_block = doc.split("## Архитектурные разрывы")[1]
         self.assertIn("| 🔴 Critical | 1 |", gaps_block)
-        self.assertIn("`Priya Nair` has no recorded tie", gaps_block)
+        self.assertIn("`Priya Nair` нет ни одной записанной связи", gaps_block)
 
 
 class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
@@ -2015,7 +2015,7 @@ class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
         save_repo(repo)
         self._write_registry("shape74", {"project": "shape74", "stakeholders": None})
         doc = self._doc("shape74")
-        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("## Интересы стейкхолдеров", doc)
         self.assertIn("David Kim", doc)
 
     def test_a_non_list_stakeholders_value_in_the_registry_does_not_raise_either(self):
@@ -2025,7 +2025,7 @@ class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
         self._write_registry("shape74b", {"project": "shape74b",
                                           "stakeholders": {"name": "Ivan"}})
         doc = self._doc("shape74b")
-        self.assertIn("## Stakeholder concerns", doc)
+        self.assertIn("## Интересы стейкхолдеров", doc)
 
     def test_a_registry_row_that_is_a_bare_string_does_not_take_the_gap_check_down(self):
         # A-2. The guard `if not labels: continue` existed — two lines BELOW the
@@ -2046,7 +2046,7 @@ class TestStoredShapesThatUsedToKillTheTool(BaseMCPTest):
         repo["history"] = {}
         save_repo(repo)
         result = mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
-        self.assertIn("declared on 1 requirement(s)", result)
+        self.assertIn("заявлен на 1 требовании", result)
         path = data_path(pid, f"{pid}_traceability_repo.json")
         with open(path, "r", encoding="utf-8") as f:
             stored = json.load(f)
@@ -2104,7 +2104,7 @@ class TestArchivedRequirementsAreNotCoverage(BaseMCPTest):
         result = mod74.check_architecture_gaps(pid)
         self.assertIn("🔴 Critical | 0", result)
         self.assertIn("🟡 Warning | 1", result)
-        self.assertIn("archived", result)
+        self.assertIn("архив", result)
         self.assertIn("Helen Vasquez", result)
 
     def test_superseded_and_retired_count_as_archived_too(self):
@@ -2125,21 +2125,21 @@ class TestArchivedRequirementsAreNotCoverage(BaseMCPTest):
         pid = self._repo_with("arch74c", ["deprecated", "retired"])
         result = mod74.check_architecture_gaps(pid)
         self.assertIn("🔴 Critical | 0", result)
-        self.assertNotIn("has no recorded tie", result)
+        self.assertNotIn("нет ни одной записанной связи", result)
 
     def test_the_document_shows_the_archived_tie_and_marks_it(self):
         # Hiding it would be the "silent skip" class this branch fixed twice: the BA
         # declared that tie and must see what became of it.
         pid = self._repo_with("arch74d", ["deprecated"])
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("`FR-001` (declared, archived)", concerns)
         self.assertIn("Helen Vasquez", concerns)
 
     def test_a_live_tie_carries_no_archived_mark(self):
         pid = self._repo_with("arch74e", ["verified"])
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("`FR-001` (declared)", concerns)
         self.assertNotIn("archived", concerns)
 
@@ -2152,8 +2152,8 @@ class TestArchivedRequirementsAreNotCoverage(BaseMCPTest):
             make_req("FR-001", "functional", "Old feature", status="deprecated")]))
         save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
         result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
-        self.assertIn("declared on 1 requirement(s)", result)
-        self.assertIn("archived", result.lower())
+        self.assertIn("заявлен на 1 требовании", result)
+        self.assertIn("архив", result.lower())
         self.assertIn("FR-001", result)
         path = data_path(pid, f"{pid}_traceability_repo.json")
         with open(path, "r", encoding="utf-8") as f:
@@ -2201,8 +2201,8 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
         self._write_registry(pid, {"project": pid, "stakeholders": []})
         result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
-        self.assertNotIn("no stakeholder registry", result)
-        self.assertIn("not in the stakeholder registry", result)
+        self.assertNotIn("нет реестра стейкхолдеров", result)
+        self.assertIn("отсутствует в реестре стейкхолдеров", result)
 
     def test_the_tool_and_the_document_agree_about_an_empty_registry(self):
         pid = "b1_74b"
@@ -2211,21 +2211,21 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         reply = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
         doc = self._doc(pid)
         self.assertNotIn("Create it via the 3.2 or 4.2 tools", reply)
-        self.assertIn("no identifiable people", doc)
+        self.assertIn("нет опознаваемых людей", doc)
 
     def test_a_missing_registry_still_says_it_cannot_compare(self):
         # The other side of the branch: the third answer must survive where it is true.
         pid = "b1_74c"
         save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
         result = mod74.declare_stakeholder_interest(pid, "Helen Vasquez", '["FR-001"]')
-        self.assertIn("no stakeholder registry", result)
+        self.assertIn("нет реестра стейкхолдеров", result)
 
     def test_an_empty_registry_produces_an_info_note_in_the_gap_report(self):
         pid = "b1_74d"
         save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
         self._write_registry(pid, {"project": pid, "stakeholders": []})
         result = mod74.check_architecture_gaps(pid)
-        self.assertIn("nobody identifiable", result)
+        self.assertIn("опознаваемых людей в нём нет", result)
         self.assertNotIn("registry not found", result.lower())
 
     def test_a_registry_of_unidentifiable_rows_produces_the_same_note(self):
@@ -2234,21 +2234,21 @@ class TestAnEmptyRegistryIsNotAMissingOne(BaseMCPTest):
         self._write_registry(pid, {"project": pid,
                                    "stakeholders": [{"influence": "High"}]})
         result = mod74.check_architecture_gaps(pid)
-        self.assertIn("nobody identifiable", result)
+        self.assertIn("опознаваемых людей в нём нет", result)
 
     def test_a_null_stakeholder_list_produces_the_note_rather_than_a_clean_verdict(self):
         pid = "b1_74f"
         save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
         self._write_registry(pid, {"project": pid, "stakeholders": None})
         result = mod74.check_architecture_gaps(pid)
-        self.assertIn("nobody identifiable", result)
+        self.assertIn("опознаваемых людей в нём нет", result)
 
     def test_a_populated_registry_gets_no_such_note(self):
         pid = "b1_74g"
         save_repo(make_repo(pid, [make_req("FR-001", "functional", "Auto routing")]))
         save_stakeholder_registry(pid, [{"name": "Helen Vasquez", "role": "Ops"}])
         result = mod74.check_architecture_gaps(pid)
-        self.assertNotIn("nobody identifiable", result)
+        self.assertNotIn("опознаваемых людей в нём нет", result)
 
 
 class TestNothingThatUsedToBeSilentBecomesCritical(BaseMCPTest):
@@ -2307,9 +2307,9 @@ class TestNothingThatUsedToBeSilentBecomesCritical(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("a3_74d", [{"name": "Priya Nair", "role": "Compliance"}])
         doc = self._doc("a3_74d")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertNotIn("{'name'", concerns)
-        self.assertIn("**Priya Nair** — no exact tie recorded", concerns)
+        self.assertIn("**Priya Nair** — точных связей не записано", concerns)
 
     def test_an_unrelated_unreadable_value_still_leaves_a_real_gap_critical(self):
         # Guard against over-widening: the pool must not match everyone just because
@@ -2319,7 +2319,7 @@ class TestNothingThatUsedToBeSilentBecomesCritical(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("a3_74e", [{"name": "Priya Nair", "role": "Compl"}])
         result = mod74.check_architecture_gaps("a3_74e")
-        self.assertIn("`Priya Nair` has no recorded tie", result)
+        self.assertIn("`Priya Nair` нет ни одной записанной связи", result)
         self.assertIn("🔴 Critical | 1", result)
 
 
@@ -2342,20 +2342,20 @@ class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
             self.assertTrue(mock_sa.called, "save_artifact was not reached")
             return mock_sa.call_args[0][0]
 
-    def test_the_hint_says_what_matched_and_that_it_is_a_coincidence(self):
+    def test_the_hint_says_what_matched_and_that_it_is_a_совпадение(self):
         repo = make_repo("a4_74", [make_req("FR-001", "functional", "Auto routing")])
         repo["requirements"][0]["owner"] = "Compliance Officer"
         save_repo(repo)
         save_stakeholder_registry("a4_74", [{"name": "Ivan Petrov",
                                              "role": "Compliance"}])
         doc = self._doc("a4_74")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("possibly the same person as **Ivan Petrov**", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("возможно, тот же человек, что и **Ivan Petrov**", concerns)
         # The label it matched on, in the registry's own wording. This used to assert
         # the lower-cased form — that is the comparison key, and asserting it pinned a
         # leak of an internal value into a signed document (re-review RR-2).
         self.assertIn("(on `Compliance`)", concerns)
-        self.assertIn("coincidence", concerns)
+        self.assertIn("совпадение", concerns)
 
     def test_every_registry_member_that_matches_is_named_not_just_the_first(self):
         repo = make_repo("a4_74b", [make_req("FR-001", "functional", "Auto routing")])
@@ -2369,8 +2369,8 @@ class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
             {"name": "Zoe Adams", "role": "Compliance"},
         ])
         doc = self._doc("a4_74b")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        hint = concerns.split("not in the 4.2 registry")[1]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        hint = concerns.split("отсутствуют в реестре 4.2")[1]
         self.assertIn("Ivan Petrov", hint)
         self.assertIn("Zoe Adams", hint)
 
@@ -2381,8 +2381,8 @@ class TestTheSamePersonHintAdmitsItIsAHeuristic(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("a4_74c", [{"name": "Priya Nair", "role": "Compl"}])
         doc = self._doc("a4_74c")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("possibly the same person as **Priya Nair**", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("возможно, тот же человек, что и **Priya Nair**", concerns)
 
 
 class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
@@ -2445,7 +2445,7 @@ class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]',
                                            note="owns the revenue report these feed")
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("owns the revenue report these feed", concerns)
         self.assertIn("FR-001", concerns)
 
@@ -2453,8 +2453,8 @@ class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
         pid = self._repo("b4_74b")
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-001"]')
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("**Sales Head** — 1 requirement: `FR-001` (declared)", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("**Sales Head** — 1 требование: `FR-001` (declared)", concerns)
         self.assertNotIn("  - `FR-001`:", concerns)
 
     def test_each_note_says_which_requirement_it_belongs_to(self):
@@ -2464,7 +2464,7 @@ class TestNothingIsDiscardedOrRecordedInSilence(BaseMCPTest):
         mod74.declare_stakeholder_interest(pid, "Sales Head", '["FR-002"]',
                                            note="SLA reporting")
         doc = self._doc(pid)
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertIn("`FR-001`: revenue", concerns)
         self.assertIn("`FR-002`: SLA reporting", concerns)
 
@@ -2494,10 +2494,10 @@ class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
         save_repo(make_repo("b5_74", reqs))
         save_stakeholder_registry("b5_74", [{"name": "Busy Person", "role": "Ops"}])
         doc = self._doc("b5_74")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         bullet = next(l for l in concerns.splitlines() if "Busy Person" in l)
         self.assertLess(len(bullet), 500, "one bullet must not run to a paragraph")
-        self.assertIn("60 requirements", bullet)
+        self.assertIn("60 требований", bullet)
         self.assertIn("more", bullet)
         self.assertIn("`FR-001`", bullet)
 
@@ -2512,7 +2512,7 @@ class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
         save_repo(make_repo("b5_74b", reqs))
         save_stakeholder_registry("b5_74b", [{"name": "Busy Person", "role": "Ops"}])
         doc = self._doc("b5_74b")
-        self.assertIn("30 requirements", doc)
+        self.assertIn("30 требований", doc)
 
     def test_a_name_with_markdown_in_it_does_not_reformat_the_page(self):
         repo = make_repo("b5_74c", [make_req("FR-001", "functional", "Auto routing")])
@@ -2520,7 +2520,7 @@ class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("b5_74c", [{"name": "**Bold Person**", "role": "Ops"}])
         doc = self._doc("b5_74c")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         self.assertNotIn("****", concerns)
         self.assertIn("Bold Person", concerns)
 
@@ -2530,7 +2530,7 @@ class TestTheConcernsSectionSurvivesHostileInput(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry("b5_74d", [{"name": "Line One\nLine Two"}])
         doc = self._doc("b5_74d")
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
         bullets = [l for l in concerns.splitlines() if l.startswith("- **")]
         self.assertEqual(len(bullets), 1)
         self.assertIn("Line One Line Two", bullets[0])
@@ -2592,8 +2592,8 @@ class TestGapsInCoverageTheMutationsExposed(BaseMCPTest):
         with patch.object(mod74, "save_artifact") as mock_sa:
             mod74.save_architecture_snapshot("a5_74b", "v1.0")
             doc = mock_sa.call_args[0][0]
-        concerns = doc.split("## Stakeholder concerns")[1].split("## Architecture gaps")[0]
-        self.assertIn("1 requirement: `FR-001` (declared)", concerns)
+        concerns = doc.split("## Интересы стейкхолдеров")[1].split("## Архитектурные разрывы")[0]
+        self.assertIn("1 требование: `FR-001` (declared)", concerns)
         self.assertNotIn("declared, declared", concerns)
 
     def test_the_graph_is_written_back_to_the_one_file_it_was_read_from(self):
@@ -2645,7 +2645,7 @@ class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
             result = mod74.check_architecture_gaps(pid)
         self.assertIn("SENTINEL-OWNER-LABEL", result)
 
-    def test_the_heuristic_source_is_named_from_its_own_constant(self):
+    def test_the_эвристика_source_is_named_from_its_own_constant(self):
         pid = self._project("a6_74b")
         with patch.dict(mod74.CONCERN_LABELS,
                         {mod74.CONCERN_TITLE: "SENTINEL-TITLE-LABEL"}):
@@ -2655,9 +2655,9 @@ class TestTheSourceConstantsAreActuallyRead(BaseMCPTest):
     def test_the_message_still_names_all_three_evidence_sources_in_plain_words(self):
         pid = self._project("a6_74c")
         result = mod74.check_architecture_gaps(pid)
-        self.assertIn("declared interest", result)
-        self.assertIn("7.1 owner", result)
-        self.assertIn("5.5 approval", result)
+        self.assertIn("заявленный интерес", result)
+        self.assertIn("`owner` из 7.1", result)
+        self.assertIn("решение о согласовании из 5.5", result)
 
 
 class TestARemoveThatMatchedNothingClaimsNothing(BaseMCPTest):
@@ -2674,7 +2674,7 @@ class TestARemoveThatMatchedNothingClaimsNothing(BaseMCPTest):
         save_repo(repo)
         result = mod74.declare_stakeholder_interest(
             pid, "Nobody At All", '["FR-001"]', remove=True)
-        self.assertNotIn("Replaced, not merged", result)
+        self.assertNotIn("Заменено, а не дополнено", result)
         stored = json.load(open(data_path(pid, f"{pid}_traceability_repo.json"),
                                 encoding="utf-8"))
         self.assertEqual(stored["requirements"][0]["stakeholders"],
@@ -2687,7 +2687,7 @@ class TestARemoveThatMatchedNothingClaimsNothing(BaseMCPTest):
         repo["requirements"][0]["stakeholders"] = {"name": "Old Note", "why": "keep me"}
         save_repo(repo)
         result = mod74.declare_stakeholder_interest(pid, "Marta Silva", '["FR-001"]')
-        self.assertIn("Replaced, not merged", result)
+        self.assertIn("Заменено, а не дополнено", result)
 
 
 class TestTheAnalyzeToolDoesNotCallArchivedActive(BaseMCPTest):
@@ -2714,7 +2714,7 @@ class TestTheAnalyzeToolDoesNotCallArchivedActive(BaseMCPTest):
         self._repo(pid)
         result = mod74.analyze_requirements_architecture(pid)
         self.assertNotIn("active req", result)
-        self.assertIn("Total req", result)
+        self.assertIn("Всего требований", result)
 
     def test_the_archived_ones_are_counted_out_loud(self):
         pid = "n5_74b"
@@ -2876,7 +2876,7 @@ class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
         # Pinned on BOTH sides: without the warning assertion this passes while the
         # person is critical, which is the state the class exists to forbid.
         self.assertIn("| 🟡 Warning | 1 |", result)
-        self.assertNotIn("in a requirement title", result,
+        self.assertNotIn("в заголовке требования", result,
                          "no requirement mentions them — a risk does, and the "
                          "sentence claiming otherwise is what R-1 objected to")
         self.assertIn("risk", result.lower())
@@ -2896,7 +2896,7 @@ class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
             [make_req("FR-001", "functional", "Compliance reporting")],
             [{"role": "Compliance"}])
         self.assertIn("| 🟡 Warning | 1 |", result)
-        self.assertIn("in a requirement title", result)
+        self.assertIn("в заголовке требования", result)
 
     def test_the_document_describes_that_person_the_way_the_report_does(self):
         """T8-3's rule, applied to the sentence and not only to the pool.
@@ -2921,8 +2921,8 @@ class TestTheGraphWideCoincidencePoolKeepsDecisionSix(BaseMCPTest):
         finally:
             mod74.save_artifact = original
         line = [ln for ln in captured[0].splitlines() if "Compliance" in ln][0]
-        self.assertIn("recorded outside them", line)
-        self.assertIn("risk (6.3)", line)
+        self.assertIn("записано вне их", line)
+        self.assertIn("риск (6.3)", line)
         self.assertNotIn("partial name or title match", line,
                          "that wording sends the reader into the requirements, "
                          "where there is nothing to find")
@@ -2977,10 +2977,10 @@ class TestOneVerdictDecidedOnce(BaseMCPTest):
         pid = "rr1_74"
         self._fixture(pid)
         report = mod74.check_architecture_gaps(pid)
-        self.assertNotIn("OUTSIDE the requirements", report,
+        self.assertNotIn("ВНЕ требований", report,
                          "FR-001's owner field carries her name — the page says so "
                          "itself a few lines down")
-        self.assertIn("partial name match", report)
+        self.assertIn("частичному совпадению имени", report)
 
     def test_the_report_and_the_document_say_the_same_thing(self):
         pid = "rr1_74b"
@@ -2994,8 +2994,8 @@ class TestOneVerdictDecidedOnce(BaseMCPTest):
             mod74.save_architecture_snapshot(pid, "v1.0")
         finally:
             mod74.save_artifact = original
-        outside_in_report = "OUTSIDE the requirements" in report
-        outside_in_doc = "recorded outside them" in captured[0]
+        outside_in_report = "ВНЕ требований" in report
+        outside_in_doc = "записано вне их" in captured[0]
         self.assertEqual(outside_in_report, outside_in_doc,
                          "two surfaces, one person, one verdict")
 
@@ -3022,7 +3022,7 @@ class TestOneVerdictDecidedOnce(BaseMCPTest):
         finally:
             mod74.save_artifact = original
         doc = captured[0]
-        self.assertIn("possibly the same person as **Ivan Petrov**", doc)
+        self.assertIn("возможно, тот же человек, что и **Ivan Petrov**", doc)
         self.assertIn("(on `Compliance`)", doc, "the registry's own wording")
         self.assertNotIn("(on `compliance`)", doc, "not the comparison key")
 
@@ -3036,7 +3036,7 @@ class TestOneVerdictDecidedOnce(BaseMCPTest):
         save_repo(repo)
         save_stakeholder_registry(pid, [{"role": "Compliance"}])
         report = mod74.check_architecture_gaps(pid)
-        self.assertIn("OUTSIDE the requirements", report)
+        self.assertIn("ВНЕ требований", report)
         self.assertIn("🔴 Critical | 0", report)
 
 
@@ -3102,7 +3102,7 @@ class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):
         pid = "arch_vp_74c"
         self._repo_with_archived(pid)
         doc = self._doc(pid)
-        self.assertIn("| Total req | 2 |", doc,
+        self.assertIn("| Всего требований | 2 |", doc,
                       "marking must not silently change a released number")
 
     def test_an_archived_requirement_gets_no_semantic_gap_advice(self):
@@ -3148,9 +3148,9 @@ class TestArchivedIsTheSameFactOnEverySurface(BaseMCPTest):
         save_stakeholder_registry(pid, [{"name": "Marta Silva", "role": "Data Steward"}])
         doc = self._doc(pid)
         line = [ln for ln in doc.splitlines() if "Marta Silva" in ln][0]
-        self.assertIn("1 requirement:", line)
+        self.assertIn("1 требование:", line)
         self.assertNotIn("every one of them", line,
-                         "'1 requirement … every one of them archived' is not English")
+                         "'1 требование … every one of them archived' is not English")
 
 
 class TestAGapSectionSaysWhoAndWhat(BaseMCPTest):
@@ -3178,8 +3178,8 @@ class TestAGapSectionSaysWhoAndWhat(BaseMCPTest):
         people = ["Anna Orlova", "Boris Petrov", "Clara Mendes", "Dmitri Sokolov"]
         out = self._gaps([
             {"type": "stakeholder_no_view", "stakeholder_id": "", "stakeholder_name": p,
-             "message": f"Stakeholder `{p}` has no recorded tie to any requirement: "
-                        f"no declared interest (7.4). Their interests may be uncovered "
+             "message": f"Stakeholder `{p}` нет ни одной записанной связи to any requirement: "
+                        f"no заявленный интерес (7.4). Their interests may be uncovered "
                         f"— record what you know with `declare_stakeholder_interest`."}
             for p in people
         ])
