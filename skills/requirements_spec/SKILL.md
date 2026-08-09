@@ -293,7 +293,7 @@ Nodes other chapters keep in the same graph — `change_request` (5.4), `risk` (
 
 ## Artifact storage
 
-All artifacts are saved to: `governance_plans/{project_id}_specs/`
+All artifacts are saved to: `governance_plans/data/{project_id}/specs/`
 
 ```
 governance_plans/crm_2024_specs/
@@ -313,7 +313,7 @@ governance_plans/crm_2024_specs/
 ## Automatic registration in 5.1
 
 Every created artifact is **automatically** registered in the 5.1 repository
-(file `governance_plans/{project_id}_traceability_repo.json`) with status `draft`.
+(file `governance_plans/data/{project_id}/{project_id}_traceability_repo.json`) with status `draft`.
 
 You can:
 - Immediately add links via `add_trace_link` (5.1)

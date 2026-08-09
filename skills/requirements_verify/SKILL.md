@@ -94,7 +94,7 @@ check_req_quality(project_id="my_project", req_type="user_story")
 
 ### check_model_consistency(project_id)
 
-Compares artifacts from 7.1: .md and .puml files in `governance_plans/{project}_specs/`.
+Compares artifacts from 7.1: .md and .puml files in `governance_plans/data/{project}/specs/`.
 
 **What it checks:**
 - Entities in DD vs ERD (name mismatches)
@@ -222,7 +222,7 @@ get_verification_report(project_id="crm_2024")
 
 **Incoming links:**
 - 5.1 repository — list of reqs with statuses
-- Files from 7.1 — specifications in `governance_plans/{project}_specs/`
+- Files from 7.1 — specifications in `governance_plans/data/{project}/specs/`
 
 **Outgoing links:**
 - → 5.5 (Approve Requirements): Verification Report as an input artifact
@@ -236,7 +236,7 @@ get_verification_report(project_id="crm_2024")
 
 | What | Where | Format |
 |-----|-----|--------|
-| Verification issues | `governance_plans/{project}_verification_issues.json` | JSON |
+| Verification issues | `governance_plans/data/{project}/{project}_verification_issues.json` | JSON |
 | Req statuses | 5.1 repository (`{project}_traceability_repo.json`) | JSON (status field) |
 | Verification Report | `governance_plans/` via save_artifact | Markdown |
 

@@ -150,7 +150,7 @@ An assumption is a passive risk. It becomes active when refuted.
 
 ## Numbering and storage
 
-Assumptions are stored in `governance_plans/{project}_assumptions.json`.
+Assumptions are stored in `governance_plans/data/{project}/{project}_assumptions.json`.
 
 **Structure of a single assumption:**
 ```json
