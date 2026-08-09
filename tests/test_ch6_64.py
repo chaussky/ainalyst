@@ -1690,7 +1690,7 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _write_gap_file()
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
-        self.assertIn("Distribution by gap_severity", out)
+        self.assertIn("Распределение по gap_severity", out)
         self.assertIn("🔴 high:   1", out)
 
     def test_coverage_reflects_the_capabilities_of_THIS_call_not_the_previous_one(self):
@@ -1755,8 +1755,8 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
-        self.assertLess(doc.index("## Solution Scope"), doc.index("**6.2 gap coverage:**"))
-        self.assertLess(doc.index("**6.2 gap coverage:**"), doc.index("## Enterprise Readiness"))
+        self.assertLess(doc.index("## Скоуп решения"), doc.index("**6.2 gap coverage:**"))
+        self.assertLess(doc.index("**6.2 gap coverage:**"), doc.index("## Готовность организации"))
 
     def test_a_capability_line_names_its_6_2_origin_and_labels_the_other_scale(self):
         """gap_severity and complexity DELIBERATELY differ here. _write_gap_file gives
@@ -2176,7 +2176,7 @@ class TestNullFieldsDoNotLoseTheDeliveredDocument(BaseMCPTest):
         self._pipeline()
         self._nullify("category", "name", "description", "gap_severity")
         doc = self._doc()
-        self.assertIn("## Solution Scope", doc)
+        self.assertIn("## Скоуп решения", doc)
         self.assertIn("Training", doc)
 
 

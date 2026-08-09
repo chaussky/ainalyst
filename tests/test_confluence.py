@@ -602,9 +602,9 @@ class TestListSpacePages(BaseMCPTest):
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = self._call()
-        self.assertIn("Требования FR", result)
-        self.assertIn("Требования BR", result)
-        self.assertIn("Архитектура", result)
+        self.assertIn("Requirements FR", result)
+        self.assertIn("Requirements BR", result)
+        self.assertIn("Architecture", result)
 
     def test_filter_by_search_title(self):
         """Фильтрует страницы по search_title."""
@@ -612,10 +612,10 @@ class TestListSpacePages(BaseMCPTest):
         with patch.dict(os.environ, VALID_ENV), \
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
-            result = self._call(search_title="Требования")
-        self.assertIn("Требования FR", result)
-        self.assertIn("Требования BR", result)
-        self.assertNotIn("Архитектура", result)
+            result = self._call(search_title="Requirements")
+        self.assertIn("Requirements FR", result)
+        self.assertIn("Requirements BR", result)
+        self.assertNotIn("Architecture", result)
 
     def test_no_pages_returns_info(self):
         """Пустое пространство → информационное сообщение."""
@@ -860,7 +860,7 @@ class TestConfluenceAuditRegressions(BaseMCPTest):
              patch("skills.integrations.confluence_mcp.save_artifact") as mock_save:
             result = confluence_mod.pull_from_confluence(
                 page_title="CRM Upgrade", space_key="BA", project_name="")
-        self.assertIn("**Project:** CRM Upgrade", result)
+        self.assertIn("**Проект:** CRM Upgrade", result)
         self.assertEqual(mock_save.call_args.kwargs.get("project_id"), "CRM Upgrade")
 
 

@@ -111,16 +111,16 @@ class StepFourNamesTheAuthoritiesTest(CRGovernanceBase):
         nothing about which one ran. The parenthetical exists only in the no-plan
         branch, and the "names:" clause only in the planned one."""
         result = score_cr(PROJECT, "CR-001", "High", "Medium")
-        self.assertIn("(from governance 3.3)", result)
-        self.assertNotIn("the 3.3 governance plan names", result)
+        self.assertIn("(из governance 3.3)", result)
+        self.assertNotIn("план governance 3.3 называет", result)
 
     def test_a_damaged_plan_leaves_the_block_intact(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         with open(ba_plan_path(PROJECT), "w", encoding="utf-8") as f:
             f.write("{ not json")
         result = score_cr(PROJECT, "CR-001", "High", "Medium")
-        self.assertIn("Next step — Step 4", result)
-        self.assertIn("(from governance 3.3)", result)
+        self.assertIn("Следующий шаг — Шаг 4", result)
+        self.assertIn("(из governance 3.3)", result)
 
 
 # ---------------------------------------------------------------------------
@@ -132,15 +132,15 @@ class DecidedByCrossCheckTest(CRGovernanceBase):
     def test_an_unplanned_decider_is_flagged_in_the_tool_output(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         _record, output = self._resolve(decided_by="Marketing Lead")
-        self.assertIn("not among the planned decision makers", output)
+        self.assertIn("нет среди запланированных принимающих решения", output)
         self.assertIn(BOTH, output)
 
     def test_an_unplanned_decider_is_flagged_in_the_decision_record(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, _output = self._resolve(decided_by="Marketing Lead")
         self.assertIn("## Governance (3.3)", record)
-        self.assertIn(f"**Planned decision authority:** {BOTH}", record)
-        self.assertIn("is not among them", record)
+        self.assertIn(f"**Запланированные полномочия на решение:** {BOTH}", record)
+        self.assertIn("среди них нет", record)
 
     def test_the_record_does_not_say_the_planned_authority_decided(self):
         """FOUND BY THE LIVE RUN, by reading the rendered record rather than grepping it.
@@ -154,8 +154,8 @@ class DecidedByCrossCheckTest(CRGovernanceBase):
         """
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, _output = self._resolve(decided_by="Marketing Lead")
-        self.assertIn("is not among them", record)          # the flag still fires
-        self.assertNotIn("decided by them", record)
+        self.assertIn("среди них нет", record)          # the flag still fires
+        self.assertNotIn("решение приняли они", record)
         # The record must name WHO it credits, and it is the person, not the plan.
         self.assertIn("`Marketing Lead`", record)
 
@@ -169,8 +169,8 @@ class DecidedByCrossCheckTest(CRGovernanceBase):
         # cannot be satisfied by an empty string.
         self.assertIn("## Governance (3.3)", record)
         self.assertIn(BOTH, record)
-        self.assertNotIn("is not among them", record)
-        self.assertNotIn("not among the planned decision makers", output)
+        self.assertNotIn("среди них нет", record)
+        self.assertNotIn("нет среди запланированных принимающих решения", output)
 
     def test_decided_by_is_never_rewritten(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
@@ -194,7 +194,7 @@ class EscalationPathTest(CRGovernanceBase):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS,
                            escalation_path="BA → CRO → Board")
         record, _output = self._resolve()
-        self.assertIn("**Escalation path:** BA → CRO → Board", record)
+        self.assertIn("**Путь эскалации:** BA → CRO → Board", record)
         self.assertIn("заявлено в 3.3", record)
 
     def test_a_template_escalation_path_is_labelled_as_the_template(self):
@@ -203,7 +203,7 @@ class EscalationPathTest(CRGovernanceBase):
         never made it."""
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, _output = self._resolve()
-        self.assertIn("**Escalation path:** BA → PM → Steering Committee", record)
+        self.assertIn("**Путь эскалации:** BA → PM → Steering Committee", record)
         self.assertIn("из шаблона High", record)
         self.assertNotIn("заявлено в 3.3", record)
 
@@ -247,7 +247,7 @@ class NoPlanAndDamagedPlanTest(CRGovernanceBase):
         self.assertNotIn("Escalation path", record)
         self.assertIn("CR CR-001 — Deferred", output)           # the output rendered
         self.assertNotIn("escalation path", output)
-        self.assertNotIn("not among the planned decision makers", output)
+        self.assertNotIn("нет среди запланированных принимающих решения", output)
 
     def test_a_governance_section_of_the_wrong_type_does_not_raise(self):
         for bad in (None, "oops", ["CFO"], 7):
@@ -286,13 +286,13 @@ class RegistryBridgeTest(CRGovernanceBase):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, output = self._resolve(decided_by="Alice Chen")
         self.assertIn("## Governance (3.3)", record)      # the block IS rendered...
-        self.assertNotIn("is not among them", record)     # ...without an accusation
-        self.assertNotIn("not among the planned decision makers", output)
+        self.assertNotIn("среди них нет", record)     # ...without an accusation
+        self.assertNotIn("нет среди запланированных принимающих решения", output)
 
     def test_a_person_outside_every_planned_role_is_still_flagged(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS)
         record, _output = self._resolve(decided_by="Mark Feld")
-        self.assertIn("is not among them", record)
+        self.assertIn("среди них нет", record)
 
 
 class NoRegistryTest(BaseMCPTest):
@@ -314,8 +314,8 @@ class NoRegistryTest(BaseMCPTest):
             output = resolve_cr(PROJECT, "CR-001", "Approved", "Alice Chen", "agreed")
             record = mock_sa.call_args[0][0]
         self.assertIn("## Governance (3.3)", record)
-        self.assertNotIn("is not among them", record)
-        self.assertNotIn("not among the planned decision makers", output)
+        self.assertNotIn("среди них нет", record)
+        self.assertNotIn("нет среди запланированных принимающих решения", output)
 
     def test_an_exact_role_match_still_fires_without_a_registry(self):
         """The bridge only ADDS matches — a BA typing the planned role is unaffected."""
@@ -324,8 +324,8 @@ class NoRegistryTest(BaseMCPTest):
             mock_sa.return_value = ""
             resolve_cr(PROJECT, "CR-001", "Approved", "CFO", "agreed")
             record = mock_sa.call_args[0][0]
-        self.assertIn(f"**Planned decision authority:** {BOTH}", record)
-        self.assertNotIn("is not among them", record)
+        self.assertIn(f"**Запланированные полномочия на решение:** {BOTH}", record)
+        self.assertNotIn("среди них нет", record)
 
 
 class DamagedPlanIsReportedTest(CRGovernanceBase):

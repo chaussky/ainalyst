@@ -537,10 +537,10 @@ def run_cr_impact(
     # own: more informative than shrinking the count, and the two agree again.
     if target_req_ids:
         lines += [
-            "### Affected nodes by link type",
+            "### Затронутые узлы по типу связи",
             "",
-            f"**the change itself** — {len(target_req_ids)} requirement(s) the CR "
-            f"rewrites:",
+            f"**само изменение** — требований, которые переписывает CR: "
+            f"{len(target_req_ids)}:",
         ]
         for rid in target_req_ids:
             node = _find_node(repo, rid)
@@ -551,12 +551,12 @@ def run_cr_impact(
     # Affected items by link type
     if affected:
         if not target_req_ids:
-            lines += ["### Affected nodes by link type", ""]
+            lines += ["### Затронутые узлы по типу связи", ""]
         relation_comments = {
-            "depends": "dependents → may lose meaning",
-            "verifies": "tests → need to be reviewed/rewritten",
-            "satisfies": "implementing components / requirements → need to be redone",
-            "derives": "child requirements → may inherit the change",
+            "depends": "зависимые → могут потерять смысл",
+            "verifies": "тесты → нужно пересмотреть или переписать",
+            "satisfies": "реализующие компоненты / требования → нужно переделать",
+            "derives": "дочерние требования → могут унаследовать изменение",
         }
         for rel, items in by_relation.items():
             comment = relation_comments.get(rel, "")
@@ -728,7 +728,7 @@ def score_cr(
     else:
         recommendation_parts.append(
             f"Затраты на реализацию CR значительно превышают ожидаемую ценность. "
-            f"Cost: {cost}, Schedule Risk: {impact_data['schedule_auto']}, Benefit: {benefit}."
+            f"Стоимость: {cost}, риск по срокам: {impact_data['schedule_auto']}, выгода: {benefit}."
         )
         if not regulatory:
             recommendation_parts.append("Рекомендуется отклонить с явным rationale для audit trail.")
@@ -802,11 +802,11 @@ def score_cr(
     plan, plan_note = load_ba_plan(project_name)
     planned_deciders = planned_decision_makers(plan)
     decider_line = (
-        f"Get a decision from an authorized stakeholder — the 3.3 governance plan "
-        f"names: {', '.join(planned_deciders)}. Then call `resolve_cr`:"
+        f"Получи решение уполномоченного стейкхолдера — план governance 3.3 называет: "
+        f"{', '.join(planned_deciders)}. Затем вызови `resolve_cr`:"
         if planned_deciders else
-        "Get a decision from an authorized stakeholder (from governance 3.3) and "
-        "call `resolve_cr`:")
+        "Получи решение уполномоченного стейкхолдера (из governance 3.3) и вызови "
+        "`resolve_cr`:")
 
     lines += [
         "---",
@@ -1055,7 +1055,7 @@ def resolve_cr(
         record_lines += ["---", "", "## Governance (3.3)", ""]
         if planned_deciders:
             record_lines.append(
-                f"**Planned decision authority:** {', '.join(planned_deciders)}  ")
+                f"**Запланированные полномочия на решение:** {', '.join(planned_deciders)}  ")
         if unplanned_decider:
             # Names the decider again rather than saying "them": directly under
             # "**Planned decision authority:** A, B" the pronoun resolves to A and B,
@@ -1063,12 +1063,13 @@ def resolve_cr(
             # contradicted the `**Decided by:**` header three lines above it, in a
             # document written for an audit.
             record_lines.append(
-                f"⚠️ `{decided_by}` is not among them. The record credits the decision "
-                f"to `{decided_by}`, exactly as it was made — either update 3.3 with "
-                f"`plan_ba_governance`, or confirm this person holds the authority.  ")
+                f"⚠️ `{decided_by}` среди них нет. Запись относит решение на "
+                f"`{decided_by}` — ровно так, как оно было принято; либо обновите 3.3 "
+                f"через `plan_ba_governance`, либо подтвердите полномочия этого "
+                f"человека.  ")
         if escalation:
             record_lines.append(
-                f"**Escalation path:** {escalation} *({escalation_source})*  ")
+                f"**Путь эскалации:** {escalation} *({escalation_source})*  ")
         record_lines.append("")
 
     # Next steps
@@ -1107,10 +1108,10 @@ def resolve_cr(
 
     if unplanned_decider:
         output_lines += [
-            f"⚠️ `{decided_by}` is not among the planned decision makers (3.3): "
-            f"{', '.join(planned_deciders)}. The decision stands exactly as recorded "
-            f"— either update 3.3 with `plan_ba_governance`, or confirm this person "
-            f"holds the authority.",
+            f"⚠️ `{decided_by}` нет среди запланированных принимающих решения (3.3): "
+            f"{', '.join(planned_deciders)}. Решение остаётся ровно таким, как записано "
+            f"— либо обновите 3.3 через `plan_ba_governance`, либо подтвердите, что этот "
+            f"человек обладает полномочиями.",
             "",
         ]
 

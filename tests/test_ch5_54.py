@@ -368,8 +368,8 @@ class TestRunCRImpact(BaseMCPTest):
         self._setup_and_open()
         result = mod54.run_cr_impact(self.P, "CR-001")
 
-        headline = int(re.search(r"\*\*Total nodes affected:\*\* (\d+)", result).group(1))
-        breakdown = result.split("### Affected nodes by link type")[1].split("\n---")[0]
+        headline = int(re.search(r"\*\*Всего затронуто узлов:\*\* (\d+)", result).group(1))
+        breakdown = result.split("### Затронутые узлы по типу связи")[1].split("\n---")[0]
         listed = len([ln for ln in breakdown.split("\n") if ln.strip().startswith("- `")])
         self.assertEqual(headline, listed,
                          f"headline says {headline}, the breakdown lists {listed}")
@@ -975,7 +975,7 @@ class TestBrPathKnowsRealGoalTypes(BaseMCPTest):
     def _untraced_line(self, result):
         """The rendered 'no traceability' line only — the id list is interpolated
         straight into it."""
-        marker = "no traceability to a business requirement"
+        marker = "нет трассировки к бизнес-потребности"
         low = result.lower()
         if marker not in low:
             return ""

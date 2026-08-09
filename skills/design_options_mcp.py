@@ -1261,14 +1261,14 @@ def save_design_options_report(
         sf = _extract_strategy_fields(strategy)
         source_note = " _(from 6.4 Change Strategy)_" if _is_rich_strategy(strategy) else ""
         doc_lines += [
-            f"## Change strategy{source_note}",
+            f"## Стратегия изменения{source_note}",
             "",
-            f"| Field | Value |",
+            f"| Поле | Значение |",
             f"|-------|-------|",
-            f"| Type | `{sf['change_type']}` |",
-            f"| Scope | {sf['scope']} |",
-            f"| Constraints | {sf['constraints']} |",
-            f"| Timeline | {sf['timeline']} |",
+            f"| Тип | `{sf['change_type']}` |",
+            f"| Скоуп | {sf['scope']} |",
+            f"| Ограничения | {sf['constraints']} |",
+            f"| Сроки | {sf['timeline']} |",
             "",
         ]
     else:

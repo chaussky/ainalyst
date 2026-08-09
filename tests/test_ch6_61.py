@@ -776,7 +776,7 @@ class TestPrefillBusinessContextFrom61(BaseMCPTest):
             from_current_state_project_id=PROJECT,
         )
         self.assertIn("✅", result)
-        self.assertIn("Auto-fill from 6.1", result)
+        self.assertIn("Автозаполнение из 6.1", result)
 
         # The behaviour, not a label in the prose: the objective is actually STORED,
         # and it keeps the 6.1 business-need id so the graph stays traceable. This

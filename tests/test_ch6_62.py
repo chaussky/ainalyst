@@ -1205,7 +1205,7 @@ class TestIntegration73(BaseMCPTest):
         )
         # Should pre-fill (with the real BN id, R1-1) and warn
         self.assertIn("BN-001", r)
-        self.assertIn("deprecated", r.lower())
+        self.assertIn("устарел", r.lower())
 
     def test_from_strategy_does_not_override_explicit_goals(self):
         """from_strategy_project_id не перебивает явно переданные goals."""
