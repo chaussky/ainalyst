@@ -1028,7 +1028,7 @@ class TestTheSurrogateAnswersTheAnalystWhoDidChapterSix(Base75Test):
         result = mod75.set_change_strategy(
             "e11", "technology_implementation", "scope", "constraints", "12 months")
         self.assertIn("6.4", result)
-        self.assertNotIn("Invalid change_type", result,
+        self.assertNotIn("Недопустимый change_type", result,
                          "the vocabulary is beside the point — this project already "
                          "has a strategy and 7.5 reads it directly")
 
@@ -1042,7 +1042,7 @@ class TestTheSurrogateAnswersTheAnalystWhoDidChapterSix(Base75Test):
     def test_a_project_without_chapter_six_still_gets_the_vocabulary(self):
         """The guard on over-fixing: validation must survive for its real audience."""
         result = mod75.set_change_strategy("e11c", "nonsense", "s", "c", "t")
-        self.assertIn("Invalid change_type", result)
+        self.assertIn("Недопустимый change_type", result)
 
 
 if __name__ == "__main__":

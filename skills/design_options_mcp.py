@@ -182,7 +182,7 @@ def _extract_strategy_fields(strategy: Optional[dict]) -> Optional[dict]:
             if caps:
                 scope_txt = "Capabilities: " + ", ".join(
                     str(c.get("name", c) if isinstance(c, dict) else c) for c in caps[:5])
-        constraints = ("Out of scope: " + "; ".join(str(e) for e in excluded)) if excluded \
+        constraints = ("Вне скоупа: " + "; ".join(str(e) for e in excluded)) if excluded \
             else (scope6.get("ba_notes", "") or "—")
         return {
             "change_type": scope6.get("change_type", "—"),
@@ -303,20 +303,20 @@ def set_change_strategy(
     existing = _load_change_strategy(project_id)
     if _is_rich_strategy(existing):
         return (
-            f"⚠️ `{project_id}_change_strategy.json` is already populated by task 6.4 "
-            f"(the richer Change Strategy contract for 7.x/8.x). **Not overwriting.**\n\n"
-            f"7.5 reads the 6.4 Change Strategy directly — no surrogate is needed. "
-            f"To change the strategy, edit it via the 6.4 tools (`change_strategy` phase)."
+            f"⚠️ `{project_id}_change_strategy.json` уже заполнен задачей 6.4 "
+            f"(это более богатый контракт Change Strategy для 7.x/8.x). **Не перезаписываю.**\n\n"
+            f"7.5 читает стратегию 6.4 напрямую — замена не нужна. "
+            f"Чтобы изменить стратегию, правьте её инструментами 6.4 (фаза `change_strategy`)."
         )
 
     if change_type not in VALID_CHANGE_TYPES:
         return (
-            f"❌ Invalid change_type: '{change_type}'.\n\n"
-            f"Valid values: {', '.join(sorted(VALID_CHANGE_TYPES))}\n"
-            f"If this project already has a 6.4 Change Strategy, you do not need this "
-            f"tool at all — 7.5 reads 6.4 directly. 6.4 uses its own, longer vocabulary "
-            f"(`technology_implementation`, `process_improvement`, …); the two are not "
-            f"interchangeable."
+            f"❌ Недопустимый change_type: '{change_type}'.\n\n"
+            f"Допустимые значения: {', '.join(sorted(VALID_CHANGE_TYPES))}\n"
+            f"Если у проекта уже есть Change Strategy из 6.4, этот инструмент вам не "
+            f"нужен вовсе — 7.5 читает 6.4 напрямую. У 6.4 свой, более длинный словарь "
+            f"(`technology_implementation`, `process_improvement`, …); эти два набора "
+            f"не взаимозаменяемы."
         )
 
     if not scope.strip():
@@ -372,8 +372,8 @@ def set_change_strategy(
 
     lines += [
         "",
-        "> ℹ️ **Entered manually in 7.5.** Task 6.4 (Define Change Strategy) writes this",
-        "> same strategy automatically when you run Chapter 6 — and its richer contract wins.",
+        "> ℹ️ **Введено вручную в 7.5.** Задача 6.4 (Define Change Strategy) записывает ту же",
+        "> стратегию автоматически, когда вы проходите Главу 6, — и её более богатый контракт главнее.",
         "",
         "---",
         "",
@@ -439,8 +439,8 @@ def create_design_option(
 
     if approach not in VALID_APPROACHES:
         return (
-            f"❌ Invalid approach: '{approach}'.\n\n"
-            f"Valid values: {', '.join(sorted(VALID_APPROACHES))}"
+            f"❌ Недопустимый approach: '{approach}'.\n\n"
+            f"Допустимые значения: {', '.join(sorted(VALID_APPROACHES))}"
         )
 
     if not title.strip():
@@ -455,8 +455,8 @@ def create_design_option(
             raise ValueError("Список компонентов не должен быть пустым")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse components_json: {e}\n\n"
-            f"Expected a non-empty JSON list: '[\"Backend API\", \"Web UI\"]'"
+            f"❌ Не удалось разобрать components_json: {e}\n\n"
+            f"Ожидается непустой JSON-список: '[\"Backend API\", \"Web UI\"]'"
         )
 
     # Парсинг improvement_opportunities
@@ -466,8 +466,8 @@ def create_design_option(
             raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse improvement_opportunities_json: {e}\n\n"
-            f"Expected a JSON list: '[{{\"type\": \"efficiency\", \"description\": \"...\"}}]'"
+            f"❌ Не удалось разобрать improvement_opportunities_json: {e}\n\n"
+            f"Ожидается JSON-список: '[{{\"type\": \"efficiency\", \"description\": \"...\"}}]'"
         )
 
     # Валидация типов opportunities
@@ -477,8 +477,8 @@ def create_design_option(
     ]
     if invalid_types:
         return (
-            f"❌ Invalid improvement opportunity types: {invalid_types}\n\n"
-            f"Valid types: {', '.join(sorted(VALID_OPPORTUNITY_TYPES))}"
+            f"❌ Недопустимые типы improvement opportunity: {invalid_types}\n\n"
+            f"Допустимые типы: {', '.join(sorted(VALID_OPPORTUNITY_TYPES))}"
         )
 
     # Парсинг effectiveness_measures
@@ -488,16 +488,16 @@ def create_design_option(
             raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse effectiveness_measures_json: {e}\n\n"
-            f"Expected a JSON list: '[\"Reduce processing time by 40%\"]'"
+            f"❌ Не удалось разобрать effectiveness_measures_json: {e}\n\n"
+            f"Ожидается JSON-список: '[\"Сократить время обработки на 40%\"]'"
         )
 
     # Предупреждение: vendor_notes рекомендуется для buy/hybrid
     vendor_warning = ""
     if approach in ("buy", "hybrid") and not vendor_notes.strip():
         vendor_warning = (
-            "\n\n> ℹ️ **Recommendation:** for approach `{approach}` it's recommended to fill in `vendor_notes` "
-            "— specify the vendor, cost, constraints, references."
+            "\n\n> ℹ️ **Рекомендация:** для подхода `{approach}` стоит заполнить `vendor_notes` "
+            "— укажите вендора, стоимость, ограничения, референсы."
         ).format(approach=approach)
 
     # Загружаем и обновляем
@@ -638,9 +638,9 @@ def allocate_requirements(
     option = next((o for o in do_data["options"] if o["option_id"] == option_id), None)
     if option is None:
         return (
-            f"❌ Design option `{option_id}` not found in project `{project_id}`.\n\n"
-            f"Existing options: {[o['option_id'] for o in do_data['options']]}\n"
-            f"First call `create_design_option`."
+            f"❌ Вариант дизайна `{option_id}` не найден в проекте `{project_id}`.\n\n"
+            f"Существующие варианты: {[o['option_id'] for o in do_data['options']]}\n"
+            f"Сначала вызовите `create_design_option`."
         )
 
     # Парсинг assignments
@@ -650,9 +650,9 @@ def allocate_requirements(
             raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse assignments_json: {e}\n\n"
-            f"Expected a JSON list: '[{{\"req_id\": \"FR-001\", \"version\": \"v1\", \"rationale\": \"...\"}}]'\n"
-            f"Or pass an empty list '[]' to use auto_suggest only."
+            f"❌ Не удалось разобрать assignments_json: {e}\n\n"
+            f"Ожидается JSON-список: '[{{\"req_id\": \"FR-001\", \"version\": \"v1\", \"rationale\": \"...\"}}]'\n"
+            f"Либо передайте пустой список '[]', чтобы обойтись только auto_suggest."
         )
 
     # Валидация assignments
@@ -662,8 +662,8 @@ def allocate_requirements(
     ]
     if invalid_versions:
         return (
-            f"❌ Invalid versions in assignments: {invalid_versions}\n\n"
-            f"Valid versions: {', '.join(sorted(VALID_VERSIONS))}"
+            f"❌ Недопустимые версии в assignments: {invalid_versions}\n\n"
+            f"Допустимые версии: {', '.join(sorted(VALID_VERSIONS))}"
         )
 
     assignments_map = {
@@ -685,8 +685,8 @@ def allocate_requirements(
 
     if not all_reqs:
         return (
-            f"⚠️ The 5.1 repository for project `{project_id}` is empty or has no requirements.\n\n"
-            f"Create requirements via the 7.1 tools before allocation."
+            f"⚠️ Репозиторий 5.1 проекта `{project_id}` пуст или не содержит требований.\n\n"
+            f"Создайте требования инструментами 7.1 перед распределением."
         )
 
     lines = [
@@ -954,14 +954,14 @@ def compare_design_options(
 
     if not options:
         return (
-            f"⚠️ No design options for project `{project_id}`.\n\n"
-            f"First create options via `create_design_option`."
+            f"⚠️ У проекта `{project_id}` нет вариантов дизайна.\n\n"
+            f"Сначала создайте варианты через `create_design_option`."
         )
 
     if len(options) < 2:
         return (
-            f"⚠️ At least 2 design options are needed for comparison.\n\n"
-            f"Current options: {len(options)}. Create one more via `create_design_option`."
+            f"⚠️ Для сравнения нужно минимум 2 варианта дизайна.\n\n"
+            f"Сейчас вариантов: {len(options)}. Создайте ещё один через `create_design_option`."
         )
 
     # Парсинг кастомных критериев
@@ -971,8 +971,8 @@ def compare_design_options(
             raise ValueError("Ожидается список")
     except (json.JSONDecodeError, ValueError) as e:
         return (
-            f"❌ Failed to parse criteria_json: {e}\n\n"
-            f"Expected a JSON list: '[{{\"id\": \"vendor_support\", \"label\": \"Vendor support\", \"weight\": \"medium\"}}]'"
+            f"❌ Не удалось разобрать criteria_json: {e}\n\n"
+            f"Ожидается JSON-список: '[{{\"id\": \"vendor_support\", \"label\": \"Поддержка вендора\", \"weight\": \"medium\"}}]'"
         )
 
     all_criteria = DEFAULT_CRITERIA + custom_criteria
@@ -1190,7 +1190,7 @@ def save_design_options_report(
     if not options:
         return (
             f"⚠️ No design options for project `{project_id}`.\n\n"
-            f"Create options via `create_design_option` before generating the report."
+            f"Создайте варианты через `create_design_option` перед формированием отчёта."
         )
 
     # Валидация recommended_option_id
@@ -1198,8 +1198,8 @@ def save_design_options_report(
         option_ids = [o["option_id"] for o in options]
         if recommended_option_id not in option_ids:
             return (
-                f"❌ Option `{recommended_option_id}` not found.\n\n"
-                f"Existing options: {', '.join(option_ids)}"
+                f"❌ Вариант `{recommended_option_id}` не найден.\n\n"
+                f"Существующие варианты: {', '.join(option_ids)}"
             )
 
     # Загружаем контекст
@@ -1286,7 +1286,7 @@ def save_design_options_report(
             "",
         ]
         if future_state:
-            doc_lines += [f"**Future State:** {future_state}", ""]
+            doc_lines += [f"**Будущее состояние:** {future_state}", ""]
         if goals:
             doc_lines += [
                 "**Бизнес-цели:**",
@@ -1306,8 +1306,8 @@ def save_design_options_report(
         doc_lines += [
             "## Архитектурный контекст (7.4)",
             "",
-            f"| Viewpoints | Critical gaps | Warning gaps |",
-            f"|------------|--------------|-------------|",
+            f"| Viewpoints | Critical-разрывы | Warning-разрывы |",
+            f"|------------|------------------|-----------------|",
             f"| {len(arch.get('viewpoints', {}))} | {critical_count} | {warning_count} |",
             "",
         ]

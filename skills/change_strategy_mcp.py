@@ -400,10 +400,10 @@ def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
     cov = _gap_coverage(strategy)
     if not cov["checked"]:
         if _gap_file_seen(strategy, project_id):
-            return ["**6.2 gap coverage:** a 6.2 gap analysis exists but was not "
-                    "imported — re-run `scope_change_strategy` to pull it in."]
-        return ["**6.2 gap coverage:** no 6.2 gap analysis imported "
-                "— coverage was not checked."]
+            return ["**Покрытие разрывов 6.2:** gap-анализ 6.2 существует, но не "
+                    "импортирован — вызовите `scope_change_strategy` заново, чтобы подтянуть его."]
+        return ["**Покрытие разрывов 6.2:** gap-анализ 6.2 не импортирован "
+                "— покрытие не проверялось."]
 
     # Element names are quoted here as they are on the capability sub-lines. Bare, they
     # read as prose — and one of them, `capabilities`, is also the heading of the very
@@ -411,43 +411,43 @@ def _gap_coverage_lines(strategy: dict, project_id: str) -> list:
     def _els(names):
         return ", ".join(f"`{n}`" for n in names)
 
-    lines = ["**6.2 gap coverage:**"]
+    lines = ["**Покрытие разрывов 6.2:**"]
     if cov["covered"]:
         # "Declared covered", not "Covered": this line and the "DECLARES coverage of"
         # line below are read off the SAME analyst declaration. Stating the positive as
         # platform fact while hedging the negative would let a sponsor read the first as
         # verified delivery and the second as a mere bookkeeping gap.
-        lines.append(f"- Declared covered: {_els(cov['covered'])} "
-                     f"({len(cov['covered'])} of {len(cov['analysed'])} analysed)")
+        lines.append(f"- Объявлено покрытым: {_els(cov['covered'])} "
+                     f"({len(cov['covered'])} из {len(cov['analysed'])} проанализированных)")
     if cov["undeclared"]:
         # "DECLARES", not "covers": while any capability is uncheckable the three lists
         # are not a partition, and an uncheckable capability may well cover this very
         # element. The sentence states what the platform knows — the declarations.
-        lines.append("- No in-scope capability DECLARES coverage of: "
+        lines.append("- Ни одна capability в скоупе НЕ ОБЪЯВЛЯЕТ покрытие для: "
                      + _els(cov["undeclared"]))
     if cov["context_elements"]:
         # Named, never hidden: 6.2 analysed them and the sponsor should see that the
         # platform knows it. They are simply not something a capability closes, so
         # they carry no accusation and sit outside the count above.
-        lines.append("- Context elements, not closed by capabilities: "
+        lines.append("- Контекстные элементы, их capabilities не закрывают: "
                      + _els(cov["context_elements"]))
     if cov["excluded"]:
         parts = []
         for element in cov["excluded"]:
             by = cov.get("excluded_by", {}).get(element) or []
             parts.append(f"`{element}` ({', '.join(by)})" if by else f"`{element}`")
-        lines.append("- Deliberately left unaddressed (out of scope): "
+        lines.append("- Сознательно оставлено без внимания (вне скоупа): "
                      + ", ".join(parts))
     if cov["claimed_absent"]:
-        lines.append("- Claimed but absent from the 6.2 analysis: "
+        lines.append("- Заявлено, но в анализе 6.2 отсутствует: "
                      + _els(cov["claimed_absent"]))
     if cov["unknown_caps"]:
         # Parenthesised, so the sentence needs no verb: "1 capability state" was the
         # live document's own grammar, with the noun singularised and the verb left
         # plural.
         noun = "capability" if cov["unknown_caps"] == 1 else "capabilities"
-        lines.append(f"- Cannot be checked: {cov['unknown_caps']} {noun} "
-                     f"(no 6.2 element stated in gap_source)")
+        lines.append(f"- Проверить нельзя: {cov['unknown_caps']} {noun} "
+                     f"(в gap_source не указан элемент 6.2)")
     return lines
 
 
@@ -555,7 +555,7 @@ def scope_change_strategy(
                     "source_project": src_id,
                 })
         else:
-            warnings.append(f"⚠️ 6.2 goals not found for '{src_id}'")
+            warnings.append(f"⚠️ Цели 6.2 не найдены для '{src_id}'")
 
         # 6.3: risk_assessment
         risk_path = data_path(src_id, f"{_safe(src_id)}_{RISK_ASSESSMENT_FILENAME}")
@@ -612,7 +612,7 @@ def scope_change_strategy(
         # that exists but gave nothing to import.
         gaps_before = len(imported_gaps)
         if gap_data is None:
-            warnings.append(f"⚠️ 6.2 gap_analysis not found for '{src_id}'")
+            warnings.append(f"⚠️ gap_analysis 6.2 не найден для '{src_id}'")
         elif isinstance(gap_data, dict):
             for gp in gap_data.get("gaps", []) if isinstance(gap_data.get("gaps"), list) else []:
                 if not isinstance(gp, dict):
@@ -632,8 +632,8 @@ def scope_change_strategy(
 
         if gap_data is not None and len(imported_gaps) == gaps_before:
             warnings.append(
-                f"⚠️ 6.2 gap_analysis for '{src_id}' was read but holds no usable "
-                f"elements — nothing imported from it")
+                f"⚠️ gap_analysis 6.2 для '{src_id}' прочитан, но пригодных элементов "
+                f"в нём нет — импортировать оттуда нечего")
 
     strategy["imported_context"] = {
         "business_needs": imported_bn,
@@ -677,7 +677,7 @@ def scope_change_strategy(
     ]
 
     if imported_bn or imported_bg or imported_risks or imported_gaps:
-        lines.append("**Imported context:**\n")
+        lines.append("**Импортированный контекст:**\n")
         if imported_bn:
             lines.append(f"  📋 Бизнес-потребности (6.1): {len(imported_bn)} шт. — "
                          + ", ".join(bn["id"] for bn in imported_bn if bn["id"]) + "\n")
@@ -698,7 +698,7 @@ def scope_change_strategy(
             unique_elements: dict = {}
             for g in imported_gaps:
                 unique_elements.setdefault(g["element"].casefold(), g["element"])
-            lines.append(f"  🔍 Gap analysis (6.2): {len(unique_elements)} elements — "
+            lines.append(f"  🔍 Gap-анализ (6.2), элементов: {len(unique_elements)} — "
                          + ", ".join(unique_elements.values()) + "\n")
             # Reconciles this count with the "(N of M analysed)" the coverage block
             # prints on the NEXT call (define_solution_scope): business_needs/external
@@ -709,9 +709,9 @@ def scope_change_strategy(
             context_elements = _gap_coverage(strategy).get("context_elements", [])
             if context_elements:
                 lines.append(
-                    f"     — of which {len(context_elements)} "
-                    + ("is" if len(context_elements) == 1 else "are")
-                    + " context (not a capability target, excluded from coverage): "
+                    f"     — из них {len(context_elements)} "
+                    + ("является" if len(context_elements) == 1 else "являются")
+                    + " контекстом (не мишень для capability, исключены из покрытия): "
                     + ", ".join(context_elements) + "\n")
 
     if warnings:
@@ -789,9 +789,9 @@ def define_solution_scope(
         declared = _declared_element(cap)
         if declared and declared.casefold() not in _VALID_GAP_ELEMENT_KEYS:
             errors.append(
-                f"Capability '{name}': invalid gap_source element '{declared}'. "
-                f"gap_source names a 6.2 element as \"6.2:<element>\". "
-                f"Allowed: {', '.join(VALID_GAP_ELEMENTS)}")
+                f"Capability '{name}': недопустимый элемент gap_source — '{declared}'. "
+                f"gap_source называет элемент 6.2 в виде \"6.2:<элемент>\". "
+                f"Допустимы: {', '.join(VALID_GAP_ELEMENTS)}")
             continue
         valid_caps.append({
             "name": name,
@@ -823,12 +823,12 @@ def define_solution_scope(
 
     overwritten = []
     if prev_excluded and not excluded:
-        noun = "exclusion" if len(prev_excluded) == 1 else "exclusions"
-        verb = "was" if len(prev_excluded) == 1 else "were"
-        overwritten.append(f"{len(prev_excluded)} explicit {noun} {verb} replaced "
-                           f"by an empty list")
+        noun = "явное исключение" if len(prev_excluded) == 1 else "явных исключений"
+        verb = "было заменено" if len(prev_excluded) == 1 else "заменено"
+        overwritten.append(f"{len(prev_excluded)} {noun} {verb} "
+                           f"пустым списком")
     if prev_summary and not scope_summary:
-        overwritten.append("the scope summary was cleared")
+        overwritten.append("сводка скоупа очищена")
 
     in_scope = [c for c in valid_caps if c.get("in_scope", True)]
     out_of_scope = [c for c in valid_caps if not c.get("in_scope", True)]
@@ -852,10 +852,10 @@ def define_solution_scope(
     if overwritten:
         # Directly under the "Explicit exclusions: 0" the analyst is about to misread.
         lines.append(
-            "⚠️ This call REPLACED the previous solution scope: "
+            "⚠️ Этот вызов ЗАМЕНИЛ предыдущий скоуп решения: "
             + "; ".join(overwritten)
-            + ". `define_solution_scope` replaces solution_scope wholesale — re-send "
-              "`explicitly_excluded` and `scope_summary` to keep them.\n\n")
+            + ". `define_solution_scope` заменяет solution_scope целиком — чтобы "
+              "сохранить `explicitly_excluded` и `scope_summary`, передайте их снова.\n\n")
 
     if cats:
         lines.append("**Capabilities по категориям:**\n")
@@ -1256,7 +1256,7 @@ def compare_strategy_options(
     lines = [
         f"✅ Сравнение вариантов завершено\n\n",
         f"  **Победитель: {winner_id} — {winner.get('name', '')}**\n",
-        f"  Weighted Score: {winner.get('weighted_score', 0):.2f} / 5.00\n",
+        f"  Взвешенная оценка: {winner.get('weighted_score', 0):.2f} / 5.00\n",
         f"  Тип стратегии: {winner.get('strategy_type', '')}\n",
         f"  Срок: {winner.get('timeline_months', 0)} мес. | Инвестиции: {winner.get('investment_level', '')}\n\n",
         f"**Матрица сравнения:**\n",
@@ -1453,7 +1453,7 @@ def save_change_strategy(
                 repo.setdefault("requirements", []).append({
                     "id": sol_id,
                     "type": SOLUTION_SCOPE_NODE_TYPE,
-                    "title": f"Solution Scope — {project_id}",
+                    "title": f"Границы решения — {project_id}",
                     "version": "1.0",
                     # NOT `approved`: that literal is 5.5's approval OUTCOME, and 7.2
                     # counted this node as a requirement the stakeholders had signed
@@ -1466,7 +1466,7 @@ def save_change_strategy(
                 # chr(10): the two ✅ notes are joined by the caller without a
                 # separator, so this note must end its own line.
                 traceability_notes.append(
-                    f"✅ Node {sol_id} ({SOLUTION_SCOPE_NODE_TYPE}) added to 5.1"
+                    f"✅ Узел {sol_id} ({SOLUTION_SCOPE_NODE_TYPE}) добавлен в 5.1"
                     + chr(10))
 
             # Связи satisfies с business_goals
@@ -1490,22 +1490,22 @@ def save_change_strategy(
                     added_links += 1
 
             if added_links:
-                traceability_notes.append(f"✅ Added {added_links} satisfies links → BG")
+                traceability_notes.append(f"✅ Добавлено связей satisfies → BG: {added_links}")
             elif bg_list:
                 # Previously this branch said NOTHING: the analyst explicitly asked for
                 # a push, got a node and no links, and no explanation of either.
                 traceability_notes.append(
-                    "ℹ️ No new satisfies links — every objective was already linked."
+                    "ℹ️ Новых связей satisfies нет — каждая цель уже связана."
                     if not missing_goals else ""
                 )
             if missing_goals:
                 shown = ", ".join(f"`{g}`" for g in missing_goals[:5])
-                more = f" (+{len(missing_goals) - 5} more)" if len(missing_goals) > 5 else ""
+                more = f" (+ещё {len(missing_goals) - 5})" if len(missing_goals) > 5 else ""
                 traceability_notes.append(
-                    f"⚠️ {len(missing_goals)} objective(s) NOT linked — not a node in the "
-                    f"5.1 repository: {shown}{more}.\n"
-                    f"   Register them via 6.2 `define_goals_and_objectives`"
-                    f" (register_in_traceability=True), then re-run this push."
+                    f"⚠️ Целей НЕ связано: {len(missing_goals)} — их нет узлами в "
+                    f"репозитории 5.1: {shown}{more}.\n"
+                    f"   Зарегистрируйте их через 6.2 `define_goals_and_objectives`"
+                    f" (register_in_traceability=True) и повторите этот push."
                 )
             traceability_notes = [n for n in traceability_notes if n]
 
@@ -1538,7 +1538,7 @@ def save_change_strategy(
         f"- Тип: {selected_option.get('strategy_type', '')}",
         f"- Инвестиции: {selected_option.get('investment_level', '')}",
         f"- Срок реализации: {selected_option.get('timeline_months', '')} мес.",
-        f"- Weighted Score: {selected_option.get('weighted_score', 'N/A')}",
+        f"- Взвешенная оценка: {selected_option.get('weighted_score', 'N/A')}",
         "",
     ]
 
@@ -1609,7 +1609,7 @@ def save_change_strategy(
             # neither `solution_scope` nor `capabilities`, and such a file stops at the
             # earlier "⚠️ Solution scope is not defined" return.) A raise here loses the
             # delivered document at the last step of the chapter.
-            severity = cap.get("gap_severity") or "not stated"
+            severity = cap.get("gap_severity") or "не указан"
             gap_icon = {"high": "🔴", "medium": "🟡", "low": "🟢", "none": "⚪"}.get(severity, "")
             md_lines.append(
                 f"- {cap.get('name') or ''} {gap_icon} gap:{severity} "
@@ -1622,22 +1622,22 @@ def save_change_strategy(
                 continue
             element = _declared_element(cap)
             if not element:
-                md_lines.append("  ↳ no 6.2 element stated in gap_source "
-                                "— coverage cannot be checked for this one")
+                md_lines.append("  ↳ в gap_source не указан элемент 6.2 "
+                                "— покрытие для этой capability проверить нельзя")
             elif element.casefold() in gap_by_element:
                 matched = gap_by_element[element.casefold()]
-                effort = matched.get("complexity") or "not stated"
+                effort = matched.get("complexity") or "не указана"
                 # The 6.2 spelling, not the capability's: one name for one element
                 # across the whole document, the same one the coverage block prints.
                 shown = (matched.get("element") or element).strip()
                 # The scale label rides on EVERY line, not in a header: `gap:` and
                 # `effort:` share the low/medium/high letters and mean different
                 # things — size of the gap versus effort of the change.
-                md_lines.append(f"  ↳ from 6.2 gap `{shown}` — change effort there: "
-                                f"{effort} (effort, not gap size)")
+                md_lines.append(f"  ↳ из разрыва 6.2 `{shown}` — трудоёмкость изменения там: "
+                                f"{effort} (трудоёмкость, а не размер разрыва)")
             else:
-                md_lines.append(f"  ↳ declares 6.2 element `{element}`, which the "
-                                f"imported gap analysis does not contain")
+                md_lines.append(f"  ↳ объявляет элемент 6.2 `{element}`, которого нет в "
+                                f"импортированном gap-анализе")
         md_lines.append("")
 
     md_lines.extend(_gap_coverage_lines(strategy, project_id) + [""])

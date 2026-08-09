@@ -20,19 +20,20 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 ## Зачем эта задача
 
-6.4 is the **culmination of Chapter 6**. It synthesizes everything done in 6.1–6.3:
-- From 6.1: we know the current state and business needs (BN-xxx)
-- From 6.2: we know the future state and business goals (BG-xxx), and the gap analysis
-  is auto-imported as **context** — the platform cannot judge how big a gap is, so you
-  still set each capability's `gap_severity` yourself in `define_solution_scope`. Name
-  the element there as `gap_source = "6.2:technology"` (the 6.2 element this capability
-  covers), and the platform reports which analysed gaps no capability addresses.
-  A bare `"6.2:gap_analysis"` or `"manual"` names no element: coverage is then reported
-  as uncheckable rather than as uncovered. Two elements, `business_needs` and `external`,
-  are context rather than capability targets and are reported separately, excluded from
-  the coverage count by default — unless a capability's `gap_source` names one of them
-  explicitly, which pulls it back in.
-- From 6.3: we know the risks (RK-xxx) and the recommendation
+6.4 — **кульминация Главы 6**. Она сводит воедино всё, что сделано в 6.1–6.3:
+- Из 6.1: известны текущее состояние и бизнес-потребности (BN-xxx)
+- Из 6.2: известны будущее состояние и бизнес-цели (BG-xxx), а gap-анализ
+  импортируется автоматически как **контекст** — платформа не может судить, насколько
+  разрыв велик, поэтому `gap_severity` каждой capability вы задаёте сами в
+  `define_solution_scope`. Элемент указывайте там как `gap_source = "6.2:technology"`
+  (тот элемент 6.2, который эта capability закрывает) — и платформа сообщит, какие
+  проанализированные разрывы не закрыты ни одной capability.
+  Голое `"6.2:gap_analysis"` или `"manual"` не называет элемента: покрытие тогда
+  сообщается как непроверяемое, а не как непокрытое. Два элемента, `business_needs`
+  и `external`, — это контекст, а не мишени для capabilities: они показываются
+  отдельно и по умолчанию исключены из счёта покрытия, если только `gap_source`
+  какой-нибудь capability не назовёт их явно — это возвращает их в счёт.
+- Из 6.3: известны риски (RK-xxx) и рекомендация
 
 Задача: сформировать **обоснованную стратегию перехода** — что делаем, как, в каком порядке.
 
@@ -80,24 +81,25 @@ save_change_strategy
 
 ## Шаг 1 — `scope_change_strategy`
 
-**What it does:** Initializes 6.4 + auto-imports context from 6.1, 6.2 (goals **and**
-the gap analysis), 6.3.
+**Что делает:** Инициализирует 6.4 и автоматически импортирует контекст из 6.1,
+6.2 (цели **и** gap-анализ), 6.3.
 
 **Параметры:**
 - `project_id` — тот же что в 6.1/6.2/6.3
 - `change_type` — transformation / process_improvement / technology_implementation / regulatory_compliance / other
-  <br>⚠️ 7.5 `set_change_strategy` asks the same question with a shorter, different set
-  (technology / process / organizational / hybrid) and the two share no value. You will not
-  normally meet this — 7.5 reads THIS strategy directly and refuses its own stand-in when a 6.4
-  strategy exists. The mapping, for the case you do, is in the 7.5 methodology. Merging the two
-  vocabularies requires migrating strategies already on disk and is scheduled for the CLI port.
-- `time_horizon_months` — target horizon in months
+  <br>⚠️ 7.5 `set_change_strategy` задаёт тот же вопрос другим, более коротким набором
+  (technology / process / organizational / hybrid), и общих значений у них нет. Обычно вы
+  с этим не столкнётесь: 7.5 читает ЭТУ стратегию напрямую и отказывается от собственной
+  замены, когда стратегия 6.4 уже есть. Сопоставление наборов — на случай, если всё же
+  столкнётесь — в методичке 7.5. Свести два словаря в один означает мигрировать стратегии,
+  уже лежащие на диске, и это запланировано на перенос в CLI.
+- `time_horizon_months` — целевой горизонт в месяцах
 - `methodology` — agile / waterfall / hybrid
 - `source_project_ids` — JSON-список project_id из 6.1/6.2/6.3 (для автоимпорта)
 
-**What it returns:** A summary of the imported context (BN, BG, RK, 6.2 gap elements)
-+ confirmation of initialization.
-Automatically adds OPT-000 (do_nothing) to the list of options.
+**Что возвращает:** Сводку импортированного контекста (BN, BG, RK, элементы разрывов 6.2)
+и подтверждение инициализации.
+Автоматически добавляет OPT-000 (do_nothing) в список вариантов.
 
 **Вопросы BA перед вызовом:**
 > 1. Какой тип изменения — глубокая трансформация или точечное улучшение?
@@ -130,12 +132,12 @@ Automatically adds OPT-000 (do_nothing) to the list of options.
 
 **Категории:** process / technology / data / people / org_structure / knowledge / location
 
-**Questions to ask the BA:**
-> 1. What exactly should the organization be able to do after the project that it can't do now?
-> 2. What exactly is NOT in scope? (important to capture to prevent scope creep)
-> 3. Which 6.2 element does this capability close? (then gap_source = "6.2:<element>",
->    e.g. "6.2:technology" — the eight valid elements are listed in
->    `references/change_strategy_guide.md` §4). If none, `"manual"`.
+**Вопросы BA перед вызовом:**
+> 1. Что именно организация должна уметь после проекта из того, чего не умеет сейчас?
+> 2. Что именно НЕ входит в скоуп? (важно зафиксировать, чтобы не поплыли границы)
+> 3. Какой элемент 6.2 закрывает эта capability? (тогда gap_source = "6.2:<элемент>",
+>    например "6.2:technology" — восемь допустимых элементов перечислены в
+>    `references/change_strategy_guide.md` §4). Если ни один — `"manual"`.
 
 ---
 
@@ -236,21 +238,21 @@ opportunity cost для отвергнутых + narrative.
 
 ## Шаг 7 — `save_change_strategy`
 
-**What it does:**
-- Saves `{project}_change_strategy.json` to DATA_DIR (contract for 7.x, 8.x)
-- Generates a Markdown report via `save_artifact()`
-- Optionally: registers the solution in the 5.1 repository as a `solution_scope`-type node
+**Что делает:**
+- Сохраняет `{project}_change_strategy.json` в DATA_DIR (контракт для 7.x, 8.x)
+- Формирует Markdown-отчёт через `save_artifact()`
+- Опционально: регистрирует решение в репозитории 5.1 узлом типа `solution_scope`
 
 **Параметры:**
 - `project_id`
 - `push_to_traceability` — True если ведёшь трассировку 5.1 (default: False)
 - `traceability_project_id` — если репозиторий 5.1 под другим project_id
 
-**When push_to_traceability=True:**
-- Creates node SOL-001 of type `solution_scope` with status `defined`
-  (NOT `solution`, which is the BABOK requirement class in the 5.1 vocabulary,
-  and NOT status `approved`, which is 5.5's stakeholder-approval outcome)
-- Links: SOL-001 satisfies BG-xxx (for each business goal from 6.2)
+**Когда push_to_traceability=True:**
+- Создаётся узел SOL-001 типа `solution_scope` со статусом `defined`
+  (НЕ `solution` — это класс требования BABOK в словаре 5.1,
+  и НЕ статус `approved` — это исход согласования стейкхолдерами из 5.5)
+- Связи: SOL-001 satisfies BG-xxx (для каждой бизнес-цели из 6.2)
 
 **После сохранения — сообщи BA:**
 1. Выбранная стратегия и обоснование
@@ -283,12 +285,12 @@ BABOK требует явно обосновать почему бездейст
 
 | Задача | Связь |
 |--------|-------|
-| ← 6.1 | Business needs BN-xxx → context for capabilities |
-| ← 6.2 | BG-xxx and the gap_analysis both auto-imported (the gaps as context); the analyst names the element each capability closes in `gap_source` |
-| ← 6.3 | RK-xxx → linked_risks in the options + risks_remaining in the phases |
-| → 7.1 | solution_scope.capabilities → what to specify |
-| → 7.4 | transition_states → requirements architecture by phase |
-| → 7.5 | selected_option + rejected → design constraints |
-| → 7.6 | value_realizable by phase → analysis of potential value |
-| → 5.1 | push_to_traceability → solution_scope node + satisfies links |
-| → 8.x | transition_states + risks_remaining → baseline for Solution Evaluation |
+| ← 6.1 | Бизнес-потребности BN-xxx → контекст для capabilities |
+| ← 6.2 | BG-xxx и gap_analysis импортируются автоматически (разрывы — как контекст); элемент, который закрывает каждая capability, аналитик называет в `gap_source` |
+| ← 6.3 | RK-xxx → linked_risks в вариантах + risks_remaining в фазах |
+| → 7.1 | solution_scope.capabilities → что специфицировать |
+| → 7.4 | transition_states → архитектура требований по фазам |
+| → 7.5 | selected_option + отвергнутые → ограничения дизайна |
+| → 7.6 | value_realizable по фазам → анализ потенциальной ценности |
+| → 5.1 | push_to_traceability → узел solution_scope + связи satisfies |
+| → 8.x | transition_states + risks_remaining → база для Solution Evaluation |

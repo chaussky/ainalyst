@@ -33,7 +33,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 | `{project}_traceability_repo.json` | 5.1 | Граф `depends`-связей для allocation |
 | `{project}_prioritization.json` | 5.3 | Приоритеты (Must/Should/Could/Won't) для auto_suggest |
 | `{project}_business_context.json` | 7.3 | Бизнес-цели, Future State, ограничения |
-| `{project}_architecture.json` | 7.4 | Viewpoints, gaps, coverage matrix |
+| `{project}_architecture.json` | 7.4 | Viewpoints, разрывы, матрица покрытия |
 | `{project}_change_strategy.json` | 6.4 | Тип изменения, скоуп, ограничения |
 
 ---
@@ -53,30 +53,30 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 ## MCP-инструменты
 
 ### 1. `set_change_strategy`
-**When:** ONLY if task 6.4 (Define Change Strategy) has NOT been done. 6.4 is the authoritative
-source of the Change Strategy (the contract for 7.x/8.x); 7.5 reads it directly. This tool is a
-flat surrogate for projects that skipped Chapter 6.
-**Fields:** `change_type` (technology/process/organizational/hybrid), `scope`, `constraints`, `timeline`
-**Result:** `{project}_change_strategy.json` (flat surrogate format)
-**Guard:** if `{project}_change_strategy.json` already exists in the richer 6.4 format, this tool
-refuses to overwrite it — 7.5 will use the 6.4 strategy as-is. Edit it via the 6.4 tools instead.
-That refusal comes FIRST, before `change_type` is judged, so an analyst who did 6.4 is told the
-tool is unnecessary rather than handed a vocabulary error.
+**Когда:** ТОЛЬКО если задача 6.4 (Define Change Strategy) НЕ выполнялась. 6.4 — авторитетный
+источник Change Strategy (контракт для 7.x/8.x), и 7.5 читает её напрямую. Этот инструмент —
+плоская замена для проектов, пропустивших Главу 6.
+**Поля:** `change_type` (technology/process/organizational/hybrid), `scope`, `constraints`, `timeline`
+**Результат:** `{project}_change_strategy.json` (формат плоской замены)
+**Гард:** если `{project}_change_strategy.json` уже существует в более богатом формате 6.4, этот
+инструмент отказывается его перезаписывать — 7.5 возьмёт стратегию 6.4 как есть. Правьте её
+инструментами 6.4. Отказ срабатывает ПЕРВЫМ, до проверки `change_type`, чтобы аналитик, прошедший
+6.4, услышал «инструмент не нужен», а не ошибку словаря.
 
-⚠️ **`change_type` here is NOT the 6.4 vocabulary.** 6.4 asks the same question with five longer
-answers, and the two sets share no value:
+⚠️ **`change_type` здесь — НЕ словарь 6.4.** 6.4 задаёт тот же вопрос пятью более длинными
+ответами, и общих значений у наборов нет:
 
 | 6.4 | 7.5 |
 |---|---|
 | `technology_implementation` | `technology` |
 | `process_improvement` | `process` |
-| `transformation` | no counterpart — usually `hybrid`, or `organizational` if purely structural |
-| `regulatory_compliance` | no counterpart — pick by what the work actually is, most often `process` |
-| `other` | no counterpart — pick by what dominates |
+| `transformation` | соответствия нет — обычно `hybrid`, либо `organizational`, если изменение чисто структурное |
+| `regulatory_compliance` | соответствия нет — выбирайте по сути работы, чаще всего `process` |
+| `other` | соответствия нет — выбирайте по тому, что преобладает |
 
-You only need this table if the project skipped Chapter 6; otherwise 7.5 reads 6.4 directly and
-nothing is re-entered. Merging the two vocabularies means migrating strategies already written to
-disk, so it is scheduled for the CLI port rather than done piecemeal.
+Эта таблица нужна, только если проект пропустил Главу 6; иначе 7.5 читает 6.4 напрямую и заново
+ничего вводить не надо. Свести два словаря в один означает мигрировать стратегии, уже записанные
+на диск, поэтому это запланировано на перенос в CLI, а не делается по частям.
 
 ---
 

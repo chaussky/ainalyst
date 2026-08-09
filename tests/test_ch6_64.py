@@ -363,7 +363,7 @@ class TestGapAnalysisImport(BaseMCPTest):
         so asserting the substring alone holds with the join deleted."""
         _write_gap_file()
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("Gap analysis (6.2)", result)
+        self.assertIn("Gap-анализ (6.2)", result)
         self.assertIn("technology, policies", result)
 
     def test_a_project_with_ONLY_a_gap_analysis_still_gets_the_context_header(self):
@@ -371,13 +371,13 @@ class TestGapAnalysisImport(BaseMCPTest):
         A project whose only artefact is a gap analysis must not lose the evidence."""
         _write_gap_file()
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("Imported context", result)
-        self.assertIn("Gap analysis (6.2)", result)
+        self.assertIn("Импортированный контекст", result)
+        self.assertIn("Gap-анализ (6.2)", result)
 
     def test_a_missing_gap_analysis_warns_and_does_not_block(self):
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
         self.assertIn("✅", result)
-        self.assertIn("6.2 gap_analysis not found", result)
+        self.assertIn("gap_analysis 6.2 не найден", result)
         self.assertEqual(_load_strategy()["imported_context"]["gaps"], [])
 
     def test_the_mirror_is_RECOMPUTED_on_a_re_run_not_merged(self):
@@ -444,10 +444,10 @@ class TestGapAnalysisImport(BaseMCPTest):
         already have, instead of fixing the one that's actually broken."""
         _write_gap_file_raw(PROJECT, [])
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertNotIn("6.2 gap_analysis not found", result)
+        self.assertNotIn("gap_analysis 6.2 не найден", result)
         self.assertIn(
-            f"6.2 gap_analysis for '{PROJECT}' was read but holds no usable "
-            f"elements", result)
+            f"gap_analysis 6.2 для '{PROJECT}' прочитан, но пригодных элементов в нём "
+            f"нет", result)
 
     def test_context_elements_are_named_and_counted_in_the_reply(self):
         """Regression: the reply printed '4 elements' while the coverage block one
@@ -461,8 +461,8 @@ class TestGapAnalysisImport(BaseMCPTest):
             {"element": "external", "gap_summary": "s", "complexity": "low"},
         ])
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("4 elements", result)
-        self.assertIn("of which 2 are context", result)
+        self.assertIn("элементов: 4", result)
+        self.assertIn("из них 2 являются контекстом", result)
         self.assertIn("business_needs, external", result)
 
         # The reconciliation itself: total unique elements minus context elements
@@ -474,8 +474,8 @@ class TestGapAnalysisImport(BaseMCPTest):
     def test_no_context_line_when_no_context_elements_are_present(self):
         _write_gap_file()  # technology, policies only — no business_needs/external
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("Gap analysis (6.2)", result)
-        self.assertNotIn("of which", result)
+        self.assertIn("Gap-анализ (6.2)", result)
+        self.assertNotIn("из них", result)
 
     def test_singular_wording_for_a_single_context_element(self):
         _write_gap_file(gaps=[
@@ -483,7 +483,7 @@ class TestGapAnalysisImport(BaseMCPTest):
             {"element": "technology", "gap_summary": "s", "complexity": "high"},
         ])
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("of which 1 is context", result)
+        self.assertIn("из них 1 является контекстом", result)
 
 
 # ---------------------------------------------------------------------------
@@ -1562,15 +1562,15 @@ class TestGapCoverage(BaseMCPTest):
     def test_the_block_states_the_covered_count_against_the_analysed_total(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}]), PROJECT))
-        self.assertIn("**6.2 gap coverage:**", lines)
-        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", lines)
-        self.assertIn("No in-scope capability DECLARES coverage of: `policies`", lines)
+        self.assertIn("**Покрытие разрывов 6.2:**", lines)
+        self.assertIn("Объявлено покрытым: `technology` (1 из 2 проанализированных)", lines)
+        self.assertIn("Ни одна capability в скоупе НЕ ОБЪЯВЛЯЕТ покрытие для: `policies`", lines)
 
     def test_without_an_analysis_the_block_says_so_and_prints_no_digits(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy([], gaps=()), PROJECT))
-        self.assertIn("no 6.2 gap analysis imported", lines)
-        self.assertIn("coverage was not checked", lines)
-        self.assertNotIn("of 0 analysed", lines)
+        self.assertIn("gap-анализ 6.2 не импортирован", lines)
+        self.assertIn("покрытие не проверялось", lines)
+        self.assertNotIn("из 0 проанализированных", lines)
         self.assertNotIn("covered:", lines)
 
     def test_a_gap_file_on_disk_that_was_never_imported_gets_its_own_message(self):
@@ -1578,23 +1578,23 @@ class TestGapCoverage(BaseMCPTest):
         own project folder, and the advice ('re-run scope_change_strategy') is lost."""
         _write_gap_file()
         lines = "\n".join(_gap_coverage_lines(self._strategy([], gaps=()), PROJECT))
-        self.assertIn("exists but was not imported", lines)
+        self.assertIn("существует, но не импортирован", lines)
         self.assertIn("scope_change_strategy", lines)
 
     def test_the_uncheckable_count_is_singular_for_one(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "manual"}]), PROJECT))
-        self.assertIn("Cannot be checked: 1 capability (no 6.2 element", lines)
+        self.assertIn("Проверить нельзя: 1 capability (в gap_source не указан элемент 6.2", lines)
 
     def test_every_optional_line_is_absent_when_it_has_nothing_to_say(self):
         lines = "\n".join(_gap_coverage_lines(self._strategy([
             {"name": "A", "gap_source": "6.2:technology"},
             {"name": "B", "gap_source": "6.2:policies"}]), PROJECT))
-        self.assertIn("Declared covered: `technology`, `policies`", lines)
+        self.assertIn("Объявлено покрытым: `technology`, `policies`", lines)
         self.assertNotIn("Cannot be checked", lines)
         self.assertNotIn("Claimed but absent", lines)
         self.assertNotIn("Deliberately left unaddressed", lines)
-        self.assertNotIn("DECLARES coverage of", lines)
+        self.assertNotIn("НЕ ОБЪЯВЛЯЕТ покрытие для", lines)
 
 
 class TestLiveRunFindings(BaseMCPTest):
@@ -1620,9 +1620,9 @@ class TestLiveRunFindings(BaseMCPTest):
         many = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "manual"},
              {"name": "B", "gap_source": "manual"}]), PROJECT))
-        self.assertIn("Cannot be checked: 1 capability (", one)
+        self.assertIn("Проверить нельзя: 1 capability (", one)
         self.assertNotIn("capability state", one)
-        self.assertIn("Cannot be checked: 2 capabilities (", many)
+        self.assertIn("Проверить нельзя: 2 capabilities (", many)
 
     def test_a_deliberate_exclusion_names_the_capability_that_carries_it(self):
         """The live document asserted "Deliberately left unaddressed (out of scope):
@@ -1633,7 +1633,7 @@ class TestLiveRunFindings(BaseMCPTest):
         out = "\n".join(_gap_coverage_lines(self._strategy([
             {"name": "Second clinic site", "gap_source": "6.2:policies",
              "in_scope": False}]), PROJECT))
-        self.assertIn("Deliberately left unaddressed (out of scope):", out)
+        self.assertIn("Сознательно оставлено без внимания (вне скоупа):", out)
         self.assertIn("Second clinic site", out)
 
     def test_two_capabilities_excluding_one_element_are_both_named(self):
@@ -1651,8 +1651,8 @@ class TestLiveRunFindings(BaseMCPTest):
         out = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}],
             gaps=("technology", "capabilities")), PROJECT))
-        self.assertIn("Declared covered: `technology`", out)
-        self.assertIn("DECLARES coverage of: `capabilities`", out)
+        self.assertIn("Объявлено покрытым: `technology`", out)
+        self.assertIn("НЕ ОБЪЯВЛЯЕТ покрытие для: `capabilities`", out)
         self.assertNotIn("coverage of: capabilities", out)
 
 
@@ -1668,21 +1668,21 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _write_gap_file()
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
-        self.assertIn("**6.2 gap coverage:**", out)
-        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", out)
-        self.assertIn("No in-scope capability DECLARES coverage of: `policies`", out)
+        self.assertIn("**Покрытие разрывов 6.2:**", out)
+        self.assertIn("Объявлено покрытым: `technology` (1 из 2 проанализированных)", out)
+        self.assertIn("Ни одна capability в скоупе НЕ ОБЪЯВЛЯЕТ покрытие для: `policies`", out)
 
     def test_the_reply_says_it_could_not_check_rather_than_reporting_zero(self):
         _make_scope()
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
-        self.assertIn("coverage was not checked", out)
+        self.assertIn("покрытие не проверялось", out)
         self.assertNotIn("0 of", out)
 
     def test_the_reply_flags_an_element_the_analysis_does_not_contain(self):
         _write_gap_file()
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         out = define_solution_scope(PROJECT, self._caps(("A", "6.2:assets")))
-        self.assertIn("Claimed but absent from the 6.2 analysis: `assets`", out)
+        self.assertIn("Заявлено, но в анализе 6.2 отсутствует: `assets`", out)
 
     def test_the_existing_severity_distribution_still_renders(self):
         """A positive companion: the block must be ADDED, not swapped in for the
@@ -1700,8 +1700,8 @@ class TestSolutionScopeReportsCoverage(BaseMCPTest):
         _make_scope(source_project_ids=f'["{PROJECT}"]')
         define_solution_scope(PROJECT, self._caps(("A", "6.2:technology")))
         out = define_solution_scope(PROJECT, self._caps(("B", "6.2:policies")))
-        self.assertIn("Declared covered: `policies` (1 of 2 analysed)", out)
-        self.assertIn("DECLARES coverage of: `technology`", out)
+        self.assertIn("Объявлено покрытым: `policies` (1 из 2 проанализированных)", out)
+        self.assertIn("НЕ ОБЪЯВЛЯЕТ покрытие для: `technology`", out)
 
 
 class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
@@ -1746,17 +1746,17 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
-        self.assertIn("**6.2 gap coverage:**", doc)
-        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", doc)
-        self.assertIn("DECLARES coverage of: `policies`", doc)
+        self.assertIn("**Покрытие разрывов 6.2:**", doc)
+        self.assertIn("Объявлено покрытым: `technology` (1 из 2 проанализированных)", doc)
+        self.assertIn("НЕ ОБЪЯВЛЯЕТ покрытие для: `policies`", doc)
 
     def test_the_block_sits_inside_Solution_Scope_not_after_the_document(self):
         self._pipeline_with_gaps([
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
-        self.assertLess(doc.index("## Скоуп решения"), doc.index("**6.2 gap coverage:**"))
-        self.assertLess(doc.index("**6.2 gap coverage:**"), doc.index("## Готовность организации"))
+        self.assertLess(doc.index("## Скоуп решения"), doc.index("**Покрытие разрывов 6.2:**"))
+        self.assertLess(doc.index("**Покрытие разрывов 6.2:**"), doc.index("## Готовность организации"))
 
     def test_a_capability_line_names_its_6_2_origin_and_labels_the_other_scale(self):
         """gap_severity and complexity DELIBERATELY differ here. _write_gap_file gives
@@ -1767,8 +1767,8 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "low", "gap_source": "6.2:technology", "in_scope": True}])
         doc = self._doc()
-        self.assertIn("↳ from 6.2 gap `technology` — change effort there: high", doc)
-        self.assertIn("(effort, not gap size)", doc)
+        self.assertIn("↳ из разрыва 6.2 `technology` — трудоёмкость изменения там: high", doc)
+        self.assertIn("(трудоёмкость, а не размер разрыва)", doc)
         self.assertIn("gap:low", doc)
 
     def test_a_capability_with_no_declared_element_says_so_on_its_own_line(self):
@@ -1776,7 +1776,7 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             {"name": "Portal", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "manual", "in_scope": True}])
         doc = self._doc()
-        self.assertIn("no 6.2 element stated in gap_source", doc)
+        self.assertIn("в gap_source не указан элемент 6.2", doc)
 
     def test_with_no_analysis_the_document_prints_the_block_ONCE_and_no_sub_lines(self):
         """Every capability is formally uncheckable with no analysis. Saying it under
@@ -1806,7 +1806,7 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             value_realizable="Value delivered",
         )
         doc = self._doc()
-        self.assertIn("coverage was not checked", doc)
+        self.assertIn("покрытие не проверялось", doc)
         self.assertNotIn("↳", doc)
 
     def test_a_capability_missing_gap_severity_no_longer_crashes_the_save(self):
@@ -1828,7 +1828,7 @@ class TestChangeStrategyDocumentCarriesCoverage(BaseMCPTest):
             json.dump(data, f)
         doc = self._doc()
         self.assertIn("Portal", doc)
-        self.assertIn("gap:not stated", doc)
+        self.assertIn("gap:не указан", doc)
 
     def test_the_existing_capability_line_format_is_unchanged_for_valid_data(self):
         """A positive companion for the KeyError fix: .get must not alter the string
@@ -1867,9 +1867,9 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:technology"}],
             gaps=("business_needs", "technology", "policies", "external")), PROJECT))
-        self.assertIn("- Context elements, not closed by capabilities: "
+        self.assertIn("- Контекстные элементы, их capabilities не закрывают: "
                       "`business_needs`, `external`", lines)
-        self.assertIn("(1 of 2 analysed)", lines)
+        self.assertIn("(1 из 2 проанализированных)", lines)
         self.assertNotIn("coverage of: `business_needs`", lines)
         self.assertNotIn("`external`,", lines.split("Context elements")[0])
 
@@ -1893,7 +1893,7 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
         lines = "\n".join(_gap_coverage_lines(self._strategy(
             [{"name": "A", "gap_source": "6.2:external"}],
             gaps=("external", "technology")), PROJECT))
-        self.assertIn("Declared covered: `external` (1 of 2 analysed)", lines)
+        self.assertIn("Объявлено покрытым: `external` (1 из 2 проанализированных)", lines)
         self.assertNotIn("Context elements", lines)
 
     def test_architecture_and_assets_are_capabilities_and_stay_in_the_denominator(self):
@@ -1905,8 +1905,8 @@ class TestContextElementsAreNotUncoveredGaps(BaseMCPTest):
     def test_an_analysis_of_ONLY_context_elements_reports_no_uncovered_anything(self):
         lines = "\n".join(_gap_coverage_lines(
             self._strategy([], gaps=("business_needs", "external")), PROJECT))
-        self.assertIn("Context elements, not closed by capabilities", lines)
-        self.assertNotIn("DECLARES coverage of", lines)
+        self.assertIn("Контекстные элементы, их capabilities не закрывают", lines)
+        self.assertNotIn("НЕ ОБЪЯВЛЯЕТ покрытие для", lines)
         self.assertNotIn("analysed)", lines)
 
 
@@ -1975,26 +1975,26 @@ class TestTheNotImportedMessageTellsTheTruth(BaseMCPTest):
     def test_an_EMPTY_gaps_list_warns_instead_of_passing_for_a_clean_import(self):
         _write_gap_file(gaps=[])
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("no usable", result)
-        self.assertNotIn("6.2 gap_analysis not found", result)
+        self.assertIn("пригодных элементов в нём нет", result)
+        self.assertNotIn("gap_analysis 6.2 не найден", result)
 
     def test_a_file_of_ONLY_unusable_entries_warns_too(self):
         _write_gap_file(gaps=[{"element": ""}, "not a dict", {"element": 7}])
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("no usable", result)
+        self.assertIn("пригодных элементов в нём нет", result)
 
     def test_a_missing_file_still_says_NOT_FOUND_and_not_the_empty_wording(self):
         """The two must stay distinguishable: one sends the analyst to build an
         artefact, the other to repair one."""
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertIn("6.2 gap_analysis not found", result)
-        self.assertNotIn("no usable", result)
+        self.assertIn("gap_analysis 6.2 не найден", result)
+        self.assertNotIn("пригодных элементов в нём нет", result)
 
     def test_a_populated_file_warns_about_neither(self):
         _write_gap_file()
         result = _make_scope(source_project_ids=f'["{PROJECT}"]')
-        self.assertNotIn("no usable", result)
-        self.assertNotIn("6.2 gap_analysis not found", result)
+        self.assertNotIn("пригодных элементов в нём нет", result)
+        self.assertNotIn("gap_analysis 6.2 не найден", result)
 
     # --- (b) the detector must ask the importer's own question ---
 
@@ -2011,8 +2011,8 @@ class TestTheNotImportedMessageTellsTheTruth(BaseMCPTest):
         _write_gap_file(project_id=PROJECT)
         lines = "\n".join(_gap_coverage_lines(
             self._strategy(["some_other_project"]), PROJECT))
-        self.assertIn("no 6.2 gap analysis imported", lines)
-        self.assertNotIn("exists but was not imported", lines)
+        self.assertIn("gap-анализ 6.2 не импортирован", lines)
+        self.assertNotIn("существует, но не импортирован", lines)
 
     def test_a_file_at_a_NAMED_source_is_still_seen(self):
         _write_gap_file(project_id="donor_project")
@@ -2074,9 +2074,9 @@ class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
         of: `technology`" AND "Claimed but absent: `Technology`" on one page."""
         out = define_solution_scope(PROJECT, self._cap("6.2:Technology"))
         self.assertIn("✅", out)
-        self.assertIn("Declared covered: `technology` (1 of 2 analysed)", out)
+        self.assertIn("Объявлено покрытым: `technology` (1 из 2 проанализированных)", out)
         self.assertNotIn("Claimed but absent", out)
-        self.assertNotIn("DECLARES coverage of: `technology`", out)
+        self.assertNotIn("НЕ ОБЪЯВЛЯЕТ покрытие для: `technology`", out)
 
     def test_the_document_sub_line_matches_a_capitalised_element_too(self):
         define_solution_scope(PROJECT, self._cap("6.2:Technology", name="Portal"))
@@ -2096,7 +2096,7 @@ class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
             mock_sa.return_value = "✅ Saved"
             save_change_strategy(project_id=PROJECT)
             doc = mock_sa.call_args[0][0]
-        self.assertIn("change effort there: high", doc)
+        self.assertIn("трудоёмкость изменения там: high", doc)
         self.assertNotIn("does not contain", doc)
 
     def test_a_VALID_element_absent_from_THIS_analysis_is_still_flagged(self):
@@ -2104,7 +2104,7 @@ class TestGapSourceElementIsValidatedAndCaseInsensitive(BaseMCPTest):
         particular analysis simply never captured."""
         out = define_solution_scope(PROJECT, self._cap("6.2:assets"))
         self.assertIn("✅", out)
-        self.assertIn("Claimed but absent from the 6.2 analysis: `assets`", out)
+        self.assertIn("Заявлено, но в анализе 6.2 отсутствует: `assets`", out)
 
 
 class TestNullFieldsDoNotLoseTheDeliveredDocument(BaseMCPTest):
@@ -2170,7 +2170,7 @@ class TestNullFieldsDoNotLoseTheDeliveredDocument(BaseMCPTest):
     def test_a_NULL_gap_severity_reads_as_not_stated(self):
         self._pipeline()
         self._nullify("gap_severity")
-        self.assertIn("gap:not stated", self._doc())
+        self.assertIn("gap:не указан", self._doc())
 
     def test_all_of_them_null_at_once_still_delivers_the_document(self):
         self._pipeline()
@@ -2202,17 +2202,17 @@ class TestASecondCallAnnouncesWhatItErased(BaseMCPTest):
                               scope_summary="s")
         out = define_solution_scope(PROJECT, self._caps())
         self.assertIn("⚠️", out)
-        self.assertIn("2 explicit exclusions", out)
+        self.assertIn("2 явных исключений", out)
 
     def test_clearing_the_summary_is_announced(self):
         define_solution_scope(PROJECT, self._caps(), scope_summary="A real summary")
         out = define_solution_scope(PROJECT, self._caps())
-        self.assertIn("scope summary", out)
+        self.assertIn("сводка скоупа", out)
 
     def test_one_exclusion_is_announced_in_the_singular(self):
         define_solution_scope(PROJECT, self._caps(), explicitly_excluded='["Mobile"]')
         out = define_solution_scope(PROJECT, self._caps())
-        self.assertIn("1 explicit exclusion ", out)
+        self.assertIn("1 явное исключение ", out)
 
     def test_the_semantics_are_UNCHANGED_the_call_still_replaces_wholesale(self):
         """Warn, do not rescue: the contract stays a full replacement."""
@@ -2245,7 +2245,7 @@ class TestTheImportReplyCountsElementsNotRecords(BaseMCPTest):
         _write_gap_file(project_id="src_a")
         _write_gap_file(project_id="src_b")
         result = _make_scope(source_project_ids='["src_a", "src_b"]')
-        self.assertIn("Gap analysis (6.2): 2 elements — technology, policies", result)
+        self.assertIn("Gap-анализ (6.2), элементов: 2 — technology, policies", result)
         self.assertNotIn("technology, policies, technology", result)
 
     def test_the_mirror_itself_still_keeps_BOTH_records_with_their_provenance(self):
@@ -2266,7 +2266,7 @@ class TestTheImportReplyCountsElementsNotRecords(BaseMCPTest):
             {"name": "A", "category": "technology", "description": "d",
              "gap_severity": "high", "gap_source": "6.2:technology",
              "in_scope": True}]))
-        self.assertIn("(1 of 2 analysed)", out)
+        self.assertIn("(1 из 2 проанализированных)", out)
 
     def test_distinct_elements_are_all_still_listed(self):
         _write_gap_file(project_id="src_a", gaps=[
@@ -2274,7 +2274,7 @@ class TestTheImportReplyCountsElementsNotRecords(BaseMCPTest):
         _write_gap_file(project_id="src_b", gaps=[
             {"element": "assets", "gap_summary": "s", "complexity": "low"}])
         result = _make_scope(source_project_ids='["src_a", "src_b"]')
-        self.assertIn("Gap analysis (6.2): 2 elements — technology, assets", result)
+        self.assertIn("Gap-анализ (6.2), элементов: 2 — technology, assets", result)
 
 
 if __name__ == "__main__":

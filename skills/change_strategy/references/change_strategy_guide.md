@@ -68,7 +68,7 @@
 
 ---
 
-## 3. Capability Categories
+## 3. Категории capabilities
 
 Capability — это **способность**, которую организация приобретёт в результате изменения.
 
@@ -95,40 +95,40 @@ Capability — это **способность**, которую организ�
 | `medium` | Значимый gap, требует усилий | Планируется в основных фазах |
 | `high` | Критичный gap, сложно закрыть | Часто определяет структуру фаз |
 
-**`gap_severity` is yours, not the platform's.** The 6.2 gap analysis is auto-imported
-into 6.4, but it stores `complexity` — how hard the change is — and that is a different
-question from how big the gap is. The two share the words low/medium/high and mean
-different things, so the import never writes `gap_severity`. The saved Change Strategy
-document prints 6.2's `complexity` next to your value on each capability's line,
-labelled "effort, not gap size", and leaves the judgement to you.
+**`gap_severity` — ваш, а не платформы.** Gap-анализ 6.2 импортируется в 6.4
+автоматически, но хранит он `complexity` — насколько изменение сложное, — а это другой
+вопрос, чем «насколько велик разрыв». Оба пользуются словами low/medium/high и значат
+разное, поэтому импорт никогда не записывает `gap_severity` сам. В сохранённом документе
+стратегии `complexity` из 6.2 печатается рядом с вашим значением в строке каждой
+capability с пометкой «трудоёмкость, а не размер разрыва» — судить оставлено вам.
 
-`gap_source` names **which 6.2 element** this capability covers, and that declaration is
-the only link between the two chapters — the platform never infers it from the category
-(6.2's eight elements and 6.4's seven categories overlap on just two values):
+`gap_source` называет, **какой элемент 6.2** закрывает эта capability, и это объявление —
+единственная связь между двумя главами: платформа никогда не выводит его из категории
+(восемь элементов 6.2 и семь категорий 6.4 совпадают всего по двум значениям):
 
-- `6.2:technology`, `6.2:policies`, `6.2:capabilities`, … — the 6.2 element covered.
-  Valid elements: `business_needs`, `org_structure`, `capabilities`, `technology`,
+- `6.2:technology`, `6.2:policies`, `6.2:capabilities`, … — покрываемый элемент 6.2.
+  Допустимые элементы: `business_needs`, `org_structure`, `capabilities`, `technology`,
   `policies`, `architecture`, `assets`, `external`.
-- `manual` — the BA determined it independently, without reference to a 6.2 element.
-- `6.2:gap_analysis` — the legacy form. It names a source, not an element, and is still
-  accepted; coverage for that capability is then reported as **uncheckable**, not as
-  uncovered.
+- `manual` — BA определил её сам, без опоры на элемент 6.2.
+- `6.2:gap_analysis` — устаревшая форма. Она называет источник, а не элемент, и всё ещё
+  принимается; покрытие такой capability сообщается тогда как **непроверяемое**, а не как
+  непокрытое.
 
-With the element named, `define_solution_scope` and the final Change Strategy document
-both report: which analysed gaps are covered, which no in-scope capability declares,
-which are deliberately left out of scope, how many capabilities could not be checked,
-and which analysed elements are context rather than a capability target.
-Where no gap analysis was imported, the platform says it did not check — it never
-reports a count it cannot support.
+Когда элемент назван, `define_solution_scope` и итоговый документ стратегии сообщают:
+какие проанализированные разрывы покрыты, какие не объявляет ни одна capability в скоупе,
+какие сознательно вынесены за скоуп, сколько capabilities проверить не удалось и какие
+проанализированные элементы являются контекстом, а не мишенью для capability.
+Если gap-анализ не импортировался, платформа говорит, что не проверяла, — она никогда не
+сообщает число, которое не может обосновать.
 
-Two of the eight valid elements, `business_needs` and `external`, are excluded from
-that count and from the "no in-scope capability declares" line by default — they are
-reported on a separate "Context elements" line instead. `business_needs` sits in every
-one of 6.2's default element sets, and `external` describes outside influences; neither
-is something a capability closes, so charging them against the denominator would
-manufacture an accusation out of a vocabulary mismatch, not a real gap. A capability
-whose `gap_source` explicitly names one of them overrides the default and pulls the
-element back into the count — the analyst's declaration always outranks the platform's.
+Два из восьми допустимых элементов, `business_needs` и `external`, по умолчанию исключены
+из этого счёта и из строки «не объявляет ни одна capability в скоупе» — вместо этого они
+показываются отдельной строкой «Контекстные элементы». `business_needs` входит в каждый
+набор элементов 6.2 по умолчанию, а `external` описывает внешние влияния; ни то, ни другое
+capability не закрывает, и записать их в знаменатель значило бы соорудить обвинение из
+расхождения словарей, а не из настоящего разрыва. Capability, чей `gap_source` явно
+называет один из них, отменяет умолчание и возвращает элемент в счёт — объявление
+аналитика всегда старше умолчания платформы.
 
 ---
 
@@ -151,7 +151,7 @@ element back into the count — the analyst's declaration always outranks the pl
 
 ---
 
-## 6. Weighted comparison criteria
+## 6. Взвешенные критерии сравнения
 
 Дефолтные критерии и их смысл:
 
