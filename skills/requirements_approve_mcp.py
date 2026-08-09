@@ -1343,28 +1343,28 @@ def check_approval_status(
     if vstate["verified"] or vstate["unverified"]:
         v_count = len(vstate["verified"])
         v_icon = "✅" if v_count == total else "🟡"
-        lines += [f"{v_icon} **Verified (7.2): {v_count} of {total}**", ""]
+        lines += [f"{v_icon} **Верифицировано (7.2): {v_count} из {total}**", ""]
         if vstate["unverified"]:
             ids_str = ", ".join(f"`{rid}`" for rid in vstate["unverified"])
             lines += [
-                f"Not verified: {ids_str} — approval is not blocked, but the fact "
-                f"is recorded in the Approval Record.",
+                f"Не верифицировано: {ids_str} — согласование это не блокирует, но факт "
+                f"записывается в Approval Record.",
                 "",
             ]
         if vstate["unknown"]:
             unknown_str = ", ".join(f"`{rid}`" for rid in vstate["unknown"])
             lines += [
-                f"Verification unknown: {unknown_str} — no record either way "
-                f"(the package predates the check).",
+                f"Верификация неизвестна: {unknown_str} — записи нет ни за, ни против "
+                f"(пакет старше самой проверки).",
                 "",
             ]
         if vstate["forced"]:
             forced_str = ", ".join(f"`{rid}`" for rid in vstate["forced"])
-            lines += [f"Verified with override (open blockers): {forced_str}", ""]
+            lines += [f"Верифицировано с обходом (открытые блокеры): {forced_str}", ""]
     else:
         lines += [
-            "⚪ **Verified (7.2): unknown** — this package was created before the "
-            "verification check existed.",
+            "⚪ **Верифицировано (7.2): неизвестно** — этот пакет создан до того, как "
+            "проверка верификации появилась.",
             "",
         ]
 
@@ -1378,7 +1378,7 @@ def check_approval_status(
         lines += ["### 🟡 Открытые условия (Conditional)", ""]
         for c in open_conditions:
             overdue_flag = " ⚠️ OVERDUE" if c.get("overdue") else (
-                " ⚠️ DEADLINE UNREADABLE" if c.get("deadline_unreadable") else "")
+                " ⚠️ СРОК НЕЧИТАЕМ" if c.get("deadline_unreadable") else "")
             deadline_str = f" | Deadline: {c['condition_deadline']}{overdue_flag}" if c['condition_deadline'] else ""
             lines.append(
                 f"- `{c['req_id']}` — {c['condition_text']}"
@@ -1406,28 +1406,30 @@ def check_approval_status(
         listed = ", ".join(f"`{p}`" for p in later)
         if fully_superseded:
             lines += [
-                f"> 📦 **This round has been superseded by {listed}.** Every requirement "
-                f"in it has since been decided again, and the later round is what governs "
-                f"— the verdict below describes THIS round's decisions, not the project's "
-                f"current position.",
+                f"> 📦 **Этот раунд вытеснен раундом {listed}.** По каждому его требованию "
+                f"с тех пор принято новое решение, и главенствует более поздний раунд — "
+                f"вердикт ниже описывает решения ЭТОГО раунда, а не текущую позицию "
+                f"проекта.",
                 "",
             ]
         else:
             rows = ", ".join(f"`{rid}` → `{pid}`" for rid, pid in sorted(superseded_by.items()))
             lines += [
-                f"> 📦 **{len(superseded_by)} requirement(s) of this round have since been "
-                f"decided by a later one:** {rows}. For those, the later round governs.",
+                f"> 📦 **По {len(superseded_by)} "
+                f"{plural_ru(len(superseded_by), 'требованию', 'требованиям', 'требованиям')} "
+                f"этого раунда с тех пор принял решение более поздний:** {rows}. "
+                f"Для них главенствует поздний раунд.",
                 "",
             ]
 
     # Verdict
-    verdict_word = "Ready for baseline" if can_baseline else "Not ready for baseline"
+    verdict_word = "Готово к baseline" if can_baseline else "Не готово к baseline"
     if fully_superseded:
-        verdict_icon, verdict_word = "📦", "Superseded — this round no longer decides anything"
+        verdict_icon, verdict_word = "📦", "Вытеснен — этот раунд больше ничего не решает"
     lines += [
         "---",
         "",
-        f"## {verdict_icon} Verdict: {verdict_word}",
+        f"## {verdict_icon} Вердикт: {verdict_word}",
         "",
     ]
 
@@ -1443,11 +1445,11 @@ def check_approval_status(
         # decisions a later round had already replaced.
         governing = sorted(set(superseded_by.values()))
         lines += [
-            "Nothing here is signed off from this round. The requirements have been "
-            "decided again by "
+            "Из этого раунда ничего не подписывается. По требованиям заново принял "
+            "решение раунд "
             + list_with_cap(governing, formatter=lambda p: f"`{p}`")
-            + " — baseline that round instead, or open a new one if the position has "
-              "changed again.",
+            + " — фиксируйте baseline по нему, либо откройте новый раунд, если позиция "
+              "снова изменилась.",
         ]
     elif can_baseline:
         lines += [
@@ -1538,44 +1540,44 @@ def create_requirements_baseline(
     # an analyst forcing past the former silently baselined over the latter.
     if gate["hard_block"]:
         lines = [
-            "❌ Baseline blocked by a rejection from an Accountable/Responsible "
-            "stakeholder — this is NOT lifted by `force`:",
+            "❌ Baseline заблокирован отказом стейкхолдера Accountable/Responsible — "
+            "это НЕ снимается флагом `force`:",
             "",
         ]
         for b in gate["ar_rejections"]:
             lines.append(
-                f"  - `{b['req_id']}` rejected by {b['stakeholder']} ({b['raci']}) "
+                f"  - `{b['req_id']}` отклонено: {b['stakeholder']} ({b['raci']}) "
                 f"— {b.get('reason') or '—'}"
             )
         lines += [
             "",
-            "A person with decision authority said no. Resolve it with them, then "
-            "record the new decision via `record_approval_decision`; or drop the "
-            "requirement from the package and prepare a new one.",
+            "Человек с правом решения сказал «нет». Урегулируйте это с ним и запишите "
+            "новое решение через `record_approval_decision`; либо уберите требование "
+            "из пакета и подготовьте новый.",
         ]
         if gate["forceable"]:
             lines.append(
-                f"\n(For reference, `force` would have covered: "
+                f"\n(Для справки, `force` покрыл бы: "
                 f"{', '.join(gate['forceable'])}.)"
             )
         return "\n".join(lines)
 
     if not gate["can_baseline"] and not force:
-        lines = ["❌ Baseline blocked:", ""]
+        lines = ["❌ Baseline заблокирован:", ""]
         if pending_reqs:
-            lines.append(f"**Requirements in pending_approval status:** {pending_reqs}")
+            lines.append(f"**Требования в статусе pending_approval:** {pending_reqs}")
         if gate["overdue_conditions"]:
             overdue = ", ".join(f"`{c['req_id']}` ({c['stakeholder']})"
                                 for c in gate["overdue_conditions"])
-            lines.append(f"**Overdue conditions:** {overdue}")
+            lines.append(f"**Просроченные условия:** {overdue}")
         if gate["low_approval"]:
-            lines.append(f"**Only {approved_pct}% of requirements approved** "
-                         f"(minimum {MIN_APPROVED_PCT}%).")
+            lines.append(f"**Согласовано лишь {approved_pct}% требований** "
+                         f"(минимум {MIN_APPROVED_PCT}%).")
         lines += [
             "",
-            "Resolve the issues above, or use `force=true` to force the baseline "
-            "creation. `force` will lift exactly: "
-            f"{', '.join(gate['forceable'])} — and each one is named in the "
+            "Устраните перечисленное выше либо используйте `force=true`, чтобы создать "
+            "baseline принудительно. `force` снимет ровно следующее: "
+            f"{', '.join(gate['forceable'])} — и каждый пункт будет назван в "
             "Approval Record.",
         ]
         return "\n".join(lines)
