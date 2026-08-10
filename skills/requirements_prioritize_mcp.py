@@ -830,6 +830,8 @@ def start_prioritization_session(
     - wsjf_scale: scale for WSJF — Fibonacci (1,2,3,5,8,13) or Linear (1-10)
     - quadrant_mapping_json: JSON quadrant mapping for ImpactEffort.
       Format: {"QuickWins": "Must", "BigBets": "Should", "FillIns": "Could", "ThanklessTasks": "Won't"}
+      Example: '{"QuickWins": "Must", "BigBets": "Could"}' — a partial mapping is merged
+      into the default one, so pass only the quadrants you are changing.
       If empty — the default mapping is used.
     - capacity: box size for TimeBoxing — what the team can deliver in the period,
       or the fixed budget. Required (> 0) for method="TimeBoxing", ignored otherwise.

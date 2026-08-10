@@ -1201,6 +1201,7 @@ def add_custom_viewpoint(
         label:             Viewpoint label: "Security and access", "Audit and compliance".
         req_ids_json:      JSON list of requirement IDs: '["NFR-003", "FR-015", "BR-002"]'.
                            All IDs must exist in the 5.1 repository.
+                           Example: '["NFR-003", "FR-015"]'
         description:       Description: what this viewpoint represents (optional).
         stakeholder_roles: Who this viewpoint is for: "Security architect, CISO" (optional).
 

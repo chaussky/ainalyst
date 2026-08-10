@@ -247,6 +247,7 @@ def set_business_context(
         business_goals_json: JSON list of business objectives:
                              '[{"id":"BG-001","title":"...","description":"...","kpi":"..."}]'.
                              id must start with BG-.
+                             Example: '[{"id": "BG-001", "title": "Cut application processing time", "description": "Applications are processed by hand", "kpi": "Average processing time"}]'
         future_state:        Description of the desired future state (Free State).
         solution_scope:      Solution boundaries: what is in, what is out.
         potential_value:          Potential value/benefit (optional).
@@ -780,6 +781,7 @@ def set_success_criteria(
         criteria_json: JSON with the criteria:
                        '{"baseline":"...", "target":"...",
                          "measurement_method":"...", "kpi_ref":"BG-001"}'.
+                       Example: '{"baseline": "2 hours", "target": "15 minutes", "measurement_method": "CRM monitoring", "kpi_ref": "BG-001"}'
 
     Returns:
         Confirmation + a KPI hint from the linked business objective.

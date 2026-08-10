@@ -496,6 +496,7 @@ def create_user_story(
         benefit:                   Business value (without "so that").
         acceptance_criteria_json:  JSON list of acceptance criteria: ["Criterion 1", "Criterion 2"]
                                    At least 2 criteria.
+                                   Example: '["The form opens within 2 seconds", "A validation error is shown under the field"]'
         priority:                  High | Medium | Low. Default Medium.
         source_artifact:           Path to the 4.3 artifact (for traceability).
         notes:                     Additional context, constraints, references.
@@ -623,6 +624,7 @@ def create_functional_requirement(
         source_artifact:   Path to the 4.3 artifact.
         constraints:       Constraints and assumptions.
         related_ids_json:  JSON list of related IDs: ["BR-001", "UC-001"]
+                           Example: '["BR-001", "UC-001"]'
         business_goal_ids_json:  JSON list of 6.2 business objective IDs this item serves:
                                  ["BG-001", "BG-002"]. Writes `satisfies` links into the
                                  5.1 graph — that is what makes per-objective coverage in
@@ -1269,6 +1271,7 @@ def create_data_dictionary(
                              "business_rules": ["Rule 1", "Rule 2"]
                            }
                          ]
+                         Example: '[{"name": "Application", "description": "Loan application", "attributes": [{"name": "id", "type": "Integer", "required": true, "constraints": "PK", "description": "Unique identifier"}], "business_rules": ["An application cannot exist without a client"]}]'
         source_artifact: Path to the 4.3 artifact.
         business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
                          ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
@@ -1406,6 +1409,7 @@ def create_erd(
                              "attributes": ["client_id FK", "status Enum", "created_at DateTime"]
                            }
                          ]
+                         Example: '[{"name": "Application", "pk": "id", "attributes": ["client_id FK", "status Enum"]}]'
         relations_json:  JSON list of relationships. Format:
                          [
                            {
@@ -1418,6 +1422,7 @@ def create_erd(
                          Allowed cardinality:
                          one-to-one | one-to-many | many-to-one | many-to-many |
                          zero-or-one-to-many | zero-or-one-to-one
+                         Example: '[{"from": "Application", "to": "Client", "cardinality": "many-to-one", "label": "belongs to"}]'
         source_artifact: Path to the 4.3 artifact.
         business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
                          ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —

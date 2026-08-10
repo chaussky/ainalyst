@@ -359,6 +359,7 @@ def add_value_assessment(
                          ],
                          "opportunity_cost": "Description of the opportunity cost (optional)"
                        }
+                       Example: '{"components": [{"component": "Backend", "cost_items": [{"category": "development", "description": "API development", "magnitude": "High"}]}], "opportunity_cost": "The mobile app launch is postponed"}'
         risks_json:    JSON list of risks (optional — if there is no file from 6.3).
                        Each item: {
                          "risk_id": "RSK-001",
@@ -369,6 +370,7 @@ def add_value_assessment(
                        }
                        If '[]' is passed and {project}_risks.json (6.3) exists —
                        risks will be read from there.
+                       Example: '[{"risk_id": "RSK-001", "description": "Vendor delivery delay", "probability": "Medium", "impact": "High", "risk_level": "High"}]'
         notes:         Additional notes (optional).
 
     Returns:
@@ -1047,6 +1049,7 @@ def save_recommendation(
                                   Format: '[{"metric": "Request processing time",
                                              "baseline": "2 hours", "target": "15 minutes",
                                              "measurement_method": "CRM monitoring"}]'
+                                  Example: '[{"metric": "Request processing time", "baseline": "2 hours", "target": "15 minutes", "measurement_method": "CRM monitoring"}]'
         risks_acknowledged_json:  JSON list of acknowledged risk IDs.
                                   Example: '["RSK-001", "RSK-002"]'
         notes:                    Additional notes (optional).

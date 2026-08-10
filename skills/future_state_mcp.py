@@ -619,6 +619,7 @@ def define_goals_and_objectives(
                                    \"target\": \"2 hours\",
                                    \"deadline\": \"2025-12-31\"
                                  }
+                                 Example: '[{\"title\": \"Reduce request processing time\", \"metric\": \"Processing time (hours)\", \"baseline\": \"8 hours\", \"target\": \"2 hours\", \"deadline\": \"2025-12-31\"}]'
         linked_business_needs:   List of BN-xxx from 6.1 that the goal is linked to.
                                  JSON list of strings: '[\"BN-001\",\"BN-002\"]'
         register_in_traceability: If True — create a business_goal node in the 5.1 repository.
@@ -1150,6 +1151,7 @@ def assess_potential_value(
                           benefit_type: financial | operational | strategic | compliance
                           magnitude: high | medium | low
                           confidence: high | medium | low
+                          Example: '[{\"benefit_title\": \"Reduced processing time\", \"benefit_type\": \"operational\", \"magnitude\": \"high\", \"confidence\": \"medium\"}]'
         investment_level: Qualitative investment level:
                           - low     — minor changes, no development needed
                           - medium  — moderate development / procurement, 3-12 months
