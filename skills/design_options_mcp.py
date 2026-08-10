@@ -523,8 +523,6 @@ def create_design_option(
     else:
         do_data["options"].append(option)
 
-    _save_design_options(do_data)
-
     action = "updated" if is_update else "created"
     total_options = len(do_data["options"])
 
@@ -586,6 +584,11 @@ def create_design_option(
             f"`allocate_requirements(project_id='{project_id}', option_id='{option_id}', auto_suggest=True)` — allocate req across versions."
         )
 
+    # The write happens AFTER the text is assembled (ADR-113). Assembly reads
+    # `opp.get("type")`, so a wrong improvement_opportunities_json shape used to crash
+    # AFTER the save: the project was left with a record 7.5 then choked on forever.
+    _save_design_options(do_data)
+
     return "\n".join(lines)
 
 
@@ -625,6 +628,7 @@ def allocate_requirements(
                           Format: '[{"req_id": "FR-001", "version": "v1", "rationale": "..."}]'
                           Versions: v1 | v2 | out_of_scope.
                           Pass only the req you want to override.
+                          Example: '[{"req_id": "FR-001", "version": "v1", "rationale": "Core of the MVP"}]'
         auto_suggest:     True — first propose an allocation by priority (recommended).
                           False — only record assignments_json without auto-suggestion.
 
@@ -943,6 +947,7 @@ def compare_design_options(
                        Format: '[{"id": "vendor_support", "label": "Vendor support", "weight": "medium"}]'
                        The default criteria are always included.
                        Pass '[]' to use only the default criteria.
+                       Example: '[{"id": "vendor_support", "label": "Vendor support", "weight": "medium"}]'
 
     Returns:
         A Comparison Document: comparison matrix for stakeholders.
