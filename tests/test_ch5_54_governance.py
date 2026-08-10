@@ -211,14 +211,14 @@ class EscalationPathTest(CRGovernanceBase):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS,
                            escalation_path="BA → CRO → Board")
         _record, output = self._resolve(decision="Deferred", rationale="next quarter")
-        self.assertIn("escalation path", output)
+        self.assertIn("цепочка эскалации", output)
         self.assertIn("BA → CRO → Board", output)
 
     def test_a_rejected_cr_offers_the_escalation_path_in_the_output(self):
         plan_ba_governance(PROJECT, "High", TWO_DECIDERS,
                            escalation_path="BA → CRO → Board")
         _record, output = self._resolve(decision="Rejected", rationale="out of scope")
-        self.assertIn("escalation path", output)
+        self.assertIn("цепочка эскалации", output)
         self.assertIn("BA → CRO → Board", output)
 
     def test_an_approved_cr_records_the_escalation_but_does_not_offer_it(self):

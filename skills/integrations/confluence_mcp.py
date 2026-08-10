@@ -705,7 +705,7 @@ def pull_from_confluence(
     lines += [
         "## Следующий шаг — передать в init_traceability_repo (5.1)",
         "",
-        f"Call it with `project_name=\"{proj_name}\"` and the list below:",
+        f"Вызовите его с `project_name=\"{proj_name}\"` и списком ниже:",
         "",
         "```json",
         requirements_json,
@@ -854,13 +854,13 @@ def list_space_pages(
                 response = confluence.cql(cql_query, limit=limit, expand="version")
                 hits = response.get("results", []) if isinstance(response, dict) else (response or [])
                 pages = [_normalize_search_hit(h) for h in hits]
-                scope_note = "searched the whole space"
+                scope_note = "искали по всему пространству"
             except Exception as cql_error:
                 # Some deployments restrict CQL — degrade instead of failing outright.
                 logger.warning(f"list_space_pages: CQL search failed ({cql_error}); "
                                f"falling back to a client-side filter")
                 pages = _filter_locally(_fetch_all())
-                scope_note = f"CQL unavailable — filtered the first {limit} pages only"
+                scope_note = f"CQL недоступен — отфильтровали только первые {limit} страниц"
         else:
             pages = _fetch_all()
     except Exception as e:
@@ -869,13 +869,13 @@ def list_space_pages(
     # NB: keep the quoting out of the f-string expression — a backslash inside an
     # f-string replacement field is a SyntaxError before Python 3.12 (PEP 701),
     # and this project supports Python 3.10+.
-    filter_note = f' (filter: "{search_title}"; {scope_note})' if search_title else ""
+    filter_note = f' (фильтр: "{search_title}"; {scope_note})' if search_title else ""
 
     if not pages:
         if search_title:
-            return (f"ℹ️ No pages matching '{search_title}' in space '{space}' "
+            return (f"ℹ️ В пространстве '{space}' нет страниц, подходящих под '{search_title}' "
                     f"({scope_note}).")
-        return f"ℹ️ No pages found in space '{space}', or no access."
+        return f"ℹ️ В пространстве '{space}' страниц не найдено — либо нет доступа."
 
     lines = [
         f"# 📋 Страницы пространства '{space}'",

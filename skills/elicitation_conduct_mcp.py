@@ -484,7 +484,7 @@ def compare_elicitation_results(
 """
 
     suffix = save_artifact(content, "4_2_cross_analysis", project_id=project_name)
-    return f"✅ Cross-analysis saved.{suffix}"
+    return f"✅ Кросс-анализ сохранён.{suffix}"
 
 
 # ---------------------------------------------------------------------------
@@ -595,7 +595,7 @@ def save_cr_elicitation_analysis(
 """
 
     suffix = save_artifact(content, "4_2_cr_elicitation", project_id=project_name)
-    return f"✅ CR analysis saved.{suffix}"
+    return f"✅ Анализ CR сохранён.{suffix}"
 
 
 # ---------------------------------------------------------------------------

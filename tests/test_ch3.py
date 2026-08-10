@@ -656,7 +656,7 @@ class TestCh3AuditRegressions(BaseMCPTest):
         """The tool used to tell the BA governance was 'passed automatically' to 5.5,
         but no module outside planning_mcp reads ba_plan.json."""
         result = save_ba_plan(self._full_plan("promise_check"))
-        self.assertNotIn("automatically\n", result)
+        self.assertNotIn("автоматически\n", result)
 
     def test_finalize_does_not_contradict_the_seeding_it_just_did(self):
         """This message still told the BA to enter the stakeholders into the registry
@@ -665,8 +665,8 @@ class TestCh3AuditRegressions(BaseMCPTest):
         instruction. The advice was correct when written, and nothing updated it when
         the seam was built."""
         result = save_ba_plan(self._full_plan("promise_check"))
-        self.assertNotIn("need to be entered", result)
-        self.assertIn("ALREADY seeded", result)
+        self.assertNotIn("нужно внести", result)
+        self.assertIn("УЖЕ засеяны", result)
 
 
 class TestSaveBaPlan(BaseMCPTest):

@@ -135,19 +135,19 @@ def _planned_context(project_name: str, technique: str) -> tuple:
                 f"не с чем.")
         elif technique in planned:
             lines.append(
-                f"- ✅ `{technique}` is among the techniques 3.1 recommended "
+                f"- ✅ `{technique}` есть среди техник, рекомендованных 3.1 "
                 f"({', '.join(planned)}).")
         else:
             lines.append(
-                f"- ⚠️ 3.1 recommended {', '.join(planned)}; this session uses "
-                f"`{technique}`. Not a blocker — the rationale below is what matters.")
+                f"- ⚠️ 3.1 рекомендовала {', '.join(planned)}; эта сессия идёт по "
+                f"`{technique}`. Это не блокер — важно обоснование ниже.")
 
     if not lines:
         return "", note
     # The trailing blank line is load-bearing for the document, not for Markdown: every
     # other separator in this artefact is followed by one, and the block is spliced in
     # directly before a heading.
-    block = "\n".join(["## From the BA plan (3.1)", ""] + lines + ["", "---", "", ""])
+    block = "\n".join(["## Из плана БА (3.1)", ""] + lines + ["", "---", "", ""])
     return block, note
 
 

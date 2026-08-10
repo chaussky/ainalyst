@@ -1274,7 +1274,7 @@ def assess_potential_value(
         "",
         "**Следующий шаг:** `check_future_state_completeness` → `save_future_state`",
         "",
-        "ℹ️ 6.3 `generate_recommendation` reads this value automatically; 7.6 makes its own numeric assessment from the design options.",
+        "ℹ️ 6.3 `generate_recommendation` читает это значение автоматически; 7.6 делает собственную числовую оценку по вариантам решения.",
     ]
 
     return "\n".join(lines)

@@ -1120,7 +1120,7 @@ def resolve_cr(
     # output the BA reads every single time.
     if decision in ("Deferred", "Rejected") and escalation:
         output_lines += [
-            f"ℹ️ If the requester disputes this, the planned escalation path is: "
+            f"ℹ️ Если инициатор оспорит это решение, запланированная цепочка эскалации: "
             f"{escalation} *({escalation_source})*.",
             "",
         ]

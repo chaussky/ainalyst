@@ -230,15 +230,15 @@ def run_consistency_check(
     saved = save_artifact(meta + content, prefix="4_3_consistency_check",
                           project_id=project_name)
     verdict = [
-        f"🔎 **Consistency check — {project_name}**",
+        f"🔎 **Проверка согласованности — {project_name}**",
         "",
-        f"- Artifacts checked: {len(artifacts)}",
-        f"- Issues: {len(issues)} (🔴 critical: {len(critical)}, "
-        f"🟠 significant: {len(significant)}, 🟡 minor: {len(minor)})",
-        f"- Status: {readiness_status}",
+        f"- Проверено артефактов: {len(artifacts)}",
+        f"- Проблем: {len(issues)} (🔴 критических: {len(critical)}, "
+        f"🟠 значимых: {len(significant)}, 🟡 незначительных: {len(minor)})",
+        f"- Статус: {readiness_status}",
     ]
     if needs_clarification:
-        verdict.append("- ⚠️ Clarification needed before continuing")
+        verdict.append("- ⚠️ Перед продолжением нужно уточнение")
     return "\n".join(verdict) + "\n" + saved
 
 

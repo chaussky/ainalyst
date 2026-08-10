@@ -401,7 +401,7 @@ def log_communication(
     # Action items
     if action_items:
         lines.append("---\n")
-        lines.append("## Action Items\n")
+        lines.append("## Действия\n")
         lines.append(f"| # | Действие | Кто | Срок |")
         lines.append(f"|---|---|---|---|")
         for i, item in enumerate(action_items, 1):

@@ -167,7 +167,7 @@ class TestTechniqueCrossCheck(unittest.TestCase):
         text = self._artefact_text()
         # The sentence, not the emoji: a bare "✅" would match anything the artefact
         # might print for an unrelated reason later.
-        self.assertIn("is among the techniques 3.1 recommended", text)
+        self.assertIn("есть среди техник, рекомендованных 3.1", text)
         self.assertIn("Workshop, Prototyping", text)   # only the intersection is listed
 
     def test_a_departure_is_named_without_blocking(self):
@@ -175,14 +175,14 @@ class TestTechniqueCrossCheck(unittest.TestCase):
         out = self._save("Benchmarking")
         self.assertIn("✅", out)                      # the plan is still saved
         text = self._artefact_text()
-        self.assertIn("3.1 recommended", text)
+        self.assertIn("3.1 рекомендовала", text)
         self.assertIn("Document Analysis", text)
-        self.assertIn("Not a blocker", text)
+        self.assertIn("Это не блокер", text)
 
     def test_plural_and_singular_names_are_the_same_technique(self):
         _seed_plan(techniques=["Interviews"])
         self._save("Interview")
-        self.assertIn("is among the techniques 3.1 recommended", self._artefact_text())
+        self.assertIn("есть среди техник, рекомендованных 3.1", self._artefact_text())
 
     def test_an_agile_plan_says_there_is_nothing_to_cross_check(self):
         """APPROACH_MATRIX gives Backlog Management / User Stories / Retrospectives for

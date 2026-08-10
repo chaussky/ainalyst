@@ -388,7 +388,7 @@ def save_meeting_notes(
 
     if action_items:
         lines.append("---\n")
-        lines.append("## Action Items\n")
+        lines.append("## Действия\n")
         lines.append("| # | Действие | Кто | Срок | Приоритет |")
         lines.append("|---|---|---|---|---|")
         for i, item in enumerate(action_items, 1):
@@ -430,7 +430,7 @@ def save_meeting_notes(
         f"  Дата: {meeting_date}\n"
         f"  Участников: {len(participants)}\n"
         f"  Решений: {len(decisions)}\n"
-        f"  Action items: {len(action_items)}\n"
+        f"  Действий: {len(action_items)}\n"
         f"  Зафиксировано: {today}\n"
         f"-->\n\n"
     )

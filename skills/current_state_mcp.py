@@ -40,6 +40,7 @@ from skills.common import (write_json_artifact,
     save_artifact, logger, DATA_DIR, data_path, normalize_project_id,
     read_json_artifact, guard_artifact_errors, parse_json_str_list,
 )
+from skills.plural_ru import plural_ru
 
 mcp = FastMCP("BABOK_CurrentState")
 
@@ -972,13 +973,13 @@ def check_current_state_completeness(
         lines.append("")
 
     lines += [
-        "## Root Cause Analysis",
+        "## Анализ первопричин (RCA)",
         "",
-        f"{'✅' if has_rca else '❌'} RCA проведён: {len(rca_list)} {'анализ' if len(rca_list) == 1 else 'анализов'}",
+        f"{'✅' if has_rca else '❌'} RCA проведён: {len(rca_list)} {plural_ru(len(rca_list), 'анализ', 'анализа', 'анализов')}",
         "",
         "## Бизнес-потребности",
         "",
-        f"{'✅' if has_needs else '❌'} Бизнес-потребности: {len(needs_list)} {'потребность' if len(needs_list) == 1 else 'потребностей'}",
+        f"{'✅' if has_needs else '❌'} Бизнес-потребности: {len(needs_list)} {plural_ru(len(needs_list), 'потребность', 'потребности', 'потребностей')}",
     ]
 
     if needs_list:
@@ -1141,7 +1142,7 @@ def save_current_state(
         report_lines += [
             "---",
             "",
-            "## Root Cause Analysis",
+            "## Анализ первопричин (RCA)",
             "",
         ]
         for rca in rca_list:

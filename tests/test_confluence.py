@@ -698,7 +698,7 @@ class TestConfluenceAuditRegressions(BaseMCPTest):
              patch("skills.integrations.confluence_mcp._get_confluence_client",
                    return_value=(mock_client, None)):
             result = confluence_mod.list_space_pages(space_key="BA", search_title="Requirements")
-        self.assertIn('filter: "Requirements"', result)
+        self.assertIn('фильтр: "Requirements"', result)
 
     # --- C2: URL building for Cloud vs Server/DC ----------------------------
 
@@ -937,7 +937,7 @@ class TestSearchIsServerSide(BaseMCPTest):
         self.assertIn("type = page", query)
         # a page beyond the first `limit` of the space is now found
         self.assertIn("Requirements — deep in the space", result)
-        self.assertIn("searched the whole space", result)
+        self.assertIn("искали по всему пространству", result)
         mock_client.get_all_pages_from_space.assert_not_called()
 
     def test_search_hit_unwrapped_shape_also_supported(self):
@@ -964,7 +964,7 @@ class TestSearchIsServerSide(BaseMCPTest):
             result = confluence_mod.list_space_pages(space_key="BA", search_title="Requirements")
         self.assertIn("Requirements FR", result)
         self.assertNotIn("Architecture", result)
-        self.assertIn("CQL unavailable", result)
+        self.assertIn("CQL недоступен", result)
 
     def test_no_search_still_lists_the_space(self):
         mock_client = _make_mock_confluence()

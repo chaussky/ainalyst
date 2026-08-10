@@ -1189,7 +1189,7 @@ def save_design_options_report(
 
     if not options:
         return (
-            f"⚠️ No design options for project `{project_id}`.\n\n"
+            f"⚠️ У проекта `{project_id}` нет ни одного варианта решения.\n\n"
             f"Создайте варианты через `create_design_option` перед формированием отчёта."
         )
 
