@@ -523,8 +523,6 @@ def create_design_option(
     else:
         do_data["options"].append(option)
 
-    _save_design_options(do_data)
-
     action = "обновлён" if is_update else "создан"
     total_options = len(do_data["options"])
 
@@ -586,6 +584,11 @@ def create_design_option(
             f"`allocate_requirements(project_id='{project_id}', option_id='{option_id}', auto_suggest=True)` — распредели req по версиям."
         )
 
+    # Запись — ПОСЛЕ сборки текста (ADR-113). Сборка обращается к `opp.get("type")`, и при
+    # неверной форме improvement_opportunities_json падала уже ПОСЛЕ сохранения: проект
+    # оставался с записью, на которой 7.5 падала навсегда.
+    _save_design_options(do_data)
+
     return "\n".join(lines)
 
 
@@ -625,6 +628,7 @@ def allocate_requirements(
                           Формат: '[{"req_id": "FR-001", "version": "v1", "rationale": "..."}]'
                           Версии: v1 | v2 | out_of_scope.
                           Передавай только те req, которые хочешь переопределить.
+                          Пример: '[{"req_id": "FR-001", "version": "v1", "rationale": "Ядро MVP"}]'
         auto_suggest:     True — сначала предложить распределение по приоритетам (рекомендуется).
                           False — только записать assignments_json без авто-предложения.
 
@@ -943,6 +947,7 @@ def compare_design_options(
                        Формат: '[{"id": "vendor_support", "label": "Поддержка вендора", "weight": "medium"}]'
                        Дефолтные критерии всегда включаются.
                        Передай '[]' для использования только дефолтных критериев.
+                       Пример: '[{"id": "vendor_support", "label": "Поддержка вендора", "weight": "medium"}]'
 
     Returns:
         Comparison Document: сравнительная матрица для стейкхолдеров.
