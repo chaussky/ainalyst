@@ -233,7 +233,8 @@ Always run `run_cr_impact` — the graph will reveal the real scope.
 
 **4. Letting CRs pile up without decisions**
 A CR sitting in `open` status for more than 2 sprints is a governance problem.
-Use `check_cr_status` to monitor open CRs.
+The platform has no dedicated monitor: open CRs are visible in the 5.1 repository —
+`export_traceability_matrix` lists `change_request` nodes with their statuses.
 
 **5. Missing rationale on Reject**
 Six months later, nobody remembers why it was rejected. Always fill in `rationale` in `resolve_cr`.
