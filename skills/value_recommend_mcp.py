@@ -359,6 +359,7 @@ def add_value_assessment(
                          ],
                          "opportunity_cost": "Описание альтернативных издержек (опционально)"
                        }
+                       Пример: '{"components": [{"component": "Backend", "cost_items": [{"category": "development", "description": "Разработка API", "magnitude": "High"}]}], "opportunity_cost": "Запуск мобильного приложения откладывается"}'
         risks_json:    JSON-список рисков (опционально — если нет файла из 6.3).
                        Каждый элемент: {
                          "risk_id": "RSK-001",
@@ -369,6 +370,7 @@ def add_value_assessment(
                        }
                        Если передан '[]' и существует {project}_risks.json (6.3) —
                        риски будут прочитаны оттуда.
+                       Пример: '[{"risk_id": "RSK-001", "description": "Задержка поставки от вендора", "probability": "Medium", "impact": "High", "risk_level": "High"}]'
         notes:         Дополнительные заметки (необязательно).
 
     Returns:
@@ -1046,6 +1048,7 @@ def save_recommendation(
                                   Формат: '[{"metric": "Время обработки заявки",
                                              "baseline": "2 часа", "target": "15 минут",
                                              "measurement_method": "Мониторинг CRM"}]'
+                                  Пример: '[{"metric": "Время обработки заявки", "baseline": "2 часа", "target": "15 минут", "measurement_method": "Мониторинг CRM"}]'
         risks_acknowledged_json:  JSON-список ID рисков принятых к сведению.
                                   Пример: '["RSK-001", "RSK-002"]'
         notes:                    Дополнительные заметки (необязательно).

@@ -619,6 +619,7 @@ def define_goals_and_objectives(
                                    \"target\": \"2 часа\",
                                    \"deadline\": \"2025-12-31\"
                                  }
+                                 Пример: '[{\"title\": \"Сократить время обработки заявок\", \"metric\": \"Время обработки (часы)\", \"baseline\": \"8 часов\", \"target\": \"2 часа\", \"deadline\": \"2025-12-31\"}]'
         linked_business_needs:   Список BN-xxx из 6.1, к которым привязана цель.
                                  JSON-список строк: '[\"BN-001\",\"BN-002\"]'
         register_in_traceability: Если True — создать узел business_goal в репозитории 5.1.
@@ -1150,6 +1151,7 @@ def assess_potential_value(
                           benefit_type: financial | operational | strategic | compliance
                           magnitude: high | medium | low
                           confidence: high | medium | low
+                          Пример: '[{\"benefit_title\": \"Сокращение времени обработки\", \"benefit_type\": \"operational\", \"magnitude\": \"high\", \"confidence\": \"medium\"}]'
         investment_level: Качественный уровень инвестиций:
                           - low     — небольшие изменения без разработки
                           - medium  — умеренная разработка / закупка, 3–12 месяцев

@@ -247,6 +247,7 @@ def set_business_context(
         business_goals_json: JSON-список бизнес-целей:
                              '[{"id":"BG-001","title":"...","description":"...","kpi":"..."}]'.
                              id must start with BG-.
+                             Пример: '[{"id": "BG-001", "title": "Снизить время обработки заявок", "description": "Заявки обрабатываются вручную", "kpi": "Среднее время обработки"}]'
         future_state:        Description of the desired future state (Free State).
         solution_scope:      Solution boundaries: what is in, what is out.
         potential_value:          Potential value/benefit (optional).
@@ -780,6 +781,7 @@ def set_success_criteria(
         criteria_json: JSON с критериями:
                        '{"baseline":"...", "target":"...",
                          "measurement_method":"...", "kpi_ref":"BG-001"}'.
+                       Пример: '{"baseline": "2 часа", "target": "15 минут", "measurement_method": "Мониторинг CRM", "kpi_ref": "BG-001"}'
 
     Returns:
         Подтверждение + подсказка KPI из связанной бизнес-цели.

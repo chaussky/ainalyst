@@ -237,6 +237,7 @@ def process_elicitation_results(
         maturity_notes:            Comment on the maturity assessment.
         risks_json:                Risks the stakeholder raised in this session. Optional.
                                    Format: [{"description": "...", "stakeholder": "..."}]
+                                   Пример: '[{"description": "Legacy-API может не выдержать нагрузку", "stakeholder": "Архитектор"}]'
                                    `stakeholder` defaults to stakeholder_role. A bare
                                    string is accepted and read as the description.
                                    Consumed by 6.3 `import_risks_from_context`.

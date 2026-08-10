@@ -500,6 +500,7 @@ def create_user_story(
         benefit:                   Business value (without "so that").
         acceptance_criteria_json:  JSON list of acceptance criteria: ["Criterion 1", "Criterion 2"]
                                    At least 2 criteria.
+                                   Пример: '["Форма открывается за 2 секунды", "Ошибка валидации показана под полем"]'
         priority:                  High | Medium | Low. Default Medium.
         source_artifact:           Path to the 4.3 artifact (for traceability).
         notes:                     Additional context, constraints, references.
@@ -627,6 +628,7 @@ def create_functional_requirement(
         source_artifact:   Path to the 4.3 artifact.
         constraints:       Constraints and assumptions.
         related_ids_json:  JSON list of related IDs: ["BR-001", "UC-001"]
+                           Пример: '["BR-001", "UC-001"]'
         business_goal_ids_json:  JSON list of 6.2 business objective IDs this item serves:
                                  ["BG-001", "BG-002"]. Writes `satisfies` links into the
                                  5.1 graph — that is what makes per-objective coverage in
@@ -1273,6 +1275,7 @@ def create_data_dictionary(
                              "business_rules": ["Правило 1", "Правило 2"]
                            }
                          ]
+                         Пример: '[{"name": "Application", "description": "Заявка на кредит", "attributes": [{"name": "id", "type": "Integer", "required": true, "constraints": "PK", "description": "Уникальный идентификатор"}], "business_rules": ["Заявка не может существовать без клиента"]}]'
         source_artifact: Path to the 4.3 artifact.
         business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
                          ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —
@@ -1410,6 +1413,7 @@ def create_erd(
                              "attributes": ["client_id FK", "status Enum", "created_at DateTime"]
                            }
                          ]
+                         Пример: '[{"name": "Application", "pk": "id", "attributes": ["client_id FK", "status Enum"]}]'
         relations_json:  JSON-список связей. Формат:
                          [
                            {
@@ -1422,6 +1426,7 @@ def create_erd(
                          Допустимые cardinality:
                          one-to-one | one-to-many | many-to-one | many-to-many |
                          zero-or-one-to-many | zero-or-one-to-one
+                         Пример: '[{"from": "Application", "to": "Client", "cardinality": "many-to-one", "label": "принадлежит"}]'
         source_artifact: Path to the 4.3 artifact.
         business_goal_ids_json: JSON list of 6.2 business objective IDs this item serves:
                          ["BG-001", "BG-002"]. Writes `satisfies` links into the 5.1 graph —

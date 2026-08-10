@@ -1140,6 +1140,7 @@ def compare_strategy_options(
         scores_json: JSON-матрица оценок 1–5 по каждому критерию.
             Формат: {"OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 3, "cost": 3,
                                  "time_to_value": 4, "org_readiness_fit": 3, "feasibility": 4}}
+            Пример: '{"OPT-001": {"alignment_to_goals": 4, "risk_mitigation": 3, "cost": 3, "time_to_value": 4, "org_readiness_fit": 3, "feasibility": 4}}'
             OPT-000 (do_nothing) should be included for a correct comparison.
             ⚠️ SCORING DIRECTION — 5 is ALWAYS the best outcome, on EVERY criterion.
             All weights are positive and the score is a weighted average, so a
@@ -1152,8 +1153,12 @@ def compare_strategy_options(
         weights_json: Optional — override the default criteria weights.
             The sum of all weights (including custom ones) must be 100.
             Format: {"alignment_to_goals": 30, "risk_mitigation": 25, ...}
+            Пример: '{"alignment_to_goals": 30, "risk_mitigation": 20, "cost": 15, "time_to_value": 15, "org_readiness_fit": 10, "feasibility": 10}'
         custom_criteria_json: Optional — add custom criteria with weights.
             Format: {"regulatory_compliance": {"weight": 15, "description": "..."}}
+            Кастомный критерий ДОБАВЛЯЕТ свой вес, поэтому уменьши стандартные в
+            weights_json на столько же — сумма должна остаться 100.
+            Пример: '{"regulatory_compliance": {"weight": 15, "description": "Соответствие требованиям регулятора"}}'
     """
     if not opportunity_cost.strip():
         return "❌ opportunity_cost обязателен. Опишите что теряем, выбрав лучший вариант вместо остальных."
