@@ -1,6 +1,6 @@
-# User Guide
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+# Пользовательская инструкция
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 
@@ -72,7 +72,7 @@ BA исследует и документирует то, как организ�
 
 **Защита от «лечения симптомов».** RCA-инструменты встроены в рабочий процесс — BA не может «случайно» пропустить анализ причин и перейти к решениям. Когда корневая причина явно зафиксирована и связана с бизнес-потребностью, все последующие решения проверяются против неё. Это снижает риск дорогостоящего разворота в середине разработки.
 
-**A measurable justification for change.** Business needs backed by metrics speak the sponsor's language. Instead of "we need improvements," the BA shows up with "we are losing 2.4 million dollars per quarter due to manual request processing (RCA-001); with automation, we expect processing time to drop from 8 hours to 1.5 hours." That is a convincing case, not a request for resources.
+**Измеримое обоснование изменений.** Бизнес-потребности с метриками — это язык, который понимает спонсор. Вместо «нам нужны улучшения» BA приходит с «мы теряем 2.4 млн рублей в квартал из-за ручной обработки заявок (RCA-001), при автоматизации ожидаем сокращение времени обработки с 8 до 1.5 часов». Это убедительное обоснование, а не просьба о ресурсах.
 
 **Трассировка с самого начала.** BN-xxx узлы, созданные в 6.1, становятся корнями всего дерева трассировки. В конце проекта будет видно: эта функция (FR-045) была разработана потому что есть бизнес-потребность BN-002, которая возникла из корневой причины RCA-001, подтверждённой такими-то данными. Это профессиональная защищаемость каждого решения.
 
@@ -156,7 +156,7 @@ BA описывает целевое состояние организации: 
 
 Три ключевых gap: нет единого реестра статусов (HIGH, замена), нет автоуведомлений (MEDIUM, новое), согласование требует личной подписи (LOW, улучшение).
 
-*"Record the constraint: budget no more than 3 million dollars, timeline: 6 months."*
+*«Зафиксируй ограничение: бюджет не более 3 млн рублей, срок — 6 месяцев.»*
 
 Отчёт и gap_analysis.json сохранены — готовы к использованию в 6.3 и 6.4.
 
@@ -246,11 +246,11 @@ BA синтезирует всё накопленное в Главе 6: фор�
 
 ### Что мы реализовали
 
-**Auto-importing context from 6.1, 6.2, and 6.3.** When 6.4 is initialized, the platform reads the artifacts of the previous tasks: business needs BN-xxx, business goals BG-xxx, risks RK-xxx, and the 6.2 gap analysis. The BA starts work with the context already filled in; there is no need to "remember what we did earlier."
+**Автоимпорт контекста из 6.1, 6.2 и 6.3.** При инициализации 6.4 платформа читает артефакты предыдущих задач: бизнес-потребности BN-xxx, бизнес-цели BG-xxx, риски RK-xxx и gap-анализ из 6.2. BA начинает работу с уже заполненным контекстом — не нужно «вспоминать, что делали раньше».
 
-**The gap analysis arrives as context, and the judgement stays with the BA.** 6.2 records how *complex* each change is; 6.4 asks how *big* the gap is. Those are different questions that happen to share the words low/medium/high, so the platform never converts one into the other: the BA sets each capability's `gap_severity` in `define_solution_scope`, and the final Change Strategy document prints 6.2's complexity next to it on the capability's own line, labelled "effort, not gap size". (The `define_solution_scope` reply itself reports coverage, not complexity — the two values are set side by side in the delivered document.)
+**Gap-анализ приходит как контекст, а суждение остаётся за BA.** 6.2 записывает, насколько *сложно* каждое изменение; 6.4 спрашивает, насколько *велик* разрыв. Это разные вопросы, у которых просто совпали слова low/medium/high, поэтому платформа никогда не превращает одно в другое: BA задаёт `gap_severity` каждой capability в `define_solution_scope`, а итоговый документ Change Strategy печатает рядом сложность из 6.2 — на собственной строке capability, с подписью «трудоёмкость, а не размер разрыва». (Сам ответ `define_solution_scope` сообщает покрытие, а не сложность — два значения ставятся рядом уже в выданном документе.)
 
-**What the platform does check is coverage.** When a capability names the element it covers — `gap_source: "6.2:technology"` — both the tool's reply and the final Change Strategy document report which analysed gaps are covered, which no in-scope capability declares, and which were deliberately left out of scope. Capabilities that name no element are counted as *uncheckable*, not as uncovered: an unstated link means the platform cannot tell, and saying otherwise would turn a missing declaration into an accusation. Where no gap analysis was imported at all, the document says the coverage was not checked rather than reporting a number it cannot support. Two of 6.2's elements, `business_needs` and `external`, describe the context of the change rather than a capability the organization builds, so by default they are reported on their own "Context elements" line and left out of the coverage count — a capability can still claim one explicitly through `gap_source`, which brings it back into the count.
+**Что платформа действительно проверяет — это покрытие.** Когда capability называет элемент, который закрывает — `gap_source: "6.2:technology"`, — и ответ инструмента, и итоговый документ Change Strategy сообщают, какие проанализированные разрывы покрыты, для каких ни одна capability в скоупе не объявляет покрытие и какие сознательно оставлены вне скоупа. Capabilities, не назвавшие ни одного элемента, считаются *непроверяемыми*, а не непокрытыми: незаявленная связь означает, что платформа не может судить, и утверждать иное — значит превращать отсутствующее объявление в обвинение. Если gap-анализ не импортирован вовсе, документ говорит, что покрытие не проверялось, а не выдаёт число, которого ничем не подтвердит. Два элемента 6.2 — `business_needs` и `external` — описывают контекст изменения, а не способность, которую организация строит, поэтому по умолчанию они выводятся отдельной строкой «Контекстные элементы» и не входят в подсчёт покрытия; capability может явно заявить такой элемент через `gap_source` — и тогда он снова попадает в подсчёт.
 
 **Явный скоуп решения с категоризацией capabilities.** Каждая capability (процесс, технология, данные, люди, оргструктура), которая изменяется в проекте, регистрируется явно с указанием степени critical gap (high / medium / low / none) и ссылкой на gap-анализ из 6.2. Также явно фиксируется что **не входит** в скоуп — это первая линия защиты от scope creep.
 
@@ -284,7 +284,7 @@ BA синтезирует всё накопленное в Главе 6: фор�
 
 *«Оцени готовность организации. Вовлечённость руководства — 4 (директор лично инициировал проект). Культурная готовность — 3 (команда осторожна с новым). Технология — 3 (ERP старый, но с API). История изменений — 2 (прошлые проекты затягивались).»*
 
-Readiness score: 3.1 → `proceed_with_caution`.
+Readiness score: 3.1 → `proceed_with_caution` (действовать с осторожностью).
 
 *«Добавь вариант phased: две фазы, инвестиции medium, риск интеграции снижается за счёт пилота в фазе 1.»*
 

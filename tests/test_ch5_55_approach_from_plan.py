@@ -127,7 +127,7 @@ class TestResolution(BaseMCPTest):
         and the docs steer the BA of that project into declaring a timing form —
         which is precisely the path that handed it the informal package."""
         _seed_plan({"timing_form": "iterations"},
-                   approach_label="Hybrid (with strengthened governance)")
+                   approach_label="Hybrid (с усиленным Governance)")
         out = self._prepare()
         self.assertIn("**Conditional**", out)
         self.assertNotIn("For Sprint Planning", out)

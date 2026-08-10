@@ -324,7 +324,7 @@ class TestReportRendersThePlannedElements(BaseMCPTest):
         plan_information_management("b33_bare", '["Jira"]')
         text = _report_text("b33_bare")
         self.assertIn("3.4 Управление информацией", text)
-        self.assertNotIn("Level of detail per audience", text)
+        self.assertNotIn("Уровень детализации по аудиториям", text)
         self.assertNotIn("Переиспользование требований", text)
         self.assertNotIn("Атрибуты требований", text)
 

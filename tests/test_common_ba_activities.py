@@ -86,7 +86,7 @@ class TestApproachToTimingForm(unittest.TestCase):
         """Guessing here would put a made-up methodology on a document that is signed."""
         self.assertEqual(approach_to_timing_form("Hybrid"), "")
         self.assertEqual(
-            approach_to_timing_form("Hybrid (with strengthened governance)"), "")
+            approach_to_timing_form("Hybrid (с усиленным Governance)"), "")
 
     def test_wrong_types_do_not_raise(self):
         for raw in (None, 5, ["Hybrid"]):

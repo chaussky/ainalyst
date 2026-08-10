@@ -56,7 +56,7 @@ class TestPlannedDetailLevel(BaseMCPTest):
 
     def test_without_a_plan_nothing_new_is_said(self):
         result, artefact = _package()
-        self.assertNotIn("Level of detail", artefact)
+        self.assertNotIn("Уровень детализации", artefact)
         self.assertNotIn("⚠️", result)
 
     def test_planned_level_appears_in_the_artefact_header(self):

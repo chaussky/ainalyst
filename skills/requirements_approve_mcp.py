@@ -372,7 +372,7 @@ _FORM_TO_APPROACH = {"phases": "predictive", "iterations": "agile"}
 # advice the docs give ("declare a timing form in 3.1b").
 _CEREMONY_BY_APPROACH = {
     "Hybrid (Agile + compliance gates)": "predictive",
-    "Hybrid (with strengthened governance)": "predictive",
+    "Hybrid (с усиленным Governance)": "predictive",
 }
 
 

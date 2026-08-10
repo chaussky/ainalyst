@@ -1,5 +1,5 @@
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 

@@ -1,6 +1,6 @@
-# User Guide
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+# Пользовательская инструкция
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 
@@ -234,23 +234,23 @@ BA организует требования в целостную структ�
 
 **Кастомные viewpoints для специфических контекстов.** `add_custom_viewpoint` позволяет добавить точку зрения, которой нет в стандартном наборе: «Безопасность и доступ» для банков, «Аудит и compliance» для регуляторных проектов, «Миграция данных» для проектов замены legacy-систем. BA указывает какие именно требования входят — платформа включает их в архитектуру.
 
-**Whose interests a requirement touches — stated, not guessed.** `declare_stakeholder_interest` records that a stakeholder's interests are affected by specific requirements. This is deliberately a different thing from two facts the platform already holds: the `owner` field (7.1) says who is answerable for the *wording* of a requirement, and the RACI role (5.5) says who decided on an *approval package*. The BA does not re-enter those — the platform reads them as evidence and says where each tie came from. Repeat calls merge, so nothing an earlier call recorded is ever silently erased; withdrawing a declaration takes an explicit `remove`. If the field was hand-edited into a shape that cannot be merged into — an object instead of a list of declarations — the tool says which requirement it replaced and keeps the discarded value in the repository history, so "silently" stays true in the one case where a replacement really does happen. The `note` you write is printed in the Architecture Document under the requirement it belongs to.
+**Чьи интересы затрагивает требование — заявлено, а не угадано.** `declare_stakeholder_interest` фиксирует, что интересы стейкхолдера затронуты конкретными требованиями. Это намеренно не то же самое, что два факта, которые платформа уже держит: поле `owner` (7.1) говорит, кто отвечает за *формулировку* требования, а роль RACI (5.5) — кто принимал решение по *пакету согласования*. BA их не вводит заново — платформа читает их как свидетельства и говорит, откуда взялась каждая связь. Повторные вызовы сливаются, поэтому записанное прошлым вызовом никогда не стирается молча; чтобы снять заявление, нужен явный `remove`. Если поле правили руками до формы, в которую нельзя влить новое, — объект вместо списка заявлений, — инструмент называет требование, где произошла замена, и сохраняет отброшенное значение в истории репозитория: так слово «молча» остаётся правдой в единственном случае, когда замена действительно случается. Написанный вами `note` печатается в Architecture Document под тем требованием, к которому относится.
 
-**Two-level gap check.** `check_architecture_gaps` identifies gaps at two levels:
-- Matrix level: does every stakeholder in the registry have a recorded tie to at least one requirement? Is every business goal covered by at least one view?
-- Semantic level: is there a Use Case with no business process? An NFR not linked to any FR? An FR with no usage scenario?
+**Двухуровневая проверка разрывов.** `check_architecture_gaps` находит разрывы на двух уровнях:
+- Уровень матрицы: у каждого ли стейкхолдера из реестра есть зафиксированная связь хотя бы с одним требованием? Покрыта ли каждая бизнес-цель хотя бы одним срезом?
+- Семантический уровень: есть ли Use Case без бизнес-процесса? NFR, не связанный ни с одним FR? FR без сценария использования?
 
-The stakeholder verdict rests on recorded facts — a declared interest, ownership of a requirement, or an approval decision on it. A person reachable only because their name happens to share a word with some requirement's title is reported as a *warning* that says so, not as a critical finding: a shared word is a coincidence, and a verdict that hides its method invites more confidence than its evidence carries. A person whose only trace lives *outside* the requirements — a risk that names their role, a change request they own — gets a warning of its own that says where the platform found them, so nobody is sent looking through the requirements for something that was never there.
+Вердикт по стейкхолдеру опирается на зафиксированные факты — заявленный интерес, владение требованием или решение о его согласовании. Человек, до которого удалось дотянуться лишь потому, что его имя совпало словом с заголовком какого-то требования, выводится как *предупреждение*, которое так и говорит, а не как критическая находка: совпадение слова — это совпадение, а вердикт, скрывающий свой метод, набирает больше доверия, чем несут его свидетельства. Человек, единственный след которого лежит *вне* требований — риск, называющий его роль, или запрос на изменение, которым он владеет, — получает собственное предупреждение с указанием, где платформа его нашла, чтобы никого не отправляли искать в требованиях то, чего там никогда не было.
 
-**"Requirement" means requirement.** The 5.1 graph also holds risks (6.3), business goals (6.2), change requests (5.4) and test cases. None of them is a requirement, so a tie to one is never counted as coverage and `declare_stakeholder_interest` refuses it by name rather than recording something the rest of the page cannot show. An *archived* requirement — deprecated, superseded or retired in 5.2 — is a different question: it is still a requirement, so the tie is recorded and shown, marked as archived, and a stakeholder whose every tie is archived is reported as a warning rather than read as fully covered. The same answer holds across the whole document, so the page cannot say two things about one id: the viewpoint tables still list an archived requirement and tag it, the totals still count it, and the semantic checks leave it alone — nobody is sent to write a use case for something the project retired last month.
+**«Требование» означает требование.** В графе 5.1 лежат ещё риски (6.3), бизнес-цели (6.2), запросы на изменение (5.4) и тест-кейсы. Ни один из них не требование, поэтому связь с ним никогда не засчитывается как покрытие, и `declare_stakeholder_interest` отказывает по имени, а не записывает то, чего остальная страница показать не сможет. *Архивное* требование — устаревшее, замещённое или выведенное из обращения в 5.2 — вопрос другой: оно всё ещё требование, поэтому связь фиксируется и показывается с пометкой об архивности, а стейкхолдер, у которого все связи архивные, выводится предупреждением, а не считается полностью покрытым. Этот же ответ держится по всему документу, поэтому страница не может сказать про один id две разные вещи: таблицы точек зрения по-прежнему перечисляют архивное требование и помечают его, итоги по-прежнему его считают, а семантические проверки его не трогают — никого не отправят писать use case для того, что проект вывел из обращения в прошлом месяце.
 
-**A versioned architecture snapshot.** `save_architecture_snapshot` captures the current state of the architecture with a version number and a comment. The history of snapshots is preserved, so you can see how the requirements architecture evolved over the course of the project. The gap block inside the document is recomputed as the snapshot is written, so it cannot contradict the concerns section printed a few lines above it — the workflow deliberately puts "declare the interests you know" between the gap check and the snapshot.
+**Версионированный снимок архитектуры.** `save_architecture_snapshot` фиксирует текущее состояние архитектуры с номером версии и комментарием. История снимков сохраняется, поэтому видно, как архитектура требований менялась по ходу проекта. Блок разрывов внутри документа пересчитывается прямо при записи снимка, поэтому он не может противоречить разделу интересов, напечатанному несколькими строками выше, — рабочий порядок намеренно ставит «заяви известные интересы» между проверкой разрывов и снимком.
 
 ### Ценности для BA
 
 **Каждый стейкхолдер получает «свой» срез.** Architecture Document организован по точкам зрения. Заказчик открывает раздел «Бизнес-процессы» и видит только то, что ему нужно. Архитектор открывает «Функциональность» и «Данные». Это снижает когнитивную нагрузку на чтение и снижает риск что важное требование будет упущено нужным стейкхолдером.
 
-**Structural gaps are found before design.** Discovering that the "Financial Controller" role exists in the stakeholder registry but has no recorded tie to a single requirement takes minutes to resolve in 7.4 — either the tie exists and simply was never stated, in which case you declare it, or it genuinely does not, in which case a requirement is missing. Discovering the same thing in 7.5, while building design options, means rework and lost time.
+**Структурные разрывы находятся до проектирования.** Обнаружить, что роль «Финансовый контролёр» есть в реестре стейкхолдеров, но не связана ни с одним требованием, в 7.4 стоит минут: либо связь есть и её просто не заявили — тогда её заявляют, либо её действительно нет — тогда не хватает требования. Обнаружить то же самое в 7.5, уже собирая варианты решения, — это переделки и потерянное время.
 
 **Входной артефакт для проектирования.** Architecture Document — это именно то, что нужно техническому архитектору для начала работы над дизайн-опциями (7.5). Структурированная картина вместо хаотичного списка. BA экономит время команды и снижает количество уточняющих вопросов.
 
@@ -368,7 +368,7 @@ OPT-003 (Hybrid): выгоды — операционные (сокращени�
 
 *«Сравни варианты.»*
 
-Value Score: OPT-003 → 8.4, OPT-002 → 6.1, OPT-001 → 5.3. Winner: OPT-003.
+Value Score: OPT-003 → 8.4, OPT-002 → 6.1, OPT-001 → 5.3. Победитель: OPT-003.
 
 *«Сформируй финальную рекомендацию: recommend_option, OPT-003. Success metrics: время согласования < 3 рабочих дней через 6 месяцев, adoption rate > 85% через 3 месяца.»*
 

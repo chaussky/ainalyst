@@ -1,6 +1,6 @@
-# User Guide
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+# Пользовательская инструкция
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 
@@ -63,32 +63,33 @@ AIналитик задаёт два уточняющих вопроса о ча
 
 > BA не выбирал параметры вручную, не открывал таблицу, не запоминал команды. Просто описал контекст — получил обоснованное решение.
 
-### Optional step 3.1b: Plan BA Activities and Timing
+### Необязательный шаг 3.1b: работы БА и их сроки
 
-BABOK 3.1 has two more elements beyond choosing an approach: which business analysis
-activities will be performed (element .3), and when — in specific phases or iteratively
-(element .4). This step is optional, and it's worth taking once the approach is settled:
-call `plan_ba_activities` with the project ID. Leave the timing form unspecified and the
-platform derives it from the chosen approach (Predictive → phases, Adaptive → iterations);
-a plain Hybrid sits between the two on purpose, so the platform asks the BA to state the
-form rather than guess it. Without any periods, the platform generates a starting skeleton
-(two iterations or three stages, depending on the form) that the BA edits and re-runs.
+У BABOK 3.1 есть ещё два элемента помимо выбора подхода: какие работы бизнес-анализа
+будут выполнены (элемент .3) и когда — по фазам или итеративно (элемент .4). Шаг
+необязательный, и делать его стоит после того, как подход определён: вызови
+`plan_ba_activities` с ID проекта. Оставь форму сроков незаданной — и платформа выведет
+её из выбранного подхода (Predictive → фазы, Adaptive → итерации); чистый Hybrid стоит
+между ними намеренно, поэтому платформа просит BA назвать форму, а не угадывает её. Если
+периодов нет вовсе, платформа сгенерирует стартовый каркас (две итерации или три этапа,
+смотря по форме), который BA правит и запускает заново.
 
-Example call:
+Пример обращения:
 
-> *"Plan the BA activities for the HR portal project: two iterations, the first covers
-> elicitation and current-state analysis with high effort, the second covers prioritization
-> and specification with medium effort, planned for August and September."*
+> *«Спланируй работы БА по проекту HR-портала: две итерации, первая — выявление и анализ
+> текущего состояния с высокой трудоёмкостью, вторая — приоритизация и спецификация со
+> средней трудоёмкостью, на август и сентябрь.»*
 
-The result is saved into `ba_plan.json` and rendered in the report as a new
-`## 3.1b BA Activities and Timing` section: the timing form and its source, a table of
-periods (BABOK tasks, deliverables, effort, timing), and any timing constraints the BA
-named (a regulatory deadline, vendor availability).
+Результат сохраняется в `ba_plan.json` и попадает в отчёт новым разделом
+`## 3.1b Работы БА и их сроки`: форма сроков и её источник, таблица периодов (задачи BABOK,
+результаты, трудоёмкость, сроки) и ограничения по срокам, которые назвал BA (дедлайн
+регулятора, доступность подрядчика).
 
-This isn't filed away either: Task 5.5 `prepare_approval_package` takes the methodology
-straight from the planned timing form, so the BA no longer states Predictive/Agile a
-second time when preparing an approval package. Task 4.1 `save_elicitation_plan` names the
-work period that covers elicitation, with its planned effort, right in the session plan.
+Это тоже не кладётся в стол: задача 5.5 `prepare_approval_package` берёт методологию
+прямо из запланированной формы сроков, поэтому BA больше не называет Predictive/Agile
+второй раз при подготовке пакета на согласование. Задача 4.1 `save_elicitation_plan`
+называет период работ, в который попадает выявление, и его плановую трудоёмкость — прямо
+в плане сессии.
 
 ---
 
@@ -102,7 +103,7 @@ BA составляет реестр всех участников проект�
 
 **Реестр стейкхолдеров — «мёртвый» документ.** BA создаёт таблицу в начале проекта, кладёт в папку и больше не открывает. Через два месяца там 4 устаревших строки, хотя реальных стейкхолдеров уже 12.
 
-**The communication strategy lives in someone's head.** The BA remembers "write to James once a week, Rachel only on request," but nothing is written down. If the BA changes or gets sick, all of that information simply gets lost.
+**Стратегия коммуникации держится в голове.** BA помнит «Сергею писать раз в неделю, Анне — по запросу» — но нигде не зафиксировано. При смене BA или при болезни вся эта информация просто теряется.
 
 **Конфликт интересов не виден заранее.** BA не замечает, что два ключевых стейкхолдера имеют противоположные цели, пока не появляется открытый конфликт — и тогда уже приходится гасить пожар вместо управляемой фасилитации.
 
@@ -124,24 +125,24 @@ BA составляет реестр всех участников проект�
 
 ### Ценности для BA
 
-- **The stakeholder registry finally lives.** This is probably the hardest artifact to maintain in BA practice. The platform builds its update into the workflow: after every interview, AInalyst offers to add the participants who were mentioned. The registry grows organically instead of requiring a separate effort to "refresh the table."
-- **Nothing gets lost when a project changes hands.** The new BA opens the registry and sees who's involved, how to treat them, when they last talked, and whether there were engagement issues. All the context that usually lives in one person's head is documented.
-- **Early detection of engagement risk.** When James stops answering emails, it gets logged as a 🟡 signal, and the platform suggests possible reasons and tactics. The BA reacts proactively, before the problem becomes critical.
-- **The communication schedule removes the nagging worry of "did I forget to write to someone."** Task 4.4 checks the schedule and produces a prioritized list of who to write to today. The BA doesn't have to keep it in their head.
+- **Реестр стейкхолдеров наконец живёт.** Это, пожалуй, самый трудно поддерживаемый артефакт в BA-практике. Платформа встраивает его обновление в рабочий процесс — после каждого интервью AIналитик предлагает добавить упомянутых участников. Реестр растёт органически, а не требует отдельного усилия «актуализировать таблицу».
+- **Ничего не теряется при передаче проекта.** Новый BA открывает реестр и видит: кто есть, как к ним относиться, когда последний раз общались, были ли проблемы с вовлечённостью. Весь контекст, который обычно живёт в голове одного человека, — задокументирован.
+- **Раннее обнаружение рисков вовлечённости.** Когда Сергей перестаёт отвечать на письма, это фиксируется как сигнал 🟡, платформа предлагает возможные причины и тактики. BA реагирует проактивно — до того как проблема стала критической.
+- **Расписание коммуникации снимает тревогу «а не забыл ли я кому-то написать».** Задача 4.4 проверяет по расписанию и выдаёт приоритизированный список: кому написать сегодня. BA не держит это в голове.
 
 ### Как пользоваться: пример
 
 На старте проекта BA знает только двух человек. Он говорит AIналитику:
 
-> *"Stakeholders: Patricia, CFO, very influential, very interested, supports the project. Michael, head of IT, high influence, medium interest, skeptical."*
+> *«Стейкхолдеры: Ирина — финансовый директор, очень влиятельная, очень заинтересована, поддерживает проект. Михаил — руководитель ИТ, влияние высокое, интерес средний, скептически настроен.»*
 
-AInalyst immediately determines: Patricia is a Key Player (Manage Closely, weekly), Michael is a Context Setter with a negative attitude (Keep Satisfied, needs special attention). The registry is saved.
+AIналитик сразу определяет: Ирина — Key Player (Manage Closely, еженедельно), Михаил — Context Setter с негативным attitude (Keep Satisfied, требует особого внимания). Реестр сохранён.
 
-A week later, during an interview, Patricia mentions Diane, the chief accountant, who also works with the system. The BA tells AInalyst:
+Через неделю на интервью Ирина называет Татьяну — главного бухгалтера, которая тоже работает с системой. BA говорит AIналитику:
 
-> *"Patricia mentioned Diane, the chief accountant, who also uses the system."*
+> *«Ирина упомянула Татьяну — главбух, тоже использует систему.»*
 
-And Diane gets added to the registry with a note about the source.
+— и Татьяна добавляется в реестр с пометкой об источнике.
 
 ---
 
@@ -167,28 +168,28 @@ BA устанавливает «правила игры» для проекта:
 
 **Фиксация лиц принятия решений** — явно зафиксировано, кто именно подписывает требования и CR. Это прямой вход для задачи 5.4 (оценка CR): Decision Record уходит именно этому человеку, не абстрактному «спонсору».
 
-**Planning how requirements will be prioritized.** Who takes part, by which technique, against which criteria. Task 5.3 then runs the session and reconciles it against the plan.
+**Планирование того, как будут приоритизироваться требования** — кто участвует, по какой технике, по каким критериям. Задача 5.3 потом проводит сессию и сверяет её с планом.
 
-**Chapter 5 actually reads this section.** Task 3.3 is not a reference document the BA re-applies from memory. The approval package in Task 5.5 prints the planned approvers and the response deadline; Task 5.5 and Task 5.4 both check whether the person who recorded a decision is one of the planned decision-makers; Task 5.4 carries the escalation path into the CR Decision Record; Task 5.3 checks the session's technique and its participants and reconciles participation in the result report. The project criticality also supplies the default traceability level for Task 3.4.
+**Глава 5 действительно читает этот раздел.** Задача 3.3 — не справочный документ, который BA заново применяет по памяти. Пакет на согласование в задаче 5.5 печатает запланированных согласующих и срок ответа; задачи 5.5 и 5.4 обе проверяют, входит ли тот, кто записал решение, в число запланированных лиц принятия решений; задача 5.4 переносит цепочку эскалации в CR Decision Record; задача 5.3 проверяет технику сессии и её участников и сверяет участие в итоговом отчёте. Критичность проекта задаёт ещё и уровень трассировки по умолчанию для задачи 3.4.
 
-**Everything read from the plan is a cross-check or a default, never an override.** If Task 5.3 runs with a different technique than the one planned, the session keeps the technique the BA chose and says the plan disagrees. The same holds everywhere: the platform reports the difference, and the BA decides which of the two is out of date. Decisions stay with the analyst.
+**Всё, что читается из плана, — это сверка или значение по умолчанию, но никогда не переопределение.** Если задача 5.3 идёт по технике, отличной от запланированной, сессия сохраняет технику, выбранную BA, и сообщает, что план с ней не согласен. Так везде: платформа сообщает о расхождении, а BA решает, какое из двух устарело. Решения остаются за аналитиком.
 
-**Plan roles; the platform recognizes people.** Task 3.3 records roles ("Product Owner"), but a CR is resolved by a person and a requirement is approved by a person. The stakeholder registry (built in Task 3.2 and kept up to date through Chapter 4) is what ties a name to a role, so "John Smith approved it" is recognized as the planned Product Owner. Without a registry the platform stays quiet instead of reporting a name it cannot match as a breach of governance — one more reason to do Task 3.2 before the Chapter 5 work.
+**Планируй роли; людей платформа опознаёт сама.** Задача 3.3 записывает роли («Product Owner»), но CR закрывает человек и требование согласует человек. Реестр стейкхолдеров (заводится в задаче 3.2 и поддерживается всей Главой 4) — это и есть связь имени с ролью, поэтому «согласовал Иван Петров» опознаётся как запланированный Product Owner. Без реестра платформа молчит, а не сообщает о нарушении governance из-за имени, которое не с чем сопоставить, — ещё одна причина пройти задачу 3.2 до работ Главы 5.
 
-**Governance decision archive.** Everything recorded in Task 3.3 lives in `ba_plan.json` and is available at any time. To the question "how did we agree to handle changes?" the answer is in a single file.
+**Архив governance-решений.** Всё, что записано в задаче 3.3, лежит в `ba_plan.json` и доступно в любой момент. На вопрос «как мы договорились обрабатывать изменения?» ответ — в одном файле.
 
 ### Ценности для BA
 
-- **The BA gets "cover" for saying no.** When yet another change request shows up, the BA can say: "Under our process, this is a CR that needs to be submitted in this format and approved by James." That's not a refusal, it's a process. Professional scope protection.
-- **The first CR doesn't turn into a crisis.** If governance isn't documented, the first serious change request causes chaos: nobody knows who decides, how to assess impact, or whether already-completed work needs to be redone. When governance is in place, it's just a routine procedure.
-- **The level of formality matches the context.** A small internal tool doesn't get buried in bureaucracy. A mission-critical system gets the right level of control. The platform helps find that balance instead of forcing a single standard.
-- **The rules don't quietly go stale.** A plan nobody reads drifts away from the project within a month, and nobody notices until an audit. Here, the moment a CR is resolved by someone outside the planned authority or a prioritization session runs with a different technique, the BA sees it — in the delivered document, not in a JSON file.
+- **BA получает «прикрытие» для отказа.** Когда приходит очередная хотелка на изменение, BA может сказать: «По нашему процессу это CR, который нужно подать через такой-то формат и согласовать с Сергеем». Это не отказ — это процесс. Профессиональная защита скоупа.
+- **Первый CR не становится кризисом.** Если governance не зафиксирован, первый серьёзный запрос на изменение вызывает хаос: непонятно кто решает, как считать влияние, нужно ли переделывать уже сделанное. Когда governance есть — это рабочая процедура.
+- **Уровень формальности соответствует контексту.** Маленький внутренний инструмент не обрастает бюрократией. Критичная система получает правильный уровень контроля. Платформа помогает найти этот баланс, а не навязывает один стандарт.
+- **Правила не устаревают втихую.** План, который никто не читает, за месяц расходится с проектом, и замечают это только на аудите. Здесь же, стоит CR закрыть человеку вне запланированных полномочий или сессии приоритизации пройти по другой технике, — BA это видит, причём в выданном документе, а не в JSON-файле.
 
 ### Как пользоваться: пример
 
 BA говорит:
 
-> *"This is a critical project: an order management system for 300 users. Decisions are made by Victor (CEO), Susan (Product Owner), and me as Lead BA."*
+> *«Проект критичный — система управления заказами для 300 пользователей. Решения принимают: Виктор (генеральный директор), Ольга (Product Owner), я как Lead BA.»*
 
 AIналитик предлагает шаблон High-критичности: формальный CR с CAB, еженедельный ревью, эскалация BA → PM → Steering Committee. BA может принять как есть или скорректировать. Сохраняется одной фразой.
 
@@ -220,9 +221,9 @@ BA определяет, где и как хранятся требования 
 
 **Интеграция с Confluence** — настраивается один раз через переменные окружения. После этого каждое обновление требования в задаче 5.2 автоматически синхронизируется с Confluence. BA больше не думает об этом.
 
-**Three more decisions that other chapters act on, not just record.** The BA can also plan the level of detail each audience gets, the scope and repository for reuse, and which requirement attributes this project maintains (Minimum / Standard / Full). These aren't filed away: Task 4.4 states the planned level of detail in every communication package it builds, and Task 5.2 ranks reuse candidates by the planned scope and audits exactly the planned attribute set. A project that skips this planning has nothing read from it: 4.4 stays silent about detail levels, and 5.2 starts its reuse search at `initiative` and audits `owner` only. (Two repairs that shipped with the feature do reach every project, plan or no plan: the health report's action list is numbered from 1 instead of opening at 2, and the reuse report no longer calls its ranking bonus a minimum.)
+**Ещё три решения, по которым другие главы действуют, а не просто их фиксируют.** BA может дополнительно запланировать уровень детализации для каждой аудитории, scope и репозиторий переиспользования и набор атрибутов требований, который этот проект поддерживает (Minimum / Standard / Full). Это не кладётся в стол: задача 4.4 называет запланированный уровень детализации в каждом собранном коммуникационном пакете, а задача 5.2 ранжирует кандидатов на переиспользование по запланированному scope и проверяет ровно запланированный набор атрибутов. У проекта, который пропустил это планирование, читать нечего: 4.4 молчит об уровнях детализации, а 5.2 начинает поиск переиспользования с `initiative` и проверяет только `owner`. (Две починки, приехавшие вместе с этой возможностью, работают в любом проекте, есть план или нет: список действий в отчёте о здоровье нумеруется с 1, а не начинается с 2, и отчёт о переиспользовании больше не называет свой бонус ранжирования минимумом.)
 
-### Value for the BA
+### Ценности для BA
 
 - **«Где актуальная версия?» — больше не вопрос.** Один зафиксированный источник правды. Все знают, куда смотреть.
 - **Уровень трассировки согласован до начала работы.** Это предотвращает конфликт в середине проекта, когда BA построил полный граф, а PM говорит «это избыточно». Или наоборот — когда аудиторы требуют трассировку, которую никто не вёл.

@@ -1,7 +1,7 @@
 
-# User Guide
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+# Пользовательская инструкция
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 ---
@@ -52,9 +52,9 @@ BA готовится к конкретной сессии выявления: �
 
 **Создание Google Form** — `create_google_form` создаёт форму автоматически по заданной структуре вопросов. BA не заходит в Google Forms руками.
 
-**Reading the 3.1 plan, when there is one.** If the BA already ran the optional `plan_ba_activities` step in Chapter 3, `save_elicitation_plan` automatically states the work period planned for this session (with its effort and timing) and honestly cross-checks the chosen elicitation technique against what 3.1 recommended. On an agile project, where 3.1's recommended techniques are things like Backlog Management and Retrospectives rather than an elicitation technique, it says plainly that there's nothing to cross-check, instead of flagging every session as a mismatch.
+**Чтение плана 3.1, если он есть.** Если BA уже прошёл необязательный шаг `plan_ba_activities` в Главе 3, `save_elicitation_plan` сам называет период работ, запланированный под эту сессию (с его трудоёмкостью и сроками), и честно сверяет выбранную технику выявления с тем, что рекомендовала 3.1. На agile-проекте, где рекомендованные 3.1 техники — это Backlog Management и Retrospectives, а вовсе не техника выявления, инструмент прямо говорит, что сверять не с чем, вместо того чтобы объявлять расхождением каждую сессию.
 
-### Value for the BA
+### Ценности для BA
 
 **Каждая встреча теперь имеет результат.** Когда цель сформулирована до встречи, после встречи есть чёткий ответ: достигли или нет. Нет — нужна следующая сессия. Достигли — можно двигаться дальше. Это убирает ощущение «потраченного времени».
 
@@ -66,11 +66,11 @@ BA готовится к конкретной сессии выявления: �
 
 ### Как пользоваться: пример
 
-The BA is preparing for a first interview with a new stakeholder, Sarah, the warehouse manager.
+BA готовится к первому интервью с новым стейкхолдером — Еленой, руководителем склада.
 
-They tell AInalyst: *"I'm preparing for an interview with Sarah. She's the warehouse manager and will be one of the key users of the new WMS. I want to understand her pain points with the current system and what matters to her in the new one."*
+Он говорит AIналитику: *«Готовлюсь к интервью с Еленой — она руководитель склада, будет одним из ключевых пользователей новой WMS. Хочу понять её боли с текущей системой и что для неё важно в новой.»*
 
-AInalyst asks clarifying questions: how much time is available, has anyone from the warehouse already been interviewed, are there specific hypotheses that need testing. The BA answers. AInalyst proposes a structured 45-minute interview with three blocks of questions: current situation, pain points, and success criteria. The BA says "add one more question about the SAP integration," and AInalyst adds it. "Save it," and the plan is recorded.
+AIналитик уточняет: сколько времени доступно, было ли уже интервью с кем-то из склада, есть ли конкретные гипотезы, которые нужно проверить. BA отвечает. AIналитик предлагает структурированное интервью на 45 минут с тремя блоками вопросов — по текущей ситуации, болям и критериям успеха. BA говорит «добавь ещё вопрос про интеграцию с SAP» — AIналитик добавляет. «Сохрани» — план зафиксирован.
 
 **На само интервью BA идёт с готовым списком вопросов, понимая зачем он туда идёт.**
 
@@ -90,9 +90,9 @@ AInalyst asks clarifying questions: how much time is available, has anyone from 
 
 **Пробелы видны только когда поздно.** BA понимает что не спросил про важную вещь уже после того как стейкхолдер занят другим, уехал в командировку или вообще покинул проект. Gap в знаниях обнаруживается не после интервью — а в середине Главы 5 когда требования уже написаны.
 
-**Contradictions between stakeholders go unnoticed.** James said one thing, Rachel said another, but the BA processed the interviews separately and didn't cross-check them. The conflict surfaces at the prioritization or approval stage, when it's much harder to fix.
+**Противоречия между стейкхолдерами не замечаются.** Сергей сказал одно, Анна сказала другое — но BA обрабатывал интервью по отдельности и не сопоставил. Конфликт всплывает на этапе приоритизации или согласования, когда исправить его гораздо сложнее.
 
-**The stakeholder registry doesn't grow.** In every interview, the stakeholder names other participants ("talk to Max from IT too" or "we have a chief accountant, Grace, she also works with the system"). The BA nods, but these people never make it into the registry. A month later it turns out a key stakeholder was never included in the process at all.
+**Реестр стейкхолдеров не растёт.** На каждом интервью стейкхолдер называет других участников («поговори ещё с Максимом из IT» / «у нас есть главный бухгалтер Вера, она тоже работает с системой»). BA кивает, но в реестр эти люди не попадают. Через месяц выясняется, что ключевой стейкхолдер вообще не был включён в процесс.
 
 **Change Request означает «начать заново».** Прилетел CR. BA не знает: какие из уже собранных требований затронуты? У кого из стейкхолдеров нужно довыявить информацию? Что изменилось в том что они говорили раньше? Это ручная работа на несколько часов.
 
@@ -104,7 +104,7 @@ AInalyst asks clarifying questions: how much time is available, has anyone from 
 
 **Анализ при Change Request** — `save_cr_elicitation_analysis` получает описание CR и определяет: какие ранее собранные требования затронуты, у кого и что нужно довыявить, какая информация устарела. Это технический input для задачи 5.4.
 
-**Automatic registry expansion.** `update_stakeholder_registry` adds a new stakeholder or updates an existing one. It's called right during interview analysis: "James mentioned Max" leads to one request, and Max is in the registry with a note on the source.
+**Автоматическое расширение реестра** — `update_stakeholder_registry` добавляет нового стейкхолдера или обновляет существующего. Вызывается прямо в ходе анализа интервью: «Сергей упомянул Максима» → один запрос → Максим в реестре с пометкой об источнике.
 
 ### Ценности для BA
 
@@ -120,11 +120,11 @@ AInalyst asks clarifying questions: how much time is available, has anyone from 
 
 ### Как пользоваться: пример
 
-The BA has interviewed Sarah and hands the transcript to AInalyst: *"Here's the recording of our conversation [text]. What's in it?"*
+BA провёл интервью с Еленой и кидает транскрипт AIналитику: *«Вот запись нашего разговора [текст]. Что там есть?»*
 
-AInalyst analyzes it and returns: three functional requirements, one business problem with a metric ("recounting inventory currently takes 4 hours, needs to be under 30 minutes"), two business rules that need to be checked against a possible contradiction with what James said, a gap ("Sarah said nothing about mobile access, needs clarifying"), and: "Sarah mentioned Dennis from IT support. Add him to the stakeholder registry?"
+AIналитик анализирует и выдаёт: три функциональных требования, одна бизнес-проблема с метрикой («сейчас на пересчёт остатков уходит 4 часа, надо меньше 30 минут»), два бизнес-правила, которые нужно проверить на противоречие с тем, что сказал Сергей, пробел («Елена не сказала ничего про мобильный доступ — нужно уточнить»), и: «Елена упомянула Дениса из IT-поддержки — добавить в реестр стейкхолдеров?»
 
-The BA says "yes, add him," and Dennis is in the registry. "Save the results," and the artifact is ready.
+BA говорит «да, добавь» — Денис в реестре. «Сохрани результаты» — артефакт готов.
 
 ---
 
@@ -162,9 +162,9 @@ BA проверяет качество собранного материала *
 
 ### Как пользоваться: пример
 
-The BA says: *"Here's my artifact from the interview with Sarah [text]. Check whether it's ready to move forward."*
+BA говорит: *«Вот мой артефакт по интервью с Еленой [текст]. Проверь, можно ли двигаться дальше.»*
 
-AInalyst reviews it and returns: "🟡 FR-003: 'the system should work quickly,' has no specific metric. I recommend clarifying with Sarah: 'What is the maximum system response time that's acceptable to you, 3 seconds, 5 seconds?'" One issue, one specific action. The BA checks with Sarah, gets the answer "no more than 3 seconds," updates the artifact, and says "close it." The artifact is confirmed.
+AIналитик проверяет и выдаёт: «🟡 FR-003 — "система должна быстро работать" — нет конкретной метрики. Рекомендую уточнить у Елены: "Какое максимальное время ожидания ответа системы для вас приемлемо — 3 секунды, 5 секунд?"». Одна проблема — одно конкретное действие. BA уточняет у Елены, получает ответ «не дольше 3 секунд», вносит в артефакт и говорит «закрой». Артефакт подтверждён.
 
 ---
 
@@ -192,9 +192,9 @@ BA адаптирует готовые артефакты под разные а
 
 **Таблица адаптации по 5 ролям** — встроена в SKILL.md: бизнес-заказчик, руководитель, разработчик, архитектор, тестировщик. Для каждой роли — что убрать, что добавить, какой тон. Для Blocker — добавить раздел «почему это важно для вас».
 
-**The level of detail comes from Task 3.4, when it was planned.** If the BA recorded a planned level (Summary / Standard / Detailed) for this audience back in 3.4, `prepare_communication_package` states it in the package and adds an explicit include/leave-out checklist. The audience can be matched by its role archetype or by a stakeholder's job title from the registry — whichever the 3.4 plan used. If no level was planned for this audience, the package is built exactly as it would have been before this existed.
+**Уровень детализации приходит из задачи 3.4, если он был запланирован.** Если BA ещё в 3.4 записал плановый уровень (Summary / Standard / Detailed) для этой аудитории, `prepare_communication_package` называет его в пакете и добавляет явный чек-лист «что включить, что оставить за скобками». Аудиторию можно сопоставить по архетипу роли или по должности стейкхолдера из реестра — смотря что использовал план 3.4. Если для этой аудитории уровень не планировали, пакет собирается ровно так, как собирался бы до появления этой возможности.
 
-**Format and channel recommendation.** With high influence and a negative attitude, a 1:1 meeting is recommended instead of a written message. For a standard update, email. This isn't something you can guess reliably without a system; the platform makes the choice deliberate.
+**Рекомендация формата и канала** — при высоком influence и негативном отношении рекомендуется встреча 1-на-1, не письмо. Для стандартного апдейта — email. Это нельзя угадать без системы — платформа делает выбор осознанным.
 
 **Лог коммуникаций** — `log_communication` фиксирует каждый факт передачи информации: кому, что, когда, через какой канал, нужен ли follow-up. Это доказательная база и инструмент управления.
 
@@ -206,7 +206,7 @@ BA адаптирует готовые артефакты под разные а
 
 **BA перестаёт быть узким местом.** Когда каждый получает понятный ему документ, вопросы «что это значит?» и «можешь объяснить?» исчезают. Стейкхолдеры читают артефакт и принимают решения — а не ждут устного пояснения от BA.
 
-**No one falls out of the communication loop.** `check_communication_schedule` is "don't forget to write to James" implemented at the system level. This matters especially during periods of intense work, when it's easy to miss that someone hasn't gotten an update in a while.
+**Никто не выпадает из коммуникации.** `check_communication_schedule` — это «не забыть написать Сергею» на системном уровне. Особенно важно в период активной работы, когда легко упустить, что кому-то давно не отправляли апдейт.
 
 **Доказуемость.** Лог коммуникаций — это защита BA при конфликте. «Вы нас не предупреждали об этом риске» → «Вот письмо от 3 февраля, вот дата получения». Профессиональная позиция.
 
@@ -254,13 +254,13 @@ BA адаптирует готовые артефакты под разные а
 
 ### Как пользоваться: пример
 
-The BA notices that Michael (the head of IT, who was initially skeptical) unexpectedly started actively supporting the project at the last meeting, but immediately afterward wrote an email to the PM raising objections, bypassing the BA.
+BA замечает, что Михаил (руководитель IT, который изначально был скептически настроен) на последней встрече неожиданно стал активно поддерживать проект, но сразу после встречи написал PM письмо с возражениями в обход BA.
 
-*"Michael agrees at the meeting, but then writes emails to the PM with objections. What's going on?"*
+*«Михаил на встрече соглашается, но потом пишет PM письма с возражениями. Что происходит?»*
 
-AInalyst: "🟡 Signal. Two likely scenarios: 1) Michael doesn't feel his opinion is genuinely being taken into account at meetings, so he agrees publicly but tries to influence things privately. 2) He has specific concerns he doesn't want to voice in front of the group. I recommend a short 1:1 with Michael, with no agenda, just to hear his real position. Update his status in the registry?"
+AIналитик: «Сигнал 🟡. Два вероятных варианта: 1) Михаил не чувствует, что его мнение реально учитывается на встречах — публично соглашается, но частно пытается влиять. 2) У него есть конкретные опасения, которые он не хочет озвучивать при группе. Рекомендую короткий 1-на-1 с Михаилом — без повестки, только чтобы услышать его реальную позицию. Обновить статус в реестре?»
 
-The BA holds the 1:1 and learns that Michael has a specific fear about the workload on his team. The problem turns out to be solvable; no one had simply asked. They update the status in the registry: was "skeptic," became "on board, needs monitoring."
+BA проводит 1-на-1, выясняет, что у Михаила конкретный страх по поводу нагрузки на его команду. Проблема оказывается решаемой — просто никто не спрашивал. Обновляет статус в реестре: было «скептик» → стало «работает, нужно мониторить».
 
 ---
 

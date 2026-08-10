@@ -1,6 +1,6 @@
-# User Guide
-## AI-powered Platform AInalyst
-**Download:** https://github.com/chaussky/ainalyst.git
+# Пользовательская инструкция
+## AI Платформа AIналитик
+**Скачать:** https://github.com/chaussky/ainalyst.git
 
 **Телеграм:** https://t.me/platform_ainalyst
 
@@ -115,9 +115,9 @@ BA следит за актуальностью реестра требован�
 
 **Автоматическая детекция «дрейфа Must».** При аудите `check_requirements_health` система считает долю Must в общем количестве требований. Если она превышает порог (по умолчанию 40%) — BA получает предупреждение. Это сигнал для пересмотра перед следующей сессией приоритизации.
 
-**Two more checks read the plan from Task 3.4, when there is one.** If 3.4 planned a reuse scope, `find_reusable_requirements` ranks by it and names the planned repository — an explicit scope passed to the tool still wins. The scope raises a requirement's suitability score; it does not hide anything below the target, because most requirements are never tagged with a scope at all and filtering would empty the report. If 3.4 planned which attributes this project maintains (Minimum / Standard / Full), `check_requirements_health` audits exactly that set instead of just `owner`; a project on `Minimum` deliberately stops getting the "No owner" warning, because owner was never something it committed to tracking. Without a 3.4 plan neither tool reads anything new: the reuse search starts at `initiative` and the health audit checks `owner` only, exactly as before. (Two repairs shipped alongside do reach every project: the health report's action list is numbered from 1 rather than opening at 2, and the reuse report no longer calls its ranking bonus a minimum.)
+**Ещё две проверки читают план из задачи 3.4, если он есть.** Если 3.4 запланировала scope переиспользования, `find_reusable_requirements` ранжирует по нему и называет запланированный репозиторий — явный scope, переданный инструменту, всё равно перевешивает. Scope повышает балл пригодности требования; он ничего не прячет ниже целевого уровня, потому что у большинства требований scope не проставлен вовсе и фильтрация опустошила бы отчёт. Если 3.4 запланировала, какие атрибуты этот проект поддерживает (Minimum / Standard / Full), `check_requirements_health` проверяет ровно этот набор вместо одного лишь `owner`; проект на `Minimum` намеренно перестаёт получать предупреждение «Нет владельца», потому что вести владельца он и не обязывался. Без плана 3.4 ни один из инструментов не читает ничего нового: поиск переиспользования начинается с `initiative`, а проверка здоровья смотрит только `owner` — ровно как раньше. (Две починки, приехавшие вместе с этим, работают в любом проекте: список действий в отчёте о здоровье нумеруется с 1, а не начинается с 2, и отчёт о переиспользовании больше не называет свой бонус ранжирования минимумом.)
 
-### Value for the BA
+### Ценности для BA
 
 **Реестр отражает реальность, а не историю.** Когда разработчик открывает реестр перед спринтом, он видит актуальные статусы, текущие версии, актуальных владельцев. Время на вопросы «а это уже согласовано?» и «а это ещё актуально?» сокращается в разы.
 
@@ -161,7 +161,7 @@ BA определяет относительную важность требов
 
 ### Что мы реализовали
 
-**Four prioritization methods matched to context.** The skill supports MoSCoW (fast, easy for stakeholders to understand), WSJF (numeric ranking that accounts for cost and time-criticality, better for Agile), the Impact/Effort Matrix (visual, convenient for workshops), and Time Boxing/Budgeting (a fixed capacity or budget decides the scope — the answer to "everything is a Must"). Choosing a method isn't a gut call: the skill asks about the context and recommends one.
+**Четыре метода приоритизации под разный контекст.** Скилл поддерживает MoSCoW (быстро, понятно стейкхолдерам), WSJF (числовое ранжирование с учётом стоимости и срочности, лучше для Agile), Impact/Effort Matrix (наглядно, удобно на воркшопе) и Time Boxing/Budgeting (объём определяет фиксированная ёмкость или бюджет — ответ на «всё Must»). Выбор метода — не вопрос интуиции: скилл спрашивает про контекст и рекомендует.
 
 **Сессионный сбор оценок.** `start_prioritization_session` открывает сессию и формирует список требований для оценки. `add_stakeholder_scores` собирает оценки по одному стейкхолдеру за раз. Это позволяет проводить оценку асинхронно: каждый стейкхолдер даёт оценки в удобное время, BA агрегирует всё одной командой.
 
@@ -279,9 +279,9 @@ BA организует официальное согласование треб
 
 **Поддержка Predictive и Agile.** В Predictive-проекте baseline создаётся в конце фазы — включает все требования этапа. В Agile — перед каждым спринтом Product Owner согласует Sprint Backlog Baseline с конкретным номером спринта.
 
-**The methodology no longer has to be typed twice.** If the BA planned the timing of BA work in Task 3.1b (`plan_ba_activities`), `prepare_approval_package` reads the methodology straight from there — the BA can simply leave `approach` unspecified. The package states where the value came from ("from the 3.1 BA plan — timing form: iterations"), so the approval package can never quietly drift from what 3.1 decided. A regulated project — either of the two approaches AInalyst produces when compliance matters, "Hybrid (Agile + compliance gates)" and "Hybrid (with strengthened governance)" — always gets the formal package with the full decision menu, because that is exactly what those gates are for, whatever the delivery cadence. If sprints are running, the package says so in as many words instead of pretending the project is a waterfall. Only a plain, unqualified "Hybrid" doesn't resolve automatically; there the BA states `approach` explicitly, or declares a timing form in 3.1b.
+**Методологию больше не нужно называть дважды.** Если BA спланировал сроки работ БА в задаче 3.1b (`plan_ba_activities`), `prepare_approval_package` берёт методологию прямо оттуда — `approach` можно просто не указывать. Пакет называет, откуда взято значение («из плана BA (3.1) — форма тайминга: iterations»), поэтому пакет согласования уже не разойдётся втихую с тем, что решила 3.1. Регулируемый проект — оба подхода, которые AIналитик выдаёт, когда важен комплаенс: «Hybrid (Agile + compliance gates)» и «Hybrid (с усиленным Governance)» — всегда получает формальный пакет с полным меню решений, потому что ровно для этого эти gates и нужны, какой бы ни была каденция поставки. Если проект идёт спринтами, пакет прямо это говорит, а не притворяется водопадом. Не разрешается автоматически только простой «Hybrid» без уточнения: там BA указывает `approach` явно либо объявляет форму сроков в 3.1b.
 
-### Value for the BA
+### Ценности для BA
 
 **«Согласовано» теперь имеет точный смысл.** Есть Approval Record с датой, версией baseline, списком участников и их решениями. Нет больше ситуации «ну мы же обсуждали на встрече». Есть документальный след, который защищает BA и даёт разработчикам уверенность в материале.
 
@@ -301,7 +301,7 @@ BA организует официальное согласование треб
 
 `prepare_approval_package` собирает пакет APKG-001. BA отправляет документ через 4.4. Приходят ответы:
 
-*"Sales director: approved everything. CFO: accepted, with one condition: FR-037 (the SAP integration) must pass a security review before development starts. Technical director: abstained."*
+*«Директор по продажам — одобрил всё. Финдиректор — принял, но с условием: FR-037 (интеграция с SAP) должна пройти security review до начала разработки. Технический директор — воздержался.»*
 
 BA фиксирует каждое решение через `record_approval_decision`. `check_approval_status` возвращает: 1 Approved, 1 Conditional (дедлайн через 2 недели), 1 Abstained. Вердикт: не готов к baseline, нужно закрыть условие финдиректора.
 
