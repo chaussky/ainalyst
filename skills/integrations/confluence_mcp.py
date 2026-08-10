@@ -873,14 +873,14 @@ def list_space_pages(
 
     if not pages:
         if search_title:
-            return (f"ℹ️ В пространстве '{space}' нет страниц, подходящих под '{search_title}' "
+            return (f"ℹ️ Страниц, подходящих под '{search_title}', в пространстве '{space}' нет "
                     f"({scope_note}).")
         return f"ℹ️ В пространстве '{space}' страниц не найдено — либо нет доступа."
 
     lines = [
         f"# 📋 Страницы пространства '{space}'",
         "",
-        f"Found: **{len(pages)}**{filter_note}",
+        f"Найдено: **{len(pages)}**{filter_note}",
         "",
         "| Заголовок | ID | Изменено |",
         "|-----------|-----|----------|",

@@ -1980,7 +1980,7 @@ def check_architecture_gaps(
     # ------------------------------------------------------------------
 
     total_gaps = len(gaps_critical) + len(gaps_warning) + len(gaps_info)
-    verdict = "✅ Нет критических разрывов" if not gaps_critical else f"❌ {len(gaps_critical)} критических разрыва(ов)"
+    verdict = "✅ Нет критических разрывов" if not gaps_critical else f"❌ Критических разрывов: {len(gaps_critical)}"
 
     lines = [
         f"<!-- BABOK 7.4 — Architecture Gaps | Проект: {project_id} | {date.today()} -->",

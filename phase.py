@@ -264,7 +264,7 @@ def switch_phase(phase: str):
         print(f"  Экономия контекста: ~{c('green', info['tokens_saved'])} токенов")
 
     if old_phase and old_phase != phase:
-        print(f"  {c('gray', f'Previous: {old_phase}')}")
+        print(f"  {c('gray', f'Предыдущая: {old_phase}')}")
 
     print()
     print(c("yellow", "  → Перезапусти Claude Code: /restart"))
