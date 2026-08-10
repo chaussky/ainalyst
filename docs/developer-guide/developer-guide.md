@@ -15,17 +15,17 @@ _Версия: v1 / Дата: апрель 2026_
 
 ## Содержание
 
-1. [Platform Architecture](#1-platform-architecture)
-2. [Phase System and `phase.py`](#2-phase-system-and-phasepy)
-3. [`common.py`: The Single Source of Truth](#3-commonpy-the-single-source-of-truth)
-4. [MCP Server Architecture](#4-mcp-server-architecture)
-5. [Skill Structure (SKILL.md)](#5-skill-structure-skillmd)
-6. [Artifact Storage](#6-artifact-storage)
-7. [Confluence Integration](#7-confluence-integration)
-8. [Testing](#8-testing)
-9. [Development Environment](#9-development-environment)
-10. [Adding a New MCP Server](#10-adding-a-new-mcp-server)
-11. [Technical Debt and Design Decisions](#11-technical-debt-and-design-decisions)
+1. [Архитектура платформы](#1-архитектура-платформы)
+2. [Система фаз и `phase.py`](#2-система-фаз-и-phasepy)
+3. [`common.py` — единый источник истины](#3-commonpy--единый-источник-истины)
+4. [Архитектура MCP-серверов](#4-архитектура-mcp-серверов)
+5. [Структура скиллов (SKILL.md)](#5-структура-скиллов-skillmd)
+6. [Хранилище артефактов](#6-хранилище-артефактов)
+7. [Интеграция с Confluence](#7-интеграция-с-confluence)
+8. [Тестирование](#8-тестирование)
+9. [Среда разработки](#9-среда-разработки)
+10. [Добавление нового MCP-сервера](#10-добавление-нового-mcp-сервера)
+11. [Технический долг и решения по дизайну](#11-технический-долг-и-решения-по-дизайну)
 
 ---
 
@@ -115,7 +115,7 @@ _Версия: v1 / Дата: апрель 2026_
 
 Без аргументов `python phase.py` показывает текущую активную фазу и подсказки по каждой.
 
-### BASE_SERVER
+### BASE_SERVER — базовый сервер
 
 Два сервера присутствуют во **всех** фазах:
 
@@ -126,8 +126,8 @@ BASE_SERVER = {
 }
 ```
 
-- `planning_mcp.py`: lightweight (7 tools), always needed for `project_id` and the stakeholder registry
-- `confluence_mcp.py`: 5 tools, starts up without `.env`. An error occurs only when a tool is called, if the keys are not filled in
+- `planning_mcp.py` — лёгкий (7 инструментов), нужен всегда: `project_id`, реестр стейкхолдеров
+- `confluence_mcp.py` — 5 инструментов, стартует без `.env`. Ошибка возникает только при вызове инструмента, если ключи не заполнены
 
 ### Как `phase.py` генерирует пути
 
@@ -196,14 +196,14 @@ def data_path(project_id, filename) -> str:
     ONE candidate — the artifact is written and looked for in the same place."""
 ```
 
-Rules for developers:
-- **JSON**: build the path via `data_path(project_id, f"{safe}_{FILENAME}")` and write it with **`write_json_artifact(path, data)`** — never with `open(...,"w")` + `json.dump` (see "Writing a JSON artifact" below; the writer creates the directory itself). The file name keeps the `{safe}_` prefix, so a file identifies itself when read out of context.
-- **Markdown**: call `save_artifact(content, prefix, project_id=...)`. With `project_id`, the report is written to `reports/<project_id>/`. Without `project_id`, it lands directly in `reports/` — that path belongs to no project and nothing reads it back; pass the id.
-- **One layout, no fallbacks** (owner's decision, 2026-08-03). `data_path` and `specs_dir` used to try five and four locations respectively, so that artifacts predating the per-project layout kept resolving. No project predates the platform, so those candidates could only ever find a file a TEST had placed — while costing every reader a multi-way search whose answer depended on what happened to be on disk. `migrate_artifacts.py` went with them.
+Правила для разработчика:
+- **JSON**: собирай путь через `data_path(project_id, f"{safe}_{FILENAME}")` и пиши его **`write_json_artifact(path, data)`** — никогда через `open(...,"w")` + `json.dump` (см. «Запись JSON-артефакта» ниже; писатель сам создаёт каталог). Имя файла сохраняет префикс `{safe}_`, поэтому файл представляется сам, даже если его читают вне контекста.
+- **Markdown**: вызывай `save_artifact(content, prefix, project_id=...)`. С `project_id` отчёт пишется в `reports/<project_id>/`. Без `project_id` он ложится прямо в `reports/` — этот путь не принадлежит ни одному проекту, и обратно его никто не читает; передавай id.
+- **Одна раскладка, никаких запасных вариантов** (решение владельца, 2026-08-03). `data_path` и `specs_dir` перебирали пять и четыре расположения соответственно, чтобы артефакты, созданные до перехода на папку-на-проект, продолжали находиться. Проектов старше платформы не бывает, поэтому эти кандидаты могли найти только файл, который положил ТЕСТ, — а платой был многовариантный поиск у каждого читателя, ответ которого зависел от того, что случайно лежит на диске. Вместе с ними ушёл и `migrate_artifacts.py`.
 
 **The `project_id` contract: an id must be a FIXED POINT of `normalize_project_id`** — spelled exactly the way its folder will be. `^[a-z0-9][a-z0-9_-]*$`, plus `normalize_project_id(pid) == pid`, plus not reserved. That makes id → folder bijective, so a collision cannot be constructed: there is no second spelling that lands on the same folder. Refused, all for the same reason: `CRM Up`, `demo.v2`, `crm__up`, `_crm`, `црм_апгрейд`.
 
-**An id that cannot be represented is REFUSED, not rewritten** (owner's decision, 2026-08-03). `normalize_project_id` is many-to-one — it strips everything outside `[a-z0-9_-]` — so a non-latin id lost every character and landed in one shared placeholder folder, where two different projects silently mixed each other's artifacts. The guard that stops this:
+**Id, который нельзя представить, ОТКЛОНЯЕТСЯ, а не переписывается** (решение владельца, 2026-08-03). `normalize_project_id` — функция «многие в одного»: она вырезает всё за пределами `[a-z0-9_-]`, поэтому нелатинский id терял все символы до единого и попадал в одну общую папку-заглушку, где два разных проекта молча перемешивали артефакты друг друга. Страж, который это останавливает:
 
 ```python
 def project_id_error(project_id) -> Optional[str]:   # BA-facing refusal, or None
@@ -211,16 +211,16 @@ def require_valid_project_id(project_id) -> None:    # raises InvalidProjectIdEr
 def project_id_suggestion(project_id) -> str:        # latin hint, for the TEXT only
 ```
 
-- `require_valid_project_id` is called by `data_dir_for`, `report_dir_for`, `data_path` and `specs_dir` — every read and write goes through one of them.
-- The check is **stateless**: it never asks whether files already exist. Conditioning it on existence was tried and reverted, because "the folder already exists" is true exactly in the dangerous case (an id collapsing onto another project's folder).
-- Transliteration is used **only** to build the hint inside the refusal text. It never reaches a path, so the table is not part of the on-disk contract and can be changed without losing projects.
-- The placeholder itself (`_unknown` / `unknown`) is a **reserved** id. Pass the RAW `project_id` to `data_path` — never a pre-normalized value, or the guard is bypassed.
+- `require_valid_project_id` вызывается из `data_dir_for`, `report_dir_for`, `data_path` и `specs_dir` — любое чтение и любая запись проходят через одну из них.
+- Проверка **не смотрит на состояние**: она никогда не спрашивает, существуют ли уже файлы. Вариант «проверять по существованию» пробовали и откатили: «папка уже есть» истинно ровно в опасном случае — когда id схлопывается на папку другого проекта.
+- Транслитерация используется **только** для подсказки внутри текста отказа. До пути она не доходит, поэтому таблица не входит в контракт с диском и может меняться без потери проектов.
+- Сама заглушка (`_unknown` / `unknown`) — **зарезервированный** id. Передавай в `data_path` СЫРОЙ `project_id`, а не заранее нормализованное значение, иначе страж обходится.
 
-**Every tool that takes `project_id`/`project_name` MUST carry `@guard_artifact_errors`** (below `@mcp.tool()`). That decorator converts `CorruptArtifactError` (including its subclass `ArtifactShapeError`) and `InvalidProjectIdError` into the `❌` string a tool must return; without it the refusal escapes as a protocol error. This is enforced by `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, which scans every module — a new tool that forgets it fails the suite.
+**Каждый инструмент, принимающий `project_id`/`project_name`, ОБЯЗАН нести `@guard_artifact_errors`** (под `@mcp.tool()`). Этот декоратор превращает `CorruptArtifactError` (включая его подкласс `ArtifactShapeError`) и `InvalidProjectIdError` в строку `❌`, которую инструмент обязан вернуть; без него отказ уходит наружу протокольной ошибкой. Это проверяется тестом `tests/test_project_id_validation.py::TestEveryToolTakingAProjectIdIsGuarded`, который сканирует каждый модуль: новый инструмент, забывший декоратор, роняет прогон.
 
-### Writing a JSON artifact: `write_json_artifact()`
+### Запись JSON-артефакта: `write_json_artifact()`
 
-**Every write of a project JSON file goes through one function.** Writing with `open(path, "w")` + `json.dump` is a defect, and `tests/test_json_writer.py::TestNoDirectWritesRemain` fails the suite if one reappears.
+**Каждая запись JSON-файла проекта идёт через одну функцию.** Запись через `open(path, "w")` + `json.dump` — это дефект, и `tests/test_json_writer.py::TestNoDirectWritesRemain` роняет прогон, если такая появится снова.
 
 ```python
 from skills.common import write_json_artifact
@@ -228,30 +228,30 @@ from skills.common import write_json_artifact
 write_json_artifact(data_path(project_id, f"{safe}_{FILENAME}"), repo)
 ```
 
-The reason is not tidiness. `open(path, "w")` **truncates the previous version before a single byte of the replacement exists**, so every such site was a window in which an interruption nobody controls — Ctrl+C, a full disk, a dead battery, an antivirus holding the handle — could reduce a whole project to a half-written file. There were 32 such sites and no backups anywhere.
+Дело не в аккуратности. `open(path, "w")` **обрезает прежнюю версию раньше, чем существует хоть один байт замены**, поэтому каждое такое место было окном, в котором никем не управляемое прерывание — Ctrl+C, кончившееся место на диске, севшая батарея, антивирус, удерживающий дескриптор, — могло свести весь проект к наполовину записанному файлу. Таких мест было 32, и резервных копий не было нигде.
 
-Three guarantees, and they are deliberately not the same guarantee three times:
+Три гарантии, и это намеренно не одна и та же гарантия трижды:
 
-| Guarantee | Protects against | Mechanism |
+| Гарантия | От чего защищает | Механизм |
 |---|---|---|
-| **Atomicity** | the write being cut short | the replacement is built under a temporary name in the same directory and moved into place with `os.replace` — the name points at one whole file or the other, never a torn one |
-| **Generations** | content written perfectly and **wrong**; hand edits | the version being replaced is copied to `governance_plans/.history/`, the last `HISTORY_GENERATIONS` (5) are kept |
-| **Shape** | a tool storing something no other chapter can read | the requirements graph accepts only `requirements` + `links` as lists; the refusal happens **before** the file is touched |
+| **Атомарность** | запись оборвалась | замена собирается под временным именем в том же каталоге и встаёт на место через `os.replace` — имя указывает либо на один целый файл, либо на другой, но никогда на разорванный |
+| **Поколения** | содержимое, записанное безупречно и **неверно**; правки руками | заменяемая версия копируется в `governance_plans/.history/`, хранятся последние `HISTORY_GENERATIONS` (5) |
+| **Форма** | инструмент сохранил то, чего не прочитает ни одна другая глава | граф требований принимает `requirements` + `links` только списками; отказ происходит **до** того, как файл тронут |
 
-Four consequences a maintainer needs to know:
+Четыре следствия, которые сопровождающему надо знать:
 
-1. **Copies are taken BEFORE the write**, so the newest generation is the state one change ago — never the state being written. The case generations exist for is content that was written perfectly and is wrong (`init_traceability_repo` once destroyed a node type atomically, validly, and with a `✅`), and there the version you want is precisely the one that tool replaced. Copying afterwards would make the newest generation a second copy of the damage.
-2. **The cost of that is stated in the error text.** A file destroyed from outside restores to one change ago, and `read_json_artifact` says so rather than letting the analyst discover it after following the advice.
-3. **`ArtifactShapeError` subclasses `CorruptArtifactError`** so the existing tool boundary converts it. Do not add a separate `except` for it.
-4. **`.history/` is flat**, which is safe only because artifact names always carry the project prefix; pruning counts per artifact name and only `*.json`, so `.part` debris from a killed process cannot evict a real generation.
+1. **Копии снимаются ДО записи**, поэтому самое свежее поколение — это состояние на одно изменение назад, а не то, которое записывается. Поколения существуют ради случая, когда содержимое записано безупречно и неверно (`init_traceability_repo` однажды уничтожил тип узла атомарно, валидно и с `✅`), и там нужна ровно та версия, которую этот инструмент заменил. Копирование после записи сделало бы самое свежее поколение второй копией повреждения.
+2. **Цена этого названа в тексте ошибки.** Файл, уничтоженный снаружи, восстанавливается на одно изменение назад, и `read_json_artifact` говорит это прямо, а не оставляет аналитику узнать самому уже после того, как он последовал совету.
+3. **`ArtifactShapeError` наследует `CorruptArtifactError`**, поэтому существующая граница инструмента преобразует и его. Отдельный `except` для него добавлять не надо.
+4. **`.history/` плоская**, и это безопасно только потому, что имена артефактов всегда несут префикс проекта; чистка считает по имени артефакта и только `*.json`, поэтому мусор `.part` от убитого процесса не вытеснит настоящее поколение.
 
-Serialisation happens **before** the filesystem is touched: content that cannot be encoded is a defect in the caller and must not cost the analyst the stored version.
+Сериализация происходит **до** того, как файловая система тронута: содержимое, которое не кодируется, — дефект вызывающего кода, и оно не должно стоить аналитику сохранённой версии.
 
 **Чего писатель НЕ даёт — одновременного запуска.** Каждый инструмент читает файл целиком, меняет его в памяти и целиком записывает обратно. Две команды подряд — норма, это обычный порядок работы. Две команды **одновременно** (скрипт, CI, два открытых терминала по одному проекту) кончаются правилом «кто последний, тот и прав»: второй запуск стартовал от состояния до сохранения первого, поэтому затирает его правку — и о потере никто не сообщит. Платформа рассчитана на одного аналитика в одной сессии; параллельный запуск инструментов по одному проекту не поддерживается.
 
-Consequences for "exotic" names: an id outside the rule (`r&d_portal`, `CRM (v2)`, `demo.v2`, a name in any non-Latin script) is refused, so artifacts stored under one are unreachable until the folder is renamed. Nothing is deleted — the rename is manual, and the refusal text names a valid id to rename it to.
+Следствия для «экзотических» имён: id вне правила (`r&d_portal`, `CRM (v2)`, `demo.v2`, имя любой нелатинской письменностью) отклоняется, поэтому артефакты, сохранённые под таким именем, недостижимы, пока папку не переименуют. Ничего не удаляется — переименование делается руками, а текст отказа называет годный id, в который переименовывать.
 
-### `_ensure_dirs()` and `save_artifact()`
+### `_ensure_dirs()` и `save_artifact()`
 
 ```python
 def save_artifact(content: str, prefix: str, project_id: Optional[str] = None) -> str:
@@ -364,7 +364,7 @@ if __name__ == "__main__":
 
 ### Почему `planning_mcp.py` — монолит
 
-Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4-7. The reason: `planning_mcp.py` is part of `BASE_SERVER` and loads in **every** phase. Splitting it into 5 separate servers would not save any context, since all of them would load in every phase anyway. At the same time, 7 tools make a lightweight monolith, which is architecturally justified.
+Глава 3 не разбита на отдельные серверы по задачам 3.1–3.5, в отличие от Глав 4–7. Причина: `planning_mcp.py` входит в `BASE_SERVER` и загружается во **всех** фазах. Разбивка на 5 отдельных серверов не дала бы экономии контекста — все они всё равно загружались бы в каждой фазе. При этом 7 инструментов — лёгкий монолит, и архитектурно это оправдано.
 
 ### Все 22 MCP-сервера
 
@@ -393,7 +393,7 @@ Chapter 3 is not split into separate servers by task, 3.1-3.5, unlike Chapters 4
 | `babok-ch7-75` | `design_options_mcp.py` | 7.5 | 5 |
 | `babok-ch7-76` | `value_recommend_mcp.py` | 7.6 | 4 |
 
-**Total: 22 servers, 114 tools.**
+**Итого: 22 сервера, 114 инструментов.**
 
 ### Технические ограничения FastMCP
 
@@ -539,7 +539,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3."
 
 ### Структура папок
 
-One folder per project — see "Layout by Project Subfolder" in section 3 for the resolver and the `project_id` contract.
+Одна папка на проект — резолвер и контракт `project_id` описаны в разделе 3, «Раскладка по подкаталогам проекта».
 
 ```
 governance_plans/
@@ -563,9 +563,9 @@ governance_plans/
 
 **Правило разделения:** JSON → `data/`, Markdown → `reports/`. Это зафиксировано в `common.py` через константы `DATA_DIR` и `REPORTS_DIR` и отражено в `.gitignore`.
 
-**`.history/` is written only by `write_json_artifact`** (section 3). It is flat and holds the last `HISTORY_GENERATIONS` (5) versions of each artifact, named `<artifact>.<YYYYmmdd_HHMMSS_ffffff>.json`. Nothing reads it back automatically: restoring is a deliberate act, because the platform cannot know whether the current file is damaged or simply new.
+**В `.history/` пишет только `write_json_artifact`** (раздел 3). Папка плоская и хранит последние `HISTORY_GENERATIONS` (5) версий каждого артефакта с именем `<артефакт>.<YYYYmmdd_HHMMSS_ffffff>.json`. Автоматически её не читает ничто: восстановление — осознанное действие, потому что платформа не может знать, повреждён текущий файл или просто новый.
 
-### `.gitignore` and `.gitkeep`
+### `.gitignore` и `.gitkeep`
 
 ```gitignore
 governance_plans/data/*
@@ -575,7 +575,7 @@ governance_plans/.history/
 !governance_plans/reports/.gitkeep
 ```
 
-The folder contents are ignored by Git: artifacts are specific to a given BA's project and should not end up in the repository. `.history/` holds the same content one version back, so it is ignored for the same reason. The folders themselves are kept via `.gitkeep`.
+Содержимое папок Git игнорирует: артефакты принадлежат проекту конкретного BA и в репозиторий попадать не должны. В `.history/` лежит то же содержимое на версию назад, поэтому она игнорируется по той же причине. Сами папки сохраняются через `.gitkeep`.
 
 `_ensure_dirs()` в `common.py` создаёт `data/` и `reports/` автоматически при первом вызове `save_artifact`. Папки уже присутствуют в репозитории с `.gitkeep` — ручной `mkdir` не нужен.
 
@@ -593,28 +593,16 @@ BA кладёт сюда входные материалы перед обраб
 
 Поддерживаемые форматы: `.txt`, `.md`, `.pdf`, `.docx`
 
-### Экспорт PDF
-
-```bash
-python export_pdf.py stakeholder_plan.md           # один файл
-python export_pdf.py --all                         # все .md из reports/ (спросит перед перезаписью)
-python export_pdf.py --all --force                 # без подтверждения
-```
-
-PDF создаётся рядом с `.md`-файлом в `governance_plans/reports/`. В Git не попадает.
-
-Зависимость: `reportlab`. Устанавливается вместе с `requirements.txt`.
-
 ### Три уровня хранения
 
 | Уровень | Где | Статус |
 |---|---|---|
-| 1 (local) | `governance_plans/` on the BA's machine | ✅ Implemented |
-| 2 (team) | Confluence (via `confluence_mcp.py`) | ✅ Implemented |
-| 3 (versioned) | `governance_plans/.history/` — the last 5 versions of every JSON artifact | ✅ Implemented |
-| 4 (audit) | Git or another external store: full history, diffs, attribution | 📋 Technical debt |
+| 1 (локальный) | `governance_plans/` на машине BA | ✅ Реализовано |
+| 2 (командный) | Confluence (через `confluence_mcp.py`) | ✅ Реализовано |
+| 3 (версионный) | `governance_plans/.history/` — последние 5 версий каждого JSON-артефакта | ✅ Реализовано |
+| 4 (аудит) | Git или другое внешнее хранилище: полная история, диффы, авторство | 📋 Технический долг |
 
-Tier 3 answers "give me back what this tool just replaced" and nothing more: five generations, no diffs, no author, no history beyond that. Tier 4 remains open, and `.history/` is not a substitute for it.
+Уровень 3 отвечает на вопрос «верни то, что этот инструмент только что заменил», и ни на что больше: пять поколений, без диффов, без автора, без истории дальше этого. Уровень 4 остаётся открытым, и `.history/` его не заменяет.
 
 ---
 
@@ -626,19 +614,19 @@ Tier 3 answers "give me back what this tool just replaced" and nothing more: fiv
 
 Сервер стартует без ошибок даже при незаполненном `.env` — graceful fallback. Ошибка подключения возникает только в момент вызова конкретного инструмента, когда сервер пытается обратиться к Confluence API.
 
-### 5 Tools
+### Пять инструментов
 
 | Инструмент | Что делает |
 |---|---|
-| `publish_artifact_to_confluence` | Publishes an artifact **already saved** to `reports/` — the document is read from disk, so its text never has to be passed in |
-| `push_to_confluence` | Publishes Markdown passed as text — for ad-hoc content that is not a stored artifact |
-| `pull_from_confluence` | Loads a page's content into context |
-| `sync_page` | Updates an existing page (or creates one if it doesn't exist) |
-| `list_space_pages` | Lists pages in a space (search by title) |
+| `publish_artifact_to_confluence` | Публикует артефакт, **уже сохранённый** в `reports/` — документ читается с диска, поэтому его текст передавать не нужно |
+| `push_to_confluence` | Публикует Markdown, переданный текстом — для разового содержимого, которое не является сохранённым артефактом |
+| `pull_from_confluence` | Загружает содержимое страницы в контекст |
+| `sync_page` | Обновляет существующую страницу (или создаёт, если её нет) |
+| `list_space_pages` | Перечисляет страницы пространства (поиск по заголовку) |
 
-Use `publish_artifact_to_confluence` whenever the content is the output of a BABOK task: passing a saved document back through as text is how a published page ends up differing from the artifact it claims to be.
+Пользуйся `publish_artifact_to_confluence` всякий раз, когда содержимое — это результат задачи BABOK: именно прогон сохранённого документа обратно через текст и приводит к тому, что опубликованная страница отличается от артефакта, которым себя называет.
 
-### Configuration via `.env`
+### Настройка через `.env`
 
 Скопировать `.env.example` → `.env` и заполнить один из двух вариантов:
 
@@ -711,7 +699,7 @@ class BaseMCPTest(unittest.TestCase):
 
 Каждый тест работает в своём временном каталоге — артефакты не засоряют рабочую папку и не влияют друг на друга.
 
-### `patch` Instead of a Global Mock
+### `patch` вместо глобального мока
 
 ```python
 # ✅ Правильно — патчим save_artifact в конкретном модуле
@@ -733,18 +721,18 @@ def test_save_plan(self, mock_save):
 
 | Файл | Покрывает |
 |---|---|
-| `tests/test_ch3_ch4.py` | Chapter 4 (Chapter 3 is tested through `planning_mcp.py`) |
-| `tests/test_ch4_41.py` … `test_ch4_45.py` | Tasks 4.1-4.5 tested separately |
-| `tests/test_ch5_51.py` … `test_ch5_55.py` | Tasks 5.1-5.5 tested separately |
-| `tests/test_ch6_61.py` … `test_ch6_64.py` | Tasks 6.1-6.4 tested separately |
-| `tests/test_ch7_71.py` … `test_ch7_76.py` | Tasks 7.1-7.6 tested separately |
-| `tests/test_confluence.py` | Confluence integration |
-| `tests/test_common_*.py` | Shared helpers in `common.py` |
-| `tests/test_json_writer.py` | Durability of stored artifacts (`write_json_artifact`) |
+| `tests/test_ch3_ch4.py` | Глава 4 (Глава 3 проверяется через `planning_mcp.py`) |
+| `tests/test_ch4_41.py` … `test_ch4_45.py` | Задачи 4.1–4.5 по отдельности |
+| `tests/test_ch5_51.py` … `test_ch5_55.py` | Задачи 5.1–5.5 по отдельности |
+| `tests/test_ch6_61.py` … `test_ch6_64.py` | Задачи 6.1–6.4 по отдельности |
+| `tests/test_ch7_71.py` … `test_ch7_76.py` | Задачи 7.1–7.6 по отдельности |
+| `tests/test_confluence.py` | Интеграция с Confluence |
+| `tests/test_common_*.py` | Общие помощники из `common.py` |
+| `tests/test_json_writer.py` | Надёжность хранения артефактов (`write_json_artifact`) |
 
-Several tasks have a second file for a property that cuts across the task — for example `test_ch7_72_preserves_approval.py` and `test_ch7_73_alignment_direction.py`.
+У нескольких задач есть второй файл — под свойство, которое проходит поперёк задачи: например `test_ch7_72_preserves_approval.py` и `test_ch7_73_alignment_direction.py`.
 
-**Coverage:** run `python -m pytest -q` — the count is printed at the end. It is deliberately not repeated here: a number written into prose is wrong the day after the next test is added, and this guide has already carried a stale one.
+**Покрытие:** запусти `python -m pytest -q` — счётчик печатается в конце. Здесь он намеренно не повторяется: число, записанное в прозу, становится неверным на следующий день после добавления теста, а этот гайд уже носил такое устаревшее число.
 
 ### Как добавить тест для нового инструмента
 
@@ -782,15 +770,13 @@ class TestMyNewTool(BaseMCPTest):
 pip install -r requirements.txt
 ```
 
-`requirements.txt` pins the exact versions of every dependency:
+`requirements.txt` фиксирует точные версии всех зависимостей:
 
 ```
-mcp[cli]==1.6.0
-fastmcp==2.3.3
-pydantic==2.11.1
-atlassian-python-api==3.41.16  # Confluence Cloud + Server/DC интеграция
-markdown2==2.5.3               # Markdown → HTML для Confluence storage format
-reportlab==4.2.5               # PDF-экспорт отчётов
+mcp[cli]==1.28.1
+pydantic==2.13.4
+atlassian-python-api==4.0.7    # Confluence Cloud + Server/DC интеграция
+markdown2==2.5.5               # Markdown → HTML для Confluence storage format
 ```
 
 Версии зафиксированы намеренно — плавающие ограничения (`>=`) допускают breaking-изменения при обновлении. При изменении версий — проверять совместимость вручную.
@@ -856,9 +842,9 @@ CONFLUENCE_SPACE_KEY=BA
 - список активных проектов (по JSON-файлам в `governance_plans/data/`)
 - последние 5 артефактов из `governance_plans/reports/`
 - список входных материалов в `inputs/`, готовых к обработке
-- подсказки по командам (голосовой режим, плановый режим, экспорт PDF)
+- подсказки по командам (голосовой режим, плановый режим)
 
-It uses `find` instead of `ls *.{ext}`, a fix. Previously, bash brace expansion produced an error if there were no files of one of the types.
+Используется `find` вместо `ls *.{ext}` — это починка: раньше раскрытие фигурных скобок в bash давало ошибку, если файлов одного из типов не было.
 
 **`post_tool_use.sh`** — запускается после каждого вызова MCP-инструмента. Если инструмент сохранил `.md`-файл в `governance_plans/reports/` — выводит уведомление с именем файла и командой для просмотра.
 
@@ -1015,7 +1001,7 @@ class TestMyNewTool(BaseMCPTest):
         self.assertIn("crm_bank", result)
 ```
 
-The `_call(**overrides)` pattern is mandatory. `{**defaults, **overrides}` is semantically correct and does not fail when a key that already exists is passed in.
+Паттерн `_call(**overrides)` — обязательный. `{**defaults, **overrides}` семантически корректен и не падает, если передан уже существующий ключ.
 
 **Шаг 6 — Запустить тесты**
 
@@ -1038,61 +1024,61 @@ python3 -m unittest discover
 
 ---
 
-## 11. Technical Debt and Design Decisions
+## 11. Технический долг и решения по дизайну
 
-### Decisions worth knowing
+### Решения, которые стоит знать
 
-The complete decision log is an internal working document and is not part of this repository. **What follows is the published subset** — the decisions you need in order to read the code without re-deriving why it is shaped this way.
-
----
-
-**Generations are copied BEFORE the write** (August 9, 2026)
-
-`write_json_artifact` (section 3) copies the version it is about to replace into `governance_plans/.history/`, not the version it just wrote. The case generations exist for is content that was written perfectly and is **wrong** — `init_traceability_repo` once destroyed the node type of every requirement it touched, atomically, validly, and with a `✅` — and there the version you want is precisely the one that tool replaced. Copying afterwards would make the newest generation a second copy of the damage.
-
-The accepted cost: a file destroyed from outside restores to one change ago. That is stated in `read_json_artifact`'s message rather than left for the analyst to discover after following the advice — the platform may not offer help it cannot deliver.
-
-`ArtifactShapeError` subclasses `CorruptArtifactError` deliberately: `except CorruptArtifactError` occurs exactly once in the codebase (the tool boundary), so inheritance means a refusal to write malformed content reaches the analyst as the same readable `❌` line, with no new `except` anywhere.
+Полный журнал решений — внутренний рабочий документ, и в этот репозиторий он не входит. **Ниже — опубликованное подмножество:** те решения, без которых код не прочитать, не выводя заново, почему он устроен именно так.
 
 ---
 
-**Removal of `main.py`** (Session 45, April 2, 2026)
+**Поколения копируются ДО записи** (9 августа 2026)
+
+`write_json_artifact` (раздел 3) копирует в `governance_plans/.history/` ту версию, которую собирается заменить, а не ту, которую только что записал. Поколения существуют ради случая, когда содержимое записано безупречно и **неверно**: `init_traceability_repo` однажды уничтожил тип узла у каждого требования, которого коснулся, — атомарно, валидно и с `✅`, — и там нужна ровно та версия, которую этот инструмент заменил. Копирование после записи сделало бы самое свежее поколение второй копией повреждения.
+
+Принятая цена: файл, уничтоженный снаружи, восстанавливается на одно изменение назад. Это сказано в сообщении `read_json_artifact`, а не оставлено аналитику на самостоятельное открытие уже после того, как он последовал совету, — платформа не вправе предлагать помощь, которую не может оказать.
+
+`ArtifactShapeError` наследует `CorruptArtifactError` намеренно: `except CorruptArtifactError` встречается в кодовой базе ровно один раз (граница инструмента), поэтому наследование означает, что отказ записать испорченное содержимое доходит до аналитика той же читаемой строкой `❌` — и ни одного нового `except` заводить не нужно.
+
+---
+
+**Удаление `main.py`** (Сессия 45, 2 апреля 2026)
 
 `main.py` был легаси-обёрткой, реэкспортировавшей функции из `planning_mcp.py`. Удалён: создавал путаницу по точке входа, «обратная совместимость» была бессмысленна (нет публичного API). Глава 3 обслуживается исключительно `skills/planning_mcp.py`.
 
 ---
 
-**Removal of `planning.py`** (Session 46, April 2, 2026, REVIEW_v26)
+**Удаление `planning.py`** (Сессия 46, 2 апреля 2026, REVIEW_v26)
 
 `planning.py` был «чистым» утилитным модулем бизнес-логики Главы 3 без MCP-обёртки. Использовался только в `tests/test_ch3_ch4.py`. Дублировал `_classify_stakeholder` из `planning_mcp.py` с другой сигнатурой (принимала объект `Stakeholder` вместо двух строк). Удалён: `tests/test_ch3_ch4.py` переписан под прямое тестирование `planning_mcp.py` через `BaseMCPTest`. Архитектура Главы 3 приведена в соответствие с остальными главами.
 
 ---
 
-**`planning_mcp.py` Stays a Monolith** (Session 46)
+**`planning_mcp.py` остаётся монолитом** (Сессия 46)
 
-The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1-3.5, even though Chapters 4-7 are built that way. The reasoning: `planning_mcp.py` is part of `BASE_SERVER` and present in every phase, so splitting it would not save any context window. 7 tools make a lightweight server, so a monolith is justified here. Symmetry for its own sake would be excessive.
+Решено не разбивать `planning_mcp.py` на 5 серверов по задачам 3.1–3.5, хотя Главы 4–7 устроены именно так. Обоснование: `planning_mcp.py` входит в `BASE_SERVER` и присутствует во всех фазах, поэтому разбивка не сэкономила бы контекстного окна. 7 инструментов — это лёгкий сервер, и монолит здесь оправдан. Симметрия ради симметрии была бы избыточной.
 
 ---
 
-**Signature Mismatches While Writing Chapter 5 Tests** (Session 38, March 29, 2026)
+**Расхождения сигнатур при написании тестов Главы 5** (Сессия 38, 29 марта 2026)
 
 При написании `test_ch5_51.py`–`test_ch5_53.py` обнаружены расхождения между ожидаемыми и фактическими сигнатурами инструментов. Зафиксировано как паттерн: тесты пишутся по реальным сигнатурам кода, не по документации. При рефакторинге инструментов — обновлять тесты одновременно с кодом.
 
 ---
 
-**The `_call(**overrides)` Pattern in Test Classes** (Session 39)
+**Паттерн `_call(**overrides)` в тестовых классах** (Сессия 39)
 
 `dict(key=val, **overrides)` падает с `TypeError` при передаче ключа уже присутствующего в `dict()`. Обязательный паттерн для всех `_call(**overrides)`: `{**defaults, **overrides}`. `overrides` побеждает — конфликтов нет. Зафиксировано в `conftest.py` как комментарий.
 
 ---
 
-**`patch` Instead of a Global Mock** (early sessions)
+**`patch` вместо глобального мока** (ранние сессии)
 
 При тестировании MCP-серверов патчить нужно в пространстве имён того модуля, который использует функцию: `@patch("skills.my_mcp.save_artifact")`, а не `@patch("skills.common.save_artifact")`. Глобальный мок `common.save_artifact` ломает другие тесты, запущенные параллельно или в одном discover-проходе.
 
 ---
 
-**Claude-in-Claude** (status: 📋 Design)
+**Claude-in-Claude** (статус: 📋 Дизайн)
 
 Серия решений по архитектуре функции Claude-in-Claude — вызов вложенного Claude-агента из MCP-инструмента для сложных аналитических операций. Единственный незакрытый функциональный блок платформы. Оставлен на последнюю очередь разработки.
 
@@ -1102,38 +1088,38 @@ The decision was made not to split `planning_mcp.py` into 5 servers by task, 3.1
 
 | # | Проблема | Критичность | Статус |
 |---|---|---|---|
-| 1 | Claude-in-Claude | 🔴 Functional | Last in line |
-| 2 | Storage tier 3 (Git versioning of artifacts) | 🔵 Architecture | Not implemented |
-| 3 | Run `pytest` on a real machine after publishing to GitHub | 📋 Process | After GitHub |
-| 4 | Platform update strategy without losing project data | 🔵 Architecture | Needs design |
-| 5 | `_classify_stakeholder` with two signatures was removed, but no general signature check was done after the refactor | 📋 QA | After publication |
+| 1 | Claude-in-Claude | 🔴 Функционал | Последняя очередь |
+| 2 | Уровень хранения 3 (Git-версионирование артефактов) | 🔵 Архитектура | Не реализовано |
+| 3 | Запустить `pytest` на живой машине после публикации на GitHub | 📋 Процесс | После GitHub |
+| 4 | Стратегия обновления платформы без потери данных проекта | 🔵 Архитектура | Нужен дизайн |
+| 5 | `_classify_stakeholder` с двумя сигнатурами удалён, но общая сверка сигнатур после рефакторинга не проводилась | 📋 QA | После публикации |
 
 **Уровень 3 хранилища (Git-версионирование)** — артефакты `governance_plans/` игнорируются Git по умолчанию (`.gitignore`). Планировалась возможность вести историю изменений и аудит через Git. Варианты реализации: отдельная ветка под данные проекта, отдельный репозиторий, `git add -f` для явного включения артефактов. Решение не принято, реализация отложена.
 
-**Platform update strategy**: the BA is working on a project in a copy of `v23`, and `v24` is released. How do you pick up the new capabilities without losing the artifacts in `governance_plans/` and the input materials in `inputs/`? Options under consideration: `git pull` (requires the BA to be git-literate), an `update.py` script, or physically separating the platform from the data. This is still open.
+**Стратегия обновления платформы**: BA ведёт проект в копии `v23`, и выходит `v24`. Как забрать новые возможности, не потеряв артефакты в `governance_plans/` и входные материалы в `inputs/`? Рассматриваются варианты: `git pull` (требует от BA владения git), скрипт `update.py` или физическое разделение платформы и данных. Вопрос остаётся открытым.
 
 ---
 
-### Changelog by Version
+### История по версиям
 
-**v20 → v26** (March 2026)
+**v20 → v26** (март 2026)
 
-Main changes:
-- Separate tests were written for Chapters 4 and 5 (previously: a monolithic `test_ch3_ch4.py`). About 156 tests were added for tasks 5.1-5.3
-- `README.md` was added at the project root
-- A glob bug in `session_start.sh` was fixed (`find` instead of `ls *.{txt,md,pdf,docx}`)
-- Exact versions were pinned in `requirements.txt` (previously floating `>=`)
-- `interviews/` was renamed to `inputs/` (the list of input material types was expanded)
-- A user guide was added (`USER_GUIDE.md`) and 6 separate CH files
-- `.mcp.json` was removed from the repository and added to `.gitignore`; it is generated by `phase.py`
-- `governance_plans/data/.gitkeep` and `governance_plans/reports/.gitkeep` were created
+Основные изменения:
+- Написаны отдельные тесты для Глав 4 и 5 (раньше был монолитный `test_ch3_ch4.py`). Для задач 5.1–5.3 добавлено около 156 тестов
+- В корень проекта добавлен `README.md`
+- Починен баг глоба в `session_start.sh` (`find` вместо `ls *.{txt,md,pdf,docx}`)
+- В `requirements.txt` зафиксированы точные версии (раньше были плавающие `>=`)
+- `interviews/` переименована в `inputs/` (список типов входных материалов расширен)
+- Добавлено руководство пользователя (`USER_GUIDE.md`) и 6 отдельных CH-файлов
+- `.mcp.json` убран из репозитория и добавлен в `.gitignore`; его генерирует `phase.py`
+- Созданы `governance_plans/data/.gitkeep` и `governance_plans/reports/.gitkeep`
 
-**v26 → v27** (April 1-2, 2026, final preparation for GitHub)
+**v26 → v27** (1–2 апреля 2026, финальная подготовка к GitHub)
 
-- All critical bugs from `DAMAGE_REPORT_v26.md` were fixed
-- `main.py` was removed: Chapter 3 now goes through `planning_mcp.py`
-- `planning.py` was removed: the duplication with `planning_mcp.py` was eliminated
-- `tests/test_ch3_ch4.py` was rewritten for `BaseMCPTest` plus direct testing of `planning_mcp.py`
-- `CLAUDE.md` was fixed: the `governance_plans/` structure now reflects the real `data/` and `reports/` subfolders
-- `phase.py` was checked: all 22 servers are on disk, with paths via `Path(__file__).resolve().parent`
-- Result: 1636 tests, all green; 22 MCP servers, 111 tools; 27 Python files with no syntax errors; no hardcoded `/home/claude` paths found
+- Починены все критические баги из `DAMAGE_REPORT_v26.md`
+- Удалён `main.py` — Глава 3 идёт через `planning_mcp.py`
+- Удалён `planning.py` — дублирование с `planning_mcp.py` устранено
+- `tests/test_ch3_ch4.py` переписан под `BaseMCPTest` и прямое тестирование `planning_mcp.py`
+- Починен `CLAUDE.md` — структура `governance_plans/` отражает реальные подпапки `data/` и `reports/`
+- Проверен `phase.py` — все 22 сервера на диске, пути через `Path(__file__).resolve().parent`
+- Итог: 1636 тестов, все зелёные; 22 MCP-сервера, 111 инструментов; 27 Python-файлов без синтаксических ошибок; хардкод-путей `/home/claude` не найдено
