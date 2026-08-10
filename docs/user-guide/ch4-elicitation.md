@@ -3,7 +3,7 @@
 ## AI Платформа AIналитик
 **Скачать:** https://github.com/chaussky/ainalyst.git
 
-**Телеграм:** https://t.me/platform_ainalyst
+**LinkedIn:** https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
 ---
 # Глава 4 — Elicitation and Collaboration
 
