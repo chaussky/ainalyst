@@ -129,7 +129,7 @@ PHASES = {
 
     "full": {
         "label": "All chapters (full mode)",
-        "hint": "All 18 servers. Use only when you need tools from different chapters at the same time",
+        "hint": "All 22 servers. Use only when you need tools from different chapters at the same time",
         "tokens_saved": "0",
         "servers": {
             **BASE_SERVER,
