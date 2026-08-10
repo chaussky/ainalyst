@@ -518,7 +518,7 @@ def check_communication_schedule(
 
     stakeholders, error = parse_json_dict_list(
         stakeholders_json, "stakeholders_json",
-        example='[{"role": "Sponsor", "influence": "High", "comm_frequency": "Weekly", '
+        example='[{"role": "Sponsor", "influence": "High", "comm_frequency": "Еженедельно", '
                 '"last_communication_date": "DD.MM.YYYY"}]')
     if error:
         return error
@@ -609,6 +609,8 @@ def check_communication_schedule(
     # when the tool then says LESS, never when it makes a confident positive claim.
     # Matching is case-insensitive because "At milestones" and "At Milestone" are the
     # same cadence written by two authors.
+    # Русские написания ДОБАВЛЕНЫ к английским, а не заменяют их (ADR-112): читатель
+    # разбирает историю проекта, где `ba_plan.json` мог быть записан до перевода.
     freq_days = {
         "after each session": 3,      # 3-day grace period
         "weekly": 7,
@@ -619,6 +621,14 @@ def check_communication_schedule(
         "at milestone": None,         # trigger-only
         "at milestones": None,
         "on request": None,
+        "после каждой сессии": 3,
+        "еженедельно": 7,
+        "раз в две недели": 14,
+        "ежемесячно": 30,
+        "квартально": 90,
+        "при вехах": None,            # trigger-only, как "at milestones"
+        "по milestone": None,         # так это значение названо в подсказке выше
+        "по запросу": None,
     }
     unknown_frequencies = set()
     # An empty or absent comm_frequency is NOT "On Request": On Request is the
