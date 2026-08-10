@@ -160,17 +160,18 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 реестра платформа молчит, а не сообщает о нарушении governance из-за имени, которое не с чем
 сопоставить, — ещё одна причина пройти 3.2 до работ Главы 5.
 
-**A plan made before this feature keeps its wording.** If 3.3 was planned in an earlier
-version, re-running it preserves the text that is there; the BA Plan marks those values
-"carried over from an earlier plan" rather than crediting them to the analyst, because
-their origin genuinely cannot be recovered. Re-state any field to make it yours.
+**План, составленный до появления этой возможности, сохраняет свои формулировки.** Если
+3.3 планировали в более ранней версии, повторный запуск сохраняет тот текст, который там
+уже есть; План БА помечает такие значения «перенесено из прежнего плана», а не
+приписывает их аналитику, потому что их происхождение действительно не восстановить.
+Перезадайте любое поле, чтобы оно стало вашим.
 
-Re-running 3.3 MERGES, same as 3.4: an omitted parameter keeps its previous value,
-`"[]"` clears a list and `"-"` clears a text field. `project_criticality` is required
-only the first time.
+Повторный запуск 3.3 СЛИВАЕТ, ровно как и 3.4: опущенный параметр сохраняет прежнее
+значение, `"[]"` очищает список, а `"-"` — текстовое поле. `project_criticality`
+обязателен только в первый раз.
 
-Nothing here is required either: with no 3.3 plan, 5.3, 5.4 and 5.5 behave exactly as
-they did before and say nothing about a plan.
+Здесь тоже ничто не обязательно: без плана 3.3 главы 5.3, 5.4 и 5.5 ведут себя ровно так
+же, как вели до неё, и о плане не говорят ничего.
 
 ---
 
@@ -193,12 +194,12 @@ they did before and say nothing about a plan.
 
 Используй MCP-инструмент `plan_information_management`.
 
-**3.4 also plans three things other chapters then act on:**
+**3.4 планирует ещё три вещи, по которым потом действуют другие главы:**
 
-| Decision | BABOK element | Who reads it |
+| Решение | Элемент BABOK | Кто это читает |
 |---|---|---|
-| Level of detail per audience | .2 | 4.4 `prepare_communication_package` |
-| Reuse scope + repository + categories | .4 | 5.2 `find_reusable_requirements` |
+| Уровень детализации по аудиториям | .2 | 4.4 `prepare_communication_package` |
+| Scope переиспользования + репозиторий + категории | .4 | 5.2 `find_reusable_requirements` |
 | Набор атрибутов (Minimum / Standard / Full) | .6 | 5.2 `check_requirements_health` |
 
 Повторный запуск 3.4 СЛИВАЕТ: опущенный параметр сохраняет прежнее значение. Список

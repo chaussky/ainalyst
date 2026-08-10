@@ -116,11 +116,10 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 [что получим на выходе]
 ```
 
-To save the plan, use the MCP tool `save_elicitation_plan`.
-For surveys, also available: `create_google_form` and `get_form_responses`.
+Чтобы сохранить план, используй MCP-инструмент `save_elicitation_plan`.
+Для опросов есть ещё `create_google_form` и `get_form_responses`.
 
-If a 3.1 BA plan exists for the project, `save_elicitation_plan` automatically states the
-planned work period covering this session (BABOK 3.1, elements .3/.4) and honestly
-cross-checks the chosen technique against what 3.1 recommended — including saying plainly
-when the plan recommends no elicitation technique at all (a common, expected case on agile
-projects).
+Если по проекту есть план БА из 3.1, `save_elicitation_plan` сам называет запланированный
+период работ, в который попадает эта сессия (BABOK 3.1, элементы .3/.4), и честно сверяет
+выбранную технику с тем, что рекомендовала 3.1 — включая прямое сообщение о том, что план
+не рекомендует никакой техники выявления вовсе (частый и ожидаемый случай на agile-проектах).

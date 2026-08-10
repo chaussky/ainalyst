@@ -57,9 +57,9 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 | **Архитектор / Техлид** | Системный, аналитический | Ограничения, НФТ, интеграции, риски реализации | Операционные детали | Архитектурные импликации, вопросы к решению |
 | **Тестировщик** | Структурированный | Сценарии, what-if, исключения, критерии приёмки | Бизнес-контекст (кратко) | Граничные значения, негативные сценарии |
 
-> If 3.4 planned a level of detail for this audience, the package states it and spells
-> out what to include and leave out. The plan may name the audience by archetype or by
-> job title — either matches.
+> Если 3.4 запланировала уровень детализации для этой аудитории, пакет называет его и
+> прямо перечисляет, что включить, а что оставить за скобками. План может назвать
+> аудиторию архетипом или должностью — подходит и то, и другое.
 
 ---
 
@@ -118,14 +118,14 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 **Алгоритм:**
 
-1. For each stakeholder, compare: date of last communication vs. the frequency.
-   Stakeholders with an empty or unrecognised `comm_frequency` are NOT evaluated
-   and the report names them — "on track" is only claimed for people it checked
-   from the schedule (set in 3.2).
-2. Check triggers: has an event occurred that requires notification?
-   (a new decision, a requirements change, completion of an elicitation session)
-3. Build a prioritized list: who to contact now.
-4. Save via `check_communication_schedule`.
+1. По каждому стейкхолдеру сравни: дату последней коммуникации с положенной частотой.
+   Стейкхолдеры с пустой или нераспознанной `comm_frequency` НЕ проверяются, и отчёт
+   их называет — «идут по плану» говорится только про тех, кого инструмент действительно
+   сверил с расписанием (оно задаётся в 3.2).
+2. Проверь триггеры: произошло ли событие, требующее уведомления?
+   (новое решение, изменение требований, завершение сессии выявления)
+3. Собери приоритизированный список: кому написать сейчас.
+4. Сохрани через `check_communication_schedule`.
 
 ---
 

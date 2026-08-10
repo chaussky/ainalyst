@@ -103,10 +103,10 @@ BABOK 6.2 — Define Future State — описывает куда движетс
 
 Вызов `define_goals_and_objectives` для каждой бизнес-цели.
 
-**SMART validation (more detail: `references/future_state_guide.md`):**
-- The tool checks the criteria and suggests improvements
-- Each objective is linked to a BN from 6.1 → traceability `BN → BG → FR`
-- The objective is registered as a `business_goal` node in the 5.1 repository
+**Проверка на SMART (подробнее: `references/future_state_guide.md`):**
+- Инструмент проверяет критерии и предлагает улучшения
+- Каждая цель связывается с BN из 6.1 → трассировка `BN → BG → FR`
+- Цель регистрируется как узел `business_goal` в репозитории 5.1
 
 **Структура `objectives_json`:**
 ```json
@@ -197,13 +197,13 @@ BA должен запустить его осознанно после запо
 - `false` (по умолчанию) — только сохраняет отчёт 6.2
 - `true` — готовит данные для передачи в 7.3. BA затем вызывает:
   `set_business_context(from_strategy_project_id="project_id", ...)`
-  and the data from the 6.2 objectives will pre-fill the business context for requirements validation
+  и данные целей 6.2 предзаполнят бизнес-контекст для валидации требований
 
 ---
 
 ## Интеграция с другими задачами
 
-### Input: 6.1 → 6.2 (optional)
+### Вход: 6.1 → 6.2 (необязательный)
 
 6.1 **не является обязательным** для работы 6.2 — graceful degradation.
 При наличии 6.1 — автоматически читается:
@@ -213,8 +213,8 @@ BA должен запустить его осознанно после запо
 
 ### Выход: 6.2 → 5.1 (трассировка целей)
 
-BG-xxx nodes are registered in the 5.1 repository with type `business_goal`.
-End-to-end chain: `BN-001 → derives → BG-001 → satisfies → FR-001 → verifies → TC-001`
+Узлы BG-xxx регистрируются в репозитории 5.1 с типом `business_goal`.
+Сквозная цепочка: `BN-001 → derives → BG-001 → satisfies → FR-001 → verifies → TC-001`
 
 ### Выход: 6.2 → 6.4 (стратегия изменений)
 
@@ -223,9 +223,9 @@ End-to-end chain: `BN-001 → derives → BG-001 → satisfies → FR-001 → ve
 
 ### Выход: 6.2 → 7.3 (бизнес-контекст)
 
-`set_business_context` in 7.3 accepts `from_strategy_project_id`.
-When passed, it pre-fills business objectives and future_state from 6.1 + 6.2 data.
-The older parameter `from_current_state_project_id` is deprecated but still works.
+`set_business_context` в 7.3 принимает `from_strategy_project_id`.
+Если он передан, бизнес-цели и future_state предзаполняются данными 6.1 + 6.2.
+Прежний параметр `from_current_state_project_id` устарел, но продолжает работать.
 
 ### Выход: 6.2 → 7.6 (потенциальная ценность)
 

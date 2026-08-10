@@ -12,7 +12,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 # SKILL: BABOK 5.1 — Trace Requirements
 **Задача:** управление трассировкой требований на протяжении жизненного цикла.  
 **MCP-сервер:** `requirements_traceability_mcp.py`  
-**Reference:** `references/traceability_guide.md`
+**Справочник:** `references/traceability_guide.md`
 
 ---
 

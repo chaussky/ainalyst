@@ -357,11 +357,11 @@ E1 ||--o{ E2 : "{relation_label}"
 
 | Артефакт 7.1     | type в реестре 5.1 | ID-префикс |
 |------------------|--------------------|------------|
-| User Story       | user_story         | US-        |
-| Functional Req   | functional         | FR-        |
-| Non-Functional   | non_functional     | NFR-       |
-| Business Rule    | business_rule      | BR-        |
-| Use Case         | use_case           | UC-        |
-| Business Process | business_process   | BP-        |
-| Data Dictionary  | data_dictionary    | DD-        |
-| ERD              | erd                | ERD-       |
+| User Story              | user_story         | US-        |
+| Функциональное          | functional         | FR-        |
+| Нефункциональное        | non_functional     | NFR-       |
+| Бизнес-правило          | business_rule      | BR-        |
+| Use Case                | use_case           | UC-        |
+| Бизнес-процесс          | business_process   | BP-        |
+| Словарь данных          | data_dictionary    | DD-        |
+| ERD                     | erd                | ERD-       |

@@ -220,8 +220,8 @@ BABOK выделяет два ключевых выхода задачи 6.1:
 
 | Задача | Как использует результаты 6.1 |
 |--------|-------------------------------|
-| **6.2** Define Future State | Current state is the foundation for identifying gaps (gap analysis) |
-| **6.4** Assess Risks | Current state elements are a source of risks |
-| **7.3** Validate Requirements | `set_business_context` is pre-filled from 6.1 |
-| **7.6** Recommend Solution | RCA and business needs influence the value assessment |
-| **5.1** Trace Requirements | Business needs (BN-xxx) are upstream nodes of the traceability graph |
+| **6.2** Define Future State | Текущее состояние — основа для выявления разрывов (gap analysis) |
+| **6.4** Assess Risks | Элементы текущего состояния — источник рисков |
+| **7.3** Validate Requirements | `set_business_context` предзаполняется из 6.1 |
+| **7.6** Recommend Solution | RCA и бизнес-потребности влияют на оценку ценности |
+| **5.1** Trace Requirements | Бизнес-потребности (BN-xxx) — верхние узлы графа трассировки |

@@ -110,7 +110,7 @@
 - **Порог:** 12–15
 - **Типичные High-риски:** простой оборудования (operational), safety (regulatory)
 
-### IT / SaaS / Digital
+### ИТ / SaaS / Digital
 - **Tolerance:** `neutral` → `risk_seeking`
 - **Порог:** 15–20
 - **Типичные High-риски:** техническая реализация (4–5), adoption (people, 3–4)

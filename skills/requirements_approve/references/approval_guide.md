@@ -164,7 +164,7 @@ Baseline = официальная, согласованная версия на�
 - `v1.1` — baseline после первого CR-пакета
 - `v2.0` — baseline для второй версии продукта
 
-Stored in `{project}_approval_history.json`.
+Хранится в `{project}_approval_history.json`.
 
 ### Что входит в baseline snapshot
 - Список всех approved требований с версиями (из 5.1)

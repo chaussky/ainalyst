@@ -13,7 +13,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 # SKILL: BABOK 5.3 — Prioritize Requirements
 **Задача:** приоритизация требований и дизайнов — определение их относительной важности для стейкхолдеров.
 **MCP-сервер:** `requirements_prioritize_mcp.py`
-**References:** `references/methods_guide.md`, `references/conflict_resolution.md`
+**Справочники:** `references/methods_guide.md`, `references/conflict_resolution.md`
 
 ---
 

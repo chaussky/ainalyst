@@ -49,7 +49,7 @@
 
 ---
 
-## Value Score — formula
+## Value Score — формула
 
 ```
 Value Score = (Benefits_Score × 2.0) + (Alignment_Score × 1.5)

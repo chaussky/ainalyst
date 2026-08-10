@@ -48,11 +48,11 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 ## Когда читать references/
 
-Read `references/value_assessment_guide.md` when:
-- The BA asks how to classify a benefit or cost type
-- You need to explain the Value Score formula
-- The BA is unsure which `recommendation_type` to choose
-- You need examples of success_metrics
+Читай `references/value_assessment_guide.md`, когда:
+- БА спрашивает, как классифицировать тип выгоды или затрат
+- Нужно объяснить формулу Value Score
+- БА не уверен, какой `recommendation_type` выбрать
+- Нужны примеры success_metrics
 
 ---
 

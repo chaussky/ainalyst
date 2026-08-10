@@ -12,7 +12,7 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 # SKILL: BABOK 5.4 — Assess Requirements Changes
 **Задача:** оценка последствий предлагаемого изменения требований и дизайнов (Change Request).
 **MCP-сервер:** `requirements_assess_changes_mcp.py`
-**Reference:** `references/cr_assessment_guide.md`
+**Справочник:** `references/cr_assessment_guide.md`
 
 ---
 
@@ -137,12 +137,12 @@ copyright: "Copyright (c) 2026 Anatoly Chaussky. Licensed under AGPL v3. Commerc
 
 **Когда:** решение принято уполномоченным стейкхолдером.
 
-Algorithm:
-1. Obtain the decision from the authorized party (per governance 3.3 — `score_cr`
-   names the planned decision makers in its Step 4 block when 3.3 has been planned,
-   and `resolve_cr` cross-checks `decided_by` against them and flags a mismatch in
-   the CR Decision Record; it never blocks and never rewrites the name)
-2. Call `resolve_cr` with parameters:
+Алгоритм:
+1. Получи решение от уполномоченной стороны (по governance 3.3 — если 3.3 запланирована,
+   `score_cr` называет запланированных принимающих решение в блоке Шага 4, а `resolve_cr`
+   сверяет с ними `decided_by` и отмечает расхождение в CR Decision Record; он никогда
+   не блокирует и никогда не переписывает имя)
+2. Вызови `resolve_cr` с параметрами:
    - `decision`: Approved / Approved_with_Modification / Deferred / Rejected
    - `decided_by`: кто принял решение
    - `rationale`: обоснование (обязательно — для аудита)

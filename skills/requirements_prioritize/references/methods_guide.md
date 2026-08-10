@@ -177,7 +177,7 @@ LOW IMPACT
 
 ---
 
-## Method 4 — Time Boxing / Budgeting
+## Метод 4 — Time Boxing / Budgeting
 
 BABOK 10.33.3 .3: приоритизация «на основе распределения фиксированного ресурса».
 Time boxing берёт объём работ, который команда выдаёт за период; budgeting — фиксированную
