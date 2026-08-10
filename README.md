@@ -17,7 +17,7 @@
 
 ## Как это устроено
 
-At the core of the platform is Anthropic's Claude large language model. One level up is Claude Code, an AI agent that doesn't just answer but acts: it reads files, runs tools, and guides you through the process. One level higher still is a set of 21 skills and 22 MCP servers with 114 tools that cover every task in BABOK chapters 3, 4, 5, 6, and 7.
+В основе платформы — большая языковая модель Claude от Anthropic. Уровнем выше — Claude Code, AI-агент, который не просто отвечает, а действует: читает файлы, запускает инструменты и ведёт вас по процессу. Ещё уровнем выше — набор из 21 скилла и 22 MCP-серверов со 114 инструментами, закрывающих все задачи глав 3, 4, 5, 6 и 7 BABOK.
 
 Каждый скилл написан по строгой спецификации и содержит YAML-заголовок с триггерами — смысловыми паттернами, которые описывают когда именно этот скилл должен сработать. Когда бизнес-аналитик пишет что-то в чат, AIналитик анализирует запрос, сопоставляет его с триггерами, активирует нужный скилл — и тот вызывает соответствующие инструменты из MCP-серверов. Бизнес-аналитик не знает что именно произошло под капотом. Ему это и не нужно: он видит результат.
 
@@ -60,17 +60,17 @@ BA приходит не с отказом, а с данными и альтер
 
 ---
 
-### Four prioritization methods for different contexts
+### Четыре метода приоритизации под разный контекст
 
 > **Для кого:** Бизнес-аналитики на проектах с конкурирующими требованиями
 > **Боль:** Приоритизация делается «по ощущениям» — без защищаемого результата
 
-A BA is running four projects at once, each with a different context. AInalyst picks the right method for each:
+BA ведёт четыре проекта одновременно, и на каждом свой контекст. AIналитик подбирает метод под каждый:
 
-- **HR tool, deadline in two weeks** → MoSCoW in 20 minutes. Fast, clear to stakeholders.
-- **Agile team, 60 requirements in the backlog** → WSJF with a numeric score for each requirement, ready to load into Jira.
-- **Workshop with three non-technical directors** → Impact/Effort Matrix. Visual, no formulas, engages everyone in the room.
-- **Everything came back "Must", and the sprint holds 40 points** → Time Boxing/Budgeting. The capacity does the cutting, and the report names what was left out and what it would have cost.
+- **HR-инструмент, дедлайн через две недели** → MoSCoW за 20 минут. Быстро, понятно стейкхолдерам.
+- **Agile-команда, 60 требований в бэклоге** → WSJF с числовой оценкой по каждому требованию, готовой к загрузке в Jira.
+- **Воркшоп с тремя нетехническими директорами** → Impact/Effort Matrix. Наглядно, без формул, вовлекает всех в комнате.
+- **Всё вернулось «Must», а спринт вмещает 40 поинтов** → Time Boxing/Budgeting. Режет ёмкость, а отчёт называет, что осталось за бортом и сколько это стоило бы.
 
 В третьем случае AIналитик обнаруживает dependency violation прямо на воркшопе, пока директора ещё в комнате — а не на планировании спринта, когда менять что-либо уже болезненно.
 
@@ -225,7 +225,7 @@ PDF появятся рядом с `.md` файлами в папке `governanc
 
 При первом использовании убедитесь что установлена библиотека: `pip install reportlab`
 
-Those files are replaced in a single step, so an interrupted write leaves the previous version whole instead of a truncated one, and the **last five versions of each are kept in `governance_plans/.history/`**. If a tool ever reports that a file cannot be read, its message names both the file and that folder — the newest copy there is the project as it stood before the most recent change.
+Эти файлы заменяются в один приём, поэтому прерванная запись оставляет прежнюю версию целой, а не обрезанной, и **последние пять версий каждого хранятся в `governance_plans/.history/`**. Если инструмент сообщил, что файл не читается, — в его сообщении названы и файл, и эта папка: самая свежая копия там — это проект в том виде, в каком он был до последнего изменения.
 
 ---
 

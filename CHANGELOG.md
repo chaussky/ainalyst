@@ -1,23 +1,23 @@
 # Changelog — AI Платформа AIналитик (AInalyst)
 
-All notable changes to the project are documented here.  
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).  
-The project follows [Semantic Versioning](https://semver.org/).
+Здесь документируются все значимые изменения проекта.  
+Формат основан на [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).  
+Проект следует [Semantic Versioning](https://semver.org/).
 
 ---
 
 ## [Unreleased]
 
 ### Added
-- **A stored artifact survives an interrupted write.** Every project JSON file is now replaced in a single step (written beside the target, then moved into place), so an interruption — Ctrl+C, a full disk, a dead battery, an antivirus holding the handle — leaves the previous version whole instead of a truncated one. Previously 32 places wrote straight over the file, truncating it before the replacement existed.
-- **Previous versions are kept.** Before a file is replaced, the version being replaced is copied to `governance_plans/.history/`; the last five generations of each artifact are retained. This covers what atomicity cannot: content written perfectly and *wrong*, and hand edits. The message for a damaged artifact now names that folder — and states that the newest copy is the project as it stood before the most recent change.
-- **A malformed structure is refused on write.** The requirements graph accepts only `requirements` and `links` as lists; the refusal happens before the file is touched and reaches the analyst as the usual `❌` line. Validation previously existed only on read, which meant a wrong-shaped write was detected after the good version was already gone.
+- **Сохранённый артефакт переживает прерванную запись.** Каждый JSON-файл проекта теперь заменяется в один приём (пишется рядом с целевым, затем перемещается на его место), поэтому прерывание — Ctrl+C, кончившееся место на диске, севшая батарея, антивирус, удерживающий дескриптор, — оставляет прежнюю версию целой, а не обрезанной. Раньше 32 места писали прямо поверх файла, обрезая его до того, как замена существовала.
+- **Предыдущие версии сохраняются.** Перед заменой файла заменяемая версия копируется в `governance_plans/.history/`; хранятся последние пять поколений каждого артефакта. Это закрывает то, чего не закрывает атомарность: содержимое, записанное безупречно и *неверно*, и правки руками. Сообщение о повреждённом артефакте теперь называет эту папку — и говорит, что самая свежая копия есть проект в том виде, в каком он был до последнего изменения.
+- **Испорченная структура отклоняется при записи.** Граф требований принимает `requirements` и `links` только списками; отказ происходит до того, как файл тронут, и доходит до аналитика обычной строкой `❌`. Раньше проверка существовала только на чтении, то есть запись неправильной формы обнаруживалась, когда хорошей версии уже не было.
 
-### Changed
-- The flagship version of the project is now in English. The Russian version is kept on the `ru` branch.
+### Изменено
+- Флагманская версия проекта теперь на английском языке. Русская версия живёт на ветке `ru`.
 
-### Removed
-- PDF export (`export_pdf.py`) and the `reportlab` dependency. Artifacts are produced as Markdown; convert them to PDF with a tool of your choice (for example `pandoc` or a Markdown editor's "Print to PDF").
+### Удалено
+- Экспорт в PDF (`export_pdf.py`) и зависимость `reportlab`. Артефакты создаются в Markdown; конвертируйте их в PDF любым удобным инструментом (например `pandoc` или «Печать в PDF» в Markdown-редакторе).
 
 ---
 

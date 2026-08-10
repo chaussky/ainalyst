@@ -1,10 +1,11 @@
 # Правила работы с артефактами
 
-## Folder structure
-- `governance_plans/data/` — JSON files. The BA doesn't go here. This is internal data for the MCP.
-- `governance_plans/reports/` — Markdown files. Point the BA here for results, and only here.
-- `governance_plans/.history/` — the last 5 versions of every `data/` file, kept automatically
-  on each write. Never point the BA here for results; it exists only for recovery.
+## Структура папок
+- `governance_plans/data/` — JSON файлы. BA сюда не заходит. Это внутренние данные для MCP.
+- `governance_plans/reports/` — Markdown файлы. Только сюда направляй BA за результатами.
+- `governance_plans/.history/` — последние 5 версий каждого файла из `data/`, сохраняются
+  автоматически при каждой записи. Никогда не направляй сюда BA за результатами: папка
+  существует только для восстановления.
 
 ## Что показывать BA
 После сохранения артефакта всегда сообщай:
@@ -21,16 +22,17 @@
 не черновики. Они используются в последующих задачах BABOK.
 Напоминай BA об этом если он относится к ним легкомысленно.
 
-## Never delete data
-Deprecated requirements are marked via deprecate_requirements,
-but not deleted. History must be preserved.
-If there's an attempt to delete project data — warn the BA and offer deprecation.
+## Никогда не удаляй данные
+Депрекированные требования помечаются через deprecate_requirements,
+но не удаляются. История должна сохраняться.
+При попытке удалить данные проекта — предупреди BA и предложи депрекацию.
 
-The same rule holds for the platform itself: a file is replaced in one step, never
-truncated in place, and the version being replaced is copied to `.history/` first.
+То же правило действует и для самой платформы: файл заменяется в один приём, никогда не
+обрезается на месте, а заменяемая версия сначала копируется в `.history/`.
 
-## Restoring a damaged file
-If a tool answers that an artifact could not be read, its message names the file and
-`.history/`. Copy the newest matching copy back over the file, then repeat the call.
-**Always state the limit:** that copy is the project as it stood BEFORE the most recent
-change. Restoring is a recovery, not an undo — never call it a full recovery.
+## Восстановление повреждённого файла
+Если инструмент отвечает, что артефакт не читается, — в его сообщении названы файл и
+`.history/`. Скопируй самую свежую подходящую копию поверх файла и повтори вызов.
+**Всегда называй границу:** эта копия — проект в том виде, в каком он был ДО последнего
+изменения. Восстановление — это возврат, а не отмена; никогда не называй его полным
+восстановлением.

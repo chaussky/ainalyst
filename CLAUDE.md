@@ -22,13 +22,14 @@
 Платформа работает в **режиме активной фазы**: в сессии загружены только
 MCP-серверы нужной главы BABOK (экономия контекстного окна).
 
-1. **Check the phase** — at the start of a session run `python phase.py`. It prints the
-   active phase AND all six with the BABOK chapter each one covers and a hint about when
-   to use it. That output is the source of truth for which phase you need — read it there,
-   don't guess. (`full` is only for when you need tools from different chapters at once.)
-2. **Switch if it doesn't match:** `python phase.py <phase>`, then **be sure to** tell the BA:
-   *"Switched the platform to the <name> phase. The session needs to be restarted — type `/restart`, and we'll continue."*
-   After `/restart` the BA writes again — and you work with the right tools. If the phase is already correct — just continue.
+1. **Проверь фазу** — в начале сессии запусти `python phase.py`. Он печатает активную
+   фазу И все шесть — с главой BABOK, которую каждая закрывает, и подсказкой, когда её
+   применять. Именно этот вывод — источник истины о том, какая фаза нужна: читай там, не
+   угадывай. (`full` нужен только тогда, когда одновременно требуются инструменты из
+   разных глав.)
+2. **Переключи, если не совпадает:** `python phase.py <фаза>`, после чего **обязательно** скажи BA:
+   *«Переключил платформу на фазу <название>. Нужно перезапустить сессию — введи `/restart`, и продолжим»*.
+   После `/restart` BA пишет снова — и ты работаешь с нужными инструментами. Если фаза уже верная — просто продолжай.
 
 > Инструменты Главы 3 (`project_id`, реестр стейкхолдеров) доступны во всех фазах
 > как базовые — для них переключать фазу не нужно.
@@ -107,10 +108,10 @@ MCP-серверы нужной главы BABOK (экономия контек�
 Когда BA называет путь к файлу (например `inputs/ivanov_21mar.txt`) — **читай его
 напрямую**, не проси вставлять текст в чат. Форматы: `.txt`, `.md`, `.pdf`, `.docx`.
 
-**`.docx` files:** the Read tool cannot open them (binary). Do not tell the BA the file
-is unsupported — extract the text yourself with this stdlib-only script (a `.docx` is a
-zip archive with the text in `word/document.xml`). Save it to a temp file and run
-`python <script> <path-to-docx>`; then work with the printed text as usual:
+**Файлы `.docx`:** инструмент Read их не открывает (бинарные). Не говори BA, что формат
+не поддерживается, — вытащи текст сам вот этим скриптом на одной стандартной библиотеке
+(`.docx` — это zip-архив, текст лежит в `word/document.xml`). Сохрани скрипт во временный
+файл, запусти `python <скрипт> <путь-к-docx>` — и работай с напечатанным текстом как обычно:
 
 ```python
 import html, re, sys, zipfile
@@ -121,21 +122,21 @@ text = html.unescape(re.sub(r"<[^>]+>", "", xml))
 print(re.sub(r"\n{3,}", "\n\n", text).strip())
 ```
 
-This recipe is covered by `tests/test_docx_snippet.py`, which executes the snippet
-exactly as published here — keep the two in sync when editing.
+Этот рецепт покрыт тестом `tests/test_docx_snippet.py`, который выполняет сниппет ровно
+в том виде, в каком он опубликован здесь, — при правке держи их в согласии.
 
 ---
 
 ## Документация платформы — используй для ответов на вопросы BA
 
-If the BA asks how the platform works, what phases are, how to use the
-tools, or what a BABOK term means — **answer from the documentation, not from memory.**
-Three places, and their file names say which chapter they cover:
+Если BA спрашивает, как работает платформа, что такое фазы, как использовать
+инструменты или что означает BABOK-термин — отвечай на основе документации,
+а не по памяти. Мест три, и имена файлов сами говорят, какую главу они закрывают:
 
-- `docs/user-guide/` — how to work with the platform, one file per BABOK chapter
+- `docs/user-guide/` — как работать с платформой, по одному файлу на главу BABOK
   (`1-introduction.md`, `ch3-planning.md` … `ch7-requirements-analysis-and-design.md`)
-- `docs/use-cases/use-cases.md` — examples and end-to-end scenarios
-- `docs/developer-guide/developer-guide.md` — technical architecture, development
+- `docs/use-cases/use-cases.md` — примеры и сквозные сценарии
+- `docs/developer-guide/developer-guide.md` — техническая архитектура, разработка
 
 ---
 
@@ -146,45 +147,47 @@ Three places, and their file names say which chapter they cover:
 - `governance_plans/reports/<project_id>/` — Markdown (документы для людей и BA)
 - спеки 7.1 — в `governance_plans/data/<project_id>/specs/`
 
-The folders are created automatically, and the file name keeps the project prefix — for
+Папки создаются автоматически, а имя файла сохраняет префикс проекта — для
 `crm_upgrade`: `data/crm_upgrade/crm_upgrade_traceability_repo.json`.
 
-Every artifact lives in exactly one place — the project's folder. A file lying directly
-in `data/` or `reports/` belongs to no project and is not read by anything.
-Point the BA to results only in `reports/`.
+Каждый артефакт лежит ровно в одном месте — в папке своего проекта. Файл, лежащий прямо
+в `data/` или `reports/`, не принадлежит ни одному проекту, и его никто не читает.
+Направляй BA за результатами только в `reports/`.
 
-**Previous versions: `governance_plans/.history/`.** Every JSON file in `data/` is replaced
-in one step (so an interrupted write leaves the old version whole), and the version being
-replaced is copied aside first — the **last five** are kept, named
-`<artifact>.<timestamp>.json`. If a tool reports that a file could not be read, the fix is
-to copy the newest matching copy from `.history/` back over it. **Say the caveat out loud:**
-that copy is the project as it stood BEFORE the most recent change, so the last change is
-the one thing it cannot return. Never present a restore as a full recovery.
+**Предыдущие версии: `governance_plans/.history/`.** Каждый JSON-файл в `data/` заменяется
+в один приём (поэтому прерванная запись оставляет прежнюю версию целой), а заменяемая
+версия сначала копируется в сторону — хранятся **последние пять**, с именем
+`<артефакт>.<временная-метка>.json`. Если инструмент сообщил, что файл не читается,
+лечится это копированием самой свежей подходящей копии из `.history/` поверх него.
+**Проговаривай оговорку вслух:** эта копия — проект в том виде, в каком он был ДО
+последнего изменения, поэтому именно последнее изменение она вернуть не может. Никогда не
+выдавай восстановление за полное.
 
 ---
 
 ## Важные принципы
 
-**`project_id` is the key to everything.** All project artifacts are linked through `project_id`.
-Use a short name from `[a-z0-9_-]`, no spaces (for example `crm_upgrade`, `bank_portal`).
-Once chosen — use it everywhere.
+**`project_id` — ключ всего.** Все артефакты проекта связаны через `project_id`.
+Используй короткое имя из `[a-z0-9_-]`, без пробелов (например `crm_upgrade`, `bank_portal`).
+Один раз выбрал — используй везде.
 
-**This is enforced, not advised.** The rule is one sentence: **`project_id` must be spelled
-exactly the way its folder is** — lower-case, starting with a letter or a digit, no spaces,
-no doubled `_`. Anything a folder name cannot carry as written is **refused** by every tool,
-and nothing is written: `црм_апгрейд`, `統一平台`, `!!!`, but also `CRM Up`, `demo.v2`,
-`crm__up`, `_crm`. The reason is not tidiness: an id that has to be rewritten to fit is an id
-some OTHER spelling also rewrites to, and two projects then land in one folder and silently
-mix each other's artifacts.
+**Это не совет, а требование.** Правило умещается в одну фразу: **`project_id` пишется
+ровно так, как называется его папка** — строчными буквами, начинается с буквы или цифры,
+без пробелов, без сдвоенного `_`. Всё, чего имя папки не унесёт как написано, каждый
+инструмент **отклоняет**, ничего при этом не записывая: `црм_апгрейд`, `統一平台`, `!!!`,
+но также `CRM Up`, `demo.v2`, `crm__up`, `_crm`. Дело не в аккуратности: id, который
+приходится переписывать, чтобы он подошёл, — это id, в который переписывается и КАКОЕ-ТО
+ДРУГОЕ написание, и тогда два проекта попадают в одну папку и молча перемешивают артефакты
+друг друга.
 
-So when the BA names a project in any script other than Latin, **agree on a latin `project_id`
-BEFORE the first tool call** — don't discover it through a refusal. Offer a transliteration,
-confirm it, then use it everywhere. The project's real name goes into the artifacts as a title
-(`project_title`, `package_title`, …), where any script works perfectly — only the *id* is
-restricted.
+Поэтому, когда BA называет проект любой письменностью, кроме латинской, **договорись о
+латинском `project_id` ДО первого вызова инструмента** — не узнавай об этом из отказа.
+Предложи транслитерацию, подтверди её и дальше используй везде. Настоящее имя проекта
+уходит в артефакты как заголовок (`project_title`, `package_title`, …), где любая
+письменность работает прекрасно, — ограничен только *id*.
 
-If the BA already has artifacts under a name that is now refused, say so plainly: the data is
-safe on disk, but the project has to be renamed to be reachable again.
+Если у BA уже есть артефакты под именем, которое теперь отклоняется, скажи прямо: данные
+на диске целы, но чтобы проект снова стал доступен, его нужно переименовать.
 
 ---
 
@@ -199,8 +202,8 @@ safe on disk, but the project has to be renamed to be reachable again.
 
 ---
 
-## Licensing — one rule
+## Лицензирование — одно правило
 
-Preserve the `Copyright (c) 2026 Anatoly Chaussky` header line when creating or editing
-files that carry it (36 files do). Licensing questions are answered from `LICENSE`,
-`COMMERCIAL_LICENSE.md` and `CLA.md` — read them when asked, don't answer from memory.
+Сохраняй строку заголовка `Copyright (c) 2026 Anatoly Chaussky` при создании и правке
+файлов, которые её несут (таких 36). На вопросы о лицензировании отвечай по `LICENSE`,
+`COMMERCIAL_LICENSE.md` и `CLA.md` — читай их, когда спрашивают, а не отвечай по памяти.

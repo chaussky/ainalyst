@@ -63,8 +63,8 @@ BASE_SERVER = {
 
 PHASES = {
     "planning": {
-        "label": "Chapter 3 — Business Analysis Planning",
-        "hint": "New project, approach selection, stakeholder map, BA plan",
+        "label": "Глава 3 — Планирование бизнес-анализа",
+        "hint": "Новый проект, выбор подхода, карта стейкхолдеров, план BA",
         "tokens_saved": "33,000",
         "servers": {
             **BASE_SERVER,
@@ -72,8 +72,8 @@ PHASES = {
     },
 
     "elicitation": {
-        "label": "Chapter 4 — Elicitation and Collaboration",
-        "hint": "Interviews, workshops, surveys, meeting minutes",
+        "label": "Глава 4 — Выявление и сотрудничество",
+        "hint": "Интервью, воркшопы, анкеты, протоколы встреч",
         "tokens_saved": "27,000",
         "servers": {
             **BASE_SERVER,
@@ -86,8 +86,8 @@ PHASES = {
     },
 
     "lifecycle": {
-        "label": "Chapter 5 — Requirements Lifecycle Management",
-        "hint": "Traceability, prioritization, CRs, approval, maintenance",
+        "label": "Глава 5 — Управление жизненным циклом требований",
+        "hint": "Трассировка, приоритизация, CR, утверждение, поддержка",
         "tokens_saved": "27,000",
         "servers": {
             **BASE_SERVER,
@@ -100,8 +100,8 @@ PHASES = {
     },
 
     "analysis": {
-        "label": "Chapter 6 — Strategy Analysis",
-        "hint": "Current state analysis (as-is), future state (to-be), gap analysis, risk assessment, change strategy",
+        "label": "Глава 6 — Анализ стратегии",
+        "hint": "Анализ текущего состояния (as-is), будущее состояние (to-be), GAP, оценка рисков, стратегия изменения",
         "tokens_saved": "28,000",
         "servers": {
             **BASE_SERVER,
@@ -113,8 +113,8 @@ PHASES = {
     },
 
     "design": {
-        "label": "Chapter 7 — Requirements Analysis and Design",
-        "hint": "Specification, verification, validation, architecture, design, value assessment",
+        "label": "Глава 7 — Определение и проектирование требований",
+        "hint": "Спецификация, верификация, валидация, архитектура, дизайн, оценка ценности",
         "tokens_saved": "18,000",
         "servers": {
             **BASE_SERVER,
@@ -128,8 +128,8 @@ PHASES = {
     },
 
     "full": {
-        "label": "All chapters (full mode)",
-        "hint": "All 18 servers. Use only when you need tools from different chapters at the same time",
+        "label": "Все главы (полный режим)",
+        "hint": "Все 22 сервера. Используй только если нужны инструменты из разных глав одновременно",
         "tokens_saved": "0",
         "servers": {
             **BASE_SERVER,
@@ -204,45 +204,45 @@ def _confluence_env_set() -> bool:
 def show_status():
     current = read_current_phase()
     print()
-    print(c("bold", "AInalyst — BABOK phase switcher"))
+    print(c("bold", "AIналитик — переключатель фаз BABOK"))
     print(c("gray", "─" * 55))
 
     if current:
         phase_info = PHASES[current]
-        print(f"  Current phase: {c('green', current)} — {phase_info['label']}")
+        print(f"  Текущая фаза: {c('green', current)} — {phase_info['label']}")
         server_count = len(phase_info["servers"])
-        print(f"  Active servers: {c('cyan', str(server_count))} of {len(PHASES['full']['servers'])}")
+        print(f"  Активных серверов: {c('cyan', str(server_count))} из {len(PHASES['full']['servers'])}")
     else:
-        print(f"  Current phase: {c('yellow', 'not set')} (using .mcp.json as is)")
+        print(f"  Текущая фаза: {c('yellow', 'не задана')} (используется .mcp.json как есть)")
 
     print()
-    print(c("bold", "Available phases:"))
+    print(c("bold", "Доступные фазы:"))
     print()
 
     for key, info in PHASES.items():
         marker = c("green", "▶ ") if key == current else "  "
         saved = info["tokens_saved"]
         servers = len(info["servers"])
-        saved_str = f"saves ~{saved} tokens" if saved != "0" else "all servers"
+        saved_str = f"экономия ~{saved} токенов" if saved != "0" else "полный набор"
         print(f"{marker}{c('cyan', key):<22} {info['label']}")
         print(f"   {c('gray', info['hint'])}")
-        print(f"   {c('gray', f'{servers} servers · {saved_str}')}")
+        print(f"   {c('gray', f'серверов: {servers} · {saved_str}')}")
         print()
 
     confluence_available = _confluence_env_set()
-    confluence_status = c("green", "configured") if confluence_available else c("yellow", "not configured — fill in .env")
+    confluence_status = c("green", "настроен") if confluence_available else c("yellow", "не настроен — заполните .env")
     print(c("gray", "─" * 55))
     print(f"  Confluence: {confluence_status}")
     print()
     print(c("gray", "─" * 55))
-    print(f"  Usage: {c('bold', 'python phase.py <phase>')}")
-    print(f"  After switching: {c('yellow', '/restart')} in Claude Code")
+    print(f"  Использование: {c('bold', 'python phase.py <фаза>')}")
+    print(f"  После переключения: {c('yellow', '/restart')} в Claude Code")
     print()
 
 
 def switch_phase(phase: str):
     if phase not in PHASES:
-        print(c("red", f"Error: phase '{phase}' does not exist."))
+        print(c("red", f"Ошибка: фаза '{phase}' не существует."))
         print(f"Available: {', '.join(PHASES.keys())}")
         sys.exit(1)
 
@@ -254,20 +254,20 @@ def switch_phase(phase: str):
     full_count = len(PHASES["full"]["servers"])
 
     print()
-    print(c("green", "✓") + f" Phase switched: {c('bold', phase)}")
+    print(c("green", "✓") + f" Фаза переключена: {c('bold', phase)}")
     print(f"  {info['label']}")
     print(f"  {c('gray', info['hint'])}")
     print()
-    print(f"  Active servers: {c('cyan', str(server_count))} of {full_count}")
+    print(f"  Активных серверов: {c('cyan', str(server_count))} из {full_count}")
 
     if info["tokens_saved"] != "0":
-        print(f"  Context savings: ~{c('green', info['tokens_saved'])} tokens")
+        print(f"  Экономия контекста: ~{c('green', info['tokens_saved'])} токенов")
 
     if old_phase and old_phase != phase:
         print(f"  {c('gray', f'Previous: {old_phase}')}")
 
     print()
-    print(c("yellow", "  → Restart Claude Code: /restart"))
+    print(c("yellow", "  → Перезапусти Claude Code: /restart"))
     print()
 
 
@@ -281,7 +281,7 @@ def main():
     elif len(sys.argv) == 2:
         switch_phase(sys.argv[1])
     else:
-        print(c("red", "Usage: python phase.py [phase]"))
+        print(c("red", "Использование: python phase.py [фаза]"))
         sys.exit(1)
 
 
