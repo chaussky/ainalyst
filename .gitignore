@@ -44,11 +44,13 @@ desktop.ini
 *.swo
 *~
 
-# Internal process artifacts (brainstorming specs, implementation plans).
+# Internal process artifacts (brainstorming specs, implementation plans) and
+# marketing copy (content plans, draft posts).
 # They contain internal strategy, not part of the product, and are not published on GitHub.
 docs/superpowers/
 .superpowers/
 Dev/
+marketing/
 
 # The second, LOCAL repository that snapshots the whole tree, including everything the
 # rule above keeps out of this one. It lives here rather than only in .git/info/exclude
