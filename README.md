@@ -1,5 +1,7 @@
 # AI Платформа AIналитик / AI-powered Platform AInalyst
 
+**🇬🇧 English version is on the [`main`](../../tree/main) branch.**
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-2991%20passed-brightgreen.svg)](tests/)
@@ -109,10 +111,12 @@ AIналитик проверяет по 9 характеристикам BABOK:
 Скачайте проект и установите зависимости:
 
 ```bash
-git clone https://github.com/chaussky/ainalyst.git
+git clone -b ru https://github.com/chaussky/ainalyst.git
 cd ainalyst
 pip install -r requirements.txt
 ```
+
+Флаг `-b ru` обязателен: ветка по умолчанию — английская, и без него склонируется английская версия платформы.
 
 Если у вас есть доступ к Confluence, настройте подключение:
 

@@ -128,7 +128,8 @@ python phase.py <название_фазы>
 
 ```bash
 # 1. Скачайте репозиторий
-git clone https://github.com/chaussky/ainalyst.git
+#    Флаг -b ru обязателен: ветка по умолчанию английская, без него придёт английская версия
+git clone -b ru https://github.com/chaussky/ainalyst.git
 cd ainalyst
 
 # 2. Установите зависимости
