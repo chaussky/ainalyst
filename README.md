@@ -294,3 +294,9 @@ For questions about commercial licensing, custom development (additional MCP ser
 **Anatoly Chaussky**  
 Email: chaussky@gmail.com  
 LinkedIn: https://www.linkedin.com/in/anatole-tchaoussky-82957a40b/
+
+---
+
+## Trademarks
+
+BABOK® and IIBA® are registered trademarks of the International Institute of Business Analysis. AInalyst is an independent open-source project: it is not affiliated with, endorsed, sponsored, or certified by IIBA. References to BABOK v3 describe the methodology this tool helps a business analyst follow.
