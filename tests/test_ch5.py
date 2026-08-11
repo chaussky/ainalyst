@@ -750,7 +750,7 @@ class TestPrioritizeTools(BaseMCPTest):
         # Read the 5.1 repository directly
         safe = self.P.lower().replace(" ", "_")
         repo_path = data_path(safe, f"{safe}_traceability_repo.json")
-        with open(repo_path) as f:
+        with open(repo_path, encoding="utf-8") as f:
             repo = json.load(f)
         fr001 = next(r for r in repo["requirements"] if r["id"] == "FR-001")
         self.assertEqual(fr001["priority"], "Must")
@@ -763,7 +763,7 @@ class TestPrioritizeTools(BaseMCPTest):
         mod53.run_aggregation(self.P, "HIST1")
         mod53.save_prioritization_result(self.P, "HIST1")
         safe = self.P.lower().replace(" ", "_")
-        with open(data_path(safe, f"{safe}_traceability_repo.json")) as f:
+        with open(data_path(safe, f"{safe}_traceability_repo.json"), encoding="utf-8") as f:
             repo = json.load(f)
         actions = [h["action"] for h in repo.get("history", [])]
         self.assertIn("priority_updated", actions)

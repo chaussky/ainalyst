@@ -167,14 +167,16 @@ STATE_FILE = Path(".ainalyst_phase")  # remembers the current phase
 
 def read_current_phase() -> str | None:
     if STATE_FILE.exists():
-        return STATE_FILE.read_text().strip()
+        return STATE_FILE.read_text(encoding="utf-8").strip()
     return None
 
 
 def write_phase(phase: str):
     config = {"mcpServers": PHASES[phase]["servers"]}
-    MCP_FILE.write_text(json.dumps(config, indent=2, ensure_ascii=False))
-    STATE_FILE.write_text(phase)
+    MCP_FILE.write_text(
+        json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    STATE_FILE.write_text(phase, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
