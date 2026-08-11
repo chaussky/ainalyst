@@ -297,3 +297,9 @@ AI Платформа AIналитик (AI-powered Platform AInalyst) распр
 
 **Анатолий Чаусский / Anatoly Chaussky**  
 Email: chaussky@gmail.com
+
+---
+
+## Товарные знаки
+
+BABOK® и IIBA® — зарегистрированные товарные знаки International Institute of Business Analysis. AIналитик (AInalyst) — независимый проект с открытым исходным кодом: он не аффилирован с IIBA, не одобрен и не сертифицирован ею. Упоминания BABOK v3 описывают методологию, следовать которой помогает инструмент.
