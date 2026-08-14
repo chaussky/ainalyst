@@ -59,6 +59,13 @@ trademark notice at the end of `README.md` says so; contributions have to keep i
   sells. Describe the technique in your own words and name the task by its number (for
   example "6.1 Analyze Current State"), so a reader can open their own copy.
 
+**One exception to the third point, and it is narrow.** A short quotation is allowed where
+the Guide's exact words are the point: a phrase or a sentence, in quotation marks, with the
+section and printed page named, explaining why the code or a vocabulary is shaped the way it
+is. A few comments in `skills/` do this, and paraphrasing them would break what the comment
+is for, which is to tie a constant to the standard's own wording. A quotation never grows
+into a paragraph, and it never stands in for writing your own explanation.
+
 **Do say** that the platform helps a business analyst follow the methodology. That is
 what it does, and it needs nobody's permission to be said.
 
