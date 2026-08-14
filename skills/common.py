@@ -53,7 +53,6 @@ BUSINESS_NODE_TYPES = {"business", "business_goal", "business_need"}
 # counted as a requirement everywhere — asked for a test case by 5.1, for an owner by
 # 5.2, for a MoSCoW vote by 5.3. Renaming the SCOPE node (the smaller, single-writer
 # population) separates them; `solution` again means only the requirement class.
-# Graphs written before the rename are migrated by migrate_solution_scope.py.
 SOLUTION_SCOPE_NODE_TYPE = "solution_scope"
 
 # Other chapters' analysis artifacts. They live in the graph for traceability but

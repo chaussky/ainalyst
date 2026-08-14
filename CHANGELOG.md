@@ -17,6 +17,7 @@ The project follows [Semantic Versioning](https://semver.org/).
 - The flagship version of the project is now in English. The Russian version is kept on the `ru` branch.
 
 ### Removed
+- `migrate_solution_scope.py`. The script repaired requirement graphs written before chapter 6.4 stopped labelling the solution scope with the `solution` literal of the 5.1 requirement vocabulary. That rename predates the first public release, so no published version ever wrote the format it repaired.
 - PDF export (`export_pdf.py`) and the `reportlab` dependency. Artifacts are produced as Markdown; convert them to PDF with a tool of your choice (for example `pandoc` or a Markdown editor's "Print to PDF").
 
 ---
