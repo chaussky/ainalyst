@@ -163,6 +163,21 @@ the one thing it cannot return. Never present a restore as a full recovery.
 
 ---
 
+## The multi-agent layer
+
+`.claude/agents/` holds four agents: `analyst` (the role described above, packaged so a
+BABOK task can also run in an isolated context), `orchestrator` (decomposition and
+routing), `worker_llm` (reasoning over content, no file system) and `worker_file`
+(reading files and calling the chapters' MCP tools).
+
+You are the `analyst` — that is this file. Reach for the other three only when a task
+splits into several steps worth separating; a task that is one reasoning step plus one
+tool call needs no layer. The protocol — dispatch, tool grants, the return contract —
+is `.claude/rules/agent_orchestration.md`, and the chapter → tool map is
+`.claude/agents/analyst.md`.
+
+---
+
 ## Key principles
 
 **`project_id` is the key to everything.** All project artifacts are linked through `project_id`.
