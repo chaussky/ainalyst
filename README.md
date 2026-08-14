@@ -273,17 +273,18 @@ For questions, issues, and feature requests, use [GitHub Issues](../../issues). 
 ## License and commercial use
 Copyright (c) 2026 Anatoly Chaussky
 
-AInalyst is distributed under the **GNU AGPL v3** license.
+AInalyst is distributed under the **GNU AGPL v3**. The AGPL already allows a great deal, commercial use included, on one condition: whoever receives the software — including a user who only ever reaches it over a network — also receives the complete source code under the same license.
 
-**Free for:**
+**The AGPL alone is enough for:**
 - Business analysts using the platform locally for their own work
 - Companies deploying the platform within their own infrastructure for their own analysts
+- Anyone who modifies the platform, hosts it, or builds on it and is willing to publish their source under the AGPL
 
-**A commercial license is required for:**
-- Building SaaS services on top of the platform
-- Embedding the code in closed-source commercial products
-- Developing paid graphical interfaces on top of the platform
-- Enterprise agreements with guarantees and support
+**A commercial license releases you from that condition.** You need one to:
+- Offer AInalyst as a hosted service (SaaS) without opening your own source code
+- Embed the code in a closed-source commercial product
+- Ship a paid graphical interface without opening the interface code
+- Obtain warranties, indemnification, or dedicated support — the AGPL expressly disclaims them
 
 For production, SaaS, or proprietary use, see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) (commercial license; contact chaussky@gmail.com).
 
