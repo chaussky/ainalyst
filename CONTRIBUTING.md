@@ -57,4 +57,5 @@
 Если вам нужны кастомные MCP-серверы, интеграции или развёртывание в закрытом контуре — пишите напрямую:
 
 **Анатолий Чаусский / Anatoly Chaussky**  
-Email: chaussky@gmail.com
+Email: chaussky@gmail.com  
+Телеграм-канал: [t.me/platform_ainalyst](https://t.me/platform_ainalyst)

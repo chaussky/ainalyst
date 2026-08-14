@@ -6,9 +6,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/chaussky/ainalyst/actions/workflows/tests.yml/badge.svg?branch=ru)](https://github.com/chaussky/ainalyst/actions/workflows/tests.yml)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-required-orange.svg)](https://claude.ai)
+[![Telegram](https://img.shields.io/badge/Telegram-канал-blue?logo=telegram)](https://t.me/platform_ainalyst)
 ![Status: Beta](https://img.shields.io/badge/status-beta-orange)
 
-Вопросы, обсуждение, сообщения об ошибках — через GitHub Issues; по остальному — `chaussky@gmail.com`.
+Ошибки и предложения — через GitHub Issues; по остальному — `chaussky@gmail.com`. Анонсы обновлений и обсуждение с другими пользователями — в Телеграм-канале **[t.me/platform_ainalyst](https://t.me/platform_ainalyst)**.
 
 **AIналитик** (AInalyst) — это AI-ассистент, который работает рядом с вами как опытный коллега-аналитик. Он знает методологию BABOK v3, умеет вести интервью, строить карты стейкхолдеров, трассировать требования и оформлять артефакты. Вы описываете задачу своими словами — AIналитик предлагает следующий шаг, задаёт уточняющие вопросы и делает работу.
 
@@ -298,6 +299,14 @@ AI Платформа AIналитик (AI-powered Platform AInalyst) распр
 
 **Анатолий Чаусский / Anatoly Chaussky**  
 Email: chaussky@gmail.com
+
+---
+
+## Сообщество
+
+Присоединяйтесь к Телеграм-каналу проекта — там анонсы обновлений, советы по использованию, разбор реальных кейсов и обсуждение с другими пользователями:
+
+**→ [t.me/platform_ainalyst](https://t.me/platform_ainalyst)**
 
 ---
 
