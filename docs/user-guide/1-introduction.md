@@ -49,6 +49,8 @@ AInalyst solves this problem through three layers:
 
 Together, these three layers create something a regular chat can't offer: a clear working framework that carries you from the start of the project to the final artifact. The platform knows the methodology; you just need to know your project.
 
+**One more thing happens out of sight.** On a task big enough to be worth it, the first layer splits into four agents: one leads the dialogue with you, one breaks the task into steps, and two carry out halves that are deliberately kept apart — reasoning over the material, and writing the artifacts. You never call them by name, and nothing changes in how you talk to the platform. The reason for the split is practical: the step that writes to disk does no thinking of its own, so it always does the same thing with the same input, and a step that fails can simply be repeated. It also means the agent that interprets your transcript has no way to write anything at all — it hands its conclusions on, and a different step saves them.
+
 ---
 
 ## You Don't Need to Memorize Anything

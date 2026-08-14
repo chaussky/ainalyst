@@ -20,6 +20,8 @@ At the core of the platform is Anthropic's Claude large language model. One leve
 
 Each skill is written to a strict specification and includes a YAML header with triggers: semantic patterns that describe exactly when that skill should fire. When a business analyst types something into the chat, AInalyst analyzes the request, matches it against the triggers, activates the right skill, and that skill calls the corresponding tools from the MCP servers. The business analyst doesn't know exactly what happened under the hood. And they don't need to: they see the result.
 
+On bigger tasks that top layer can split into four agents: one leads the dialogue with you, one breaks the task into steps, and two carry out the halves that must never blur together — reasoning over the material, and writing the artifacts. You never call them by name and nothing changes in how you work; the platform reaches for the split when a task is large enough to be worth it. The reason for keeping the halves apart is practical: the step that writes to disk stays deterministic, so a failed step can simply be repeated.
+
 ### What this means in practice
 
 **Reduced cognitive load.** A project may run for months, with stakeholders, decisions, requirements, and change history piling up. Holding it all in your head is impossible. AInalyst records every step in structured artifacts. At any moment you can ask "what approvals are open right now" or "why was this decision made," and get an answer immediately.
